@@ -308,9 +308,7 @@ class Report extends \OWA\Core\AdminController {
              * would show a report that is quietly missing a widget.
              *
              * And the reason is SHOWN. It names a metric, a dimension or a
-             * widget -- nothing a reader of reports could not already query --
-             * and "could not be found" sent people looking for a missing page
-             * when the page was there and one name in it was not.
+             * widget -- nothing a reader of reports could not already query.
              */
             return $this->reportCannotBeDrawn( $id, $error );
         }

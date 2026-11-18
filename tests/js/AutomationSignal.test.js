@@ -5,8 +5,7 @@ import { Util as OwaUtil } from '../../modules/Base/src/common/Util.js';
  *
  * The only crawler a JavaScript tracker ever sees is one that runs JavaScript,
  * and those look exactly like Chrome on the server because they ARE Chrome
- * under a script. Measured on a live install, one such crawler made 365
- * requests over two days and was counted as a person.
+ * under a script.
  *
  * navigator.webdriver is standardised -- a conforming browser must report true
  * while under automation -- so it is the one thing that separates them, and
@@ -56,9 +55,7 @@ describe('automation is treated as untrackable', () => {
 
     /**
      * Automating your own site is legitimate -- end to end tests, synthetic
-     * monitoring, an uptime check that should show up in reports. Without a way
-     * back in, this project's own e2e suite would record nothing, which is a
-     * fair warning about what it would do to everyone else's.
+     * monitoring, an uptime check that should show up in reports.
      */
     test('automation can be opted back in by the site owner', () => {
         setWebdriver(true);

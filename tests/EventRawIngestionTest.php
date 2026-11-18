@@ -31,9 +31,6 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Fire a page view and hand back its raw rows, keyed by event_type.
-     */
-    /**
      * Fire a first-session page view for a given visitor and return whether the
      * acquisition write reported success.
      *
@@ -53,6 +50,9 @@ final class EventRawIngestionTest extends IngestionTestCase
         return $check->wasPersisted();
     }
 
+    /**
+     * Fire a page view and hand back its raw rows, keyed by event_type.
+     */
     private function firePageView(array $override = []): array
     {
         $visitor = $this->uniqueGuid();
@@ -64,9 +64,8 @@ final class EventRawIngestionTest extends IngestionTestCase
             'session_id' => $session,
             // page_url as well as page_location, because Compat::apply() is
             // meant to leave page_location alone when a beacon carries both.
-            // landing_url is NOT here: the tracker stopped sending it, and the
-            // fixture claiming a property the registry no longer declares is
-            // how a deleted field goes on looking alive.
+            // landing_url is NOT here: the tracker does not send it and the
+            // registry does not declare it.
             'page_url'      => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_location' => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_title'    => 'V2 A',
@@ -118,17 +117,15 @@ final class EventRawIngestionTest extends IngestionTestCase
      * An event with no NAME is refused, like one with no visitor.
      *
      * The id is derived from five things -- site, visitor, session, ts and the
-     * event name -- and the guard checked four. The column does not catch it
-     * either: event_type is NOT NULL, and '' satisfies that. So every nameless
-     * event of one visitor in one microsecond would derive the SAME id and
-     * collide onto one row, which is what the guard's own comment says it
-     * exists to prevent.
+     * event name -- and the guard checks all five. The column would not catch a
+     * missing name: event_type is NOT NULL, and '' satisfies that. So every
+     * nameless event of one visitor in one microsecond would derive the SAME id
+     * and collide onto one row.
      *
      * DRIVEN AT row() RATHER THAN THROUGH A BEACON, deliberately. Dispatch will
      * not route an event with no type to a handler, so the public path cannot
      * reach this line -- a test that fired a nameless beacon would pass with
-     * the guard REMOVED, proving only that dispatch drops it. Measured: it did.
-     * This is a backstop against a caller passing an empty name, and the only
+     * the guard REMOVED, proving only that dispatch drops it. This is a backstop against a caller passing an empty name, and the only
      * honest way to test a backstop is to call it.
      */
     public function testAnEventWithNoNameIsRefused(): void
@@ -182,16 +179,13 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * A SESSION WITH NO PAGE VIEW still gets its marker rows.
      *
-     * The tracker has never been coupled to page views: raiseEvent() goes through
-     * manageState() like everything else, so a scroll or a form_start that happens
-     * to be the first event of a session mints the session id and stamps
-     * is_new_session_start on THAT beacon. Ingest used to gate the markers on
-     * page_view, which dropped the flag silently -- the session existed in raw with
-     * no session_start row, and a genuinely new visitor had no first_visit.
-     *
-     * It survived because `sessions` is a distinct count over session_id, so the
-     * session was still counted. What disagreed was everything reading the marker
-     * rows.
+     * The tracker is not coupled to page views: raiseEvent() goes through
+     * manageState() like everything else, so a scroll or a form_start that is the
+     * first event of a session mints the session id and stamps
+     * is_new_session_start on THAT beacon, and ingest raises the markers from it.
+     * Gated on page_view, the session would still be counted -- `sessions` is a
+     * distinct count over session_id -- while it had no session_start row and a
+     * new visitor no first_visit.
      *
      * @dataProvider firstEventProvider
      */
@@ -443,8 +437,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * TWO CLICKS THAT ARRIVE IN THE SAME MICROSECOND ARE TWO ROWS. ts is the
      * edge receipt, and this process stamps every event it fires with one, so
      * the two clicks below share every input of the id but the sequence number
-     * the tracker counted them by. Before the sequence was part of the id the
-     * second derived the first one's id and was lost.
+     * the tracker counted them by, which is part of the id.
      *
      * The same click sent again, sequence and all, is still stored once.
      */
@@ -640,7 +633,7 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * A row for a day the routine cube build no longer covers queues a rebuild
+     * A row for a day the routine cube build does not cover queues a rebuild
      * of that day, once per Property and day; a row for yesterday or today
      * queues nothing, since the routine build covers those.
      */
@@ -722,17 +715,13 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * A display name is a custom USER property, and reaches the visitor store.
      *
-     * These two tests asserted it reached `params` as a declared property with
-     * `log_visitor_pii` gating it. Both premises are gone: user_name and
-     * user_email left the release vocabulary to become ordinary custom user
-     * properties (PLAN.html §2.26.1 -- v2 offers site authors event and user
-     * scope and nothing else, and a value describing the PERSON is the second),
-     * and the gate moved to user_id, which is the identity field that still has a
-     * column.
+     * user_name and user_email are ordinary custom user properties (PLAN.html
+     * §2.26.1 -- v2 offers site authors event and user scope and nothing else, and
+     * a value describing the PERSON is the second), and log_visitor_pii gates
+     * user_id, the identity field that has a column.
      *
-     * So the path under test is the `vps_` one, which is the same path any other
-     * user property takes -- the point being that a name needs no special case
-     * once it stops being special.
+     * So the path under test is the `vps_` one, the same path any other user
+     * property takes.
      */
     public function testADisplayNameIsAUserProperty(): void
     {
@@ -792,8 +781,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      *
      * gateUserId() DELETES the property rather than returning null. A null is not
      * written back by setTrackerProperties(), so a gate that merely returns
-     * nothing leaves the beacon's value on the event for the row builder to read
-     * -- which is exactly how the old user_name gate failed.
+     * nothing leaves the beacon's value on the event for the row builder to read.
      */
     public function testThePiiGateStopsUserIdBeingStored(): void
     {
@@ -850,14 +838,10 @@ final class EventRawIngestionTest extends IngestionTestCase
      * Line items nest as a real array, so JSON_TABLE can read one row per item.
      *
      * ct_line_items arrives from the wire as JSON TEXT, and Sanitize::cleanJson()
-     * validates it and hands the text back. The row builder assigned that straight
-     * into the params map, so json_encode() escaped it a second time and the column
-     * held {"items": "[{\"sku\": ...}]"} -- the value at $.items being one scalar
-     * string. Measured on a seeded purchase.
-     *
-     * JSON_TABLE over '$.items[*]' then produces nothing usable, which is why the
-     * Products report had no line items to report on. Asserted both ways: the
-     * document nests, and the server can expand it.
+     * validates it and hands the text back. Assigned straight into the params map,
+     * json_encode() would escape it a second time and the value at $.items would be
+     * one scalar string, which JSON_TABLE over '$.items[*]' cannot expand. Asserted
+     * both ways: the document nests, and the server can expand it.
      */
     public function testLineItemsNestAndExpandWithJsonTable(): void
     {
@@ -1097,14 +1081,13 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * The row stores whether the click left the site; THE CLIENT decided it.
+     * The row stores whether the click left the site; THE CLIENT decides it.
      *
-     * The comparison was a server derivation, off target_url's host against
-     * page_location's. That only serves a sender shaped like a browser -- a non-web
-     * client has neither property and still knows whether what it raised left the
-     * property -- and only the client can see the DOM, where an href may have been
-     * rewritten by script. The host-comparison rules are asserted against
-     * OWATracker.isOutboundUrl(), which is where they now live.
+     * A server derivation off target_url's host against page_location's would only
+     * serve a sender shaped like a browser -- a non-web client has neither property
+     * and still knows whether what it raised left the property -- and only the
+     * client can see the DOM, where an href may have been rewritten by script. The
+     * host-comparison rules are asserted against OWATracker.isOutboundUrl().
      *
      * What is left here is the mapping, and it has a real edge: the column is
      * NOT NULL, so a beacon that says nothing must land as 0 rather than aborting
@@ -1214,14 +1197,13 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * The download's name and extension are COLUMNS, and are not also in params.
      *
-     * They were params, and a params key is unreportable until a site registers it
-     * as a custom dimension -- so a downloads report cost every install one of its
-     * 20 registration slots for a value OWA set itself. Promoted in Update054.
+     * A params key is unreportable until a site registers it as a custom
+     * dimension, so as params a downloads report would cost every install one of
+     * its 20 registration slots for a value OWA set itself.
      *
      * NOT ALSO IN THE BAG is the half worth asserting. params() is built from the
      * registry's param destinations, so moving one to `column` should take it out
-     * of the JSON -- and a value in both places is two authorities for one fact,
-     * which is how the row builder and the registry drifted apart before.
+     * of the JSON -- and a value in both places is two authorities for one fact.
      *
      * The element and form params are NOT promoted, and the same row proves it:
      * element_class is still only in the bag.
@@ -1298,15 +1280,9 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * The search term is a COLUMN, and not also in params.
-     *
-     * It was a param, so "what do people search this site for" needed a custom
-     * dimension registration -- one of a Property's twenty slots spent on a value
-     * OWA set itself. Third promotion after file_name and file_extension.
-     *
-     * The event could not fire at all before this release: siteSearchParams
-     * defaulted to empty AND trackSiteSearch() had no caller. So there is nothing
-     * to backfill, and this is the first test that could ever have stored one.
+     * The search term is a COLUMN, and not also in params, so "what do people
+     * search this site for" needs no custom dimension registration -- one of a
+     * Property's twenty slots spent on a value OWA set itself.
      */
     public function testTheSearchTermIsAColumn(): void
     {
@@ -1339,10 +1315,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * AND THE ELEMENT PARAMS STAY IN THE BAG -- the other half of the decision.
      *
-     * Only file_name and file_extension were promoted. Most installs will never
+     * Only file_name and file_extension are columns. Most installs will never
      * group by an element class or name, and a column is width on every row of
-     * every Property whether anyone reads it or not: promoting nine of these was
-     * measured at taking the custom-dimension ceiling from 62 to 37 on MySQL 8.4.
+     * every Property whether anyone reads it or not: promoting nine of these
+     * would take the custom-dimension ceiling from 62 to 37 on MySQL 8.4.
      * A site that does want one registers it, which is the route its own values
      * take.
      *
@@ -1468,10 +1444,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * The regression this found: applyStorageDefault() looks the sentinel up by
-     * PROPERTY NAME across every registered map, with no notion of which entity
-     * is being written -- so language, host and page_title arrived in a v2 row
-     * holding the literal '(not set)'.
+     * applyStorageDefault() looks the sentinel up by PROPERTY NAME across every
+     * registered map, with no notion of which entity is being written -- so a
+     * column that did not opt out would store language, host and page_title as the
+     * literal '(not set)'.
      */
     public function testAbsenceIsStoredAsNull(): void
     {
@@ -1691,12 +1667,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * A late first_visit still lands on a row that a property created.
      *
-     * The write used to skip whenever the row existed, which was safe only
-     * while nothing but acquisition ever wrote one. A user property can now
-     * create a row for a visitor whose acquisition is unknown, and a queue
-     * drain can deliver the real first_visit afterwards -- so skipping on row
-     * presence would lose the acquisition permanently and silently, which is
-     * exactly the placeholder hazard 2.9 refuses.
+     * A user property can create a row for a visitor whose acquisition is unknown,
+     * and a queue drain can deliver the real first_visit afterwards -- so the
+     * write does not skip on row presence, which would lose the acquisition
+     * permanently and silently: the placeholder hazard 2.9 refuses.
      */
     public function testALateFirstVisitFillsARowThatHasNoAcquisitionYet(): void
     {
@@ -1750,12 +1724,8 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Every site collects, with nothing to opt into.
-     *
-     * The inverse of the test this replaces, which asserted that a site had to
-     * turn `v2_raw_collection` on first. The gate was development scaffolding
-     * for exercising ingest against one site; the tracker now sends v2-shaped
-     * events, so there is nothing left to gate on.
+     * Every site collects, with nothing to opt into: there is no
+     * `v2_raw_collection` gate.
      */
     public function testEverySiteCollectsWithNoSettingToTurnOn(): void
     {
@@ -1765,8 +1735,8 @@ final class EventRawIngestionTest extends IngestionTestCase
 
     /**
      * A recording chunk is an attachment to a page view. Promoting chunks --
-     * or worse, their samples -- would swamp the table: one measured corpus
-     * held 229,663 chunks carrying 5,767,986 samples.
+     * or worse, their samples -- would swamp the table: one corpus of 229,663
+     * chunks carries 5,767,986 samples.
      */
     public function testDomstreamIsNotStoredAsAnEvent(): void
     {
@@ -1896,11 +1866,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * THE BILLING ADDRESS IS NOT COLLECTED, and the allowlist is what refuses it.
      *
-     * city, state and country are the SERVER-DERIVED geolocation readings from
-     * the observed IP. A transaction used to send its billing address under those
-     * three names, silently replacing the visitor's location on purchase rows
-     * only. They were then moved to ct_* prefixes, and now they are not declared
-     * at all: nothing reports on a billing address.
+     * city, state and country are the SERVER-DERIVED geolocation readings from the
+     * observed IP, so a billing address sent under those names would replace the
+     * visitor's location on purchase rows. No billing field is declared under any
+     * other name either: nothing reports on a billing address.
      */
     public function testTheBillingAddressIsRefused(): void
     {

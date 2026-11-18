@@ -14,9 +14,7 @@ namespace OWA\Module\Base\Update;
  * It no longer does (it is a no-op), so this finds the column only on an
  * installation that ran 051 before that change, and skips it otherwise.
  * Apache sets that only with HostnameLookups On, which is off by default, and
- * nothing reported it: no dimension read the column. On app it was empty in all
- * 1,131,431 rows. The reverse-DNS lookup v1 did itself went in 62a1d702, and the
- * resolve_hosts setting that switched it goes with this release.
+ * nothing reported it: no dimension read the column.
  *
  * NOT CLI-ONLY. Raw drops the column instantly; each cube is rebuilt in place
  * once (see CubeColumn::dropColumns()), which is online.

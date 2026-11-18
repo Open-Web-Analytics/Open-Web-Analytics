@@ -1,20 +1,6 @@
 <?php
 namespace OWA\Core\Validation;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /**
  * Date Range Validation
  *
@@ -30,11 +16,6 @@ namespace OWA\Core\Validation;
  * The rule itself lives on TimePeriod so the web and REST paths cannot drift
  * apart on what a range is, in the same way both take their period names from
  * TimePeriod::getValidPeriods().
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
  */
 class DateRange extends \OWA\Core\Validation\Validation {
 

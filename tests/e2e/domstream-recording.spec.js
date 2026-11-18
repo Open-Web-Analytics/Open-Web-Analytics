@@ -68,9 +68,7 @@ test.describe('a recording lands @selfhost-only', () => {
         // Routing off BEFORE leaving. While any route is registered Playwright
         // intercepts every request the page makes, and a beacon sent from
         // pagehide is still held by that interception when the page is gone --
-        // so it is aborted, and never reaches the server. Measured: half of the
-        // pagehide flushes were lost with the route in place, none without it.
-        // Real browsers have no such layer; this is the test's own doing.
+        // so it is aborted, and never reaches the server. Real browsers have no such layer; this is the test's own doing.
         await page.unrouteAll({ behavior: 'wait' });
 
         // Leaving the page flushes what is left, as a real visitor's would --

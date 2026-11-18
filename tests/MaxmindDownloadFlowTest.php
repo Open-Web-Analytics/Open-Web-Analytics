@@ -9,14 +9,10 @@ use PHPUnit\Framework\TestCase;
  * The real thing costs a download from an account's limit -- MaxMind rate-limit
  * and say so -- and needs a credential that must not be in a repository, a CI
  * secret store, or a developer's shell history. A test suite that needed either
- * would be a test suite nobody runs, and the bugs found here were not in the
- * HTTP anyway. They were in what happens either side of it:
- *
- *   - the archive was named something PharData refuses to open, so the unpack
- *     failed after a successful download
- *   - the dry run reported after downloading, so asking cost what doing costs
- *
- * Both are reachable with the transport replaced, which is what this does. The
+ * would be a test suite nobody runs, and what can go wrong is mostly either
+ * side of the HTTP: the archive has to be named so PharData will open it, and
+ * a dry run has to stop before the download. Both are reachable with the
+ * transport replaced, which is what this does. The
  * controller's download() and lastModified() are protected precisely so a test
  * can stand in for them, and dataDir() so nothing is written near a real
  * installation's 60MB database.
@@ -520,11 +516,8 @@ final class MaxmindDownloadFlowTest extends TestCase {
     /**
      * The database being replaced is kept.
      *
-     * This is not hypothetical: a run of this command on a live installation
-     * replaced a database that had been in place since 2024, and nothing could
-     * have brought it back. A download that succeeds but produces a bad file,
-     * or an upstream release with a regression in it, would have left no way
-     * back either.
+     * A download that succeeds but produces a bad file, or an upstream release
+     * with a regression in it, would otherwise leave no way back.
      */
     public function testTheReplacedDatabaseIsKept(): void {
 

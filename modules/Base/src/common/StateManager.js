@@ -13,19 +13,13 @@ class StateManager {
 
 		/*
 		 * Managing state, persisting it, and loading what was persisted are
-		 * three different jobs. They used to be one: set() and get() both
-		 * called load() on first touch, so putting a value into a store was
-		 * what pulled the cookie in. A value set on this page and a value left
-		 * by a previous session were therefore merged before anyone knew
-		 * whether that previous session was still alive -- and once merged,
-		 * nothing could tell them apart.
+		 * three different jobs. Loading on first touch would merge a value set on
+		 * this page with one left by a previous session before anyone knew whether
+		 * that session was still alive -- and once merged, nothing could tell them
+		 * apart.
 		 *
 		 * Which of those jobs a given store takes part in, and when, is
-		 * DECLARED AT REGISTRATION -- see registerStore(). It used to be
-		 * hardcoded here as a set of maps keyed by one-letter store name, which
-		 * meant a store's identity was declared in the tracker and its behaviour
-		 * in this file, and registering a new store gave you no way to say how
-		 * it should behave.
+		 * DECLARED AT REGISTRATION -- see registerStore().
 		 */
 		this.hydrated = {};
 		this.persistenceReleased = {};
@@ -37,10 +31,7 @@ class StateManager {
 		 * migration happened. Compatibility handled at the READ side spreads
 		 * outwards -- every reader grows a fallback, every fallback is a place
 		 * the old shape can come back, and they are never removed because no
-		 * one can prove the last visitor holding the old shape is gone. The 'b'
-		 * store is the worked example: reading it as a fallback kept visitors
-		 * from losing values, and also carried a session-boundary leak into the
-		 * store it was being moved away from.
+		 * one can prove the last visitor holding the old shape is gone.
 		 *
 		 * Normalising storage BEFORE anything reads it means readers only ever
 		 * see the current shape, and a migration is finished work rather than a
@@ -277,51 +268,13 @@ class StateManager {
 		}
 	}
 
-	/**
-	 * Fold a legacy store into the one that now owns its values, and drop it.
-	 *
-	 * 'b' held session-scoped custom variables in a cookie of its own, beside
-	 * the session store. Reading it as a fallback was enough to stop a visitor
-	 * losing what they had, but not enough to be correct: because nothing ever
-	 * cleared it at a session boundary, a variable left there by a session that
-	 * had ended was still found by that read and put back on the wire. The store
-	 * moved; the leak moved with it.
-	 *
-	 * THIS DEPENDS ON NOTHING, so it runs at tracker init rather than waiting
-	 * for the session to be settled. It is a storage migration, not a session
-	 * decision: values move cookie to cookie without passing through memory, so
-	 * they keep their provenance -- persisted by a previous page load, and still
-	 * persisted afterwards. Whatever the session decision turns out to be then
-	 * applies to them exactly as it would have had they never moved.
-	 *
-	 * Merging into MEMORY instead would be the subtle version of the bug this
-	 * whole design exists to prevent: memory is what marks a value as set by
-	 * THIS page load, so a legacy value merged there would survive a new session
-	 * that should have discarded it.
-	 *
-	 * Running at init also means it happens on a page that never tracks a
-	 * pageview, so the extra cookie stops riding on requests at the first
-	 * opportunity. That is what makes this a migration rather than an indefinite
-	 * compatibility shim: it empties itself the first time each visitor is seen.
-	 */
-	/**
-	 * Declare a storage migration.
-	 *
-	 * The callback receives the state manager and runs once per page, after the
-	 * cookie domain is established and before anything downstream reads.
-	 */
 	/*
 	 * The shape a persisted store is written in.
 	 *
-	 * Storage format has now changed under live visitors twice -- assoc to JSON,
-	 * and a shared 's' to a per-site 's_<siteId>' -- and both were survivable only
-	 * because a bespoke migration was written each time. Neither could have been
-	 * detected from the data: the reader SNIFFS, guessing JSON from a leading '{'.
-	 *
-	 * A sniff answers "what does this look like", which is not the question. The
-	 * question is "which version of this tracker wrote it", and only the writer
-	 * can answer that. Stamping it is what turns the next change from bespoke into
-	 * routine.
+	 * The reader SNIFFS, guessing JSON from a leading '{'. A sniff answers "what
+	 * does this look like", which is not the question. The question is "which
+	 * version of this tracker wrote it", and only the writer can answer that, so
+	 * it stamps the version.
 	 *
 	 * Bump this when the SHAPE changes -- a key renamed, a value's meaning
 	 * changed, a store split. Not when a value is merely added: an older reader
@@ -363,8 +316,7 @@ class StateManager {
 	 * The case that matters is a stored value written by a NEWER tracker: a
 	 * visitor who meets an updated site and then a cached older one, or a
 	 * rollback. Sniffing cannot see that at all -- the value still looks like
-	 * JSON, so the old code reads it confidently and wrong. Declining is the
-	 * point of having a marker.
+	 * JSON. Declining is the point of having a marker.
 	 *
 	 * Older is fine: this tracker knows every shape it has written before, and
 	 * migrations exist for the ones that need moving.
@@ -374,6 +326,12 @@ class StateManager {
 		return this.versionOf( state ) <= StateManager.STORE_VERSION;
 	}
 
+	/**
+	 * Declare a storage migration.
+	 *
+	 * The callback receives the state manager and runs once per page, after the
+	 * cookie domain is established and before anything downstream reads.
+	 */
 	registerMigration( name, callback ) {
 
 		this.migrations.push( { 'name': name, 'callback': callback } );
@@ -428,6 +386,30 @@ class StateManager {
 		return false;
 	}
 
+	/**
+	 * Fold a legacy store into the one that now owns its values, and drop it.
+	 *
+	 * 'b' holds session-scoped custom variables in a cookie of its own, beside
+	 * the session store. Read as a fallback, a variable left there by a session
+	 * that had ended would be found and put back on the wire, because nothing
+	 * clears it at a session boundary.
+	 *
+	 * THIS DEPENDS ON NOTHING, so it runs at tracker init rather than waiting
+	 * for the session to be settled. It is a storage migration, not a session
+	 * decision: values move cookie to cookie without passing through memory, so
+	 * they keep their provenance -- persisted by a previous page load, and still
+	 * persisted afterwards. Whatever the session decision turns out to be then
+	 * applies to them exactly as it would have had they never moved.
+	 *
+	 * Merging into MEMORY instead would be the subtle version of the bug this
+	 * whole design exists to prevent: memory is what marks a value as set by
+	 * THIS page load, so a legacy value merged there would survive a new session
+	 * that should have discarded it.
+	 *
+	 * Running at init also means it happens on a page that never tracks a
+	 * pageview, so the extra cookie stops riding on requests at the first
+	 * opportunity: it empties itself the first time each visitor is seen.
+	 */
 	collapseLegacyStores() {
 
 		for ( var name in this.storeMeta ) {
@@ -522,8 +504,7 @@ class StateManager {
      * Declare a state store.
      *
      * `behaviour` is optional and says how the store takes part in hydration
-     * and persistence. Defaults match what every store did before any of this
-     * existed, so an existing four-argument call keeps its meaning:
+     * and persistence. The defaults keep a four-argument call's meaning:
      *
      *   hydrate: 'eager'      load the cookie on first touch (default)
      *            'deferred'   do not load until the session decision settles
@@ -592,10 +573,8 @@ class StateManager {
              *   'site'    one store per site id
              *
              * The visitor is shared across every site on the page; session state
-             * is one store per site. OWA had a single shared session store, so two
-             * trackers on one page produced ONE session id -- and since a
-             * session row is loaded by session_id alone, the second site's
-             * facts pointed at the first site's session row.
+             * is one store per site, so two trackers on one page hold two session
+             * ids.
              *
              * The scope is declared here, but the NAME is resolved by the
              * tracker, which is the thing that knows its site: a site-scoped
@@ -835,10 +814,8 @@ class StateManager {
      *
      * It is declared once at registerStore(), because a store is backed by one
      * cookie and a cookie has one lifetime: two writes asking for different
-     * expirations would quietly fight over it, last write winning. This used to
-     * take an expiration_days argument and discard it -- persist() reads
-     * getExpirationDays(store_name) -- so a caller passing one was silently
-     * ignored. The campaign store's 60 days comes from its registration.
+     * expirations would quietly fight over it, last write winning. persist()
+     * reads getExpirationDays(store_name).
      */
     set(store_name, key, value, is_perminant, format) {
         

@@ -4,13 +4,11 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 
 /**
- * The two ways a configured cookie lifetime used to be lost before it was used.
+ * A configured cookie lifetime survives until it is used.
  *
- * Both come from the same root: the value was applied EAGERLY, copied into the
- * store registry when the command arrived. Anything that rewrote the registry
- * afterwards, or happened before the command arrived at all, silently got the
- * shipped 364 days instead. The lifetime is read where it is used now, and the
- * configuration is carried into the constructor, which is what these pin.
+ * The lifetime is read where it is used, and the configuration is carried into
+ * the constructor, so neither a registry rewrite nor a write before the command
+ * arrives gets the shipped 364 days instead.
  */
 
 function captureCookies() {
@@ -58,8 +56,7 @@ afterEach(() => {
  *
  * registerStore() replaces storeMeta[name] wholesale and the constructor
  * re-registers the global 'v' and 'c' stores unconditionally, so a second
- * tracker configured with nothing used to take the visitor store back to 364
- * with nothing to put it back. Only the global stores can collide: a site-scoped
+ * tracker configured with nothing must not take the visitor store back to 364. Only the global stores can collide: a site-scoped
  * store is registered as 's_<siteId>', so two trackers never contend for it.
  */
 describe('a second tracker does not reset the first ones configuration', () => {

@@ -1,24 +1,6 @@
 <?php
 namespace OWA\Module\MaxmindGeoip\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2010 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 use MaxMind\Db\Reader;
 
 
@@ -26,14 +8,6 @@ use MaxMind\Db\Reader;
  * Maxmind Geolocation Wrapper
  * 
  * See http://www.maxmind.com/app/php for API documentation
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.4.0
  */
 class Maxmind extends \OWA\Core\Location {
 
@@ -232,20 +206,10 @@ class Maxmind extends \OWA\Core\Location {
      *
      * NO CHARACTER SET CONVERSION HAPPENS HERE, and that is deliberate.
      *
-     * Every name below used to be run through a Latin-1 to UTF-8 conversion, on
-     * the stated grounds that "MaxMind name fields are Latin-1". They are not.
      * The MaxMind DB format spec defines its string type as "a variable length
      * byte sequence that contains valid utf8", and this module reads .mmdb files
-     * through MaxMind\Db\Reader exclusively -- there is no longer any path
-     * through the legacy GeoIP .dat API, which did return ISO-8859-1 and is
-     * presumably where the belief came from.
-     *
-     * So the conversion was encoding UTF-8 a second time: "München" was stored
-     * as "MÃ¼nchen", and every city or region carrying an umlaut, accent or
-     * cedilla has been wrong since. Reported as issue #742 in March 2021. It
-     * went unnoticed for so long because the fields that are ISO codes are pure
-     * ASCII, so converting them changed nothing, and an English-speaking
-     * operator sees no difference either.
+     * through MaxMind\Db\Reader exclusively. Converting from Latin-1 would encode
+     * UTF-8 a second time: "München" would be stored as "MÃ¼nchen".
      *
      * Nothing downstream needs it. The database connection is utf8mb4, the
      * tables are utf8, and Sanitize::escapeForDisplay() escapes as UTF-8.

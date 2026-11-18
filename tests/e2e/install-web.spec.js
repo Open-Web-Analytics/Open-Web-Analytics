@@ -100,13 +100,8 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
 
         // --- STEP 5+6: Defaults entry -> installBase (schema+admin+site) ------
         /*
-         * The whole address, scheme and all.
-         *
-         * There is no protocol select any more, and a pasted URL is no longer
-         * refused -- installBase strips the scheme, which is what every reader
-         * of that column already did. Submitting the full address is therefore
-         * the case worth driving: it is what somebody actually pastes, and it
-         * used to be the one thing the form rejected.
+         * The whole address, scheme and all: installBase strips the scheme, and
+         * it is what somebody actually pastes.
          */
         await page.fill('input[name="domain"]', INFO.install_site);
 

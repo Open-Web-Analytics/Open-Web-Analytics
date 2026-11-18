@@ -9,18 +9,15 @@ use PHPUnit\Framework\TestCase;
  * ---------------
  * conf/messages.php entries are two independent sprintf templates -- 'headline'
  * and 'message' -- and a caller normally fills in only one of them. getMsg()
- * used to decide whether to substitute by looking at which parts the TEMPLATE
- * has, not which parts the CALLER supplied, so filling in 'message' alone read
- * $substitutions['headline'] anyway: an undefined-key warning on PHP 8 followed
- * by vsprintf(null) -- a TypeError, i.e. a 500, on the password-reset flow
- * (messages 2000/2001, the only substituting call sites in the tree).
+ * substitutes the parts the CALLER supplied, not the parts the TEMPLATE has:
+ * filling in 'message' alone must not read $substitutions['headline'], which
+ * is an undefined-key warning and then vsprintf(null), a TypeError (a 500 on
+ * the password-reset flow, messages 2000/2001).
  *
  * The second half of the contract is the value shape. vsprintf() takes an
- * ARGUMENT LIST, so a substitution value is an array. Every caller that has
- * ever passed substitutions passed a bare string instead, which on PHP 5/7
- * degraded to a warning and a blank message and on PHP 8 is a hard TypeError.
- * The call sites now pass arrays, and getMsg() casts anyway so that a scalar
- * from a third-party module cannot 500 an admin screen.
+ * ARGUMENT LIST, so a substitution value is an array. The call sites pass
+ * arrays, and getMsg() casts anyway so that a scalar from a third-party module
+ * cannot 500 an admin screen.
  *
  * A message with no substitutions at all must come back verbatim -- that is
  * how all the other ~20 call sites use it, and running an unsubstituted
@@ -42,9 +39,9 @@ final class MessageSubstitutionTest extends TestCase
     }
 
     /**
-     * The regression: message 2000 substituted, headline left alone.
+     * Message 2000 substituted, headline left alone.
      * failOnWarning="true" in phpunit.xml makes the undefined-key warning a
-     * failure on its own, before the TypeError would have been reached.
+     * failure on its own, before the TypeError would be reached.
      */
     public function testSubstitutingOnlyTheMessageLeavesTheHeadlineIntact(): void
     {

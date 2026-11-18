@@ -10,15 +10,13 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * The boolean flags must not be able to write NULL.
  *
  * A boolean column that also holds NULL has three values, and each groups
- * separately: a report counting a flag = 0 silently misses every NULL row.
- * is_repeat_visitor did exactly this from 2015 until 8d24fc65 -- its callback
- * fell off the end returning null, and nothing turned that into false.
+ * separately: a report counting a flag = 0 silently misses every NULL row --
+ * a callback that falls off the end returns null.
  *
- * Two independent guards stop it now, and they are worth telling apart because
- * only one of them was ever the thing that broke:
+ * Two independent guards stop it:
  *
- *   - required + default_value false. This is what actually closed the hole,
- *     once a falsy default stopped being skipped by a truthy test.
+ *   - required + default_value false: a falsy default, applied rather than
+ *     skipped by a truthy test.
  *   - data_type boolean, which re-resolves a null AFTER the callback runs.
  *
  * These tests pin both, and show the second one is not decoration: with the
@@ -29,19 +27,8 @@ final class BooleanPropertyTypeTest extends TestCase
 {
     /** The three flags whose callback can fall off the end returning null. */
     /*
-     * is_entry_page and is_repeat_visitor were here. Both were v1 derivations
-     * reading flags the tracker no longer sends -- and removing the flags
-     * without them would have left each computing a wrong value rather than
-     * none, which is the defect this whole file is about.
-     */
-    /*
-     * is_browser and is_robot were here and are gone. Both were computed on
-     * every beacon and read only by v1 handlers -- neither reached a raw column
-     * or a cube pass -- so they went with the rest of the dead derivations.
-     *
-     * The two that remain are the session and visitor markers, and they are the
-     * better subjects anyway: they arrive FROM the wire, where a boolean's
-     * three states actually bite.
+     * The session and visitor markers: they arrive FROM the wire, where a
+     * boolean's three states actually bite.
      */
     private const FLAGS = [ 'is_new_session_start', 'is_new_visitor_created' ];
 
@@ -67,11 +54,9 @@ final class BooleanPropertyTypeTest extends TestCase
     public function testEveryBooleanFlagDeclaresItsType(): void
     {
         /*
-         * Every group, not just the derived one. The two flags that remain are
-         * CLIENT properties -- they arrive from the wire -- and the derived
-         * booleans that used to live here, is_browser and is_robot, are gone
-         * with the v1 handlers that were their only readers. What is being
-         * checked is the declaration of a boolean, wherever it is declared.
+         * Every group, not just the derived one: the two flags are CLIENT
+         * properties, and what is checked is the declaration of a boolean,
+         * wherever it is declared.
          */
         $server = array_merge(
             Helpers::requestProperties(),
@@ -96,11 +81,9 @@ final class BooleanPropertyTypeTest extends TestCase
     public function testEveryBooleanFlagIsRequiredWithAFalseDefault(): void
     {
         /*
-         * Every group, not just the derived one. The two flags that remain are
-         * CLIENT properties -- they arrive from the wire -- and the derived
-         * booleans that used to live here, is_browser and is_robot, are gone
-         * with the v1 handlers that were their only readers. What is being
-         * checked is the declaration of a boolean, wherever it is declared.
+         * Every group, not just the derived one: the two flags are CLIENT
+         * properties, and what is checked is the declaration of a boolean,
+         * wherever it is declared.
          */
         $server = array_merge(
             Helpers::requestProperties(),

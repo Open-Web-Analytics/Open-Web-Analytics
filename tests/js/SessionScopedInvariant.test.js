@@ -11,11 +11,8 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  * A session-scoped property must be IDENTICAL on every event sharing a
  * session_id. A divergence is a regression, whatever caused it.
  *
- * This is the rule that ruled out deriving days_since_prior_session as calendar
- * days: counting date boundaries needs two absolute times, and an event carries
- * only its own timestamp plus a session-scoped interval, so the derived anchor
- * moved for every event after the one that opened the session and two hits
- * either side of a midnight disagreed about the same session.
+ * It rules out deriving anything as calendar days from an event's own timestamp:
+ * two hits either side of a midnight would disagree about the same session.
  *
  * The list below is explicit rather than derived from collectStateProperties(),
  * because not everything that lives in the session store is session-scoped --
@@ -78,9 +75,8 @@ describe('session-scoped properties do not vary within a session', () => {
     beforeEach(wipe);
     afterEach(wipe);
 
-    // The session store is scoped to a site now, so its cookie carries the site
-    // in the name -- 'owa_s_<siteId>'. Reading 'owa_s'
-    // would find the pre-split cookie, which nothing writes any more.
+    // The session store is scoped to a site, so its cookie carries the site
+    // in the name -- 'owa_s_<siteId>'.
     function sessionCookie(site) {
         const raw = Util.readCookie('owa_s_' + (site || 'invariant-site'));
         return raw ? Util.decodeCookieValue(unescape(raw)) : null;
@@ -158,13 +154,9 @@ describe('session-scoped properties do not vary within a session', () => {
              * The invariant is per SESSION, and a session belongs to one site.
              *
              * The run deliberately includes a tracker for a different site
-             * alongside the others. That tracker used to share the single
-             * 'owa_s' store and therefore the same session id -- which is the
-             * collision the per-site session store removed. Asserting one
-             * session across every beacon would now be asserting the bug.
-             *
-             * So beacons are grouped by session_id and the invariant is checked
-             * within each group, which is what it always meant.
+             * alongside the others, with a session of its own. So beacons are
+             * grouped by session_id and the invariant is checked within each
+             * group.
              */
             function bySession(beacons) {
                 const groups = {};
@@ -264,27 +256,8 @@ describe('session-scoped properties do not vary within a session', () => {
          */
         [
             'session_id',
-            // prior_session_id was here: no v2 reader takes it, so it left the
-            // wire and the session store.
-            // is_new_visitor was here. Removed with the flag: v2 materialises
-            // a first_visit EVENT from the request-scoped
-            // is_new_visitor_created, and nothing wants a session-scoped
-            // restatement of it -- the acquisition write reads
-            // prior_sessions == 0, which rides every beacon.
             'psts',
             'sts',
-            /*
-             * session_referer AND landing_url were here, and both are gone --
-             * taken twice, as this tripwire demands.
-             *
-             * Each was written once at session start and re-sent from state on
-             * every beacon of the session, so the server could attribute from any
-             * event. It never needed either: the tags are parsed from
-             * page_location on the session-starting beacon, which is the same URL
-             * landing_url held, and the session's referrer is the referer_host of
-             * its first row -- read by the pass through the window it already
-             * opens for the landing page. HTTP_REFERER still rides every beacon.
-             */
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
         // ...and the two that left, asserted absent so their removal cannot be

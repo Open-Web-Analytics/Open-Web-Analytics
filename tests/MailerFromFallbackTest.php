@@ -10,22 +10,16 @@ use PHPUnit\Framework\TestCase;
  * WHY THIS EXISTS
  * ---------------
  * It runs from Settings::__construct(), i.e. before load() merges the stored
- * settings in. A stored address therefore always wins, but the two earlier
- * layers -- the shipped defaults array and anything the config file sets --
- * used to be overwritten unconditionally with 'owa@' . SERVER_NAME.
- *
- * That is not a cosmetic default. An authenticating SMTP relay rejects an
- * envelope sender the account does not own, so an install whose operator had
- * configured a real From still handed the relay 'owa@<servername>' and every
- * mail died at RCPT TO with "553 5.7.1 Sender address rejected". The
- * password-reset flow reports success regardless -- the mail failure is only a
- * debug-level log line -- so the symptom was a reset mail that silently never
- * arrived.
+ * settings in, so it must not overwrite the shipped defaults array or anything
+ * the config file sets. An authenticating SMTP relay rejects an envelope
+ * sender the account does not own: a configured From replaced by
+ * 'owa@<servername>' fails every mail at RCPT TO with "553 5.7.1 Sender
+ * address rejected" -- silently for a password reset, which reports success
+ * regardless, the mail failure being only a debug-level log line.
  *
  * The auto-computed value must still appear when nothing is configured: an
  * empty From builds a malformed header that the local MTA drops (see the note
- * in owa_mailer::__construct), which is the failure this fallback exists to
- * prevent in the first place.
+ * in owa_mailer::__construct).
  */
 final class MailerFromFallbackTest extends TestCase
 {
@@ -46,7 +40,7 @@ final class MailerFromFallbackTest extends TestCase
         $this->restoreSettings();
     }
 
-    /** The regression: a configured address survives the constructor's default. */
+    /** A configured address survives the constructor's default. */
     public function testAConfiguredFromAddressIsNotOverwritten(): void
     {
         $c = $this->settings();

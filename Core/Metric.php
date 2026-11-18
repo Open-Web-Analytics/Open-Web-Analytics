@@ -1,34 +1,9 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Metric
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-type MetricCondition array{column?: string, value?: scalar, operator?: string}
  */
@@ -66,7 +41,7 @@ class Metric extends \OWA\Core\Base {
      * The rows this metric counts, when it counts some of them.
      *
      * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
-     * row, which is what every metric did before conditions existed.
+     * row.
      *
      * @var MetricCondition
      */
@@ -173,8 +148,6 @@ class Metric extends \OWA\Core\Base {
             $this->params = $params;
         }
             
-        //$this->db = owa_coreAPI::dbSingleton();
-
         parent::__construct();
     }
     
@@ -279,11 +252,8 @@ class Metric extends \OWA\Core\Base {
             $db = \OWA\Core\CoreAPI::dbSingleton();
 
             /*
-             * Initialised, and the switch says so when it does not recognise a
-             * type. It had no default, so an unrecognised aggregation returned
-             * an undefined $statement -- a SELECT with a hole in it, built and
-             * run without complaint. The outcome is the same as before (there
-             * is nothing sensible to aggregate with), but it is now stated.
+             * Initialised, and the switch says so when it does not recognise a type:
+             * there is nothing sensible to aggregate with.
              */
             $statement = null;
 
@@ -296,8 +266,8 @@ class Metric extends \OWA\Core\Base {
                      * v2 vocabulary is "count the rows that are X" --
                      * pageViews, downloads, transactions, goalEvents
                      * -- and an event table answers that by testing a column on
-                     * each row it is already reading. Measured on this box:
-                     * EXPLAIN says select_type=SIMPLE, Using where; Using index.
+                     * each row it is already reading (EXPLAIN: select_type=SIMPLE,
+                     * Using where; Using index).
                      *
                      * `sum(CASE ...)` rather than a FILTER clause or COUNTIF.
                      * CASE is SQL-92 and renders on every engine; FILTER is
@@ -367,7 +337,7 @@ class Metric extends \OWA\Core\Base {
                      *
                      * And COALESCE on the column: a matching row can hold NULL
                      * -- a purchase with no tax -- and SUM over NULL alone is
-                     * NULL, which a report showed as a blank cell beside zeros.
+                     * NULL, which a report would show as a blank cell beside zeros.
                      * And around the whole sum, for a period with no rows at
                      * all, where the ELSE 0 never runs.
                      */
@@ -400,10 +370,8 @@ class Metric extends \OWA\Core\Base {
 
                     /*
                      * NULL counts as 0 here, which merges "false" with "not
-                     * recorded" (PLAN 1.12). Preserved deliberately rather than
-                     * corrected: this reproduces the classes it replaces, and
-                     * the three-valued boolean is a 1.x problem that v2's schema
-                     * removes rather than one to fix inside a conversion.
+                     * recorded" (PLAN 1.12): the three-valued boolean is a 1.x
+                     * problem that v2's schema removes.
                      */
                     $statement = sprintf( OWA_SQL_COALESCE, sprintf(
                         'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->getColumn() ), '0' );
@@ -413,8 +381,7 @@ class Metric extends \OWA\Core\Base {
 
                     /*
                      * Two columns on the same table, subtracted then averaged --
-                     * a duration. Qualified with the entity's alias because that
-                     * is what the class did, and the alias is what makes the
+                     * a duration. Qualified with the entity's alias, which makes the
                      * columns unambiguous once the query joins anything.
                      */
                     /* Both columns arrive already qualified by their setters. */
@@ -533,13 +500,8 @@ class Metric extends \OWA\Core\Base {
     }
     
     /**
-     * Children of a calculated metric.
-     *
-     * These lived only on CalculatedMetric, so ConfigurableMetric -- which
-     * extends this class -- called setChildMetric() on an object that had no
-     * such method. Its 'calculated' type has therefore never worked: supported
-     * on paper, fatal on first use, and never registered by anything, so nobody
-     * found out. Held here so any metric can be calculated.
+     * Children of a calculated metric. Held here so any metric, ConfigurableMetric
+     * included, can be calculated.
      *
      * @var list<string> metric names
      */

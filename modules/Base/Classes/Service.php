@@ -1,34 +1,9 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Service Class
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-import-type JobRegistration from \OWA\Core\Module
  * @phpstan-type MetricDefinition array<string, mixed>
@@ -129,16 +104,9 @@ class Service extends \OWA\Core\Base {
     /**
      * The user-agent parse, memoised PER AGENT.
      *
-     * It used to memoise the first parse a process made and then ignore every
-     * $ua it was given afterwards -- so a queue drain, which walks many events in
-     * one process, versioned all of them by whichever agent it happened to see
-     * first. Every reading came from that one parse: browser, browser_version,
-     * os, os_version and the three device columns.
-     *
-     * Keyed by the agent instead. One parse per distinct agent, which is the
-     * memo the callers were promised: a single request still parses once however
-     * many properties ask, and a drain parses once per distinct visitor agent
-     * rather than once, wrongly.
+     * One parse per distinct agent: a single request parses once however many
+     * properties ask, and a queue drain, which walks many events in one process,
+     * parses once per distinct visitor agent.
      *
      * @param  string $ua  the agent to parse; the request's own when empty
      * @return object
@@ -213,9 +181,6 @@ class Service extends \OWA\Core\Base {
         foreach ($this->modules as $k => $module) {
 
             foreach ($module->entities as $entity_k => $entity_v) {
-                // TODO: remove this to make API stateless
-                //$this->entities[] = $module->name.$entity_v;
-                // proper call
                 $this->addEntity($entity_v, $module->name.'.'.$entity_v);
             }
         }
@@ -749,7 +714,6 @@ class Service extends \OWA\Core\Base {
      */
     public function getDenormalizedDimension($name, $entity) {
 
-        //print_r($this->denormalizedDimensions);
         if (array_key_exists($name, $this->denormalizedDimensions)) {
             if (array_key_exists($entity, $this->denormalizedDimensions[$name])) {
                 return $this->denormalizedDimensions[$name][$entity];

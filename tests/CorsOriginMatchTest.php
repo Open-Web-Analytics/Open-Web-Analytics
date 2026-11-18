@@ -5,21 +5,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Which Origins the REST API is willing to answer cross-origin.
  *
- * addCorsHeaders() has never emitted a header. It iterated getSitesList(),
- * which returns `SELECT * FROM owa_site` -- an array of *row arrays* -- and
- * compared each row against the Origin string:
- *
- *     foreach ( CoreAPI::getSitesList() as $allowedOrigin ) {
- *         if ( $allowedOrigin !== $HTTP_ORIGIN ) { continue; }
- *
- * An array is never identical to a string, so `continue` always fired, the
- * loop always fell through, and no Access-Control-Allow-Origin was ever sent.
- * Cross-origin REST calls had therefore never worked, which is why playback
- * depended on JSONP -- a transport that exists precisely to evade the
- * same-origin policy CORS is meant to satisfy properly. With this fixed and
- * covered end to end, JSONP has been removed from both the overlays and the
- * server.
- *
  * Matching is on HOST, not on the stored string. Real installs store
  * `http://demo.openwebanalytics.com` while serving over https, so a browser
  * sends `Origin: https://demo.openwebanalytics.com` and an exact-string match
@@ -152,9 +137,6 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertNull($this->match('https://c.example.com', $domains));
     }
 
-    /**
-     * No sites configured means nothing is allowed.
-     */
     /** A domain stored with a port allows that port only; the scheme's default port counts when the origin names none. */
     public function testAStoredPortIsTheOnlyPortAllowed(): void
     {
@@ -166,6 +148,9 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertSame('https://example.com:8443', $this->match('https://example.com:8443', ['https://example.com:8443/']));
     }
 
+    /**
+     * No sites configured means nothing is allowed.
+     */
     public function testNoSitesMatchesNothing(): void
     {
         $this->assertNull($this->match('https://example.com', []));

@@ -1,36 +1,11 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Result Set Manager
  *
  * Responsible for creating a data result set from various metrics and dimensions
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
  *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-import-type Bindings from \OWA\Core\Db
@@ -245,14 +220,10 @@ class ResultSetManager extends \OWA\Core\Base {
                  * again for the aggregates, so the same misspelling would be
                  * reported twice.
                  *
-                 * It used to fall through applyConstraint() doing nothing, so
-                 * the query ran WITHOUT that filter and answered with the
-                 * unconstrained total -- the identical failure the check above
-                 * exists to stop, differing only in cause: a misspelled name
-                 * rather than a lost value. Measured before this,
-                 * `bogusDimension==direct` returned exactly what no constraint
-                 * at all returned, while a valid name matching nothing
-                 * correctly returned none.
+                 * Ignored, the query would run WITHOUT that filter and answer
+                 * with the unconstrained total -- the failure the check above
+                 * exists to stop, from a misspelled name rather than a lost
+                 * value.
                  */
                 if ( ! $this->isDimension( $constraint['name'] )
                      && ! $this->isMetric( $constraint['name'] ) ) {
@@ -725,7 +696,6 @@ class ResultSetManager extends \OWA\Core\Base {
     public function constraintsStringToArray($string) {
 
         if ($string) {
-            //print_r($string);
             // add string to query params array for use in URLs.
             $this->query_params['constraints'] = $string;
 
@@ -907,7 +877,6 @@ class ResultSetManager extends \OWA\Core\Base {
         if ( ! $constraints ) {
             $constraints = $this->getConstraints();
         }
-        //owa_coreAPI::debug(print_r($constraints, true));
         foreach ($constraints as $k => $constraint) {
 
             $this->applyConstraint($constraint, $db, $entity);
@@ -1030,19 +999,14 @@ class ResultSetManager extends \OWA\Core\Base {
 
         // A constraint with NO VALUE is refused, not quietly ignored.
         //
-        // Db::where() skips a constraint whose value isEmpty(), so an empty one
-        // used to mean "no filter" -- the query ran unconstrained and returned
-        // the full total with no error anywhere. That is the worst possible
-        // default for reporting: a lost parameter is indistinguishable from a
-        // request for everything.
+        // Db::where() skips a constraint whose value isEmpty(), so an empty one would
+        // mean "no filter": the query would run unconstrained and return the full total
+        // with no error anywhere, and a lost parameter would be indistinguishable from
+        // a request for everything -- "source==" reaches here whenever owa_source goes
+        // missing from the request.
         //
-        // It is not hypothetical. "source==" reached this method whenever
-        // owa_source went missing from the request -- a cache layer was found
-        // stripping it -- and the Source Detail report happily showed the same
-        // unfiltered visit count for every source.
-        //
-        // Refused the same way an unknown sort column already is, so the caller
-        // sees an error instead of plausible wrong numbers.
+        // Refused the same way an unknown sort column is, so the caller sees an error
+        // instead of plausible wrong numbers.
         if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
 
             $this->addError( sprintf(
@@ -1150,17 +1114,6 @@ class ResultSetManager extends \OWA\Core\Base {
             if ( $this->isMetric( $item['name'] ) ) {
                 $metrics[$item['name']] = $item;
 
-                // add to all metrics or dimensions array - needed to determin base entity
-                /*
-if ( ! in_array($item['name'], $this->allMetrics) ) {
-                    $this->allMetrics[] = $item['name'];
-                }
-
-                if ( ! in_array($item['name'], $this->allDimensions) ) {
-                    $this->allDimensions[] = $item['name'];
-                }
-*/
-
             } elseif ($this->isDimension( $item['name'] ) ) {
                 $dimensions[$item['name']] = $item;
 
@@ -1266,7 +1219,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dims = [];
 
         $constraints = $this->getConstraints();
-        //print_r($constraints);
         if (!empty($constraints)) {
 
             foreach ($constraints as $carray) {
@@ -1406,17 +1358,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    /*
-     * setSort() WAS HERE and did nothing: its one statement was commented out,
-     * so every call silently produced an unsorted result. Nothing in the
-     * application called it -- ReportsRest goes through
-     * setSorts( sortStringToArray( ... ) ), which is the working path -- so the
-     * only thing it did was read like the obvious way to sort and then not
-     * sort, which cost one test in this suite its meaning before it was
-     * noticed. Deleted rather than implemented, because the plural is already
-     * the one everything uses.
-     */
-
     /**
      * @param  array<Sort>|null $array as sortStringToArray() makes them
      * @return void
@@ -1529,7 +1470,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     $order = 'ASC';
                 }
 
-                //$col_name = $this->getColumnName($column);
                 $check = $this->isSortValid($column);
 
                 if ($check) {
@@ -1703,27 +1643,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         // A TIME bound also gets a closed DATE bound, derived here.
         //
-        // The fact tables are RANGE-partitioned on yyyymmdd, so a predicate that
-        // names only `timestamp` cannot prune -- and it is unselective enough
-        // that the optimiser abandons the timestamp index too. Measured on a
-        // live table:
+        // The fact tables are RANGE-partitioned on yyyymmdd, so a predicate that names
+        // only `timestamp` cannot prune -- and it is unselective enough that the
+        // optimiser abandons the timestamp index too. An OPEN lower bound on yyyymmdd
+        // still reads everything from that day onwards; the bound has to be closed at
+        // both ends to prune to a span.
         //
-        //   timestamp > X                          all partitions, no index, 405,217 rows
-        //   yyyymmdd >= D AND timestamp > X        all from D,     no index, 351,937 rows
-        //   yyyymmdd BETWEEN D-1 AND D AND ts > X  1 partition,    yyyymmdd,   4,080 rows
-        //
-        // Note the middle row: an OPEN lower bound still reads everything from D
-        // onwards. The bound has to be closed at both ends to prune to a span.
-        //
-        // Derived in the query builder rather than left to whoever writes the
-        // report, because a report author has no reason to know the physical
-        // partitioning -- and because this is the seam a non-SQL reporting
-        // backend would override with its own pruning predicate. Putting it in
-        // the reports instead would tie it to the star schema.
+        // Derived in the query builder rather than left to whoever writes the report,
+        // because a report author has no reason to know the physical partitioning --
+        // and because this is the seam a non-SQL reporting backend would override with
+        // its own pruning predicate.
         //
         // The date is computed from the same timestamps in the same timezone the
-        // yyyymmdd column was written in, so a range spanning midnight yields
-        // two days and still prunes to those two partitions.
+        // yyyymmdd column was written in, so a range spanning midnight yields two days
+        // and still prunes to those two partitions.
         if ( $dimension_name === 'timestamp' && $start && $end ) {
 
             $this->setConstraint(
@@ -1808,20 +1741,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         foreach ($row as $k => $v) {
 
             /*
-             * Reset per key.
+             * Reset per key. The row can hold a key that is neither metric nor
+             * dimension -- a calculated metric's children arrive without having been asked
+             * for -- and $type and $data_type would otherwise describe the PREVIOUS column.
              *
-             * These were assigned only inside the two branches below, and the
-             * row can hold a key that is neither: a calculated metric's
-             * children arrive in the result without having been asked for, so
-             * they reach the else branch. Left over from the previous
-             * iteration, $type and $data_type then described the PREVIOUS
-             * column -- a child metric following a date dimension was reported
-             * as a dimension and run through the date formatter. On the first
-             * key there was nothing to inherit and PHP warned about an
-             * undefined variable instead, which is how this was found.
-             *
-             * Null is what the else branch means: no metadata is applied at
-             * this stage, as the comment there says.
+             * Null is what the else branch means: no metadata is applied at this stage, as
+             * the comment there says.
              */
             $type      = null;
             $data_type = null;
@@ -1837,7 +1762,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             else {
                 // can't throw exception here as the metrics are sometimes used to geenrate calculated metrics
                 // therefor no meta data is applied as this stage.
-                //throw new Exception($k.' is not a metric or dimension. Check the configuration!');
             }
 
 
@@ -1866,11 +1790,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * render time keeps one copy of the decision, changeable without touching
      * data, and translatable later.
      *
-     * 1.x had no such renderer, which is why the write path grew sentinels
-     * instead -- Geolocation and RefererHandlers each wrote the literal string
-     * so that something would appear in a report. Both stop now that this
-     * exists.
-     *
      * Empty string counts as absent alongside null, because it renders as
      * nothing either way and rows already carry both.
      *
@@ -1889,11 +1808,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * arrived. Folding the two onto one label would lose the distinction that
      * Classes\V2Event::UNRESOLVED exists to record.
      *
-     * The sentinel is a control byte, so without this it rendered as NOTHING:
-     * a blank axis label and an unlabelled pie slice. V2Event's own docblock
-     * had described this rendering since the sentinel was introduced, and
-     * nothing implemented it -- every cube column that resolves can emit it,
-     * source and medium included.
+     * The sentinel is a control byte, so without this it would render as
+     * NOTHING: a blank axis label and an unlabelled pie slice. Every cube column
+     * that resolves can emit it, source and medium included.
      */
     const UNKNOWN_LABEL = '(unknown)';
 
@@ -1918,10 +1835,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
          * A dimension built from several columns can carry the sentinel in ONE
          * of its parts -- `(unknown) / referral` is a true statement about a
          * session whose source never resolved but whose medium did. The
-         * whole-value comparison above cannot see that, so before this was
-         * here a source/medium pair with an unresolved half rendered as ` / `:
-         * a label that looks empty and says nothing, which is the failure the
-         * sentinel was given a label to avoid in the first place.
+         * whole-value comparison above cannot see that, and the pair would
+         * render as ` / `.
          *
          * Only a joined dimension can reach this. V2Event::strip() removes
          * control bytes from every observed value, and a pass writes the
@@ -2121,7 +2036,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if (array_key_exists($key, $this->labels)) {
             return $this->labels[$key];
         } else {
-            //owa_coreAPI::debug("No label found for $key.");
         }
 
     }
@@ -2287,7 +2201,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @return void
      */
     public function applyMetrics() {
-        //print_r($this->metrics);
         foreach($this->metrics as $k => $metric_name) {
 
             if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
@@ -2295,7 +2208,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $m = $this->metricObjects[$metric_name];
 
                 $select = $m->getSelect();
-                //print_r ($select);
                 $this->db->selectColumn($select[0], $select[1]);
             } else {
                 $m = $this->getCalculatedMetricByName($metric_name);
@@ -2316,7 +2228,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                         $child = $this->metricObjects[$child_name];
                         $select = $child->getSelect();
-                        //print_r ($select[0]);
                         $this->db->selectColumn($select[0], $select[1]);
                         // needed so we can remove this temp metric later
                         $this->childMetrics[] = $child_name;
@@ -2956,7 +2867,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                         $this->applySorts();
                     
                         foreach ($sorts as $sort) {
-                            //$this->db->orderBy($sort[0], $sort[1]);
                             $this->resultSet->sortColumn = $sort[0];
                             
                             if (isset($sort[1])){
@@ -3037,7 +2947,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             if ( isset( $segment['metrics'] ) ) {
 
-                //$this->applyConstraints( $segment['metrics'], $db);
             }
 
             if ( isset( $segment['dimensions'] ) ) {
@@ -3047,7 +2956,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 // apply siteId, startDate, and endDate constraints
                 $constraint_names = ['siteId', 'date'];
                 $constraints_apply = [];
-                //print_r($this->params['constraints']);
                 foreach ( $constraint_names as $name ) {
 
                     $con = $this->getConstraint( $name );

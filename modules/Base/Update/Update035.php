@@ -28,10 +28,9 @@ namespace OWA\Module\Base\Update;
  * cube-rebuild until that rotate ran, and on an installation whose scheduler was
  * never set up, for as long as the month lasted.
  *
- * An installation that applied this update before that was so gets a monthly
- * cube, and the next partition-rotate carves the front in one run -- including
+ * A monthly cube is carved by the next partition-rotate in one run -- including
  * the current partition, despite its rows, because leaving it costs the same
- * rewrite on every rebuild. No separate update is needed for it.
+ * rewrite on every rebuild.
  */
 class Update035 extends \OWA\Core\Update {
 

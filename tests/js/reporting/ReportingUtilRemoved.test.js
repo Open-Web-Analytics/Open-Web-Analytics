@@ -12,8 +12,8 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * OWA.util.countObjectProperties had one caller, in OWA.uri, which #1457
- * deleted. The helper is gone, and nothing in the reporting sources names it.
+ * OWA.util has no countObjectProperties, and nothing in the reporting
+ * sources names it.
  */
 describe('OWA.util has no countObjectProperties', () => {
 

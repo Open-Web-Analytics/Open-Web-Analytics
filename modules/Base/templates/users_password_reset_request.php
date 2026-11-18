@@ -6,11 +6,6 @@
     <p class="owa_publicIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Enter the email address on your account and we will send you a link to set a new password.' ) );?></p>
 
     <?php
-        /*
-         * The markup here used to close a table that was never opened --
-         * </TD></TR>, a <TR>, then </TABLE> -- left behind when this stopped
-         * being a table. Browsers dropped the stray tags silently.
-         */
     ?>
     <form method="POST" class="owa_publicForm">
 

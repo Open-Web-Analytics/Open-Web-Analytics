@@ -5,17 +5,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * Strict SQL mode is the default, and it is overridable.
  *
- * OWA sent `SET SESSION sql_mode=''` on every connection for years, disabling
- * strict mode and turning bad writes into wrong data instead of errors: values
- * too long for their column were truncated, and non-numeric values written to
- * integer columns became 0.
+ * With sql_mode '' bad writes become wrong data instead of errors: values too
+ * long for their column are truncated, and non-numeric values written to
+ * integer columns become 0 -- a yyyymmdd of 0 is invisible to reporting and
+ * lands in the catch-all partition.
  *
- * That produced real damage. Rows were found on two live installs whose
- * yyyymmdd -- the fact-table partition key, and the column every date-range
- * report filters on -- had been coerced to 0, making them invisible to reporting
- * and putting them in the catch-all partition.
- *
- * This pins both halves of the fix, because each fails differently:
+ * This pins both halves, because each fails differently:
  *
  *   - if the default silently reverted to '', the coercions would come back and
  *     nothing else in the suite would notice;

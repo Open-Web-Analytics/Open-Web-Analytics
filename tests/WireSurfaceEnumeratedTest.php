@@ -30,10 +30,10 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     private const NOT_TRACKING_PROPERTIES = [];
 
-    /** @return array every name the tracker emits, across all event types */
     /** The wire this branch's tracker emits; OWATracker.BEACON_FORMAT_VERSION. */
     private const CURRENT_BEACON_FORMAT_VERSION = '2';
 
+    /** @return array every name the tracker emits, across all event types */
     private function emitted(): array
     {
         $contracts = json_decode(
@@ -191,35 +191,15 @@ final class WireSurfaceEnumeratedTest extends TestCase
     public function testBothSidesAreActuallyPopulated(): void
     {
         /*
-         * 33 now, and it keeps shrinking on purpose. The wire has lost
-         * landing_url, session_referer, three dom_element_* the click no longer
-         * collects, the purchase's three billing-address fields, timestamp,
-         * client_ts_usec, last_req and the whole custom_event shape -- each
-         * because nothing read it. The guard is against the FIXTURE not being
-         * read, so it tracks the wire down rather than pinning a number the wire
-         * is supposed to be able to shrink.
+         * A floor, not a count: the guard is against the FIXTURE not being read,
+         * and the wire is supposed to be able to shrink.
          */
         $this->assertGreaterThan( 25, count( $this->emitted() ),
             'Far fewer beacon fields than expected -- the fixture is not being read.' );
 
         /*
-         * The floor was 100 while the dead ingest derivations were still
-         * declared: the five cube-pass readings, the v1 handler inputs
-         * (page_uri, full_host, is_browser, is_robot, latitude, longitude,
-         * prior_page), the v1 date parts and the cv halves. It came down to 85
-         * when those went.
-         *
-         * Then eight more: the registry holds only what v2 CALLS things, so the
-         * compat spellings left it -- page_url and nps for the two renames, and
-         * page_type, ad_type, tagged_ad_type, feed_subscription_id,
-         * time_since_last_session and browser, none of which any v2 reader or
-         * dimension touches. 80 is the current vocabulary and the guard still
-         * catches the config not being read.
-         *
-         * Then 84, when landing_url and session_referer came off the wire: the
-         * tags are parsed from page_location on the session-starting beacon, which
-         * is the same URL, and the session's referrer is the referer_host of its
-         * first row.
+         * A floor, not a count: it guards against the config not being read. The
+         * registry holds what v2 CALLS things, without the compat spellings.
          */
         $this->assertGreaterThan( 70, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );

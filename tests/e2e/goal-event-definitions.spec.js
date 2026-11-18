@@ -2,12 +2,8 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, adminLogin } = require('./fixtures');
 
 /**
- * Goal event definitions: the screens that replaced the twenty numbered goal slots.
- *
- * The old screens listed twenty rows whether or not anyone had filled them in,
- * because the storage was a fixed-length array and the screen showed the
- * storage. These list what exists -- so "counts nothing yet" is a state worth
- * asserting, being the one the old screens could not represent.
+ * Goal event definitions: the screens. They list what exists, so "counts nothing
+ * yet" is a state worth asserting.
  */
 
 /** Land on an admin screen by its owa_do action. */
@@ -183,10 +179,8 @@ test.describe('goal event definitions', () => {
     });
 
     /**
-     * THE PROPERTIES FOLLOW THE EVENT. The list was rendered for the saved event
-     * and nothing changed it, so choosing "click" still offered a page view's
-     * properties until the form was saved and reloaded -- which is how a goal
-     * gets written that can never fire.
+     * THE PROPERTIES FOLLOW THE EVENT: choosing "click" offers a click's
+     * properties at once, or a goal gets written that can never fire.
      */
     test('choosing the event changes the properties offered', async ({ page }) => {
         await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);
@@ -406,9 +400,7 @@ test.describe('goal event definitions', () => {
 
     /**
      * A condition with nothing to compare against counts nothing, and says
-     * nothing about it. This install had a goal in exactly that state -- a type
-     * the evaluator has no case for and no URL -- silently never firing since
-     * it was made.
+     * nothing about it: the goal never fires.
      */
     test('a condition with no value is refused', async ({ page }) => {
         await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);

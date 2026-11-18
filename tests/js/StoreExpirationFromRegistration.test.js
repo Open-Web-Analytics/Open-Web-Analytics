@@ -4,18 +4,8 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 /**
  * A store's cookie lifetime comes from its registration, and from nowhere else.
  *
- * WHAT THIS REPLACED. set() and replaceStore() used to accept an
- * `expiration_days` argument and discard it: persistence reads
+ * set() and replaceStore() take no expiration: persistence reads
  * getExpirationDays(store_name), which is the value given to registerStore().
- * So a caller passing an expiration was silently ignored, and the tracker did
- * exactly that -- it passed `campaignAttributionWindow` on every campaign write,
- * and the documentation told people that setting configured the attribution
- * window. It did not. The window worked only because the campaign store happens
- * to be registered with the same number.
- *
- * The argument is gone. These tests pin the mechanism that was really doing the
- * work, because removing a parameter nobody reads is safe only while the thing
- * that does read something keeps working.
  *
  * A store is backed by one cookie and a cookie has one lifetime, which is why
  * this belongs to the store rather than to a write: two writes asking for

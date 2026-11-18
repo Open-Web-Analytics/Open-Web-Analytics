@@ -2,9 +2,9 @@
 //
 // The root .htaccess denies everything and grants public/ back with an <If>
 // expression. A server that reads Require but not <If> -- shared hosting running
-// LiteSpeed (#1401) -- denied every stylesheet and script, and the pages loaded
-// with no styles. A directory's own Require replaces the one it inherits, so this
-// file grants public/ with no expression to evaluate.
+// LiteSpeed -- would deny every stylesheet and script. A directory's own Require
+// replaces the one it inherits, so this file grants public/ with no expression to
+// evaluate.
 //
 // Written by the build rather than committed: public/ is build output, ignored as
 // a whole, and the release tarball ships what the build leaves there.

@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Overlay Launcher Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class OverlayLauncher extends \OWA\Core\Controller {
@@ -95,9 +69,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      *
      * NOTHING TO LOOK UP. The url is the Profile's domain with the path and the
      * query string; the clicks drawn are constrained to that same
-     * pagePathPlusQuery for the report's period. Choosing "the url with the
-     * most clicks for a path" scanned every click the Property ever had and
-     * then drew every variant's clicks over whichever one it opened.
+     * pagePathPlusQuery for the report's period.
      *
      * The data link is minted here, at the click, because a row only exists in
      * the browser: the report could not have minted one per row.

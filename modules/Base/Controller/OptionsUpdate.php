@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Base Options Update Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class OptionsUpdate extends \OWA\Core\AdminController {
@@ -221,10 +195,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
      *
      * This controller is the action every settings form in OWA posts to, so on
      * its own it can only send everyone to the same place -- which is right for
-     * the general settings page the form came from, and wrong for every other
-     * one. Saving the GeoIP settings used to land the administrator on the
-     * general settings page, with "Options Saved." attached to a page they had
-     * not been editing.
+     * the general settings page, and wrong for every other one.
      *
      * A page that wants to be returned to subclasses this and says so. That
      * keeps the destination a fact about the code rather than a value posted by
@@ -254,8 +225,8 @@ class OptionsUpdate extends \OWA\Core\AdminController {
      */
     private static function isSensitiveSettingKey( $module, $key ) {
 
-        // Composed from the two lists on Settings so there is a single source
-        // of truth, and so the REASON a key is denylisted stays visible:
+        // Composed from Settings so there is a single source of truth, and so
+        // the REASON a key is denylisted stays visible:
         //
         //   databaseStateSettings()  - legitimate database state that the form
         //                              simply must not edit (schema_version,
@@ -267,9 +238,8 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         //                              screens, "listed in a fieldset of this
         //                              page" becomes that test and this goes.
         //
-        // The config-file-only half is GONE. Those settings are declared
-        // static, so the registry check above refuses them and no query asks
-        // for them: one statement of the rule instead of two kept in step.
+        // Config-file-only settings are declared static, so the registry check
+        // above refuses them.
         static $denylist = null;
 
         if ( $denylist === null ) {

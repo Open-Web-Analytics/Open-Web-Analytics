@@ -123,8 +123,7 @@ describe( 'a value read from a result set\'s URL', () => {
     /*
      * kpiBox.queryMetrics(), linkTrendToGrid() and the trend's granularity and
      * breakdown controls read the value decoded ONCE, as the server encoded it
-     * once: a + sent as %2B stays a +, and %2541 stays %41. They used to run it
-     * through OWA.util.urldecode() a second time.
+     * once: a + sent as %2B stays a +, and %2541 stays %41.
      */
     test( 'the metric boxes read the metrics as the server sent them', () => {
         expect( OWA.kpiBox.prototype.queryMetrics( { self: SELF } ) ).toEqual( [ 'visits', 'pageViews' ] );

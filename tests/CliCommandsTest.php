@@ -291,11 +291,9 @@ final class CliCommandsTest extends CliControllerTestCase
 
     public function testDeactivateModuleWorksForNotBootLoadedModule(): void
     {
-        // Regression: deactivateModule() resolved the module through
-        // service::getModule(), which only returns boot-loaded (active)
-        // modules and returned false otherwise -- so deactivating an already
-        // inactive module fataled with deactivate()-on-bool. It now loads a
-        // fresh instance via moduleClassFactory() like activate/install do.
+        // deactivateModule() loads a fresh instance via moduleClassFactory(), like
+        // activate/install do: service::getModule() returns only boot-loaded (active)
+        // modules, so an inactive module would be false.
         // The fixture, made inactive first: a harmless no-op to drive.
         $module  = self::MODULE;
         $restore = $this->forgetFixtureAfter();

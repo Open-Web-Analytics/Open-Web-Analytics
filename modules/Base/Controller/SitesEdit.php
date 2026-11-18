@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Edit User Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class SitesEdit extends \OWA\Core\AdminController {
@@ -68,8 +42,8 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->set('domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ) );
 
         /*
-         * An emptied description means empty. set() drops '' on a string column
-         * so the old text used to survive the save with nothing said about it.
+         * An emptied description means empty. set() drops '' on a string column,
+         * so the old text would survive the save.
          */
         $description = (string) $this->getParam( 'description' );
 
@@ -85,12 +59,11 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->save();
 
         /*
-         * Back to the Profile that was edited, not to reporting. This sent
-         * every rename to the dashboard, which reads as the save having thrown
-         * the screen away -- and is not what the other two Profile editors do.
+         * Back to the Profile that was edited, not to reporting, as the other two
+         * Profile editors do.
          *
          * 'edit' as well as the siteId: base.sitesProfile draws the add form
-         * without it, so a rename landed on "New Observation Profile".
+         * without it.
          */
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
         $this->set( 'edit', true );

@@ -335,8 +335,8 @@ final class MaxmindUpdateCliTest extends TestCase {
 
     /**
      * A dry run must not spend the account's download limit to say what it
-     * would do. It used to fetch the whole archive -- tens of megabytes -- and
-     * report afterwards, which costs exactly as much as doing the work.
+     * would do: fetching the archive -- tens of megabytes -- costs exactly as
+     * much as doing the work.
      */
     public function testADryRunStopsBeforeTheTransfer(): void {
 

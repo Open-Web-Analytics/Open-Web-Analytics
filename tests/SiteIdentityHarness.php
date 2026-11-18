@@ -3,31 +3,21 @@
 namespace OWA\Tests;
 
 /**
- * A recording of how a site's identity is derived, before that derivation is
- * broken on purpose.
+ * A recording of how a site's identity is derived.
  *
- * WHY THIS EXISTS
- * ---------------
- * A site's identity is currently a pure function of its domain:
+ *     site_id = md5( $domain )                 <- recorded, not relied on
+ *     id      = generateId( $site_id )         <- must not change
  *
- *     site_id = md5( $domain )                 <- to be replaced
- *     id      = generateId( $site_id )         <- to be kept
+ * New site_ids are minted rather than derived from the domain, and every
+ * site_id in the wild stays exactly as stored, because every fact row
+ * references it. So this harness pins two things and keeps them apart:
  *
- * That makes two sites for one domain impossible by construction, which is the
- * blocker for giving a tracked website several profiles. The coming change stops
- * DERIVING new identifiers from the domain without REISSUING any that already
- * exist -- every site_id in the wild stays exactly as stored, because every fact
- * row references it.
- *
- * So this harness pins two things that behave differently under that change, and
- * the value of the recording is in keeping them apart:
- *
- *   - domain -> site_id  IS EXPECTED TO CHANGE. It is recorded so the change is
- *     visible and deliberate rather than incidental.
+ *   - domain -> site_id  is recorded so that any change to it is visible and
+ *     deliberate rather than incidental.
  *
  *   - site_id -> id      MUST NOT CHANGE. The numeric primary key stays a pure
  *     function of the site_id string, which is what lets an existing site keep
- *     its identity when the domain no longer determines it. If this moves,
+ *     its identity when the domain does not determine it. If this moves,
  *     existing installs lose their sites.
  *
  * Fixed domains rather than generated ones, so the fixture is a stable statement
@@ -71,8 +61,7 @@ final class SiteIdentityHarness
      *
      * Separate from derive() because this is the half that must survive. Taking
      * a site_id directly -- rather than a domain -- is the whole point: it is
-     * how an existing site is still found once the domain stops determining
-     * anything.
+     * how an existing site is found when the domain does not determine it.
      */
     public static function idForSiteId( string $siteId ): string
     {

@@ -12,9 +12,8 @@ namespace OWA\Module\Base\Entity;
  * Acquiring is a plain INSERT; the loser of a race gets a constraint violation
  * and simply does not run. No transaction, no SELECT ... FOR UPDATE, no
  * engine-specific syntax -- every database enforces uniqueness, so this behaves
- * identically everywhere. This is Laravel's cache_locks design, and it is why
- * MySQL's GET_LOCK was rejected: that works on one driver only, and baking a
- * driver dependency into core scheduling is the portability regression to avoid.
+ * identically everywhere. This is Laravel's cache_locks design. MySQL's GET_LOCK
+ * works on one driver only.
  *
  * Per job rather than one global scheduler lock, so a long queue drain cannot
  * starve partition-rotate while still guaranteeing no drain overlaps another.

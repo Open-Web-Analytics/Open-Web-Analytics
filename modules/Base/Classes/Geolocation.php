@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Geolocation Class
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
  */
 
 
@@ -82,16 +57,9 @@ class Geolocation {
             }
             
             /*
-             * A field the lookup could not fill stays empty.
-             *
-             * This used to write the literal '(not set)' so that something
-             * would appear in a report, which is how owa_location_dim.state
-             * came to hold more of that string than real values -- 2,949
-             * against 2,099 on the demo install. The label is the reporting
-             * layer's job now: ResultSetManager::formatDimensionValue()
-             * renders an absent dimension as "(not set)" at display time, so
-             * the screen is unchanged and the row stops claiming a value it
-             * does not have.
+             * A field the lookup could not fill stays empty. The label is the
+             * reporting layer's: ResultSetManager::formatDimensionValue() renders an
+             * absent dimension as "(not set)" at display time.
              */
             
             $this->properties = $geo;

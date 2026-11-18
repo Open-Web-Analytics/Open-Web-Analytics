@@ -20,14 +20,10 @@ namespace OWA\Module\Base\Classes\Cube;
  * globally, and the one formatter that fits a two-state column answers Yes and
  * No.
  *
- * WHICH IS HOW THE PIE BUG HAPPENED. v1 spelled this as two boolean
- * dimensions over a nullable tinyint: is_new_visitor and is_repeat_visitor,
- * holding 1, 0 and NULL. Three values, three GROUP BY buckets, and a
- * valueLabels map in dashboard.json folding them back onto two names -- so the
- * chart drew two slices both labelled New. Stamping the label makes the
- * failure unreachable rather than fixed: the column holds one of three known
- * strings, the group-by is a plain indexable column read, and there is nothing
- * left to fold.
+ * Two booleans over a nullable tinyint would be three values, three GROUP BY
+ * buckets, and a chart with two slices both labelled New. The column holds one
+ * of three known strings, the group-by is a plain indexable column read, and
+ * there is nothing to fold.
  *
  * A REWORDING IS A REBUILD, which is why storing a display string here does not
  * contradict 2.11's rule about sentinels. The cube is derived; changing what

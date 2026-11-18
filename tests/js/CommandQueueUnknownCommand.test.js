@@ -3,19 +3,15 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 /**
  * A command the tracker does not implement must not stop the ones that do.
  *
- * The queue used to call window[obj][method].apply() unguarded, so an unknown
- * name threw a TypeError -- and that throw escaped process(), abandoning every
- * command still queued behind it. trackPageView is pushed LAST by the snippet,
- * so the practical effect was that one unrecognised command silently stopped
- * the page from being tracked at all.
+ * An unguarded window[obj][method].apply() would throw a TypeError for an
+ * unknown name, and that throw would escape process(), abandoning every
+ * command still queued behind it -- trackPageView, which the snippet pushes
+ * LAST, among them.
  *
  * This is a version-skew problem, not a typo problem. The snippet is generated
  * server-side and changes the moment PHP is upgraded; the tracker is a
- * long-cached static file a returning visitor may hold for days. So every new
+ * long-cached static file a returning visitor may hold for days. So a new
  * snippet command reaches some browsers running a tracker too old to have it.
- * That window is exactly when OWA must not stop recording -- and it is how this
- * was found: a live install serving a tracker built before
- * setCookiePersistence existed, receiving a snippet that already emitted it.
  */
 
 function installImageSpy() {

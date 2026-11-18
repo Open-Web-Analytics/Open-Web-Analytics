@@ -270,7 +270,6 @@ OWA.areaChart.prototype = {
         
         var that = this;
         var h =  jQuery("#"+that.dom_id).height();
-        //alert(h);
         return h;    
     },
     
@@ -281,8 +280,6 @@ OWA.areaChart.prototype = {
             // convery yyyymmdd to javascript timestamp as  flot requires that
             case 'yyyymmdd':
                 
-                //date = jQuery.datepicker.parseDate('yymmdd', value);
-                //value = Date.parse(date);
                 var year = value.substring(0,4) * 1;
                 var month = (value.substring(4,6) * 1) -1;
                 var day = value.substring(6,8) * 1; 
@@ -430,9 +427,6 @@ OWA.areaChart.prototype = {
     },
     
     /**
-     * Main method for displaying an area chart
-     */
-    /**
      * A legend entry's label, as HTML: flot inserts what this returns as
      * markup, and the label is a tracked value.
      */
@@ -441,6 +435,9 @@ OWA.areaChart.prototype = {
         return OWA.util.escapeHtml( label );
     },
 
+    /**
+     * Main method for displaying an area chart
+     */
     generate : function( resultSet, series, dom_id ) {
         OWA.debug('generating area chart for ' + dom_id);
         // set dom_id just in case.
@@ -482,12 +479,10 @@ OWA.areaChart.prototype = {
              * What varies is the DIMENSION: given one, each of its values
              * becomes a line -- visits by medium is a line per medium -- and
              * the filled area behind them is their total. Given none, the
-             * metric itself is the single filled area, which is what a trend
-             * has always been and what all sixty-one shipped ones still are.
+             * metric itself is the single filled area.
              *
-             * The call shape is unchanged: an array of {x, y}, now with an
-             * optional `series` naming the dimension to break down by. Four
-             * older templates still call it the old way and go on working.
+             * The call shape is an array of {x, y}, with an optional `series`
+             * naming the dimension to break down by.
              */
             var spec = series[0] || {};
 
@@ -638,14 +633,10 @@ OWA.areaChart.prototype = {
         } else {
 
             /*
-             * STILL A CHART, with nothing in it.
-             *
-             * An empty period used to replace the whole widget with a line of
-             * text and collapse it to 50px -- so a report with no data for the
-             * period changed SHAPE, and the reader had to work out whether the
-             * chart was missing or the data was. The axes and the grid are the
-             * frame of the answer; they belong there whether or not anything
-             * has been plotted on them.
+             * STILL A CHART, with nothing in it, so a report with no data for
+             * the period keeps its shape. The axes and the grid are the frame of
+             * the answer; they belong there whether or not anything has been
+             * plotted on them.
              *
              * The same path as a chart with data, minus the series: setup, plot,
              * watch the width. A caption over the plot says which of the two
@@ -856,10 +847,8 @@ OWA.areaChart.prototype = {
              * The y value goes through formatValue too.
              *
              * Currency is stored in minor units and formatValue is what divides
-             * it by a hundred -- so without this a revenue trend plotted 6300
-             * and the axis, which labels in major units, read $6,300.00 for
-             * $63.00. Every other type passes through unchanged, which is why
-             * dropping this went unnoticed until an axis put a unit on it.
+             * it by a hundred, and the axis labels in major units. Every other
+             * type passes through unchanged.
              */
             data.push( [
                 this.formatValue( x_type, row[ x_name ].value ),
@@ -1524,14 +1513,13 @@ OWA.areaChart.prototype = {
      * The y axis, labelled in the units of the metric being charted.
      *
      * A bounce rate is stored 0 to 1 and a revenue figure in minor units, so an
-     * axis of bare numbers was labelling a rate "0, 0, 0, 1" and money in a
+     * axis of bare numbers would label a rate "0, 0, 0, 1" and money in a
      * currency nobody named. The metric already says what it is -- its
      * data_type is what the server formats its values with -- so the axis is
      * read from the same answer the numbers are.
      *
-     * tickDecimals was hard-coded to 0, which is right for counts and is what
-     * flattened a rate's axis to zeroes. flot decides it now, and each
-     * formatter is told what it decided.
+     * flot decides tickDecimals (a fixed 0 flattens a rate's axis to zeroes),
+     * and each formatter is told what it decided.
      *
      * @param object resultSet
      * @param string metric the metric being plotted
@@ -1810,6 +1798,14 @@ OWA.areaChart.prototype = {
         return null;
     },
 
+    /** The x type a dimension is drawn as over the period (zeroFilled()), or ''. */
+    axisType : function ( resultSet, x_name ) {
+
+        var period = this.zeroFilled( resultSet, x_name );
+
+        return period ? period.x_type : '';
+    },
+
     /**
      * Every interval of the period, in order, as x values -- or null when the
      * period cannot be read or is not what the chart is drawn over.
@@ -1819,14 +1815,6 @@ OWA.areaChart.prototype = {
      * Left out, flot joined the intervals either side of it, a line drawn
      * straight over the absence; left empty, a ratio's line broke there.
      */
-    /** The x type a dimension is drawn as over the period (zeroFilled()), or ''. */
-    axisType : function ( resultSet, x_name ) {
-
-        var period = this.zeroFilled( resultSet, x_name );
-
-        return period ? period.x_type : '';
-    },
-
     periodXs : function ( resultSet, x_name, x_type, wholeAxis ) {
 
         var period = this.zeroFilled( resultSet, x_name, wholeAxis );
@@ -1898,18 +1886,6 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * The day/month control, top right of the chart.
-     *
-     * A trend is a shape over time, and which time -- days or months -- is a
-     * question about how you want to read it rather than about what the report
-     * is. So it is a reader's control, not something baked into the definition:
-     * the stored query says `date`, and this rewrites it on the way out.
-     *
-     * Drawn only when the chart knows who to ask for new data. The explorer
-     * owns fetching; a select that could not refetch would be a control that
-     * does nothing, which is worse than no control.
-     */
-    /**
      * What the chart draws, over it: the metric, by the grid's dimensions
      * when it draws the grid's rows, over time.
      */
@@ -1940,6 +1916,18 @@ OWA.areaChart.prototype = {
         $title.text( this.options.showTitle ? this.chartTitle() : '' );
     },
 
+    /**
+     * The day/month control, top right of the chart.
+     *
+     * A trend is a shape over time, and which time -- days or months -- is a
+     * question about how you want to read it rather than about what the report
+     * is. So it is a reader's control, not something baked into the definition:
+     * the stored query says `date`, and this rewrites it on the way out.
+     *
+     * Drawn only when the chart knows who to ask for new data. The explorer
+     * owns fetching; a select that could not refetch would be a control that
+     * does nothing, which is worse than no control.
+     */
     drawGranularityControl : function ( dom_id ) {
 
         var that = this;
@@ -2991,11 +2979,8 @@ OWA.areaChart.prototype = {
         
         var that = this;
         
-        //var w = this.getContainerWidth();
         var w = jQuery("#"+dom_id).css('width');
-        //alert(w);
         var h = this.getContainerHeight() || this.getOption('height');
-        //var h = this.getOption('height');
         
         /*
          * The plot, and a place under it for the legend.

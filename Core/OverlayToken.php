@@ -2,20 +2,6 @@
 
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /**
  * A short-lived, scoped credential for an overlay: the heatmap, or one a
  * module registers.
@@ -25,11 +11,8 @@ namespace OWA\Core;
  * browsers increasingly refuse -- and they cannot send an Authorization header
  * without turning a simple cross-origin GET into a preflighted one. The
  * credential therefore has to travel in the URL, and the question is only what
- * it is worth to whoever reads it there.
- *
- * Previously it was the signed-in user's **apiKey**, which is long-lived and
- * carries that user's whole account. This carries one user, one endpoint, one
- * resource, and expires in minutes.
+ * it is worth to whoever reads it there: one user, one endpoint, one resource,
+ * and it expires in minutes.
  *
  * Stateless by design: verification recomputes the signature rather than
  * looking the token up, so there is no table, no schema version to bump and no
@@ -62,10 +45,8 @@ class OverlayToken {
      * dates it may ask about. A key absent when the token was minted must be
      * absent from the request.
      *
-     * It was bound to the constraints alone, so for five minutes it answered
-     * any query with those constraints -- any Property the minting user could
-     * see, any metrics, any dimensions. It sits in the URL fragment on the
-     * tracked site, where any other script on that page can read it.
+     * It sits in the URL fragment on the tracked site, where any other script on
+     * that page can read it, so it answers only the query it was minted for.
      */
     const SCOPE = [ 'siteId', 'propertyId', 'metrics', 'dimensions',
         'period', 'startDate', 'endDate', 'startTime', 'endTime',
@@ -175,7 +156,7 @@ class OverlayToken {
      *
      * The scope check is the security-critical half of the design: a token that
      * authenticates a user without constraining what they may reach is no
-     * better than the apiKey it replaces.
+     * better than a long-lived API key.
      *
      * @param    string    $token
      * @param    string    $action        the 'do' the request is asking for

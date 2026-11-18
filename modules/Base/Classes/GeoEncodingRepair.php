@@ -1,30 +1,13 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /**
  * Recognise, and undo, a UTF-8 string that was encoded as UTF-8 a second time.
  *
- * The geolocation reader used to convert every name it read from the MaxMind
- * database from ISO-8859-1 to UTF-8. MaxMind stores names as UTF-8 already --
- * the MaxMind DB format spec defines its string type as "a variable length byte
- * sequence that contains valid utf8" -- so the conversion ran over text that was
- * never Latin-1 and encoded it twice. "München" was stored as "MÃ¼nchen", and
- * any city or region with an umlaut, accent or cedilla has been wrong since.
- * See issue #742.
+ * MaxMind stores names as UTF-8 already -- the MaxMind DB format spec defines
+ * its string type as "a variable length byte sequence that contains valid
+ * utf8" -- so a reader that converted them from ISO-8859-1 encoded them twice:
+ * "München" stored as "MÃ¼nchen".
  *
  * WHY THIS IS A SEPARATE CLASS. Undoing a mis-encoding means rewriting stored
  * data, and a rule that is slightly too eager corrupts rows that were fine. So

@@ -9,27 +9,14 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * The claim a URL carried is a different fact from the source it resolves to.
  *
- * Until this release the tracker and the server both wrote source, medium,
- * campaign, ad and search_terms. A row therefore recorded no trace of which
- * half produced its value, and every derivation had to open by respecting its
- * own current value -- the callback could not tell "the tracker sent this" from
- * "an earlier callback computed this".
+ * The server parses the tags out of the landing page's URL
+ * (TrackingEventHelpers::taggedValue(), with the parameter names from the
+ * per-Property `campaignKeys` setting) and records them as tagged_* claims.
+ * Classification is the cube pass's (SourceStep, MediumStep, SearchTermsStep),
+ * and CubeBuildTest asserts organic-search, direct and referral on BUILT ROWS.
  *
- * The tracker no longer reports tagged_* either. It sends landing_url, and the
- * server parses the tags out of it -- TrackingEventHelpers::taggedValue(), with
- * the parameter names coming from the per-Property `campaignKeys` setting.
- *
- * WHAT THIS FILE NO LONGER TESTS. Seven cases here drove resolveSource(),
- * resolveMedium(), resolveSearchTerms(), resolveCampaign() and resolveAd(),
- * asserting that a tag beats a referer, that a search referer is
- * organic-search, that a bare visit is direct. Those functions are gone: the
- * classification is the cube pass's now (SourceStep, MediumStep,
- * SearchTermsStep), and CubeBuildTest asserts organic-search, direct and
- * referral on BUILT ROWS -- the same behaviour, checked where it happens and
- * against the value a report actually reads.
- *
- * What remains here is the WIRE GATE: a request may state a claim and may not
- * state the answer. That is the half no other file covers.
+ * What this file covers is the WIRE GATE: a request may state a claim and may
+ * not state the answer.
  */
 final class TaggedAttributionTest extends TestCase
 {
@@ -76,22 +63,18 @@ final class TaggedAttributionTest extends TestCase
     }
 
     /**
-     * The other half of the split, and the reason it is worth doing: a request
-     * can no longer assert an answer. Before the rename these names were
-     * registered client-settable, so anything could post owa_source=... and
-     * have it stored as the resolved source.
+     * The other half of the split: a request cannot assert an answer --
+     * owa_source=... is not stored as the resolved source.
      */
     public function testTheAnswerIsNotSettableFromTheWire(): void
     {
         /*
-         * Through admitRequestParams(), which is the gate log.php runs.
+         * Through admitRequestParams(), the gate log.php runs.
          *
-         * It used to be rejectServerOwnedParams() -- a DENYLIST that refused
-         * the names the server computed and passed everything else. These six
-         * are not registered properties at all any more, because nothing
-         * derives them at ingest: the cube pass does. So a denylist would now
-         * let them straight through, while the allowlist refuses them for the
-         * stronger reason that nothing declares them as settable.
+         * These six are not registered properties at all, because nothing derives
+         * them at ingest: the cube pass does. A denylist would let them straight
+         * through; the allowlist refuses them because nothing declares them as
+         * settable.
          */
         $kept = Helpers::admitRequestParams( [
             'source'       => 'forged',
@@ -117,18 +100,11 @@ final class TaggedAttributionTest extends TestCase
     /**
      * No dimension id is derived in the property pipeline at all.
      *
-     * This replaces an ordering assertion. campaign_id, ad_id, source_id and
-     * referring_search_term_id used to be registered properties that picked
-     * their value up by alternative_key, so the config had to resolve the
-     * ANSWER before the id that hashed it -- register them the other way round
-     * and an untagged visit hashed nothing and the dimension was silently wrong
-     * rather than absent.
-     *
-     * Derivation now happens when a row is written, from content, by the
-     * dimension that owns it. The ordering constraint is not satisfied, it is
-     * gone: there is no longer anything in the pipeline whose order could be
-     * wrong. Asserting the absence is what keeps it gone, since re-adding one of
-     * these entries would silently reinstate the hazard.
+     * Derivation happens when a row is written, from content, by the dimension
+     * that owns it, so nothing in the pipeline has an order that could be wrong.
+     * Asserted as an absence: re-adding one of these entries -- campaign_id,
+     * ad_id, source_id, referring_search_term_id -- would bring back a property
+     * hashed before the answer it hashes is resolved.
      */
     public function testNoDimensionIdIsDerivedInThePipeline(): void
     {

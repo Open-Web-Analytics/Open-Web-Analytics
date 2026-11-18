@@ -8,11 +8,8 @@ namespace OWA\Tests;
  * the widget descriptions report_widgets.php hands owa.reportWidgets.js. Those
  * are the report; everything else is markup around them.
  *
- * Parsers only. It used to also record every report into a golden fixture, to
- * prove the controller-to-JSON conversion preserved what each controller
- * rendered. The conversion is finished, and a report is configuration like the
- * dimension and metric registries, which are not snapshotted either -- so the
- * recording went and the parsers stayed for ReportDefinitionFormatTest.
+ * Parsers only, for ReportDefinitionFormatTest: a report is configuration like
+ * the dimension and metric registries, which are not snapshotted either.
  *
  * URLs are PARSED, never compared as strings. A substring test for
  * 'siteId=' also matches 'owa_siteId=', and a report that quietly dropped a

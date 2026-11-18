@@ -106,8 +106,8 @@ final class CubesTest extends TestCase
      * Asking for a shape's columns must not need a table.
      *
      * A build composes its statement from the cube's column list before it has
-     * decided anything about a table, and getColumns() used to resolve the
-     * table name whether or not it was going to use it.
+     * decided anything about a table, so getColumns() does not resolve the table
+     * name.
      */
     public function testTheShapesColumnsCanBeReadWithoutATable(): void
     {

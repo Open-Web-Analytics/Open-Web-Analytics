@@ -202,7 +202,7 @@ class V1Names {
             return [ 'known' => true, 'to' => self::METRICS[ $name ] ];
         }
 
-        // goal1Completions .. goal15Value: the numbered goal slots are gone.
+        // goal1Completions .. goal15Value: v2 has no numbered goal slots.
         if ( preg_match( '/^goal\d+(Completions|Starts|Value)$/', $name ) ) {
 
             return [ 'known' => true, 'to' => null ];

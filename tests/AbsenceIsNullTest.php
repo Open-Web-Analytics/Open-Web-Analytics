@@ -115,8 +115,7 @@ final class AbsenceIsNullTest extends TestCase
      * Two different statements, so two different words: absence means the row
      * carried nothing, while V2Event::UNRESOLVED means a build had something to
      * read and could not reach an answer. The sentinel is a control byte, so
-     * before this it rendered as an EMPTY label -- a blank pie slice, on every
-     * cube dimension that can resolve.
+     * without a label of its own it would render as an empty one.
      */
     public function testAnUnresolvedDimensionRendersAsUnknown(): void
     {

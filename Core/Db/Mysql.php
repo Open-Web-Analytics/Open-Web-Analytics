@@ -1,24 +1,6 @@
 <?php
 namespace OWA\Core\Db;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 // The MySQL DDL vocabulary and schema introspection now live in the
 // MysqlDialect trait, shared with the PDO driver. `use` below is what defines
 // the OWA_DTD_* / OWA_SQL_* constants -- they are dialect, not transport.
@@ -89,22 +71,14 @@ class Mysql extends \OWA\Core\Db {
 
             // A FAILED CONNECT IS NOT A CONNECTION.
             //
-            // mysqli_init() always returns an object, so `$this->connection`
-            // is truthy whether or not the connect below succeeds, and the
-            // guard at the end of this method -- which exists precisely to
-            // report a failure -- can never fire. What happened instead was
-            // that mysqli_set_charset() was called on a handle that was never
-            // connected, which in PHP 8 raises "mysqli object is not fully
-            // initialized": an Error, not an Exception, so query()'s catch does
-            // not see it either. A refused connection therefore took out the
-            // whole request with an uncaught fatal rather than degrading.
+            // mysqli_init() always returns an object, so `$this->connection` is truthy
+            // whether or not the connect below succeeds. mysqli_set_charset() on a handle
+            // that never connected raises "mysqli object is not fully initialized" in
+            // PHP 8 -- an Error, not an Exception, so query()'s catch does not see it, and
+            // a refused connection would take out the whole request.
             //
-            // Observed in production: RDS refused a connection for a few
-            // seconds and every page and tracking request during that window
-            // fataled instead of logging and moving on.
-            //
-            // So the return value decides, and the dead handle is released
-            // before anything can touch it.
+            // So the return value decides, and the dead handle is released before anything
+            // can touch it.
             $connected = mysqli_real_connect(
                 $this->connection,
                 $host,
@@ -309,9 +283,7 @@ class Mysql extends \OWA\Core\Db {
      * Fetch result set array
      *
      * Null, not an empty array, when there is nothing to return -- no rows, or
-     * a query that failed. Callers have always had to allow for that, so the
-     * behaviour is left alone and the type is corrected to match it: returning
-     * an array instead would silently change what `=== null` sees.
+     * a query that failed. Callers test `=== null`.
      *
      * @param     string $sql
      * @param     Bindings $params
@@ -324,8 +296,6 @@ class Mysql extends \OWA\Core\Db {
 
             $this->query($sql, $params);
         }
-
-        //$this->result = array();
 
         if (!$this->new_result) {
             return null;
@@ -377,16 +347,13 @@ class Mysql extends \OWA\Core\Db {
      *
      * mysqli is inconsistent with itself: mysqli_query() yields strings, while a
      * PREPARED statement fetched via mysqli_stmt_get_result() yields native PHP
-     * types under mysqlnd. Introducing bound parameters therefore changed the
-     * type of every value the builder returns -- '0' became 0 -- which breaks
-     * === comparisons across the codebase and would change the REST API's JSON,
-     * serialising counts as numbers instead of quoted strings.
+     * types under mysqlnd -- '0' becomes 0 -- which would break === comparisons
+     * across the codebase and change the REST API's JSON.
      *
      * MYSQLI_OPT_INT_AND_FLOAT_NATIVE is the documented switch for this and has
-     * NO EFFECT here (mysqlnd 8.2, set before real_connect -- verified both
-     * orderings), so the coercion is explicit. PDO's ATTR_STRINGIFY_FETCHES does
-     * the same job on the other driver, and DbDriverSqlParityTest compares the
-     * two drivers' rows so they cannot drift apart again.
+     * NO EFFECT here (mysqlnd 8.2, set before real_connect), so the coercion is
+     * explicit. PDO's ATTR_STRINGIFY_FETCHES does the same job on the other
+     * driver, and DbDriverSqlParityTest compares the two drivers' rows.
      *
      * NULL IS PRESERVED. A blanket (string) cast turns NULL into '', which is a
      * different value -- OWA stores real NULLs and distinguishes them from empty
@@ -485,8 +452,8 @@ class Mysql extends \OWA\Core\Db {
      *
      * LOGS ITS OWN FAILURES. A prepared statement's error is on the statement,
      * not the connection, and is gone once the statement is closed, so query()
-     * cannot see it afterwards. Without this a refused bound statement -- every
-     * entity create() and update() -- was not logged at all on this driver.
+     * cannot see it afterwards -- and every entity create() and update() is a
+     * bound statement.
      *
      * @param  string $sql
      * @param  Bindings $params

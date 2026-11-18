@@ -44,7 +44,7 @@ final class EventDispatchListenerShapeTest extends TestCase
     }
 
     /**
-     * The shape that broke it: a class name rather than an instance.
+     * A class name rather than an instance.
      */
     public function testAStaticListenerIsNotified(): void
     {

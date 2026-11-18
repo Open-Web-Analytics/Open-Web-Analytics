@@ -10,9 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * ingest or the database.
  *
  * Read from the source, because the server API that makes it real --
- * PHP-FPM's fastcgi_finish_request() -- is not what CI runs PHP under. On
- * this install, through Apache and Varnish, a beacon's response went from
- * 55-90 ms (all of ingest) to 6-40 ms (blank.php's own time).
+ * PHP-FPM's fastcgi_finish_request() -- is not what CI runs PHP under.
  */
 final class LogEndpointTest extends TestCase
 {

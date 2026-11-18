@@ -7,9 +7,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * An update can stop for the operator -- a choice to make, something to do
  * first -- without that being reported as a failure. Update062 stops to ask
- * how much history to migrate, and cmd=update used to answer that with
- * "Update Procedure Failed ... Updates failed. Check OWA's error log", which
- * reads as a broken upgrade. Found rehearsing a real 1.x install.
+ * how much history to migrate, and cmd=update says so rather than "Updates
+ * failed", which would read as a broken upgrade.
  */
 final class UpdateAwaitingTest extends TestCase
 {

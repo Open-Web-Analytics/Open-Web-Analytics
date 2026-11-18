@@ -11,10 +11,10 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  *
  * The session store is written on every event, so a lost session cookie comes
  * back with the next one. The visitor store is written on a page's first event
- * only, so before this a lost visitor cookie stayed lost and the next page
- * minted a new visitor. Safari has been seen dropping both cookies mid-page.
+ * only, so a lost visitor cookie would stay lost and the next page would mint a
+ * new visitor.
  *
- * Every event now checks the jar and writes the visitor store back only when
+ * Every event checks the jar and writes the visitor store back only when
  * its cookie is missing: not when it holds something else, and not when the
  * page has recorded consent as denied.
  *

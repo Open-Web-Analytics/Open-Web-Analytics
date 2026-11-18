@@ -1,36 +1,10 @@
 <?php
 namespace OWA\Core\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * CLI Controller Class
  *
  * This controller should be used for internal management pages/actions that require authentication
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 
@@ -96,16 +70,13 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * What this command actually did: 'ok', 'refused' or 'failed'.
      *
-     * doAction() returns $this->data and CLI actions return void, so until the
-     * scheduler existed a command that declined to act and one that did the work
-     * looked identical to a caller. That is fine for a person reading a terminal
-     * and useless to a dispatcher, which has to decide whether an occurrence was
-     * satisfied and record why.
+     * doAction() returns $this->data and CLI actions return void, so without this
+     * a command that declined to act and one that did the work look identical to
+     * a dispatcher, which has to decide whether an occurrence was satisfied and
+     * record why.
      *
-     * Defaults to 'ok': a command that never says otherwise ran to completion,
-     * which is what every existing command means today. Nothing had to be
-     * rewritten; commands opt in one at a time by calling refuse() or fail()
-     * where they already call notice().
+     * Defaults to 'ok': a command that never says otherwise ran to completion.
+     * Commands call refuse() or fail() where they call notice().
      *
      * @var string
      */
@@ -168,7 +139,7 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * Tried and failed. The occurrence is left unsatisfied and retried.
      *
-     * This matters more than it looks: Db::query() swallows SQL errors and
+     * Db::query() swallows SQL errors and
      * returns falsy, so without commands calling this, a job whose ALTER TABLE
      * was rejected by the server would record 'ok' indefinitely.
      *

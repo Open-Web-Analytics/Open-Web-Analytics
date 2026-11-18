@@ -18,22 +18,17 @@
 
 <?php
 /*
- * The fields are BUILT, not written out.
+ * The fields are BUILT, not written out, so no control can name a setting
+ * the registry does not have -- which would not error, it would save a value
+ * nothing reads.
  *
- * Each of these used to be a hand-written block: a title div, a description
- * div, and a control whose name was assembled here as config[base.key]. Eight
- * of them, and every one an independent chance to name a setting the registry
- * does not have -- which does not error, it saves a value nothing reads.
+ * The declaration in modules/Base/settings.php says what each control is and
+ * what to call it, and registerSettingsFieldSet() in Module.php says which
+ * settings appear here and in what order. Both are read below rather than
+ * restated.
  *
- * The declaration in modules/Base/settings.php already says what each control
- * is and what to call it, and registerSettingsFieldSet() in Module.php says
- * which settings appear here and in what order. Both are read below rather
- * than restated.
- *
- * ONE BEHAVIOUR CHANGED. A setting supplied by a config-file constant is
- * rendered disabled with a note naming the constant. That was hand-written for
- * base.timezone and for nothing else, so every other field on this page used to
- * accept an edit that the next boot silently discarded.
+ * A setting supplied by a config-file constant is rendered disabled with a
+ * note naming the constant.
  */
 foreach ( $view->settings_fieldsets as $set ) {
 

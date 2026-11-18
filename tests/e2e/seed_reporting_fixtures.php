@@ -28,10 +28,9 @@
 // ---- Fixture identifiers (stable contract with the Playwright config) --------
 const E2E_SITE_DOMAIN = 'https://owa-e2e.example.test';
 /*
- * Pinned, not derived. site_id used to be md5( domain ), so the seeder and the
- * specs could each compute it independently and agree. Identifiers are minted
- * now, so the fixture states the one it wants and passes it at creation --
- * fixtureInfo() then hands the same value to the specs.
+ * Pinned, not derived. Identifiers are minted, so the fixture states the
+ * one it wants and passes it at creation -- fixtureInfo() then hands the
+ * same value to the specs.
  */
 const E2E_SITE_ID = 'OWA-e2e-reporting-fixture';
 const E2E_SITE_NAME   = 'OWA E2E Reporting Fixture';
@@ -44,10 +43,9 @@ const E2E_PAGEVIEWS   = 11;                        // number of synthetic pagevi
 /*
  * The referring URLs the four seeded visits arrive from.
  *
- * session_referer is the ONE input the attribution chain derives from --
- * deriveMedium, deriveSource and extractSearchTerm all read it, and the
- * referer/search-term dimension ids are minted off those. Two search engines
- * and one ordinary referral give organic 2, referral 1, (none) 1.
+ * The cube pass classifies source and medium from the referring host. Two
+ * search engines and one ordinary referral give organic 2, referral 1,
+ * (none) 1.
  *
  * Held here rather than only inside $visits so teardown can delete exactly the
  * referer rows this fixture created.
@@ -74,7 +72,7 @@ const E2E_MEDIUM_REFERERS = [
 
 // E-commerce fixture. enableEcommerceReporting is a PER-PROPERTY setting, so
 // the seeder turns it on for the fixture site's Property -- the install-wide
-// value has been false since it was introduced.
+// value is false.
 // Two transactions with three line items between them: enough for the commerce
 // reports to have rows, and for productName to appear more than once so a
 // grouped dimension is not trivially one row per item.
@@ -176,18 +174,9 @@ const E2E_ACTIONS = [
 const E2E_GOAL_NAME   = 'E2E_Signup_Funnel';
 const E2E_GOAL_URL    = '/docs';
 
-// The funnel VISUALIZATION.
-//
-// A funnel used to be configuration -- rows hanging off a goal -- and the goal
-// funnel report read them. It is a visualization now: a custom report of type
-// `visualization`, whose definition holds its own steps. So it is seeded the
-// way a custom report is, not the way a goal is, and nothing about it belongs
-// to the goal event above.
-//
-// The third step is the one the old report APPENDED from the goal's own
-// goal_url. It is an ordinary step here, which is the whole difference: the
-// path being analysed is stated where it is looked at, so there is no longer a
-// stage the report builds rather than reads.
+// The funnel VISUALIZATION: a custom report of type `visualization`, whose
+// definition holds its own steps. So it is seeded the way a custom report is,
+// not the way a goal is, and nothing about it belongs to the goal event above.
 const E2E_FUNNEL_VIZ_NAME  = 'E2E Signup Funnel Visualization';
 const E2E_FUNNEL_VIZ_STEPS = [
     ['name' => 'E2E Step Home',    'path' => '/'],
@@ -429,10 +418,7 @@ function seed(): array
      *    NOTE THE TRAP: this tops up, it never REWRITES. Once the site has its
      *    full complement, seeding is a no-op and every existing row survives
      *    verbatim -- including rows whose shape came from a since-fixed
-     *    derivation. That is not hypothetical: after is_repeat_visitor's NULL
-     *    bug was fixed, re-seeding left the two pre-fix NULL session rows in
-     *    place, and the fixture looked like it was still producing them. It was
-     *    not producing anything at all.
+     *    derivation.
      *
      *    So: after changing anything that derives a stored property, run
      *    `teardown` before `seed`. A seed alone proves nothing about the new
@@ -528,15 +514,11 @@ function seed(): array
  *
  * A PROPERTY ALREADY EXISTS -- createNewSite() mints one, because a site is an
  * Observation Profile (see unseedPropertyIfEmpty). What does not exist is the
- * TABLE: a cube is created by the build job on a Property's first data, and
- * nothing in this fixture ran one. So v2 reporting had no end-to-end coverage
- * at all, and the first report to read the cube failed in a way no spec could
- * see until it counted the things on the page.
+ * TABLE: a cube is created by the build job on a Property's first data, so
+ * this runs one.
  *
  * Built from whatever raw rows the seeding produced rather than from seeded
- * ones of its own: ingest writes owa_event_raw alongside the v1 tables on the
- * same logEvent() call, so the cube is derived from the same traffic the v1
- * reports are, and the two cannot disagree about what happened.
+ * ones of its own, so the cube is derived from the traffic logEvent() ingested.
  */
 function seedCube(): array
 {
@@ -1028,8 +1010,7 @@ function seedNotifications(): array
  *
  * Creating a site MINTS a Property -- a site is an Observation Profile, and a
  * Profile has to hang off something -- so a teardown that removes only the site
- * leaves a parentless Property behind on every run. This fixture's own was
- * sitting in the development database as exactly that.
+ * leaves a parentless Property behind on every run.
  *
  * Guarded on emptiness rather than deleted outright, because a Property can
  * legitimately hold more than one Profile: two Observation Profiles of the same
@@ -1229,13 +1210,8 @@ function seedGoal(): array
      * A goal event row and its one condition, written the way GoalEventDefinitionSave
      * writes them: triggered by page_view, conditioned on page_path.
      *
-     * It was seeded through GoalManager::saveGoal(), the 1.x goal shape, which
-     * stored the v1 trigger name base.page_request. Rows store page_view, so the
-     * seeded goal could never mark an event.
-     *
-     * No steps: a funnel is not part of a goal any more. See
-     * seedFunnelVisualization(), which seeds the path separately and does not
-     * name this goal at all.
+     * No steps: a funnel is a visualization. See seedFunnelVisualization(),
+     * which seeds the path separately and does not name this goal at all.
      */
     $id = e2eGoalEventDefinitionId();
 
@@ -1314,8 +1290,7 @@ function teardown(): array
      * alone. These are the exception: a referer row carries a page_title, the
      * seeded referer URLs are unique to this fixture, and RefererHandlers
      * REUSES an existing row rather than rewriting it. So a title written by an
-     * earlier run -- a real one, if that box had crawling on -- survives into
-     * the next and the fixture stops being deterministic. Deleting only the
+     * earlier run survives into the next and the fixture stops being deterministic. Deleting only the
      * fixture's own URLs cannot touch anyone else's data.
      */
     foreach (E2E_REFERERS as $url) {
@@ -1335,10 +1310,9 @@ function teardown(): array
     /*
      * The fixture goal event, and the conditions hanging off it.
      *
-     * Goals are ROWS now, in owa_goal_event_definition -- the table loop above does not
+     * Goals are ROWS, in owa_goal_event_definition -- the table loop above does not
      * reach them because it clears fact tables, and a goal event left behind
-     * keeps converting against real traffic and keeps its group showing as a
-     * metric-set tab on every tabbed report.
+     * keeps converting against real traffic.
      *
      * Only this one is removed, by its derived id: an install may have goal
      * events of its own, and clearing the table wholesale would take them too.
@@ -1466,31 +1440,6 @@ function teardown(): array
 }
 
 /**
- * Fire up to $n synthetic pageviews for the fixture site through the real
- * ingestion pipeline, spread across a few pages, two visitors, and -- crucially
- * -- SEVERAL DAYS, so the report has real shape: multiple rows in the pages
- * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
- * trend charts need >1 day of data or they collapse to a single point).
- *
- * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
- * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
- * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
- * taken once per process -- and yyyymmdd is derived from ts at log time. So to
- * backdate an event we must move the singleton's clock before logEvent().
- *
- * THROUGH setTimestamp(), which moves both of the container's clock fields. This
- * assigned ->timestamp directly, which is the seconds field; v2 reads the
- * microsecond one. Measured: every event below landed on TODAY, so the four-day
- * spread this docblock describes collapsed to a single point -- exactly the flat
- * timeseries the spread exists to avoid -- and nothing errored.
- *
- * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
- * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
- * as 4 single-day visits by 2 returning visitors across 4 days spanning the
- * last_thirty_days window. $n caps how many of the plan actually fire (used by
- * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
- */
-/**
  * Seed commerce transactions + line items for the fixture site.
  *
  * Idempotent by order_id: re-running the seeder does not duplicate rows, which
@@ -1581,6 +1530,28 @@ function seedTransactions(): int
     return $seeded;
 }
 
+/**
+ * Fire up to $n synthetic pageviews for the fixture site through the real
+ * ingestion pipeline, spread across a few pages, two visitors, and -- crucially
+ * -- SEVERAL DAYS, so the report has real shape: multiple rows in the pages
+ * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
+ * trend charts need >1 day of data or they collapse to a single point).
+ *
+ * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
+ * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
+ * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
+ * taken once per process -- and yyyymmdd is derived from ts at log time. So to
+ * backdate an event we must move the singleton's clock before logEvent().
+ *
+ * THROUGH setTimestamp(), which moves both of the container's clock fields:
+ * ->timestamp is the seconds field, and ts is derived from the microsecond one.
+ *
+ * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
+ * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
+ * as 4 single-day visits by 2 returning visitors across 4 days spanning the
+ * last_thirty_days window. $n caps how many of the plan actually fire (used by
+ * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
+ */
 function seedPageviews(int $n): int
 {
     $site_id = E2E_SITE_ID;
@@ -1684,19 +1655,9 @@ function seedPageviews(int $n): int
              * THE REFERRER IS THE VISIT'S OWN, on the first page, and the
              * previous page of the visit after that.
              *
-             * This sent the visit's real referrer as `session_referer` and
-             * hardcoded HTTP_REFERER to a bare 'https://www.google.com/'. Both
-             * halves are now wrong. session_referer LEFT THE REGISTRY -- the
-             * server parses the campaign tags out of page_location and reads the
-             * per-event referrer for the rest -- so the three E2E_REFERERS went
-             * nowhere, and the only external host raw ever saw was that literal,
-             * without the query string that makes it a search. Measured: two rows
-             * from www.google.com and nothing from news.ycombinator.com or
-             * www.bing.com, so the medium spread this fixture promises (organic 2,
-             * referral 1, direct 2) did not exist.
-             *
-             * HTTP_REFERER is the one input now, and it is per EVENT: the session's
-             * referrer is the first row's, which is what the cube's window reads.
+             * HTTP_REFERER is the one input, and it is per EVENT: the session's
+             * referrer is the first row's, which is what the cube's window reads. The
+             * server parses the campaign tags out of page_location.
              */
             $referer = $isFirst
                 ? ( $visit['referer'] ?? '' )
@@ -1722,9 +1683,8 @@ function seedPageviews(int $n): int
 
                 /*
                  * The visitor's session count BEFORE this one, which is the column
-                 * new_vs_returning and newUsers both read. Absent, it stored NULL,
-                 * and NULL is not New -- the pass renders it as unresolved, so the
-                 * Visitor Types pie had one bucket for a gap in the beacon.
+                 * new_vs_returning and newUsers both read. Absent, it stores NULL, and
+                 * NULL is not New -- the pass renders it as unresolved.
                  */
                 'num_prior_sessions' => $prior_sessions,
 
@@ -1992,14 +1952,8 @@ function seedActions(): array
 /*
  * ---- WHERE THE FIXTURE LOOKS FOR ITS OWN DATA -----------------------------
  *
- * THE v1 STAR TABLES ARE EMPTY ON THIS BRANCH, and this fixture was reading
- * them. owa_request, owa_session, owa_click and owa_action_fact are written by
- * the v1 event chain, which came out of Module.php -- measured on the dev
- * install, the newest row in owa_session predates that commit and owa_event_raw
- * is current. So every lookup below used to answer "nothing found", silently:
- * seedDomstreams() skipped both recordings, and the click and action
- * idempotency guards never tripped, which meant a re-seed DOUBLED them while
- * reporting rows_in_db: 0.
+ * Nothing writes the v1 star tables (owa_request, owa_session, owa_click,
+ * owa_action_fact); everything is in owa_event_raw.
  *
  * A session on v2 is not a row. It is the set of owa_event_raw rows sharing a
  * session_id, and its start is a session_start row. So "find me a session" is a
@@ -2076,20 +2030,18 @@ function sessionByReferer(string $site_id, string $referer_url): ?array
     return sessionFromRaw($site_id, "referer_host = '" . $db->prepare($host) . "'");
 }
 
-/**
- * Raw rows for the fixture site, optionally of one event type.
- *
- * Replaces countSiteRows('owa_click') and countSiteRows('owa_action_fact'),
- * which counted tables nothing writes. The event type is the v2 name -- a click
- * is `click` and a tracked action is `custom_event` -- so this is the same
- * question asked where the answer now lives.
- */
 /** Stored rows of the fixture's action events. */
 function countActionRows(): int
 {
     return array_sum(array_map('countRawRows', array_unique(array_column(E2E_ACTIONS, 'name'))));
 }
 
+/**
+ * Raw rows for the fixture site, optionally of one event type.
+ *
+ * The event type is the v2 name -- a click is `click` and a tracked action is
+ * `custom_event`.
+ */
 function countRawRows(?string $event_type = null): int
 {
     $db = \OWA\Core\CoreAPI::dbSingleton();

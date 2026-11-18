@@ -12,9 +12,8 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 /**
  * Configurable cookie lifetimes, via the stateStoreExpirations option.
  *
- * The tracker used to decide on its own how long its cookies lived -- 364 days
- * for the visitor id, 60 for the campaign store, 364 for the session -- and
- * there was no way to reach those numbers from outside. A year-long identifier
+ * The shipped lifetimes are 364 days for the visitor id and the session. A
+ * year-long identifier
  * is the first thing a "small privacy impact" argument loses on, so an operator
  * needs to be able to shorten it; the install-wide and per-Profile settings emit
  * this command into the snippet to do that.
@@ -29,9 +28,8 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
  *      exception there is somebody else's site broken;
  *   3. the new lifetime is in place BEFORE the first cookie is written. The
  *      snippet pushes this ahead of trackPageView and the queue drains in push
- *      order -- so this holds today, and nothing but a test stops a later
- *      reordering from silently making the first page view of every visit write
- *      the old year.
+ *      order, and nothing but a test stops a later reordering from silently
+ *      making the first page view of every visit write the old year.
  */
 
 /** Capture cookie writes the way the tracker's persist path makes them. */
@@ -92,13 +90,6 @@ describe('the configured lifetime is what the registry answers with', () => {
 
         expect(OWA.state.getExpirationDays('v')).toBe(90);
     });
-
-    /*
-     * The campaign-store case was here. There is no 'c' store any more: it held
-     * the client's attribution stack, which the server never read, and it went
-     * with the attribution models. The cases around this still cover that
-     * naming one store does not disturb another.
-     */
 
     /**
      * The session store is per site -- it is registered as 's_<siteId>'. The

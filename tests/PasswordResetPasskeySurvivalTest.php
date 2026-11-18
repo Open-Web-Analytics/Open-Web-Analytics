@@ -11,20 +11,12 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * hidden field, so the passkey has to survive every re-render -- including the
  * one that happens when validation fails.
  *
- * It did not. UsersPasswordEntry::action() puts the key in 'key', which is what
- * the view reads; UsersChangePassword::errorAction() put it in 'k'. View::get()
- * answers FALSE for a name nobody set, so the hidden field rendered as
- * value="" and the passkey was simply gone.
- *
- * The user-visible failure was a reset that could not be completed. Mistype the
- * confirmation once, get "Your passwords must match", correct it, submit -- and
- * that submit carried no key, so authenticateUserTempPasskey() refused it and
- * the redirect went to the login form with "can't find key in the db". Every
- * retry failed the same way. Only a fresh reset email, typed correctly the
- * first time, could get through.
- *
- * Reproduced against a live install before fixing: the first render carried
- * value="817b...", and the render after one mismatch carried value="".
+ * UsersPasswordEntry::action() puts the key in 'key', which is what the view
+ * reads, so the re-render after a failed validation has to put it there too:
+ * View::get() answers FALSE for a name nobody set, so the hidden field would
+ * render as value="", the next submit would carry no key, and
+ * authenticateUserTempPasskey() would refuse it -- every retry failing the
+ * same way.
  */
 final class PasswordResetPasskeySurvivalTest extends TestCase
 {

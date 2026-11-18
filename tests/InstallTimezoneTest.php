@@ -15,9 +15,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * zone it was derived under -- reports group by yyyymmdd and silently mix the
  * two. The shift can be up to 21 hours, nearly a whole day.
  *
- * The setting shipped defaulting to America/Los_Angeles and was not asked for
- * anywhere in the wizard, so every install ran on US Pacific until someone
- * noticed. Asking at install is the only moment the choice is free.
+ * Asking at install is the only moment the choice is free.
  *
  * Note this is NOT the same class of problem as a wrong clock: `timestamp` is a
  * unix epoch and timezone-free, and there is no date arithmetic in SQL at all
@@ -37,11 +35,8 @@ final class InstallTimezoneTest extends TestCase
     /**
      * The timezone field as the settings page RENDERS it.
      *
-     * This used to read the template file, which worked while the field was
-     * written out there by hand. It is built from the declaration now, so the
-     * source of that template says nothing about what a user sees -- and
-     * rendering it is the stronger assertion either way: it goes through the
-     * same path the page does.
+     * Rendered rather than read from the template: the field is built from the
+     * declaration, and rendering goes through the same path the page does.
      */
     private function optionsForm(): string
     {
@@ -189,12 +184,10 @@ final class InstallTimezoneTest extends TestCase
      * THE PRECEDENCE RULE. A constant declared in owa-config.php beats a value
      * stored in the database.
      *
-     * It used to lose: applyConfigConstants() runs before load(), and load()
-     * array_merges the database blob over the top, so the constant was silently
-     * discarded. And the options form writes EVERY field on its page rather than
-     * only the edited one, so a timezone entered the database the first time
-     * anyone saved General Settings for an unrelated reason -- after which the
-     * config file said one thing and the installation did another.
+     * applyConfigConstants() runs before load(), and load() array_merges the
+     * database blob over the top. The options form writes EVERY field on its page
+     * rather than only the edited one, so a timezone enters the database the
+     * first time anyone saves General Settings for an unrelated reason.
      *
      * Expressed as ABSENCE, like the config-file-only settings: the losing value
      * is removed from the database array before the merge, because a merge is
@@ -235,9 +228,8 @@ final class InstallTimezoneTest extends TestCase
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         // Simulate an installation that declares none: forget every recorded
-        // constant, then put them all back. This install declares eleven, so
-        // without the forget this asserts nothing -- it passed only where no
-        // config file exists and the ledger was empty anyway.
+        // constant, then put them all back. An install with a config file declares
+        // several, so without the forget this would assert nothing.
         $ledger = $c->configConstants();
 
         foreach ( $ledger as $module => $keys ) {
@@ -333,9 +325,9 @@ final class InstallTimezoneTest extends TestCase
         }
 
         /*
-         * Not hand-written for this one field any more. That was the bug: the
-         * check existed only in the timezone block, so every other setting on
-         * the page accepted an edit the next boot discarded.
+         * Not hand-written for this one field: a check in the timezone block
+         * alone would let every other setting on the page accept an edit the next
+         * boot discards.
          */
         $this->assertStringNotContainsString(
             'configFileConstantFor',
@@ -413,15 +405,13 @@ final class InstallTimezoneTest extends TestCase
      * ...and load() actually calls the stripper, in the right place.
      *
      * A source assertion, deliberately: the effect is only observable when an
-     * installation has BOTH a constant and a stored value for the same key, and
-     * the measured overlap across all three installs here is zero -- timezone is
-     * the only setting that can be written from both sides, and none of them has
-     * saved it. So there is no state in which the wiring can be observed from
-     * behaviour alone without fabricating a database.
+     * installation has BOTH a constant and a stored value for the same key --
+     * timezone is the only setting that can be written from both sides -- so
+     * there is no state in which the wiring can be observed from behaviour alone
+     * without fabricating a database.
      *
-     * Position matters as much as presence: it must run after the security strip
-     * and before the merge, or the database values it is meant to lose to have
-     * already been merged in.
+     * Position matters as much as presence: it must run before the merge, or the
+     * database values it is meant to lose to have already been merged in.
      */
     public function testLoadAppliesTheStripperBeforeMergingTheDatabase(): void
     {
@@ -441,24 +431,15 @@ final class InstallTimezoneTest extends TestCase
         $this->assertLessThan($merge, $strip, 'must run before the database is merged in');
 
         /*
-         * There is no security strip to run after any more. The
-         * config-file-only settings are declared static, so the boot query does
-         * not fetch them and nothing arrives for a strip to remove -- see
-         * BaseDeclarationPresentTest, which is what guarantees the declaration
-         * is there to do it.
+         * There is no security strip to run after: the config-file-only settings
+         * are declared static, so the boot query does not fetch them -- see
+         * BaseDeclarationPresentTest, which is what guarantees the declaration is
+         * there to do it.
          */
         $this->assertFalse(strpos($load, 'stripConfigFileOnlySettings('),
             'the strip is gone; the declaration states the rule once');
     }
 
-    /**
-     * UTC is selectable.
-     *
-     * conf/country2Timezones.php is keyed by COUNTRY, and UTC is not a country,
-     * so it was absent from both pickers -- 285 zones and no way to choose the
-     * one that does not move. For a self-hosted product whose operator may run
-     * servers in several regions, that is the omission most likely to matter.
-     */
     /**
      * A wizard whose timezone field is governed by a constant.
      *
@@ -573,7 +554,7 @@ final class InstallTimezoneTest extends TestCase
      * InstallBase sets 'defaults' only in errorAction() -- the re-render after a
      * validation failure -- so every genuine first visit to this step reads keys
      * that are not there. Unguarded, that is a PHP warning per field on every
-     * install; CI turns warnings into failures, which is how it surfaced.
+     * install, and CI turns warnings into failures.
      */
     public function testAFirstRenderWithNoDefaultsRaisesNoWarnings(): void
     {
@@ -595,6 +576,14 @@ final class InstallTimezoneTest extends TestCase
         $this->assertGreaterThan( 200, substr_count( $html, '<option' ) );
     }
 
+    /**
+     * UTC is selectable.
+     *
+     * conf/country2Timezones.php is keyed by COUNTRY, and UTC is not a country,
+     * so it was absent from both pickers -- 285 zones and no way to choose the
+     * one that does not move. For a self-hosted product whose operator may run
+     * servers in several regions, that is the omission most likely to matter.
+     */
     public function testUtcIsOfferedByThePicker(): void
     {
         // require, not require_once: a second require_once answers true.

@@ -380,7 +380,7 @@ class TrackerIngest {
 
         /*
          * The site is checked here as well as at the edge: a beacon queued while
-         * the database could not answer was let through unchecked, and a site
+         * the database could not answer is let through unchecked, and a site
          * archived since it was queued no longer observes.
          */
         $registered = \OWA\Core\CoreAPI::siteRegistration( $event->getSiteId() );

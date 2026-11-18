@@ -2,10 +2,9 @@
 /**
  * Every registered REST route answers over HTTP.
  *
- * The routes have unit coverage, but nothing exercised them through the real
- * stack until now: a registration naming a class that no longer exists, a route
- * name that no longer matches, or a controller that cannot be constructed passes
- * PHPUnit and every existing e2e spec, and surfaces only in production.
+ * The routes have unit coverage, but a registration naming a class that does not
+ * exist, a route name that does not match, or a controller that cannot be
+ * constructed passes PHPUnit and surfaces only over HTTP.
  *
  * Each route is asserted twice:
  *
@@ -119,7 +118,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             });
 
             // A 404 or 500 here would mean the route never resolved -- the class
-            // is missing, or the registration no longer matches the URL.
+            // is missing, or the registration does not match the URL.
             expect(res.status(), `${label} did not reach the auth layer`).toBe(401);
         });
 
@@ -167,7 +166,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
     });
 
     /**
-     * A request that names no route used to return an empty 200 -- a silent false
+     * A request that names no route is a 400: an empty 200 would be a false
      * success a client could not tell from a call that legitimately had no data.
      * There is deliberately no default route here: the admin endpoint falls back
      * to the start_page setting, but a REST client that omits the route has made
@@ -209,19 +208,6 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         expect(fake.body, 'an unknown route must be byte-identical').toBe(real.body);
     });
 
-    /**
-     * CORS lives in its own describe with a freshly provisioned fixture.
-     *
-     * The route loop above sends real requests that POST and DELETE against
-     * users and sites, so by the time these run the fixture credential has been
-     * through eight mutating calls. Re-provisioning here makes these cases
-     * independent of what the loop did rather than dependent on running last --
-     * and because they ARE last, re-provisioning cannot disturb anything above.
-     *
-     * It must not be a separate spec file: provision() calls cleanup() first, so
-     * a second file calling it destroys this one's fixture mid-run. That is what
-     * broke seven of the authenticated cases above when these lived elsewhere.
-     */
     /**
      * CORS: the API answers cross-origin, and only for configured sites.
      *
@@ -304,14 +290,10 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
     });
 
     /**
-     * JSONP is gone from the server, not just from the two overlays.
-     *
-     * It was never a documented part of the API. What it did was wrap the same
-     * JSON body in a caller-named function so the response could be loaded with
-     * a <script> tag -- which made every endpoint readable by any page on the
-     * internet, with the response executing in that page's context. CORS is the
-     * mechanism that grants the same access deliberately, to named origins, and
-     * it works now.
+     * JSONP is not served: wrapping the JSON body in a caller-named function
+     * would make every endpoint readable by any page on the internet, with the
+     * response executing in that page's context. CORS grants the same access
+     * deliberately, to named origins.
      *
      * Asserted over real HTTP rather than as a unit test because a callback
      * wrapper is a property of the response body and its Content-Type, and both
@@ -348,8 +330,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
  *
  * A browser sends OPTIONS first for a cross-origin call carrying an
  * Authorization header -- an application password used from a
- * page. The preflight controller was looked up under a name nothing resolved
- * any more, so every OPTIONS answered 500 and the browser never sent the call.
+ * page. A preflight that fails means the browser never sends the call.
  */
 test.describe('CORS preflight @selfhost-only', () => {
 

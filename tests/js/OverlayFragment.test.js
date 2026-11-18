@@ -5,11 +5,9 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 /**
  * A tracked page opened from an overlay link: #owa_overlay.<base64 params>.
  *
- * Anyone can write such a link to any tracked page. The tracker used to pause
- * itself and start the overlay whatever the params said, and the overlay then
- * fetched the link's api_url -- as a script, when that URL asked for JSONP.
- * Now only a link whose api_url is on the OWA server the page reports to
- * starts an overlay; any other is ignored and the page is tracked as usual.
+ * Anyone can write such a link to any tracked page. Only a link whose api_url is
+ * on the OWA server the page reports to starts an overlay; any other is ignored
+ * and the page is tracked as usual.
  */
 
 const OWA_SERVER = 'https://reporting.example.com/owa/';

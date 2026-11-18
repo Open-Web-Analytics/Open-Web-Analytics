@@ -9,14 +9,11 @@
  * whoever maintains the template and never reach a browser.
  *
  * WHY THE LOADER APPENDS TO <head>, rather than inserting before the first
- * script element the way the old snippet did: that pattern dates from before
- * 'async' was universal, when document position decided fetch order. It has not
- * bought anything for years, and it assumes a script element exists to insert
- * before -- on a page where this snippet is served from an external file and
- * nothing else on the page is a script, the lookup returns undefined and the
- * next line dereferences its parentNode. That is a TypeError thrown before the
- * tracker is ever requested, on a page nobody tested. The fallback chain ends at
- * documentElement because a document without one is not a document.
+ * script element: with 'async' document position does not decide fetch order,
+ * and on a page where this snippet is served from an external file and nothing
+ * else is a script there is no script element to insert before. The fallback
+ * chain ends at documentElement because a document without one is not a
+ * document.
  *
  * Open the connection to the tracker's origin while the parser is still working
  * on this snippet.

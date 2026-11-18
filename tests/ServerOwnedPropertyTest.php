@@ -9,22 +9,15 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * A tracking request must not be able to set what the server computes.
  *
- * log.php copied every owa_* parameter onto the event, so any parameter whose
- * name matched a column was written to that column. A request carrying
- * owa_is_browser=ludhiana put a city name into a boolean column -- which is how
- * this was found, in a production log -- and owa_ip_address or owa_timestamp
- * would have replaced the observed values that IP exclusion, geolocation and
- * event ordering all depend on.
+ * A parameter whose name matches a server-computed column must not reach it:
+ * owa_ip_address would replace the observed value that IP exclusion and
+ * geolocation depend on, and a boolean column would take whatever text was
+ * sent.
  *
  * Two places enforce it, from ONE definition:
  *
  *   - log.php drops server-owned parameters before they reach the event;
- *   - ProcessEvent no longer re-applies them over the derivation it just ran.
- *
- * That second one was the actual defect. The derivation always worked: it
- * computed is_browser correctly and was then overwritten by a "re-apply
- * sanitized properties" step that treated every non-regular property as
- * unregistered input.
+ *   - ProcessEvent does not re-apply them over the derivation it just ran.
  */
 final class ServerOwnedPropertyTest extends TestCase
 {
@@ -49,8 +42,7 @@ final class ServerOwnedPropertyTest extends TestCase
          * sends geolocation somewhere else; a forged is_robot decides whether the
          * sender gets filtered at all.
          *
-         * `timestamp` was in this set on the reasoning that forging it reorders
-         * events, and that is no longer what it is. It is the TRACKER's own clock
+         * `timestamp` is not in this set: it is the TRACKER's own clock
          * -- declared client-set, because the tracker sends it and the device's
          * session-timeout comparison needs it -- and it reaches no column, so
          * forging it achieves nothing. Ordering rests on `ts`, the edge stamp,
@@ -70,15 +62,10 @@ final class ServerOwnedPropertyTest extends TestCase
     public function testLocationAndHostAreRefusedFromTheWire(): void
     {
         /*
-         * No exceptions for geo or host. An earlier version of this fix
-         * declared country, city, state and host client-settable, on the
-         * grounds that LocationHandlers accepts client geo and that a caller
-         * may supply a host. Both are wrong to allow:
+         * No exceptions for geo or host:
          *
          *   - accepting geo lets a request choose the location its own traffic
-         *     is reported under, and the tracker only ever sends city/state/
-         *     country as an ecommerce BILLING address -- which is a different
-         *     fact that happens to share these names;
+         *     is reported under;
          *
          *   - host is the page's host, cut from page_location by deriveHost(),
          *     so accepting one lets a request report a page under a host it
@@ -98,17 +85,12 @@ final class ServerOwnedPropertyTest extends TestCase
     }
 
     /**
-     * An unregistered property is REFUSED, which is the opposite of what this
-     * asserted.
-     *
-     * The gate was a denylist: it refused the names the server computed and let
-     * everything else through, and its own note said so -- "it does not
-     * restrict what a site may send". So it was open for exactly the inputs
-     * nobody had thought about. admitRequestParams() admits two things: a name
+     * An unregistered property is REFUSED. admitRequestParams() admits two
+     * things: a name
      * some event declares and a client may set, and a custom value under one of
      * the four prefixes.
      *
-     * A site's own values are as free as they ever were. They just have to say
+     * A site's own values are free. They just have to say
      * which bag they are in, which the tracker already does.
      */
     public function testAnUnregisteredPropertyIsRefused(): void
@@ -135,18 +117,13 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        /*
-         * `timestamp` was here and is not a property any more: it was the
-         * second-resolution twin of `ts`, from the same clock reading, and only
-         * one of the two ever reached a column.
-         */
         foreach ( [ 'browser_type', 'country', 'ip_address', 'ts' ] as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }
 
         /*
-         * is_outbound is NOT here, and was briefly. It is decided on the CLIENT --
+         * is_outbound is NOT here. It is decided on the CLIENT --
          * only the client can see the DOM, and a non-web sender has no
          * page_location and target_url for the server to compare -- so the beacon
          * is the authority and admitRequestParams() takes it.
@@ -167,10 +144,6 @@ final class ServerOwnedPropertyTest extends TestCase
             ] ),
             'the client decides outbound, so the gate has to let it through' );
 
-        /*
-         * full_host is gone with the v1 handlers that read it -- the reverse-DNS
-         * name reached no raw column and no cube pass. host, which does, stays.
-         */
         foreach ( [ 'country', 'city', 'state', 'host' ] as $name ) {
 
             $this->assertArrayHasKey(
@@ -192,11 +165,9 @@ final class ServerOwnedPropertyTest extends TestCase
         $source = file_get_contents( \OWA\Core\Env::root() . '/log.php' );
 
         /*
-         * admitRequestParams(), not rejectServerOwnedParams(): the gate is an
-         * allowlist now. It subsumes the old refusal -- a server-computed
-         * property is not client-settable, so it is not admitted -- and closes
-         * the half the denylist left open, which was every name nobody had
-         * registered.
+         * admitRequestParams(): the gate is an allowlist. A server-computed
+         * property is not client-settable, so it is not admitted -- and neither is
+         * any name nobody registered.
          */
         $this->assertStringContainsString( 'admitRequestParams', $source );
 

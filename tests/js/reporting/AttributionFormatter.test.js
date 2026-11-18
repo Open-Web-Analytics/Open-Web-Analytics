@@ -100,9 +100,7 @@ describe('attributionList formatter', () => {
     });
 
     /**
-     * The bug the old template could not have. jqGrid passes the cell object,
-     * so the JSON lives on .value -- reading the argument directly rendered
-     * the header and nothing else.
+     * The grid passes the cell object, so the JSON lives on .value.
      */
     test('reads the JSON from the cell object jqGrid actually passes', () => {
         const html = fmt(cell('[{"md":"beach","sr":"kauai"}]'));

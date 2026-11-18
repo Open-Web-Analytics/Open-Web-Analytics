@@ -15,9 +15,8 @@ namespace OWA\Module\Base\Controller;
  * that whatever computes it does not read. Building the other kind is the way
  * to get the other kind.
  *
- * Only the funnel exists today, which is why the kind is named at all: a single
- * hardcoded one would not need naming, and the map means the second costs a row
- * in VISUALIZATION_TYPES rather than a dispatcher change.
+ * The kinds are a map, VISUALIZATION_TYPES, so another costs a row there
+ * rather than a dispatcher change.
  *
  * @phpstan-import-type DimensionEntry from \OWA\Module\Base\Classes\DimensionRegistry
  */
@@ -49,8 +48,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         /*
          * One that is not on this Property, of another or gone, is refused
-         * back to the roster as one that does not exist. It used to open as a
-         * blank form carrying the id.
+         * back to the roster as one that does not exist.
          */
         if ( $id && ! $report ) {
 
@@ -131,9 +129,8 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          *
          * makeLink() does not add state unless it is asked to, so a form action
          * built from it posts to a URL with no scope on it -- and the save then
-         * redirects to the funnel without one. Everything drew: the right
-         * stages, the right names, and `r.site_id = ''` behind them, so every
-         * stage reported zero visitors and looked like a site nobody had used.
+         * redirects to the funnel without one, and every stage would count
+         * against `r.site_id = ''`: zero visitors.
          *
          * A hidden field rather than makeLink(..., true), because that is what
          * the custom report builder does and one pattern is easier to keep

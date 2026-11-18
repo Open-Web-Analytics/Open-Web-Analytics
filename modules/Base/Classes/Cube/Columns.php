@@ -65,13 +65,11 @@ class Columns {
     /**
      * Tests a definition may name rather than spell.
      *
-     * ACQUISITION, NOT THE ROW. This used to be `v.visitor_id IS NULL` -- the
-     * LEFT JOIN found nothing -- which was only ever a proxy for "we never
-     * captured this visitor's acquisition", and the proxy breaks as soon as
-     * anything else writes to that row. A user property arriving for a visitor
-     * whose acquisition is unknown creates the row, and the build would then
-     * resolve acq_source to `direct` rather than the sentinel: an unknown
-     * silently becoming a claim.
+     * ACQUISITION, NOT THE ROW. `v.visitor_id IS NULL` -- the LEFT JOIN found
+     * nothing -- is only a proxy for "we never captured this visitor's
+     * acquisition": a user property arriving for a visitor whose acquisition is
+     * unknown creates the row, and acq_source would resolve to `direct` rather
+     * than the sentinel.
      *
      * acq_ts is written only when an acquisition was actually captured, so it
      * says what the test means. Equivalently: stamp the acq_* columns when

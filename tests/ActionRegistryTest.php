@@ -11,13 +11,9 @@ use PHPUnit\Framework\TestCase;
  * filesystem path by concatenating the request's own 'do' param.
  *
  * That legacy branch has to stay: third-party modules resolve through it, and
- * removing it would break them. It is now guarded by an identifier check (see
- * ActionNameValidationTest), but core should never depend on it.
- *
- * Before this, exactly ONE action was registered out of ~140 controllers, so in
- * practice every request took the legacy branch. This test is what stops that
- * drifting back: add a controller without registering it and the count check
- * fails.
+ * removing it would break them. It is guarded by an identifier check (see
+ * ActionNameValidationTest), but core should never depend on it. A controller
+ * added without registering it fails the count check.
  */
 final class ActionRegistryTest extends TestCase
 {
@@ -36,18 +32,12 @@ final class ActionRegistryTest extends TestCase
     public function testTheActionMapIsPopulated(): void
     {
         /*
-         * Derived from the tree rather than a round number.
-         *
-         * It was `> 100`, chosen when there were about 153 actions. Converting
-         * the reports to configuration retired 53 of them and left exactly 100,
-         * so the guard failed for a reason that was not a regression -- and the
-         * obvious repair, picking a smaller number, is how a floor like this
-         * rots until it stops detecting anything.
+         * Derived from the tree rather than a round number, so the floor moves
+         * with the controllers instead of rotting until it detects nothing.
          *
          * The map covers every module, so it can only be larger than Base's own
          * dispatchable controllers. If module registration ever fails to run,
-         * the count collapses well below this and the check fires -- which is
-         * the state this test exists to catch.
+         * the count collapses well below this and the check fires.
          */
         $floor = count($this->dispatchableBaseControllers());
 
@@ -240,9 +230,7 @@ final class ActionRegistryTest extends TestCase
         $map = $this->actionMap();
 
         // Any registered action will do -- this is about the RESOLUTION path,
-        // not about which report happens to still have a controller. It named
-        // reportDashboard until dashboard became a report definition, then
-        // reportDomstreams until recordings moved to their own module.
+        // not about which report has a controller.
         $this->assertArrayHasKey('base.visualizationFunnel', $map);
         $this->assertSame(
             'OWA\\Module\\Base\\Controller\\VisualizationFunnel',

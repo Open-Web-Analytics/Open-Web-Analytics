@@ -8,16 +8,9 @@ use PHPUnit\Framework\TestCase;
  * WHAT THIS EXISTS FOR
  *
  * conf/messages.php is one big array literal, and a repeated key in an array
- * literal is not an error in PHP -- the later one silently wins. Three codes
- * were declared twice:
- *
- *   2504  'Entity %s Schema Created.'  shadowed by  'Goal Saved.'
- *   3208  'That site does not exist.'  shadowed by  'Please remove the http://'
- *   3310  'E-mail Address is required.' shadowed by 'Password is required.'
- *
- * So three messages were unreachable, and any controller setting one of those
- * codes for the shadowed reason showed the other message instead. That is how
- * saving a custom report came to report "Goal Saved.": it borrowed 2504.
+ * literal is not an error in PHP -- the later one silently wins. A shadowed
+ * message is unreachable, and a controller setting its code shows the other
+ * message instead.
  *
  * Reading the file cannot find this -- by the time PHP has parsed it, the
  * duplicate is gone and the array simply has one entry. So this counts the
@@ -169,13 +162,10 @@ final class MessageCatalogueTest extends TestCase
     /**
      * The form screens report a FORM error, not the CLI-updates message.
      *
-     * SitesAdd has set 3311 since 2009; 3311 became "these updates must be
-     * applied using the command line interface" in 2010, when that commit took
-     * a code three form screens were already using. It stayed latent because
      * Controller::doAction() sets validation_errors before calling
-     * errorAction(), and msgs.php shows error_msg only when there are none --
-     * so the wrong text was suppressed on the ordinary path and would have
-     * appeared the moment that branch changed.
+     * errorAction(), and msgs.php shows error_msg only when there are none, so a
+     * wrong code is suppressed on the ordinary path and would appear the moment
+     * that branch changed.
      *
      * Pinned by MEANING rather than by number: the message these screens show
      * has to be about the form, and must not be the updates one.

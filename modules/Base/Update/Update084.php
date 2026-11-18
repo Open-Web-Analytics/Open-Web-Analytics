@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Update;
  * whole update at a scratch table. Neither direction touches the object cache,
  * which lasts only for the request.
  *
- * A log_robots set in owa-config.php is not a row, and is not read any more.
+ * A log_robots set in owa-config.php is not a row, and nothing reads it.
  *
  * NOT CLI-ONLY. A handful of rows.
  */

@@ -58,11 +58,11 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
     await expect(filters.getByRole('textbox', { name: 'URL Parameters' })).toBeEnabled();
     await expect(filters.getByRole('switch')).toHaveCount(0);
 
-    // Domain Aliases is gone.
+    // No Domain Aliases.
     await expect(page.getByLabel('Domain Aliases')).toHaveCount(0);
     await expect(page.locator('[name="config[base.domain_aliases]"]')).toHaveCount(0);
 
-    // And e-commerce is no longer offered per Profile.
+    // And e-commerce is not offered per Profile.
     await expect(page.locator('[name="config[base.enableEcommerceReporting]"]')).toHaveCount(0);
 
     // Nor the retired default_page, nor its install-wide successor.
@@ -188,7 +188,7 @@ test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
         await expect(sw()).toBeChecked();
         await expect(field()).toHaveValue('0');
 
-        // The pills follow what is saved: clicks are no longer tracked.
+        // The pills follow what is saved: clicks are not tracked.
         await expect(pills()).not.toContainText(['Clicks']);
         await expect(pills()).toContainText(['Page views']);
     } finally {

@@ -5,31 +5,28 @@ namespace OWA\Module\Base\Update;
 /**
  * Store the session anchors; drop the two columns nothing read.
  *
- * THE CONFUSION THIS ENDS. `sts` (session start) and `psts` (prior session
- * start) were on the beacon and reached NO column, while `prev_event_ts` was
- * written to a column nothing read. The value that was stored was not the one
- * anybody wanted.
+ * `sts` (session start) and `psts` (prior session start) are on the beacon and
+ * get columns; `prev_event_ts` and `clock_offset_usec`, which nothing read, are
+ * dropped.
  *
  * prev_event_ts was `last_req` restated -- seconds to microseconds, client
  * clock to server clock -- and it meant two different things depending on where
  * the row sat: on a session's first event the PREVIOUS session's end, on every
  * other event the previous event of this one. One column, two facts.
  *
- * psts answers the question that was actually wanted. The tracker's own comment
- * says so, and says why the seconds interval it replaced was wrong: "a
- * continuous seconds value gives one bucket per distinct second, so it was a
- * metric wearing a dimension's clothes. Days bucket; seconds do not."
+ * psts answers the question that was wanted: days bucket, where a continuous
+ * seconds value gives one bucket per distinct second.
  *
  * clock_offset_usec goes with prev_event_ts because correcting it was its only
- * job. Ordering is settled by event_seq now (Update045), which is a counter and
- * needs no clock at all -- so the offset's other implied use went too.
+ * job. Ordering is settled by event_seq (Update045), a counter that needs no
+ * clock.
  *
  * NOTHING TO BACKFILL. Both new columns are anchors the client holds; a stored
  * row cannot be made to yield one it never carried. Rows written before this
  * keep NULL, which is the honest reading.
  *
- * COMPAT WITH STALE TRACKERS: both are already on the wire and have been, so a
- * tracker cached from before this release fills them from its first beacon. The
+ * COMPAT WITH STALE TRACKERS: both are already on the wire, so a tracker
+ * cached from before this release fills them from its first beacon. The
  * columns are nullable for the ones that predate the fields themselves.
  *
  * NOT CLI-ONLY. Adds two columns and drops two, the way any release does.

@@ -8,12 +8,10 @@ import { OWA } from './owa.format.js';
  * it against the largest -- the bars a card draws (owa.grid.css), so the two
  * read as one kind of thing.
  *
- * It replaced a pie. A pie's slices are angles, which are hard to compare,
- * and its names were a legend beside the circle that had to be fitted into a
- * fixed box. Here the names are the rows and the shares are printed.
+ * The names are the rows and the shares are printed.
  *
- * The widget type is still `pie` in a report definition, so a saved report
- * keeps working; only what it draws changed.
+ * The widget type is `pie` in a report definition, so a saved report naming it
+ * keeps working.
  */
 OWA.shareChart = function ( options ) {
 

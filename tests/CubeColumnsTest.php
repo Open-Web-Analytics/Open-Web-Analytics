@@ -32,8 +32,8 @@ final class CubeColumnsTest extends TestCase
 
     public function testAColumnWithNoDefinitionIsFatal(): void
     {
-        // The failure this replaces was silent: the SELECT list was built by
-        // appending expressions in an order that had to match the entity's.
+        // Built by appending expressions in an order that had to match the
+        // entity's, the SELECT list would fail silently.
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('no definition for');
 

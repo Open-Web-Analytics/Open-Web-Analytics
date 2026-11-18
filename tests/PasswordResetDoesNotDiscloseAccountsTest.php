@@ -9,14 +9,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * It is unauthenticated and takes an e-mail address, so any difference between
  * the known and unknown case is an oracle: ask it about an address and it tells
- * you whether that person has an account here. It answered
- * "A user with that email address does not exist" for an unknown address and
- * "an e-mail ... has been sent to X" for a known one -- about as direct as that
- * gets, one guess at a time, with nothing to slow it down.
+ * you whether that person has an account here.
  *
- * Both cases now take the same path and get the same reply. The handler still
- * only sends mail when there is somebody to send it to; the difference is that
- * the difference is no longer visible from outside.
+ * Both cases take the same path and get the same reply. The handler only
+ * sends mail when there is somebody to send it to, and that difference is not
+ * visible from outside.
  */
 final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
 {

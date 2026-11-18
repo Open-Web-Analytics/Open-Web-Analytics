@@ -28,8 +28,8 @@ namespace OWA\Module\Base\Entity;
  * Resolutions -- source, medium, acq_* -- always produce a value or the
  * sentinel, so they are NOT NULL.
  *
- * 2.1's type column lists some of the copies without NULL. Satisfying that
- * would mean inventing a value for an absence, which 2.11 forbids.
+ * Copies are never made NOT NULL by inventing a value for an absence, which
+ * PLAN 2.11 forbids.
  *
  * campaign, ad and search_terms are copies despite being attribution: a
  * campaign exists only because a URL was tagged with one, so no tag is an
@@ -48,6 +48,13 @@ class Event extends EventRaw {
     private $property_id = '';
 
     /**
+     * The SQL alias every cube is read under, whatever Property it belongs to.
+     * See the constructor: column references are built before a Property is
+     * known, so the alias cannot depend on one.
+     */
+    const ALIAS = 'event';
+
+    /**
      * Whether this instance has a table at all.
      *
      * Separate from $property_id because the pre-split cube has a table and no
@@ -57,14 +64,6 @@ class Event extends EventRaw {
      *
      * @var bool
      */
-    /**
-     * The SQL alias every cube is read under, whatever Property it belongs to.
-     * See the constructor: column references are built before a Property is
-     * known, so the alias cannot depend on one.
-     */
-    const ALIAS = 'event';
-
-    /** @var bool */
     private $bound = false;
 
     public function __construct() {
@@ -149,9 +148,8 @@ class Event extends EventRaw {
         $this->setProperty( $this->column( 'search_terms', OWA_DTD_VARCHAR255 ) );
 
         /*
-         * The session's landing page, copied from that same first event. Makes
-         * a landing-page report a GROUP BY: 215ms against 3.1s on the measured
-         * corpus.
+         * The session's landing page, copied from that same first event, so a
+         * landing-page report is a GROUP BY.
          *
          * Path and query are copied rather than re-parsed, so they cannot
          * disagree with the row they came from. Exit needs no twin -- is_exit
@@ -229,14 +227,13 @@ class Event extends EventRaw {
          * leave an upgraded install and a fresh one with the same columns in a
          * different order. Nothing reads the cube positionally -- the build
          * names its columns and a staging table is cut from the live DDL -- but
-         * two shapes for one release is a difference somebody eventually has to
-         * explain.
+         * one release has one shape.
          *
          * NOT NULL and no default, like source and medium: a build always
-         * produces a value, the sentinel included. Measured on this server
-         * under STRICT_ALL_TABLES, ADD COLUMN ... NOT NULL on a populated cube
-         * backfills '' rather than failing, so rows written before the next
-         * rebuild read as `(not set)` until one runs.
+         * produces a value, the sentinel included. Under STRICT_ALL_TABLES,
+         * ADD COLUMN ... NOT NULL on a populated cube backfills '' rather than
+         * failing, so rows written before the next rebuild read as `(not set)`
+         * until one runs.
          */
         $this->setProperty( $this->resolved( 'new_vs_returning', OWA_DTD_VARCHAR16 ) );
 
@@ -343,14 +340,10 @@ class Event extends EventRaw {
      * THE ONE PLACE THIS IS DECLARED. Three things shape a table's partitions --
      * Db::createTable() at creation, partition-rotate as it maintains the lead,
      * partition-reorganize when an operator changes granularity -- and each of
-     * them asks here. Two of the three had already been written as if every fact
-     * table were alike, and both were wrong in the same way: reorganize merged
-     * the daily front away, and createTable built a monthly lead that left every
-     * rebuild rewriting a month until the first rotate ran.
+     * them asks here, so none of them treats every fact table as alike.
      *
      * It lives on the ENTITY because Db::createTable() sits below the
-     * controllers and cannot reach them. A description kept anywhere else is one
-     * the creation path cannot consult, and the two would drift apart again.
+     * controllers and cannot reach them.
      *
      * Only the cube answers. Raw is never rebuilt -- its retention is a DROP
      * PARTITION -- so it would pay the merge for nothing, and v1's fact tables

@@ -8,8 +8,7 @@ const { defineConfig, devices } = require('@playwright/test');
  * tests/js/reporting/*) proves the bundle loads and OWA objects construct, but
  * it cannot paint a Flot chart, lay out a jqGrid, or open a chosen select menu.
  * These tests drive a headless Chromium against a LIVE, logged-in report page
- * backed by the deterministic fixtures in tests/e2e/seed_reporting_fixtures.php
- * and pin the pre-migration (jQuery 1.6.4) render as the baseline.
+ * backed by the deterministic fixtures in tests/e2e/seed_reporting_fixtures.php.
  *
  * The whole tests/ tree is excluded from the release tarball (see
  * .github/workflows/main.yml), so this harness never ships to a distro.
@@ -60,8 +59,8 @@ module.exports = defineConfig({
                 // Append "Open Web Analytics" to the REAL Chrome UA (keep the
                 // browser UA base so Chromium still behaves normally). The site's
                 // WAF/rate-limiter allowlists that token, so the full suite's
-                // sustained load no longer trips it into intermittent 403s /
-                // failures to serve the login form. NOTE: this MUST live in the
+                // sustained load does not trip it into intermittent 403s. NOTE:
+                // this MUST live in the
                 // project `use` (not top-level) -- devices['Desktop Chrome']
                 // carries its own userAgent that otherwise clobbers a top-level
                 // one. Also lets server log filters identify the harness.

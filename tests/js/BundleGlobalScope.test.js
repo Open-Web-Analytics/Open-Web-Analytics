@@ -11,12 +11,9 @@ const vm = require('vm');
  * host page's global scope: every top-level declaration in every concatenated
  * source file becomes a global binding.
  *
- * That is not a theoretical concern. The tracker's event class, then still named
- * `Event` (it is OwaEvent now, in tracker/OwaEvent.js), used to land as a global
- * lexical binding, which shadows the DOM's window.Event for the whole page (lexical
- * declarations are resolved before the global object), and broke every library doing
- * `new Event(...)` -- Bootstrap dropdowns, modals and tabs among them, with
- * "Failed to execute 'dispatchEvent' on 'EventTarget'".
+ * A class named `Event` landing as a global lexical binding, for one, shadows the
+ * DOM's window.Event for the whole page (lexical declarations are resolved before
+ * the global object), and breaks every library doing `new Event(...)`.
  *
  * Two guards, because they fail on different mistakes:
  *   1. the config guard catches `output.iife: false` coming back;

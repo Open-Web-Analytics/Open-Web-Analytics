@@ -65,7 +65,7 @@ class RuleSets {
     /**
      * Each level and the sets it runs.
      *
-     * normal is what robot detection did before this: the user agent alone.
+     * normal is the user agent alone.
      */
     const LEVELS = [
         'normal' => [ 'user_agent' ],

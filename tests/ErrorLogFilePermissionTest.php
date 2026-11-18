@@ -6,19 +6,19 @@ use PHPUnit\Framework\TestCase;
  * The error log must be created group-writable.
  *
  * Two accounts write to the same file: the web server user, and whoever runs
- * the CLI. StreamHandler was constructed without a filePermission, so the file
- * inherited the umask of whichever process created it first -- 0664 from the
- * web server (umask 002), but 0644 from a shell (umask 022). In the second case
- * the web server can no longer append, and a log write that cannot open its
- * file raises, so a notice becomes a fatal.
+ * the CLI. Without an explicit mode the file inherits the umask of whichever
+ * process creates it first -- 0664 from the web server (umask 002), but 0644
+ * from a shell (umask 022). In the second case the web server cannot append,
+ * and a log write that cannot open its file raises, so a notice becomes a
+ * fatal.
  *
  * That is not a one-off: the path embeds an instance-specific hash derived from
  * the credentials, so a new file appears -- with a fresh race over who creates
  * it -- on every rotation.
  *
  * This asserts the mode of a file the logger actually creates, rather than
- * looking for the argument in the source, so it fails if the behaviour
- * regresses however the code is arranged.
+ * looking for the argument in the source, so it holds however the code is
+ * arranged.
  */
 final class ErrorLogFilePermissionTest extends TestCase
 {

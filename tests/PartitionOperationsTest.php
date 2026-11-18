@@ -1626,7 +1626,7 @@ final class PartitionOperationsTest extends TestCase
         }
     }
 
-    /** Without the skip range the front is merged away -- the defect this fixes. */
+    /** Without the skip range the daily front is merged away. */
     public function testWithoutASkipRangeTheDailyFrontIsMergedAway()
     {
         $t      = $this->cubeShapedTable();

@@ -54,9 +54,8 @@ final class ActionNameValidationTest extends TestCase
 
     public function testAnActionWithNoSeparatorIsRefused(): void
     {
-        // explode() yields a single element, so the action half is null. Before
-        // the guard this produced an "Undefined array key 1" warning and then
-        // fataled deeper in the factory.
+        // explode() yields a single element, so the action half is null; the
+        // guard refuses it before the factory is reached.
         $this->expectException(\Exception::class);
 
         \OWA\Core\CoreAPI::moduleFactory('reportContent', 'Controller', []);

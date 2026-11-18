@@ -38,10 +38,8 @@ async function openBuilder(page) {
 /**
  * The builder, with one grid block added and its modal OPEN.
  *
- * A new report starts empty now -- there is no default block to press Edit on
- * -- so a test about what the widget modal contains has to put a widget there
- * first. A grid, because that is what the default block used to be, so the
- * tests below are asking the same question they were.
+ * A new report starts empty, so a test about what the widget modal contains has
+ * to put a widget there first.
  */
 async function openBuilderOnGrid(page) {
     await openBuilder(page);
@@ -213,10 +211,7 @@ async function addWidget(page, type, opts = {}) {
 /**
  * One widget of a given type, and nothing else.
  *
- * This used to add one and then remove the grid block a new report started
- * with. A new report starts EMPTY, so there is nothing to drop -- but the
- * assertion is kept, because it is what makes every caller's later
- * `.first()` unambiguous.
+ * The assertion is what makes every caller's later `.first()` unambiguous.
  */
 async function onlyWidget(page, type, opts = {}) {
     await addWidget(page, type, opts);
@@ -469,13 +464,7 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * THE REPORT METRIC SET IS NOT ASKED FOR ANY MORE.
-         *
-         * It was a second answer to "what does this report measure", beside the
-         * one inside every widget, and the two did not compose: a widget naming
-         * nothing inherited the set, so what a widget drew depended on a field
-         * further up the page that said nothing about which widget it landed
-         * in. Every widget names its own now.
+         * THE REPORT METRIC SET IS NOT ASKED FOR: every widget names its own.
          *
          * Asserted on the CONTROL rather than on the label, because the label
          * could be renamed and the picker left behind -- and the picker is the
@@ -496,11 +485,7 @@ test.describe('custom reports', () => {
          * A NEW REPORT STARTS EMPTY
          * ------------------------------------------------------------------
          *
-         * It used to start from one table block: already named, already the
-         * right width, already a type. So Save worked on a report the author
-         * had made no decision about, and what came out was a table of nothing.
-         *
-         * Empty, the first thing on the screen is the choice that actually
+         * The first thing on the screen is the choice that actually
          * starts a report, and Save is unavailable until it has been made.
          */
         test('a new report starts with no widgets and cannot be saved', async ({ page }) => {
@@ -519,8 +504,7 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('#customReportSubmit')).toBeDisabled();
 
-            // The budget counts from nought, rather than from the block that
-            // used to be there.
+            // The budget counts from nought.
             await expect(page.locator('#widgetBudget')).toContainText('0 of');
         });
 
@@ -720,13 +704,8 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * SAVE WAITS FOR EVERY RULE THE SERVER APPLIES, and says which one.
-         *
-         * A widget could be added and left with no metrics, and Save was
-         * bright orange over it. The report was then refused -- correctly, it
-         * would have drawn an empty panel -- but the author found that out
-         * after a round trip, on a page that had to tell them about a widget
-         * rather than showing it to them.
+         * SAVE WAITS FOR EVERY RULE THE SERVER APPLIES, and says which one, so
+         * the author learns it without a round trip.
          *
          * Each rule asserted with the ONE reason it should give: a disabled
          * button that does not say what is missing is the worst of both, and a
@@ -761,12 +740,8 @@ test.describe('custom reports', () => {
          * THE PANEL IS WHERE A WIDGET IS FINISHED
          * ------------------------------------------------------------------
          *
-         * Done used to close on anything. The block landed on the canvas marked
-         * unfinished and Save explained it -- a correct chain, and a slow one:
-         * the author was told about a widget two steps after the screen that
-         * was about that widget, and had to find it again to fix it.
-         *
-         * The canvas marking and the Save gate STAY, because a definition can
+         * Apply refuses an unfinished widget. The canvas marking and the Save
+         * gate STAY too, because a definition can
          * arrive already broken from a report saved before these rules or from
          * a refusal round-trip. They are the backstop, not the first line.
          */
@@ -813,8 +788,8 @@ test.describe('custom reports', () => {
          * THE SORT IS ONE OF THE WIDGET'S OWN METRICS OR DIMENSIONS, AND A
          * DIRECTION.
          *
-         * It was a text field taking `pageViews-`, the one place an author
-         * could type a name the registry does not know. A new widget is sorted
+         * Not free text, so an author cannot type a name the registry does not
+         * know. A new widget is sorted
          * by its first metric, largest first, as soon as it has one.
          */
         test('the sort is chosen from what the widget shows, with a direction', async ({ page }) => {
@@ -949,7 +924,7 @@ test.describe('custom reports', () => {
              * there by POSTING it, not by typing it.
              *
              * The panel offers only the widget's own fields as a sort, so this
-             * cannot be built in the editor any more; a save-time refusal is
+             * cannot be built in the editor; a save-time refusal is
              * not reachable through the UI at all. It is still reachable from a
              * stale tab, a direct post, or a report stored before these rules,
              * which is exactly why the refusal page still has to work.
@@ -1006,19 +981,12 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * A REFUSAL RAISED BY validate() RENDERS A PAGE.
-         *
-         * It did not. Core/Controller.php calls errorAction() for its side
-         * effects and then returns $this->data regardless -- it only honours
-         * what action() returns -- so CustomReportSave::refuse() built the
-         * whole builder screen and had it thrown away. The author got a blank
-         * white page, every time, for the most ordinary mistake there is:
-         * pressing Save with the name left empty. The field carries a
-         * placeholder, so an empty one does not look empty.
+         * A REFUSAL RAISED BY validate() RENDERS A PAGE: Save with the name left
+         * empty (the field carries a placeholder, so an empty one does not look
+         * empty).
          *
          * Driven PAST the client-side gate on purpose. The gate stops this in a
-         * browser, which is why the server half went unnoticed for so long --
-         * but a stale tab, a second window, or anything posting the form
+         * browser, but a stale tab, a second window, or anything posting the form
          * directly still reaches it, and a blank page is the one response that
          * tells nobody anything.
          */
@@ -1308,9 +1276,8 @@ test.describe('custom reports', () => {
             await buildOne(page, 'Chrome');
 
             await expect(page.locator('.owa_periodTrigger')).toHaveCount(1);
-            // The site filter used to be a select in the content column. It is
-            // the site control above the left nav now -- same job, and still
-            // part of the chrome every report gets for free.
+            // The site filter is the site control above the left nav, part of the
+            // chrome every report gets for free.
             await expect(page.locator('#owa_siteControl')).toHaveCount(1);
         });
 
@@ -1321,7 +1288,7 @@ test.describe('custom reports', () => {
         test('the plus adds blocks, and stops at ten', async ({ page }) => {
             await openBuilder(page);
 
-            // From NOUGHT: a new report no longer starts with a block.
+            // From NOUGHT: a new report starts with no block.
             await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
 
             // The plus asks what KIND now, so each one is a choice as well as
@@ -1661,15 +1628,6 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgHeight label')).toHaveText(['Short', 'Tall']);
         });
 
-        /*
-         * The test that used to sit here asserted a trend had NO dimension
-         * picker at all. It does now: its axis is fixed to a date, but the
-         * dimension whose values become its lines is the author's. What
-         * remains of that assertion -- that the axis is not a choice, and that
-         * time cannot be the breakdown -- is covered by 'a trend offers a
-         * breakdown, and refuses time as the thing to break out by'.
-         */
-
         /**
          * A row of totals has nothing to group by either, but for a different
          * reason -- and the sentence says which.
@@ -1687,14 +1645,8 @@ test.describe('custom reports', () => {
          * A trend card names its own metrics and has nothing to group by.
          *
          * Both follow from the width: half a row has no room for a legend of
-         * six lines, so it cannot be broken out.
-         *
-         * The metrics half used to be the interesting one -- every other
-         * multi-metric type carried "Leave empty to use the report metric set",
-         * and an author who acted on that sentence HERE would be refused on
-         * save by the rule it contradicted. There is no set to leave it empty
-         * for any more, on any type, so the sentence is gone from all of them
-         * and what is asserted is that it has not come back.
+         * six lines, so it cannot be broken out. The help says the metrics are
+         * required, and offers no report metric set to leave them empty for.
          */
         test('a trend card names its own metrics and is not broken out', async ({ page }) => {
             await openBuilder(page);
@@ -1704,7 +1656,7 @@ test.describe('custom reports', () => {
             // Several metrics, so the field is plural -- unlike a card or a pie.
             await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
 
-            // Nothing offers an inheritance that no longer exists.
+            // Nothing offers an inheritance from a report metric set.
             await expect(page.locator('#dlgMetricsHelp')).not.toContainText('Leave empty');
             await expect(page.locator('#dlgMetricsHelp')).not.toContainText('report metric set');
             await expect(page.locator('#dlgMetricsHelp')).toContainText('Required');
@@ -1880,20 +1832,15 @@ test.describe('custom reports', () => {
         /**
          * AN ADMIN MAY EDIT SOMEBODY ELSE'S REPORT, AND IS OFFERED IT.
          *
-         * This is the case every other test in this file misses, and it hid a
-         * real bug for a whole session. A test that builds a report and then
-         * opens it is always looking at its OWN -- where mayEdit() succeeds
-         * through the ownership branch and the capability branch is never
-         * exercised at all.
+         * A test that builds a report and then opens it is always looking at its
+         * OWN -- where mayEdit() succeeds through the ownership branch and the
+         * capability branch is never exercised at all.
          *
-         * The capability branch was broken. Report::doAction() is overridden
-         * and deliberately runs no capability check of its own, delegating so
-         * the target's check governs -- which means authentication happens
-         * INSIDE $target->doAction(). The edit control was decided BEFORE that
-         * call, when the current user still carried the default role
-         * 'everyone', so isCapable('edit_users') was always false. Every admin
-         * on every install saw no edit control on any report but their own, and
-         * the suite was green throughout.
+         * Report::doAction() is overridden and deliberately runs no capability
+         * check of its own, delegating so the target's check governs -- which
+         * means authentication happens INSIDE $target->doAction(). An edit
+         * control decided before that call would see the default role
+         * 'everyone', so isCapable('edit_users') would always be false.
          *
          * So the fixture seeds a report owned by a user nobody signs in as.
          */
@@ -1973,15 +1920,6 @@ test.describe('custom reports', () => {
             expect(await spare('dlgMetrics')).toBe(0);
             expect(await spare('dlgDimensions')).toBe(0);
         });
-
-        /*
-         * The test that used to sit here checked that switching a grid to a
-         * card trimmed its metrics to one. A widget's type is settled when it
-         * is added now, so there is no switch to trim after -- the pickers are
-         * capped for the type from the moment the modal opens, which is what
-         * 'a card takes one metric and one dimension and then offers no more'
-         * covers.
-         */
 
         /*
          * ------------------------------------------------------------------
@@ -2291,10 +2229,9 @@ test.describe('custom reports', () => {
             expect(chart.colors.slice(1)).toEqual(palette.slice(0, chart.colors.length - 1));
 
             /*
-             * The legend sits at the left edge, with the chart's y-axis labels.
-             * Centred, it moved sideways whenever a series was added or a label
-             * changed length, so there was no stable place for the eye to
-             * return to.
+             * The legend sits at the left edge, with the chart's y-axis labels,
+             * so it does not move sideways when a series is added or a label
+             * changes length.
              */
             const legend = await page.evaluate(() => {
                 const box = document.querySelector('#w1 > .owa_chartLegend');
@@ -2406,25 +2343,10 @@ test.describe('custom reports', () => {
             expect(after.total).toBe(after.parts.reduce((a, b) => a + b, 0));
         });
 
-        /*
-         * The test that used to sit here asserted that cancelling the modal
-         * left the widget as it was. It opened a BARE grid to do it, which now
-         * means something different: Cancel on a widget that was never
-         * configured removes it. Both halves of that distinction are covered
-         * above, by 'cancelling a widget that was never configured removes it'
-         * and 'cancelling an edit of a configured widget keeps it'.
-         */
-
         /**
          * A block can be removed, and removing the LAST one leaves the canvas
-         * empty rather than putting another block back.
-         *
-         * It used to put a fresh one back, on the reasoning that a report with
-         * no widgets cannot be saved and so an empty canvas is a dead end. It
-         * is not a dead end -- the plus is right there -- and the replacement
-         * was worse than the emptiness: an author who removed a widget got
-         * another one, of a type they had not chosen, which then had to be
-         * removed as well.
+         * empty rather than putting another block back: the plus is right
+         * there.
          */
         test('removing the last block empties the canvas and disables save',
             async ({ page }) => {
@@ -2477,10 +2399,8 @@ test.describe('custom reports', () => {
 
             /*
              * Back in through the ROSTER and then the report, because that is
-             * the only way in now: the roster row links to the report, and the
-             * report carries the pencil. There was an Edit link in the row as
-             * well, which meant two links to two screens on every row and an
-             * empty cell for anyone who may not edit.
+             * the only way in: the roster row links to the report, and the report
+             * carries the pencil.
              */
             await openRoster(page);
             await page.locator('table.owa_customReportRoster tr').filter({ hasText: name })
@@ -2564,9 +2484,8 @@ test.describe('custom reports', () => {
          *
          * A grid is full width and carries its control bar; a card is added at
          * half the row and carries none. Asserted on the RENDERED widgets rather
-         * than on the definition, because the bug this replaced was entirely a
-         * rendering one -- the definition said colspan 6 and the renderer drew
-         * a full-width bar inside it.
+         * than on the definition: a definition saying colspan 6 says nothing
+         * about whether the renderer draws a full-width bar inside it.
          */
         test('a grid renders full width with controls, a card renders narrow with none',
             async ({ page }) => {
@@ -2633,11 +2552,8 @@ test.describe('custom reports', () => {
         /**
          * Metric boxes cascade left to right, not down the page.
          *
-         * They used to stack: .owa_metricInfobox carries width:100% with
-         * float:left, and a full-width float takes a row each -- so a
-         * four-metric widget was a column of four boxes. Asserted on measured
-         * POSITIONS, because the markup was always the same; only the layout
-         * was wrong.
+         * Asserted on measured POSITIONS: a full-width float takes a row each,
+         * and the markup alone cannot tell the two layouts apart.
          */
         test('metric boxes lay out across the widget, not down it', async ({ page }) => {
             const name = reportName('Boxes');
@@ -2684,9 +2600,6 @@ test.describe('custom reports', () => {
         /**
          * Editing is a thing you do TO the report, so it sits ON the title --
          * an icon, immediately after the words naming what it edits.
-         *
-         * It was a command bar of its own between the title and the first
-         * widget: a second header, above the first widget, saying one thing.
          */
         test('a custom report offers an edit icon on its title', async ({ page }) => {
             await buildOne(page, 'Commanded');
@@ -2710,7 +2623,7 @@ test.describe('custom reports', () => {
             expect(icon.y).toBeGreaterThanOrEqual(title.y - 2);
             expect(icon.y + icon.height).toBeLessThanOrEqual(title.y + title.height + 2);
 
-            // And the command bar it replaces is gone.
+            // And there is no command bar.
             await expect(page.locator('.owa_reportCommands')).toHaveCount(0);
 
             await edit.click();
@@ -2731,12 +2644,8 @@ test.describe('custom reports', () => {
             await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
             /*
-             * POSTED, not typed.
-             *
-             * The sort used to be the way in: free text, so an author could put
-             * an unresolvable name in it and find out on save. The modal
-             * resolves it against the registry now, so that route is closed and
-             * a refusal cannot be built through the UI at all.
+             * POSTED, not typed: the modal resolves a sort against the registry,
+             * so a refusal cannot be built through the UI at all.
              *
              * The refusal still has to work, because a definition can arrive
              * from a stale tab, a direct post, or a report stored before these
@@ -2796,11 +2705,9 @@ test.describe('custom reports', () => {
                 await expect(star.locator('i.far.fa-star')).toHaveCount(1);
 
                 /*
-                 * And it has to actually DRAW. A class assertion alone passed
-                 * while this shipped invisible -- the element was there, its
-                 * class named an icon the stylesheet does not define, and it
-                 * rendered at zero width. A glyph that is not there has no
-                 * bounding box, so visibility is what catches it.
+                 * And it has to actually DRAW. A class naming an icon the stylesheet
+                 * does not define renders at zero width, and a glyph that is not there
+                 * has no bounding box, so visibility is what catches it.
                  */
                 await expect(star.locator('i.far.fa-star')).toBeVisible();
                 const box = await star.locator('i.far.fa-star').boundingBox();
@@ -2982,12 +2889,8 @@ test.describe('custom reports', () => {
     });
 
     /**
-     * The filter has to survive producing NOTHING.
-     *
-     * It used to be drawn inside the branch that rendered the table, so
-     * choosing a filter that matched no reports took the filter away with the
-     * rows. There was then no control left to choose "All" with, and the
-     * browser's back button was the only way out.
+     * The filter has to survive producing NOTHING, or there is no control
+     * left to choose "All" with.
      *
      * Favorites, emptied first with the roster's own stars, from the reader's
      * side: their "Just mine" holds the funnel the fixture made for them, and
@@ -3065,7 +2968,7 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * ...and the other side of the capability that was broken.
+         * ...and the other side of the capability.
          *
          * Editing is NARROWER than viewing: a reader with view_reports opens a
          * custom report its author has shared. Changing it takes the creator,

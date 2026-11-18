@@ -32,8 +32,8 @@ final class OptionsReturnActionTest extends TestCase {
     }
 
     /**
-     * Every form that existed before this change posts to the shared
-     * controller and must keep landing exactly where it did.
+     * Every form that posts to the shared controller keeps landing on General
+     * Settings.
      */
     public function testTheSharedControllerStillReturnsToGeneralSettings(): void {
 
@@ -194,8 +194,7 @@ final class OptionsReturnActionTest extends TestCase {
          *
          * A STATIC setting is refused by the registry: OptionsUpdate asks
          * mayPersistInstallWide() before persisting anything, so a posted field
-         * naming one is dropped. That used to be the denylist's job and is not
-         * any more -- the declaration says it once.
+         * naming one is dropped. The declaration says it once.
          */
         $static = \OWA\Module\Base\Classes\Settings::staticSettings();
         $module = array_key_first( $static );

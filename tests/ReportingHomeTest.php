@@ -5,15 +5,9 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Reporting resumes where it left off.
- *
- * base.sites -- a flat roster of every tracked site with a thumbnail, trend
- * metrics and five management links per row -- was the landing page, the
- * "Reporting" link and the redirect after every save. Its navigation job is the
- * site control's now, and its five links are the tier nav's; it was the last
- * screen still offering the old flat route to them.
- *
- * Landing on a report is what the roster was a step in the way of.
+ * Reporting resumes where it left off: it lands on a report of the last
+ * Property viewed. Moving between sites is the site control's job, and
+ * managing one is the tier nav's.
  */
 final class ReportingHomeTest extends TestCase
 {

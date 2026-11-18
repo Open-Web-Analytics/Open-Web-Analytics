@@ -1,35 +1,10 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006-2010 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Sanitize Class
  *
  * Responsible sanitizing input and escaping output
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
  */
 
 class Sanitize {
@@ -128,7 +103,6 @@ class Sanitize {
      */
     public static function stripAllTags( $input = '' ) {
 
-        //$output = owa_sanitize::stripWhitespace( $input );
         $output = \OWA\Module\Base\Classes\Sanitize::stripScriptsAndCss( $input );
         $output = \OWA\Module\Base\Classes\Sanitize::stripImages( $output );
         $output = \OWA\Module\Base\Classes\Sanitize::stripHtml( $output );
@@ -148,10 +122,9 @@ class Sanitize {
     public static function stripHtml( $input = '', $tags = [] ) {
 
         if ($tags) {
-            // Each tag is stripped from what the previous pass left. Every pass
-            // used to start again from $input, so only the LAST tag in the list
-            // was removed. The closing tag is matched by whole name, as the
-            // opening one is: stripping b no longer takes </blockquote> too.
+            // Each tag is stripped from what the previous pass left. The closing tag is
+            // matched by whole name, as the opening one is, so stripping b does not take
+            // </blockquote> too.
             $output = $input;
             foreach ( $tags as $tag ) {
                 $tag = preg_quote( (string) $tag, '/' );
@@ -480,8 +453,7 @@ class Sanitize {
      *
      * json_decode() answers null for input that is not JSON at all, and
      * json_encode(null) is the four-character string "null" -- so anything
-     * malformed used to be stored as if it were data, and a reader taking it at
-     * face value gets a string where it expected a structure.
+     * malformed would be stored as if it were data.
      *
      * The literal input "null" is itself valid JSON and decodes to null, which
      * is why the check is not simply "did this decode to null".

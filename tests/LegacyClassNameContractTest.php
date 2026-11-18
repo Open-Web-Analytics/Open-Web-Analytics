@@ -54,7 +54,7 @@ final class LegacyClassNameContractTest extends TestCase
         $this->assertSame([], $resolves, "these 1.x class names still resolve:\n" . implode("\n", $resolves));
     }
 
-    /** The names a module built on most are gone in their PSR-4 form's favour. */
+    /** The base classes a module builds on resolve only by their PSR-4 names. */
     public function testTheBaseClassesResolveOnlyByTheirNamespacedNames(): void
     {
         foreach ([

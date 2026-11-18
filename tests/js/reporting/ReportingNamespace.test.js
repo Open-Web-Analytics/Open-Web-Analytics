@@ -34,10 +34,7 @@ describe('the reporting bundle keeps the wire namespace out of its own URLs', ()
     /**
      * Report URLs are built by the SERVER (PaginatedResultSet emits the result
      * set's own self/next/previous links) and taken apart again here, so both
-     * ends have to agree. The explorer used to hardcode 'owa_sort',
-     * 'owa_constraints', 'owa_dimensions', 'owa_page' and 'owa_do=' -- which
-     * agreed with the server only by coincidence, and stopped agreeing the
-     * moment the server's links dropped the prefix.
+     * ends have to agree on bare names.
      */
     describe('the results explorer builds URLs with bare names', () => {
 

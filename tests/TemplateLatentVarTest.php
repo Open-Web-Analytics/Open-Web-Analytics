@@ -5,10 +5,10 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Regression guard for latent variables the $view migration surfaced.
+ * Guard for latent variables in templates.
  *
- * The migration to ViewScope (see ViewScopeCompatTest) rewrote OWA's own
- * templates to read view data as `$view->name`. An undefined bare variable is a
+ * OWA's own templates read view data as `$view->name` (ViewScope, see
+ * ViewScopeCompatTest). An undefined bare variable is a
  * warning that yields null, whereas `$view->neverSet` throws, so these tests
  * render the ACTUAL template files with the data their views set.
  */
@@ -50,13 +50,10 @@ final class TemplateLatentVarTest extends TestCase
      * does not exist yet.
      *
      * WHY THIS IS THE TEST THAT MATTERS. Each form serves both add and edit, and
-     * on the add path the record vars are empty. They used to be read as bare
-     * variables behind an @, which silently yielded null. They are now
+     * on the add path the record vars are empty. They are read as
      * $view->site / $view->user / $view->goal, and $view->neverSet THROWS -- so if a
      * view ever stops setting one of these unconditionally, this test fails
-     * instead of an admin getting a 500. The hoisting that makes that safe lives
-     * in Core/View.php (validation_errors) and View/SitesAdd.php +
-     * View/SitesProfile.php (site, config).
+     * instead of an admin getting a 500.
      *
      * @dataProvider addPathForms
      * @param array<string, mixed> $vars
@@ -219,9 +216,7 @@ final class TemplateLatentVarTest extends TestCase
                 [
                     /*
                      * Exactly what GoalEventDefinitionEdit declares on the ADD path --
-                     * goalEventDefinition is an empty array there, not absent, and this
-                     * test exists because a template reading a var nobody set
-                     * used to render blank rather than fail.
+                     * goalEventDefinition is an empty array there, not absent.
                      */
                     'headline' => 'New Goal Event Definition', 'propertyId' => '7000000000000001',
                     'goalEventDefinition' => [], 'goalEventDefinitionId' => '',
@@ -247,10 +242,8 @@ final class TemplateLatentVarTest extends TestCase
      * Core/View sets validation_errors UNCONDITIONALLY, so a form template can
      * read it without knowing which controller branch it arrived through.
      *
-     * It used to be set only when the key was already in $this->data, which is
-     * what forced sites_addoredit.php to read it behind an @. An empty array
-     * rather than null keeps if()/empty() behaving exactly as they did when the
-     * key was simply absent. Asserted against the source because the alternative
+     * An empty array rather than null keeps if()/empty() behaving as they do
+     * for an absent key. Asserted against the source because the alternative
      * -- standing up a full View with a body template -- would test the harness
      * more than the guarantee.
      */
@@ -258,13 +251,9 @@ final class TemplateLatentVarTest extends TestCase
     {
         $src = file_get_contents(__DIR__ . '/../Core/View.php');
 
-        // Single-quoted on purpose. These were double-quoted, so "$this->data"
-        // interpolated the TEST's own (undefined) $data property and collapsed
-        // to the empty string: the negative assertion searched for
-        // "if (array_key_exists('validation_errors', )) {" and passed no matter
-        // what View.php contained, and the positive one matched only by
-        // accident. The undefined-property warning was the only trace, and
-        // nothing was configured to show it.
+        // Single-quoted on purpose: double-quoted, "$this->data" would interpolate
+        // the TEST's own (undefined) $data property to the empty string, and the
+        // assertions would pass whatever View.php contained.
         $this->assertStringNotContainsString(
             'if (array_key_exists(\'validation_errors\', $this->data)) {',
             $src,

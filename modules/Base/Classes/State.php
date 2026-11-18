@@ -1,33 +1,9 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Service User Class
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-type StoreMeta array{expiration: mixed, length: mixed, format: mixed, type: mixed, cdh_required: mixed}
  */
@@ -92,7 +68,6 @@ class State {
     public function get($store, $name = '') {
 
         \OWA\Core\CoreAPI::debug("Getting state - store: ".$store.' key: '.$name);
-        //owa_coreAPI::debug("existing stores: ".print_r($this->stores, true));
         if ( ! isset($this->stores[$store] ) ) {
             $this->loadState($store);
         }
@@ -133,7 +108,6 @@ class State {
         // set values
         if (empty($name)) {
             $this->stores[$store] = $value;
-            //owa_coreAPI::debug('setstate: '.print_r($this->stores, true));
         } else {
             //just in case the store was set first as a string instead of as an array.
             if ( array_key_exists($store, $this->stores)) {
@@ -164,7 +138,6 @@ class State {
         }
 
         $this->dirty_stores[] = $store;
-        //owa_coreAPI::debug(print_r($this->stores, true));
     }
 
     /**
@@ -262,7 +235,6 @@ class State {
         if ( ! $value && isset( $this->initial_state[$store] ) ) {
             $possible_values = $this->initial_state[$store];
         } else {
-            //owa_coreAPI::debug( $this->initial_state );
             \OWA\Core\CoreAPI::debug("NO state store: $store found");
             return;
         }
@@ -301,10 +273,6 @@ class State {
                         // if cookie is not deleted then new cookies set on .domain.com will never be seen by PHP
                         // as only the sub domain cookies are available.
                         \OWA\Core\CoreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
-                        //owa_coreAPI::debug("deleting cookie: owa_$store");
-                        //owa_coreAPI::deleteCookie($store,'/', $_SERVER['HTTP_HOST']);
-                        //unset($this->initial_state[$store]);
-                        //return;
                     }
                 } else {
 

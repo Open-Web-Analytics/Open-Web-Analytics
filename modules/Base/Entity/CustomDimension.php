@@ -76,13 +76,11 @@ class CustomDimension extends \OWA\Core\Entity {
      * Registered, but the column is not on the cube yet.
      *
      * The normal state for a few minutes after someone registers one. Adding
-     * the column is a full table rebuild -- 11.3 seconds measured at 1.5M rows,
-     * and longer on a real cube -- which is past PHP's 30-second limit, past
-     * Varnish's 60 and past the load balancer's 65. Worse, a killed request
-     * does NOT kill the ALTER: measured, the client dies and MySQL finishes
-     * anyway, so a synchronous screen would hand someone a timeout, add the
-     * column regardless, and let them retry into a second full rebuild that
-     * fails on a duplicate column.
+     * the column is a full table rebuild, which on a real cube runs past a
+     * request's time limits -- and a killed request does NOT kill the ALTER, so
+     * a synchronous screen would hand someone a timeout, add the column
+     * regardless, and let them retry into a second full rebuild that fails on a
+     * duplicate column.
      *
      * So the registration is the record and the DDL happens later, under the
      * lock the cube build already holds.

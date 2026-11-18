@@ -18,18 +18,16 @@
  * table to join and no foreign key to name. That is the default this file is
  * read under.
  *
- * NAMES v1 ALSO REGISTERS ARE TAKEN rather than avoided. v2's dimensions
- * replace v1's -- v1's history is migrated into v2's raw store and no v1
- * reporting path survives it, so there is no v1 registry to keep working
- * (PLAN 2.23).
+ * NAMES v1 USED ARE TAKEN rather than avoided: v1's history is migrated into
+ * v2's raw store and there is no v1 reporting path (PLAN 2.23).
  *
  * `internal` => true KEEPS A DIMENSION OUT OF THE PICKERS -- the custom report
  * and visualization editors -- while the reports API still resolves it. For
  * the ones a feature queries and a person would not group by: the heatmap's
  * coordinates and element anchor.
  *
- * A COLUMN THAT IS NOT THERE FAILS SILENTLY. Measured: the result set carries
- * no error, the aggregate is still right, and the breakdown comes back empty --
+ * A COLUMN THAT IS NOT THERE FAILS SILENTLY: the result set carries no error,
+ * the aggregate is still right, and the breakdown comes back empty --
  * MySQL refuses the dimensional query with "Unknown column" and that refusal is
  * swallowed. CubeReportingTest checks every column below against the real
  * table for that reason.
@@ -59,15 +57,11 @@ return [
         /*
          * THE DATE PARTS, read out of yyyymmdd rather than out of ts.
          *
-         * 1.x stored six of these as columns on every fact row. They are
-         * rendered from one column now -- the measurement behind that, and the
-         * timezone reasoning behind the basis, are in DimensionExpression.
-         *
-         * The short version: yyyymmdd was written by PHP in the configured
+         * Rendered from one column; the timezone reasoning behind the basis is
+         * in DimensionExpression. yyyymmdd is written by PHP in the configured
          * timezone, so a part read from it agrees with `date` above and with
          * the partition the row lives in. A part read from `ts` would answer in
-         * the DATABASE's timezone, which on this installation is seven hours
-         * away.
+         * the DATABASE's timezone.
          */
         'year' => [ 'datePart' => 'year', 'label' => 'Year',
             'family' => 'time', 'data_type' => 'integer',
@@ -144,10 +138,7 @@ return [
                 'family' => 'content', 'description' => "The page's URL without its scheme: host, path and query string." ],
 
             /*
-             * The referring HOST, which the cube carried as a column and no
-             * dimension read -- so a referring-sites report, one of the oldest
-             * questions in analytics, had nothing to group by. 1.x asked it as
-             * referralWebSite off an enriched referer table.
+             * The referring HOST, for a referring-sites report.
              *
              * Distinct from sessionSource beside it: that is the RESOLVED
              * source, which is the tag when a URL carried one and falls back to
@@ -255,12 +246,9 @@ return [
                 'data_type' => 'integer' ],
 
             /*
-             * REPLACES v1's isNewVisitor AND isRepeatVisitor, which were two
-             * dimensions partitioning one population over a nullable tinyint --
-             * three values, three GROUP BY buckets, and a valueLabels map in
-             * dashboard.json folding them back onto two names. That is what drew
-             * a pie with two slices both labelled New. So there is one
-             * `New / returning` dimension and no boolean twins.
+             * ONE `New / returning` dimension and no boolean twins: two
+             * dimensions partitioning one population over a nullable tinyint give
+             * three values and three GROUP BY buckets.
              *
              * The cube stores the label, so this is a plain column read like
              * every other line in this file -- see Classes\Cube\NewVsReturningStep
@@ -330,12 +318,9 @@ return [
              * disagree with the column it reads.
              *
              * BOOLEAN, not integer -- the formatter renders Yes and No where
-             * integer rendered 1 and 0. That is safe here in a way it was not
-             * for 1.x's isNewVisitor: is_goal_event is NOT NULL DEFAULT 0, so
-             * it holds two values. The defect there was a NULLABLE tinyint
-             * holding three, which grouped into three buckets and drew a pie
-             * with two slices called New -- the formatter was never the
-             * problem.
+             * integer rendered 1 and 0. Safe because is_goal_event is NOT NULL
+             * DEFAULT 0, so it holds two values; a NULLABLE tinyint would hold
+             * three and group into three buckets.
              */
             'isGoalEvent' => [ 'column' => 'is_goal_event', 'label' => 'Goal Event',
                 'family' => 'event', 'description' => 'Whether this event is a goal event.',
@@ -345,19 +330,13 @@ return [
             'domElementTag' => [ 'column' => 'element_tag', 'label' => 'Element Tag',
                 'family' => 'event', 'description' => 'The tag name of the element that was clicked.' ],
             /*
-             * WHERE OUTBOUND LIVES. The tracker carried an isOutboundUrl() that
-             * nothing called, and the notion was stored nowhere at all; it is
-             * decided at ingest now, from the click target's host against the
-             * page's.
+             * is_outbound is decided by the tracker (OWATracker.isOutboundUrl()) and sent
+             * with the click.
              *
-             * BOOLEAN is safe here for the same reason it is on isGoalEvent:
-             * is_outbound is NOT NULL DEFAULT 0, so it holds two values and the
-             * formatter's Yes/No maps onto them one to one. A nullable flag would
-             * have put the non-clicks in a third bucket also rendered 'No'.
-             *
-             * `elementPath` is GONE -- see Update053. It read a CSS selector that
-             * no report or widget ever grouped by and that a template edit
-             * renumbers; the heatmap places clicks by coordinate.
+             * BOOLEAN is safe here for the same reason it is on isGoalEvent: is_outbound is
+             * NOT NULL DEFAULT 0, so it holds two values and the formatter's Yes/No maps
+             * onto them one to one. A nullable flag would put the non-clicks in a third
+             * bucket also rendered 'No'.
              */
             'isOutbound' => [ 'column' => 'is_outbound', 'label' => 'Outbound Click',
                 'family' => 'event', 'data_type' => 'boolean',
@@ -407,13 +386,9 @@ return [
                 'description' => 'How far down the page the visitor scrolled: the deepest percentage threshold reached on the page view.' ],
 
             /*
-             * THE CLICK'S COORDINATES, which the heatmap groups by.
-             *
-             * Unregistered until now, while report_widgets.php has been asking the
-             * reports API for `dimensions=clickX,clickY` -- and a name that does
-             * not resolve through this registry never reaches SQL, by design. So
-             * the heatmap's own fetch could not succeed on v2 and the overlay drew
-             * an empty canvas.
+             * THE CLICK'S COORDINATES, which the heatmap groups by: its fetch asks
+             * the reports API for `dimensions=clickX,clickY`, and a name that does
+             * not resolve through this registry never reaches SQL.
              *
              * A coordinate is only meaningful against the viewport it was measured
              * in, which is why page_width and page_height ride the same click row.

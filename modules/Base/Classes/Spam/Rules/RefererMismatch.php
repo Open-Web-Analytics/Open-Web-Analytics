@@ -12,9 +12,9 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  *
  * A browser sets the Referer of the request to log.php to the page that sent
  * the beacon, or to its origin when the page's referrer policy trims it, so its
- * host is the page's host. Measured on 2,701 browser beacons: it was on every
- * one except 117, all from m.baidu.com, Baidu's mobile transcoder. A page served
- * through such a proxy scores 3.0 here, below the default threshold.
+ * host is the page's host. A transcoding proxy (m.baidu.com, Baidu's mobile
+ * transcoder) is the honest exception; a page served through one scores 3.0
+ * here, below the default threshold.
  *
  * The header is request_referer, read at the edge. Not HTTP_REFERER, the page's
  * own referrer, which the tracker sends.

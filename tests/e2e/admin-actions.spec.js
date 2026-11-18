@@ -65,9 +65,9 @@ test.describe('admin: authentication (login / logout)', () => {
     test('the admin fixture user can authenticate and reach the admin UI', async ({ page }) => {
         await adminLogin(page);
         // Post-login lands on base.reportingHome, which redirects to the last
-        // Profile's dashboard. base.sites is gone -- the roster of Profiles is
-        // the site control's fan-out now, and its "add new" is the affordance
-        // an admin (edit_sites) gets and an analyst never does.
+        // Profile's dashboard. The roster of Profiles is the site control's
+        // fan-out, and its "add new" is the affordance an admin (edit_sites) gets
+        // and an analyst never does.
         /*
          * The account menu, not the word "Logout".
          *
@@ -321,9 +321,9 @@ test.describe('admin: site CRUD', () => {
         ]);
 
         // sitesAdd redirects to the new Profile's Tracking Tag. The site
-        // control's fan-out lists Properties -- base.sites is gone -- so that is
-        // where the new Property has to show up, and its Profile is on the
-        // Property's Observation Profiles roster.
+        // control's fan-out lists Properties, so that is where the new Property
+        // has to show up, and its Profile is on the Property's Observation
+        // Profiles roster.
         await page.goto('?', { waitUntil: 'networkidle' });
 
         // The typed name and domain land on the PROPERTY. The Profile is named
@@ -363,10 +363,9 @@ test.describe('admin: site CRUD', () => {
         await expect(profileRows(), 'the new Property should have exactly one Profile').toHaveCount(1);
 
         // --- EDIT --------------------------------------------------------------
-        // Read the identifier off the roster rather than deriving it. site_id
-        // used to be md5(domain-as-typed), so the spec could compute what the
-        // admin UI would store; identifiers are minted now, so the only thing
-        // that knows this site's id is the page that just rendered it.
+        // Read the identifier off the roster rather than deriving it: identifiers
+        // are minted, so the only thing that knows this site's id is the page that
+        // just rendered it.
         const createdSiteId = paramOf(
             await profileRows().locator('a', { hasText: 'Details' }).getAttribute('href'), 'siteId');
         expect(createdSiteId, 'the roster must expose the new site id').toBeTruthy();
@@ -401,10 +400,9 @@ test.describe('admin: site CRUD', () => {
         const deleteButton = page.locator('input[value="Delete Profile"]');
         await expect(deleteButton).toBeVisible();
 
-        // A real modal now, not window.confirm(). The old alert could not say
-        // what was kept as opposed to destroyed -- and Playwright DISMISSES
-        // native dialogs by default, so a test driving the delete passed while
-        // deleting nothing.
+        // A real modal, not window.confirm(): Playwright DISMISSES native dialogs
+        // by default, so a test driving a native confirm would pass while deleting
+        // nothing.
         await deleteButton.click();
 
         const confirmDialog = page.locator('#owa_confirmDialog');
@@ -438,7 +436,7 @@ test.describe('admin: site CRUD', () => {
             page.locator('.owa_confirmProceed').click(),
         ]);
 
-        // Back on the roster it was deleted from, which no longer lists it.
+        // Back on the roster it was deleted from, which does not list it.
         expect(paramOf(page.url(), 'do')).toBe('base.propertyProfiles');
         await expect(profileRows()).toHaveCount(0);
 
@@ -450,10 +448,6 @@ test.describe('admin: site CRUD', () => {
         // but deleting a Profile never takes its Property. An empty Property is a
         // legitimate state -- it is how you start a website's Profiles over --
         // and that only works if you can still get to it.
-        //
-        // It used to be filtered out of the fan-out for having no Profiles, which
-        // made it unreachable: present in the database, invisible everywhere, with
-        // no screen that could bring it back.
         await expect(propertyRow, 'the empty Property must stay reachable')
             .toHaveCount(1);
 
@@ -555,17 +549,11 @@ test.describe('admin: user CRUD + site association', () => {
         // Done while the user is still an analyst, deliberately. A grant only
         // means anything for a non-admin: isSiteAccessible() returns true for
         // role admin before it consults owa_site_user at all, so granting an
-        // admin writes a row that changes nothing. The old multi-select offered
-        // that choice anyway and this test took it -- the assertion round-tripped
-        // through the database and looked meaningful while testing nothing.
+        // admin writes a row that changes nothing.
         //
         // The form submits a DELTA: the ids it rendered travel with the ids that
-        // were checked, so ticking this user grants only this user. It used to
-        // submit the UNION of every existing grant plus the new one, because the
-        // controller replaced the whole set and posting just one user would
-        // silently revoke the reporter fixture and break every downstream report.
-        // The grant form is its own screen now -- Property Access Management --
-        // rather than a third form on the Profile page.
+        // were checked, so ticking this user grants only this user. The grant form
+        // is its own screen -- Property Access Management.
         await gotoAction(page, 'base.propertyAccess', `&owa_siteId=${FIXTURE.siteId}`);
 
         const userRow = () => page.locator('table.owa-allowed-users tr.owa-user-row', {
@@ -750,19 +738,6 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
 });
 
 /**
- * The admin endpoint's default action.
- *
- * index.php supplies a route when the request does not name one:
- *
- *     $do = CoreAPI::getRequestParam('do');
- *     if ( ! $do ) { $params['do'] = $owa->getSetting('base', 'start_page'); }
- *
- * Arriving at index.php with no params is the normal way into the admin UI, so
- * this fallback has to keep working. It is also the reason the REST endpoint's
- * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
- * so the asymmetry is pinned rather than incidental.
- */
-/**
  * THE FAN-OUT'S ROWS ARE CLICKABLE ACROSS THEIR WHOLE WIDTH.
  *
  * The row is a flex box: the name on the left, a secondary link on the right.
@@ -924,6 +899,19 @@ test.describe('admin: the site control fan-out', () => {
     });
 });
 
+/**
+ * The admin endpoint's default action.
+ *
+ * index.php supplies a route when the request does not name one:
+ *
+ *     $do = CoreAPI::getRequestParam('do');
+ *     if ( ! $do ) { $params['do'] = $owa->getSetting('base', 'start_page'); }
+ *
+ * Arriving at index.php with no params is the normal way into the admin UI, so
+ * this fallback has to keep working. It is also the reason the REST endpoint's
+ * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
+ * so the asymmetry is pinned rather than incidental.
+ */
 test.describe('admin: start_page default action', () => {
 
     test('a bare request renders the start_page report, not an error', async ({ page }) => {
@@ -942,10 +930,9 @@ test.describe('admin: start_page default action', () => {
     test('the bare request and an explicit start_page render the same screen', async ({ page }) => {
         await login(page);
 
-        // start_page is base.reportingHome now, not the base.sites roster --
-        // that screen is gone and you land on the last Property you looked at.
-        // Read the setting rather than hardcoding it, so this stays honest if
-        // the default is repointed again.
+        // start_page is base.reportingHome: you land on the last Property you
+        // looked at. Read the setting rather than hardcoding it, so this stays
+        // honest if the default is repointed.
         await page.goto('?owa_do=base.reportingHome', { waitUntil: 'networkidle' });
         const explicitTitle = await page.title();
         const explicitUrl = page.url();
@@ -970,11 +957,9 @@ test.describe('admin: start_page default action', () => {
 
         const body = await page.content();
 
-        // It used to be the base.sites roster and the assertion was that the
-        // fixture site appeared as a ROW. The front door is a report now, so
-        // what has to be true is that it arrived scoped to a Property: no scope
-        // means makeNavigationMenu() returns false and there is no left nav at
-        // all, which is the failure this guards.
+        // The front door is a report, so what has to be true is that it arrived
+        // scoped to a Property: no scope means makeNavigationMenu() returns false
+        // and there is no left nav at all, which is the failure this guards.
         expect(page.url(), 'the front door must resolve to a Property')
             .toMatch(/propertyId=/);
 

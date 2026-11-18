@@ -9,16 +9,14 @@ const { PublicHtaccessPlugin } = require('./webpack.public-htaccess.js');
 
 // --- Per-module asset build registration ---------------------------------
 //
-// The build products are no longer hardcoded here. Instead each module declares
-// what it builds in a `build.manifest.json` in its own directory, and this config
+// Each module declares what it builds in a `build.manifest.json` in its own
+// directory, and this config
 // DISCOVERS them by scanning modules/*/build.manifest.json -- the direct analogue
 // of how root composer.json merges modules/*/composer.json via
 // wikimedia/composer-merge-plugin. A module self-registers its assets by dropping
 // that one file in its own dir; there is no central list to edit.
 //
-// Today only `base` ships build inputs, so exactly one manifest is found and the
-// three configs below (tracker JS, reporting JS, reporting CSS) come out of it --
-// byte-identical to when they were inline. The factories translate each manifest
+// The factories translate each manifest
 // package into the right webpack config for its `type`.
 //
 // A manifest may also CONTRIBUTE source to another module's package:
@@ -63,20 +61,14 @@ const minimizer = [new TerserPlugin({ extractComments: false })];
 // verbatim (the package name IS the filename, so no PHP path churn) into the
 // module's output dir.
 //
-// `output.iife` is deliberately LEFT AT ITS DEFAULT (true for target:web). It used
-// to be forced to false, carried over unexplained from the original webpack
-// migration (0592fcb6). That is not a safe setting for a bundle that ships as a
-// classic <script>: production mode enables scope hoisting, so webpack concatenates
-// the entry's whole module graph into one scope, and without the IIFE that scope IS
-// the page's global scope. Every top-level declaration in every concatenated source
-// file then becomes a global binding -- the tracker's event class, then still
-// named `Event` (it is OwaEvent now, in tracker/OwaEvent.js), shadowed the DOM's
-// window.Event for the entire page, breaking any library that does `new Event(...)`
-// (Bootstrap's dropdowns, modals and tabs, for instance).
-//
-// The flag also does not do what the old comment claimed. `output.iife` controls
-// only the wrapper; whether a vendors split lands in a sibling chunk or an async
-// import() is governed by `optimization.splitChunks` below, which is unchanged.
+// `output.iife` is deliberately LEFT AT ITS DEFAULT (true for target:web). False is
+// not safe for a bundle that ships as a classic <script>: production mode enables
+// scope hoisting, so webpack concatenates the entry's whole module graph into one
+// scope, and without the IIFE that scope IS the page's global scope -- every
+// top-level declaration becomes a global binding and can shadow the page's own
+// (window.Event, say). `output.iife` controls only the wrapper; whether a vendors
+// split lands in a sibling chunk or an async import() is governed by
+// `optimization.splitChunks` below.
 function jsOutput(moduleDir, pkg) {
 	return {
 		path: path.resolve(moduleDir, pkg.outputDir),
@@ -91,16 +83,13 @@ function jsOutput(moduleDir, pkg) {
 // templates load exactly one script, so vendors must NOT be split out) or a chunk
 // name (the tracker splits node_modules into a sibling vendors chunk).
 //
-// NOTE (Phase 4): there is no longer a ProvidePlugin. The reporting bundle used to
-// need one to feed its legacy vendor plugins (chosen, flot, ...) a bundled
-// jQuery via the free `jQuery`/`$` globals they read at eval time; that scoped the
-// two products into separate configs. Now the reporting entry publishes jQuery on
-// window itself (its first import, vendor-jquery-global.js) before the plugins run,
-// and OWA's own files import jQuery explicitly -- so no config-level jQuery injection
-// is needed and both products share this one factory.
+// No ProvidePlugin: the reporting entry publishes jQuery on window itself (its
+// first import, vendor-jquery-global.js) before the vendor plugins that read the
+// free `jQuery`/`$` globals run, and OWA's own files import jQuery explicitly, so
+// both products share this one factory.
 // Where the lazy-plugin stubs are written. Gitignored, and NOT under
 // node_modules: the tracker's vendor split matches /node_modules/, and a stub
-// there was moved into a vendors chunk the entry then depended on -- a second
+// there would be moved into a vendors chunk the entry then depended on -- a second
 // script every page would need before the tracker could run.
 const GENERATED_DIR = path.join(__dirname, '.build', 'generated');
 
@@ -213,15 +202,15 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = [], lazy = []) {
 		},
 		output: jsOutput(moduleDir, pkg),
 		// A package may declare its own `licence` (a path relative to the module dir),
-		// emitted VERBATIM next to the bundle. Only the tracker does: it was relicensed
-		// BSD-3 in 2020 (#670) so site owners can embed it on non-GPL pages, while the
-		// rest of OWA -- the reporting bundle included -- stays GPL-2.0. Do not widen
-		// this to every package; that would ship the wrong licence beside GPL output.
+		// emitted VERBATIM next to the bundle. Only the tracker does: it is BSD-3 so
+		// site owners can embed it on non-GPL pages, while the rest of OWA -- the
+		// reporting bundle included -- is GPL-2.0. Do not widen this to every package;
+		// that would ship the wrong licence beside GPL output.
 		//
 		// A SIBLING FILE, not a banner in the bundle. BSD-3 clause 2 lets a binary-form
 		// redistribution carry the notice in "materials provided with the distribution",
-		// and the tracker loads on every tracked page view -- a banner cost 1552 bytes
-		// raw / 745 gzipped there for no legal gain. It cannot instead live with the
+		// and the tracker loads on every tracked page view, where a banner would cost
+		// bytes for no legal gain. It cannot instead live with the
 		// source: the release tarball excludes modules/Base/src and ships public/, so
 		// public/ is the only place the notice actually reaches a user.
 		plugins: (pkg.bundleManifest

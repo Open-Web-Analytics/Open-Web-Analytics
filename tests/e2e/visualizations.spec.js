@@ -95,7 +95,7 @@ test.describe('visualizations', () => {
          */
         await expect(row.locator('a[href*="visualizationEdit"]')).toHaveCount(0);
 
-        // The old roster's address opens the same list.
+        // The base.visualizations address opens the same list.
         await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
         await expect(
             page.locator('table.owa_customReportRoster tbody tr', { hasText: name })
@@ -242,10 +242,8 @@ test.describe('visualizations', () => {
     });
 
     /**
-     * Save waits for the same rules the server applies, and says which one.
-     *
-     * The form used to offer Save from the moment it opened, so the first
-     * answer to an empty funnel was a round trip.
+     * Save waits for the same rules the server applies, and says which one,
+     * so an empty funnel is answered without a round trip.
      */
     test('save waits for a name and a complete step', async ({ page }) => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);

@@ -5,12 +5,8 @@ namespace OWA\Module\Base\Update;
 /**
  * A purchase gets its order id, its tax and its shipping.
  *
- * `revenue` and `currency` were the only two things a purchase stored. The rest
- * of the transaction -- what it was, what the tax was, what the delivery cost --
- * reached the row builder and was dropped: the per-event param list named
- * `transaction_id, tax, shipping, gateway, items` and the wire sends
- * `ct_order_id, ct_tax, ct_shipping, ct_gateway, ct_line_items`, so every lookup
- * missed and `params` came back NULL. Measured on a purchase carrying all five.
+ * The wire sends `ct_order_id, ct_tax, ct_shipping, ct_gateway, ct_line_items`
+ * beside `revenue` and `currency`.
  *
  * WHY THESE THREE ARE COLUMNS AND THE OTHERS ARE PARAMS. Tax and shipping are
  * summed metrics -- taxRevenue and shippingRevenue -- and a metric needs a

@@ -64,13 +64,4 @@ final class JsonPropertyValidationTest extends TestCase
         $this->assertNull( Sanitize::cleanJson( null ) );
     }
 
-    /*
-     * testTheAttributionStackIsTheJsonProperty WAS HERE. `attribs` was the
-     * only json-typed tracking property, and it is gone: it carried the
-     * client's campaign attribution stack, which only the v1 SessionHandlers
-     * ever read, and the v2 tracker no longer computes or sends one.
-     *
-     * The json data type itself is still exercised by the cases around this,
-     * which is why they stayed.
-     */
 }

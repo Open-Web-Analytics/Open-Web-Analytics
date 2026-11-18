@@ -4,9 +4,7 @@ namespace OWA\Module\Base\Controller;
 /**
  * Create or edit one goal event definition.
  *
- * Replaces the goal entry screen, which edited a numbered SLOT -- so creating a
- * goal meant picking an unused number out of twenty, and there was no
- * twenty-first. A definition is a row: it is created, not claimed.
+ * A definition is a row: it is created, not claimed from a numbered slot.
  */
 class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
 
@@ -176,11 +174,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * What a condition can be written against, for this trigger event.
      *
      * Classes\GoalVocabulary answers it: the columns of the stored ROW that the
-     * trigger event carries. Three things used to answer this question
-     * differently -- this list offered every client and server PROPERTY name,
-     * marking matched against the event, and GoalEventDefinitionPredicate kept
-     * its own map of four v1 names -- and none of the three agreed with what
-     * gets stored.
+     * trigger event carries.
      *
      * A COLUMN ALREADY IN USE IS KEPT IN THE LIST even when the trigger does not
      * carry it, and labelled as not carried. Dropping it would silently rewrite

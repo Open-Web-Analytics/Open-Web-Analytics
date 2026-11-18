@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Abstract OWA Event Class
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class Event {
@@ -39,13 +14,7 @@ class Event {
      */
     public $properties = [];
 
-    /**
-     * State
-     *
-     * @var string
-     */
-    //var $state;
-
+    /** @var string */
     public $eventType;
 
     /**
@@ -161,7 +130,6 @@ class Event {
     public function get($name) {
 
         if(array_key_exists($name, $this->properties)) {
-            //print_r($this->properties[$name]);
             return $this->properties[$name];
         } else {
             return false;
@@ -340,18 +308,11 @@ class Event {
     /**
      * What this event IS. Read from the class member and nowhere else.
      *
-     * IT USED TO FALL BACK TO THE PROPERTY BAG. For a TRACKING event that looked
-     * harmless -- the beacon really does carry event_type, the endpoint admits it,
-     * and owa_event_raw.event_type stores it -- so the bag legitimately holds it
-     * and the registry still declares it.
-     *
-     * The fallback was wrong for everything ELSE. EventRawHandlers::announce()
-     * copies a beacon's properties onto a fresh notice, so a base.new_session
-     * notice carries an event_type property reading "page_view"; it routed
-     * correctly only because this method happened to prefer the member. Any read
-     * that took the bag first dispatched a session announcement as a page view.
-     * The same shape applies to every internal event that inherits properties from
-     * one that came off the wire.
+     * NOT FROM THE PROPERTY BAG. EventRawHandlers::announce() copies a beacon's
+     * properties onto a fresh notice, so a base.new_session notice carries an
+     * event_type property reading "page_view"; read from the bag, it would be
+     * dispatched as a page view. The same holds for every internal event that
+     * inherits properties from one that came off the wire.
      *
      * So an event's type comes from its MEMBER, set at construction (makeEvent),
      * at the endpoint (log.php) or by logEvent(). The property is what the beacon

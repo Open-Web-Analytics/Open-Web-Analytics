@@ -7,12 +7,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Deleting a user takes their site access with them.
  *
- * deleteUser() removed the owa_user row and nothing else, so the grants in
- * owa_site_user were left keyed on a user that no longer existed. Nothing reads
- * them in that direction -- every screen lists users and looks their grants up
- * -- so they accumulated invisibly, and Property Access Management could not
- * clear them either: it submits a delta of the users it RENDERED, and a deleted
- * user is never rendered, so the row survived every save forever.
+ * Nothing reads grants in that direction -- every screen lists users and looks
+ * their grants up -- and Property Access Management submits a delta of the
+ * users it RENDERED, so a grant left keyed on a deleted user would never be
+ * cleared.
  *
  * Not quite inert, either. User ids are auto-increment rather than derived from
  * the username, so re-creating a deleted username does not inherit its access

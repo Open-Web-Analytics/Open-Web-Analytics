@@ -18,18 +18,16 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  *     inflate unique visitors by one for every expired or cleared session.
  *   - a session whose visitor cookie is gone ENDS. The visitor cannot be
  *     identified, so the tracker mints one, and a session belongs to one
- *     visitor. Continuing it put a single session across two visitors: a
+ *     visitor. Continuing it would put a single session across two visitors: a
  *     second first_visit part way through, and no nps on the new visitor's
- *     beacons, so the server could not tell new from returning. Observed in
- *     Safari, where the visitor cookie (written once per page) was lost while
- *     the session cookie (rewritten by every event, the unload beacon
- *     included) came back.
+ *     beacons, so the server could not tell new from returning. A browser can
+ *     lose the visitor cookie (written once per page) while the session cookie
+ *     (rewritten by every event, the unload beacon included) comes back.
  *
- * This matters more since the session store stopped hydrating on first touch:
- * the session decision now depends on reading the persisted 's' store at a
- * specific moment, and a fixture that seeds both cookies together would never
- * exercise the case where only one is there. Nothing else in the suite covers
- * either half-cleared state.
+ * The session store does not hydrate on first touch, so the session decision
+ * depends on reading the persisted 's' store at a specific moment, and a fixture
+ * that seeds both cookies together would never exercise the case where only one
+ * is there.
  *
  * These drive the real trackPageView pipeline so the whole chain is exercised
  * in order -- setVisitorId, setLastRequestTime, setSessionId -- rather than the
@@ -160,16 +158,6 @@ describe('one OWA cookie cleared but not the other', () => {
         expect(stored.sid).not.toBe(SESSION_SID);
     });
 
-    /*
-     * Two cases about session-scoped custom variables stood here. They followed
-     * the session rather than the visitor, which was the point being pinned --
-     * and the capability is gone: v2 offers authors event and user scope only,
-     * and derives session scope server-side from the session's own events.
-     *
-     * What they were really exercising -- one cookie recovered, the other not --
-     * is covered by the cases above and below on visitor_id, session_id and the
-     * two is_new flags, which is the mechanism rather than a payload riding it.
-     */
     test('both cookies gone: a new visitor and a new session, as on a first visit', () => {
         seed({});
 

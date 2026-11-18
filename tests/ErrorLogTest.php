@@ -84,8 +84,7 @@ final class ErrorLogTest extends TestCase
     }
 
     /**
-     * OWA_DEBUG is the one switch. OWA_ERROR_HANDLER, which 1.x read, no longer
-     * turns debug on. Each case runs in its own process, as a constant cannot be
+     * OWA_DEBUG is the one switch. OWA_ERROR_HANDLER does not turn debug on. Each case runs in its own process, as a constant cannot be
      * undefined.
      */
     public function testOnlyOwaDebugTurnsDebugOn(): void
@@ -108,7 +107,7 @@ final class ErrorLogTest extends TestCase
         }
     }
 
-    /** Nothing in OWA's own code loads a logging library any more. */
+    /** Nothing in OWA's own code loads a logging library. */
     public function testNoLoggingLibraryIsUsed(): void
     {
         $code = '';

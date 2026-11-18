@@ -74,11 +74,6 @@ const INSTALL_DOMAIN    = 'owa-e2e-selfhost.example.test';
 // NOT isolate the queue. Sharing it with the live install means the queue depth
 // a spec measures counts whatever anyone else left there, and a drain the spec
 // runs consumes the live install's queued events into the scratch DB.
-//
-// That is not hypothetical: it hid a real queue bug for weeks. The queue spec
-// failed here and passed in CI -- a fresh checkout has an empty directory, this
-// box did not -- so the failure read as local mess and was repeatedly dismissed
-// as environmental.
 const SCRATCH_LOG_DIR = 'owa-data/e2e-selfhost-logs/';
 
 $repoRoot = dirname(__DIR__, 2) . '/';
@@ -330,14 +325,11 @@ function up(string $repoRoot): array
  * Register the site the tracker fixtures beacon to.
  *
  * The tracker harness pages send owa_site_id=e2e-tracker-harness, a literal
- * baked into the fixtures, and tracking now refuses events naming a site the
- * installation does not have. Until that check existed the specs relied on OWA
- * accepting an unregistered id, which is exactly the behaviour being removed.
+ * baked into the fixtures, and tracking refuses events naming a site the
+ * installation does not have.
  *
- * Written directly rather than through SiteManager. That used to be necessary
- * -- SiteManager derived site_id as md5( domain ) and could not produce an
- * arbitrary literal -- and is now merely simpler: createSite() accepts a pinned
- * identifier, but this row needs no other setup. It is otherwise identical to
+ * Written directly rather than through SiteManager, which is simpler: this row
+ * needs no other setup. It is otherwise identical to
  * one the admin UI creates.
  */
 function registerHarnessSite(string $repoRoot): void

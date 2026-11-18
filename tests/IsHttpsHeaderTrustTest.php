@@ -5,28 +5,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * Which signals may tell OWA that the current request arrived over HTTPS.
  *
- * isHttps() accepted two that the client controls entirely:
+ * Not HTTP_ORIGIN or HTTP_REFERER. Both describe the *other end* of the
+ * connection -- where the caller came from -- and neither says anything about
+ * how this request reached this server. Anyone can send either.
  *
- *     || ( isset( $_SERVER['HTTP_ORIGIN'] )  && substr( $_SERVER['HTTP_ORIGIN'], 0, 5 )  === 'https' )
- *     || ( isset( $_SERVER['HTTP_REFERER'] ) && substr( $_SERVER['HTTP_REFERER'], 0, 5 ) === 'https' )
- *
- * Both describe the *other end* of the connection -- where the caller came
- * from -- and neither says anything about how this request reached this server.
- * Anyone can send either. So any visitor arriving from an https page, or any
- * caller setting an Origin header, made OWA believe it was serving over TLS
- * when it was not.
- *
- * The concrete breakage that surfaced it: Lib::get_current_url() builds its
- * scheme from this, and Auth::isSignatureValid() recomputes an API request's
- * signature over that URL. A signed cross-origin request from an https page
- * therefore signs `http://host/...` and is verified against `https://host/...`,
- * which can never match -- every such request 401s, with "Not authenticated"
- * as the only clue. That is exactly the cross-origin API use CORS was fixed to
- * enable.
- *
- * It reaches further than signatures, though: anything building an absolute URL
- * from get_current_url() could be steered to the wrong scheme by a visitor's
- * Referer.
+ * Lib::get_current_url() builds its scheme from isHttps(), and
+ * Auth::isSignatureValid() recomputes an API request's signature over that
+ * URL. A scheme steered by a visitor's Referer would make a signed
+ * cross-origin request from an https page verify against the wrong URL and
+ * 401, and would steer anything else building an absolute URL from
+ * get_current_url().
  *
  * The forwarding headers are a different case and are kept. X-Forwarded-Proto
  * and X-Forwarded-Port are set by a terminating proxy -- which is how TLS
@@ -56,7 +44,7 @@ final class IsHttpsHeaderTrustTest extends TestCase
     }
 
     /**
-     * The defect. Either header, set by anyone, used to be taken as proof.
+     * Either header, set by anyone, is not proof.
      */
     public function testAClientSuppliedOriginDoesNotMakeARequestHttps(): void
     {

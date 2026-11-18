@@ -1,24 +1,14 @@
 /**
  * Heatmap plotting: how fetched rows become dots, and how they are coloured.
  *
- * WHAT WAS WRONG WITH THE DRAWING
+ * THE DRAWING
  *
- * Gradients were drawn straight onto the VISIBLE canvas, and each dot was then
- * recoloured in place -- a getImageData, a pixel loop and a putImageData per
- * click. Two consequences, and the second is the one you can see:
+ * Gradients accumulate on an offscreen canvas and the visible one is painted
+ * from it in a single pass. Recolouring each dot in place on the visible canvas
+ * would cost a canvas read/write round trip per click, and would blend an
+ * overlapping click into the previous one's COLOUR rather than its alpha.
  *
- *   - Cost. One page on a live install holds 345,620 clicks, which is 345,620
- *     canvas read/write round trips.
- *   - Correctness. Once a region has been recoloured its pixels hold colour,
- *     not the black alpha ramp the next dot composites against. So wherever two
- *     clicks overlapped, the second blended into the first one's COLOUR and the
- *     result was neither click's intensity -- exactly where a heatmap is
- *     supposed to be most informative.
- *
- * Gradients now accumulate on an offscreen canvas and the visible one is
- * painted from it in a single pass, which is the standard way round.
- *
- * WHAT THE ROWS LOOK LIKE NOW
+ * WHAT THE ROWS LOOK LIKE
  *
  * The heatmap is an ordinary dimensional query -- eventCount grouped by clickX
  * and clickY, constrained to eventName==click -- so identical coordinates arrive
@@ -145,9 +135,9 @@ describe('reading the dimensional result set', () => {
     test('the weight is read from the metric the request asks for', () => {
         const hm = makeHeatmap(Heatmap, freshRecorder());
 
-        // What the fetch used to ask for. No metric declares it, so a reader
-        // keyed to the old name falls back to 1 on every row and the map has no
-        // hot spots at all -- a broken heatmap that still draws.
+        // A name no metric declares: a reader keyed to it falls back to 1 on every
+        // row and the map has no hot spots at all -- a broken heatmap that still
+        // draws.
         hm.clicks = { resultsRows: [{
             clickX: { value: '100' },
             clickY: { value: '200' },
@@ -224,9 +214,8 @@ describe('plotting', () => {
     });
 
     /**
-     * The heart of the fix: colouring is ONE pass over the whole canvas, not
-     * one per dot. Three dots used to mean three getImageData/putImageData
-     * pairs; a page's worth meant hundreds of thousands.
+     * Colouring is ONE pass over the whole canvas, not one
+     * getImageData/putImageData pair per dot.
      */
     test('colouring happens once per plotted page, not once per dot', () => {
         const rec = freshRecorder();

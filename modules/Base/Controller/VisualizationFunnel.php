@@ -1,34 +1,9 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Funnel Report Controller
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.4.0
  *
  * @phpstan-import-type Report from \OWA\Module\Base\Classes\CustomReports as SavedReport
  * @phpstan-import-type Compiled from \OWA\Module\Base\Classes\EventPredicate
@@ -133,11 +108,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     public function action() {
 
         /*
-         * The steps come from the VISUALIZATION's own definition.
-         *
-         * They used to come from a 1.x goal's funnel config, which made a
-         * report depend on admin configuration. A funnel is an analysis of a
-         * path, defined where it is looked at.
+         * The steps come from the VISUALIZATION's own definition: a funnel is an
+         * analysis of a path, defined where it is looked at.
          */
         $visualization = $this->visualization();
 
@@ -179,9 +151,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         if ( $funnel ) {
 
             /*
-             * The steps ARE the path. The old report appended the goal's
-             * destination as a final step because its steps described the route
-             * TO a goal; a visualization's last step is the destination.
+             * The steps ARE the path: a visualization's last step is the
+             * destination.
              */
             $steps = array_values( $funnel );
 
@@ -234,10 +205,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                  * shows. The first step is the entry population, so it is 100%
                  * of itself by definition.
                  *
-                 * No backfill guard any more: a step can no longer out-count
-                 * the one before it, because reaching step N now REQUIRES
-                 * having reached N-1. The old code needed that guard precisely
-                 * because its steps were independent counts.
+                 * No backfill guard: a step cannot out-count the one before
+                 * it, because reaching step N REQUIRES having reached N-1.
                  */
                 if ( $previous === null ) {
 
@@ -262,14 +231,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             /*
              * The Completion Rate: of those who entered, the share who reached
              * the last step. Against the population that ENTERED the funnel,
-             * not against a separate query.
-             *
-             * The denominator used to be its own request constrained on every
-             * required step at once -- `pagePath==a,pagePath==b,...`. Those are
-             * ANDed on a single fact row, and a row has one path, so it could
-             * never match; worse, constraints are keyed by column, so all but
-             * the last were silently discarded and the denominator quietly
-             * became "whoever hit the last required step".
+             * not against a separate query: constraints on every step at once
+             * would be ANDed on a single fact row, which has one path.
              */
             $completion_rate = $entered > 0
                 ? round( $last['visitors'] / $entered, 4 ) * 100 . '%'
@@ -476,32 +439,13 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * hands them back per subject in time order. The sequencing -- which is a
      * state machine, one cursor per subject -- happens here.
      *
-     * That looks like the wrong side of the line, so it was moved into SQL and
-     * measured. Three formulations, against scratch tables carrying the fact
-     * table's real schema and indexes -- owa_request's, when the funnel still
-     * read it -- with a realistic drop-off
-     * (100% -> 33% -> 10%) over a three-step funnel at 262,144 rows:
+     * Window functions, a temporary table per step and nested derived tables
+     * all give the same counts about three times slower: each reads the fact
+     * table once per STEP, and this reads it once.
      *
-     *     this, streamed                1.11s     4MB
-     *     window functions              3.01s
-     *     temporary table per step      3.06s
-     *     nested derived tables         3.87s
-     *
-     * All four agree on the counts; the last three are between 2.7x and 3.5x
-     * slower. The reason is the same for each: every one of them reads the
-     * request table once per STEP, and this reads it once. Narrowing does not
-     * rescue them -- the version that genuinely shrinks its input at each level
-     * (temporary tables, inner-joined) is still three times slower -- and
-     * neither does the composite index those joins want, which made the derived
-     * chain worse rather than better.
-     *
-     * MEMORY WAS THE REAL PROBLEM, AND IT WAS NOT THE QUERY'S FAULT
-     *
-     * The cost that prompted all of that was get_results() building one PHP
-     * assoc array per row before the walk read any of them -- 46MB per 100,000
-     * rows. get_result_iterator() hands them over one at a time instead, which
-     * takes the same 262,144-row funnel from 30MB to 4MB and costs nothing in
-     * time. The scan was never the problem; the copy of it was.
+     * MEMORY. get_result_iterator() hands the rows over one at a time, where
+     * get_results() would build one PHP array per row before the walk read any
+     * of them.
      *
      * @param  list<array<string, mixed>> $steps
      * @param  string $scope

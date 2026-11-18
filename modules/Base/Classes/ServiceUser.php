@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Service User Class
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 
@@ -46,7 +21,6 @@ class ServiceUser extends \OWA\Core\Base {
     public $assignedSites = [];
 
     public function __construct() {
-        //parent::__construct();
         // create empty user entity
         $this->user = \OWA\Core\CoreAPI::entityFactory('base.user');
         // set default role
@@ -65,13 +39,7 @@ class ServiceUser extends \OWA\Core\Base {
 
         if (! $user_id ) {
 
-            // if there is no user_id and role is everyone
-            // procead with loading sites and
-            //if ( $this->isAnonymousUser() ) {
-            //    return $this->initInternalProperties();
-            //} else {
                 throw new \Exception('No valid userid given!');
-            //}
         }
          
         // if there is a user_id load the user object and other properties.
@@ -247,10 +215,6 @@ class ServiceUser extends \OWA\Core\Base {
 
     /**
      * Mark the user as authenticated, or not.
-     *
-     * It used to ignore its argument and always set true, so a caller passing
-     * false to withdraw authentication authenticated the user instead. Every
-     * caller in OWA passes true.
      *
      * @param  bool $bool whether the user is authenticated
      * @return void

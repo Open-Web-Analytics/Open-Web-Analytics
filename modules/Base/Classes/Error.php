@@ -1,23 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * OWA's log: one file (base.error_log_file), and STDOUT as well under the CLI.
  *
@@ -27,13 +10,6 @@ namespace OWA\Module\Base\Classes;
  * nothing at all.
  *
  * The threshold is notice, or debug when OWA_DEBUG is true (Lib::inDebug()).
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @since        owa 1.0.0
  */
 class Error {
 
@@ -164,11 +140,9 @@ class Error {
     /**
      * Record an exception nothing else caught, and answer with a server error.
      *
-     * Only the development handler used to register one, which had the effect
-     * backwards: the installation exposed to the internet was the one running
-     * without an exception handler. An uncaught exception there became a PHP
-     * fatal, recorded in the web server's log rather than OWA's own, where an
-     * administrator would look for it.
+     * Registered by the production handler too, so an uncaught exception is
+     * recorded in OWA's own log, where an administrator would look for it,
+     * rather than becoming a PHP fatal in the web server's.
      *
      * The status is set deliberately rather than inherited from PHP's fatal, and
      * the response body is left empty: the message and stack trace go to the log,

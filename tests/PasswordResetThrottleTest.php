@@ -11,9 +11,8 @@ use OWA\Module\Base\Entity\User;
 /**
  * One password reset email per account per RESET_RESEND_AFTER.
  *
- * The request form is unauthenticated, and each request used to mint a new
- * key and send another email. A request inside the window now keeps the key
- * already sent and sends nothing; the requester's reply is the same either
+ * The request form is unauthenticated, so a request inside the window keeps
+ * the key already sent and sends nothing; the requester's reply is the same either
  * way (PasswordResetDoesNotDiscloseAccountsTest).
  */
 final class PasswordResetThrottleTest extends TestCase

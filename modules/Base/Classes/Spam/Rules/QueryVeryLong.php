@@ -10,9 +10,6 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
 /**
  * The page URL's query string is longer than 500 characters. Fires instead of
  * QUERY_LONG, never beside it.
- *
- * Measured across app's sites: none on 1-3 November, 86 during the 4-5
- * November attack.
  */
 class QueryVeryLong extends \OWA\Module\Base\Classes\Spam\Rule {
 

@@ -13,21 +13,9 @@ namespace OWA\Module\Base\View;
  * -- whereas changing what a published field CONTAINS is not, even though the
  * shape would survive it.
  *
- * It is needed because the hierarchy moved the website's human name up to the
- * Property, leaving the Profile's stored name as "Observation Profile 1". A
- * client that wants to show which website a Profile belongs to now has it
- * without a second call.
- *
- * Note this is NOT about the WordPress plugin's picker, whatever the earlier
- * reasoning here said. That picker labels with site_id and domain and never
- * reads 'name' at all:
- *
- *     sprintf('%s (%s)', $site['properties']['site_id']['value'],
- *                        $site['properties']['domain']['value'])
- *
- * -- which also shows it is reading the PRE-#977 nested shape and has been
- * broken since that payload was flattened. Fixing that belongs in the plugin,
- * not here.
+ * The website's human name is the Property's; a Profile's stored name is
+ * "Observation Profile 1". So a client that wants to show which website a
+ * Profile belongs to has it without a second call.
  */
 class SitesRest extends \OWA\Core\View\RestApi {
 

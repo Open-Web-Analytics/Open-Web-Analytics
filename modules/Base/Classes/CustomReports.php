@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * Custom reports: storing them, listing them, and deciding what may be stored.
  *
@@ -55,7 +39,6 @@ namespace OWA\Module\Base\Classes;
  * and it means the author is told at the moment they can still fix it, rather
  * than being handed a report that is broken every time it is opened.
  *
- * @since owa 1.8.0
  *
  * A definition, and each widget in it, is decoded JSON: key => value of any
  * type, checked where it is read. A Report is a stored row with its
@@ -96,17 +79,6 @@ class CustomReports {
     const MAX_DIMENSIONS = 4;
 
     /**
-     * The widget types the builder offers.
-     *
-     * A SUBSET of what the renderer can draw, and deliberately so. The others
-     * exist to serve one shipped report each -- report-links needs a list of
-     * report ids, heatmap-link needs a document, the badge widgets need a
-     * particular dimension in a particular column -- so offering them would be
-     * offering configurations that mostly cannot be made to work.
-     *
-     * Keys are what a definition says; values are what a person is shown.
-     */
-    /**
      * The visualizations, and the controller each resolves to.
      *
      * A map rather than a switch so a second one needs no dispatcher change.
@@ -135,7 +107,17 @@ class CustomReports {
         'funnel' => 'fas fa-filter',
     ];
 
-    /*
+    /**
+     * The widget types the builder offers.
+     *
+     * A SUBSET of what the renderer can draw, and deliberately so. The others
+     * exist to serve one shipped report each -- report-links needs a list of
+     * report ids, heatmap-link needs a document, the badge widgets need a
+     * particular dimension in a particular column -- so offering them would be
+     * offering configurations that mostly cannot be made to work.
+     *
+     * Keys are what a definition says; values are what a person is shown.
+     *
      * `pie` draws ranked share bars now (OWA.shareChart). The key stays, since
      * saved reports and shipped definitions name it.
      */
@@ -295,8 +277,8 @@ class CustomReports {
     /**
      * Types that must name their own metrics, because a set is not an answer.
      *
-     * A report METRIC SET is a property of the SITE -- site usage, e-commerce,
-     * a group of goals -- and a widget that inherits one is saying "however
+     * A report METRIC SET is a property of the SITE -- site usage, e-commerce
+     * -- and a widget that inherits one is saying "however
      * this report is being measured". That is right for a trend, whose boxes
      * are the set made visible.
      *
@@ -659,21 +641,17 @@ class CustomReports {
         }
 
         /*
-         * EVERY WIDGET NAMES ITS OWN METRICS.
+         * EVERY WIDGET NAMES ITS OWN METRICS: the builder asks for no report metric
+         * set, so a widget naming none has nothing to inherit and would draw an empty
+         * panel.
          *
-         * A widget naming none used to inherit the report metric set. The
-         * builder no longer asks for that set (see custom_report_edit.php), so
-         * an empty list now has nothing to inherit and the widget draws an
-         * empty panel.
+         * A report that already HAS a set is exempt. validate() runs at render time as
+         * well as at save time, so refusing those would break reports that work, and
+         * their authors have no field to fix them with.
          *
-         * A report that already HAS a set is exempt. validate() runs at render
-         * time as well as at save time, so refusing those would break reports
-         * that work today, and their authors have no field left to fix them
-         * with.
-         *
-         * AFTER the single-field check, which says the same thing more
-         * precisely for a card or a pie: "draws one metric, this one names 0"
-         * names the count as well as the rule.
+         * AFTER the single-field check, which says the same thing more precisely for a
+         * card or a pie: "draws one metric, this one names 0" names the count as well
+         * as the rule.
          */
         if ( ! self::asNames( $query['metrics'] ?? '' ) ) {
 
@@ -2110,15 +2088,13 @@ class CustomReports {
     /**
      * Settle the things the TYPE decides, before the definition is stored.
      *
-     * Only one so far: a full-width type carries no colspan. Dropping the key
-     * rather than writing 12 is what makes the rule survive a change to what
-     * full width means -- ReportGrid answers that question, and a definition
-     * that had baked in the old number would keep the old layout.
+     * A full-width type carries no colspan. Dropping the key rather than writing
+     * 12 keeps the rule true if what full width means changes -- ReportGrid
+     * answers that question.
      *
      * Here rather than in validate(), because this is not a reason to refuse a
-     * report. A definition arriving with a colspan on a grid is one written
-     * against an older builder, or by hand; the width simply is not the
-     * author's to choose, so it is taken off rather than argued about.
+     * report: the width is not the author's to choose, so a colspan on a grid is
+     * taken off.
      *
      * @param Definition $definition
      * @return Definition

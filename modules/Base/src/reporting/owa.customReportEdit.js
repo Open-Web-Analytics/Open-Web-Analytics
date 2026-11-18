@@ -245,9 +245,8 @@ export function newWidget( rules, index, type ) {
  * validate() still refuse all of these. Ordered as an author would fix them:
  * a widget, a name, then each widget's metrics.
  *
- * Every widget names its own metrics unless the report carries a metric set
- * from before that control was withdrawn, the one case the server still lets
- * inherit -- the builder allows exactly what the server allows, or it refuses
+ * Every widget names its own metrics unless the report carries a stored
+ * report-level metric set, the one case the server lets inherit -- the builder allows exactly what the server allows, or it refuses
  * an old report its author cannot fix.
  *
  * @param  {Object[]} widgets
@@ -521,22 +520,15 @@ export function start( config ) {
     /*
      * A NEW REPORT STARTS EMPTY.
      *
-     * It used to start from one table block, so the canvas was never blank --
-     * and the cost of that was a report you could save without having decided
-     * anything. The block was already named, already a table, already the right
-     * width; pressing Save produced a report with a table of nothing in it, and
-     * the author had answered no question to get there.
-     *
-     * Empty, the first thing on the screen is the choice that actually starts a
-     * report: what kind of widget. Save is refused until one exists, here and
-     * on the server both.
+     * The first thing on the screen is the choice that starts a report: what
+     * kind of widget. Save is refused until one exists, here and on the server
+     * both.
      */
 
     /*
      * The report-level metric set, as it was stored.
      *
-     * Not editable any more -- see the note where the control used to be -- but
-     * carried so that saving a report built before it was withdrawn does not
+     * Not editable, but carried so that saving a report that has one does not
      * silently strip it. Read once, written back on submit, never looked at in
      * between.
      */
@@ -588,15 +580,9 @@ export function start( config ) {
      * trend charts; the first dimension is what a grid is grouped by and what
      * a report is about. So the list has to come back in the author's order.
      *
-     * It did not. The options were rebuilt in registry order on every change --
-     * narrowMetrics() refills the select each time one is picked -- and
-     * `$select.val()` answers in OPTION order, so choosing visits, then unique
-     * visitors, then page views stored `pageViews,uniqueVisitors,visits` and
-     * charted pageViews. The author's first choice became the last box, and
-     * the one they picked last was drawn.
-     *
-     * Putting the selected block first fixes both halves at once: `.val()`
-     * answers in that order, and chosen renders its pills from the options, so
+     * narrowMetrics() refills the select each time one is picked, and
+     * `$select.val()` answers in OPTION order. Putting the selected block first
+     * covers both halves: `.val()` answers in that order, and chosen renders its pills from the options, so
      * the pills read in the author's order too. It costs nothing in the drop --
      * chosen hides an already-selected option from the list.
      */
@@ -685,9 +671,7 @@ export function start( config ) {
         var $select  = jQuery( '#dlgMetrics' );
         var selected = $select.val() || [];
 
-        // The widget's own cap, which depends on its type. It used to also
-        // serve the report metric set, whose cap was MAX_METRICS flat; that
-        // control is gone, so there is one caller and one cap.
+        // The widget's own cap, which depends on its type.
         var full = selected.length >= maxMetrics();
 
         var allowed = METRICS.filter( function ( choice ) {
@@ -730,9 +714,8 @@ export function start( config ) {
     /**
      * Re-sync a chosen control to its select after setting values in code.
      *
-     * chosen-js 1.x ignores a programmatic .val() until told; the event was
-     * renamed from liszt:updated in 0.9.x, which is why anything written
-     * against the old name silently does nothing.
+     * chosen-js 1.x ignores a programmatic .val() until told with
+     * chosen:updated.
      */
     function chosenSync( selector ) {
 
@@ -1172,23 +1155,17 @@ export function start( config ) {
         jQuery( '#dlgMetricsLabel' ).text( oneMetric ? OWA.l( 'Metric' ) : OWA.l( 'Metrics' ) );
 
         /*
-         * THERE IS NO LONGER ANYTHING TO LEAVE THIS EMPTY FOR.
-         *
-         * The sentence here used to be "Leave empty to use the report metric
-         * set" on every type that could inherit one, and a contradiction of it
-         * on the types that could not. With the set withdrawn from the builder
-         * the first half is an offer nothing fulfils -- an author who took it
-         * would be refused on save -- so both halves go and the field says the
-         * one thing that is now true of every type: it has to be answered.
+         * Every type has to answer this field: a widget that names no metrics is
+         * refused on save.
          */
         var required = ' ' + OWA.l( 'Required.' );
 
         /*
          * ...and the mark beside the label says the same thing at a glance.
          *
-         * Metrics are required on every type UNLESS the report carries a metric
-         * set from before that control was withdrawn -- the one case the server
-         * still lets a widget inherit. Marking it required there would be
+         * Metrics are required on every type UNLESS the report carries a stored
+         * report-level metric set -- the one case the server lets a widget
+         * inherit. Marking it required there would be
          * telling an author to fill a field they can legitimately leave alone.
          */
         jQuery( '#dlgMetricsRequired' ).toggle( ! reportMetrics );

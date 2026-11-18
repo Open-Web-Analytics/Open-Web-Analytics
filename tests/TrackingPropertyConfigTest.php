@@ -9,18 +9,13 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * The tracking property config is the enumeration of the wire surface.
  *
- * It used to be 440 lines of PHP literal, where a typo was a parse error and
- * the file could not be wrong in an interesting way. As data in a file it can
- * be: malformed, missing an axis, or naming a callback that does not exist.
- * Nothing catches the last one until an event arrives in production and the
- * derivation quietly does not happen.
+ * As data in a file it can be malformed, missing an axis, or naming a callback
+ * that does not exist -- and nothing else catches the last one until an event
+ * arrives in production and the derivation quietly does not happen.
  *
- * THE FILE IS FLAT. It grouped properties under request / client / server, which
- * made "how does this value get set" implicit in an entry's POSITION -- and the
- * position was also doing duty as the dependency order, since a callback reads
- * whatever is already on the event. Every entry declares `set_by` and `from`
- * now, so the two stop being one fact, and TrackingPropertyFormatTest is where
- * the axes are checked.
+ * THE FILE IS FLAT: every entry declares `set_by` and `from`, so how a value
+ * gets set and what it depends on are stated, not implied by position.
+ * TrackingPropertyFormatTest is where the axes are checked.
  */
 final class TrackingPropertyConfigTest extends TestCase
 {
@@ -60,20 +55,11 @@ final class TrackingPropertyConfigTest extends TestCase
             'All three setters must be in use, or the vocabulary has lost one.' );
 
         /*
-         * A MINIMUM PER SETTER. It was `> 5` for all three, which the request
-         * bucket no longer satisfies: HTTP_HOST went (always this install's own
-         * host), and user_name and user_email moved to `client`, which is what
-         * they always were -- the tracker has a setter for user_name, and
-         * declaring it request-set made an environmental property of it, so
-         * admitRequestParams() refused the value the beacon carried.
-         *
-         * Four is what is left, and every one is a genuine reading of the
-         * REQUEST: the agent, the address, the language and the edge clock.
-         * REMOTE_HOST, the visitor's network host, went in Update074.
-         *
-         * Then fifteen: nine headers of the beacon request and the two URLs as
-         * they arrived, which spam detection reads (Classes\Spam) and nothing
-         * stores. The floor stays at the four that reach a column.
+         * A MINIMUM PER SETTER. The request bucket holds the genuine readings of
+         * the REQUEST that reach a column -- the agent, the address, the language
+         * and the edge clock -- and the headers and arrived URLs spam detection
+         * reads (Classes\Spam), which nothing stores. The floor is the four that
+         * reach a column.
          */
         $floors = [ 'client' => 30, 'event' => 15, 'request' => 4 ];
 
@@ -113,13 +99,8 @@ final class TrackingPropertyConfigTest extends TestCase
         $this->assertGreaterThan(
             15, $checked, 'Almost no callbacks were found, so this test is not reading the config.'
             /*
-             * The floor was 30 while the v1 date parts, the five attribution
-             * readings and the v1 handler inputs still had callbacks. Cutting
-             * those took the real count to 25 without changing what this test
-             * checks, which is that every callback NAMED in the config exists.
-             * Then to 19, when timestampDefault and microtimeDefault went with
-             * their properties -- two spellings of the instant `ts` already
-             * carries, one reaching no column and the other nothing at all.
+             * A floor, not the count: what this test checks is that every
+             * callback NAMED in the config exists.
              */ );
 
         $this->assertSame( [], $missing, implode( "\n  ", $missing ) );

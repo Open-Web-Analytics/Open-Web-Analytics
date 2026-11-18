@@ -200,8 +200,8 @@ final class GoalMarkingTest extends TestCase
     }
 
     /**
-     * AN EMPTY TRIGGER MATCHES NOTHING. It used to mean every event, which on a
-     * landing page marked the page view and both materialized events.
+     * AN EMPTY TRIGGER MATCHES NOTHING. As every event, it would mark a landing
+     * page's page view and both materialized events.
      */
     public function testAGoalWithNoTriggerMarksNothing(): void
     {
@@ -574,8 +574,7 @@ final class GoalMarkingTest extends TestCase
      * One active goal event definition on this Profile's Property, with
      * conditions.
      *
-     * No goal_number, deliberately: that is what the current screen creates, and
-     * it is the case marking used to miss.
+     * No goal_number, deliberately: that is what the screen creates.
      */
     private function makeGoal( array $conditions, array $overrides = [] )
     {

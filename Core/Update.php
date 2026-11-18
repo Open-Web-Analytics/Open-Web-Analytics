@@ -1,35 +1,10 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 - 2010 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Abstract Update Class
  * 
  * Performs an Update for a specific module
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class Update extends \OWA\Core\Base {
@@ -212,9 +187,6 @@ class Update extends \OWA\Core\Base {
      * out-of-sequence rollback and a failing down() both return false, matching
      * apply()'s contract in this class.
      *
-     * (This previously returned true unconditionally, so callers could not tell
-     * a completed rollback from one that never ran.)
-     *
      * @return boolean true if the rollback was applied, false if refused or failed
      */
     public function rollback() {
@@ -286,11 +258,6 @@ class Update extends \OWA\Core\Base {
     }
 
     /**
-     * Abstract Method for update
-     *
-     * @return boolean
-     */
-    /**
      * Add a column, treating "it is already there" as success.
      *
      * addColumn() answers FALSE both for "could not" and for "already exists",
@@ -303,11 +270,6 @@ class Update extends \OWA\Core\Base {
      * built from the CURRENT entity definition, which already carries every
      * column that LATER migrations add -- so the column exists before the
      * migration that adds it ever runs.
-     *
-     * Found on a live deploy: an installation at schema 20 ran Update021, which
-     * created owa_property complete with the archived_date that Update023 then
-     * tried to add. The upgrade stopped dead at 23, on a database that was
-     * already correct.
      *
      * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
      * come from the migration's own code rather than from a request.
@@ -341,8 +303,7 @@ class Update extends \OWA\Core\Base {
          * an update is permanent and a shape is not -- a LATER update may drop
          * the column, and from then on this one is asking the entity to
          * describe something it has deliberately forgotten. getColumn() throws,
-         * and the whole upgrade path from before that version is broken, which
-         * is a fresh install's path too.
+         * and would break the whole upgrade path from before that version.
          *
          * Update037 is the case: it adds prev_event_ts, and Update046 removes
          * it. The mirror of Update046::down() having to spell its types out for

@@ -8,32 +8,26 @@ namespace OWA\Module\Base\Update;
  * Every goal event on every install says what it watches in words v2 does not
  * use, so every one of them counts nothing:
  *
- *   trigger_event_type   'base.page_request', a v1 event name. It was read by
- *                        nothing until marking started gating on it, so a goal
- *                        that kept a v1 name there would now match no row at
- *                        all -- the gate and this migration have to ship
- *                        together.
+ *   trigger_event_type   'base.page_request', a v1 event name. Marking gates
+ *                        on it, so a goal that kept a v1 name there would
+ *                        match no row at all.
  *
  *   condition_property   a v1 PROPERTY name. Conditions are matched against the
- *                        stored ROW now, and neither page_uri nor medium is a
- *                        column of it. page_uri was a v1 derivation and has been
- *                        deleted outright; medium is tagged_medium.
- *
- * MEASURED, both installs here: every condition in existence names page_uri or
- * medium. That is not a coincidence -- they are what the old builder offered
- * first and what Update025 wrote when it migrated the twenty numbered slots.
+ *                        stored ROW, and neither page_uri nor medium is a
+ *                        column of it: page_uri maps to page_path, medium to
+ *                        tagged_medium. Update025 wrote those two when it
+ *                        migrated the twenty numbered slots.
  *
  * THE MAP IS Classes\GoalVocabulary, not a table written out here, because the
  * builder and the save validation have to agree with it. A vocabulary that lives
  * in a migration is one that stops being true the moment a column is renamed.
  *
  * A DECLARATION THAT CANNOT BE EXPRESSED SWITCHES ITS GOAL OFF, and is named in
- * the output. The old builder offered every property name there was, including
- * ones with no column at all -- page_type, is_robot, the v1 date parts -- so a
- * condition naming one of those cannot be translated into anything. Left active
- * it would say "active" in the UI and count zero for ever, which is the state
- * this whole change exists to remove. Switched off it is visible, and one click
- * turns it back on once its condition is rewritten.
+ * the output. A condition naming a property with no column at all --
+ * page_type, is_robot, the v1 date parts -- cannot be translated into
+ * anything. Left active it would say "active" in the UI and count zero for
+ * ever; switched off it is visible, and one click turns it back on once its
+ * condition is rewritten.
  *
  * NO down(). The mapping is many-to-one -- page_uri and page_path both arrive at
  * page_path -- so there is no inverse to apply, and guessing one would rewrite

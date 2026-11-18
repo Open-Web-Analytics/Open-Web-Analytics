@@ -77,7 +77,7 @@ final class MailFailureTest extends TestCase
         $this->assertSame(10, $this->message()->mailer->Timeout);
     }
 
-    /** The address that used to throw on the ingest path: skipped, logged, and the send fails with no recipient. */
+    /** A recipient the mailer refuses, on the ingest path: skipped, logged, and the send fails with no recipient. */
     public function testARecipientTheMailerRefusesIsSkippedNotThrown(): void
     {
         $m = $this->message();

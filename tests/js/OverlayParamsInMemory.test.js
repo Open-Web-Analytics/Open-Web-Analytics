@@ -4,23 +4,16 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * Overlay params are held in memory, not in a cookie -- and are actually
  * readable by the code that needs them.
  *
- * They used to be written to an `owa_overlay` cookie on the *tracked* site's
- * own domain, path `/`, so Heatmap.fetchData() and Player.fetchData() could
- * read `api_url` back out. That put a credential somewhere every other script
- * on the page could read and the browser re-sent to that site on every
- * request.
- *
- * The cookie was never necessary: startOverlaySession() already receives the
- * decoded params from the URL fragment. It now keeps them for the page's
- * lifetime instead.
+ * A cookie on the *tracked* site's own domain would put a credential (api_url)
+ * where every other script on the page could read it and the browser would
+ * re-send it to that site on every request. startOverlaySession() receives the
+ * decoded params from the URL fragment and keeps them for the page's lifetime.
  *
  * These tests exist because the failure mode of getting this wrong is silent.
  * If getOverlayParams() returned nothing, `var url = params.api_url` would be
  * undefined, the fetch would go to an undefined URL, and the overlay
  * would simply never draw -- no error, no exception, nothing for a suite that
- * only asserts DOM construction to catch. The existing overlay e2e explicitly
- * does not assert the fetch ("it simply never calls back in this harness"), so
- * nothing else covers this.
+ * only asserts DOM construction to catch.
  */
 describe('overlay params are kept in memory', () => {
 

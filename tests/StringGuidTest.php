@@ -14,15 +14,15 @@ use PHPUnit\Framework\TestCase;
  * works if the derivation is total and stable: every node, every PHP version,
  * every platform must agree, and the result must be storable.
  *
- * The wide-hash scheme did not meet that bar. `hexdec( substr( sha1( $s ), 0, 16 ) )`
- * asks for a full 64 bits when PHP_INT_MAX is 2^63-1, so PHP returned a float
- * for about half of all inputs and the cast to int wrapped those negative.
- * Floats carry 53 bits of mantissa, so the low bits were gone before the cast,
- * and casting an out-of-range float is undefined behaviour in PHP -- it wraps
- * consistently on x86-64 today, and nothing promises it will elsewhere.
+ * `hexdec( substr( sha1( $s ), 0, 16 ) )` does not meet that bar: it asks for
+ * a full 64 bits when PHP_INT_MAX is 2^63-1, so PHP returns a float for about
+ * half of all inputs and the cast to int wraps those negative. Floats carry 53
+ * bits of mantissa, so the low bits are gone before the cast, and casting an
+ * out-of-range float is undefined behaviour in PHP -- it wraps consistently on
+ * x86-64, and nothing promises it will elsewhere.
  *
- * These cases pin the replacement and, in one case, the defect itself, so that
- * anyone tempted by the shorter expression can see what it does.
+ * These cases pin the derivation and, in one case, what the shorter
+ * expression does.
  */
 final class StringGuidTest extends TestCase
 {
@@ -153,7 +153,7 @@ final class StringGuidTest extends TestCase
                 (string) \OWA\Core\Lib::setStringGuid('https://example.com/')
             );
 
-            // Flagged: the old scheme, whatever the schema says.
+            // Flagged: the narrow scheme, whatever the schema says.
             \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', true);
 
             $this->assertTrue(\OWA\Core\Lib::useNarrowGuid());

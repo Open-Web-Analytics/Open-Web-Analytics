@@ -18,9 +18,8 @@ use OWA\Module\Base\Entity\CustomDimension;
  * to "queryable".
  *
  * WHY A REAL COLUMN AND NOT A GENERATED ONE. A VIRTUAL generated column over
- * the JSON was measured and rejected: ~330ms flat and retroactive over all
- * history, which is better on both counts, but it puts the JSON extraction in
- * the SCHEMA rather than in one dialect expression, and the rebuild-and-swap
+ * the JSON would be cheaper to add and retroactive over all history, but it
+ * puts the JSON extraction in the SCHEMA rather than in one dialect expression, and the rebuild-and-swap
  * idiom is meant to port to columnar stores, which have columns and generally
  * not generated columns. A real column also parses the JSON once per build
  * rather than on every read.
@@ -28,14 +27,10 @@ use OWA\Module\Base\Entity\CustomDimension;
  * NO BACKFILL, BY DEFAULT. A new column is NULL for rows that already exist and
  * the next build fills it going forward. Backfilling is cmd=cube-rebuild over
  * whatever range is wanted, and it is the operator's decision rather than a
- * side effect of registering.
- *
- * That is worth stating as a capability. A registration that only applied
- * going forward would leave everything collected before it permanently
- * unreportable; v2 keeps `params` on every raw row, so a registration made today
- * can be
- * backfilled across the whole of retained history. The only bounds are raw
- * retention and the cost of rebuilding the coarse end of it.
+ * side effect of registering. v2 keeps `params` on every raw row, so a
+ * registration made today can be backfilled across the whole of retained
+ * history, bounded by raw retention and the cost of rebuilding the coarse end
+ * of it.
  *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-type Registration array{scope: string, dimension_key: string, column_name: string, data_type: string, max_length: int, label: string}
@@ -74,16 +69,10 @@ class Dimensions {
      * many actually fit and returns the smaller of the two.
      *
      * Twenty is where a person's sense of "enough" is, and it is close to what
-     * the tightest server allows -- MySQL 8.0 takes 19 on a cube of today's
-     * shape, 8.4 takes at least 20. Neither number can be assumed, because
-     * WHICH LIMIT BINDS DEPENDS ON THE SERVER. 8.4 refuses at 65,535 bytes,
-     * MySQL's row DEFINITION limit; 8.0 refuses at 8,126, InnoDB's limit on
-     * the part of a row that lives on the page. The second is far tighter, and
-     * arithmetic that predicted the first exactly said nothing useful about it.
-     *
-     * So the budget is measured rather than modelled. Two attempts to compute
-     * this from column widths were confidently wrong, and the second agreed
-     * with the permissive server while the strict one was refusing.
+     * the tightest server allows. WHICH LIMIT BINDS DEPENDS ON THE SERVER: 8.4
+     * refuses at 65,535 bytes, MySQL's row DEFINITION limit; 8.0 refuses at
+     * 8,126, InnoDB's limit on the part of a row that lives on the page. So the
+     * budget is measured rather than modelled.
      */
     const MAX_PER_PROPERTY = 20;
 
@@ -112,13 +101,12 @@ class Dimensions {
      * ASKED, NOT CALCULATED. The limit that binds depends on the server -- 8,126
      * on-page bytes on MySQL 8.0, 65,535 declared bytes on 8.4 -- and the second
      * is loose enough that arithmetic tuned to it is silently wrong on the
-     * first. Both were tried; both were wrong in the same direction.
+     * first.
      *
      * Measured on a THROWAWAY COPY of the cube, never on the cube itself: the
      * search adds and drops columns, and doing that to a live table would be a
-     * rebuild each time and would race the build. An unpartitioned copy is 65ms
-     * and the whole search is about 850, which is affordable for an admin
-     * screen and would not be on a write path -- nothing on the write path asks.
+     * rebuild each time and would race the build. An unpartitioned copy is
+     * cheap enough for an admin screen; nothing on the write path asks.
      *
      * Measured on the cube's RELEASE shape, so the answer does not move as
      * dimensions are registered: this is capacity, and what is left is capacity
@@ -390,13 +378,10 @@ class Dimensions {
      * Record one or more dimensions against a Property.
      *
      * A WRITE, NOT A REBUILD. Putting the column on the cube is a full table
-     * rebuild -- 4.4 seconds on an empty 73-partition cube, 11.3 at 1.5M rows,
-     * longer on a real one -- and that is past PHP's 30-second limit, past
-     * Varnish's 60 and past the load balancer's 65. Doing it here would make an
-     * admin screen time out, and a timed-out request does not stop the ALTER:
-     * measured, the client is killed and MySQL finishes anyway. The person
-     * would see a failure, get the column regardless, and a retry would pay a
-     * second rebuild before failing on a duplicate column.
+     * rebuild, which on a real cube runs past PHP's and a proxy's time limits.
+     * A timed-out request does not stop the ALTER -- MySQL finishes anyway --
+     * so the person would see a failure, get the column regardless, and a
+     * retry would pay a second rebuild before failing on a duplicate column.
      *
      * So this validates, prices, and writes the rows as pending. reconcile()
      * puts the columns on, under the lock a cube build already holds.
@@ -618,11 +603,8 @@ class Dimensions {
      *
      * The registry is the desired state and this is the only thing that acts on
      * it. Everything registered or de-registered since the last run is applied
-     * together: measured on a 73-partition cube, one added column costs
-     * 4,361ms and two cost 4,247ms, and a combined add-and-drop costs 4,193ms
-     * -- the rebuild is the cost and the clause count is not. So a reconcile is
-     * exactly one rebuild however much has accumulated, which is strictly
-     * better than batching in the UI and hoping.
+     * together: the rebuild is the cost and the clause count is not, so a
+     * reconcile is exactly one rebuild however much has accumulated.
      *
      * THE CALLER MUST HOLD THIS CUBE'S LOCK. A build derives its staging table
      * from the live cube's DDL and then swaps; an ALTER landing between those

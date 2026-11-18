@@ -5,20 +5,13 @@ use PHPUnit\Framework\TestCase;
 /**
  * A statement the database refuses has to be visible.
  *
- * Both drivers reported query errors with $this->e->debug(). Under the
- * production error handler -- which is what a real installation runs -- debug
- * is written nowhere. Verified against a live install: notice, warning and
- * error all reach the log; debug does not.
+ * Query errors are logged at a level the production error handler writes:
+ * notice, warning and error reach the log; debug is written nowhere. A refused
+ * write logged at debug produces NOTHING -- the INSERT fails, the failure
+ * propagates as a false return the tracking path does not inspect, and rows
+ * go missing silently (a strict sql_mode dropping page views, say).
  *
- * So a refused write produced NOTHING. That is how a strict sql_mode dropped
- * page views on a live installation without anyone noticing: the INSERT failed,
- * the failure propagated as a false return that the tracking path does not
- * inspect, and no log line existed to contradict the impression that everything
- * was fine. The symptom was missing rows, discovered by chance, days later.
- *
- * This is the test that makes the next such failure loud instead of silent, so
- * it asserts the LEVEL rather than the wording -- the wording is not what
- * failed.
+ * So this asserts the LEVEL rather than the wording.
  */
 final class QueryErrorVisibilityTest extends TestCase {
 
@@ -30,8 +23,8 @@ final class QueryErrorVisibilityTest extends TestCase {
     /**
      * Each case starts under the cap. The driver logs at most
      * QUERY_ERROR_LOG_LIMIT refused statements a process, and every test that
-     * ran before this one in the suite counts towards it: a couple of hundred
-     * files in, a refused statement here was past the cap and logged nothing.
+     * ran before this one in the suite counts towards it, so a refused
+     * statement here could be past the cap and log nothing.
      */
     protected function setUp(): void {
 
@@ -167,8 +160,7 @@ final class QueryErrorVisibilityTest extends TestCase {
      * or host both miss and both insert, and one loses. The row exists either
      * way -- which is what the insert was for -- so the loser has nothing to
      * fix. Reporting that at error level would cry wolf on every busy site, and
-     * a log that cries wolf gets ignored, which is how the silence this whole
-     * change is about becomes possible again by a different route.
+     * a log that cries wolf gets ignored.
      *
      * Still logged, because a duplicate rate that climbs is worth seeing.
      */

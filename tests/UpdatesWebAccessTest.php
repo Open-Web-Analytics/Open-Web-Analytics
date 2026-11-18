@@ -52,19 +52,17 @@ final class UpdatesApplyLockProbe extends \OWA\Module\Base\Controller\UpdatesApp
  * brought forward before the rest of the application can be relied on, and the
  * authentication path is part of what may be waiting on it.
  *
- * It WAS gated, and that made the documented upgrade unusable for a signed-out
- * admin -- reported as #979. base.updates renders anonymously, so its Apply link
- * carried a nonce minted with no user_id; createNonce() binds to user_id, so the
- * nonce could never verify once they signed in. The request was turned away, the
- * browser returned to the login form, and correct credentials appeared to be
- * rejected.
+ * base.updates renders anonymously, so its Apply link would carry a nonce
+ * minted with no user_id; createNonce() binds to user_id, so the nonce could
+ * never verify once the admin signed in, and correct credentials would appear
+ * to be rejected.
  *
  * WordPress takes the same position for the equivalent step: wp-admin/upgrade.php
  * loads wp-load.php rather than admin.php and calls wp_upgrade() with no
  * capability check and no nonce. The control is that the work is idempotent and
  * does nothing unless the schema is actually behind.
  *
- * These assert the action is REACHED, which is what the earlier gating broke.
+ * These assert the action is REACHED.
  * The probe replaces action() so nothing migrates the test database.
  */
 final class UpdatesWebAccessTest extends RestControllerTestCase
@@ -120,8 +118,7 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
     }
 
     /**
-     * The #979 case: a signed-out admin follows the documented upgrade and the
-     * update runs. Gating this is what broke it.
+     * A signed-out admin follows the documented upgrade and the update runs.
      */
     public function testAnAnonymousRequestReachesTheUpdateAction(): void
     {

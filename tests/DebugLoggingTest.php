@@ -8,10 +8,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Debug output is one line per message, built only when debug logging is on,
  * and never carries what a request posted.
  *
- * A beacon used to write 4,233 lines: filters logged the whole registry map
- * they were handed, twice per callback, through print_r() -- which ran on
- * every install at every level, because the string is built before debug()
- * can discard it.
+ * The string is built before debug() can discard it, so a message that
+ * print_r()s a structure -- a filter's whole registry map -- costs on every
+ * install at every level.
  */
 final class DebugLoggingTest extends TestCase
 {

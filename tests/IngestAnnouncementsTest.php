@@ -5,12 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
- * v2 ingest announces what it just materialised.
- *
- * base.new_session used to be raised by v1's SessionHandlers, two hops
- * downstream of the beacon -- page_request, then page_request_logged, then the
- * v1 session write, then the announcement. Every hop was v1 machinery kept
- * alive to deliver one signal to NotifyHandlers. v2 knows all three facts at
+ * v2 ingest announces what it just materialised. It knows all three facts at
  * ingest, because it is what decides them.
  *
  * SYNCHRONOUS AND UNQUEUED. EventDispatch::notify() calls listeners in-process
@@ -109,11 +104,8 @@ final class IngestAnnouncementsTest extends IngestionTestCase
     }
 
     /**
-     * A page view that starts NO session announces only the page view.
-     *
-     * Every event of a session used to be a candidate for the announcement,
-     * which is why the flags were split in the first place. Asserted here so
-     * the marker-driven version cannot regress to that.
+     * A page view that starts NO session announces only the page view: the
+     * announcement follows the marker, not every event of a session.
      */
     public function testAnOrdinaryPageViewAnnouncesOnlyItself(): void
     {

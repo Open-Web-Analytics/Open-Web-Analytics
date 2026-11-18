@@ -10,14 +10,12 @@ namespace OWA\Module\Base\Classes\Cube;
 /**
  * A cube column whose value PHP has to work out, written set-based anyway.
  *
- * THE ESCAPE HATCH, AND WHY IT IS SHAPED LIKE THIS. What SQL can express was
- * deciding what the product could do: a reading that needed a real URL parse or
- * a percent-decode had nowhere to go but ingest, which is the one layer a
- * correction can never reach. That is backwards.
+ * THE ESCAPE HATCH, AND WHY IT IS SHAPED LIKE THIS. A reading that needs a
+ * real URL parse or a percent-decode cannot be SQL, and at ingest a correction
+ * could never reach it.
  *
- * So PHP may COMPUTE. What it may not do is STREAM. The invariant worth keeping
- * was never "no row passes through PHP" -- the classifier has always been PHP
- * shaping the statement -- it is the write shape: one bulk build, one swap, no
+ * So PHP may COMPUTE. What it may not do is STREAM. The invariant is the write
+ * shape: one bulk build, one swap, no
  * row-at-a-time writes, because that is what the atomicity and the columnar
  * door both rest on.
  *

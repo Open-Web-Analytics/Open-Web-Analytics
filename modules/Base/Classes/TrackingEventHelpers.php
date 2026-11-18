@@ -9,14 +9,6 @@ namespace OWA\Module\Base\Classes;
 class TrackingEventHelpers {
 
     /**
-     * The label a v1 column carries when there is no value.
-     *
-     * Declared as default_value on 26 tracking properties. It is applied when a
-     * value is STORED, not when an event is built -- see setTrackerProperties()
-     * and Entity::setProperties(). The reporting layer produces it for a NULL
-     * dimension at render time as well.
-     */
-    /**
      * Declared types whose values are trimmed before they reach the event.
      *
      * The text-ish ones. '' is here because a property may omit data_type, and
@@ -32,6 +24,14 @@ class TrackingEventHelpers {
     const DESKTOP_OS = [ 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
                               'chrome os', 'fedora', 'debian', 'freebsd' ];
 
+    /**
+     * The label a v1 column carries when there is no value.
+     *
+     * Declared as default_value on tracking properties. It is applied when a
+     * value is STORED, not when an event is built -- see setTrackerProperties()
+     * and Entity::setProperties(). The reporting layer produces it for a NULL
+     * dimension at render time as well.
+     */
     const ABSENT_VALUE_LABEL = '(not set)';
 
 
@@ -114,24 +114,6 @@ class TrackingEventHelpers {
     /** @var array<string, EventAttributes>|null config/tracking_events.php, memoised by eventConfig(). */
     private static $event_config = null;
 
-    /**
-     * The property definitions, read from modules/Base/config/tracking_properties.json.
-     *
-     * The file is the single enumeration of what a tracking event may carry:
-     * every property a handler expects by name, which of the three scopes owns
-     * it, and how the pipeline should treat it. Anything not named there is a
-     * custom property and is passed through without a contract.
-     *
-     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
-     * in the order they appear here, and a callback may read what earlier ones
-     * wrote -- the date parts read timestamp, the geo callbacks read
-     * ip_address, source and medium read session_referer. Reordering entries
-     * does not fail; the dependant silently derives from a value that has not
-     * been computed yet. TrackingPropertyOrderTest holds this.
-     *
-     * @param string $scope one of request, client, server
-     * @return array
-     */
     /** The three answers to "how does this property's value get set". */
     const SET_BY = [ 'client', 'request', 'event' ];
 
@@ -141,7 +123,7 @@ class TrackingEventHelpers {
     /**
      * The registry, filtered to one kind of setter.
      *
-     * THE FILE IS FLAT NOW, and every entry says how its value gets set:
+     * Every entry says how its value gets set:
      *
      *   client   the tracker sends it, and `from` holds the transport keys. The
      *            only names a beacon may carry are these, which makes admission
@@ -156,17 +138,12 @@ class TrackingEventHelpers {
      * genuinely are: ip_address tries five $_SERVER keys in order, and an event
      * property can derive from more than one.
      *
-     * Those three were the file's top-level grouping -- request / client /
-     * server -- which made the answer implicit in an entry's POSITION, and the
-     * position was doing a second job as the dependency order, since a callback
-     * reads whatever is already on the event. `from` states the dependency, so
-     * the two stop being the same fact.
+     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
+     * in the order they appear, and a callback reads whatever is already on the
+     * event. TrackingPropertyOrderTest holds this.
      *
-     * `column` is the fourth axis: the raw column the value lands in, present
-     * only when it differs from the property name. That relationship was in
-     * three other places -- GoalVocabulary::SOURCE, the row builder's literal,
-     * and the per-event param list -- and the purchase params went missing
-     * because two of them disagreed.
+     * `column` is the raw column the value lands in, spelled out on every entry
+     * that has one (columnFor()).
      *
      * @param  string $set_by  one of SET_BY
      * @return array<string, Definition>  name => definition
@@ -253,12 +230,9 @@ class TrackingEventHelpers {
     /**
      * The raw column a property lands in, or '' when it lands in none.
      *
-     * SPELLED OUT ON EVERY ENTRY, never inferred. This used to answer the
-     * property's own name whenever the key was absent, which read as "the column
-     * has the same name" -- and 32 of the 90 properties have no column at all, so
-     * it confidently answered `last_req`, `form_id` and `session_referer`, none of
-     * which exist. A guess that is right 58 times out of 90 is worse than no
-     * answer, because nothing downstream can tell which kind it got.
+     * SPELLED OUT ON EVERY ENTRY, never inferred from the property's name: many
+     * properties have no column, and a name-based guess would answer columns that
+     * do not exist.
      *
      * @param  string $property
      * @return string  '' when the property reaches no column
@@ -349,8 +323,7 @@ class TrackingEventHelpers {
      * The params an event of this name carries, as property name => params key.
      *
      * Read from the registry, so the wire name, the params key and the event
-     * scoping are one declaration. EventRawHandlers::declaredParams() was a map
-     * written by hand beside all three.
+     * scoping are one declaration.
      *
      * @param  string $event_name
      * @return array<string, string>  property name => params key
@@ -404,33 +377,14 @@ class TrackingEventHelpers {
     /**
      * The properties an event of this name may carry.
      *
-     * WHY THIS EXISTS. Three namespaces nearly-but-don't align here: the wire
-     * (~130 registered properties), the raw row (59 columns), and the
-     * dimension vocabulary. Nothing stated which properties belong to which
-     * event, so a goal condition could be written against `medium` on a
-     * page_view -- a reading the cube pass derives, which no row carries and
-     * no ingest-time match can ever satisfy. Nine such conditions exist on
-     * this installation, every one of them unsatisfiable, and nothing could
-     * have refused them at save time.
+     * Three namespaces nearly align here: the wire, the raw row, and the dimension
+     * vocabulary. This says which properties belong to which event, so a goal
+     * condition written against a property no row of that event carries can be
+     * refused at save time.
      *
-     * `events` in the config is that statement. Absent means the property is
-     * carried by every event, which is the common case -- site_id, visitor_id,
-     * page_location. A list means only those events: file_name is a property
-     * of file_download and of nothing else.
-     *
-     * An EMPTY list means no event carries it, and that is not the same as
-     * having no entry. source, medium, campaign, ad and search_terms are
-     * derived by the cube pass, so no beacon carries them and no row stores
-     * them -- but the registry entry is still load-bearing three times over:
-     * it puts the name in serverOwnedProperties(), which is what refuses a
-     * request that tries to set `source` directly and forge its own
-     * attribution; it carries the default (medium defaults to 'direct'); and
-     * the v1 dimension entities derive their ids from these names.
-     *
-     * So the entry states two independent facts -- the name is RESERVED, and
-     * no event CARRIES it. Deleting the entry to assert the second would
-     * destroy the first, which was tried: it makes attribution settable from
-     * the wire and TaggedAttributionTest goes red.
+     * `events` in the config is that statement: `["*"]` is every event, a list is
+     * only those events. file_name is a property of file_download and of nothing
+     * else.
      *
      * @param  string $event_name  a v2 event name
      * @return string[]            property names, sorted
@@ -457,20 +411,11 @@ class TrackingEventHelpers {
             foreach ( self::propertyConfig( $scope ) as $name => $definition ) {
 
                 /*
-                 * `["*"]` is every event, a list is only those, and an EMPTY
-                 * list is none -- which is how a reading that no beacon carries
-                 * declares itself.
+                 * `["*"]` is every event, a list is only those, and an empty list is none.
                  *
-                 * The star is written out rather than implied by an absent key.
-                 * Absence read as "every event" is how numeric_value, declared
-                 * with a default of 0 and no event list, ended up on every page
-                 * view carrying a param the event never had; a property that
-                 * rides every beacon now says so.
-                 *
-                 * Absence is still tolerated and still means every event, so a
-                 * module shipping its own registry is not broken by the rule --
-                 * but nothing in core relies on it, and the format test refuses
-                 * an entry that omits the key.
+                 * An absent key is tolerated and also means every event, so a module shipping
+                 * its own registry is not broken by the rule; nothing in core relies on it, and
+                 * the format test refuses an entry that omits the key.
                  */
                 if ( ! array_key_exists( 'events', $definition ) ) {
 
@@ -492,7 +437,7 @@ class TrackingEventHelpers {
                  * event that carried the flag, and a property that describes
                  * that event itself -- engagement time accrued, whether it met a
                  * goal -- says nothing about the materialized one. Copied, the
-                 * carrier's engagement time was summed three times.
+                 * carrier's engagement time would be summed three times.
                  */
                 if ( array_key_exists( 'materialize', $definition )
                      && ! $definition['materialize']
@@ -515,29 +460,21 @@ class TrackingEventHelpers {
     /**
      * Every first-class event name, from config/tracking_events.php.
      *
-     * DECLARED, NOT DERIVED, and it used to be derived: the union of the property
-     * registry's `events` lists, on the reasoning that a first-class event is one
-     * the registry describes. That holds only while every event carries a property
-     * no other event does -- and it stopped holding when engagement_msec was
-     * correctly widened to `*`, taking `user_engagement` out of the vocabulary
-     * with it. See the config file for the rest of that story.
+     * DECLARED, NOT DERIVED from the property registry: a declared event may carry
+     * no property of its own (user_engagement carries only the common set).
      *
-     * eventNamesFromProperties() still computes the union, as a CHECK: a test
-     * asserts the registry implies nothing that is not declared.
+     * eventNamesFromProperties() computes the union of the registry's `events`
+     * lists as a CHECK: a test asserts the registry implies nothing that is not
+     * declared.
      *
      * @return string[]  sorted
      */
     public static function eventNames() {
 
         /*
-         * MEMOISED, because this is on the beacon path twice.
-         *
-         * logEvent()'s gate and ProcessEvent::isTrackingEvent() both ask, and
-         * without this each walked every definition in all three scopes to rebuild
-         * the same list -- measured at 20us a call, so ~40us per beacon deriving a
-         * value that cannot change within a process. propertyConfig() already
-         * memoises the file read, so the source is fixed once loaded and this adds
-         * no staleness the config did not already have.
+         * MEMOISED, because this is on the beacon path twice: logEvent()'s gate and
+         * ProcessEvent::isTrackingEvent() both ask. propertyConfig() memoises the file
+         * read, so the source is fixed once loaded and this adds no staleness.
          */
         if ( self::$event_names !== null ) {
 
@@ -729,9 +666,8 @@ class TrackingEventHelpers {
     /**
      * What the property registry IMPLIES the event names are.
      *
-     * The union of every non-`*` entry in the `events` lists -- which is what
-     * eventNames() used to return. Kept as the other half of a check, not as a
-     * source: a name here that is not declared in config/tracking_events.php means
+     * The union of every non-`*` entry in the `events` lists. The other half of
+     * a check, not a source: a name here that is not declared in config/tracking_events.php means
      * a property is scoped to an event nothing else knows about, which is either a
      * typo or an event somebody forgot to declare.
      *
@@ -781,10 +717,6 @@ class TrackingEventHelpers {
      * from, and the moment it arrived. A tracking request cannot set these --
      * it would be choosing what it is observed to be.
      *
-     * Moved here from Module::setupTrackingProperties(), because every
-     * callback these definitions name is a method of this class -- the
-     * declaration and the behaviour were about 440 lines apart in two files.
-     *
      * @return array<string, Definition>
      */
     public static function requestProperties() {
@@ -796,14 +728,7 @@ class TrackingEventHelpers {
     /**
      * Properties the tracker sends.
      *
-     * The client is the source, so a request may set them. ORDER IS PART OF THE
-     * CONTRACT here: deriveSource, deriveMedium and extractSearchTerm all read
-     * session_referer, so those three must stay after it. Nothing enforces
-     * that ordering, which is why TrackingPropertyOrderTest exists.
-     *
-     * Moved here from Module::setupTrackingProperties(), because every
-     * callback these definitions name is a method of this class -- the
-     * declaration and the behaviour were about 440 lines apart in two files.
+     * The client is the source, so a request may set them.
      *
      * @return array<string, Definition>
      */
@@ -817,13 +742,8 @@ class TrackingEventHelpers {
      * Properties the server computes from other properties.
      *
      * Date parts from the timestamp, geolocation from the address, browser from
-     * the user agent, and the dimension ids. A request cannot set these either:
-     * a supplied value would replace a derivation, which is exactly the defect
-     * that let a city name reach a boolean column.
-     *
-     * Moved here from Module::setupTrackingProperties(), because every
-     * callback these definitions name is a method of this class -- the
-     * declaration and the behaviour were about 440 lines apart in two files.
+     * the user agent. A request cannot set these either: a supplied value would
+     * replace a derivation.
      *
      * @return array<string, Definition>
      */
@@ -840,16 +760,9 @@ class TrackingEventHelpers {
      * request may set has to be decided here, deliberately, rather than by
      * whether a parameter's name happens to match a column.
      *
-     * Membership is DECLARED, not inferred from which map a property lives in.
-     * `regular` is client-set by definition, but the classification is not a
-     * clean proxy in both directions: LocationHandlers deliberately accepts a
-     * client-supplied country and city and skips the IP lookup when it sees
-     * them, and those are registered as derived. So a derived property opts in
-     * with 'client_settable' => true rather than the endpoint guessing.
-     *
-     * Anything a module has not registered at all is still accepted -- it is
-     * sanitised in ProcessEvent and carried as a custom property, which is how
-     * custom variables and event parameters work.
+     * Membership is DECLARED, not inferred from which map a property lives in:
+     * `regular` is client-set by definition, and a derived property opts in with
+     * 'client_settable' => true rather than the endpoint guessing.
      *
      * @return array<mixed> property name => its definition
      */
@@ -909,22 +822,14 @@ class TrackingEventHelpers {
     /**
      * Keep only what a request is ALLOWED to set.
      *
-     * WHY THIS REPLACES A DENYLIST. rejectServerOwnedParams() refuses names
-     * the server computes and lets everything else through -- its own note
-     * said so: "Unregistered names still pass through: this refuses to let a
-     * request OVERWRITE a derivation, it does not restrict what a site may
-     * send." So any name nobody had registered reached the event, and the gate
-     * failed open for exactly the inputs nobody had thought about. OWA has
-     * made this mistake before, in the settings registry, for the same reason.
-     *
+     * An allowlist, so the gate cannot fail open for a name nobody thought about.
      * Two things are admitted and nothing else:
      *
-     *   - a name some event declares, which the property registry now states
+     *   - a name some event declares, which the property registry states
      *   - a custom value under one of the four prefixes, whose name is legal
      *
-     * A site's own keys are therefore unrestricted, which is the freedom the
-     * denylist was protecting -- they simply have to say which bag they are
-     * in, which the tracker already does.
+     * A site's own keys are therefore unrestricted: they have to say which bag
+     * they are in, which the tracker already does.
      *
      * @param  array<mixed> $params
      * @return array<string, mixed>  the admitted subset
@@ -934,15 +839,10 @@ class TrackingEventHelpers {
         $allowed = self::clientSettableProperties();
 
         /*
-         * Plus the names the beacon compat layer renames on the way in. They
-         * are legitimate inbound names for an older generation, and three of
-         * the four are not registered properties at all -- they exist only as
-         * the FROM side of a rename, so nothing else can vouch for them.
-         *
-         * Missed on the first cut of this gate: the denylist it replaced passed
-         * anything unregistered, so those three arrived by accident and
-         * Compat::apply() renamed them. Refusing them here made the bridge
-         * unreachable without breaking a single test, because no test sent one.
+         * Plus the names the beacon compat layer renames on the way in. They are
+         * legitimate inbound names for an older generation, and most are not
+         * registered properties at all -- they exist only as the FROM side of a
+         * rename, so nothing else can vouch for them.
          */
         foreach ( \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames() as $bridged ) {
 
@@ -1152,12 +1052,8 @@ class TrackingEventHelpers {
         /*
          * OLD SPELLINGS FIRST, once, before anything below reads a value.
          *
-         * This used to be `alternative_key`, applied per property inside the
-         * loop and gated on the canonical value being FALSY -- which cannot
-         * tell "absent" from "present and false", needed the 0 and "0" cases
-         * carved out by hand, and could never be used for a boolean at all.
-         * Classes\Beacon\Compat asks whether the key is THERE, which has no
-         * such hole, and it is one place rather than a branch per property.
+         * Classes\Beacon\Compat asks whether the key is THERE, not whether its value
+         * is truthy, so 0, "0" and false are carried like any other value.
          */
         \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
 
@@ -1195,15 +1091,13 @@ class TrackingEventHelpers {
             /*
              * Re-apply the declared type AFTER filtering.
              *
-             * setDataType() above runs on the value as it arrived, so it only
-             * ever sanitised input. A callback runs after it and its return
-             * value went to the database untouched -- which is how a derivation
-             * that falls off the end (returning null) wrote NULL into a column
-             * whose declared type is boolean. setRepeatVisitorFlag did exactly
-             * that from 2015 until 8d24fc65.
+             * setDataType() above runs on the value as it arrived, and a callback's return
+             * value goes to the database untouched -- so a derivation that falls off the
+             * end (returning null) would write NULL into a column whose declared type is
+             * boolean.
              *
-             * Only when a value actually came back null: a callback that
-             * deliberately returns 0, '' or false keeps what it returned.
+             * Only when a value actually came back null: a callback that deliberately
+             * returns 0, '' or false keeps what it returned.
              */
             if ( $data_type && $value === null ) {
 
@@ -1213,28 +1107,19 @@ class TrackingEventHelpers {
             /*
              * Trim once, here, after the callbacks.
              *
-             * Leading and trailing whitespace is never meaningful in a tracking
-             * value, and it was being removed in some paths and not others.
-             * The catch-all definition applies lowercaseString(), which is
-             * strtolower( trim() ); eight resolvers trim for themselves; and
-             * Sanitize::cleanInput(), which every explicitly-defined string
-             * property flows through, does not trim at all -- removeHiddenSpaces()
-             * only swaps a non-breaking space. So the properties that escaped
-             * trimming were exactly the ones with their own definitions.
+             * Leading and trailing whitespace is never meaningful in a tracking value.
+             * Sanitize::cleanInput(), which every explicitly-defined string property flows
+             * through, does not trim (removeHiddenSpaces() only swaps a non-breaking
+             * space), so without this the properties with their own definitions would keep
+             * it, and ' Google ' and 'Google' would be different values.
              *
-             * That asymmetry had teeth: ' Google ' and 'Google' hashed to
-             * different dimension rows depending which code path derived the id,
-             * and the fix for that was to trim inside the derivation, which left
-             * the STORED value untrimmed and merely moved the inconsistency.
+             * After the callback rather than inside setDataType(), because a callback's
+             * return value goes on to the event untouched -- trimming only the raw input
+             * would leave every resolved value unhandled.
              *
-             * After the callback rather than inside setDataType(), because a
-             * callback's return value goes on to the event untouched -- trimming
-             * only the raw input would leave every resolved value unhandled.
-             *
-             * Deliberately NOT lowercasing. That is identity normalisation, and
-             * it belongs to the hash, not the value: a page title, a city name
-             * and a source domain are all displayed as recorded. Properties that
-             * lowercase today do it in their own callbacks and keep doing it.
+             * Deliberately NOT lowercasing. That is identity normalisation: a page title, a
+             * city name and a source domain are all displayed as recorded. Properties that
+             * lowercase do it in their own callbacks.
              */
             if ( is_string( $value ) && in_array( $data_type, self::TRIMMED_TYPES, true ) ) {
 
@@ -1245,28 +1130,17 @@ class TrackingEventHelpers {
             if ( $required && ! $value && $value !== 0 && $value !== "0") {
 
                 /*
-                 * array_key_exists, not isset() && truthiness.
-                 *
-                 * The old test could never apply a FALSY default -- `false` and
-                 * `0` are the only defaults a boolean or counter would want, and
-                 * both failed the truthy check. So the one case a default exists
-                 * for was the one case it was skipped.
+                 * array_key_exists, not isset() && truthiness: `false` and `0` are the
+                 * defaults a boolean or a counter wants.
                  */
                 /*
-                 * The "(not set)" default is a STORAGE convention, not an event
-                 * one, so it is not applied here any more.
+                 * The "(not set)" default is a STORAGE convention, not an event one, so it is
+                 * not applied here: absence stays absent on the event. The v1 columns still
+                 * receive it: Entity::setProperties() substitutes it when an empty value
+                 * reaches a column whose property declares it.
                  *
-                 * It used to be written onto the event before dispatch, which
-                 * made the literal the value every reader saw -- including v2,
-                 * which wants absence to look like absence. The v1 columns still
-                 * receive it: Entity::setProperties() substitutes it when an
-                 * empty value reaches a column whose property declares it, so
-                 * nothing on disk changes and there is nothing to backfill.
-                 *
-                 * Every other default still applies here, because it is a real
-                 * value rather than a stand-in for the lack of one: the boolean
-                 * flags default false, browser and os to '(unknown)', medium to
-                 * 'direct'.
+                 * Every other default applies here, because it is a real value rather than a
+                 * stand-in for the lack of one.
                  */
                 if ( array_key_exists( 'default_value', $property )
                      && $property['default_value'] !== self::ABSENT_VALUE_LABEL ) {
@@ -1295,33 +1169,18 @@ class TrackingEventHelpers {
             case "integer":
 
                 /*
-                 * Guarded, because this is reached from an unauthenticated
-                 * tracking beacon. PHP 8 raises
-                 * "TypeError: Unsupported operand types: string + int" for a
-                 * non-numeric string, so a beacon carrying ?owa_dsps=abc -- or
-                 * any garbage in any integer-typed property -- fataled event
-                 * processing. During a queue drain that is a poison pill.
+                 * Guarded, because this is reached from an unauthenticated tracking beacon.
+                 * PHP 8 raises "TypeError: Unsupported operand types: string + int" for a
+                 * non-numeric string, and during a queue drain that is a poison pill.
                  *
-                 * is_numeric() rather than a cast, so valid input keeps exactly
-                 * the value it had before: (int) would truncate "1.9" to 1,
-                 * where + 0 yields 1.9.
+                 * is_numeric() rather than a cast, so valid input keeps its value: (int) would
+                 * truncate "1.9" to 1, where + 0 yields 1.9.
                  *
-                 * ABSENT IS NOT ZERO, and the two used to be the same answer.
-                 * Event::get() returns false for a property the event does not
-                 * carry, which is not numeric, so every registered integer
-                 * property arrived on every event holding 0 whether or not the
-                 * beacon mentioned it. For v1 that is invisible -- its numeric
-                 * columns are NOT NULL and store 0 either way -- but v2 has
-                 * columns where 0 is a real reading: a beacon carrying no
-                 * scroll_depth is not a beacon reporting a scroll to the top,
-                 * and one carrying no engagement_msec is not reporting zero
-                 * engagement.
-                 *
-                 * So absence stays absent and GARBAGE still becomes 0, which is
-                 * the half the guard above exists for. Nothing downstream
-                 * changes for v1: a null reaching a non-nullable numeric column
-                 * is written as 0 by Entity::writeValue(), which is where that
-                 * coercion belongs and where a nullable column can opt out.
+                 * ABSENT IS NOT ZERO. Event::get() returns false for a property the event does
+                 * not carry, and in v2 0 is a real reading: a beacon carrying no scroll_depth is
+                 * not reporting a scroll to the top. So absence stays absent and GARBAGE
+                 * becomes 0. A null reaching a non-nullable numeric column is written as 0 by
+                 * Entity::writeValue(), where a nullable column can opt out.
                  */
                 if ( $var === null || $var === false || $var === '' ) {
 
@@ -1551,20 +1410,6 @@ class TrackingEventHelpers {
         return is_string( $header ) ? $header : '';
     }
 
-    /*
-     * httpHostDefault() stood here, and goes with the HTTP_HOST property.
-     *
-     * It returned the Host header of the BEACON request -- this OWA instance's
-     * own hostname, the same value on every event of every site an install
-     * tracks. The host that says something about the visit is the PAGE's
-     * (`host`, cut from page_location). This one never had a column, and no
-     * dimension or metric named it.
-     *
-     * Where the install's own hostname is genuinely wanted it is a SETTING
-     * rather than an observation -- Lib and Settings read $_SERVER['HTTP_HOST']
-     * for that, and still do.
-     */
-
     /**
      * @return string
      */
@@ -1573,12 +1418,6 @@ class TrackingEventHelpers {
         return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
     }
 
-    /*
-     * Registered as a FILTER, so the dispatcher hands it ( $value, $event )
-     * even though the old signature named neither. $event is named now
-     * because anonymisation is a per-Profile decision; $value stays ignored,
-     * as this callback always recomputes the address from the request.
-     */
     /**
      * The visitor's address from what a request carried: the first public
      * address of a proxy chain ("client, proxy, ..."), or the address itself
@@ -1644,6 +1483,10 @@ class TrackingEventHelpers {
     }
 
     /**
+     * Registered as a filter, so the dispatcher hands it ( $value, $event ).
+     * $event is read because anonymisation is a per-Profile decision; $value is
+     * ignored, as the address is always recomputed from the request.
+     *
      * @param  mixed      $value
      * @param  Event|null $event
      * @return string
@@ -1665,22 +1508,6 @@ class TrackingEventHelpers {
         return $chosen_ip;
     }
 
-    /*
-     * timestampDefault() and microtimeDefault() stood here, and are removed with
-     * the last property either could be attached to.
-     *
-     * Both answered a spelling of ONE instant that `ts` already carries: the edge
-     * receipt, in microseconds, environmental so a request cannot set it and a
-     * queue drain cannot restamp it. timestampDefault() returned the same instant
-     * in seconds and reached no column; microtimeDefault() returned PHP's
-     * space-separated microtime() string and reached nothing at all.
-     *
-     * They were unregistered when their properties left the registry, and
-     * `timestamp` has now left it too -- it is device-local state in the tracker,
-     * read by isNewSession() and fsts and never sent. So there is no definition
-     * left for either to be named by. See edgeTimestampMicroseconds() below.
-     */
-
     /**
      * Edge receipt in microseconds, for owa_event_raw.ts.
      *
@@ -1701,53 +1528,6 @@ class TrackingEventHelpers {
         return \OWA\Core\CoreAPI::getRequestTimestampMicroseconds();
     }
 
-    /*
-     * generateLocationId() and generateDimensionId() stood here.
-     *
-     * They hashed a dimension key onto the event before dispatch, for v1's
-     * dimension tables. v2 stores the values themselves and derives no keys.
-     *
-     * The event carries content. Nothing derived rides along on it.
-     */
-
-    /*
-     * THE DAY-COUNT DERIVATIONS WERE HERE, and are removed with their
-     * properties: deriveDaysSinceFirstSession(), deriveDaysSincePriorSession(),
-     * and the three helpers only they used -- dateFromTimestamp(),
-     * daysBetweenDates() and sessionDateOf().
-     *
-     * THEY WERE NOT v1 HOLDOVERS. The client used to compute both counts and the
-     * server accepted the integers on faith; 2026-08-22 moved the arithmetic
-     * here, so the client sends three raw ANCHORS -- fsts, psts, sts -- and the
-     * server derives the offsets and can re-derive them. That was a deliberate
-     * increase in trust and it worked.
-     *
-     * What they never got was a DESTINATION. Neither property declared a column
-     * or a param, and no dimension or metric read either, so both were computed
-     * on every event and discarded. The anchors, meanwhile, are stored:
-     * visitor_fsts, prior_session_start_ts and session_start_ts.
-     *
-     * So the offsets go and the anchors stay -- ship the anchor, derive the
-     * offset downstream. On
-     * the cube that is arithmetic between two columns of one row at query time:
-     * no join, no dimension table, and a corrected calculation re-applies to
-     * history instead of being frozen into a row.
-     *
-     * Anything reviving a daysSince* dimension should derive it there, from
-     * yyyymmdd and the anchor, not restore a write-path callback.
-     */
-
-    /*
-     * setRepeatVisitorFlag() was here, and resolveEntryPage() below it.
-     *
-     * Both derived a v1 column from a flag the tracker no longer sends --
-     * is_repeat_visitor from is_new_visitor, is_entry_page from
-     * is_new_session. Removed with their inputs rather than left computing:
-     * `! $event->get('is_new_visitor')` on an absent flag is `! false`, so
-     * every session would have been marked a repeat visit, and every page a
-     * non-entry. Wrong data is worse than a missing column.
-     */
-
 
 
 
@@ -1762,20 +1542,13 @@ class TrackingEventHelpers {
         //
         // This column is NOT NULL, it is the partition key, and every date-range
         // report filters on it -- so a row written without one is invisible to
-        // reporting and lands in the catch-all partition. A permissive sql_mode
-        // hid that by turning the empty write into 0; measured on two live
-        // installs, a handful of rows per million had ended up that way.
+        // reporting and lands in the catch-all partition.
         //
-        // date() with a null timestamp yields 1970, which is worse than useless
-        // because it looks like real data. Falling back to now is honest: the
-        // server assigns event time anyway when the client does not supply one.
+        // date() with a null timestamp yields 1970, which looks like real data.
+        // Falling back to now is honest: the server assigns event time anyway when the
+        // client does not supply one.
         //
-        // FROM `ts`, which is the edge stamp in MICROseconds and the only server
-        // clock reading there is. There used to be a second-resolution twin --
-        // the `timestamp` property, from the same microtime() call so the two
-        // could not straddle a boundary -- and this was its one live reader. Two
-        // spellings of one instant, where one of them reached a column and the
-        // other reached nothing.
+        // FROM `ts`, the edge stamp in MICROseconds and the only server clock reading.
         $ts = (int) $event->get( 'ts' );
 
         $timestamp = $ts > 0 ? intdiv( $ts, 1000000 ) : time();
@@ -2101,16 +1874,9 @@ class TrackingEventHelpers {
     /*
      * GEO IS DERIVED FROM THE OBSERVED IP AND CANNOT BE SUPPLIED.
      *
-     * All four of these opened by returning their own current value if it was
-     * truthy -- a client-override path, so a proxy could state a visitor's
-     * location and skip the lookup. It was unreachable twice over: none of the
-     * four declares client_settable, so admitRequestParams() refuses it at
-     * log.php, and LocationHandlers -- the v1 handler that read a supplied
-     * country -- is not registered.
-     *
-     * A branch guarding a capability with no way in reads like the capability
-     * exists. If supplying geo is wanted back it needs client_settable set,
-     * which is a decision about trust, not this branch restored.
+     * None of the four declares client_settable, so admitRequestParams() refuses
+     * them at log.php. Supplying geo would need client_settable set, which is a
+     * decision about trust.
      */
     /**
      * The location of the event's IP address.
@@ -2178,39 +1944,6 @@ class TrackingEventHelpers {
         return strtolower( trim( $string ) );
     }
 
-
-    /*
-     * setUserName() and setEmailAddress() STOOD HERE, and go with the two
-     * properties they resolved.
-     *
-     * user_name and user_email are no longer part of v2's declared vocabulary.
-     * They are ordinary CUSTOM USER PROPERTIES now -- a site sends
-     * up_user_name, it lands in the visitor store's JSON beside every other
-     * user property, and it becomes queryable by being registered. PLAN.html
-     * §2.26.1 is what settles that: v2 offers site authors exactly two scopes,
-     * event and user, and a value describing the PERSON is the second one.
-     *
-     * The temporality that made a column wrong is handled there rather than by a
-     * scope: §2.26.5 stores each user property with when it was SET, so
-     * `cd_<name>_set_ts <= ts` answers "was this already true at this event" --
-     * which is the question a display name needs and a session boundary only
-     * approximates.
-     *
-     * log_owa_user_names GOES WITH THEM. It enabled the fallback that stamped
-     * whoever was logged into OWA onto events of a TRACKED site, which was never
-     * a visitor's identity, and it was read here and nowhere else.
-     *
-     * log_visitor_pii STAYS, and moves to what it should always have gated:
-     * user_id. That is the site's own identifier for a person -- the one field
-     * with a column, the one that persists in the visitor store, and the one that
-     * outlives a cookie, which is what makes it the only honest basis for joining
-     * a person's devices and equally the thing a privacy switch has to be able to
-     * turn off. A custom user property is the site's own decision, made by
-     * choosing to send it; user_id is part of the release vocabulary, so the
-     * install gets a say. So are the display name and email address the
-     * release's own setUserName() and the 1.x bridge produce. See
-     * gateVisitorPii().
-     */
 
     /**
      * screen_resolution as WIDTHxHEIGHT, or nothing.
@@ -2368,27 +2101,6 @@ class TrackingEventHelpers {
     /** @var array<string, array<string, string>> Resolved campaign key maps, keyed by site. */
     private static $campaignKeys = [];
 
-    /**
-     * What the landing URL claimed for one campaign property.
-     *
-     * The tracker used to parse the landing URL against campaignKeys and send
-     * six tagged_* parameters on every beacon of the session. It now carries
-     * the URL itself and the parse happens here, which is what makes the answer
-     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
-     * reprocess instead of being frozen in whatever a browser decided months
-     * ago.
-     *
-     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
-     * installs upgrade at their own pace, so beacons from the old tracker keep
-     * arriving long after the new one ships; treating what it sent as
-     * authoritative is what makes this change invisible to them. The parse is
-     * the fallback, which is also the right precedence on its own terms -- a
-     * value that was actually transmitted beats one re-derived from evidence.
-     *
-     * @param object $event
-     * @param string $name  a value of CAMPAIGN_KEYS
-     * @return string|null
-     */
     /**
      * One campaign tag off the URL THE SESSION LANDED ON.
      *
@@ -2774,22 +2486,16 @@ class TrackingEventHelpers {
      * Six columns are readings of a URL the beacon sent, and each is set by its
      * own callback off the property it reads -- page_location for the page's
      * three, HTTP_REFERER for the referrer's two, target_url for the click
-     * target's host. They used to be cut inside the row builder, which meant the
-     * registry declared six properties that nothing produced and the row builder
-     * knew how to parse a URL.
+     * target's host.
      *
      * NO MEMO, unlike the user agent's seven and the campaign tags' five. Those
      * share a parse worth keeping: browscap loads a rule set, and the tag parse
-     * walks a settings-derived key map. parse_url is a C function costing 0.27us
-     * on a tagged URL -- measured, 300k iterations -- so the memo's own string
-     * concatenation and isset() would cost about what it saved. Three URLs
-     * parsed twice each is under a microsecond an event.
+     * walks a settings-derived key map. parse_url is cheap enough that a memo would
+     * cost about what it saved.
      *
      * THE THREE READINGS OF page_location ARE INDEPENDENT. path, query and host
      * are disjoint substrings and no callback here reads another's output, so
-     * their order in the registry is free -- which is what makes six separate
-     * callbacks a mechanical substitution for one procedure rather than a
-     * rewrite with a sequence to preserve.
+     * their order in the registry is free.
      */
 
     /**
@@ -2885,8 +2591,8 @@ class TrackingEventHelpers {
     /**
      * The page's own host, not this server's (HTTP_HOST).
      *
-     * Falls back to whatever the property already held, which is what the row
-     * builder's `?:` did. Nothing on the v2 path sets it: host is set_by event,
+     * Falls back to whatever the property already held. Nothing on the v2 path
+     * sets it: host is set_by event,
      * so admitRequestParams() refuses a beacon that names it. The fallback is
      * kept because a caller building an event in process can still set one, and
      * the column is declared required.
@@ -2976,9 +2682,8 @@ class TrackingEventHelpers {
      * The click target's host, so an outbound click is a comparison against host
      * rather than a string test.
      *
-     * Reads target_url AFTER makeUrlCanonical() has filtered it, which is what
-     * the row builder did: target_url is a client property and this is a derived
-     * one, so the scopes settle the order.
+     * Reads target_url AFTER makeUrlCanonical() has filtered it: target_url is a
+     * client property and this is a derived one, so the scopes settle the order.
      *
      * @param  mixed $value
      * @param  Event $event
@@ -2991,19 +2696,6 @@ class TrackingEventHelpers {
 
         return $parts['host'];
     }
-
-    /*
-     * deriveIsOutbound() IS GONE -- the CLIENT decides outbound now.
-     *
-     * It compared target_url's host with page_location's, which only works for a
-     * sender shaped like a browser: a non-web client has neither property and still
-     * knows whether what it raised left the property. It also read the inputs of two
-     * other derived properties, and this pass walks the registry in key order, so
-     * its correctness rested on where the entry happened to sit.
-     *
-     * See OWATracker.isOutboundUrl(). is_outbound is set_by client now, so
-     * admitRequestParams() admits it like any other thing the tracker sends.
-     */
 
     /**
      * Whether a click to $target_host left the site, by the tracker's rule
@@ -3171,10 +2863,6 @@ class TrackingEventHelpers {
      * shipping are BIGINTs of minor units with the currency beside them, because
      * a float column sums to something nobody can reconcile.
      *
-     * The conversion used to happen in the row builder, which is the last place
-     * it could: a property whose value is not what its column stores is a
-     * property the registry cannot describe.
-     *
      * @param  mixed $value
      * @param  Event $event
      * @return int|null
@@ -3339,13 +3027,11 @@ class TrackingEventHelpers {
      * RETIRED_CAMPAIGN_KEYS, plus the site's query_string_filters at both
      * install and Profile scope.
      *
-     * THE CAMPAIGN TAGS ARE ONE LIST. utm_* used to stay, as "the site's own
-     * tagging", while owa_source went: so with campaignUtmParams on -- the default
-     * -- a utm-tagged visit was a different page in every page report, though
-     * attribution had read the tags exactly like OWA's own. Now the tags leave the
-     * page path's query and stay in page_location. Attribution is unaffected: it
-     * parses page_location, which keeps them (filterStoredUrls() removes only
-     * the query_string_filters names, and after the tags have been read).
+     * THE CAMPAIGN TAGS ARE ONE LIST, utm_* included: they leave the page path's
+     * query, so a tagged visit is the same page as an untagged one in every page
+     * report, and stay in page_location. Attribution parses page_location
+     * (filterStoredUrls() removes only the query_string_filters names, and after
+     * the tags have been read).
      *
      * The list is per site and settings change, so what a report shows depends on
      * the list as it was when the row was written. Making a corrected list

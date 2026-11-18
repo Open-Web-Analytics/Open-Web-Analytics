@@ -204,8 +204,7 @@ final class NotificationManagerTest extends TestCase
      *
      * These tests write to a real table that a real UI reads. Left behind, the
      * rows accumulate run after run and show up in the notification panel of
-     * whoever next logs into this install -- which is exactly how the badge
-     * ended up reading 25 with 66 undismissed behind it.
+     * whoever next logs into this install.
      */
     public static function tearDownAfterClass(): void
     {
@@ -252,10 +251,6 @@ final class NotificationManagerTest extends TestCase
             'the job sees the same releases every run; storing again would duplicate them' );
     }
 
-    /**
-     * The same underlying thing can legitimately be addressed to several
-     * people, so dedupe asks "does THIS user have it", not "does anyone".
-     */
     /**
      * A brand new install must not be greeted with a wall of history.
      *
@@ -321,6 +316,10 @@ final class NotificationManagerTest extends TestCase
         ], $source ) );
     }
 
+    /**
+     * The same underlying thing can legitimately be addressed to several
+     * people, so dedupe asks "does THIS user have it", not "does anyone".
+     */
     public function testTheSameThingCanBeAddressedToDifferentPeople(): void
     {
         $this->requireDb();

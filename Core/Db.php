@@ -1,33 +1,9 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Database Connection Class
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * The query methods every driver implements (Db\Mysql, Db\Pdo); declared
  * here so code holding a Db can call them. A row comes back column => value.
@@ -98,9 +74,8 @@ class Db extends \OWA\Core\Base {
     /**
      * Queries issued on this connection.
      *
-     * Declared since 1.0 and never incremented until now, so anything that
-     * read it saw null. The drivers count here because a claim about how many
-     * queries a code path costs is otherwise untestable -- settingRowsForChain()
+     * The drivers count here because a claim about how many queries a code path
+     * costs is otherwise untestable -- settingRowsForChain()
      * exists to turn one query per key per scope into one per chain, and that
      * is only a fact if something can count.
      *
@@ -173,9 +148,9 @@ class Db extends \OWA\Core\Base {
      * makers are evaluated as sprintf() ARGUMENTS in generateSelectQuerySql(),
      * and PHP evaluates arguments left to right in the order the format string
      * lays them out -- so the order they append in is the order they appear in.
-     * A future rearrangement that builds clauses into variables first, then
-     * assembles them in a different order, would silently transpose values
-     * between columns. DbBindingTest pins the order for exactly this reason.
+     * Building clauses into variables first, then assembling them in a different
+     * order, would silently transpose values between columns. DbBindingTest pins
+     * the order.
      *
      * @var list<mixed> whatever bindValue() was given
      */
@@ -255,15 +230,9 @@ class Db extends \OWA\Core\Base {
     /**
      * Report a statement the database refused.
      *
-     * This used to be $this->e->debug(), which under the production error
-     * handler is not written anywhere -- so a refused write produced NOTHING.
-     * That is how a strict sql_mode silently dropped page views on a live
-     * installation: the INSERT failed, the failure propagated as a false return
-     * that the tracking path does not inspect, and no log line existed to
-     * contradict the impression that everything was fine.
-     *
-     * Verified against the production handler: notice, warning and error are
-     * written; debug is not.
+     * At notice or above, because the production error handler writes notice,
+     * warning and error and drops debug -- and a refused write on the tracking
+     * path returns a false nothing inspects, so the log line is the only trace.
      *
      * The query is truncated because some of them are enormous, and the error
      * message is what identifies the problem -- the SQL is context. The full
@@ -280,8 +249,7 @@ class Db extends \OWA\Core\Base {
         $this->last_query_error = (string) $message;
         $this->last_query_was_constraint_violation = (bool) $is_constraint_violation;
 
-        // Full detail for development, unconditionally: this is the level that
-        // was already being used, so nothing that worked before is lost.
+        // Full detail for development, unconditionally.
         $this->e->debug( sprintf( 'A database error occurred. Error: %s. Query: %s', $message, $sql ) );
 
         self::$query_error_count++;
@@ -455,12 +423,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Prepare string
-     *
-     * @param string $string
-     * @return string
-     */
-    /**
      * Record a value for binding and return the placeholder that stands for it.
      *
      * Replaces interpolating an escaped value into the SQL text. The value never
@@ -473,16 +435,9 @@ class Db extends \OWA\Core\Base {
      */
     public function bindValue( $value ) {
 
-        // NULL is bound as a real SQL NULL.
-        //
-        // The escaping path could not do this: prepare( null ) returned null and
-        // sprintf( "'%s'", null ) produced '', so every unset value was written
-        // as an empty string and a permissive sql_mode coerced that to 0 in a
-        // numeric column. That is the coercion the strict-mode work exists to
-        // remove -- under STRICT_ALL_TABLES the same write is rejected outright
-        // with "Incorrect integer value: '' for column ...".
-        //
-        // Writing NULL means callers must stop relying on the coercion.
+        // NULL is bound as a real SQL NULL, not as '': under STRICT_ALL_TABLES an
+        // empty string in a numeric column is refused, and a permissive sql_mode would
+        // coerce it to 0.
         $this->_bindings[] = $value;
 
         return '?';
@@ -732,7 +687,6 @@ class Db extends \OWA\Core\Base {
         $this->limit(1);
         $ret = $this->_selectQuery();
         return (is_array($ret) && isset($ret[0])) ? $ret[0] : null;
-        //return is_null($ret)?null:$ret[0];
     }
 
     /**
@@ -917,9 +871,6 @@ class Db extends \OWA\Core\Base {
 
         foreach ($params as $k => $v) {
 
-            //$sql_cols = $sql_cols.$key;
-            //$sql_values = $sql_values."'".$this->prepare($value)."'";
-
             // Add commas
             if ($i != 0):
 
@@ -958,7 +909,7 @@ class Db extends \OWA\Core\Base {
      * A built DELETE or UPDATE with no WHERE is refused.
      *
      * where() drops a condition whose value is empty, so a caller passing an
-     * empty id built `DELETE FROM owa_user` and emptied the table. Every caller
+     * empty id would build `DELETE FROM owa_user` and empty the table. Every caller
      * of deleteFrom() and updateTable() means to touch some rows, never all.
      * The builder is reset, as after a query.
      *
@@ -1069,16 +1020,11 @@ class Db extends \OWA\Core\Base {
      * request from naming an arbitrary column. Only $v['value'] comes from
      * outside, and that is bound.
      *
-     * prepare() ran on it until it was noticed that escaping an IDENTIFIER
-     * protects nothing -- an attacker who could choose the operand would not
-     * need a quote to do damage -- while corrupting every operand that
-     * legitimately contains one. Both kinds exist: a metric with a condition
-     * generates `sum(CASE WHEN event_type = 'page_view' ...)`, so filtering a
-     * report on pageViews emitted an escaped literal and the statement was
-     * refused; a dimension built from several columns carries its separators as
-     * string literals and broke the same way. The escaped backslashes also
-     * desynchronised the placeholder count, so the driver's binding guard fired
-     * instead of a syntax error, which is what hid it.
+     * Escaping an IDENTIFIER protects nothing -- an attacker who could choose
+     * the operand would not need a quote to do damage -- and corrupts every
+     * operand that legitimately contains one: a metric with a condition
+     * generates `sum(CASE WHEN event_type = 'page_view' ...)`, and a dimension
+     * built from several columns carries its separators as string literals.
      *
      * @param  array<string, Constraint>|false $params
      * @return string|void  nothing with no conditions
@@ -1227,14 +1173,6 @@ class Db extends \OWA\Core\Base {
      * driver knows. There is no correct database-agnostic version, so the base
      * class refuses rather than offering a plausible-looking one.
      *
-     * It used to offer Sanitize::stripSql(), which was not escaping at all: it
-     * deleted parentheses, commas, and any word matching a list of SQL keywords
-     * from the value. That is not a defence -- values were already escaped by
-     * the real drivers -- and it silently corrupted data whenever it was
-     * reached. It ran on this installation's user agents for six months, giving
-     * every browser two identities and roughly quadrupling the cardinality of
-     * the user-agent dimension.
-     *
      * A third-party driver that reaches this is not escaping its
      * values, which is a defect worth hearing about immediately rather than
      * discovering later.
@@ -1320,7 +1258,6 @@ class Db extends \OWA\Core\Base {
     public function _makeOrderByClause() {
 
         $sorts = $this->_fetchSqlParams('orderby');
-        //print_r($sorts);
         if (!empty($sorts)) {
 
             $order = $this->_fetchSqlParams('order');
@@ -1803,18 +1740,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Where a month is cut, by day of month.
-     *
-     * Named for how many parts a month is divided into, never for a duration:
-     * months vary from 28 to 31 days, so any name carrying a day count would be
-     * wrong in some month. A third of January is 11 days and a third of
-     * February is 8; both are still a third of their month.
-     *
-     * Cutting only on days of the month is also what keeps every boundary
-     * aligned to a month start, which is what lets a granularity change rewrite
-     * one month at a time instead of the whole table.
-     */
-    /**
      * Partitions per table beyond which an operation asks to be confirmed.
      *
      * Each partition is a file, and they are shared with every other table
@@ -1870,14 +1795,21 @@ class Db extends \OWA\Core\Base {
     /**
      * Days of slack on the lower bound used to prune per-session queries.
      *
-     * See factLowerBound(). Sized empirically against observed anomalies, not
-     * from a known mechanism -- the one unexplained case measured in the field
-     * was two days.
+     * See factLowerBound(). Sized empirically, not from a known mechanism.
      */
     const FACT_LOWER_BOUND_SLACK_DAYS = 30;
 
     /**
      * Day-of-month cut points per granularity, coarsest first.
+     *
+     * Named for how many parts a month is divided into, never for a duration:
+     * months vary from 28 to 31 days, so any name carrying a day count would be
+     * wrong in some month. A third of January is 11 days and a third of
+     * February is 8; both are still a third of their month.
+     *
+     * Cutting only on days of the month is also what keeps every boundary
+     * aligned to a month start, which is what lets a granularity change rewrite
+     * one month at a time instead of the whole table.
      *
      * `daily` is listed last and is the only entry whose cuts a month can fail
      * to carry -- cutsForMonth() clamps the 29th through 31st away in a short
@@ -2518,12 +2450,10 @@ class Db extends \OWA\Core\Base {
     /**
      * Add and drop columns in ONE statement, rebuilding rather than instant.
      *
-     * ONE REBUILD FOR EVERYTHING IT CARRIES, which is the whole reason it takes
-     * both directions at once. Measured on a 73-partition cube: one added
-     * column 4,361ms, two added 4,247ms, one added and one dropped together
-     * 4,193ms. The rebuild is the cost and the clause count is not, so
-     * accumulating changes and applying them together is strictly cheaper than
-     * applying them as they arrive.
+     * ONE REBUILD FOR EVERYTHING IT CARRIES, which is why it takes both
+     * directions at once: the rebuild is the cost and the clause count is not,
+     * so applying accumulated changes together is cheaper than applying them as
+     * they arrive.
      *
      * INPLACE for the same reason addColumnRebuilding() pins it: the default is
      * INSTANT, and an instant column leaves row-format metadata that makes
@@ -2716,19 +2646,11 @@ class Db extends \OWA\Core\Base {
      * The slack is empirical, and deliberately generous, because the ways this
      * invariant can be broken are not fully known.
      *
-     * Both dates are server-assigned from the same clock: an event takes its
-     * timestamp in Event::__construct(), before it is persisted to the queue,
-     * and yyyymmdd is derived from that timestamp -- so neither queue lag nor a
-     * client clock can move them apart. On a 685,623-row installation four rows
-     * were nonetheless dated before their session. Three are explained: a
-     * sentinel session_id of -1, and two rows joined through a collided 32-bit
-     * crc32 id, which is not a real session at all. The fourth, two days out
-     * with a modern id, has no established cause.
-     *
+     * Both dates are server-assigned from the same clock, so neither queue lag
+     * nor a client clock can move them apart -- yet rows dated before their
+     * session do occur, one of them two days out with no established cause.
      * A month costs one extra partition on a monthly layout, which is cheap
-     * against an anomaly whose mechanism has not been identified. Narrow it
-     * only with evidence about that mechanism, not on the reasoning that both
-     * dates ought to agree -- they ought to, and in one case did not.
+     * against that. Narrow it only with evidence about the mechanism.
      *
      * Returns null where the date is unusable, in which case the caller simply
      * does not constrain -- slower, never wrong.
@@ -2853,7 +2775,7 @@ class Db extends \OWA\Core\Base {
             // constant: a 30-day month has no 31st, so a daily table's
             // boundaries are 1..30 and never equal PARTITION_CUTS['daily'].
             // For the three coarser schemes every cut is <= 22, so clamping is
-            // a no-op and this is the same comparison it always was.
+            // a no-op.
             if ( $days === self::cutsForMonth( $month_start, $granularity ) ) {
 
                 return $granularity;
@@ -4434,8 +4356,8 @@ class Db extends \OWA\Core\Base {
          * Declared rather than inherited. InnoDB's ~8,126-byte on-page row
          * limit is the one that actually stops a wide table being created, and
          * how much of a long column can be moved off the page to satisfy it
-         * depends entirely on this. Measured: the reporting cube is creatable
-         * under DYNAMIC and refused under COMPACT and REDUNDANT.
+         * depends entirely on this: the reporting cube is creatable under
+         * DYNAMIC and refused under COMPACT and REDUNDANT.
          */
         if ( defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) {
 
@@ -4475,12 +4397,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Abandons the open transaction.
      *
-     * The missing third of the pair. Until v2's ingest there was nothing to
-     * roll back -- the only callers of begin/end are the schema-update CLI, and
-     * on the tracking path each create() stood alone -- so a failure part way
-     * through several related writes had no way to undo the ones that had
-     * already landed. One beacon becoming several rows is the first thing here
-     * that needs all of them or none.
+     * v2 ingest writes one beacon as several rows, all of them or none.
      *
      * @return QueryResult
      */

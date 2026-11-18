@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * User Authentication Object
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 class Auth extends \OWA\Core\Base {
 
@@ -241,11 +215,8 @@ class Auth extends \OWA\Core\Base {
      * are cross-origin: a session cookie would be a third-party cookie, and an
      * Authorization header would turn a simple GET into a preflighted one. The
      * credential has to sit in the URL, so what matters is that it is worth as
-     * little as possible to anyone who reads it there.
-     *
-     * It replaces the user's apiKey, which was long-lived and carried the whole
-     * account. This carries one user, one endpoint, one resource, and expires
-     * in minutes.
+     * little as possible to anyone who reads it there: one user, one endpoint,
+     * one resource, and it expires in minutes.
      *
      * **Scope is checked here, before the user is loaded**, so a request outside
      * the token's scope never authenticates. Deferring the check to an

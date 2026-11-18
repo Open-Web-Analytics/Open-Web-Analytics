@@ -7,21 +7,17 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A freshly installed OWA and a migrated one must be indistinguishable.
  *
- * 1.13's Update021 gave an existing install an Organization, a Property per website
- * and "Observation Profile N" beneath it. Installing created the hierarchy
- * TABLES and nothing in them, so a brand new install had its one site sitting
- * under "Unassigned" in both the site selector and the Property roster, while
- * an install of the same age that had been migrated looked correct.
- *
- * 2.0 upgrades from 1.14, so Update021 is gone; its values are pinned below. If
- * they drift, "Observation Profile 1" means one thing on one install and
- * something else on another.
+ * An install creates the Organization, Property and "Observation Profile N"
+ * that 1.13's Update021 gave an existing install, so a new install's one site
+ * does not sit under "Unassigned" in the site selector and the Property roster.
+ * Update021's values are pinned below. If they drift, "Observation Profile 1"
+ * means one thing on one install and something else on another.
  */
 final class FreshInstallHierarchyTest extends TestCase
 {
     /**
-     * The values 1.13's Update021 gave every upgraded installation. That update
-     * is gone -- 2.0 upgrades from 1.14 -- so they are pinned here instead.
+     * The values 1.13's Update021 gave every upgraded installation, pinned
+     * here because 2.0 upgrades from 1.14 and does not carry that update.
      */
     public function testTheDefaultsMatchWhatTheMigrationUsed(): void
     {
@@ -117,15 +113,14 @@ final class FreshInstallHierarchyTest extends TestCase
     /**
      * Renaming the only Organization must not make it un-findable.
      *
-     * This looked the default up by matching DEFAULT_ORGANIZATION_NAME, and
-     * there is a screen for renaming an Organization -- so the name was a key
-     * that the product invites you to change. Renaming it made the next call
-     * mint a SECOND Organization: the rename appeared to revert, and every
-     * Property added afterwards attached to the new empty row.
+     * The default is not looked up by DEFAULT_ORGANIZATION_NAME: there is a
+     * screen for renaming an Organization, and after a rename such a lookup
+     * would mint a SECOND Organization -- the rename appearing to revert, and
+     * every Property added afterwards attaching to the new empty row.
      *
      * Asked in a FRESH PROCESS on purpose. The entity cache is per-process and
      * getByColumn() populates it, so asking again in this one is answered from
-     * the lookup made before the rename -- the same masking that let this ship.
+     * the lookup made before the rename, which would mask exactly this.
      */
     public function testRenamingTheOrganizationDoesNotMintASecondOne(): void
     {

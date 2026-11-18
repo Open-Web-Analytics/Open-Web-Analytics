@@ -7,20 +7,13 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * OWA does not fetch referring web pages.
  *
- * It used to: a new referer caused the server to issue an HTTP GET to the
- * referring URL and scrape the page's <title> and anchor text into the referer
- * dimension.
+ * The referer URL arrives on the tracking beacon, which is public and
+ * unauthenticated by design, so fetching it would let any anonymous request
+ * make the server fetch an arbitrary address, redirects and all -- for one
+ * piece of data the browser never hands over (a page's title;
+ * document.referrer gives the URL and nothing else).
  *
- * That URL arrives on the tracking beacon, which is public and unauthenticated
- * by design, and nothing constrained where it pointed -- so any anonymous
- * request could make the server fetch an arbitrary address, redirects and all,
- * and the extracted title then surfaced in reports as referralPageTitle. It
- * bought one piece of data the browser will never hand over (document.referrer
- * gives the URL and nothing else; the History API exposes no titles) at the
- * cost of turning every install into an HTTP client for anonymous input.
- *
- * Asserted absent rather than simply deleted, so the removal is a decision this
- * suite records and enforces.
+ * Asserted absent, so the decision is one this suite records and enforces.
  */
 final class RefererCrawlRemovedTest extends TestCase
 {
@@ -50,7 +43,7 @@ final class RefererCrawlRemovedTest extends TestCase
         ];
     }
 
-    /** The CLI command that crawled every stored referer is gone too. */
+    /** No CLI command crawls the stored referers either. */
     public function testTheCrawlCommandIsGone(): void
     {
         foreach ( [

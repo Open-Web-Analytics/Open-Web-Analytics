@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Installation CLI Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class InstallCli extends \OWA\Core\Controller\Cli {
@@ -54,9 +29,9 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The admin account's password is required. It used to be set to the
-     * database password from owa-config.php, so whoever could read that file
-     * could sign in as the admin, and changing one meant remembering the other.
+     * The admin account's password is required, and is not the database
+     * password: whoever could read owa-config.php could otherwise sign in as
+     * the admin.
      */
     public function validate()
     {

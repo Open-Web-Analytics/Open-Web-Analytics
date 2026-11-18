@@ -16,8 +16,8 @@ namespace OWA\Module\Base\Update;
  * The element params (element_class, element_name, element_text), the form params
  * and the two commerce ones STAY IN THE BAG, deliberately. Most installs will
  * never group by an element class or a form name, and a column is width on every
- * row of every Property whether anyone reads it or not. MEASURED on MySQL 8.4:
- * promoting nine of them took the custom-dimension ceiling from 62 to 37. A site
+ * row of every Property whether anyone reads it or not: promoting all nine would
+ * cost the custom-dimension ceiling dozens of columns on MySQL 8.4. A site
  * that does want one registers it, which is the same route its own values take.
  * ct_line_items cannot be a column at all -- it is a nested array, and needs a
  * repeated record of its own rather than a scalar.
@@ -31,13 +31,9 @@ namespace OWA\Module\Base\Update;
  * attempted: `cmd=cube-rebuild` will not do it, and thinking it might is the
  * trap.
  *
- * NO CUSTOM REGISTRATION IS CLEANED UP, and an earlier draft of this did that too.
- * A registration for `file_name` would read params.file_name, which nothing writes
- * from here on, so it would fill with NULL while still costing one of the
- * Property's twenty slots -- real, but unreachable: custom dimensions exist only on
- * the v2 branch and THE BRANCH HAS NOT SHIPPED. The only v2 install has one
- * registration and it is `plan`. Nor could it ever have collided: columnFor()
- * prefixes cd_, so the key was ever only cd_file_name.
+ * NO CUSTOM REGISTRATION IS CLEANED UP: custom dimensions never shipped in a
+ * release before this, so none can name `file_name`, and columnFor() prefixes
+ * cd_, so it could not collide.
  *
  * NOT CLI-ONLY: two columns on raw and on every cube.
  */

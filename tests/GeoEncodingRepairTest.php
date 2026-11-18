@@ -48,7 +48,7 @@ final class GeoEncodingRepairTest extends TestCase
     public function testItIsNotOnlyGermanThatWasAffected(): void
     {
         // Any name in the Latin-1 range was mangled the same way, which is why
-        // the fix is not umlaut-specific.
+        // the repair is not umlaut-specific.
         $cases = [
             'ZÃ¼rich'    => 'Zürich',
             'MÃ¡laga'    => 'Málaga',

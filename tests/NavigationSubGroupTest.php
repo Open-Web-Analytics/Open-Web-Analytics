@@ -13,8 +13,8 @@ class NavigationSubGroupProbeModule extends \OWA\Core\Module
  * Module::addNavigationSubGroup() keeps the links already added to that
  * subgroup.
  *
- * It assigned the subgroup's entry whole, so a link added before the subgroup
- * was declared, or a second declaration of it, dropped the links in it.
+ * A link added before the subgroup is declared survives the declaration, and
+ * so do a subgroup's links a second declaration of it.
  */
 final class NavigationSubGroupTest extends TestCase
 {

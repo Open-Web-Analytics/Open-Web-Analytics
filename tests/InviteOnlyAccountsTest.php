@@ -156,8 +156,8 @@ final class InviteOnlyAccountsTest extends TestCase
     }
 
     /**
-     * An account created before this change, whose stored hash IS of "$2y$10",
-     * is refused with it. Its owner sets a password through a reset link.
+     * An account whose stored hash IS of the generated value "$2y$10" is
+     * refused with it. Its owner sets a password through a reset link.
      */
     public function testSigningInWithTheOldGeneratedValueIsRefused(): void
     {

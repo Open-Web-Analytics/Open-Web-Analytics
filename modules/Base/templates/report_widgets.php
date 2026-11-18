@@ -106,10 +106,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * it for report scale. OWA has one banner, not a per-report one.
      *
      * Deliberately generic: the renderer neither knows nor cares WHY a report
-     * is deprecated. The first two carry one because the data behind them was
-     * collected by fetching referring pages, which OWA no longer does, and a
-     * report that silently renders nothing forever is worse than one that says
-     * so.
+     * is deprecated.
      */
 ?>
 <div class="notice owa_reportDeprecated" role="status">

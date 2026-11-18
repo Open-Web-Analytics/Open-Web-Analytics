@@ -33,7 +33,7 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *   - setFirstSessionTimestamp(): stamps v.fsts once (first visit) and always
  *     recomputes dsfs (days since first session) against the event timestamp.
  *
- *   - days since the prior session is NOT computed here any more. The tracker
+ *   - days since the prior session is NOT computed here. The tracker
  *     sends time_since_last_session and the server derives
  *     days_since_prior_session from it, in straight 24-hour periods -- it must
  *     be identical on every event sharing a session_id, which calendar days
@@ -46,9 +46,7 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *   - the 'isSessionizationDone' announcement, which settles the session store:
  *     a new session discards the PERSISTED store and keeps memory (holding only
  *     what this page load set); a continuing one merges the persisted values in
- *     behind memory, filling gaps only. This replaced resetSessionState(), which
- *     cleared the store and then put back what the page load had set, because by
- *     then the two were mixed and nothing distinguished them.
+ *     behind memory, filling gaps only.
  *
  * jsdom's cookie jar backs the state stores here, so these assert real
  * round-trips through OWA.getState/setState, not mocks.
@@ -93,7 +91,7 @@ function coldPage() {
  * then wipe memory.
  *
  * Tests that need a PREVIOUS session's values must persist them rather than
- * set them: the session store is no longer hydrated on first touch, so a plain
+ * set them: the session store is not hydrated on first touch, so a plain
  * setState() puts a value in memory, where it reads as something THIS page load
  * set. That distinction is the whole point of the design, and a test that seeds
  * with setState() is testing the wrong side of it.
@@ -205,10 +203,8 @@ describe('setSessionId', () => {
         expect(OWA.getState('s_session-site', 'sid')).toBeTruthy();
         expect(t.isNewSessionFlag).toBe(true);
 
-        // The id lives in the store and is what rides events. It used to be
-        // cached on the tracker as well, and this assertion used to compare the
-        // two copies; with one copy left, comparing it to the event is what
-        // still says something.
+        // The id lives in the store and is what rides events, so the event is
+        // what it is compared to.
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
         expect(event.get('session_id')).toBe(OWA.getState('s_session-site', 'sid'));
@@ -255,16 +251,6 @@ describe('setSessionId', () => {
     });
 });
 
-/*
- * "is_new_visitor has session lifetime" was here.
- *
- * The flag is gone. It said this SESSION was the visitor's first -- a
- * session-scoped restatement of a per-request fact -- and existed so v1 could
- * derive is_repeat_visitor. v2 materialises a first_visit EVENT from the
- * request-scoped is_new_visitor_created, and the one thing that still wanted
- * the session-scoped answer, writing the visitor's acquisition from any event
- * of the first session, reads prior_sessions == 0 instead.
- */
 describe('the two session-start flags have different lifetimes', () => {
 
     /*
@@ -353,10 +339,9 @@ describe('the visitor-created flag belongs to one event', () => {
         expect(beacons[0].is_new_visitor_created).toBe(true);
         expect(beacons[1].is_new_visitor_created).toBeFalsy();
 
-        // And no session-scoped twin rides alongside it. There used to be one,
-        // restating the same fact for every event of the first session; v2
-        // materialises first_visit from the flag above and derives everything
-        // session-wide in the pass.
+        // And no session-scoped twin rides alongside it: v2 materialises
+        // first_visit from the flag above and derives everything session-wide in
+        // the pass.
         expect(beacons[0].is_new_visitor).toBeUndefined();
         expect(beacons[1].is_new_visitor).toBeUndefined();
     });
@@ -386,13 +371,8 @@ describe('the visitor-created flag belongs to one event', () => {
 describe('last_req tracks activity, not page starts', () => {
 
     /*
-     * The advance runs for every event rather than once per page load. It used
-     * to sit inside the stateInit-guarded pipeline, so last_req was the
-     * timestamp of the page's FIRST tracked event and never moved -- and the
-     * timeout was therefore measured from when the previous page started, not
-     * from the last thing the visitor did. isNewSession() already reads as
-     * though this were the case: its variable is time_since_lastreq and its
-     * comment says "no requests since some time".
+     * The advance runs for every event rather than once per page load, so
+     * the timeout is measured from the last thing the visitor did.
      */
 
     test('a later event on the same page moves it', () => {
@@ -473,12 +453,8 @@ describe('setNumberPriorSessions', () => {
     });
 
     /*
-     * A first-ever session stores 0, as a NUMBER.
-     *
-     * It used to store the string "0", and the absence test was `! nps` --
-     * so the string's truthiness was the only thing keeping a first session
-     * from being read back as "never counted". Storing a number under that
-     * test would have reset the count on every visit.
+     * A first-ever session stores 0, as a NUMBER, and absence is tested for
+     * directly.
      */
     test('a first-ever session stores zero, not an absence', () => {
         const t = newTracker();
@@ -490,9 +466,8 @@ describe('setNumberPriorSessions', () => {
     });
 
     /*
-     * ...and the session after it counts 1. This is the regression: with a
-     * truthiness test, 0 reads as absent and this answers 0 forever, so every
-     * visitor stays New and nothing anywhere reports a fault.
+     * ...and the session after it counts 1: with a truthiness test, 0 would
+     * read as absent and this would answer 0 forever.
      */
     test('the session after a first one counts it', () => {
         const t = newTracker();
@@ -509,7 +484,7 @@ describe('setNumberPriorSessions', () => {
         expect(OWA.getState('v', 'nps')).toBe(1);
     });
 
-    /* A store written by the old code holds the STRING "0". It counts too. */
+    /* A store holding the STRING "0" counts too. */
     test('a legacy string zero is a count, not an absence', () => {
         const t = newTracker();
         OWA.setState('v', 'nps', '0', true);
@@ -613,11 +588,9 @@ describe('setFirstSessionTimestamp', () => {
 describe('days since the prior session is no longer computed here', () => {
 
     /*
-     * setDaysSinceLastSession() is gone. dsps is not sent at all: the server
-     * derives days_since_prior_session from time_since_last_session, counting
-     * straight 24-hour periods. One interval on the wire now feeds both
-     * daysSinceLastVisit and timeSinceLastVisit, instead of the same interval
-     * being measured twice on the client.
+     * dsps is not sent: the server derives days_since_prior_session from
+     * time_since_last_session, counting straight 24-hour periods. One interval
+     * on the wire feeds both daysSinceLastVisit and timeSinceLastVisit.
      */
 
     test('the tracker no longer sends dsps', () => {
@@ -660,8 +633,7 @@ describe('setLastRequestTime', () => {
         t.setLastRequestTime(eventAt(NOW), null);
 
         // Kept separately because it is what events report, while s.last_req
-        // moves on. The advance is not this method's job any more -- it happens
-        // for every event, in manageState().
+        // moves on. The advance happens for every event, in manageState().
         expect(OWA.getState('s_session-site', 'prior_last_req')).toBe(NOW - 1000);
     });
 

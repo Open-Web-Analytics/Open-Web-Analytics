@@ -11,17 +11,11 @@ use PHPUnit\Framework\TestCase;
  * The constructor takes both from ONE microtime() call, so they cannot straddle a
  * second boundary and disagree.
  *
- * WHAT WENT WRONG. Callers moved the clock by assigning ->timestamp, which is the
- * seconds field, and v2 reads the MICROSECOND one: `ts` is
- * edgeTimestampMicroseconds(), yyyymmdd is derived from ts, and the event id is a
- * hash over ts. So backdating moved a field the stored row does not read, and the
- * row was stamped with the real now -- no error, no warning, and the date parts
- * agreeing with each other so nothing downstream looked wrong.
- *
- * The reporting e2e seeder did exactly that, in six places, to spread a fixture
- * across four days "so the report has real shape: multiple rows in the pages grid
- * AND a non-flat timeseries". Measured before the fix: every row landed on today,
- * which is the single point that spread exists to avoid.
+ * v2 reads the MICROSECOND reading: `ts` is edgeTimestampMicroseconds(),
+ * yyyymmdd is derived from ts, and the event id is a hash over ts. Moving only
+ * ->timestamp, the seconds field, would leave the row stamped with the real
+ * now -- no error, no warning, and the date parts agreeing with each other so
+ * nothing downstream looks wrong.
  *
  * So this asserts the SEAM, not the setter: that moving the clock reaches the
  * value an event is actually stamped with.
@@ -76,9 +70,8 @@ final class RequestClockTest extends TestCase
     /**
      * And so do the date parts a report groups by.
      *
-     * yyyymmdd is what every period constraint reads. This is the assertion that
-     * fails on the old code: it answered today's date for a clock set to a day in
-     * the past.
+     * yyyymmdd is what every period constraint reads, so a clock set to a day
+     * in the past must answer that day, not today.
      */
     public function testTheDatePartsFollow(): void
     {

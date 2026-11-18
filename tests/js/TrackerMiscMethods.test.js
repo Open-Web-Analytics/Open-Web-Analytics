@@ -126,11 +126,9 @@ describe('getUrlAnchorValue / getAnchorParam', () => {
 describe('page-property convenience setters', () => {
 
     /*
-     * These used to write a global event property, private to the tracker that
-     * was called. A page title is a fact about the PAGE and an identified user
-     * is a fact about the VISITOR -- neither is a fact about one tracker -- so a
-     * site that called the setter once had only one of the trackers on the page
-     * reporting it.
+     * A page title is a fact about the PAGE and an identified user is a fact
+     * about the VISITOR -- neither is a fact about one tracker -- so a site
+     * that calls the setter once has every tracker on the page report it.
      */
 
     test('setPageTitle trims and stores it page-scoped', () => {
@@ -217,11 +215,8 @@ describe('lifecycle: pause / restart', () => {
 describe('state-derived properties are collected onto each event', () => {
 
     /*
-     * These were derived once in manageState() and cached as global event
-     * properties on the tracker. The cache was never wrong -- every branch that
-     * set it wrote the same value to the store -- but it was a private second
-     * copy of something the stores already own and every tracker on the page
-     * shares.
+     * These are read from the stores, which own them and which every
+     * tracker on the page shares.
      */
 
     test('visitor identity and counters come off the stores', () => {

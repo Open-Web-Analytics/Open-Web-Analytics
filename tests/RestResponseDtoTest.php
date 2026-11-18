@@ -5,13 +5,13 @@ use PHPUnit\Framework\TestCase;
 /**
  * REST responses expose entity properties, not entity objects.
  *
- * Views used to hand entities straight to setResponseData(), so json_encode()
- * emitted every public member the object happened to have: the property bag, but
- * also _tableProperties, wasPersisted, cache and dirty. None of that is API
- * surface, and it made the payload a function of the entity's current shape --
- * a newly added sensitive column would ship the moment it existed.
+ * json_encode() of an entity would emit every public member it has: the
+ * property bag, but also _tableProperties, wasPersisted, cache and dirty. None
+ * of that is API surface, and it would make the payload a function of the
+ * entity's current shape -- a newly added sensitive column would ship the
+ * moment it existed.
  *
- * The reduction now happens inside setResponseData(), so an entity cannot reach
+ * The reduction happens inside setResponseData(), so an entity cannot reach
  * a response without passing through it, and the fields to withhold are declared
  * on the entity next to the columns they protect.
  */
@@ -55,10 +55,9 @@ final class RestResponseDtoTest extends TestCase
         /*
          * The PUBLISHED shape: properties.<column>.value.
          *
-         * Asserted explicitly because retiring it is what broke every deployed
-         * consumer -- the WordPress plugin reads
-         * $site['properties']['site_id']['value'] and got null for a month.
-         * A change here needs a deprecation path, not a flip.
+         * Asserted explicitly because deployed consumers read it -- the WordPress
+         * plugin reads $site['properties']['site_id']['value']. A change here needs a
+         * deprecation path, not a flip.
          */
         $this->assertArrayHasKey('properties', $out);
         $this->assertSame('https://dto.example.test', $out['properties']['domain']['value']);
@@ -66,7 +65,7 @@ final class RestResponseDtoTest extends TestCase
     }
 
     /**
-     * The ORM bookkeeping that used to ride along. These are not fields anyone
+     * The ORM bookkeeping stays out. These are not fields anyone
      * asked for and they describe the storage layer, not the resource.
      */
     public function testEntityInternalsAreNotExposed()
@@ -77,9 +76,8 @@ final class RestResponseDtoTest extends TestCase
         $out = $this->reduce($site);
 
         /*
-         * 'properties' is NOT on this list any more, and that was the mistake.
-         * The bag is the resource; the bookkeeping around it is the leak. #977
-         * removed both, which fixed the leak and retired the contract with it.
+         * 'properties' is NOT on this list: the bag is the resource; the
+         * bookkeeping around it is the leak.
          */
         foreach (['_tableProperties', 'wasPersisted', 'dirty', 'cache'] as $internal) {
             $this->assertArrayNotHasKey(

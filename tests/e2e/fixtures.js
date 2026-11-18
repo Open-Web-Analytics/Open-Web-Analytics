@@ -88,7 +88,7 @@ const FIXTURE = {
         mediums: { organic: 2, referral: 1, '(none)': 1 },
     },
     // The goal event seeded by seed_reporting_fixtures.php. It has no funnel:
-    // a funnel is not part of a goal any more, it is a visualization.
+    // a funnel is a visualization.
     goal: {
         number: 1,
         name: 'E2E_Signup_Funnel',
@@ -102,10 +102,7 @@ const FIXTURE = {
      * an event step with a page_path condition). The step paths are ones the
      * pageview fixture already walks, in order, so
      * every stage counts somebody -- a funnel whose stages are all zero would
-     * render and prove nothing about the counting. `/docs` is an ordinary step
-     * here; it used to be a bar the report appended from the goal's own
-     * goal_url, and appending it was the only stage a key mismatch could
-     * silently empty.
+     * render and prove nothing about the counting.
      *
      * The id is not written down: it is minted by the seeder, so the specs find
      * it by NAME on the roster.
@@ -135,21 +132,6 @@ const FIXTURE = {
         tag: 'a',
         elementClass: 'e2e-clickable',
     },
-    /*
-     * THE ACTION EXPECTATIONS WERE HERE AND ARE REMOVED with the reports that
-     * read them.
-     *
-     * They described three metrics -- actions, uniqueActions, actionsValue -- and
-     * the dimensions actionName, actionLabel and actionGroup. v2 declares none of
-     * those and should declare none: a tracked action is a custom event named
-     * by the action, like any other event, so it is counted by the Events
-     * report grouping on eventName, and its group, label and value ride
-     * `params`, which ARE the custom dimensions.
-     *
-     * seedActions() still fires the four events -- they are real events and the
-     * Events report counts them -- but nothing asserts a shape for them here,
-     * because there is no action vocabulary left to assert against.
-     */
     /*
      * The recordings seeded by seedDomstreams().
      *
@@ -303,8 +285,7 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
  * build.
  *
  * Reports are addressed by id -- owa_do=base.report&owa_reportId=<id> -- not by
- * a per-report action. Most of them no longer HAVE one: they are configuration
- * under modules/Base/reports/, rendered by Core\ConfiguredReport. Unlike the dashboard, these pages render
+ * a per-report action: they are configuration under modules/Base/reports/, rendered by Core\ConfiguredReport. Unlike the dashboard, these pages render
  * the tabbed report layout (owa.report.createTabs -> OWA.tabs, a tablist named
  * Metrics).
  * Defaults to Browser Types -- a plain dimension report needing no extra params.
@@ -429,9 +410,8 @@ function declaredReportParams(reportId) {
  * Restricted to modules that are ACTIVE. A module registers its reports from
  * registerReports(), which only runs for modules in the active list, so a
  * definition shipped by an inactive one is a file on disk and not a report
- * anybody can open. Sweeping it means waiting twenty seconds for a widget that
- * was never going to be drawn and calling that a rendering failure -- which is
- * what happened the first time the example module shipped one.
+ * anybody can open. Sweeping it would wait twenty seconds for a widget that is
+ * never drawn and call that a rendering failure.
  *
  * base is the only module active on a default install; ACTIVE_MODULES lets a
  * spec that activates another one sweep its reports too.

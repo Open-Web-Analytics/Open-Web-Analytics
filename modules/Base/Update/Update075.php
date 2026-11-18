@@ -10,10 +10,10 @@ namespace OWA\Module\Base\Update;
 /**
  * A goal event's conversion becomes a row of its own (PLAN 1.3.2).
  *
- * Until now ingest flagged the event that met a goal event, is_goal_event = 1,
- * so the stored rows could not say WHICH goal event converted: the Goals report
- * had a total and nothing to group it by. A conversion is now a row named by
- * the goal event (Classes\GoalMarking), and the event that met it keeps 0.
+ * Before this, ingest flagged the event that met a goal event, is_goal_event = 1,
+ * so the stored rows could not say WHICH goal event converted. A conversion is a
+ * row named by the goal event (Classes\GoalMarking), and the event that met it
+ * keeps 0.
  *
  * up():
  *   - A goal event's name becomes the event name its conversion rows carry, so

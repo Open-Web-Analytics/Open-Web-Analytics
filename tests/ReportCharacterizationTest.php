@@ -11,14 +11,8 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  * Every report renders, and rendering it raises nothing.
  *
  * Every report: each definition file in modules/Base/reports, and any report
- * still implemented by a controller. Asked of the tree rather than of a list kept
- * beside it. That list used to be the conversion ledger, so a report authored
- * after the conversion -- Clicks, Events, Latest Visits, Scroll Depth -- was run by
- * none of these tests until it had been added to a map by hand.
- *
- * That silence is worth its own test. The controllers these reports replaced had
- * never been run by any test until this harness existed, and the first CI run
- * turned up three deprecations and a warning that had been there the whole time.
+ * still implemented by a controller -- asked of the tree rather than of a list
+ * kept beside it, so a new report is run without being added by hand.
  */
 final class ReportCharacterizationTest extends TestCase
 {
@@ -166,9 +160,8 @@ final class ReportCharacterizationTest extends TestCase
     {
         $snap = Harness::snapshot( 'pages' );
 
-        // pages is laid out as widgets now: the subview is the grid renderer,
-        // and what used to be top-level metrics/resultsPerPage is the query of
-        // the widget that asks for them. Same values, read where they now live.
+        // pages is laid out as widgets: the subview is the grid renderer, and
+        // metrics/resultsPerPage are the query of the widget that asks for them.
         $this->assertSame( 'base.reportWidgets', $snap['config']['subview'] );
 
         $widgets = $snap['config']['widgets'];

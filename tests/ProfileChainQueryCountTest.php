@@ -7,13 +7,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A Profile's settings resolve in one query.
  *
- * The walk used to cost three: load the site row to find its property_id, load
- * the property row to find its organization_id, then ask for the settings. Two
- * whole queries to fetch two foreign keys, on the first scoped read of every
- * request that touches a site -- which is every tracking hit and every report.
- *
- * A join does the walk and the fetch together. What has to stay true is that it
- * answers the SAME thing the walk did, so these tests pin the answers as well as
+ * A join does the walk -- site to property_id, property to organization_id --
+ * and the fetch together, on the first scoped read of every request that
+ * touches a site, which is every tracking hit and every report. What has to
+ * stay true is that it answers the SAME thing the walk would, so these tests pin the answers as well as
  * the count: a faster query that resolves a different value is not an
  * optimisation.
  */
@@ -232,8 +229,7 @@ final class ProfileChainQueryCountTest extends TestCase
                 'A setting whose Profile no longer exists became unreadable.' );
 
             /*
-             * And the fallback costs what the walk used to: the empty join, then
-             * the generic read. The site lookup is not repeated, because an
+             * And the fallback costs two: the empty join, then the generic read. The site lookup is not repeated, because an
              * empty result already tells us there are no ancestors.
              */
             \OWA\Core\CoreAPI::settingCacheFlush();

@@ -222,10 +222,8 @@ abstract class RestControllerTestCase extends TestCase
      */
     protected function runControllerData(string $class, string $controllerFile, array $params): array
     {
-        // Controllers autoload by name (compat bridge + Composer PSR-4); only fall
-        // back to an explicit require if the class is somehow not yet defined. The
-        // legacy 'controllers/<file>.php' path no longer exists post-PSR-4, so this
-        // require must stay guarded.
+        // Controllers autoload by name (compat bridge + Composer PSR-4); the require
+        // is only a fallback for a class not yet defined, so it stays guarded.
         if (!class_exists($class)) {
             $path = ($controllerFile[0] === '/')
                 ? $controllerFile

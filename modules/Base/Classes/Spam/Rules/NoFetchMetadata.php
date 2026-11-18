@@ -13,10 +13,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  *
  * The browser sets Sec-Fetch-* itself on every request, and a page cannot
  * remove them. An HTTP client sending a browser's user agent sends none unless
- * it is written to. Measured on 2,701 beacons for app.openwebanalytics.com: every
- * Firefox, every Safari from 16.4 and every real Chrome beacon carried
- * Sec-Fetch-Mode; the ones without it were Googlebot, one iPhone on iOS 15.6 and
- * forged-Chrome bots.
+ * it is written to.
  *
  * The browsers, and the first version of each that sends it:
  *

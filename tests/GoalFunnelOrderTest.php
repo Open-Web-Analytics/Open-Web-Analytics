@@ -5,46 +5,19 @@ use PHPUnit\Framework\TestCase;
 /**
  * A funnel counts people who moved THROUGH it, in order.
  *
- * WHAT THIS REPLACES
- *
- * Every step used to be its own query -- `visitors where pagePath == <step>` --
- * with no ordering and no dependence on the step before it. So it was not a
- * funnel: somebody who landed straight on the last page and never saw the first
- * counted in the last step, and a later step could out-count an earlier one
- * (the old code carried a "backfill check" for exactly that, which is the shape
- * of the bug rather than a fix for it).
- *
- * AND WHAT REPLACED THE REPLACEMENT
- *
- * The fix for that took MIN(timestamp) per step and then checked the times came
- * out in order. It is the obvious implementation and it is still wrong, because
- * the first time somebody reached a step OVERALL is not the first time they
- * reached it AFTER the step before. A visitor who reads the docs, comes back to
- * the home page, goes to pricing and reads the docs again has been through
- * / -> /pricing -> /docs; MIN puts the docs visit at the front and drops them.
- *
+ * Each step counts the subjects who reached it AFTER the step before -- not
+ * those who reached it at all, and not by the first time anyone reached it
+ * OVERALL. A visitor who reads the docs, comes back to the home page, goes to
+ * pricing and reads the docs again has been through / -> /pricing -> /docs;
+ * MIN(timestamp) per step would put the docs visit at the front and drop them.
  * Funnels start on home pages and pricing pages, which are exactly the pages
  * people also visit at other times, so this is the common case rather than an
  * odd one -- and the error is always an undercount at the later steps, which
  * reads as a conversion problem rather than as a bug.
  *
- * The sequencing happens in SQL now: one derived table per step, each carrying
- * every subject and the time they reached each step so far, left-joined so a
- * subject who stops is kept with a null rather than dropped. A closed funnel
- * with indirectly-followed steps, where a subject enters once in the period and
- * it is their first run through that counts.
- *
- * It was briefly a flat scan walked in PHP -- right answer, wrong cost: a row
- * per matching EVENT, materialised whole before the walk began. These tests are
- * unchanged in what they assert across all three implementations, which is the
- * useful thing about them: they pin the SEMANTICS, not the mechanism.
- *
- * AND THEN THE TABLE MOVED. The fixture seeded owa_request joined to
- * owa_document, which is what the funnel read and what v2 ingest does not write
- * at all -- so the funnel could only ever have counted zero on this branch. It
- * reads the CUBE now, one row per event, and the fixture is cube rows: a
- * Property, one Profile under it, and the same fifteen hits. Not one assertion
- * below changed, which is the test doing its job.
+ * The funnel reads the CUBE, one row per event, and the fixture is cube rows:
+ * a Property, one Profile under it, and fifteen hits. These tests pin the
+ * SEMANTICS, not the mechanism.
  *
  * THE FIXTURE IS ASYMMETRIC ON PURPOSE
  *
@@ -336,7 +309,7 @@ final class GoalFunnelOrderTest extends TestCase
     }
 
     /**
-     * The property the old "backfill check" was papering over.
+     * A later step cannot out-count the one before it.
      */
     public function testAStepCannotOutCountTheOneBeforeIt(): void
     {
@@ -381,8 +354,7 @@ final class GoalFunnelOrderTest extends TestCase
          * closed funnel is entered at step one.
          *
          * So the two scopes must disagree, and a toggle wired to nothing would
-         * show them agreeing. This used to be v4's job, which it could only do
-         * while the ordering was computed from MIN.
+         * show them agreeing.
          */
         $this->assertSame(4, $byVisitor[1], 'as people: v1, v4, v5 and v7');
         $this->assertSame(3, $bySession[1], "as visits: v1's, v4's second, and v7's");

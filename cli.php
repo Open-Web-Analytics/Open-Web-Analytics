@@ -1,31 +1,7 @@
 <?php
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * OWA Comand Line Interface (CLI)
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.2.1
  */
 
 // Ensure we are being called as a CLI process before any other processing.
@@ -74,9 +50,6 @@ $owa = new owa( $config );
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-    // setting CLI mode to true
-    //$owa->setSetting('base', 'cli_mode', true);
-    
     // An admin with no user_id. A login name here would reach nonces,
     // named-user logging and anything stored per user.
     $owa->setCurrentUser('admin');

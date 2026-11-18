@@ -5,25 +5,18 @@ require_once( __DIR__ . '/SettingsSingletonSnapshot.php' );
 use PHPUnit\Framework\TestCase;
 
 /**
- * addCapabilityToRole()'s third argument was unreachable.
+ * addCapabilityToRole()'s third argument adds the capability to
+ * `capabilitiesThatRequireSiteAccess`.
  *
- * The guard read
+ * The guard is `$role !== 'everyone'`: the 'everyone' role is the
+ * unauthenticated one, and site access cannot be required of it. Written as
+ * `! $role === 'everyone'`, PHP parses `(! $role) === 'everyone'` -- a boolean
+ * compared identically against a string, always false -- and the body never
+ * runs.
  *
- *     if ( ! $role === 'everyone' && $isSiteAccessRequired )
- *
- * which PHP parses as `(! $role) === 'everyone'` -- a boolean compared
- * identically against a string, so always false. The whole condition was
- * therefore always false and the body never ran: a capability could never be
- * added to `capabilitiesThatRequireSiteAccess`, whatever the caller asked for.
- *
- * Nothing in the tree passes `true` today, so the list is populated entirely
- * from the hard-coded default and the defect has never bitten. It would have
- * bitten the first caller that tried -- silently, by leaving a capability
- * ungated by site access while the code plainly says otherwise. That is the
- * kind of failure worth a test rather than a comment.
- *
- * The intent was `$role !== 'everyone'`: the 'everyone' role is the
- * unauthenticated one, and site access cannot be required of it.
+ * Nothing in the tree passes `true`, so a broken guard would bite only the
+ * first caller that tries: silently, by leaving a capability ungated by site
+ * access while the code plainly says otherwise.
  */
 final class CapabilitySiteAccessTest extends TestCase
 {
@@ -52,8 +45,8 @@ final class CapabilitySiteAccessTest extends TestCase
     }
 
     /**
-     * The defect: this asked for the capability to be site-access gated, and
-     * before the fix the request was silently dropped.
+     * Asking for a capability to be site-access gated adds it, rather than
+     * silently dropping the request.
      */
     public function testACapabilityCanBeAddedToTheSiteAccessList(): void
     {

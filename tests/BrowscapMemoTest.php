@@ -7,16 +7,12 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * The user-agent parse is memoised PER AGENT, not per process.
  *
- * It used to keep the first parse a process made and ignore every $ua handed to
- * it afterwards. One request parses once either way, so nothing showed -- but a
- * queue drain walks many events in one process, and every one of them after the
- * first was versioned by whichever agent the drain happened to see first.
- * Everything read off that parse went with it: browser, browser_version, os,
- * os_version, device_type, device_brand, device_model.
- *
- * Found while making those five columns into properties with callbacks of their
- * own: five callbacks each asking for the parse is only cheap if the memo keys on
- * what they ask for.
+ * A queue drain walks many events in one process. Memoised per process, every
+ * event after the first would be versioned by whichever agent the drain saw
+ * first, and everything read off that parse with it: browser, browser_version,
+ * os, os_version, device_type, device_brand, device_model. The five callbacks
+ * that each ask for the parse are cheap because the memo keys on what they ask
+ * for.
  */
 final class BrowscapMemoTest extends TestCase
 {

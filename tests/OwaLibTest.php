@@ -63,9 +63,8 @@ final class OwaLibTest extends TestCase
     }
 
     /**
-     * An array used to be concatenated into the string, which is a PHP warning
-     * and puts the literal "Array" in the URL as the value. This is what was
-     * reaching the Apache error log from base.updatesApply.
+     * An array value is dropped, not concatenated into the string -- a PHP
+     * warning, and the literal "Array" in the URL as the value.
      */
     public function testNonScalarValuesAreDroppedRatherThanStringified(): void
     {

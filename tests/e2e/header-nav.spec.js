@@ -9,9 +9,7 @@
  * to assistive technology are all runtime behaviour -- the markup alone says
  * none of it.
  *
- * And the spacing. The links used to be fixed-width boxes whatever their text,
- * so the gaps between the words were all different; that is a measurement, not
- * a class name.
+ * And the spacing, which is a measurement, not a class name.
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, loginAs, adminLogin } = require('./fixtures');
@@ -28,10 +26,7 @@ test.describe('the top bar', () => {
     });
 
     /**
-     * The greeting is gone.
-     *
-     * "Hi, <name> !" spent the widest part of the bar saying hello. The name is
-     * the control now, so there is nothing left to greet with.
+     * No greeting: the name is the control.
      */
     test('there is no greeting, and the name is a control', async ({ page }) => {
         await expect(page.locator('#owa_header')).not.toContainText('Hi,');
@@ -146,13 +141,8 @@ test.describe('the top bar', () => {
     /**
      * EVERYTHING SITS ON THE LOGO'S CENTRE LINE.
      *
-     * Every item in this header is floated, and a float takes its own height
-     * and sits at the top of the content box -- so the logo (55px) and the
-     * round buttons (40px) each started at the same top edge and
-     * ended in three different places, none of them centred on any other.
-     *
-     * Measured, because that is what the defect was: a class name cannot say
-     * whether two boxes share a centre line.
+     * Measured, because a class name cannot say whether two boxes share a
+     * centre line.
      */
     test('the logo and the buttons share one centre line', async ({ page }) => {
         const middles = await page.evaluate(() => {
@@ -351,8 +341,7 @@ test.describe('the top bar', () => {
          *
          * Documentation is the thing an anonymous reader is most likely to
          * want, and every destination in this menu is a public GitHub URL, so
-         * none of it depends on having a session. It used to sit inside the
-         * signed-in branch and vanish with the rest of the account chrome.
+         * none of it depends on having a session.
          */
         test('help is still offered, and still opens', async ({ page }) => {
             await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`,

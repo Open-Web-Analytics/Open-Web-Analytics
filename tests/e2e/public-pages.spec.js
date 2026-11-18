@@ -18,12 +18,8 @@ test.describe('the signed-out pages', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
     /**
-     * THE MARKUP THAT WAS THERE.
-     *
-     * The reset form closed a table that was never opened -- </TD></TR>, a
-     * <TR>, then </TABLE> -- left behind when it stopped being a table, and
-     * browsers dropped the stray tags silently. Both it and the set-password
-     * form were wrapped in "spiffy" rounded-corner spans.
+     * THE MARKUP: no stray table tags, and no "spiffy" rounded-corner
+     * spans, on the reset and set-password forms.
      */
     test('none of the old markup survives', async ({ page }) => {
         for (const action of ['base.loginForm', 'base.passwordResetForm']) {

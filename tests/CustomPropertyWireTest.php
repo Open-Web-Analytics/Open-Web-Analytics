@@ -14,10 +14,6 @@ use OWA\Module\Base\Handler\EventRawHandlers;
  * name (`epn_` / `vpn_`), and a cap bounds how many ride each beacon. Together
  * they are what lets the endpoint run an ALLOWLIST: a namespace can be
  * admitted without knowing one of a site's keys.
- *
- * Before this, log.php ran a denylist -- it refused the names the server
- * computes and passed everything else, so the gate was open for exactly the
- * inputs nobody had thought about.
  */
 final class CustomPropertyWireTest extends TestCase
 {
@@ -36,8 +32,7 @@ final class CustomPropertyWireTest extends TestCase
     }
 
     /**
-     * THE HALF THE DENYLIST LEFT OPEN. An unregistered name is refused now,
-     * where before it was sanitised and set on the event.
+     * An unregistered name is refused, not sanitised and set on the event.
      */
     public function testAnUnregisteredNameIsRefused(): void
     {
@@ -194,11 +189,9 @@ final class CustomPropertyWireTest extends TestCase
     /**
      * An older generation's properties reach the maps THROUGH THE FILTER.
      *
-     * The cv{n} slots are today's case. They used to be generated inside
-     * TrackingEventHelpers, which put a compat shim in the middle of the
-     * current vocabulary -- and made a measurement of what v2 reads report a
-     * live compat path as dead, because the slot names are built at runtime
-     * and appear nowhere as literals.
+     * The cv{n} slots are today's case: the compat layer defines them, not the
+     * current vocabulary. The slot names are built at runtime and appear
+     * nowhere as literals.
      *
      * Asserted through CoreAPI::filter() rather than by calling the compat
      * class, because the thing that can break is the REGISTRATION: drop that

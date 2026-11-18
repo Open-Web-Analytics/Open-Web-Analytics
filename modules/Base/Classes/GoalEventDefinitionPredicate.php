@@ -40,7 +40,6 @@ namespace OWA\Module\Base\Classes;
  * untranslatable property in place and switches its goal off, so the name
  * survives to be shown to whoever has to fix it.
  *
- * @since owa 1.8.0
  *
  * @phpstan-import-type Compiled from EventPredicate
  */

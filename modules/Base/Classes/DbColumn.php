@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Database Column Object
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
  
 class DbColumn {
@@ -65,15 +40,13 @@ class DbColumn {
      /**
       * May this column store NULL, or is an unset value written as ''?
       *
-      * Defaults to false, which is Entity::writeValue()'s long-standing
-      * behaviour: a text column whose value is NULL is written as '' so that
-      * rows keep the shape the pre-PDO driver gave them. That compatibility
-      * rule is about columns which ALREADY held '', and it must not be changed
-      * for them -- see the PDO null-coercion regression, where flipping ~70
-      * nullable columns the other way had to be reverted.
+      * Defaults to false: Entity::writeValue() writes a text column's NULL as ''
+      * so that rows keep the shape the interpolating driver gave them. That
+      * rule is about columns which ALREADY hold '', and must not change for
+      * them: a two-state fact would report as three.
       *
-      * A column added after that point has no such history, and NULL is the
-      * storage form v2 uses for absence: "(not set)" is a label applied when a
+      * A new column has no such history, and NULL is the storage form v2 uses
+      * for absence: "(not set)" is a label applied when a
       * value is rendered, never a value that is stored. Declaring a new column
       * nullable opts it into that, one column at a time, without touching the
       * ones the rule exists to protect.
@@ -183,17 +156,11 @@ class DbColumn {
     /**
      * Cut an over-long string down to what the column can actually hold.
      *
-     * MySQL used to do this silently, and OWA depended on it without saying so.
-     * It is not a rare path: on a live install ~15% of document urls and ~9% of
-     * referer urls sit at exactly the column limit, which is the fingerprint of
-     * a value that arrived longer and got trimmed on the way in.
-     *
-     * Under a permissive sql_mode that trim is a warning nobody reads. Under
-     * STRICT_ALL_TABLES it is an ERROR, and the whole INSERT is refused -- so
-     * the page view is not truncated, it is LOST, and silently, because the
-     * write path does not surface the failure. Healing the value here is what
-     * makes strict mode safe to turn on: the row still lands, holding what it
-     * always held.
+     * Under a permissive sql_mode MySQL trims an over-long value with a warning
+     * nobody reads. Under STRICT_ALL_TABLES it is an ERROR, and the whole INSERT
+     * is refused -- so the page view would not be truncated, it would be LOST,
+     * silently. Long URLs are common. Healing the value here keeps strict mode
+     * safe: the row still lands, holding what a permissive server would store.
      *
      * Measured in CHARACTERS, not bytes, because the column is declared that
      * way -- and cutting a UTF-8 sequence in half would produce a value that
@@ -231,9 +198,8 @@ class DbColumn {
      * OWA declares utf8, which in MySQL is utf8mb3 and holds no character above
      * U+FFFF. An emoji in a page title is therefore unstorable -- and what
      * MySQL does with it is not drop the character, it drops THE REST OF THE
-     * STRING. Measured: a 35-character title containing one emoji stores as 13
-     * characters. Everything from the emoji onward is gone, silently, under the
-     * permissive mode. Under a strict mode the whole row is refused instead.
+     * STRING, silently, under the permissive mode. Under a strict mode the whole
+     * row is refused instead.
      *
      * Dropping the offending character costs one character rather than the
      * remainder, and leaves something storable either way. It is a floor, not a
@@ -384,19 +350,12 @@ class DbColumn {
      /**
       * THE COLUMN'S OWN DEFINITION, AND NOTHING ELSE.
       *
-      * An index is a TABLE-level clause, not part of a column definition. This
-      * used to append `, INDEX (col)` here, which reads fine inside a CREATE
-      * TABLE's parenthesised list and is a syntax error everywhere else -- so
-      * `ALTER TABLE t ADD col VARCHAR(255), INDEX (col)` was rejected outright
-      * and addColumn() had never once worked for an indexed column.
+      * An index is a TABLE-level clause, not part of a column definition: `, INDEX
+      * (col)` reads fine inside a CREATE TABLE's parenthesised list and is a syntax
+      * error in `ALTER TABLE t ADD col VARCHAR(255), INDEX (col)`.
       *
-      * It went unnoticed because a fresh install CREATEs its tables from the
-      * current entity, indexes and all; only an upgrade adding an indexed
-      * column to an existing table takes this path, and that is what stopped a
-      * live upgrade dead at Update026.
-      *
-      * createTable() asks isIndexed() and writes the table-level clause
-      * itself; Entity::addColumn() adds the index as its own statement.
+      * createTable() asks isIndexed() and writes the table-level clause itself;
+      * Entity::addColumn() adds the index as its own statement.
       *
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
       *                                table that declares a composite one
@@ -452,7 +411,6 @@ class DbColumn {
         // of it, so the caller can ask for the inline one to be left off.
         if ($this->get('is_primary_key') == true && ! $omit_primary_key):
             $definition .= ' '.OWA_DTD_PRIMARY_KEY;
-            //$definition .= sprintf(", INDEX (%s)", $this->get('name'));
         endif;
 
          return $definition;

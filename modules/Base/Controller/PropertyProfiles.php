@@ -5,7 +5,7 @@ namespace OWA\Module\Base\Controller;
  * A Property's Observation Profiles: the roster a Profile is reached from.
  *
  * Reports are of a Property, so the site control stops there and a Profile is
- * no longer picked from it. Its own screens -- details, how it observes, its
+ * not picked from it. Its own screens -- details, how it observes, its
  * tag -- are reached from a row here.
  */
 class PropertyProfiles extends \OWA\Core\AdminController {

@@ -12,9 +12,8 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * "Linux" with a Mac or Windows agent, "Windows" with an Android or iOS one.
  *
  * A Chromium browser derives both from the same system, so they agree. A bot
- * that sets the hints by hand gets them wrong: measured the week before the
- * 4 November attack, 18 Mac agents with platform "Linux" and 117 `android`
- * agents with platform "Windows", and no real browser.
+ * that sets the hints by hand gets them wrong: Mac agents with platform
+ * "Linux", `android` agents with platform "Windows".
  *
  * Never fires for "Unknown", for an agent whose system it cannot tell
  * (Client::osClass()), or for a value outside the list (CH_INVALID_VALUE's).

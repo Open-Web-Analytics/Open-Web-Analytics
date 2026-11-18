@@ -9,8 +9,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * page gets a Play link.
  *
  * The page is the location the beacon claimed, and anyone can send a beacon.
- * A recording whose location was javascript: had a Play link that ran script
- * in OWA's own window when a reader clicked it. The page is opened with the
+ * A recording whose location is javascript: would have a Play link that runs
+ * script in OWA's own window. The page is opened with the
  * player's data link in its fragment, so it must also be on the Profile's
  * domain or a subdomain of it, as the heatmap launcher requires.
  */

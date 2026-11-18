@@ -2,10 +2,6 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
 
 /**
- * The seeded custom report of metric boxes with no chart above them, found by
- * name on the roster: its id is minted at seed time.
- */
-/**
  * A visits table's Visit Start cells, asserting it is the first column after
  * the row number.
  */
@@ -16,6 +12,10 @@ async function startColumn(grid) {
     return grid.locator(`tr.owa_gridRow td:nth-child(${head.indexOf('Visit Start') + 1})`);
 }
 
+/**
+ * The seeded custom report of metric boxes with no chart above them, found by
+ * name on the roster: its id is minted at seed time.
+ */
 async function boxesReport(page) {
 
     await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
@@ -321,19 +321,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * The chosen metric survives a refetch, and the boxes do not multiply.
-     *
-     * THE BUG THIS EXISTS FOR
-     *
-     * kpiBox built its container selector as `dom_id + ' > .metricInfobox...'`
-     * with no leading '#', which is a valid CSS TYPE selector -- an element
-     * called <siteTrend-metrics> -- so it matched nothing. The remove() before
-     * each rebuild was a silent no-op and every new result set appended ANOTHER
-     * full set of boxes beneath the old ones. Every granularity change, page
-     * change and site change doubled them.
-     *
-     * It went unnoticed because nothing read the boxes; marking one of them is
-     * what made two of them visible.
+     * The chosen metric survives a refetch, and the boxes do not multiply: a
+     * container selector that matched nothing would make the remove() before
+     * each rebuild a no-op, and every new result set would append another full
+     * set of boxes beneath the old ones.
      */
     test('the metric boxes rebuild rather than accumulate', async ({ page }) => {
         const boxes = page.locator('#siteTrend-metrics .owa_metricInfobox');
@@ -382,8 +373,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(underTrend.sparklines).toBe(0);
 
         /*
-         * ...and a widget of boxes with no chart above them is untouched. No
-         * shipped report has one any more, so it is the seeded custom report's.
+         * ...and a widget of boxes with no chart above them is untouched -- the
+         * seeded custom report's.
          */
         await page.goto(await boxesReport(page), { waitUntil: 'networkidle' });
 
@@ -450,10 +441,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the metric boxes read in the order the query asked for', async ({ page }) => {
 
         /*
-         * THE SERVER IS MADE TO ANSWER OUT OF ORDER. It answers in query order
-         * now, so on its own this fixture no longer exercised kpiBox's
-         * reordering at all -- the guard below said so and failed. Reversing the
-         * aggregates on the way in puts the reordering back under test.
+         * THE SERVER IS MADE TO ANSWER OUT OF ORDER. It answers in query order,
+         * so on its own this fixture would not exercise kpiBox's reordering.
+         * Reversing the aggregates on the way in puts the reordering under
+         * test.
          */
         await page.route('**/api/index.php?*', async (route) => {
             const url = route.request().url();
@@ -593,13 +584,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await grids.count()).toBeGreaterThanOrEqual(1);
 
         /*
-         * Scoped to #top-pages, not the whole page.
-         *
-         * Counting every grid row on the dashboard only ever matched the
-         * seeded page count because the OTHER grids had nothing to draw --
-         * the fixture attributed no traffic, so #top-referers took the
-         * explorer's empty branch. Now that it has a referral to show, a
-         * page-wide count measures both grids and this read 5 for 4 pages.
+         * Scoped to #top-pages, not the whole page: a page-wide count would
+         * measure the referrers grid too.
          */
         const rows = page.locator('#top-pages tr.owa_gridRow');
         await expect(rows).toHaveCount(FIXTURE.expectedGridRows, { timeout: 20_000 });
@@ -607,9 +593,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         /*
          * By PAGE, not by title. Top Content is a grid-card grouped by
          * pagePath -- one metric against one dimension, which is what a card
-         * is -- where it used to be a grid grouped by pageTitle with the path
-         * carried alongside it and hidden. The cell also holds the row's
-         * Actions button, which is not the value.
+         * is. The cell also holds the row's Actions button, which is not the
+         * value.
          */
         const cells = await page.evaluate(() =>
             [...document.querySelectorAll('#top-pages tr.owa_gridRow td:first-child')]
@@ -636,18 +621,14 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * The referrers grid, which had nothing to draw until the fixture
-     * attributed its traffic.
+     * The referrers grid.
      *
      * One row: the grid constrains to medium==referral, and of the four seeded
      * visits exactly one is a referral -- the other three are two organic
      * searches and a direct. So the count is the constraint working.
      *
-     * It shows the referring URL. It used to show referralPageTitle and hide the
-     * url, but that title was only ever filled by fetching the referring page,
-     * which OWA no longer does -- so every row read '(not set)', including the
-     * link text. The column and its dimension are kept and simply stop being
-     * populated; nothing about the schema changed.
+     * It shows the referring URL: referralPageTitle would need the referring
+     * page fetched, which OWA does not do.
      */
     test('the grid renders the seeded referring site', async ({ page }) => {
         await expect(page.locator('#top-referers tr.owa_gridRow'))
@@ -848,14 +829,14 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {
-        // Regression: makeImageLink() (owa_template.php) emits the <img> src for
-        // server-rendered images (the header logo, browser/referral/document icons,
-        // etc.). It must resolve against images_url (the public/ asset tree the build
-        // copies base/i/ into), NOT modules_url -- the deny-all .htaccess blocks the
-        // whole modules/ tree, so a modules/base/i/... src is a broken (403) image.
-        // The header logo is rendered via makeImageLink on every admin page, so it is
-        // a reliable anchor. NOTE: probing the static URLs directly (access-hardening
-        // spec) does NOT catch this -- only asserting the emitted src does.
+        // makeImageLink() emits the <img> src for server-rendered images (the header
+        // logo, browser/referral/document icons, etc.). It must resolve against
+        // images_url (the public/ asset tree the build copies base/i/ into), NOT
+        // modules_url -- the deny-all .htaccess blocks the whole modules/ tree, so a
+        // modules/base/i/... src is a broken (403) image. The header logo is rendered
+        // via makeImageLink on every admin page, so it is a reliable anchor. Probing the
+        // static URLs directly (access-hardening spec) does NOT catch this -- only
+        // asserting the emitted src does.
         const logo = page.locator('.owa_logo img').first();
         await expect(logo).toBeVisible();
 
@@ -1146,7 +1127,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         expect((await page.locator('.owa_gridTable thead th').allInnerTexts()).map((h) => h.trim()))
             .toContain('Browser');
 
-        // Every row is still a Chrome row and now carries a YYYYMMDD date value,
+        // Every row is still a Chrome row and carries a YYYYMMDD date value,
         // and the dates are DISTINCT -- i.e. the grid really grouped by date.
         const rowText = await page.locator('tr.owa_gridRow').allInnerTexts();
         expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
@@ -1259,12 +1240,9 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 });
 
 /**
- * "Data as of" in the header, where Live View was.
- *
- * Live View re-polled every widget on a timer, but widgets read the reporting
- * cube, which moves only when a build runs, so it refreshed nothing. The
- * header now says when the numbers were built, for a period that reaches into
- * days a build has not settled.
+ * "Data as of" in the header: when the numbers were built, for a period that
+ * reaches into days a build has not settled. Widgets read the reporting cube,
+ * which moves only when a build runs, so nothing re-polls on a timer.
  */
 test.describe('report freshness', () => {
 
@@ -1312,7 +1290,7 @@ test.describe('report freshness', () => {
         const loaded = requests.length;
         expect(loaded, 'the dashboard fetches its widgets').toBeGreaterThan(0);
 
-        // Longer than the old Live View interval (15s) and explorer default (10s).
+        // Longer than any widget refresh interval would be.
         await page.waitForTimeout(16_000);
 
         expect(requests.length, 'no widget refreshed itself').toBe(loaded);
@@ -1377,7 +1355,7 @@ test.describe('a dashboard card shows more rows from the bar under them', () => 
 
         const n = await rows.count();
 
-        // Every row is showing: the bar is gone, and the focus is on the link.
+        // Every row is showing: no bar, and the focus is on the link.
         await expect(more).toHaveCount(0);
         await expect(card.locator('[data-ui="grid-status"]')).toHaveText(`Showing ${n} of ${n} rows`);
         await expect(link).toBeFocused();

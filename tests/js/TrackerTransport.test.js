@@ -112,12 +112,12 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
     });
 
     test('structural characters in a value are url-encoded, not truncated', () => {
-        // Regression for the beacon-truncation bug: values with query-structural
-        // characters used to ride the wire raw, so a '#' started a fragment (the
-        // browser dropped everything after it) and a '&'/'=' forged a new pair.
-        // A clicked link whose href held a '#' or '&' thus lost every param that
-        // came after the page URL (c_x, site, s_id). Assert the value is
-        // percent-encoded AND that params queued after it still appear intact.
+        // Values with query-structural characters are percent-encoded: raw, a
+        // '#' would start a fragment (the browser drops everything after it) and a
+        // '&'/'=' would forge a new pair, so a clicked link whose href held a '#'
+        // or '&' would lose every param after the page URL (c_x, site, s_id).
+        // Assert the value is percent-encoded AND that params queued after it
+        // still appear intact.
         const spy = installImageSpy();
         try {
             const t = newTracker();
@@ -154,7 +154,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
     /**
      * A payload too large for the query string goes by sendBeacon WITH A BODY.
      *
-     * There is no iframe fallback any more: every browser that runs this
+     * There is no iframe fallback: every browser that runs this
      * tracker has sendBeacon, and the largest payload OWA makes is a domstream
      * chunk well inside its limit. A payload the browser refuses is dropped, and
      * the session is not persisted on it -- acceptance is what persists one.
@@ -335,10 +335,9 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
     test('a small chunk on the GET path rides complete + encoded, not truncated', () => {
         // When the blob still fits under getRequestCharacterLimit it takes the GET
-        // pixel path -- the exact path the value-encoding fix touches. The blob is
-        // riddled with '[' '"' ':' ',' and holds '&'/'='/'#' inside captured DOM
-        // values; before the fix those rode raw and truncated the beacon. Assert
-        // the blob is percent-encoded AND that seq (assembled AFTER it) arrives.
+        // pixel path. The blob is riddled with '[' '"' ':' ',' and holds '&'/'='/'#'
+        // inside captured DOM values; assert the blob is percent-encoded AND that seq
+        // (assembled AFTER it) arrives.
         const spy = installImageSpy();
         try {
             const t = newTracker();

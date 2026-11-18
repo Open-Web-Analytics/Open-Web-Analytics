@@ -124,15 +124,10 @@ final class UpdatesCliTest extends CliControllerTestCase
      * `rollback=base.34` has to reach the same class as `rollback=base.Update034`.
      *
      * The CLI's apply= and rollback= arguments are written by a human, who
-     * writes the sequence number the update is known by. Module::getUpdates()
-     * instead passes the PSR-4 class basename it read off disk. Only the second
-     * form resolved, so every targeted apply and rollback fell through to the
-     * legacy branch and died looking for owa_base_17_update.php -- a filename
-     * that stopped existing when the modules moved to PSR-4.
-     *
-     * Nothing caught it because the bare `cmd=update` path does not go through
-     * here: it applies the updates the module enumerated, already named the way
-     * this used to require.
+     * writes the sequence number the update is known by; Module::getUpdates()
+     * passes the PSR-4 class basename it read off disk. Both forms resolve. The
+     * bare `cmd=update` path does not go through here, so it cannot catch a form
+     * that fails.
      */
     public function testAnUpdateResolvesByBareSequenceAsWellAsByClassName(): void
     {
@@ -241,9 +236,8 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * rollback() must report refusal, not success. It previously returned true
-     * unconditionally, so UpdatesApplyCli printed "Rollback completed." even
-     * when nothing had run.
+     * rollback() must report refusal, not success, so UpdatesApplyCli does not
+     * print "Rollback completed." when nothing ran.
      */
     public function testRollbackReturnsFalseWhenItRefuses(): void
     {

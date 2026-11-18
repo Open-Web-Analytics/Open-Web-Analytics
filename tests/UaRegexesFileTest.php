@@ -65,8 +65,7 @@ final class UaRegexesFileTest extends TestCase {
     }
 
     /**
-     * The point of the change: a refreshed file is used with nothing to
-     * configure. Requiring a setting as well would mean most installations
+     * A refreshed file is used with nothing to configure. Requiring a setting as well would mean most installations
      * refreshed the patterns and carried on using the old ones.
      */
     public function testAMaintainedFileIsPreferredOverTheBundledCopy(): void {

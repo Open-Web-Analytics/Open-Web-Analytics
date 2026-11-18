@@ -5,15 +5,10 @@ namespace OWA\Module\Base\Entity;
 /**
  * One condition of a goal event definition.
  *
- * A goal event definition carried a single property / operator / value triple
- * to begin with, which is 1.x's shape: one goal, one URL, one match type. It is
- * not enough to describe a behaviour pattern -- "a purchase over 50 from the
- * pricing page" is two conditions, and there was no way to write it.
- *
- * So the triple moved off the definition into rows. Which also makes the shape
- * consistent with everything else here: a funnel step is a condition, a report
- * constraint is a condition, and now a definition's own test is a condition
- * too, spelled the same way each time.
+ * Rows rather than one property / operator / value triple on the definition,
+ * because a behaviour pattern -- "a purchase over 50 from the pricing page" --
+ * is several conditions. A funnel step, a report constraint and a
+ * definition's own test are each a condition, spelled the same way.
  *
  * How several combine is on the definition itself (condition_match), not here.
  * A row says what it tests; it does not get an opinion on the others.

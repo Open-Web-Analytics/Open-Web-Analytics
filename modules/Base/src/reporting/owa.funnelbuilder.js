@@ -19,13 +19,11 @@ import { bindBuilder, readVocabulary, setText, CUSTOM_TRIGGER } from './owa.goal
  *
  * The rows are .constraintRow, the same markup the report builder uses, so they
  * arrive already styled -- including the + and X buttons. Those buttons are
- * bound PER ROW inside the report builder and the result set explorer, though,
- * so reusing the markup does not reuse the behaviour: the buttons rendered,
- * looked live, and did nothing.
+ * bound PER ROW inside the report builder and the result set explorer, so
+ * reusing the markup does not reuse the behaviour.
  *
  * Delegated from the document rather than bound per row, because rows are added
- * at runtime and a per-row binding would have to be repeated for each new one --
- * which is the shape that left the originals unbound here in the first place.
+ * at runtime and a per-row binding would have to be repeated for each new one.
  *
  * Progressive enhancement: with no JavaScript the form still saves whatever
  * steps were rendered. The server validates by TYPE and numbers the steps it
@@ -33,12 +31,9 @@ import { bindBuilder, readVocabulary, setText, CUSTOM_TRIGGER } from './owa.goal
  */
 
 /*
- * Any list that opts in, not just the funnel.
- *
- * A goal event definition's conditions are a repeatable list for the same
- * reason a funnel's steps are, and they were built twice before this was
- * generalised. The list declares itself with data-owa-repeatable so a third one
- * needs no JS at all.
+ * Any list that opts in, not just the funnel: a goal event definition's
+ * conditions are a repeatable list too. The list declares itself with
+ * data-owa-repeatable, so another one needs no JS at all.
  */
 var LIST_SELECTOR = '[data-owa-repeatable]';
 

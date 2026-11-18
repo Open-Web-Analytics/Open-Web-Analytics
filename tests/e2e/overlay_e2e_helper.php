@@ -136,14 +136,10 @@ function provision(): array
     $site_id = md5(OVERLAY_DOMAIN);
 
     /*
-     * THROUGH SiteManager, because a site needs a PROPERTY.
-     *
-     * This built the row by hand, which was enough while nothing about this
-     * fixture read the cube. It is not now: a cube belongs to a Property, and
-     * createNewSite() is what mints one -- a site IS an Observation Profile. A
-     * hand-built row has property_id empty, so buildOverlayCube() found no
-     * Property and provision() refused, which is how this fixture went from
-     * passing over v1 rows to failing outright.
+     * THROUGH SiteManager, because a site needs a PROPERTY: a cube belongs to
+     * a Property, and createNewSite() is what mints one -- a site IS an
+     * Observation Profile. A hand-built row has property_id empty, so
+     * buildOverlayCube() would find no Property and provision() would refuse.
      *
      * Idempotent, and it recognises an existing site, so cleanup() having run
      * first is not a precondition.
@@ -165,17 +161,12 @@ function provision(): array
      * NO DOCUMENT ROW, and no owa_click rows either.
      *
      * The heatmap is an ordinary dimensional query -- eventCount grouped by clickX
-     * and clickY, constrained on pagePath and eventName -- and on v2 every one of
-     * those is a COLUMN on the click row itself. owa_document existed because a v1
-     * click held only a foreign key; page_path and page_location ride the raw row
-     * now, so there is nothing to join to and nothing to pre-create.
+     * and clickY, constrained on pagePath and eventName -- and every one of those
+     * is a COLUMN on the click row itself, so there is nothing to join to and
+     * nothing to pre-create.
      *
-     * The clicks are seeded THROUGH logEvent below rather than written as
-     * base.click rows. That fixture was self-consistent -- it wrote owa_click and
-     * read owa_click back -- and self-consistency was the problem: the v1 chain is
-     * unregistered, so a real click never reaches that table, and the specs passed
-     * over data no tracked site can produce. The overlay was in fact broken, in
-     * two places at once, and neither showed here.
+     * The clicks are seeded THROUGH logEvent below, so the specs run over data a
+     * tracked site can produce.
      */
 
     seedClicks($site_id);
@@ -213,11 +204,8 @@ function provision(): array
         'domain'         => OVERLAY_DOMAIN,
         'user_id'        => $user_id,
         /*
-         * document_id is no longer returned. It named a base.document row this
-         * fixture used to mint so a v1 click had something to join to, and the
-         * heatmap's query joins nothing now -- page_path and page_location are
-         * columns on the click row. Returning an id for a row that does not exist
-         * is worse than omitting it.
+         * No document_id: the heatmap's query joins nothing -- page_path and
+         * page_location are columns on the click row.
          */
         'recording_id'   => $recording_id,
         'clicks'         => countClickEvents($site_id),
@@ -355,9 +343,8 @@ function overlayGuid(): string
  * The cube, which is what the heatmap's query reads.
  *
  * Raw alone is not enough: every report goes through the cube, so a fixture that
- * seeds raw and stops hands the overlay an empty result that still answers 201 --
- * the shape of a test passing for the wrong reason, which is what this fixture
- * was already doing by another route.
+ * seeds raw and stops hands the overlay an empty result that still answers 201,
+ * and a test passing for the wrong reason.
  */
 function buildOverlayCube(string $site_id): array
 {

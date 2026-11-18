@@ -1,35 +1,10 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * User Manager Class
  * 
  * handels the common tasks associated with creating and manipulating user accounts
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class UserManager extends \OWA\Core\Base {
@@ -98,14 +73,12 @@ class UserManager extends \OWA\Core\Base {
     /**
      * Delete a user, and the site access that only meant anything for them.
      *
-     * The grants in owa_site_user were left behind, keyed on a user row that
-     * no longer existed. Nothing reads them -- every screen lists users and
-     * looks their grants up, never the reverse -- so they accumulated
-     * invisibly, and Property Access Management could not clear them either:
-     * it submits a delta of the users it RENDERED, and a deleted user is never
-     * rendered, so its row survived every save forever.
+     * Grants left in owa_site_user for a deleted user would be invisible --
+     * every screen lists users and looks their grants up, never the reverse --
+     * and Property Access Management could not clear them: it submits a delta of
+     * the users it RENDERED.
      *
-     * They are also not quite inert. User ids are auto-increment rather than
+     * They would not be quite inert either. User ids are auto-increment rather than
      * derived from the username, so re-creating a deleted username does NOT
      * inherit its access -- but a restore from backup can reset the counter to
      * MAX(id)+1, and then a new user can be minted onto a deleted user's id and

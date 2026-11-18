@@ -1,34 +1,9 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * OWA Core API
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-import-type Bindings from \OWA\Core\Db
@@ -81,11 +56,11 @@ class CoreAPI {
      */
     public $params;
 
-    // @depricated
-    // @todo remove
     /**
      * @param  array<string, mixed> $params
      * @return \OWA\Core\CoreAPI
+     * @deprecated
+     * @todo remove
      */
     public static function singleton($params = []) {
 
@@ -105,14 +80,10 @@ class CoreAPI {
     /**
      * The driver name to actually load for a configured db_type.
      *
-     * Every existing install has db_type = 'mysql', which historically meant the
-     * mysqli driver. It now means "MySQL", and PDO is used to reach it wherever
-     * pdo_mysql is available -- so installs get bound parameters without editing
-     * owa-config.php, and a host that has mysqli but NOT pdo_mysql keeps working
-     * instead of being left broken by an upgrade. That combination is unusual on
-     * distro-packaged PHP, where one package ships both, but it is entirely
-     * possible in containers and hand-built PHP, where extensions are enabled
-     * one at a time.
+     * db_type = 'mysql' means "MySQL", and PDO is used to reach it wherever
+     * pdo_mysql is available, else mysqli -- so a host that has mysqli but NOT
+     * pdo_mysql keeps working. That happens in containers and hand-built PHP,
+     * where extensions are enabled one at a time.
      *
      * Anything explicit is honoured as written:
      *
@@ -684,7 +655,7 @@ class CoreAPI {
     public static function settingScopeChain( $scopeType, $scopeId ) {
 
         /*
-         * Memoized because the tracking path now reads several scoped settings
+         * Memoized because the tracking path reads several scoped settings
          * per event, and each read would otherwise re-walk the hierarchy --
          * loading a site row and a property row every time. A request cannot
          * see the hierarchy change under it, so caching for its lifetime is
@@ -952,17 +923,10 @@ class CoreAPI {
         }
 
         /*
-         * Reads the scoped store, NOT owa_site.settings.
+         * Reads the scoped store, NOT owa_site.settings: the screens write there.
          *
-         * Update022 copied the blob into profile-scoped rows, and the screens
-         * write there now. Leaving this reader on the blob would have meant
-         * two sources of truth: an edit saved on the Profile screen would not
-         * be visible to any caller of this function.
-         *
-         * It also inherits, which the blob could not: a Profile with no value
-         * of its own now takes its Property's, then its Organization's, then
-         * the install's. That is the point of the tier -- and it makes the
-         * install-wide controls for these settings mean what they say.
+         * It inherits: a Profile with no value of its own takes its Property's, then
+         * its Organization's, then the install's.
          */
         return \OWA\Core\CoreAPI::getSetting( 'base', $name, 'profile', $site_id );
     }
@@ -970,17 +934,11 @@ class CoreAPI {
     /**
      * Is this site id one this installation actually knows about?
      *
-     * Tracking accepts a site id from the request and has never checked it, so
-     * an event naming a site that does not exist is recorded in full: fact rows,
-     * sessions, the lot. Nothing ever reads them, because reporting is entered
-     * through a site that cannot be selected, and nothing ever removes them. Two
-     * real installations carry 165 and 15,173 such rows.
-     *
-     * The values are not hypothetical either. Observed in production data:
-     * 'yoursiteidgoeshere' and 'your_site_id' (the documentation placeholder,
-     * pasted into live tracking code), 'No options are available.' (a select-box
-     * label submitted as a value), and one real site id truncated at six
-     * different lengths.
+     * Tracking takes a site id from the request. An event naming a site that
+     * does not exist would be recorded and never read, since reporting is
+     * entered through a site -- and such ids occur: the documentation
+     * placeholder pasted into live tracking code, a select-box label, a site id
+     * truncated.
      *
      * MEMOISED, because a queue worker processes many events per process and the
      * answer cannot change within one. A single request pays one lookup at most.
@@ -997,8 +955,8 @@ class CoreAPI {
      * Whether a site id is registered: true, false, or null when the database
      * could not answer.
      *
-     * A lookup that fails reads as no row, so an outage made every site look
-     * unregistered and every beacon of it was refused as unknown. Null is not
+     * A lookup that fails would read as no row, and an outage would make every
+     * site look unregistered. Null is not
      * memoised: the next beacon asks again.
      *
      * @param string $site_id
@@ -1415,8 +1373,8 @@ class CoreAPI {
 
         /*
          * By convention first. Handlers and filters are registered with the
-         * pre-PSR-4 directory names -- 'handlers', 'classes' -- so those are
-         * read as the directories they became.
+         * lowercase directory names -- 'handlers', 'classes' -- so those are
+         * read as their PSR-4 directories.
          */
         $dirs = [ 'handlers' => 'Handler', 'classes' => 'Classes', 'filters' => 'Filter' ];
         $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
@@ -1499,14 +1457,9 @@ class CoreAPI {
 
         $obj->module_name = $module;
         if (!$obj->schema_version) {
-            // Derive the sequence from the filename for updates that do not
-            // declare one. OWA's own all do; a module's may not.
-            //
-            // Legacy files were named '<seq>.php', so assigning $filename gave
-            // the right number. PSR-4 files are 'UpdateNNN.php', so the same
-            // assignment yielded the string 'Update004' -- which casts to 0 and
-            // makes apply()/rollback() sequence checks compare against zero.
-            // Take the digits, whichever naming form was passed.
+            // Derive the sequence from the filename for updates that do not declare
+            // one. OWA's own all do; a module's may not. Take the digits, so
+            // 'Update004.php' and '4.php' both give 4.
             $obj->schema_version = (int) preg_replace( '/\D/', '', (string) $filename );
         }
         return $obj;
@@ -1546,7 +1499,6 @@ class CoreAPI {
         }
 
         $obj = \OWA\Core\Lib::factory(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($module) . '/Classes/', $class_ns, $class, $params);
-        //$obj->module = $module;
 
         return $obj;
     }
@@ -1836,9 +1788,7 @@ class CoreAPI {
      * Returns a consolidated list of nav links from all active modules for a particular view
      * and named navigation element.
      *
-     * A module adds one with Module::addViewNavigationLink(). 1.0 modules
-     * wrote such links into nav_links with their own view and nav_name; that
-     * form is no longer read.
+     * A module adds one with Module::addViewNavigationLink().
      *
      * @param string $view
      * @param string $nav_name the name of the navigation element that you want links for
@@ -1961,10 +1911,6 @@ class CoreAPI {
 
     /**
      * A nav group's entries by their `order`, and each entry's links by theirs.
-     *
-     * The order was stored and never read: entries rendered in the order
-     * modules registered them, so the numbers Base declares did nothing and a
-     * new entry went wherever it happened to be added.
      *
      * STABLE: equal orders keep registration order. An entry registered with
      * no order follows the ordered ones, also in registration order, so a
@@ -2111,10 +2057,9 @@ class CoreAPI {
             
         /*
          * The action registry is the only way in. A name no module registered
-         * is answered as a missing page, and never turned into a class name:
-         * the convention lookup this replaced reached any class under a
-         * module's Controller/ directory, registered or not -- an abstract
-         * base among them, which then fataled.
+         * is answered as a missing page, and never turned into a class name, so
+         * no class under a module's Controller/ directory is reachable unless
+         * registered.
          *
          * Malformed (not <module>.<action>, each a bare identifier) is a 400,
          * since it was never a route anywhere; well-formed but unregistered is
@@ -2304,8 +2249,7 @@ class CoreAPI {
      * trackingEventTypes() derives that set, so the vocabulary and the gate cannot
      * drift. Anything else is admitted if it is a legal CUSTOM event name, because
      * the tracker can emit one with any name (trackCustomEvent) and a site's own
-     * events have to reach the pipeline. They were being refused: the gate was an
-     * allowlist, so every custom event a site defined was dropped at the door.
+     * events have to reach the pipeline.
      *
      * A name starts with a letter, uses only letters, numbers and underscores,
      * and is at most 40 characters, case-sensitive. That is the same pattern a
@@ -2413,14 +2357,10 @@ class CoreAPI {
         $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $event_type ) );
         
         /*
-         * Named-user logging is a per-Profile decision, so this check runs
-         * AFTER the event is built: it needs a site_id, and before this point
-         * there is only $message, which may still be a raw array.
-         *
-         * It used to sit above that construction, reading the install-wide
-         * value. Moving it down keeps it an early bail -- nothing is stored
-         * between the two points -- while letting one Profile log named users
-         * and another not.
+         * Named-user logging is a per-Profile decision, so this check runs AFTER the
+         * event is built: it needs a site_id, and before this point there is only
+         * $message, which may still be a raw array. Nothing is stored between the two
+         * points, so it is still an early bail.
          */
         // Check to see if named users should be logged
         if ( \OWA\Core\CoreAPI::getSetting(
@@ -2485,20 +2425,13 @@ class CoreAPI {
 
         // Refuse an event for a site this installation does not have.
         //
-        // The site id arrives in the request and, until now, was written to
-        // every fact row without ever being checked. Such rows are unreachable
-        // by design -- reporting is entered through a site, and the site does
-        // not exist -- so they are recorded, never read, and never removed.
+        // Such rows would be unreachable -- reporting is entered through a site, and
+        // the site does not exist -- and tracking would be an unauthenticated write:
+        // anyone could post events naming any site id and add rows indefinitely.
         //
-        // That also made tracking an unauthenticated write: anyone could post
-        // events naming any site id and add rows indefinitely, invisible in
-        // every report while consuming partitions and open-file budget.
-        //
-        // Placed after the IP gate so a rejected request costs no
-        // lookup, and before queueing so bad events cannot fill the queue.
-        // Nothing on this path creates sites -- they come only from the admin
-        // UI, cmd=add-site and install -- so nothing legitimate is being
-        // refused.
+        // Placed after the IP gate so a rejected request costs no lookup, and before
+        // queueing so bad events cannot fill the queue. Nothing on this path creates
+        // sites -- they come only from the admin UI, cmd=add-site and install.
         $site_id    = $event->getSiteId();
         $registered = \OWA\Core\CoreAPI::siteRegistration( $site_id );
 
@@ -2768,7 +2701,7 @@ class CoreAPI {
      * setcookie()'s options for createCookie().
      *
      * SameSite is Lax, as an option of its own. A path written with it on the
-     * end, as 1.x's default was ('/; samesite=Lax'), is read up to the ;.
+     * end ('/; samesite=Lax', 1.x's default) is read up to the ;.
      *
      * @param int    $expires
      * @param string $path      '' or a path ending at a ; reads as /
@@ -2844,11 +2777,11 @@ class CoreAPI {
         return $service->request->state->get($store, $name);
     }
 
-    // depricated
     /**
      * @param  string $store
      * @param  string $name
      * @return mixed
+     * @deprecated
      */
     public static function getStateParam($store, $name = '') {
 
@@ -2976,19 +2909,6 @@ class CoreAPI {
         \OWA\Core\CoreAPI::debug( 'Handling request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         }
 
-        /*
-         * The old-style 'view' request scheme was removed here.
-         *
-         * It let a request name a view to render directly. Nothing in the
-         * codebase ever constructed such a URL -- this branch was its only
-         * consumer, with no writer in Core/, modules/, templates or JS -- so it
-         * was dead weight carried since the early releases.
-         *
-         * displayView() itself is unchanged and stays: it is still used
-         * internally to render an already-resolved view, and by View\Mail for
-         * alternate bodies.
-         */
-
         if (empty($action)) {
             $action = \OWA\Core\CoreAPI::getRequestParam('action');
             if (empty($action)) {
@@ -3031,10 +2951,7 @@ class CoreAPI {
             $request_method = $service->request->getRequestType();
 
             /*
-             * A CORS preflight. Built by class: it was looked up under its
-             * pre-PSR-4 name and file, which nothing resolves since the compat
-             * map went (#1091), so every OPTIONS request answered 500 and a
-             * browser refused the request it was asking about.
+             * A CORS preflight, built by class.
              */
             if ($request_method == 'OPTIONS') {
 
@@ -3123,10 +3040,8 @@ class CoreAPI {
     }
     
     /**
-     * Renders a REST error through the standard response envelope.
-     *
-     * Returned instead of the empty 200 these paths used to produce, which was
-     * indistinguishable from a successful call that carried no data.
+     * Renders a REST error through the standard response envelope, so it
+     * cannot be mistaken for a successful call that carried no data.
      *
      * These run BEFORE the controller authenticates, so the reply is readable by
      * anyone and says nothing a caller could not already supply: no route names,
@@ -3466,7 +3381,6 @@ class CoreAPI {
 
             }
 
-            //$seed = md5($seed . $rnd_value);
         }
         // Take the first 8 digits for our value
         $value = substr($rnd_value, 0, 8);
@@ -3562,10 +3476,9 @@ class CoreAPI {
         if ( $module_name ) {
 
             // Load a fresh module instance, symmetric with activateModule() and
-            // installModule(). deactivate() only flips the persisted is_active
-            // setting on $this->name, so a boot-loaded instance is not needed --
-            // and getModule() returned false (then fataled on false->deactivate())
-            // for any module that was not already in the active/boot-loaded set.
+            // installModule(). deactivate() only flips the persisted is_active setting on
+            // $this->name, so a boot-loaded instance is not needed, and a module outside
+            // the boot-loaded set can still be deactivated.
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             return $m->deactivate();
         }
@@ -3722,8 +3635,7 @@ class CoreAPI {
     /**
      * $siteId is a Profile id. Passing it lets one Profile exclude an
      * office IP that another Profile still wants to record; omitting it
-     * falls back to the install-wide list, which is what every existing
-     * caller got before the setting became scopeable.
+     * falls back to the install-wide list.
      *
      * @param  string $ip_address
      * @param  string $siteId
@@ -3809,12 +3721,8 @@ class CoreAPI {
     /**
      * Run a filter, passing any further arguments to each listener as context.
      *
-     * VARIADIC, because EventDispatch::filter() has always supported context
-     * arguments -- it reads func_get_args() and hands array_slice($args, 1) to
-     * each listener, chaining only the first -- and this wrapper's fixed
-     * two-argument signature silently dropped them. Every filter point in the
-     * application went through here, so the capability existed and was
-     * unreachable.
+     * VARIADIC, because EventDispatch::filter() hands every argument after the
+     * first to each listener, chaining only the first.
      *
      * @param  string $filter_name
      * @param  mixed  $value    chained through the listeners

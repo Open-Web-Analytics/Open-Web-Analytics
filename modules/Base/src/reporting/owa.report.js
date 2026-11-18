@@ -155,16 +155,10 @@ OWA.report.prototype = {
     reload: function() {
     
         /*
-         * The Property is NOT read from a control any more. Choosing one is a
-         * link in the site control, so the browser navigates and the new
-         * propertyId arrives in the URL -- reload() reloads whatever is
-         * current, which is what its other caller (the period picker) actually
-         * wants.
-         *
-         * It read '#owa_reportSiteFilterSelect option:selected' until the site
-         * control replaced that select. That lookup would now return undefined
-         * and the guard below would quietly skip it, so this would have kept
-         * "working" while silently ignoring the site.
+         * The Property is not read from a control. Choosing one is a link in the
+         * site control, so the browser navigates and the new propertyId arrives in
+         * the URL -- reload() reloads whatever is current, which is what its other
+         * caller (the period picker) wants.
          */
         // reload report    
         var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);

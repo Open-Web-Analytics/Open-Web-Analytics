@@ -1,20 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /**
  * What this server has to provide before OWA can run.
  *
@@ -140,12 +126,9 @@ class EnvironmentCheck {
         }
 
         /*
-         * Whether the config file can be WRITTEN.
-         *
-         * On a docroot the web server cannot write to, an author used to fill in
-         * the whole database form before anything went wrong, and what went
-         * wrong was a file handle failing rather than a message. An existing
-         * file is fine: that path skips the form entirely.
+         * Whether the config file can be WRITTEN, checked before the database form is
+         * filled in rather than failing on a file handle afterwards. An existing file
+         * is fine: that path skips the form entirely.
          */
         $config_dir = dirname( $config_file );
 

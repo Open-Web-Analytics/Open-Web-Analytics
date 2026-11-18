@@ -7,11 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Reports are of a Property, and every Profile in it.
  *
- * The cube was always per Property; what scoped a report to one Profile was
- * the siteId every report request carried. This covers what replaced it:
- * access granted at the Property, report requests that name a Property, and
- * the roster a Profile is reached from now that the site control stops at the
- * Property.
+ * The cube is per Property. This covers access granted at the Property,
+ * report requests that name a Property, and the roster a Profile is reached
+ * from, since the site control stops at the Property.
  */
 final class PropertyScopedReportingTest extends TestCase
 {

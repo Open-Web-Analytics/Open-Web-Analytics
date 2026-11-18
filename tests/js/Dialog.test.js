@@ -77,7 +77,7 @@ describe('a dialog', () => {
         expect(content.hidden).toBe(false);
         expect(d.isOpen()).toBe(false);
 
-        // Its title attribute is the heading, and no longer a tooltip.
+        // Its title attribute is the heading, not a tooltip.
         expect(d.element.querySelector('.owa_dialogTitle').textContent).toBe('Add a widget');
         expect(content.hasAttribute('title')).toBe(false);
     });

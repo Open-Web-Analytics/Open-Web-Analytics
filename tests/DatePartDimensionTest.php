@@ -199,10 +199,10 @@ final class DatePartDimensionTest extends TestCase
     /**
      * The clock parts carry the zone as a PLACEHOLDER, filled at query time.
      *
-     * Not baked in at registration, for two reasons that both bit: the emitted
+     * Not baked in at registration, for two reasons: the emitted
      * SQL would carry the generating machine's zone, which made the catalog
      * recording unmatchable anywhere else; and an installation that changed
-     * its timezone would keep querying with the old one until something
+     * its timezone would go on querying with the old one until something
      * re-registered.
      */
     public function testTheClockPartsCarryTheZoneAsAPlaceholder(): void

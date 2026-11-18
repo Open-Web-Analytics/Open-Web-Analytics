@@ -51,9 +51,9 @@ class Retention {
     /**
      * Milliseconds per event a cube rebuild takes, low and high.
      *
-     * Measured on full rebuilds of two migrated installations: about 1.5
-     * minutes per 100,000 events when raw fits the database's buffer pool, and
-     * about 3 when it does not. An estimate shown as a range, not a promise.
+     * About 1.5 minutes per 100,000 events when raw fits the database's buffer
+     * pool, and about 3 when it does not. An estimate shown as a range, not a
+     * promise.
      */
     const REBUILD_MS_PER_EVENT = [ 0.9, 1.8 ];
 

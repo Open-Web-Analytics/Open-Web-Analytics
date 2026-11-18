@@ -8,19 +8,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Unpacking the settings blob, and putting it back, more than once.
  *
  * The schema upgrade cycle rewinds and re-applies every update IN ONE PROCESS
- * -- down(), up(), down() again -- and that is what broke this. Both entities
- * involved are setCachable() and the migration drops and recreates their
- * tables underneath them, so on the second down() a cached object answered
- * with an id, the write took the update() branch, the UPDATE matched no row in
- * the table that had just been rebuilt, and the write reported success having
- * stored nothing.
- *
- * Nothing noticed until the next cold boot, which found no schema_version and
- * sent the upgrade back to Update003 -- against a schema rewound past the
- * tables that update assumes, where it stopped dead.
+ * -- down(), up(), down() again. Both entities involved are setCachable() and
+ * the migration drops and recreates their tables underneath them, so on the
+ * second down() a cached object would answer with an id, the write would take
+ * the update() branch, match no row in the rebuilt table, and report success
+ * having stored nothing -- visible only at the next cold boot, as a missing
+ * schema_version.
  *
  * So the cycle is run here rather than only in CI, and the assertion is on the
- * SECOND pass, which is the one that was wrong.
+ * SECOND pass.
  */
 final class Update043Test extends TestCase
 {
@@ -125,9 +121,8 @@ final class Update043Test extends TestCase
     /**
      * What a cold boot would read, after the rollback.
      *
-     * The failure was only ever visible here: in-process the settings were
-     * still in memory and correct, so the rewind reported the schema version it
-     * thought it had reached, and the next process found nothing.
+     * Only visible here: in-process the settings are still in memory and
+     * correct, so a lost write shows only to the next process.
      */
     public function testAfterARollbackTheStoredSettingsStillHoldTheSchemaVersion(): void
     {

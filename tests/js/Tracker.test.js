@@ -24,12 +24,8 @@ describe('OWATracker event assembly', () => {
 
     /**
      * trackAction sends the action's OWN NAME as the event, with the rest as
-     * parameters.
-     *
-     * It used to send event_type 'custom_event' and put the name in an
-     * action_name field: v1's one-event-type-for-everything shape, told apart by
-     * a property. v2 retires it -- an event name is a name, and the group, label
-     * and value describe it, which is why eventName is a dimension.
+     * parameters: an event name is a name, and the group, label and value
+     * describe it, which is why eventName is a dimension.
      */
     test('trackAction sends the action name as the event, with eps_ parameters', () => {
         tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
@@ -41,7 +37,7 @@ describe('OWATracker event assembly', () => {
         expect(e.get('eps_action_label')).toBe('footer form');
         expect(e.get('epn_numeric_value')).toBe(10);
 
-        // The old spellings are gone, not merely unread.
+        // No action_* spellings on the event.
         expect(e.get('action_name')).toBeUndefined();
         expect(e.get('action_group')).toBeUndefined();
         expect(e.get('numeric_value')).toBeUndefined();
@@ -50,10 +46,8 @@ describe('OWATracker event assembly', () => {
     /**
      * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
      *
-     * The migration cost, stated as a test. v1 action names were free text, so
-     * 'test action' was ordinary; an event name may not contain a space in v2,
-     * so a site passing one now sends nothing and gets a
-     * debug line saying why.
+     * An event name may not contain a space, so a site passing one sends
+     * nothing and gets a debug line saying why.
      *
      * Refused rather than reshaped on purpose: silently turning 'test action' into
      * 'test_action' would invent a name the site never chose and split its history

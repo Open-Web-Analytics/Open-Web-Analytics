@@ -84,8 +84,8 @@ final class EntryPointBootstrapTest extends TestCase
      * The behavioural half, and the one that actually proves it: stand a DECOY
      * owa_env.php in the working directory and confirm cli.php ignores it.
      *
-     * Before the fix this test's decoy wins, because '.' precedes the script's
-     * own directory in include_path. A source assertion alone could be satisfied
+     * Resolved through include_path the decoy would win, because '.' precedes
+     * the script's own directory there. A source assertion alone could be satisfied
      * by a change that still resolves the wrong file.
      */
     public function testAnEntryPointIgnoresAnOwaEnvInTheWorkingDirectory(): void

@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * Stores what the builder produced.
  *
@@ -27,8 +11,6 @@ namespace OWA\Module\Base\Controller;
  *
  * Nonce-required, like every other form that writes: without it, a link
  * somebody follows could quietly rewrite one of their reports.
- *
- * @since owa 1.8.0
  */
 class CustomReportSave extends \OWA\Core\AdminController {
 
@@ -122,10 +104,8 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         /*
          * Created and saved say different things, because they answer different
-         * questions -- "did my new report get made" and "did my change stick".
-         *
-         * Codes of their own, too. This used to set 2504, which the shared
-         * catalogue defines as "Goal Saved."
+         * questions -- "did my new report get made" and "did my change stick" --
+         * and have codes of their own.
          */
         $this->setStatusCode( $id === '' ? 2510 : 2511 );
 
@@ -158,24 +138,17 @@ class CustomReportSave extends \OWA\Core\AdminController {
      * DELEGATED rather than rendered here, the same way the report dispatcher
      * delegates: the builder is a reporting screen and needs the chrome that
      * ReportController::pre() supplies, and this controller is a write that
-     * redirects on success. Setting the report view from here instead produced
-     * an entirely blank page -- no site list, no period, nothing for the view
-     * to render -- so an author who mistyped a metric name got a blank screen
-     * rather than a message.
-     *
-     * Making THIS a ReportController was the other thing tried, and it broke
-     * the success path: setRedirectAction() copies the controller's data into
-     * the redirect, and the report chrome is a site list and a period object.
+     * redirects on success. Setting the report view from here would render a
+     * blank page -- no site list, no period, nothing for the view to render.
+     * Nor can THIS be a ReportController: setRedirectAction() copies the
+     * controller's data into the redirect, and the report chrome is a site list
+     * and a period object.
      *
      * The submitted definition rides along in the params, so the builder
      * redraws what the author had rather than what was last stored.
      *
-     * Returned from both action() and errorAction(), and doAction() now uses
-     * what either one hands back. It used to discard errorAction()'s return and
-     * render this controller's own data, which names no view -- so a refusal
-     * raised by validate() rather than by action() was a blank page. That is
-     * fixed in Core/Controller.php; this assigned to $this->data as well to
-     * work around it, and no longer needs to.
+     * Returned from both action() and errorAction(); doAction() uses what
+     * either one hands back.
      * @param  string $message why, already translated
      * @return mixed the builder's answer
      */

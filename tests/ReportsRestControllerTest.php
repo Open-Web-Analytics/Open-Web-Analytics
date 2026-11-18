@@ -8,7 +8,7 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
  *   GET /owa/api/base/v1/reports  -> owa_reportsRestController (view_reports)
  *
  * A resultSet query, which REQUIRES `metrics`. The named reports
- * (/reports/{report_name}) went with v1 in 2.0 and are refused.
+ * (/reports/{report_name}) are refused.
  *
  * success() -> 201 (base.reportsRest); errorAction()/validation -> 422 (base.restApi).
  */
@@ -231,8 +231,8 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     }
 
     /**
-     * The named reports went with v1's tables in 2.0. A name is refused, not
-     * ignored, so a caller still using one is told.
+     * A report name is refused, not ignored, so a caller still using one is
+     * told.
      */
     public function testANamedReportIsRefused(): void
     {

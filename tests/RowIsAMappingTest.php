@@ -13,22 +13,15 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * registry says how each property is set and a callback sets it, so assembling a
  * row is property name -> column name and a coercion, and nothing else.
  *
- * WHY THIS IS A TEST AND NOT A CONVENTION. Sixteen columns used to be computed
- * inside row(): five readings of the user agent, five campaign tags, six
- * readings of a URL, and the three money conversions. Each one was reasonable
- * where it stood and together they cost three defects that a mapping cannot
- * express:
+ * WHY THIS IS A TEST AND NOT A CONVENTION. A value computed inside row() lets
+ * its producer and its column drift apart, in ways a mapping cannot express:
  *
- *   - `revenue` read a property of that name. The registry declares none -- the
- *     wire sends ct_total -- so every purchase ever stored wrote NULL.
- *   - two of the sixteen came back from helper methods merged with `+=`, which
- *     silently keeps the key the literal already set. browser_version was the
- *     parser's answer in one and the beacon's claim in the other.
- *   - goal conditions were matched before those helpers merged, so a goal
- *     declared on device_type or a tagged_* value matched nothing, silently.
+ *   - a column reading a property the registry does not declare writes NULL on
+ *     every row (`revenue`, where the wire sends ct_total);
+ *   - a helper merged with `+=` silently keeps the key the literal already set;
+ *   - goal conditions matched before such a helper merges match nothing.
  *
- * All three are the same shape: a value's producer and its column drifted apart
- * because nothing required them to be the same statement. This requires it.
+ * This requires the producer and the column to be the same statement.
  *
  * DERIVED FROM THE SOURCE, not from a hand-kept list, so a column added
  * tomorrow is covered without anyone remembering this file exists.
@@ -287,10 +280,7 @@ final class RowIsAMappingTest extends TestCase
      * And every column the registry declares is actually written.
      *
      * The other direction. A property can name a column that no row entry reads,
-     * and then the registry describes a value nothing stores -- which is what
-     * page_path, page_query, host, referer_host, referer_query and target_host
-     * were before their callbacks existed: declared, and filled by the row
-     * builder behind the registry's back.
+     * and then the registry describes a value nothing stores.
      */
     public function testEveryDeclaredColumnIsWritten(): void
     {

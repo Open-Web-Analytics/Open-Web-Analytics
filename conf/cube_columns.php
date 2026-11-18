@@ -5,17 +5,14 @@
  *
  * The cube's column list is the map, and this is the map. Every column
  * owa_event adds past owa_event_raw has exactly one entry; a column with none
- * is a fatal at boot, and so is a second entry for one. The previous shape
- * appended expressions to a list in an order that had to match the entity's by
- * hand, and a reordered entity would have put the right values in the wrong
- * columns with no error anywhere.
+ * is a fatal at boot, and so is a second entry for one. Keyed by column, so no
+ * order has to match the entity's.
  *
  * A DEFINITION NAMES A KIND, AND AN IMPLEMENTATION RENDERS IT -- the same rule
  * metrics and dimensions follow, for the same reason. Nothing here carries SQL,
  * and nothing here names a join alias: `session.tagged_source` is a logical
- * source that the kind resolves. A definition holding `s.s_tagged_source` would
- * be the A.1.23 mistake in a new place, and the first non-MySQL store would
- * rewrite every line of this file by hand.
+ * source that the kind resolves, so a non-MySQL store does not mean rewriting
+ * this file.
  *
  * WHAT CONFIG CANNOT DO
  *   - invent a column. The entity declares the schema; this says how a declared
@@ -99,8 +96,8 @@ return [
         'description' => 'The session\'s tagged search terms, else the terms a search engine put in its referring URL. Empty when neither has them.',
     ],
 
-    // The session's landing page, copied from that same first event. Makes a
-    // landing-page report a group-by: 215ms against 3.1s on the measured corpus.
+    // The session's landing page, copied from that same first event, so a
+    // landing-page report is a group-by.
     'landing_page_location' => [ 'kind' => 'copy', 'from' => 'session.page_location',
         'description' => 'The complete URL of the page the session landed on.' ],
     'landing_page_path'     => [ 'kind' => 'copy', 'from' => 'session.page_path',

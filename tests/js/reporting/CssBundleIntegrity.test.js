@@ -6,21 +6,18 @@ const { execSync } = require('child_process');
  * Build-integrity characterization of the combined reporting stylesheet
  * (public/base/css/owa.reporting-css-combined.css; sources in modules/Base/css/).
  *
- * This file's production moved from the PHP-CLI `cmd=build` controller
- * (base.build / owa_buildController, formerly driven by base/module.php
- * registerBuildPackages) to webpack (reportingCssConfig in webpack.config.js):
+ * Built by webpack (reportingCssConfig in webpack.config.js):
  *   - The six source CSS files are the webpack entry, in cascade order: chosen,
  *     owa, owa.admin, owa.report, owa.grid, owa.shell.
- *   - mini-css-extract-plugin emits the combined file under the SAME name to the
- *     SAME directory (modules/Base/css/), and css-loader runs with url:false so
- *     every url() is passed through verbatim -- combined with the css/ output dir,
- *     the relative asset paths (chosen-sprite.png, ../i/*) stay
+ *   - mini-css-extract-plugin emits the combined file to public/base/css/, and
+ *     css-loader runs with url:false so every url() is passed through verbatim --
+ *     combined with the css/ output dir, the relative asset paths (chosen-sprite.png, ../i/*) stay
  *     valid without rewriting a single url().
  *   - webpack-remove-empty-scripts drops the stub .js a CSS-only entry produces.
- *   - The output is NOT minified (no -min suffix), matching the retired concat.
+ *   - The output is NOT minified (no -min suffix).
  *
  * These tests pin that contract: the six sources exist, the config drives the CSS
- * through mini-css-extract (not the PHP concat), the PHP build package is gone, and
+ * through mini-css-extract, no PHP build package is registered, and
  * the built artifact carries each source's signature rule with url()s intact.
  */
 describe('reporting CSS build integrity', () => {
@@ -54,7 +51,7 @@ describe('reporting CSS build integrity', () => {
     });
 
     test('the build manifest lists the six sources in cascade order', () => {
-        // The entry (source list + order) now lives in base/build.manifest.json,
+        // The entry (source list + order) lives in base/build.manifest.json,
         // discovered by webpack.config.js. Order is load-bearing.
         expect(cssPkg).toBeDefined();
         expect(cssPkg.type).toBe('css');
@@ -73,9 +70,8 @@ describe('reporting CSS build integrity', () => {
     });
 
     test('the PHP-CLI build package is retired', () => {
-        // registerBuildPackages() (and its owa.reporting-css package) was removed from
-        // base/module.php; the parent no-op stub is inherited instead. A re-introduced
-        // package would mean two build paths fighting over one file.
+        // base/module.php registers no build package: a second one would mean
+        // two build paths fighting over one file.
         const modulePhp = fs.readFileSync(modulePhpPath, 'utf8');
         expect(modulePhp).not.toMatch(/owa\.reporting-css/);
         expect(modulePhp).not.toMatch(/registerBuildPackage\s*\(/);
@@ -115,8 +111,7 @@ describe('reporting CSS build integrity', () => {
             expect(css).toMatch(/\.owa_navShell/);        // owa.shell.css
         });
 
-        // Dialogs and tabs are OWA's own; jQuery UI's theme and the rules that
-        // restyled it are gone with it.
+        // Dialogs and tabs are OWA's own; no jQuery UI theme rule ships.
         test('no jQuery UI rule is left', () => {
             if (css === null) return;
             expect(css).not.toMatch(/\.ui-(dialog|tabs|widget|button|state|corner|icon|helper|front)\b/);
@@ -127,8 +122,7 @@ describe('reporting CSS build integrity', () => {
             // These would be rewritten/hashed/inlined if css-loader resolved url()s;
             // they must stay as authored so they resolve against the css/ dir at runtime.
             expect(css).toContain('url("chosen-sprite.png")');
-            // owa.report.css no longer points at ../i/: its triangle rules were for
-            // classes nothing used, and went with the images.
+            // owa.report.css does not point at ../i/.
         });
 
         test('no stray JS chunk is emitted alongside the stylesheet', () => {

@@ -2,28 +2,19 @@
 /**
  * Session lifecycle: does a session actually LAND?
  *
- * tracker-beacon.spec.js proves beacons leave the browser. Nothing until now
- * proved rows arrive -- that one page view yields one session, that a second
- * page view extends it rather than minting another, and (the case this suite
- * exists for) that a lost FIRST beacon does not strand every later hit.
+ * tracker-beacon.spec.js proves beacons leave the browser. This proves rows
+ * arrive -- that one page view yields one session, that a second page view
+ * extends it rather than minting another, and (the case this suite exists for)
+ * that a lost FIRST beacon does not strand every later hit: a cookie written
+ * before its beacon was delivered would assert a session the server was never
+ * told about.
  *
- * The failure being guarded against: the tracker used to write s.sid / s.last_req
- * to the cookie the moment they were derived, before the request carrying them
- * was transmitted. When that first beacon died -- typically cancelled by the
- * browser when the visitor clicked through while the 1x1 pixel was in flight --
- * the cookie asserted a session the server had never been told about. Every later
- * page then read that sid and sent no new-session flag, so on v1 the server took
- * sessionHandlers::logSessionUpdate(), which correctly aborts (on a multi-server
- * setup an update can legitimately precede its create) and requeued the event.
- * Nothing reconciled it, so one lost beacon stranded the whole session.
- *
- * WHAT "A SESSION" IS HERE, NOW. There is no owa_session row on v2 -- that whole
- * chain is unregistered. A session is the set of owa_event_raw rows sharing a
+ * WHAT "A SESSION" IS HERE. A session is the set of owa_event_raw rows sharing a
  * session_id, and its existence is a `session_start` row, materialised from the
  * request-scoped is_new_session_start flag in the same transaction as the page
  * view that carried it. session_e2e_helper.php reads exactly that, so
  * session_count is a count of markers and `dangling` is rows whose session was
- * never started. Both questions are the same ones; only the table changed.
+ * never started.
  *
  * Scenario 4 asserts a dangling row as the CORRECT current outcome, not a bug: a
  * click fired after a lost page view carries no request-scoped flag, so ingest

@@ -45,9 +45,7 @@ class Util {
     static readAllCookies() {
     
         Util.debug('Reading all cookies...');
-        //var dhash = '';
         var jar = {};
-        //var nameEQ = name + "=";
         var ca = document.cookie.split(';');
         
         if (ca) {
@@ -57,17 +55,13 @@ class Util {
                 var cat = String( ca[i] ).trim();
                 var pos = cat.indexOf( '=' );
 
-                // A fragment with no '=' is not a cookie. The PHP strpos port
-                // returned false here, and substring(0, false) is substring(0,
-                // 0) -- so this used to produce an empty key holding the
-                // fragment with its first character eaten.
+                // A fragment with no '=' is not a cookie.
                 if ( pos < 1 ) {
                     continue;
                 }
 
                 var key = cat.substring( 0, pos );
                 var value = cat.substring( pos + 1 );
-                //Util.debug('key %s, value %s', key, value);
                 // create cookie jar array for that key
                 // this is needed because you can have multiple cookies with the same name
                 if ( ! jar.hasOwnProperty(key) ) {
@@ -124,12 +118,9 @@ class Util {
                 
                     
             } else {
-                //    domain = '.'+ domain
                 Util.debug("erasing " + name + " in domain3: " + domain);
                 this.setCookie(name,"",-2,"/",domain);    
             }
-            //Util.debug("erasing " + name + " in domain: ");
-            //this.setCookie(name,"",-2,"/");    
         }
         
     }
@@ -323,7 +314,6 @@ class Util {
         
         var format = Util.getCookieValueFormat(string);
         var value = '';
-        //Util.debug('decodeCookieValue - string: %s, format: %s', string, format);        
         if (format === 'json') {
             value = JSON.parse(string);
         
@@ -409,9 +399,8 @@ class Util {
         
         if (str){
         
-            // includes(), not the old strpos() port: that returned an index,
-            // and index 0 is falsy, so a string STARTING with the inner
-            // separator was reported as containing no separator at all.
+            // includes() rather than an index test: index 0 is falsy, and a string
+            // STARTING with the inner separator does contain it.
             if ( ! String( str ).includes( inner ) ) {
     
                 return str;
@@ -420,7 +409,6 @@ class Util {
                 
                 var assoc = {};
                 var outer_array = str.split(outer);
-                //Util.debug('outer array: %s', JSON.stringify(outer_array));
                 for (var i = 0, n = outer_array.length; i < n; i++) {
                 
                     var inside_array = outer_array[i].split(inner);
@@ -429,7 +417,6 @@ class Util {
                 }    
             }
             
-            //Util.debug('jsonFromAssocString: ' + JSON.stringify(assoc));
             return assoc;
         }
     }
@@ -448,7 +435,6 @@ class Util {
                 string += '|||';
             }
         }
-        //Util.debug('Util.assocStringFromJson: %s', string);
         return string;    
     
     }
@@ -482,16 +468,13 @@ class Util {
      * also keeps every id above Number.MAX_SAFE_INTEGER: nothing can carry one
      * as a float without it showing at once.
      *
-     * NO TIMESTAMP PREFIX. It used to be 10 digits of unix seconds and 9
-     * random digits: about 30 random bits per second, since the seconds spent
-     * ~33 bits encoding three centuries an installation never sees. That was
-     * roughly 0.8 collisions a year at 10 new visitors a second. With 62
-     * random bits the expected collisions among n ids are n^2 / 2^63 -- about
-     * 0.01 in ten years at that rate. Nothing reads a creation time out of an
-     * id: first-seen and session start ride every event as anchors.
+     * NO TIMESTAMP PREFIX. With 62 random bits the expected collisions among n
+     * ids are n^2 / 2^63 -- about 0.01 in ten years at 10 new visitors a
+     * second. Nothing reads a creation time out of an id: first-seen and
+     * session start ride every event as anchors.
      *
      * The cost is insert locality: owa_visitor_acquisition is keyed on the
-     * visitor id, so its inserts no longer append. One insert per new visitor,
+     * visitor id, so its inserts do not append. One insert per new visitor,
      * on a table far smaller than owa_event_raw, whose key is a hash already.
      *
      * crypto.getRandomValues(), not Math.random(). BigInt is not used: the
@@ -567,16 +550,11 @@ class Util {
     /**
      * Base64, via the browser's own implementation.
      *
-     * Replaces a 118-line phpjs port whose UTF-8 pre-pass encoded each half of a
-     * surrogate pair separately -- CESU-8, not UTF-8. Every astral-plane
-     * character goes through a surrogate pair, and every emoji is astral, so a
-     * custom variable or page title containing one was carried across a domain
-     * in an encoding no other tool decodes. The port round-tripped its own
-     * output, which is why it never looked broken from inside OWA.
-     *
      * btoa handles bytes, not characters, so the string is widened to UTF-8
-     * bytes first. That step is what the port was for; the difference is that
-     * encodeURIComponent gets surrogate pairs right.
+     * bytes first, with encodeURIComponent, which encodes a surrogate pair as one
+     * character (UTF-8), not each half separately (CESU-8). Every emoji is
+     * astral, so this is what carries one across a domain in an encoding other
+     * tools decode.
      *
      * utf8_encode() stays, because crc32() still calls it: the cookie domain
      * hash it produces is stamped into every cookie already written, and
@@ -604,15 +582,12 @@ class Util {
             return decodeURIComponent( escape( raw ) );
         } catch ( e ) {
             /*
-             * A token written by a tracker older than this one. Its CESU-8
-             * output is not valid UTF-8, so the widening above throws rather
-             * than returning something wrong -- and the bytes it choked on are
-             * what that tracker meant by them.
-             *
-             * Returning them raw is what the old decoder did. This branch is
-             * for tokens in flight during a deploy: they live for one
-             * cross-domain click, so it stops mattering within minutes, but
-             * throwing would break the link rather than degrade it.
+             * A token written by an older tracker. Its CESU-8 output is not valid
+             * UTF-8, so the widening above throws rather than returning something
+             * wrong -- and the bytes it choked on are what that tracker meant by them.
+             * Tokens live for one cross-domain click, so this branch covers tokens in
+             * flight during a deploy; throwing would break the link rather than
+             * degrade it.
              */
             return raw;
         }
@@ -778,9 +753,7 @@ class Util {
      *    script -- so nothing on the server can identify it from the user
      *    agent. The WebDriver specification requires a conforming browser to
      *    report navigator.webdriver as true while under automation, and that is
-     *    the only place the question can be answered. Measured on a live
-     *    installation, one such crawler made 365 requests over two days and was
-     *    counted as a person.
+     *    the only place the question can be answered.
      *
      * Only the standard flag, no fingerprinting. Plugin counts and language
      * lists are guessy, and a wrong answer here silently costs a real page
@@ -870,9 +843,7 @@ class Util {
      *
      * Needed because automating your own site is a legitimate thing to do --
      * end-to-end tests, synthetic monitoring, an uptime check that should
-     * appear in reports. Without a way back in, this project's own e2e suite
-     * would record nothing, which is a fair warning about what it would do to
-     * everyone else's.
+     * appear in reports.
      *
      * Opt-in rather than opt-out: the common case is a crawler, and the site
      * owner is the only one who can say otherwise.

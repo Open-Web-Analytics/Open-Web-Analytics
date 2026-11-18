@@ -143,28 +143,10 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * A SANITY CEILING, not a budget. It exists to refuse a configuration that
      * is absurd on its face -- daily granularity kept for ten years is 3,650
      * partitions on one table -- and not to allocate a scarce resource between
-     * tables, because there is no such resource to allocate.
-     *
-     * WHAT THIS USED TO DO, AND WHY IT WAS WRONG. It read @@innodb_open_files,
-     * subtracted the number of base tables, halved the remainder by a reserve
-     * and divided by the number of partitioned tables, to produce a per-table
-     * cap. Four things were wrong with that chain, each on its own:
-     *
-     *   - innodb_open_files is an LRU CACHE of file descriptors, not a ceiling
-     *     on tablespaces. InnoDB closes the least recently used to open
-     *     another; measured on one server, 2,131 tablespaces existed while
-     *     2,014 were open under a cache of 4,000. Exceeding it costs close and
-     *     reopen, not failure, so there is nothing being consumed.
-     *   - it subtracted BASE TABLES, which are not what occupy descriptors --
-     *     partitions are, and one base table may be seventy of them.
-     *   - it divided by the table count, answering "what is an equal share?"
-     *     when nothing about the constraint is per-table.
-     *   - and halved it again by a reserve, against a number that was already
-     *     a cache size rather than a limit.
-     *
-     * The result granted 1,470 partitions across ten tables using 338, while
-     * refusing a cube-per-property layout that the same server would hold four
-     * times over.
+     * tables, because there is no such resource to allocate:
+     * innodb_open_files is an LRU CACHE of file descriptors, not a ceiling on
+     * tablespaces. InnoDB closes the least recently used to open another, so
+     * exceeding it costs close and reopen, not failure.
      *
      * What actually costs is CHURN, and churn follows the working set -- the
      * partitions queries touch -- which partition pruning keeps small by
@@ -536,8 +518,6 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * table's partitions -- Db::createTable(), partition-rotate's lead
      * maintenance, and partition-reorganize -- all read the same declaration,
      * so a table cannot be created in one shape and maintained in another.
-     * Two of the three were once written as if every fact table were alike and
-     * both were wrong the same way.
      *
      * Table NAME in, because that is what the partition commands work in; the
      * entity is looked up rather than assumed.

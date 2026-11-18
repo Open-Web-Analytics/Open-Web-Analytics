@@ -7,12 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * element_path goes off the row; is_outbound arrives on it.
  *
- * THIS FILE IS SHORT ON PURPOSE. An earlier version tested a rewrite of saved
- * custom report definitions, because `elementPath` was choosable in the report
- * builder and an unregistered dimension is refused rather than ignored. That
- * dimension only ever existed on the v2 branch, which has not shipped -- no
- * install can carry such a report, and the only v2 install has 1159 saved reports
- * and names it in none of them. The migration code went with the tests.
+ * THIS FILE IS SHORT ON PURPOSE. No saved custom report can name
+ * `elementPath`: the dimension existed only on the v2 branch, which has not
+ * shipped.
  *
  * What the swap itself does is asserted where it is observable: the columns in
  * EventRawEntityTest, the derivation in EventRawIngestionTest, the grouping in

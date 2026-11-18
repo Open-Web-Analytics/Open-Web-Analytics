@@ -44,12 +44,10 @@ class ReportsRest extends \OWA\Core\ReportController {
         
         /*
          * The same range rule the web path enforces, from the same place, so the
-         * two cannot drift on what a date range is -- as they had drifted on
-         * what a period is until both were pointed at getValidPeriods().
+         * two cannot drift on what a date range is.
          *
          * Applied to every report this controller serves, not just the generic
-         * resultset branch: the named reports below take the same startDate and
-         * endDate parameters and had the same inverted-window behaviour.
+         * resultset branch.
          */
         $range = new \OWA\Core\Validation\DateRange();
 
@@ -82,14 +80,10 @@ class ReportsRest extends \OWA\Core\ReportController {
                 
                 /*
                  * The same list the web path validates against, rather than a
-                 * second one built here. These had drifted: this controller
-                 * used the dropdown's labels alone, so `period=date_range` --
-                 * accepted everywhere else -- was rejected over the API, and
-                 * the only way to ask for a custom range was to omit the
-                 * parameter and let it be inferred.
+                 * second one built here, so `period=date_range` is accepted.
                  *
-                 * That inference stays. Naming the period is now permitted, not
-                 * required; a caller sending two dates and nothing else is
+                 * The period is inferred from two dates. Naming it is permitted,
+                 * not required; a caller sending two dates and nothing else is
                  * still doing the normal thing.
                  */
                 $period = new \OWA\Module\Base\Classes\TimePeriod();
@@ -98,11 +92,9 @@ class ReportsRest extends \OWA\Core\ReportController {
         } else {
 
             /*
-             * The named reports -- visit, clickstream, latest visits and
-             * actions, transactions -- read v1's tables and went with them in
-             * 2.0. Nothing in the UI called them. A name is refused rather than
-             * ignored, so a caller still using one learns it is gone instead of
-             * receiving an unrelated result set.
+             * No report name is accepted: a name is refused rather than ignored, so a
+             * caller using one learns it is not served instead of receiving an
+             * unrelated result set.
              */
             $this->addValidation( 'report_name', $this->get('report_name'), 'inArray',
                 [ 'possible_values' => [], 'stopOnError' => true ] );

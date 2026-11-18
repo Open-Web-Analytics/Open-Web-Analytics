@@ -2,28 +2,18 @@
  * Localhost / non-FQDN cookie-domain characterization.
  *
  * WHY THIS EXISTS
- * There is a long-standing, repeatedly-reported belief that OWA does not track
- * under `localhost` (or a bare hostname / IP) and "requires a FQDN". The usual
- * theory: the tracker resolves its cookie domain from document.domain and writes
- * state cookies with `; domain=.localhost`, which a browser rejects per RFC 6265
- * (a Domain cookie needs an embedded dot), so the visitor/session cookies never
- * persist.
+ * The tracker resolves its cookie domain from document.domain and writes state
+ * cookies with `; domain=.localhost` on localhost, which RFC 6265 says a browser
+ * may reject (a Domain cookie needs an embedded dot). jsdom cannot judge this --
+ * its cookie jar is more lenient than a browser's and it reports document.domain
+ * as undefined on localhost -- so it is checked in a real browser: Chromium
+ * ACCEPTS `; domain=.localhost` (and `; domain=.127.0.0.1`), storing them as
+ * host-scoped cookies, so the tracker's state persists on localhost and a
+ * visitor id stays stable across page loads. If a change (or a stricter browser)
+ * breaks cookie persistence on a single-label host, this test fails.
  *
- * This spec was written to REPRODUCE that failure in a real browser -- the one
- * thing jsdom cannot judge, since its cookie jar is more lenient than a browser's
- * and it reports document.domain as undefined on localhost. The result is the
- * opposite of the theory: modern Chromium ACCEPTS `; domain=.localhost` (and
- * `; domain=.127.0.0.1`), storing them as host-scoped cookies. The tracker's
- * client-side state therefore DOES persist on localhost, and a visitor id stays
- * stable across page loads. So this stands as a characterization/guard test: if a
- * future change (or a stricter browser) ever does break cookie persistence on a
- * single-label host, this test starts failing and tells us.
- *
- * (Server side, settings.php::setCookieDomain deliberately refuses to set a
- * `.localhost` cookie domain -- the `>= 2 dots` FQDN gate -- and falls back to a
- * host-only cookie, which is the correct behavior for localhost. That gate was
- * added in 2011 specifically to stop OWA emitting a broken `.localhost` server
- * cookie. It is protective, not the cause of a break.)
+ * (Server side, setCookieDomain refuses to set a `.localhost` cookie domain --
+ * the `>= 2 dots` FQDN gate -- and falls back to a host-only cookie.)
  *
  * WHAT IT DOES
  * localhost_cookie_harness.html boots the built tracker and queues a
@@ -83,8 +73,7 @@ test.describe(`tracker state cookies on a single-label host (${HOST})`, () => {
         );
 
         // The real browser cookie jar must hold the namespaced state cookies. If a
-        // browser ever rejected the `.localhost` Domain cookie (the old theory),
-        // they'd be absent and this would time out.
+        // browser rejected the `.localhost` Domain cookie, they'd be absent and this would time out.
         //
         // Note the two names. The VISITOR store is global -- one per browser,
         // shared by every tracker on the page -- while the SESSION store is

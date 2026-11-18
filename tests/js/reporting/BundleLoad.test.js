@@ -13,9 +13,9 @@ const path = require('path');
  * This is the layer that catches object construction breaking before Playwright
  * (which is slower and needs a live page) ever runs.
  *
- * The bundle is a webpack module graph (was a flat concat).
- * `OWA` and `jQuery` are no longer bundle-top-level `var`s reachable from the
- * outer function scope -- reporting-entry.js publishes them onto `window`
+ * The bundle is a webpack module graph. `OWA` and `jQuery` are not
+ * bundle-top-level `var`s reachable from the outer function scope --
+ * reporting-entry.js publishes them onto `window`
  * (window.OWA / window.jQuery), which is what the report templates' inline
  * scripts consume too. So the load harness reads them off window.
  */

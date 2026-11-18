@@ -6,15 +6,9 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * JSONP is not a transport, it is a way around the same-origin policy: the
  * response comes back as a `<script>` the browser executes, so the endpoint is
  * reachable by any page on the internet and its body runs with that page's
- * privileges. OWA used it for the heatmap overlay and the recording player
- * because those run on the *tracked* site and call back to the OWA origin --
- * genuinely cross-origin, and CORS did not work.
- *
- * CORS does work now: addCorsHeaders() had never emitted a header (it compared
- * site row arrays against the Origin string), and isHttps() let a client's
- * Origin header flip the server's own scheme, which broke the signature on
- * every cross-origin signed request. With both fixed and covered end to end,
- * the reason for JSONP is gone.
+ * privileges. The heatmap overlay and the recording player run on the *tracked*
+ * site and call back to the OWA origin -- genuinely cross-origin -- so they use
+ * CORS.
  *
  * The overlays fetch with fetch(): whatever comes back is read as JSON, never
  * run, and no <script> is added to the page.

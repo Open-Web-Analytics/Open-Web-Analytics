@@ -29,15 +29,9 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  * have to be present and of the right kind, and their values are none of this
  * test's business.
  *
- * The reason it matters for the conversion: a JSON-rendered report that forgets
- * to run pre() loses its site selector and its date picker on every screen, and
- * nothing in the characterization suite would say a word.
- *
- * The two base.sites cases were REMOVED 2026-09-01 with the page. It was the
- * flat roster of every tracked site, and it inherited the report chrome and the
- * period refusal from ReportController -- a dependency invisible from its own
- * controller, which is why it was covered here. Reporting lands on the last
- * Property viewed now, so there is no such page to hold the contract.
+ * It matters because a JSON-rendered report that forgets to run pre() loses
+ * its site selector and its date picker on every screen, and nothing in the
+ * characterization suite would say a word.
  */
 final class ReportChromeContractTest extends TestCase
 {
@@ -59,14 +53,11 @@ final class ReportChromeContractTest extends TestCase
      * report belongs here; the converted ones reach the same chrome through the
      * registry, which testTheChromeSurvivesTheRegistryRoute covers by id.
      *
-     * It used to fill every parameter a report reads with one sentinel, and
-     * named the single report that tolerated it. Neither of the two now left
-     * does. VisualizationFunnel reads `period`, `startDate` and `endDate`, so a
-     * sentinel in those overwrites the very date picker under test; and
-     * the recordings report pages its results, so a sentinel in `page` reaches
-     * arithmetic and raises a TypeError before doAction() returns.
-     *
-     * Hence real parameters, one report at a time. Each is the smallest set
+     * Real parameters, one report at a time, not one sentinel in every
+     * parameter: VisualizationFunnel reads `period`, `startDate` and `endDate`,
+     * so a sentinel in those would overwrite the very date picker under test,
+     * and the recordings report pages its results, so a sentinel in `page`
+     * reaches arithmetic and raises a TypeError before doAction() returns. Each is the smallest set
      * that lets the report run -- nothing here is a period or a site, because
      * those are exactly what pre() is supposed to supply and the test would
      * otherwise be checking its own input.
@@ -244,15 +235,11 @@ final class ReportChromeContractTest extends TestCase
     /**
      * Reports reached by id must not share a container id.
      *
-     * dom_id used to be the action name hyphenated, and every report had its
-     * own action -- base-reportPages, base-reportEntryPages. Routing everything
-     * through base.report would have collapsed that to "base-report" for every
-     * report on the installation.
-     *
-     * Nothing keys persistence off it today, so nothing was broken. It is
-     * derived from the report identity anyway, because dom_id is what
-     * OWA.report binds to and what anything remembering per-report UI state --
-     * an active tab, real-time mode left switched on -- would naturally key on.
+     * Every report routes through base.report, so a dom_id derived from the
+     * action name would be "base-report" for all of them. It is derived from the
+     * report identity, because dom_id is what OWA.report binds to and what
+     * anything remembering per-report UI state -- an active tab, real-time mode
+     * left switched on -- would naturally key on.
      */
     public function testReportsReachedByIdGetDistinctContainerIds(): void
     {
@@ -276,14 +263,8 @@ final class ReportChromeContractTest extends TestCase
     }
 
     /**
-     * ...and a report still reached by its own action keeps the id it had, so
-     * the reportId derivation added an id for the new path rather than changing
-     * the old one.
-     *
-     * Was ReportPages, then ReportHostDetail, then ReportCampaigns, then
-     * ReportGoals; all four are configuration now and have no action left.
-     * Then ReportTransactionDetail, until that report was removed outright.
-     * The recordings report is a controller in its own module, so it keeps
+     * ...and a report still reached by its own action keeps its action-derived
+     * id. The recordings report is a controller in its own module, so it keeps
      * its own action.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void

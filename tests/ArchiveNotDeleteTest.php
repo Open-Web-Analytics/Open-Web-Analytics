@@ -7,11 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Removing a Profile or a Property archives it rather than destroying it.
  *
- * The old delete removed one row and left everything hanging off it -- access
- * grants, scoped settings, and every fact row ever collected under that
- * site_id -- behind as orphans a re-minted identifier could inherit. It was
- * also unrecoverable, which for the only record of a site's traffic is a
- * severe thing for one button to do.
+ * A delete would leave access grants, scoped settings, and every fact row ever
+ * collected under that site_id behind as orphans a re-minted identifier could
+ * inherit, and it could not be undone.
  *
  * Archiving has to be airtight in one direction: an archived Profile must stop
  * being everywhere. Missing a single read path is how it reappears -- still
@@ -222,10 +220,9 @@ final class ArchiveNotDeleteTest extends TestCase
      * column is treated by the entity layer as "no value given" and skipped, so
      * a restore cannot put NULL back.
      *
-     * Which makes `IS NULL` the wrong test and empty() the right one. This is
-     * the exact shape that has bitten this schema before: a boolean column
-     * holding 1, 0 and NULL, where `= 0` silently excluded every row written
-     * before the column existed.
+     * Which makes `IS NULL` the wrong test and empty() the right one -- the same
+     * shape as a boolean column holding 1, 0 and NULL, where `= 0` silently
+     * excludes every NULL row.
      */
     public function testARestoredRowReadsAsLiveEvenThoughItIsNotNull(): void
     {
@@ -314,12 +311,9 @@ final class ArchiveNotDeleteTest extends TestCase
     }
 
     /**
-     * An empty Property stays reachable for whoever can see every Profile.
-     *
-     * It used to be filtered out for having none, which made it unreachable --
-     * no screen could get back to it. That happened both to a Property whose
-     * last Profile was removed and to one created from the fan-out before it
-     * had any.
+     * An empty Property stays reachable for whoever can see every Profile:
+     * one whose last Profile was removed, and one created from the fan-out before
+     * it had any. Filtered out for having none, no screen could get back to it.
      */
     public function testTheHierarchyKeepsAnEmptyPropertyForAnAdmin(): void
     {

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Domstream;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Domstream: recordings of what a visitor's pointer, scroll, clicks and key
  * presses did on a page, and their playback.
@@ -21,8 +15,6 @@ namespace OWA\Module\Domstream;
  * Key presses are recorded as THAT a key was pressed in a field -- never
  * which key.
  *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  *
  * @phpstan-import-type Definition from \OWA\Module\Base\Classes\TrackingEventHelpers
  * @phpstan-import-type Config from \OWA\Module\Base\Classes\TrackerBundle

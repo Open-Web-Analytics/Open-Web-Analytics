@@ -7,27 +7,17 @@ use PHPUnit\Framework\TestCase;
 /**
  * No e2e spec asserts a v1 event name on the wire.
  *
- * WHY THIS EXISTS. The v2 tracker stopped emitting v1 event names in 4b93b248 --
- * it sends `event_type=page_view` and `event_type=click`, and conf/beacon_compat
- * .php became the v1 -> v2 mapping for beacons from older trackers rather than a
- * translation the live path depends on.
+ * The tracker sends `event_type=page_view` and `event_type=click`, and
+ * conf/beacon_compat.php maps v1 names for beacons from older trackers. A spec
+ * matching a v1 name fails misleadingly: session-lifecycle.spec.js waits for a
+ * beacon before it reads the database, so a pattern that never matches times
+ * out with "Expected: > 0, Received: 0", which reads as "the server stored
+ * nothing" rather than "the regex never matched".
  *
- * Three e2e specs went on matching the OLD names, and the way they failed is the
- * point. session-lifecycle.spec.js waits for a beacon before it reads the
- * database, so every one of its four tests timed out after 20 seconds with
- * "Expected: > 0, Received: 0" -- which reads as "the server stored nothing", not
- * as "the regex never matched". Two full afternoons of this branch's e2e failures
- * were attributed to ingest and the fixture layer on that evidence. It was the
- * pattern.
- *
- * Eight failures across three files, one cause, and nothing connected the specs'
- * wire assertions to the contract the tracker actually emits -- tests/fixtures/
- * beacon_contracts.json records that per beacon version, and the jest suite holds
- * the tracker to it, but a Playwright spec asserting a name is just a string.
- *
- * So this reads the contract and refuses a spec that names anything outside it.
- * A grep would do today; reading the contract means a future rename is caught by
- * the same test instead of needing this list edited.
+ * So this reads the contract -- tests/fixtures/beacon_contracts.json, per beacon
+ * version, which the jest suite holds the tracker to -- and refuses a spec that
+ * names anything outside it. A future rename is caught by the same test
+ * instead of needing a list edited.
  */
 final class E2eWireNamesAreV2Test extends TestCase
 {
@@ -95,7 +85,7 @@ final class E2eWireNamesAreV2Test extends TestCase
 
             foreach ( explode( "\n", (string) file_get_contents( $file ) ) as $n => $line ) {
 
-                // Prose may still name the old spelling; an assertion may not.
+                // Prose may name a v1 spelling; an assertion may not.
                 if ( preg_match( self::PROSE, $line ) ) {
 
                     continue;

@@ -9,23 +9,20 @@ use PHPUnit\Framework\TestCase;
  *
  * THE STATE THIS EXISTS TO PREVENT. A module has two things: its tables, and a
  * recorded schema_version. install() creates both; activate() sets is_active and
- * nothing else. The admin UI's "Activate" control has always called install(),
- * but `cmd=activate` called activate() -- so the same word did different things
- * depending on where it was typed, and the CLI one left a module switched on
- * with no tables and no version. Nothing reported it, because
- * Module::getSchemaVersion() defaults an absent version to 1 and every module
- * currently requires 1, so the module read as current. demo's maxmind_geoip has
- * been in exactly that state.
+ * nothing else. The admin UI's "Activate" control and `cmd=activate` both call
+ * install(), so a module is never switched on with no tables and no version --
+ * a state nothing would report, because Module::getSchemaVersion() defaults an
+ * absent version to 1 and every module currently requires 1.
  *
- * WHY RE-RUNNING install() USED TO BE DESTRUCTIVE. createTable() is
- * CREATE TABLE IF NOT EXISTS, so a re-run leaves existing tables untouched --
- * but install() then wrote the REQUIRED schema version anyway. update() selects
- * work with `$seq > $current_schema_version`, so every update between the real
- * version and the required one was skipped, permanently, and isSchemaCurrent()
- * answered true afterwards. Reachable from the UI: deactivate a module, upgrade
- * OWA, activate it again.
+ * WHY RE-RUNNING install() MUST NOT WRITE THE REQUIRED VERSION BLINDLY.
+ * createTable() is CREATE TABLE IF NOT EXISTS, so a re-run leaves existing
+ * tables untouched. update() selects work with `$seq > $current_schema_version`,
+ * so recording the REQUIRED version over existing tables would skip every
+ * update between the real version and the required one, permanently, and
+ * isSchemaCurrent() would answer true. Reachable from the UI: deactivate a
+ * module, upgrade OWA, activate it again.
  *
- * So install() now records the version only when that is provably right, and
+ * So install() records the version only when that is provably right, and
  * these tests pin each branch of that decision.
  */
 final class ModuleActivateInstallTest extends TestCase
@@ -64,10 +61,10 @@ final class ModuleActivateInstallTest extends TestCase
      */
     public function testActivatingRepairsAMissingSchemaVersion(): void
     {
-        // Reproduce demo: activated but never installed -- is_active present,
-        // schema_version absent. Writing false is how a key is removed from the
-        // settings blob, so this produces a genuinely absent key rather than a
-        // zero, which is the state the repair has to recognise.
+        // Activated but never installed: is_active present, schema_version absent.
+        // Writing false is how a key is removed from the settings blob, so this
+        // produces a genuinely absent key rather than a zero, which is the state the
+        // repair has to recognise.
         \OWA\Core\CoreAPI::persistSetting('maxmind_geoip', 'schema_version', false);
         \OWA\Core\CoreAPI::configSingleton()->save();
 
@@ -153,8 +150,8 @@ final class ModuleActivateInstallTest extends TestCase
      * base is the only module with entities AND a required version above 1, so
      * it is the only place the operands differ: its tables already exist, so a
      * missing version might mean 27 updates are pending rather than none.
-     * Guessing "current" there is precisely the migration-skip this change
-     * exists to stop, so install() must refuse and leave the version unset --
+     * Guessing "current" there is precisely the migration skip, so install()
+     * must refuse and leave the version unset --
      * getSchemaVersion() then reads 1 and cmd=update replays properly.
      */
     public function testAMissingVersionIsNotRepairedWhenUpdatesCouldBePending(): void

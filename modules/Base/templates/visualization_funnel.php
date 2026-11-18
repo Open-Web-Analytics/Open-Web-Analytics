@@ -3,15 +3,8 @@
 /**
  * A funnel: a control bar, the funnel left to right, and the numbers under it.
  *
- * The funnel used to run DOWN the page as a three-column table -- prior pages,
- * the step, next pages -- one row per step. Left to right is how every other
- * tool draws a funnel, and it is what makes the drop-off legible: the bars
+ * Left to right, because that is what makes the drop-off legible: the bars
  * shorten as you read.
- *
- * The per-step "prior page / next page" grids are gone with that layout. They
- * had not worked in a long time: their queries constrained on
- * `funnel_json[step]['url']`, and a step is keyed `path` -- so every one of them
- * asked for `pagePath==undefined` and drew an empty grid.
  */
 $owa_steps = (array) $view->funnel;
 $owa_scope = $view->get('funnel_scope');

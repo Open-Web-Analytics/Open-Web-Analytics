@@ -8,11 +8,8 @@ namespace OWA\Tests;
  *
  * WHY THIS EXISTS
  * ---------------
- * The catalog is about to be changed so that two schema generations can be
- * registered under one name -- `visits` computed from the v1 star and `visits`
- * computed from the v2 event table, told apart by their entity. That work is
- * behaviour-preserving for the single-generation case, and this harness is what
- * makes "behaviour-preserving" checkable rather than asserted.
+ * A change to how the catalog is registered is checked against this recording
+ * rather than asserted to preserve behaviour.
  *
  * It deliberately records the catalog INCLUDING two defects, because a
  * characterization suite that quietly corrects what it finds cannot prove
@@ -226,7 +223,7 @@ final class CatalogCharacterizationHarness
                  * params carries the entity and column for a configured metric,
                  * and the formula and children for a calculated one. It is the
                  * part that says WHERE a number comes from, so it is the part
-                 * this change is most likely to disturb.
+                 * a change is most likely to disturb.
                  */
                 $row['params'] = self::normaliseParams(
                     (array) ( $implementation['params'] ?? [] ) );
@@ -307,11 +304,9 @@ final class CatalogCharacterizationHarness
      * Recorded because ResultSetManager::relatedDimensions() reads the
      * dimension registry as a PUBLIC PROPERTY rather than through an accessor,
      * so changing the registry's shape changes what it sees without any
-     * accessor being involved. Nothing covered it, and a shape change silently
-     * halved its answer -- 305 dimensions to 153 -- while every unit test and
-     * both accessors stayed byte-identical. The reports that broke did so by
-     * dropping constraints, which is the failure this codebase already knows
-     * to be silent.
+     * accessor being involved. A shape change can halve its answer while every
+     * unit test and both accessors stay byte-identical, and the reports it
+     * breaks fail by dropping constraints, silently.
      *
      * @return array<string,array<string,array<int,string>>>
      */

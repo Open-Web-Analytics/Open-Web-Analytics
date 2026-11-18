@@ -10,8 +10,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
 /**
  * A beacon of an event sent from a page carries no page location.
  *
- * The tracker puts the page's URL (p_l) on every event it sends. Measured on
- * 2,701 beacons: seven lacked one, all of them bots.
+ * The tracker puts the page's URL (p_l) on every event it sends.
  *
  * WHICH EVENTS. The registry declares page_location for every event (`*`), so
  * it cannot say which events come from a page. This fires for the first-class

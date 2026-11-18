@@ -51,7 +51,7 @@ final class OverlayApiLinkTest extends TestCase
          * The real heatmap query: clicks grouped by coordinate, constrained on
          * the page AND to clicks. The token pins `constraints`, because that is
          * the parameter carrying which page the link is for -- there is no
-         * clicks report and no document_id any more.
+         * clicks report and no document_id.
          */
         return $t->makeOverlayApiLink([
             'metrics'     => 'eventCount',

@@ -5,10 +5,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * OWA's own templates read view data through $view and nothing else.
  *
- * fetch() no longer extract()s the view vars and includes each template from a
+ * fetch() does not extract() the view vars and includes each template from a
  * static closure (ViewScopeCompatTest), so a bare `$headline` is undefined and
  * `$this` does not exist. The template PHPStan gate reports an unguarded bare
- * read, but not one inside isset() or empty() -- and that is the read that now
+ * read, but not one inside isset() or empty() -- and that is the read that
  * fails silently, always false. This test finds both kinds.
  *
  * A variable counts as the template's own when the file assigns it, loops into

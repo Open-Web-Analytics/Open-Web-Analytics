@@ -521,9 +521,8 @@ abstract class FactMigrator {
      * latest ts it wrote -- v1 stopped before v2 began recording, so a row
      * after that is live traffic, not migrated history.
      *
-     * Counted, not rebuilt. Reconciliation used to read v1 again and rebuild
-     * every row to know what to expect, which cost as much as the migration:
-     * 26 of 54 minutes on a real 1.x install.
+     * Counted, not rebuilt: reading v1 again and rebuilding every row to know
+     * what to expect would cost as much as the migration.
      *
      * A site reconciles when every expected row is present with the same
      * revenue and visitors. Refused rows are the accounted-for difference.
@@ -938,16 +937,14 @@ abstract class FactMigrator {
      * A v1 location's names, with any double-encoded one undone, and its
      * country code a code or nothing.
      *
-     * The geolocation reader once encoded MaxMind's names a second time --
-     * "MÃ¼nchen" for "München" (#742). 1.14 ships repair-geo-encoding for the
-     * rows already stored, but nothing makes an administrator run it, and v2
-     * does not have it, so the migration repairs them on the way through.
+     * 1.x rows can hold MaxMind's names encoded a second time -- "MÃ¼nchen" for
+     * "München". 1.14's repair-geo-encoding need not have been run, and v2 does
+     * not have it, so the migration repairs them on the way through.
      *
      * v1 upper-cased the country code, its "(not set)" sentinel included, so
      * "(NOT SET)" got past the sentinel check and into a CHAR(2) column, which
-     * strict mode refuses -- and with it the whole batch. Measured on a 1.x
-     * install: 745 of 11,741 locations, plus one "VATICAN CITY STATE)". A code
-     * is two letters; anything else is not one, and is stored as no code.
+     * strict mode refuses -- and with it the whole batch. A code is two letters;
+     * anything else is not one, and is stored as no code.
      *
      * @param  array<mixed> $location  a v1 location_dim row, or none
      * @return array<mixed>
@@ -997,9 +994,8 @@ abstract class FactMigrator {
      * A v1 address, or a v1 proxy chain resolved the way ingest resolves one.
      *
      * 1.x sometimes stored the whole X-Forwarded-For chain -- "client, proxy,
-     * ..." -- which is not an address and is longer than the column: strict
-     * mode refused the batch. Measured on a 1.x install: 5 of 724,000 rows.
-     * A single address is kept as v1 stored it; 1.x already chose it.
+     * ..." -- which is not an address and is longer than the column, so strict
+     * mode would refuse the batch. A single address is kept as v1 stored it; 1.x already chose it.
      *
      * @param mixed $value  as v1 stored it
      * @return string|null
@@ -1028,9 +1024,8 @@ abstract class FactMigrator {
      *
      * Kept as stored when it fits the column: ingest stores the first five
      * characters of Accept-Language, so "de,en" is as legitimate here as it
-     * is live, and "(not set)" is ingest's own sentinel to drop. One row
-     * measured on a 1.x install holds "0.20504800 1616979699" -- a microtime,
-     * longer than any language ingest writes and than the column.
+     * is live, and "(not set)" is ingest's own sentinel to drop. A 1.x row can
+     * hold something else entirely -- a microtime -- longer than the column.
      *
      * @param mixed $value
      * @return string|null
@@ -1145,17 +1140,14 @@ abstract class FactMigrator {
      * How many sessions each of the batch's visitors had on the site before
      * each of its sessions, counted from v1's owa_session.
      *
-     * v1's own two readings cannot be used. num_prior_sessions counted the
-     * current session for years (a new visitor read 1), and is_new_visitor was
-     * written 0 for every session for others; on a real 1.x install the two
-     * disagree with each other from 2016 to 2019, and each is wrong somewhere.
-     * Counting the rows v1 kept gives one rule for any history: a visitor's
+     * v1's own two readings cannot be used: num_prior_sessions counted the
+     * current session in some releases (a new visitor read 1), is_new_visitor was
+     * written 0 for every session in others, and the two disagree. Counting the rows v1 kept gives one rule for any history: a visitor's
      * first retained session has none before it, and is its first visit.
      *
      * A visitor's sessions are its owa_session rows and the sessions its page
-     * views name, which include those v1 lost the row for (2,719 in one year
-     * of a real 1.x install). Left out, each such session read as a first
-     * visit, and 1,034 visitors there had two or more. A session with a row
+     * views name, which include those v1 lost the row for; left out, each such
+     * session would read as a first visit. A session with a row
      * starts at the row; one without, at its earliest page view, as
      * sessionStarts() has it. Two queries per batch, on each table's
      * visitor_id index.

@@ -27,8 +27,7 @@ namespace OWA\Module\Base\Classes\Cube;
  * value does not truncate, it aborts the whole INSERT ... SELECT and the
  * partition keeps its last good contents. One site's long string must not be
  * able to stop a Property's cube being built, so the clamp is in the
- * expression. A number that will not convert is NULL rather than an error --
- * measured, not assumed -- which is the same rule arriving from the server.
+ * expression. A number that will not convert is NULL rather than an error.
  */
 class JsonStep extends Step {
 

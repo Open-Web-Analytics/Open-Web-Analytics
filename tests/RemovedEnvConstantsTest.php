@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * The 1.x path and version constants are gone (Core\Env answers instead), as
  * are the file cache's, and OWA_DATA_DIR and OWA_MAXMIND_DATA_DIR are owa-config.php's
  * alone: no code defines them, or a value in the config file would be ignored
- * with an "already defined" warning, as 1.x's OWA_DATA_DIR was.
+ * with an "already defined" warning.
  */
 final class RemovedEnvConstantsTest extends TestCase
 {

@@ -7,31 +7,26 @@ use PHPUnit\Framework\TestCase;
  *
  * The fact tables are RANGE-partitioned on yyyymmdd. A predicate naming only
  * `timestamp` cannot prune, and is unselective enough that the optimiser
- * abandons the timestamp index as well. Measured on a live table:
+ * abandons the timestamp index as well. On a live table:
  *
  *   timestamp > X                           all partitions, no index, 405,217 rows
  *   yyyymmdd >= D AND timestamp > X         all from D,     no index, 351,937 rows
  *   yyyymmdd BETWEEN D-1 AND D AND ts > X   1 partition,    yyyymmdd,   4,080 rows
  *
  * The middle row is the reason this says CLOSED: an open lower bound still reads
- * every partition from D onward. Verified again after the fix with EXPLAIN on a
- * 29-partition table -- 29 partitions scanned before, 1 after.
+ * every partition from D onward.
  *
  * WHY IN THE QUERY BUILDER
  * A report author has no reason to know how the facts are physically laid out,
- * and there are ~60 declarative report controllers that would each have to
- * remember. Deriving it centrally also puts it at the seam a non-SQL reporting
- * backend would later override with its own pruning predicate -- ClickHouse
- * partition keys, Parquet row-group statistics and DuckDB zone maps all want the
- * same thing. Pushed into the reports instead, it would die with the star schema.
+ * and every report would have to remember. Deriving it centrally also puts it
+ * at the seam a non-SQL reporting backend would override with its own pruning
+ * predicate -- ClickHouse partition keys, Parquet row-group statistics and
+ * DuckDB zone maps all want the same thing.
  *
  * THE REVERSE DIRECTION IS A CORRECTNESS BUG, NOT A PERFORMANCE ONE
- * last_half_hour and last_hour are allowlisted periods, and both produced
- * exactly the same constraint as `today` -- date BETWEEN D AND D, with no
- * timestamp bound at all. The period object knew it meant 22:15-22:45; the query
- * asked for all 1,440 minutes of the day. Measured on a live table: "last hour"
- * returned 131 rows where the true answer was 5. Wrong answers, silently, on a
- * period any user can pick.
+ * A partial-day period such as last_hour must carry a timestamp bound. Without
+ * one its constraint is the same as `today` -- date BETWEEN D AND D -- and the
+ * query asks for all 1,440 minutes of the day: a wrong answer, silently.
  *
  * These assert the CONSTRAINTS rather than the SQL, because that is the contract
  * the builder owes: whatever the storage engine, a time bound implies a date

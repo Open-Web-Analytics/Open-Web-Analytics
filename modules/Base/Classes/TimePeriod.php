@@ -1,33 +1,9 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Time Period Class
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-type PeriodInfo array{period: string|null, startDate: int|string|null, endDate: int|string|null, startTime: int|string|false|null, endTime: int|string|false|null, label: string|null, currentHour: int, axisEndDate: int|string|null}
  * @phpstan-type DateDifference array{YearsSince: float|int, MonthsSince: float|int, DaysSince: float|int, HoursSince: float|int, MinutesSince: float|int, SecondsSince: int, NiceString: string, NiceString2: string}
@@ -58,8 +34,6 @@ class TimePeriod {
 
     public function __construct() {
 
-        //parent::__construct();
-
         $this->startDate = new \OWA\Module\Base\Classes\Date();
         $this->endDate = new \OWA\Module\Base\Classes\Date();
     }
@@ -67,8 +41,8 @@ class TimePeriod {
     /**
      * Periods the picker no longer offers.
      *
-     * Comparison replaced them: "Same month last year" is This month compared
-     * to the previous year. A request naming one is treated as naming no
+     * Comparison covers them: "Same month last year" is This month compared to
+     * the previous year. A request naming one is treated as naming no
      * period, so an old bookmark opens on the default period rather than an
      * error page.
      */
@@ -449,14 +423,11 @@ class TimePeriod {
 
     }
 
-    // checks to see if the period value passsed is valid.
     /**
      * Every period a request may name.
      *
-     * One list, because there were two: this class accepted the picker's labels
-     * plus date_range, while the REST controller built its own from the labels
-     * alone. The same request was therefore valid over the web and rejected
-     * over the API -- `period=date_range` -- for no reason anyone chose.
+     * One list, read by this class and the REST controller, so a request is
+     * valid over the web and over the API alike.
      *
      * date_range belongs here and not in getPeriodLabels() because that list is
      * the DROPDOWN: a custom range is not an entry in it, it is what the
@@ -686,22 +657,12 @@ class TimePeriod {
 
 
             /*
-             * "all_time" is gone. It set the start to 1 January 1969 and the
-             * end to now, which is a full scan of every fact table on the
-             * installation -- across every partition, by construction, since
-             * the range cannot be pruned to any of them.
+             * No "all_time": a range from 1969 to now is a full scan of every fact table,
+             * across every partition, since it cannot be pruned to any of them.
              *
-             * It was already unreachable through the normal path: isValid() is
-             * built from the picker's labels plus date_range, so a request for
-             * it silently became the default reporting period. Removing the
-             * case makes that refusal honest instead of accidental, and stops
-             * set() -- which has no such guard -- from being able to ask for it
-             * directly.
-             *
-             * The sub-hour periods (last_hour, last_half_hour, last_24_hours)
-             * remain implemented and unoffered. They need bound pruning that
-             * works at finer than day granularity before they would be
-             * anything but expensive, and nothing needs them today.
+             * The sub-hour periods (last_hour, last_half_hour, last_24_hours) are
+             * implemented and unoffered. They need bound pruning that works at finer than
+             * day granularity before they would be anything but expensive.
              */
 
             case "last_thirty_days":
@@ -743,8 +704,6 @@ class TimePeriod {
         $period_params['period'] = $this->get();
         $period_params['startDate'] = $this->startDate->getYyyymmdd();
         $period_params['endDate'] = $this->endDate->getYyyymmdd();
-        //$period_params['startTime'] = $this->startDate->getTimestamp();
-        //$period_params['endTime'] = $this->endDate->getTimestamp();
         return $period_params;
     }
 
@@ -842,32 +801,22 @@ class TimePeriod {
         return $this->diff_days;
     }
 
-    // Function used to take two date strings, and returns an associative array
-    // with different formats for the difference between the dates.
-    // based on function by: tchapin at gmail dot com
-    // --------------------
-    // Variables:
-    // StartDateString (String - MM/DD/YYYY)
-    // EndDateString (String - MM/DD/YYYY)
-    // --------------------
-    // Example: $DateDiffAry = GetDateDifference('01/09/2008', '02/11/2009');
-    // print_r($DateDiffAry);
-    // --------------------
-    // Returns Something Like:
-    /*
-    Array
-    (
-        [YearsSince] => 1.0931506849315
-        [MonthsSince] => 13.117808219178
-        [DaysSince] => 399
-        [HoursSince] => 9576
-        [MinutesSince] => 574560
-        [SecondsSince] => 34473600
-        [NiceString] => 1 year, 1 month, and 2 days
-        [NiceString2] => Years: 1, Months: 1, Days: 2
-    )
-    */
     /**
+     * The difference between two dates in several units, and as text.
+     *
+     * Based on a function by tchapin at gmail dot com.
+     *
+     * getDateDifference('20080109', '20090211') returns:
+     *
+     *     [YearsSince] => 1.0931506849315
+     *     [MonthsSince] => 13.117808219178
+     *     [DaysSince] => 399
+     *     [HoursSince] => 9576
+     *     [MinutesSince] => 574560
+     *     [SecondsSince] => 34473600
+     *     [NiceString] => 1 year, 1 month, and 2 days
+     *     [NiceString2] => Years: 1, Months: 1, Days: 2
+     *
      * @param  int|string|null $StartDateString yyyymmdd
      * @param  int|string|null $EndDateString   yyyymmdd
      * @return DateDifference

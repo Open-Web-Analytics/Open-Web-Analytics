@@ -7,50 +7,24 @@ const { FIXTURE, login, openConfiguredReport, configuredReportIds } = require('.
  * The rest of the suite verifies the JavaScript a report EMITS -- the
  * characterization fixtures record the query URLs, the explorer commands and
  * the load calls, and a test can read them without a browser. None of that
- * proves the emitted script RUNS.
- *
- * That distinction has already cost this project once. base.reportEcommerce
- * set sort='actions', neither a metric it queried nor a dimension it grouped
- * on; the unresolvable sort arrived as a null sortColumn, jqGrid (the grid
- * then) called .toLowerCase() on it, and the grid threw while building. The page still
- * rendered. The only trace was the browser console, which nothing was
- * watching.
- *
- * The reports converted to configuration are exactly where that class of bug
- * would land now, and until this spec existed only five of the fifty-three
- * were ever opened in a browser.
+ * proves the emitted script RUNS: a script that throws while building a grid
+ * still leaves a rendered page, and the only trace is the browser console.
  *
  * Prereq: run `php tests/e2e/seed_reporting_fixtures.php seed` first.
  */
 test.describe('every configured report renders in a browser', () => {
 
     /**
-     * One test, not fifty-three.
-     *
-     * A test per report would give a nicer failure name, but it would also log
-     * in fifty-three times and pay a fresh browser context for each. Sweeping
-     * in one context and COLLECTING the failures gets the same information --
-     * the assertion names every offending report rather than dying on the
-     * first -- for one login.
-     */
-    /**
      * A grid does not offer a picker for a column nobody can see.
      *
      * transactions is grouped by timestamp AND transactionId with timestamp in
-     * excludeColumns -- it is there only so the rows can carry it. The bar drew
-     * a picker for it all the same, so a grid showing one column offered two
-     * pickers and the second named a column that is not in the table.
+     * excludeColumns -- it is there only so the rows can carry it. A picker for
+     * it would name a column that is not in the table.
      *
      * transactions rather than action-group, which has the same shape but takes
      * a parameter: opened with a sentinel it matches nothing and draws no grid
-     * to carry a bar, so it cannot answer this either.
-     *
-     * This has now moved twice, both times because its subject became a
-     * grid-card: first from Top Content, then from Top Referrers. A card draws
-     * no explorer bar at all, so it cannot answer this question -- and the
-     * dashboard no longer has a grid with a hidden dimension on it, which is why
-     * this lives here with the other configured-report checks rather than in the
-     * dashboard spec.
+     * to carry a bar, so it cannot answer this either. A grid-card draws no
+     * explorer bar at all.
      */
     test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
 
@@ -69,6 +43,15 @@ test.describe('every configured report renders in a browser', () => {
         expect(bars[0].add).toBe(1);
     });
 
+    /**
+     * One test, not fifty-three.
+     *
+     * A test per report would give a nicer failure name, but it would also log
+     * in fifty-three times and pay a fresh browser context for each. Sweeping
+     * in one context and COLLECTING the failures gets the same information --
+     * the assertion names every offending report rather than dying on the
+     * first -- for one login.
+     */
     test('no configured report raises a browser console error', async ({ page }) => {
         test.setTimeout(300_000);
 
@@ -149,14 +132,6 @@ test.describe('every configured report renders in a browser', () => {
     });
 
     /**
-     * The widget types that only Traffic uses.
-     *
-     * `pie` and `metric-boxes` were added when traffic became configuration
-     * and are the newest code in the renderer. Traffic is also the only report
-     * whose widgets each constrain to different rows, so it exercises the
-     * per-widget constraint path end to end.
-     */
-    /**
      * The goals report measures goal events: the rows ingest adds, named by
      * the goal event definition and flagged is_goal_event, for events that met
      * an active definition. The seeded definition is declared before the seeded
@@ -207,11 +182,9 @@ test.describe('every configured report renders in a browser', () => {
         /**
          * The way to a funnel is the nav, not a link on this report.
          *
-         * The goals report used to carry a Related Reports widget pointing at
-         * goal-funnel. A funnel is not a report any more -- it is a
-         * visualization, one somebody made, and there is no single one to
-         * point at. So the route is Custom Reports in the rail, whose list
-         * holds the funnels that exist.
+         * A funnel is a visualization, one somebody made, and there is no
+         * single one to point at. So the route is Custom Reports in the rail,
+         * whose list holds the funnels that exist.
          *
          * Asserted rather than left as an absence: a reader looking at goal
          * performance and wanting to see the path to it must still have
@@ -229,6 +202,13 @@ test.describe('every configured report renders in a browser', () => {
         });
     });
 
+    /**
+     * The widget types that only Traffic uses.
+     *
+     * Traffic is the only report
+     * whose widgets each constrain to different rows, so it exercises the
+     * per-widget constraint path end to end.
+     */
     test.describe('the traffic report draws its widgets', () => {
 
         test.beforeEach(async ({ page }) => {
@@ -251,9 +231,7 @@ test.describe('every configured report renders in a browser', () => {
          * each split as its own chart. Two widgets of one type on one report
          * is the case that catches a template writing them all into the first
          * container, or into a container it names from the type rather than
-         * from the widget: the traffic report used to have three metric-boxes
-         * widgets and that is exactly the bug they were guarding, so the guard
-         * follows the shape rather than the type.
+         * from the widget.
          */
         test('each share chart draws into its own container', async ({ page }) => {
             await expect(page.locator('#traffic-sources-source'), 'the Sources chart repeated Top Sources').toHaveCount(0);
@@ -346,11 +324,9 @@ test.describe('every configured report renders in a browser', () => {
                 'referring-sites drew no rows').toBeVisible({ timeout: 20_000 });
 
             /*
-             * By SITE, not by page. The old grid on this report groups by
-             * referral page URL and is still here, so a card that had taken
-             * the wrong dimension would show the same host inside a full URL
-             * and read as correct. The cell is compared whole.
-             *
+             * By SITE, not by page. The grid on this report groups by referral page
+             * URL, so a card that had taken the wrong dimension would show the same
+             * host inside a full URL and read as correct. The cell is compared whole.
              */
             const cells = page.locator('#referring-sites tr.owa_gridRow td[data-column="sessionSource"]');
 
@@ -358,14 +334,9 @@ test.describe('every configured report renders in a browser', () => {
                 .toHaveCount(1);
 
             /*
-             * ...and it leads to the report about the same thing.
-             *
-             * This link did not exist at first: Referring Web Sites grouped by
-             * referral page URL, so a card of SITES leading there was a link
-             * the report builder itself refuses to offer -- a fuller report
-             * has to be about the dimension the card shows. The report was
-             * repointed at referralWebSite, which is what its nav entry had
-             * always called it, and the link followed.
+             * ...and it leads to the report about the same thing: a fuller report
+             * has to be about the dimension the card shows, so the link goes to the
+             * report grouped by referralWebSite.
              */
             const more = page.locator('#referring-sites')
                 .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
@@ -390,20 +361,11 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /*
-         * NO referrals test either: Top Referrals was a duplicate of the
-         * dashboard's Top Referrers card and is off this report. Referring Web
-         * Sites, which is what the report keeps, is covered by the grid-card
-         * assertions above.
-         *
-         * NO keywords test and NO related-reports test here any more: Top
-         * Keywords and the links block are off this report.
-         *
-         * Neither property went with them. That a widget's declared constraint
-         * reaches its query is measured on the dashboard, where #top-referers
-         * is constrained to medium==referral and the assertion is its row COUNT
-         * -- of the four seeded visits only the referral may arrive. That a
-         * links block prints its heading once is measured on the goals report,
-         * which still has one.
+         * That a widget's declared constraint reaches its query is measured on
+         * the dashboard, where #top-referers is constrained to medium==referral and
+         * the assertion is its row COUNT -- of the four seeded visits only the
+         * referral may arrive. That a links block prints its heading once is
+         * measured on the goals report.
          */
     });
 });
@@ -411,12 +373,10 @@ test.describe('every configured report renders in a browser', () => {
 /**
  * A widget has a floor.
  *
- * The report grid is twelve tracks of minmax(0, 1fr), and a quarter-width card
- * on a 1280-wide laptop was 213px: twelve tracks and eleven 20px gaps leave
- * 64px a track. It did not overflow -- .owa_reportGridItem sets min-width:0, so
- * the widget shrank and its table scrolled inside it -- which is the worst
- * shape for a layout bug to take. The report looks intact and is unreadable,
- * and nothing in the console says a word.
+ * The report grid is twelve tracks of minmax(0, 1fr), so a quarter-width card on
+ * a 1280-wide laptop would be 213px. It would not overflow -- .owa_reportGridItem
+ * sets min-width:0, so the widget shrinks and its table scrolls inside it: the
+ * report looks intact and is unreadable, and nothing in the console says a word.
  *
  * The floor is held by container queries that promote a widget's SPAN as the
  * container narrows, because a min-width on a grid item cannot hold it: a
@@ -424,8 +384,7 @@ test.describe('every configured report renders in a browser', () => {
  * overflows into its neighbour rather than widening the track.
  *
  * Which makes this a test only a browser can run. The span classes are static
- * and a PHP test can read them; what they RESOLVE to at a given width is the
- * thing that was broken.
+ * and a PHP test can read them; what they RESOLVE to at a given width is not.
  */
 test.describe('the report grid gives every widget a usable width', () => {
 
@@ -498,16 +457,8 @@ test.describe('the report grid gives every widget a usable width', () => {
      * The grid has to still BE a grid inside a tab.
      *
      * On a report rendered per metric set the tab PANEL is the grid -- one
-     * panel per set, each holding that set's widgets -- and jQuery UI's
-     * `.ui-tabs .ui-tabs-panel { display: block }` was two classes to
-     * `.owa_reportGrid`'s one. It won on every tabbed report: the tracks were
-     * never created and every widget was a full-width block.
-     *
-     * It stayed invisible because every widget on every tabbed report was full
-     * width anyway, so a grid of one column per row looked exactly like the
-     * grid working. The first half-width widget on a tabbed report is what
-     * would have found it, which is a long time to wait for a stylesheet to be
-     * checked.
+     * panel per set, each holding that set's widgets -- so a tab rule that
+     * outranks `.owa_reportGrid` would leave every widget a full-width block.
      */
     test('a tabbed report lays its widgets out on the grid', async ({ page }) => {
         await login(page);
@@ -596,8 +547,7 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         // Narrow enough that they do not fit -- same count, still one line.
         // The dashboard's Site Metrics card is full width, so that takes a
-        // phone-sized viewport: measured, 640px overflows by 134px and 900px
-        // not at all.
+        // phone-sized viewport: 640px overflows and 900px does not.
         const start = await carousel(640);
 
         expect(start.boxes).toBe(wide.boxes);
@@ -655,28 +605,13 @@ test.describe('the report grid gives every widget a usable width', () => {
     /**
      * AN EMPTY PERIOD IS A CHART OF ZERO.
      *
-     * It used to replace the whole widget with a line of text and collapse it
-     * to 50px, so a report with no data changed SHAPE and the reader had to
-     * work out whether the chart was missing or the data was.
+     * Drawn as a real trend, with a point per day of the period and every one
+     * of them zero. For a count that IS the answer rather than a stand-in for
+     * one -- and the days come from the period the result set was queried for,
+     * which is the only place they can come from when the rows are empty.
      *
-     * Drawn as a real trend instead, with a point per day of the period and
-     * every one of them zero. For a count that IS the answer rather than a
-     * stand-in for one -- and the days come from the period the result set was
-     * queried for, which is the only place they can come from when the rows are
-     * empty.
-     *
-     * WHICH REPORT IS EMPTY IS A FIXTURE FACT, AND IT MOVED.
-     *
-     * This used the Clicks report, on the grounds that the fixture seeded no
-     * clicks. It seeds six now -- the click reports had no coverage precisely
-     * because nothing produced a click -- so the Clicks report is a chart of
-     * real data and no longer says anything about the empty case.
-     *
-     * Pointed at Feeds instead, which nothing seeds: feedRequests, feedReaders
-     * and feedSubscriptions have no fixture and no handler firing in this
-     * suite. Moved rather than weakened, per the note that used to be here: an
-     * empty-state test whose subject stopped being empty should change subject,
-     * not lower its standards.
+     * The Feeds report is the empty one: feedRequests, feedReaders and
+     * feedSubscriptions have no fixture and no handler firing in this suite.
      */
     test('a trend with no data is drawn as a zero-filled period', async ({ page }) => {
         await login(page);
@@ -778,7 +713,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             };
         });
 
-        // Comfortably past the 125px default the chart used to draw at.
+        // Comfortably past the 125px default height.
         expect(m.plot, 'the chart is still at its default height').toBeGreaterThan(180);
 
         // ...and the plot really is filling the space the chart element has
@@ -1035,11 +970,8 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
-     * Resizing must not throw.
-     *
-     * flot's resize plugin threw two uncaught TypeErrors on every window
-     * resize, in a bundle where nothing was watching the console. It is gone
-     * now; this is what notices if it -- or anything like it -- comes back.
+     * Resizing must not throw, in a bundle where nothing else watches the
+     * console.
      */
     test('resizing a report raises no console error', async ({ page }) => {
         const errors = [];
@@ -1076,7 +1008,7 @@ test.describe('the report grid gives every widget a usable width', () => {
     test('a quarter-width widget is promoted once a quarter stops fitting', async ({ page }) => {
         await login(page);
 
-        // 1280 with the old 200px nav column; the rail and column are 336px.
+        // The rail and column are 336px.
         await page.setViewportSize({ width: 1416, height: 1000 });
 
         await page.goto(
@@ -1086,10 +1018,10 @@ test.describe('the report grid gives every widget a usable width', () => {
         );
 
         /*
-         * No shipped report has a quarter-width card any more -- every row is
-         * full at twelve columns (ShippedReportLayoutTest) -- but a custom
-         * report can. So a real card is declared a quarter here, and the rule
-         * under test is what it resolves to.
+         * No shipped report has a quarter-width card -- every row is full at
+         * twelve columns (ShippedReportLayoutTest) -- but a custom report can. So
+         * a real card is declared a quarter here, and the rule under test is what
+         * it resolves to.
          */
         const card = page.locator('.owa_reportGridItem.owa_widget-grid-card').first();
         await expect(card).toBeAttached();

@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Classes;
  *
  * A receipt page reloaded, or reached again from history, sends its purchase
  * again -- with a new arrival time, so a new row id, so the idempotence check on
- * the id does not see it. It was stored twice, doubling transactions and revenue.
+ * the id does not see it, and it would be stored twice.
  *
  * A callback on Ingest::TRACKING_EVENTS_PRE_SAVE at priority 50: after the
  * materializers, so a session_start or first_visit the beacon carried is kept
@@ -23,7 +23,7 @@ namespace OWA\Module\Base\Classes;
  * make every id-less purchase a duplicate of the first.
  *
  * Two copies arriving at the same instant can both pass the lookup; the window
- * is one request's length, and a duplicate there is what happened before this.
+ * is one request's length.
  */
 class PurchaseDeduplication {
 

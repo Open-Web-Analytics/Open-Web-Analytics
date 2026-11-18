@@ -1,37 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
-
-
-
 /**
  * Add Site Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class SitesAdd extends \OWA\Core\AdminController {
@@ -91,28 +62,13 @@ class SitesAdd extends \OWA\Core\AdminController {
     }
     
     /**
-     * The domain is NOT validated here any more, because it is not set here.
-     *
-     * Three rules used to guard it, all of them from 2009, when a site WAS a
-     * domain: site_id was md5( domain ), so the domain was the primary-key
-     * material. It had to be present, it had to carry a scheme, and it had to
-     * be unique. Identifiers are minted now, and every one of those reasons is
-     * gone -- but the rules outlived them into preventing two things this
-     * hierarchy was built to allow:
-     *
-     *   - the uniqueness check refused a second Observation Profile for a
-     *     website you already track, which is exactly what a Property is for;
-     *   - and it did not exclude ARCHIVED Profiles, so archiving one made its
-     *     domain permanently unusable -- the row kept to make the deletion
-     *     recoverable was what blocked starting over.
-     *
-     * `required` had to go for its own reason: a Property's domain is optional
-     * -- an app has none -- so requiring one to create a Profile meant an app
-     * could be a Property and never be observed.
+     * The domain is NOT validated here, because it is not set here.
      *
      * The domain belongs to the Property and is validated on the Property
-     * screen. What this screen needs is to know WHICH Property, and that is
-     * only required when it is not creating one.
+     * screen; it is optional there -- an app has none. It is not unique
+     * either: a second Observation Profile for a website already tracked is
+     * what a Property is for. What this screen needs is to know WHICH
+     * Property, and that is only required when it is not creating one.
      */
     public function validate() {
 
@@ -173,9 +129,8 @@ class SitesAdd extends \OWA\Core\AdminController {
          * The tag is what a new Profile is for, and it has no data to report
          * yet. action() has put the created row in 'site'.
          *
-         * Read from $this->data, NOT $this->get(): get() reads the request.
-         * Through get() 'site' was always empty, so every new Profile fell
-         * through to base.reportingHome, the dashboard of the first site.
+         * Read from $this->data, NOT $this->get(): get() reads the request,
+         * where 'site' is empty.
          */
         $site = (array) ( $this->data['site'] ?? [] );
 
@@ -197,15 +152,10 @@ class SitesAdd extends \OWA\Core\AdminController {
         $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.sitesProfile');
         /*
-         * 3002 -- "the form had errors" -- not 3311.
-         *
-         * 3311 has been the CLI-updates message since 2010, and this screen has
-         * set 3311 since 2009: the later commit took a code three form screens
-         * were already using. Latent rather than visible, because
-         * Controller::doAction() sets validation_errors before calling
-         * errorAction() and msgs.php shows error_msg only when there are none --
-         * so the CLI text was suppressed on the ordinary path and would have
-         * appeared the moment that branch changed.
+         * 3002 -- "the form had errors" -- not 3311, which is the CLI-updates
+         * message. Controller::doAction() sets validation_errors before calling
+         * errorAction() and msgs.php shows error_msg only when there are none, so
+         * a wrong code here shows only once that branch changes.
          */
         $this->set('error_code', 3002);
         $this->set('site', $this->params);

@@ -40,8 +40,7 @@ final class EventDispatchObserverIdTest extends TestCase
      * Enough registrations that a six-digit random would very likely collide.
      *
      * 2000 ids out of a million values is a collision with probability ~86% --
-     * so this fails almost every run against the old scheme and passes always
-     * against a counter, which is the difference worth pinning.
+     * so a random id would fail almost every run, and a counter always passes.
      */
     public function testManyRegistrationsProduceNoDuplicateIds(): void
     {

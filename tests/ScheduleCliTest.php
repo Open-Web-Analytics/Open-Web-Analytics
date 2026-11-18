@@ -492,10 +492,6 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * The same command twice under different names: two jobs, two state rows,
-     * two locks — so one instance running never blocks the other.
-     */
-    /**
      * The configuration key is the JOB NAME, never the command name.
      *
      * The shipped job now demonstrates this itself -- rotate-partitions runs
@@ -533,6 +529,10 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame(['reached' => 'the right job'], $jobs['nightly-job-prune']['params']);
     }
 
+    /**
+     * The same command twice under different names: two jobs, two state rows,
+     * two locks — so one instance running never blocks the other.
+     */
     public function testTheSameCommandCanBeScheduledTwice()
     {
         $jobs = $this->jobsWith([
@@ -677,9 +677,6 @@ final class ScheduleCliTest extends CliControllerTestCase
     /**
      * partition-rotate reports arguments it will not act on rather than
      * looking like a success: a usage error, exit code 2.
-     *
-     * Before the outcome channel, a refused run and a completed one were
-     * indistinguishable to any caller.
      */
     public function testRotateReportsItsRefusals()
     {
@@ -718,13 +715,12 @@ final class ScheduleCliTest extends CliControllerTestCase
      * Rotate's lease reflects the DATA a run will rewrite, not the partitions
      * that happen to exist and not the number of periods it will create.
      *
-     * Both mistakes were made and both were expensive. Counting existing
-     * partitions gave 8.3 hours for a rotate with nothing to do. Counting
-     * created partitions gave 2.6 hours for an extension measured at 1.52
-     * seconds -- because extending the lead is ONE statement however many
-     * periods it produces, and its cost follows what is in the catch-all.
+     * Counting existing partitions would lease hours for a rotate with nothing
+     * to do, and counting created ones hours for an extension that takes
+     * seconds: extending the lead is ONE statement however many periods it
+     * produces, and its cost follows what is in the catch-all.
      *
-     * A test asserting only "at least the floor" passed both.
+     * A test asserting only "at least the floor" would pass both.
      */
     public function testRotateLeaseFollowsDataRewrittenNotPartitionCount()
     {
@@ -1563,8 +1559,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      *
      * Tested through leaseFor() because the interesting terms are both zero on
      * a maintained install -- so a test that only recomputes the estimate from
-     * live state agrees with every wrong version of the formula. Two mutants
-     * survived exactly that way before this was split out.
+     * live state agrees with every wrong version of the formula.
      */
     public function testTheLeaseArithmetic()
     {

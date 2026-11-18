@@ -1,29 +1,11 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * Stores what base.myProfile produced.
  *
  * Always writes to the signed-in user's own row. The account is taken from the
  * session, never from the request, so there is no user_id to authorise.
- *
- * @since owa 1.8.0
  */
 class MyProfileSave extends \OWA\Core\AdminController {
 
@@ -164,9 +146,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
              *
              * updateUserPassword() moves the user's session_epoch, which every
              * session cookie is signed with (Auth::sessionCredential()), so the
-             * next request with any of them is anonymous. Left alone, someone
-             * who changed their password was silently signed out on their next
-             * click and had no idea why.
+             * next request with any of them is anonymous.
              *
              * So it is done deliberately and said out loud: credentials
              * cleared, and back to the login form asking them to sign in with

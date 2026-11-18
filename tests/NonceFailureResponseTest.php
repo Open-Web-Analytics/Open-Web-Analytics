@@ -5,10 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * A nonce failure is answered on its own terms, not as a missing session.
  *
- * Both conditions used to reach notAuthenticatedAction(), so someone already
- * signed in was shown the login form. That is untrue and unactionable -- they
- * re-enter credentials that were never the problem -- and it is why the report
- * on #979 read as an authentication failure rather than an expired token.
+ * Someone already signed in is not shown the login form: that is untrue and
+ * unactionable -- they would re-enter credentials that were never the problem.
  *
  * A nonce carries a time window and the user_id it was minted for, so it lapses
  * for perfectly valid sessions: a form left open too long, or one rendered
@@ -60,10 +58,8 @@ final class NonceFailureResponseTest extends TestCase
         $flag->setValue($currentUser, $authenticated);
 
         /*
-         * ReportingHome stands in for "any ordinary controller". It used to be
-         * base.sites, the roster screen, which was retired when reporting
-         * started landing on the last Profile viewed -- nothing here depends on
-         * which controller it is, only that it is one.
+         * ReportingHome stands in for "any ordinary controller": nothing here
+         * depends on which controller it is, only that it is one.
          */
         $controller = new \OWA\Module\Base\Controller\ReportingHome([]);
         $controller->setNonceRequired();
@@ -133,7 +129,7 @@ final class NonceFailureResponseTest extends TestCase
 
     /**
      * A form posting back to the URL it was rendered at has that URL as its
-     * referrer. That is the way back, and it used to be dropped as a self-link.
+     * referrer. That is the way back, and it is not dropped as a self-link.
      */
     public function testAFormThatPostsToItsOwnUrlStillGetsTheWayBack()
     {

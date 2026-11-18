@@ -3,23 +3,14 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * A value longer than its column is trimmed on the way in, not on the way out.
+ * A value longer than its column is trimmed on the way in, not left to the
+ * database.
  *
- * MySQL used to do this, silently, and OWA depended on it without saying so.
- * Measured on a live install, the dependency is heavy rather than incidental:
- *
- *   owa_document.url    135 / 874     15.4% sitting at exactly the limit
- *   owa_referer.url   2,429 / 25,454   9.5%
- *   owa_document.uri     52 / 874      5.9%
- *   owa_ua.ua           180 / 39,953   0.45%
- *
- * A row at exactly the limit is the fingerprint of a value that arrived longer.
- *
- * Under a permissive sql_mode that trim is a warning nobody reads. Under
- * STRICT_ALL_TABLES it is an error and the INSERT is refused outright -- so the
- * page view is not truncated, it is lost, and the write path does not surface
- * the failure, so it is lost quietly. That is why this is a correctness fix and
- * not tidying: it is the thing standing between OWA and a strict sql_mode.
+ * Under a permissive sql_mode MySQL trims it with a warning nobody reads. Under
+ * STRICT_ALL_TABLES the INSERT is refused outright -- so the page view is not
+ * truncated, it is lost, and the write path does not surface the failure. Values
+ * that arrive longer than their column are common (URLs especially), so this is
+ * what stands between OWA and a strict sql_mode.
  */
 final class ColumnLengthHealTest extends TestCase {
 

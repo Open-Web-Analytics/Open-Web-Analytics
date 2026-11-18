@@ -48,14 +48,9 @@
         <?php else:?>
         <?php
         /*
-         * WHICH Property, rather than "what domain".
-         *
-         * The old form asked for a domain and derived a Property from it, which
-         * made the domain the Property's key: adding a second Profile to a
-         * website meant retyping its domain, and a Property with no domain (an
-         * app) could never be chosen at all. Choosing is also what makes an
-         * empty Property usable -- there was previously no way to put a Profile
-         * back into one.
+         * WHICH Property, rather than "what domain": a website can have a second
+         * Profile without retyping its domain, a Property with no domain (an app) can
+         * be chosen, and a Profile can be put into an empty Property.
          */
         ?>
         <TR>
@@ -146,12 +141,7 @@
 <?php if ( $view->edit == true && $view->getCurrentUser()->isCapable('edit_sites') ):?>
 <?php
 /*
- * Deleting an Observation Profile.
- *
- * This lived on the base.sites roster, which is gone -- so the action was
- * still registered and still worked, but nothing linked it and there was no
- * way to delete a Profile at all. It belongs here: this is the screen that
- * already owns this one Profile.
+ * Deleting an Observation Profile, on the screen that owns this one Profile.
  *
  * Its own form, not a second submit on the one above, so a stray Enter in a
  * text field cannot reach it. The nonce is minted for base.sitesDelete

@@ -5,23 +5,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * A constraint a caller asked for is applied, or refused -- never dropped.
  *
- * The failure this guards is the same one twice, from two causes:
+ * Two causes of the same failure:
  *
- *   - `source==`            a value went missing on the way in
+ *   - `source==`            a value went missing on the way in (a cache layer
+ *                           stripping owa_source, say)
  *   - `bogusDimension==x`   a name does not resolve
  *
- * Either way the constraint used to vanish and the query ran WITHOUT it,
- * answering with the unconstrained total. That is the worst available default
- * for reporting: a lost parameter becomes indistinguishable from a request for
- * everything, and unfiltered numbers look real. The empty-value half was found
- * in production -- a cache layer stripping owa_source, and the Source Detail
- * report showing the same visit count for every source with no error anywhere.
- *
- * The unknown-name half was found while tracing stored SQL-injection probes on
- * the demo install. Those were inert, but `bogusDimension==direct` returned
- * exactly what no constraint at all returned, which is how it surfaced.
- *
- * Neither of these was covered by a test before this file.
+ * A query run WITHOUT the constraint answers with the unconstrained total. That
+ * is the worst available default for reporting: a lost parameter becomes
+ * indistinguishable from a request for everything, and unfiltered numbers look
+ * real.
  */
 final class ConstraintRefusalTest extends TestCase
 {
@@ -207,8 +200,7 @@ final class ConstraintRefusalTest extends TestCase
      * Most of $errors is routine -- a denormalized dimension such as
      * productName resolves only against certain entities, so lookupDimension()
      * records "not a registered dimension" during perfectly ordinary reports.
-     * Measured: it fires twice in a clean run of the suite with no bad input
-     * anywhere. Gating on "any error" would refuse to run those reports.
+     * Gating on "any error" would refuse to run those reports.
      */
     public function testARoutineLookupMissDoesNotRefuseTheQuery(): void
     {

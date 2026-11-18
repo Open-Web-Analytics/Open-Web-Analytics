@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * base Schema Installation Controller
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class InstallBase extends \OWA\Core\Controller\Install {
@@ -57,16 +31,6 @@ class InstallBase extends \OWA\Core\Controller\Install {
             'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ]);
 
-        /*
-         * A pasted URL is no longer refused.
-         *
-         * The form used to ask for the scheme in a select of its own, so a
-         * domain that also carried one produced "https://https://example.com"
-         * -- hence a validation that rejected anything starting with "http".
-         * The select is gone and the scheme is stripped instead
-         * (SiteManager::domainOnly(), in InstallManager::createDefaultSite());
-         * refusing the most natural thing to paste bought nothing.
-         */
     }
 
     public function action() {

@@ -14,10 +14,8 @@ namespace OWA\Module\Base\Classes;
  * page_view event with a page_path condition, which is what a new step starts
  * as. No conditions matches every event of that name.
  *
- * There used to be two other kinds: a path ({path}) and a goal event step
- * ({goal_event_definition_id}), which borrowed a definition's trigger and
- * conditions as a saved filter. Update079 turned the saved ones into event
- * steps, and neither is saved or counted any more.
+ * A path ({path}) or goal event step ({goal_event_definition_id}) row is not
+ * saved or counted; Update079 turned the stored ones into event steps.
  *
  * The rules a step is saved under live here, so the save (VisualizationSave),
  * the preview (VisualizationPreview) and their tests apply one set of them.

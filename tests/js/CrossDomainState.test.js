@@ -19,14 +19,9 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  *     off the URL/anchor, decodes it, and replaces the local state stores so the
  *     visitor arrives already-identified instead of as a brand-new visitor.
  *
- * These paths were previously untested, and writing the test surfaced two real
- * strict-mode bugs in checkForLinkedState() that are pinned by regression tests
- * at the bottom of this file:
- *   1. an assignment to an undeclared `decodedvalue` (ReferenceError under the
- *      bundle's "use strict") that threw the moment any shared state was found;
- *   2. an unconditional `decodedvalue.cdh = ...` that threw a TypeError when a
- *      sharable store was empty (the common case: a visitor with no campaign
- *      state serializes 'c'/'b' to "").
+ * Two strict-mode cases in checkForLinkedState() are pinned at the bottom of this
+ * file: any shared state found, and a sharable store that is empty (the common
+ * case: a visitor with no campaign state serializes 'c'/'b' to "").
  *
  * jsdom note: real navigation (assigning document.location.href in
  * shareStateByLink, or form.submit()) is not implemented in jsdom, so we drive
@@ -229,10 +224,9 @@ describe('cross-domain state: destination-side restoration', () => {
 describe('cross-domain state: strict-mode regression guards', () => {
 
     test('restoring shared state does not throw a ReferenceError (undeclared decodedvalue)', () => {
-        // Regression: checkForLinkedState assigned to an undeclared `decodedvalue`,
-        // which throws "decodedvalue is not defined" under the bundle's strict
-        // mode the instant any shared state is found -- silently breaking every
-        // cross-domain hand-off. This exercises exactly that path.
+        // Under the bundle's strict mode, an undeclared assignment in
+        // checkForLinkedState would throw the instant any shared state is found.
+        // This exercises exactly that path.
         const source = newTracker();
         OWA.setState('v', 'visitor_id', 'regress-visitor', true, 'json');
         const token = source.createSharedStateValue();
@@ -244,12 +238,10 @@ describe('cross-domain state: strict-mode regression guards', () => {
     });
 
     test('an empty sharable store in the token does not throw and is skipped', () => {
-        // Regression: a visitor with no campaign state serializes 'c'/'b' to "",
-        // which decodes to a non-object on the destination; the old code then did
-        // `decodedvalue.cdh = ...` and threw "Cannot create property 'cdh' on
-        // string". Seed ONLY the visitor store so 'c'/'b' ride along empty, and
-        // assert the populated store still restores while the empty ones are
-        // skipped rather than crashing the whole hand-off.
+        // A visitor with no campaign state serializes 'c'/'b' to "", which decodes
+        // to a non-object on the destination. Seed ONLY the visitor store so 'c'/'b'
+        // ride along empty, and assert the populated store still restores while the
+        // empty ones are skipped rather than crashing the whole hand-off.
         const source = newTracker();
         OWA.setState('v', 'visitor_id', 'lonely-visitor', true, 'json');
         const token = source.createSharedStateValue();

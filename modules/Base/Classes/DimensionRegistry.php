@@ -23,13 +23,11 @@ namespace OWA\Module\Base\Classes;
  * and then lose its breakdown to MySQL's "Unknown column", which the result set
  * swallows (config/dimensions.php).
  *
- * NEVER IN THE PROCESS-WIDE REGISTRY. They used to be pushed into Service's
- * denormalizedDimensions for the Property a request named first, so a list
- * built before anything named one had none: the custom report editor opened
- * from a report's pencil offered no custom dimension, and dropped one a widget
- * already used. Here Service's registries are read as the modules loaded them,
- * and the custom dimensions sit beside them keyed by Property, so an answer for
- * B cannot carry A's however many Properties one process has served.
+ * NEVER IN THE PROCESS-WIDE REGISTRY. Service's registries are read as the
+ * modules loaded them, and the custom dimensions sit beside them keyed by
+ * Property, so an answer for B cannot carry A's however many Properties one
+ * process has served, and a list built before anything names a Property is
+ * not missing them.
  *
  * forProperty( null ) is the module vocabulary alone, for a caller that is
  * about no Property; each such caller says why.

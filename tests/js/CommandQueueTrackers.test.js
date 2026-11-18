@@ -2,7 +2,7 @@
  * The command queue and the trackers it creates.
  *
  * - Every tracker the queue creates starts its default features, not only
- *   OWATracker: a named tracker for a second site used to start none.
+ *   OWATracker.
  * - A tracker created after the page's queue was processed starts them once
  *   the command that created it has run.
  * - A second copy of the bundle on the page leaves the live queue alone.

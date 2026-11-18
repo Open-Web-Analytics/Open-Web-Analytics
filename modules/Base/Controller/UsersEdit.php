@@ -1,34 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Edit User Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class UsersEdit extends \OWA\Core\AdminController {
@@ -81,15 +55,10 @@ class UsersEdit extends \OWA\Core\AdminController {
         $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');
         /*
-         * 3002 -- "the form had errors" -- not 3311.
-         *
-         * 3311 has been the CLI-updates message since 2010, and this screen has
-         * set 3311 since 2009: the later commit took a code three form screens
-         * were already using. Latent rather than visible, because
-         * Controller::doAction() sets validation_errors before calling
-         * errorAction() and msgs.php shows error_msg only when there are none --
-         * so the CLI text was suppressed on the ordinary path and would have
-         * appeared the moment that branch changed.
+         * 3002 -- "the form had errors" -- not 3311, which is the CLI-updates
+         * message. Controller::doAction() sets validation_errors before calling
+         * errorAction() and msgs.php shows error_msg only when there are none, so
+         * a wrong code here shows only once that branch changes.
          */
         $this->set('error_code', 3002);
         $this->set('user', $this->params);

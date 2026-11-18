@@ -11,8 +11,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * The user agent claims a browser (Client::claimsBrowser()) and the request
  * has no Accept-Language.
  *
- * One point: measured the week before the 4 November attack, it fired on 1 of
- * 2,389 real browser beacons, and on 12 bot beacons.
+ * One point: a real browser lacks it very rarely, and so do most bots.
  */
 class NoAcceptLanguage extends \OWA\Module\Base\Classes\Spam\Rule {
 

@@ -4,9 +4,7 @@
  * The site control: what is being reported on, and the navigation for changing it.
  *
  * It sits above the left nav because it scopes everything in that nav -- every
- * report below it is a report OF this Property. The old control was a select in
- * the content column, which put the thing every report depends on beside the
- * reports rather than above them.
+ * report below it is a report OF this Property.
  *
  * It stops at the Property. A report reads the Property's cube, which holds
  * every Profile beneath it; a report broken out by Profile uses the Profile

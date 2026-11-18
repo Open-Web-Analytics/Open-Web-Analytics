@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A calculated metric is a ratio or a difference. The 1.x formula -- an
  * expression eval()'d with child values substituted in by metric name -- is
- * refused when the metric is built, and nothing in OWA eval()s any more.
+ * refused when the metric is built, and nothing in OWA eval()s.
  */
 final class MetricFormulaRefusedTest extends TestCase
 {

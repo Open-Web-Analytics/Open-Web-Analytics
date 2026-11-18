@@ -2,18 +2,9 @@
 /**
  * The heatmap overlay and the recording player fetch their data cross-origin.
  *
- * This is the property that JSONP existed to provide, and nothing tested it.
  * Both overlays run on the *tracked* site and fetch from the OWA origin, so
- * their request is genuinely cross-origin; JSONP got around the same-origin
- * policy by returning the body as an executable script. Replacing it with CORS
- * is only safe if CORS actually works from a browser, which curl cannot show
- * and the existing overlay spec explicitly does not assert -- it says so in its
- * own header: "the subsequent click-data fetch ... is not asserted (it simply
- * never calls back in this harness)".
- *
- * That silence is the point. JSONP fails by never calling back, so an overlay
- * whose fetch was broken looked exactly like one whose fetch was pending. The
- * DOM assertions passed either way.
+ * their request is genuinely cross-origin, and CORS working from a browser is
+ * something curl cannot show. overlay-heatmap.spec.js asserts only the DOM.
  *
  * HOW THIS IS CROSS-ORIGIN WITHOUT A SECOND HOST
  * The self-host runner serves one php -S on 127.0.0.1:PORT, and
@@ -22,14 +13,6 @@
  * and enforces the response's CORS headers for real. The fixture provisions a
  * site at http://localhost so the request is allowed on the merits: the matcher
  * compares the Origin's host against configured sites.
- *
- * WHAT WOULD HAVE CAUGHT WHAT
- * Three separate defects had to be fixed before this could pass, and each was
- * invisible to every other suite:
- *   - addCorsHeaders() never emitted a header (row arrays vs a string)
- *   - isHttps() let the Origin header flip the server's own scheme, breaking
- *     the signature on every signed cross-origin request
- *   - the overlay read its params from a cookie that had been removed
  */
 const fs = require('fs');
 const path = require('path');
@@ -157,7 +140,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const { fetches, consoleErrors, apiRoot, pageRoot } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             // An ordinary dimensional query: clicks grouped by coordinate,
-            // constrained on the page. There is no clicks report any more.
+            // constrained on the page.
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
                 + '&owa_metrics=' + encodeURIComponent(fx.heatmap_metrics)
                 + '&owa_dimensions=' + encodeURIComponent(fx.heatmap_dimensions)

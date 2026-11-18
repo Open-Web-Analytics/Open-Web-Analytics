@@ -109,8 +109,7 @@ test.describe('report nav on a phone', () => {
 
     /**
      * The menu button is where the logo is at full width, at the left of the
-     * header, and the logo moves to the top of the menu. The button used to be
-     * under the header, at the top of the report.
+     * header, and the logo moves to the top of the menu.
      */
     test('the menu button has the logo\'s place, and the logo heads the menu', async ({ page }) => {
         await openReport(page, REPORT);

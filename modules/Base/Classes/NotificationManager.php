@@ -267,10 +267,8 @@ class NotificationManager {
 
             /*
              * Afterwards, never import anything OLDER than what we already
-             * hold. Capping only the first fetch would merely postpone the
-             * backfill: the second run finds rows present, the cap no longer
-             * applies, and the history we deliberately skipped arrives anyway.
-             * The watermark is what makes the decision stick.
+             * hold, or the history the first fetch skipped would arrive on the
+             * second run.
              *
              * `>=` and not `>`: two releases can share a timestamp, and the
              * one already stored is refused by the dedupe below rather than by

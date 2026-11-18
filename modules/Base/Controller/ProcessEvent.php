@@ -1,35 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 /**
  * Generic Event Processor Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class ProcessEvent extends \OWA\Core\Controller {
@@ -102,17 +75,10 @@ class ProcessEvent extends \OWA\Core\Controller {
         /*
          * Everything the event carries that NO module has registered.
          *
-         * Diffed against every registered map, not just the regular one. It
-         * used to diff against `regular` alone, which left all 39 derived
-         * properties and the environmental ones in this set -- so a value a
-         * client sent for a SERVER-COMPUTED property was captured here, and the
-         * re-apply at the end of this method put it back on top of the value
-         * the derivation had just computed.
-         *
-         * The derivation ran correctly and was then undone, so a value sent
-         * with the request reached a column only the server should decide.
-         * Environmental properties were reachable the same way, which is the
-         * more serious half.
+         * Diffed against every registered map, not just the regular one: a value a
+         * client sent for a SERVER-COMPUTED or environmental property would
+         * otherwise be captured here, and the re-apply at the end of this method
+         * would put it back on top of the value the derivation computed.
          */
         $protected = $properties + $teh->serverOwnedProperties();
 
@@ -120,7 +86,6 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // Kept as the text that was sent (Sanitize::cleanTrackingText()), applied back below.
         $sanitized_properties = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $unsanitized_properties );
-        //owa_coreAPI::debug( print_r($sanitized_properties, true ) );
 
         // translate custom var properties
         $teh->translateCustomVariables( $this->event );
@@ -133,11 +98,8 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         /*
          * The cv{n}_name / cv{n}_value pairs are DERIVED -- the server makes
-         * them by splitting the cv{n} slot the tracker sent. They used to be
-         * merged into the regular map, which made them settable from the wire:
-         * a request posting owa_cv1_name survived the filter and was then
-         * re-applied over the split result by the sanitized-properties step
-         * below.
+         * them by splitting the cv{n} slot the tracker sent -- and kept out of the
+         * regular map, so they cannot be set from the wire.
          */
 
         $teh->setTrackerProperties( $this->event, $derived_properties );
@@ -197,12 +159,9 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * ONE RULE, ASKED OF ONE PLACE.
      *
-     * This kept its own copy of the test -- in_array() against
-     * trackingEventTypes() -- which is an allowlist, so a custom event admitted by
-     * logEvent() was refused again here and never dispatched. Three places asked
-     * "is this a tracking event" with three copies of the answer; they now share
      * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
-     * custom one.
+     * custom one, is the one answer to "is this a tracking event": a copy here
+     * would refuse a custom event logEvent() admitted.
      *
      * @return bool
      */

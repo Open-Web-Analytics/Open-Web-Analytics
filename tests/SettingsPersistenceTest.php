@@ -12,19 +12,8 @@ use PHPUnit\Framework\TestCase;
  * A persisted value overrides the code default forever. Storing one that is
  * currently identical to the default looks like a no-op, but it silently pins
  * that value: when the default later changes, the install keeps the old one and
- * stops tracking the code.
- *
- * That is not hypothetical. An old config GUI persisted the WHOLE settings
- * array rather than only changed fields, so installs accumulated dozens of
- * redundant copies -- three real installs carried 26, 21 and 13 persisted keys
- * of which only 2-3 were genuine customisations. One of them, report_wrapper,
- * held 'wrapper_default.tpl' from back when that WAS the default. The
- * .tpl -> .php template migration therefore could not reach it, and every
- * report render died on include('') with "ValueError: Path cannot be empty" --
- * the only diagnostic written to OWA's own log, not the web server's.
- *
- * Update012 repairs installs that already have these. This test guards the
- * behaviour that stops them being created again.
+ * stops tracking the code. A form that persists the WHOLE settings array
+ * rather than only changed fields would store dozens of these.
  */
 final class SettingsPersistenceTest extends TestCase
 {
@@ -207,10 +196,6 @@ final class SettingsPersistenceTest extends TestCase
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']
         );
 
-        // async_error_log_file, async_log_file, async_lock_file, db_class_dir,
-        // module_dir, templates_dir, search_engines.ini, query_strings.ini,
-        // plugin_dir and cache_dir were on this list too. They were removed in
-        // v2.0 with nothing left that reads them, so a stored value has no effect.
         $original = [
             'error_log_file','async_log_dir','data_dir',
             'report_wrapper','db_type','db_host','db_port','db_name',
@@ -232,15 +217,12 @@ final class SettingsPersistenceTest extends TestCase
     /**
      * Real database state must stay READABLE from the store.
      *
-     * The old form of this asserted those keys were absent from the
-     * config-file-only list, because being on it meant being dropped on load.
-     * The mechanism is the declaration now, and the equivalent hazard is being
-     * declared STATIC: a static setting is never fetched, so a stored
-     * schema_version would be invisible and every update would re-run.
+     * The hazard is being declared STATIC: a static setting is never fetched, so
+     * a stored schema_version would be invisible and every update would re-run.
      *
-     * configuration_id is deliberately not in this list any more. It named the
-     * blob row Update043 retired, so it is vestigial rather than state, and
-     * its default of '1' is the whole of it.
+     * configuration_id is deliberately not in this list. It named the blob row
+     * Update043 retired, so it is vestigial rather than state, and its default of
+     * '1' is the whole of it.
      */
     public function testDatabaseStateKeysAreStillReadFromTheStore(): void
     {
@@ -267,7 +249,7 @@ final class SettingsPersistenceTest extends TestCase
      * be dropped on load whatever it holds.
      *
      * This is the real-world shape: async_log_dir naming a previous server's
-     * directory, and report_wrapper naming a .tpl file that no longer exists.
+     * directory, and report_wrapper naming a file that does not exist.
      *
      * @dataProvider configFileOnlyValueProvider
      */
@@ -360,13 +342,12 @@ final class SettingsPersistenceTest extends TestCase
     /**
      * The prune is confined to modules whose defaults are known.
      *
-     * That used to mean base alone, because default_config held nothing else.
-     * A module that ships settings.php now contributes its defaults too, and
-     * pruning those is correct -- a stored value equal to its declared default
+     * A module that ships settings.php contributes its defaults, and pruning
+     * those is correct -- a stored value equal to its declared default
      * is exactly what the rule exists to drop.
      *
      * Two things must still hold, and they are what this asserts. A module that
-     * has declared NOTHING is untouched, as before. And is_active /
+     * has declared NOTHING is untouched. And is_active /
      * schema_version are never pruned for anyone, declared or not: they carry
      * database state rather than configuration, and core registers them with
      * eagerness but no default precisely so they can never look like a value
@@ -416,24 +397,11 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * Writing '' is not a removal, and there has to be something that is.
+     * And a config-file-only setting cannot be persisted at all.
      *
-     * persistSetting('') stores an empty string -- a row that overrides the
-     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
-     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
-     * config of every install it ever ran against, this box included, since
-     * long before settings became rows. Nobody noticed because an empty string
-     * reads like an absent one until you look at the table.
-     */
-    /**
-     * And the setting these three USED to demonstrate cannot be persisted.
-     *
-     * They were written around base.report_wrapper, which is convenient -- a
-     * code default and a documented history of being pinned -- and is also
-     * config-file-only: a stored value there is an arbitrary file include.
-     * Base declares all of those static now, so persistSetting refuses
-     * them, and the pruning rule is shown on a setting that can legitimately
-     * hold a stored value.
+     * base.report_wrapper is static -- a stored value there would be an arbitrary
+     * file include -- so persistSetting refuses it. The pruning rule above is
+     * shown on a setting that can legitimately hold a stored value.
      */
     public function testAConfigFileOnlySettingCannotBePersistedAtAll(): void
     {
@@ -450,6 +418,16 @@ final class SettingsPersistenceTest extends TestCase
         }
     }
 
+    /**
+     * Writing '' is not a removal, and there has to be something that is.
+     *
+     * persistSetting('') stores an empty string -- a row that overrides the
+     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
+     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
+     * config of every install it ever ran against, this box included, since
+     * long before settings became rows. Nobody noticed because an empty string
+     * reads like an absent one until you look at the table.
+     */
     public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
     {
         $c = $this->settings();

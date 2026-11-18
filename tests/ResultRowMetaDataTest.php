@@ -9,18 +9,13 @@ use OWA\Module\Base\Classes\ResultSetManager;
 /**
  * A result row's metadata describes that column, and no other.
  *
- * applyMetaDataToSingleResultRow() assigned $type and $data_type inside two
- * branches -- the key is a requested dimension, or a requested metric -- and a
- * row can hold a key that is neither. A calculated metric's children arrive in
- * the result without having been asked for: revenuePerTransaction is
- * 'transactionRevenue / transactions', so both of those land in the row while
- * only the parent is in $metrics.
- *
- * Reaching the third branch left the two variables holding whatever the
- * PREVIOUS key had set, so the child was reported as a dimension and formatted
- * as a date. On the first key there was nothing to inherit and PHP warned about
- * an undefined variable, which is how this surfaced -- four times in the Apache
- * error log, every one a REST query for revenuePerTransaction.
+ * A row can hold a key that is neither a requested dimension nor a requested
+ * metric: a calculated metric's children arrive in the result without having
+ * been asked for. revenuePerTransaction is 'transactionRevenue /
+ * transactions', so both of those land in the row while only the parent is in
+ * $metrics. Such a key must not inherit the PREVIOUS key's type and data type
+ * -- a child reported as a dimension and formatted as a date -- nor, as the
+ * first key, read an undefined variable.
  *
  * The registry lookups are answered here rather than loaded, so these assert
  * the metadata assignment and nothing else.

@@ -11,10 +11,9 @@ use PHPUnit\Framework\TestCase;
  * $view->params, which is URL-controlled. report_widgets.php reads it back
  * into a widget's description for addLinkToColumn().
  *
- * It used to be assembled by string concatenation and escaped with
- * Sanitize::escapeForDisplay(), which is htmlentities(): an HTML escape applied
- * to a JavaScript context. It leaves a backslash untouched, and a backslash is
- * what a JS string literal treats as an escape.
+ * An HTML escape such as Sanitize::escapeForDisplay() (htmlentities()) is wrong
+ * in this JavaScript context: it leaves a backslash untouched, and a backslash
+ * is what a JS string literal treats as an escape.
  */
 final class MakeJsonIsSafeInlineTest extends TestCase
 {
@@ -95,7 +94,7 @@ final class MakeJsonIsSafeInlineTest extends TestCase
 
         $this->assertSame( $payload, $this->decoded( [ 'q' => $payload ] )['q'] );
 
-        // the old escape left the backslash alone; assert we no longer do
+        // an HTML escape would leave the backslash alone
         $this->assertStringNotContainsString( 'value\\"',
             $this->json( [ 'q' => $payload ] ) );
     }
@@ -136,7 +135,7 @@ final class MakeJsonIsSafeInlineTest extends TestCase
         $this->assertSame( [ '0' => 'a', '1' => 'b' ], json_decode( $json, true ) );
     }
 
-    /** An empty array used to return '}' on its own. */
+    /** An empty array is an empty object. */
     public function testAnEmptyArrayIsAnEmptyObject(): void
     {
         $this->assertSame( '{}', $this->json( [] ) );

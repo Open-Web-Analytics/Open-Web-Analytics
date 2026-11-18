@@ -43,8 +43,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
          * A web Property needs a domain.
          *
          * It is the origin a tracking request is accepted or refused on, so a
-         * web Property without one has nothing to check against -- the field
-         * was optional and quietly load-bearing. An APP Property is identified
+         * web Property without one has nothing to check against. An APP Property is identified
          * by its Profiles' bundle ids instead, so it is not asked for one.
          *
          * The TYPE is read the way the save reads it: from the stored row when
@@ -235,10 +234,9 @@ class PropertyEdit extends \OWA\Core\AdminController {
     /**
      * The form again, as it was sent, with the reasons it was refused.
      *
-     * It redirected to base.propertyProfile, and a redirect carries only
-     * scalar values, so the settings and their Override switches were lost and
-     * the screen reloaded what was stored: correcting one field meant entering
-     * every other change again. Rendered here, as SitesEditSettings does.
+     * Rendered here, as SitesEditSettings does, not redirected: a redirect
+     * carries only scalar values, so the settings and their Override switches
+     * would be lost.
      */
     public function errorAction() {
 

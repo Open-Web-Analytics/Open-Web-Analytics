@@ -5,8 +5,7 @@ import { dialog } from './owa.dialog.js';
 /**
  * The confirmation an irreversible action gets before it runs.
  *
- * window.confirm() was doing this job on the Profile delete. It cannot carry
- * more than one line, cannot be styled, cannot say what is about to be kept as
+ * Not window.confirm(), which cannot carry more than one line, cannot be styled, cannot say what is about to be kept as
  * opposed to destroyed, and in an automated browser it is DISMISSED by default
  * -- so a test driving a delete passes while deleting nothing.
  *

@@ -5,39 +5,26 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 /**
  * When the session store reaches the cookie.
  *
- * THE ORIGINAL PROBLEM
- * The tracker used to write s.sid and s.last_req the moment they were derived,
- * before the request carrying them was transmitted. When that first beacon died
- * (typically cancelled by the browser when the visitor clicked through while the
- * 1x1 pixel was still in flight) the cookie asserted a session the server had
- * never been told about. Every later page then read that sid, sent
- * is_new_session UNSET, and the server took sessionHandlers::logSessionUpdate(),
- * which correctly aborts -- on a multi-server setup an update can legitimately
- * arrive before its create -- and requeued the event. Nothing reconciled it, so
- * one lost first beacon stranded every subsequent hit in that session.
+ * Written before the request carrying them is transmitted, s.sid and s.last_req
+ * would assert a session the server was never told about when that first beacon
+ * dies (typically cancelled by the browser when the visitor clicks through while
+ * the 1x1 pixel is still in flight), and every later hit would be stranded.
  *
- * The first fix withheld those two KEYS from the cookie until a send was
- * accepted, and let every other key in the store persist immediately.
- *
- * WHAT CHANGED, AND WHY
- * The session store is now withheld WHOLE until the session is known to be
- * worth persisting, on the 'persistSession' action. Two reasons:
+ * The session store is withheld WHOLE until the session is known to be worth
+ * persisting, on the 'persistSession' action. Two reasons:
  *
  *   1. Holding a value back is what makes it distinguishable. A session-scoped
  *      value in memory was set by THIS page load; one in the cookie was left by
- *      a previous one. Writing memory through immediately destroyed that
+ *      a previous one. Writing memory through immediately would destroy that
  *      distinction, and a new session could then neither keep the new values nor
  *      discard the old ones without a label to tell them apart. Nothing durable
  *      could carry that label. See CustomVarStorage.test.js.
  *
  *   2. It makes the store commit atomically. Persisting referer or a custom var
- *      while withholding sid wrote a half-session to disk: state describing a
- *      session whose identity was not recorded. Whatever read it next attached
- *      those values to a different session.
+ *      while withholding sid would write a half-session to disk: state describing
+ *      a session whose identity was not recorded.
  *
- * This reverses a rationale stated in this file's previous header -- that custom
- * vars are "publisher intent that must not hinge on transport". They do hinge on
- * it now, and that is the point: a session-scoped value cannot outlive the
+ * So custom vars hinge on transport: a session-scoped value cannot outlive the
  * persistence of the session it is scoped to. If the sid never lands, there is
  * no session for the variable to belong to, and persisting it alone would attach
  * it to whatever session came next.
@@ -93,13 +80,6 @@ afterEach(() => {
 });
 
 describe('store behaviour is declared at registration', () => {
-
-    /*
-     * It used to be hardcoded in StateManager's constructor as maps keyed by
-     * one-letter store name -- so a store's identity was declared in the
-     * tracker while its behaviour lived in another file, and registering a new
-     * store gave you no way to say how it should behave.
-     */
 
     test('the session store defers hydration and waits for the session to persist', () => {
         expect(OWA.state.behaviourOf('s')).toMatchObject({

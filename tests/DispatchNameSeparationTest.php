@@ -12,12 +12,11 @@ use PHPUnit\Framework\TestCase;
  * CoreAPI::logEvent(). Everything OWA raises internally -- install_complete,
  * base.reset_password, the announcements ingest raises -- goes straight to
  * EventDispatch::notify() without passing through logEvent, so it has no dispatch
- * name and must route on its event type, as it always has.
+ * name and must route on its event type.
  *
- * That fallback is the whole compatibility story for every non-tracking event, and
- * nothing tested it. Two attempts at this change broke exactly those events:
- * inferring "is this a tracking event" from the NAME matches install_complete, and
- * Module::installCompleteHandler was replaced by ingest.
+ * That fallback is the whole compatibility story for every non-tracking event.
+ * Inferring "is this a tracking event" from the NAME would match
+ * install_complete.
  *
  * THE CONTRADICTORY PROPERTY IS THE REASON THE KEY IS NOT IN THE BAG.
  * EventRawHandlers::announce() copies the beacon's properties onto a fresh notice,
@@ -118,13 +117,13 @@ final class DispatchNameSeparationTest extends TestCase
      * the endpoint admits it, and owa_event_raw.event_type stores it, so the bag
      * legitimately holds it and the registry declares it.
      *
-     * It is wrong for everything else, and announce() is how that happened -- it
+     * It is wrong for everything else, and announce() is why -- it
      * copies a beacon's whole property bag onto a fresh notice, event_type
      * included. With getEventType() falling back to the bag, an event whose member
      * was never set would take its identity from whatever beacon it inherited from.
      *
-     * Asserted on an event that has ONLY the property, which is the case the
-     * fallback used to answer and now must not.
+     * Asserted on an event that has ONLY the property, which the fallback must
+     * not answer.
      */
     public function testATypeInThePropertyBagDoesNotNameTheEvent(): void
     {

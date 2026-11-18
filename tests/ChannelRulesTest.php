@@ -153,8 +153,8 @@ final class ChannelRulesTest extends TestCase
     }
 
     /**
-     * WHOLE LABELS, NOT SUBSTRINGS. The build used to test containment, so
-     * `t.co` matched microsoft.com and every Microsoft referral read as social.
+     * WHOLE LABELS, NOT SUBSTRINGS: by containment `t.co` would match
+     * microsoft.com and every Microsoft referral would read as social.
      */
     public function testListsMatchWholeLabels(): void
     {

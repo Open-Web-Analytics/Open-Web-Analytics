@@ -1,33 +1,8 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Updates Application Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
@@ -74,8 +49,6 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
         
         $modules = $s->getModulesNeedingUpdates();
-        //print_r($modules);
-        //return;
         
         // foreach do update in order
         if (!empty($modules)) {
@@ -182,12 +155,9 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         
         // check for force command param
         //
-        // The key is 'force', not '--force'. The dashes used to be part of the
-        // parameter NAME because cli.php required key=value and stored whatever
-        // was left of the '=' verbatim, so 'cmd=update --force=1' produced a
-        // parameter literally called '--force'. cli.php now strips a leading --
-        // and treats a valueless switch as true, so all three spellings arrive
-        // here as 'force': --force, --force=1 and force=1.
+        // The key is 'force', not '--force': cli.php strips a leading -- and treats
+        // a valueless switch as true, so --force, --force=1 and force=1 all arrive
+        // here as 'force'.
         $force = false;
         if ($this->isParam('force')) {
             

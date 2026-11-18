@@ -20,20 +20,17 @@ class Lib {
      *
      * The module runtime name ($module->name, the DB persist key, the dotted-id
      * prefix, the ?do= route segment) stays lowercase forever -- e.g. 'base',
-     * 'maxmind_geoip', 'sqs'. Its filesystem home, however, is now the
-     * PascalCase PSR-4 namespace segment: 'Base', 'MaxmindGeoip', 'Sqs'.
-     * This is the single seam that maps one to the other. The transform matches
-     * exactly how the top-level module namespaces were derived during the PSR-4
-     * migration: upper-case the first letter of each underscore-delimited word,
-     * then drop the underscores.
+     * 'maxmind_geoip', 'sqs'. Its filesystem home is the PascalCase PSR-4
+     * namespace segment: 'Base', 'MaxmindGeoip', 'Sqs'. This is the single seam
+     * that maps one to the other: upper-case the first letter of each
+     * underscore-delimited word, then drop the underscores.
      *
      *   base          -> Base
      *   maxmind_geoip -> MaxmindGeoip
      *   sqs           -> Sqs
      *
      * The transform is idempotent on its own output ('Base' -> 'Base'). Only the
-     * PascalCase directory is read: the pre-PSR-4 lowercase layout was removed
-     * at v2.0.
+     * PascalCase directory is read.
      *
      * @param string $name lowercase module runtime name
      * @return string PascalCase directory / namespace segment
@@ -116,22 +113,13 @@ class Lib {
         
         // Only signals describing THIS hop count.
         //
-        // HTTP_ORIGIN and HTTP_REFERER used to be accepted here, and both are
-        // set by the client: they describe where the caller came from, never
-        // how the request reached this server. Any visitor arriving from an
-        // https page, or any caller sending an Origin header, could therefore
-        // tell OWA it was serving over TLS when it was not.
+        // HTTP_ORIGIN and HTTP_REFERER are not read: both are set by the client and
+        // describe where the caller came from, never how the request reached this
+        // server, so any caller could tell OWA it was serving over TLS when it was
+        // not -- and get_current_url() takes its scheme from here.
         //
-        // That is not cosmetic. get_current_url() takes its scheme from here,
-        // and the request signature 1.x checked was computed over that URL --
-        // so a signed cross-origin request from an https page signed
-        // http://host/... and was verified against https://host/..., which
-        // could never match. Every such request 401'd. Anything else
-        // building an absolute URL from get_current_url() was steerable the
-        // same way.
-        //
-        // The forwarding headers stay: a terminating proxy sets them, and that
-        // is how TLS actually reaches OWA in a normal deployment.
+        // The forwarding headers are read: a terminating proxy sets them, and that is
+        // how TLS reaches OWA in a normal deployment.
         if(
             ( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
             || ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
@@ -277,7 +265,7 @@ class Lib {
 
         // THEN the name as given: a fully-qualified class, or one already
         // loaded (a third-party database driver). Nothing is required in
-        // by file path -- the pre-PSR-4 convention was removed at v2.0.
+        // by file path.
         if (!class_exists($class)) {
             throw new \Exception(sprintf(
                 'No class %s in %s. A class must be PSR-4 autoloadable; the pre-PSR-4 '
@@ -518,13 +506,10 @@ class Lib {
 
             foreach ($params as $n => $v) {
 
-                // The namespace has to be a PREFIX, not merely present. This
-                // used to test strstr() and then chop $len characters off the
-                // front regardless, so a name that carried 'owa_' anywhere --
-                // a host page's 'my_owa_setting' -- was both matched and then
-                // mis-sliced into a key that was never sent. Anchoring it is
-                // also what makes the namespaced and bare param sets exact
-                // complements, which RequestContainer relies on.
+                // The namespace has to be a PREFIX, not merely present: a host page's
+                // 'my_owa_setting' carries 'owa_' and is not OWA's. Anchoring it is also what
+                // makes the namespaced and bare param sets exact complements, which
+                // RequestContainer relies on.
                 if ( strpos( (string) $n, $ns ) !== 0 ) {
                     continue;
                 }
@@ -557,7 +542,6 @@ class Lib {
      * @return null
      */
     public static function redirectToView($data) {
-        //print_r($data);
         $c = \OWA\Core\CoreAPI::configSingleton();
         $config = $c->fetch('base');
 
@@ -578,14 +562,12 @@ class Lib {
      * The query string a redirect-to-view carries, as trailing-& pairs.
      *
      * A query string holds scalars. A value that is not one -- an array or an
-     * object still in the controller's data container -- used to be
-     * concatenated in regardless, which is a PHP warning and writes the literal
-     * string "Array" into the URL as that parameter's value. Such values are
-     * dropped: they could never have survived the trip, and dropping one says
-     * so instead of sending something that reads like data.
+     * object still in the controller's data container -- is dropped: it could
+     * never survive the trip, and concatenated it would write "Array" into the
+     * URL.
      *
-     * Names and values are encoded. They were interpolated raw, so a value
-     * holding & or = or a space rewrote the rest of the query string.
+     * Names and values are encoded, so a value holding & or = or a space cannot
+     * rewrite the rest of the query string.
      *
      * Separated from redirectToView() because that method ends in a Location
      * header, which a test cannot read. This half is the part with the rules in
@@ -617,23 +599,14 @@ class Lib {
     }
 
     /**
-     * Create guid from string
-     *
-     * @param     string $string
-     * @return     int|string|null
-     * @access     private
-     */
-    /**
      * A 63-bit id derived from the content, for the wide-hash scheme.
      *
      * WHY NOT THE OBVIOUS hexdec( substr( sha1( $s ), 0, 16 ) )
      * ---------------------------------------------------------
      * Sixteen hex characters is a full 64 bits, and PHP_INT_MAX is 2^63-1. So
      * hexdec() returns a FLOAT for roughly half of all inputs, and casting that
-     * float to int wraps it negative. Measured over 2,000 values: 49% came back
-     * negative. Worse, a float carries 53 bits of mantissa, so the low bits of
-     * those ids were already gone before the cast -- the scheme delivered about
-     * 53 bits of key space, not 64. And casting an out-of-range float to int is
+     * float to int wraps it negative. Worse, a float carries 53 bits of
+     * mantissa, so the low bits are gone before the cast. And casting an out-of-range float to int is
      * explicitly undefined in PHP: it happens to wrap consistently on x86-64,
      * but nothing guarantees that across versions or platforms, which matters
      * because OWA supports several nodes deriving ids for the same content.
@@ -681,10 +654,8 @@ class Lib {
      * before anyone runs cmd=update, and tracking does not stop for a pending
      * update -- log.php keeps ingesting the moment the files are replaced. In
      * that window an existing installation has no flag yet, so the flag alone
-     * would have it derive 63-bit ids against crc32 history, and then revert to
-     * crc32 once the update finally ran. Every dimension touched in between
-     * would be duplicated at an id the migration then has to merge rather than
-     * rewrite. Reading the stored schema version closes the window: it is
+     * would have it derive 63-bit ids against crc32 history. Reading the stored
+     * schema version closes the window: it is
      * already in the settings loaded at boot, so this costs no query.
      *
      * A missing version means an installation being created right now, which
@@ -705,13 +676,14 @@ class Lib {
     }
 
     /**
+     * Create guid from string
+     *
      * @param string|null $string
      * @param bool $allow_falsy Hash '0' rather than treating it as no value.
      *        The guard below is a truthiness test, so the legitimate string '0'
      *        reads as absent and this returns null -- which reaches a BIGINT
-     *        foreign key as 0, an id no row carries. v1's dimension ids passed
-     *        true; nothing in OWA does since they went, and the parameter stays
-     *        for modules that derive ids of their own.
+     *        foreign key as 0, an id no row carries. Nothing in OWA passes
+     *        true; the parameter is for modules that derive ids of their own.
      * @return int|string|null a string of digits; crc32's int on a narrow-id
      *        install (useNarrowGuid())
      */
@@ -852,7 +824,6 @@ class Lib {
     public static function encryptOldPassword($password) {
 
         return md5(strtolower($password).strlen($password));
-        //return owa_coreAPI::saltedHash( $password, 'auth');
     }
     /**
      * @param  string $password
@@ -894,9 +865,7 @@ class Lib {
      *   --key=value     'value'
      *   key=value       'value'       the original form
      *
-     * A leading -- is stripped from the name. It used to survive into the key,
-     * so a parameter could be literally called '--force'; anything relying on
-     * that reads its value under the undashed name now.
+     * A leading -- is stripped from the name.
      *
      * @param list<string> $argv raw arguments, including the script name at index 0
      * @return array<string|true>|string the parameter map, or a message describing
@@ -992,8 +961,8 @@ class Lib {
         /*
          * Not UTF-8, so read as Windows-1252: the Latin-1 superset browsers and
          * mail clients send when they are not sending UTF-8, so an "é" stays an
-         * "é". It used to ask mb_detect_encoding(), which answers false for
-         * Latin-1 bytes, and hand that false to iconv() as the source encoding.
+         * "é". mb_detect_encoding() is no use here: it answers false for
+         * Latin-1 bytes.
          */
         if ( function_exists( 'mb_convert_encoding' ) ) {
 
@@ -1083,8 +1052,7 @@ class Lib {
 
         } else {
 
-            // Fallback for hosts without intl. money_format() was removed in
-            // PHP 8.0, so format the amount directly instead.
+            // Fallback for hosts without intl.
             return $currency . ' ' . number_format( $value, \OWA\Module\Base\Classes\Currency::exponent( $currency ) );
         }
     }
@@ -1095,7 +1063,6 @@ class Lib {
      */
     public static function crc32AsHex($string) {
         $crc = crc32($string);
-        //$crc += 0x100000000;
         if ($crc < 0) {
             $crc = 0xFFFFFFFF + $crc + 1;
         }
@@ -1123,10 +1090,6 @@ class Lib {
         return $domain;
     }
 
-    // better empty check when you need to accept these as valid, non-empty values:
-    // - 0 (0 as an integer)
-    //- 0.0 (0 as a float)
-    //- "0" (0 as a string)
     /**
      * Where a call came from: the first frame outside the given files, as a
      * path under the install and a line. For a notice that should name the
@@ -1155,6 +1118,8 @@ class Lib {
     }
 
     /**
+     * empty(), except that 0, 0.0 and "0" count as values.
+     *
      * @param  mixed $value any type
      * @return true|null true when empty() and not numeric
      */
@@ -1326,8 +1291,7 @@ class Lib {
     /**
      * A value as ONE log line: JSON, capped at $max characters.
      *
-     * print_r() of a registry map was thousands of lines per request. An
-     * object is named by its class; an event also by its type and property
+     * An object is named by its class; an event also by its type and property
      * NAMES, never its values, since those are a visitor's data.
      *
      * @param  mixed $value

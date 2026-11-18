@@ -101,10 +101,9 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         /*
          * The same chrome the reporting screens load, because these draw the
-         * same chrome. The top nav's icons are font-awesome classes, and the
-         * combined stylesheet carries owa.css -- neither was loaded here, so
-         * every settings screen drew the navigation without its icons and
-         * without the base styles the header is built on.
+         * same chrome: the top nav's icons are font-awesome classes, and the
+         * combined stylesheet carries owa.css, the base styles the header is
+         * built on.
          */
         $this->setCss( 'base/css/font-awesome/css/all.min.css' );
         $this->setCss( 'base/css/owa.reporting-css-combined.css' );

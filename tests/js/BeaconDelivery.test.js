@@ -4,20 +4,15 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 /**
  * Transport selection and the delivery signal it produces.
  *
- * The tracker historically sent every event as `new Image(1,1); image.src = url`
- * -- fire and forget, with no way to learn whether the request survived. That is
- * the dominant way a first page view is lost: the visitor clicks through (an
- * outbound link, or even an in-page anchor) while the pixel is still in flight
- * and the browser cancels it. The `block` parameter threaded from
- * trackCustomEvent -> trackEvent -> logEvent was meant to guard against exactly
- * that, but its body had been commented out for years, so it did nothing.
+ * A 1x1 pixel is fire and forget, with no way to learn whether the request
+ * survived, and the browser cancels it when the visitor clicks through (an
+ * outbound link, or even an in-page anchor) while it is in flight.
  *
- * navigator.sendBeacon is the modern replacement: the browser takes ownership of
+ * navigator.sendBeacon: the browser takes ownership of
  * delivery and completes it across unload. Called with no body it issues a POST
  * with the query string intact, so log.php keeps reading $_GET unchanged.
  *
- * Its boolean return is also the first delivery signal this code has ever had,
- * and it drives whether session identity may be committed to the cookie:
+ * Its boolean return is a delivery signal, and it drives whether session identity may be committed to the cookie:
  *
  *   accepted            -> commit  (the server will hear about this session)
  *   refused / errored   -> abandon (leave the cookie clean; next page starts new)
@@ -219,9 +214,8 @@ describe('the delivery signal drives session persistence', () => {
     });
 
     test('the handler is onload, not onLoad', () => {
-        // The original code assigned `image.onLoad`, which is not a DOM property
-        // and never fires. Harmless while nothing hung off the success path;
-        // load-bearing now that it commits session identity.
+        // `image.onload`, not `onLoad`, which is not a DOM property and never fires;
+        // it commits session identity.
         const gone = removeBeacon();
         const created = [];
         const Orig = global.Image;

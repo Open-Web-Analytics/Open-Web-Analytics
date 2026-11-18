@@ -13,12 +13,8 @@ namespace OWA\Module\Base\Update;
  * in a list are distinct values, and a template edit renumbers every path on the
  * site at once. Not aggregable, and not stable across a deploy.
  *
- * IS_OUTBOUND IS WHERE "THE CLICK LEFT THE SITE" NOW LIVES. It was nowhere:
- * Tracker.js carried an isOutboundUrl() with no caller but a unit test, no wire
- * field, no column, no dimension, and a docblock in classifyClickTarget()
- * claiming outbound "rides as a param" that nothing implemented. It is target_url's
- * host against page_location's -- two readings of one row, so no join, and
- * derived at ingest rather than sent.
+ * IS_OUTBOUND IS WHERE "THE CLICK LEFT THE SITE" LIVES: a column on raw and
+ * every cube, which the tracker sets (OWATracker.isOutboundUrl()).
  *
  * NOT NULL DEFAULT 0, like is_goal_event. The flag answers a question asked of
  * every row -- "is this an outbound click?" -- so a page_view answering 0 is
@@ -26,15 +22,9 @@ namespace OWA\Module\Base\Update;
  * formatter renders NULL and 0 both as 'No', which is the isNewVisitor pie with
  * two slices called New.
  *
- * NO SAVED CUSTOM REPORT IS REWRITTEN, and an earlier draft of this did. A report
- * naming `elementPath` would be refused rather than ignored, so walking the saved
- * definitions looked like the careful thing -- but that dimension only ever existed
- * on the v2 branch, WHICH HAS NOT SHIPPED. No install in the world can carry such
- * a report: the only v2 install is the one this was written on, and it has 1159
- * saved reports and none of them names it. Update052 migrated goal conditions
- * because `browser` shipped in 1.x and other people's installs really do have
- * them. This is the same shape with none of the exposure, so the code went rather
- * than being kept as insurance against a state that cannot exist.
+ * NO SAVED CUSTOM REPORT IS REWRITTEN: the `elementPath` dimension never
+ * shipped in a release, so no saved report can name it. (Update052 migrates
+ * goal conditions because `browser` shipped in 1.x.)
  *
  * NOT CLI-ONLY: one column off and one column on, on raw and on every cube.
  */

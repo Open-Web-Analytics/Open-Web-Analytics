@@ -1,38 +1,11 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
-
 define('OWA_EHS_EVENT_HANDLED', 2);
 define('OWA_EHS_EVENT_FAILED', 3);
 
 /**
  * Event Dispatch
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 class EventDispatch {
 
@@ -219,25 +192,16 @@ class EventDispatch {
      * NAMESPACE SUBSCRIPTION. A listener may register for `foo.*` and hear every
      * event dispatched under `foo.`.
      *
-     * WHY THIS EXISTS. Two different things were being called the event type: the
-     * NAME a tracker sets, which is data -- it is stored in
+     * WHY THIS EXISTS. The NAME a tracker sets is data -- it is stored in
      * owa_event_raw.event_type and is the eventName dimension -- and the key this
-     * dispatcher routes on, which is plumbing shared with OWA's internal events.
-     * They were the same string, and that was fine while every event name was
-     * known at registration time.
+     * dispatcher routes on is plumbing shared with OWA's internal events. A site
+     * can send an event with any legal name (trackCustomEvent), so a handler
+     * that must see every tracking event cannot list them.
      *
-     * v2 broke that: a site can send an event with any legal name
-     * (trackCustomEvent), so a handler that must see every tracking event cannot
-     * list them, and a flat map keyed by exact name cannot express it. The first
-     * attempt at this was a magic key plus a conditional in notify() asking
-     * "is this a tracking event" -- which put knowledge of tracking into the
-     * dispatcher and left the two meanings conflated.
-     *
-     * Tracking events are dispatched under `tracking.` instead -- logEvent() sets
+     * Tracking events are dispatched under `tracking.` -- logEvent() sets
      * the key on the event as it arrives (Event::setDispatchName) -- so "every
      * tracking event" is `tracking.*` and this mechanism knows nothing about
-     * tracking, only about prefixes. v1's names were already namespaced, which is
-     * where the convention comes from.
+     * tracking, only about prefixes.
      */
     const NAMESPACE_WILDCARD = '.*';
 
@@ -313,8 +277,6 @@ class EventDispatch {
 
         $responses = [];
         \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
-        //print_r($this->listenersByEventType[$event_type] );
-        //print $event->getEventType();
         /*
          * The listeners for this dispatch name, plus any registered for a
          * namespace it falls under. A custom event's name belongs to the site, so
@@ -435,7 +397,6 @@ class EventDispatch {
      * @depricated
      */
     public function log($event_params, $event_type = '') {
-        //owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 
         if (!is_a($event_params, \OWA\Module\Base\Classes\Event::class)) {
             $event = new \OWA\Module\Base\Classes\Event();

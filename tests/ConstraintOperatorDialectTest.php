@@ -13,11 +13,7 @@ use PHPUnit\Framework\TestCase;
  *                     Server and Oracle. Written literally, like = and AND.
  *   REGEXP            MySQL. PostgreSQL spells it ~. Comes from a constant.
  *   LOCATE(a, b)      MySQL. PostgreSQL has POSITION(a IN b), SQL Server
- *                     CHARINDEX. Now comes from a constant.
- *
- * LOCATE was written literally two lines below =~ correctly using
- * OWA_SQL_REGEXP, which is what makes this worth pinning: the right pattern was
- * already in the file, and the exception did not look like one.
+ *                     CHARINDEX. Comes from a constant.
  *
  * A dialect supplies the WHOLE expression, not the function name, because the
  * shape differs too -- POSITION takes an infix IN rather than a comma.

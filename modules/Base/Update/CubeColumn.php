@@ -89,14 +89,13 @@ trait CubeColumn {
     /**
      * Drop a column from every cube.
      *
-     * The inverse of addCubeColumn(), and the reason a down() cannot just walk
-     * a list of entity names any more: there is no entity per cube, only the
-     * one shape bound to each table in turn.
+     * The inverse of addCubeColumn(). There is no entity per cube, only the
+     * one shape bound to each table in turn, so a down() cannot walk a list of
+     * entity names.
      *
      * Rebuilding, like the add. A plain DROP is instant on MySQL 8.0.29+ and
-     * leaves a row version behind, which is 1731 at the next swap; that was
-     * every down() here until clearCubeInstantColumns() had an answer to act
-     * on. The plain drop stays as the fallback, with the rebuild after it.
+     * leaves a row version behind, which is 1731 at the next swap. The plain
+     * drop is the fallback, with the rebuild after it.
      *
      * @param string $column
      * @return bool
@@ -334,13 +333,8 @@ trait CubeColumn {
              *
              * dropColumnIfPresent() and the methods above both ask the entity
              * for the column, and the release dropping it has removed its
-             * declaration. Before
-             * Entity::getColumn() refused an undeclared name this returned null
-             * with a warning and the DDL happened to work anyway, so it passed
-             * on a database where the column was already gone and failed on one
-             * where it was not -- which is to say, on every real upgrade and no
-             * fresh install. The schema upgrade cycle is the only job that runs
-             * it.
+             * declaration; Entity::getColumn() refuses an undeclared name. The
+             * schema upgrade cycle is the only job that runs it.
              */
             foreach ( array_merge( \OWA\Module\Base\Classes\Cube\Cubes::allTables(),
                       [ $raw ] ) as $table ) {

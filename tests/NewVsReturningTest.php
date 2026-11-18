@@ -96,11 +96,10 @@ final class NewVsReturningTest extends TestCase
     /**
      * The dashboard pie groups by the label and needs no folding map.
      *
-     * The map it used to carry -- {"1":"Repeat","0":"New","":"New"} -- is the
-     * defect written down: three buckets named twice. Asserted on THIS widget
-     * rather than on every report, because valueLabels is a legitimate option
-     * of the pie and a later report may have a real use for it; what must not
-     * come back is this widget needing one.
+     * A map such as {"1":"Repeat","0":"New","":"New"} would be the defect written
+     * down: three buckets named twice. Asserted on THIS widget rather than on
+     * every report, because valueLabels is a legitimate option of the pie and a
+     * later report may have a real use for it.
      */
     public function testTheDashboardPieGroupsByTheLabelWithNoFoldingMap(): void
     {

@@ -1,14 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-/**
- * Open Web Analytics - The Open Source Web Analytics Framework
- * Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
- * Website: http://www.openwebanalytics.con
- */
-
-
 /**
  * Tracked Sites REST Controller
  * 
@@ -30,11 +22,8 @@ class SitesRest extends \OWA\Core\ReportController {
     }
 
     /*
-     * This action used to be inherited from base.sites, the flat roster screen
-     * that was also the landing page. That screen is retired; the endpoint is
-     * not, so the one thing it needed from it lives here now. Inheriting a
-     * screen controller to reuse four lines is how deleting the screen broke
-     * the API.
+     * Its own action rather than one inherited from a screen controller, so
+     * the endpoint does not depend on a screen.
      */
     public function action() {
 

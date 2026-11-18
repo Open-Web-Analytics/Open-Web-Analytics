@@ -77,20 +77,13 @@ describe('crossing a session boundary', () => {
 
     test('the new session can still read the PRIOR session last request', () => {
         /*
-         * Regression. setLastRequestTime() runs AFTER the session decision, so
-         * erasing the cookie at that decision made this read find nothing.
+         * setLastRequestTime() runs AFTER the session decision, so erasing the
+         * cookie at that decision would make this read find nothing.
          *
-         * ASSERTED ON STATE, NOT ON THE WIRE. It used to read
-         * beacons[0].last_req, and last_req is no longer sent: v2 reads nothing
-         * from it -- v1's logSession() wrote prior_session_lastreq and six date
-         * parts from it and is unregistered, and engagement_msec replaced the
-         * visitDuration that subtracted it. The prior session's START arrives as
-         * psts, with a column.
-         *
-         * The invariant this file exists for is unchanged and is the STORE's: the
-         * persisted session survives the decision long enough for the rest of the
-         * page load to read it. Reading prior_last_req proves exactly that, and
-         * the value is still the aged one rather than now.
+         * ASSERTED ON STATE, NOT ON THE WIRE: last_req is not sent. The invariant
+         * is the STORE's: the persisted session survives the decision long enough
+         * for the rest of the page load to read it. Reading prior_last_req proves
+         * exactly that, and the value is still the aged one rather than now.
          */
         const first = establishSession();
         const aged = expire(first);
@@ -108,7 +101,7 @@ describe('crossing a session boundary', () => {
 
         expect(OWA.getState('s_boundary-site', 'prior_last_req')).toBe(aged.last_req);
 
-        // And it is NOT on the beacon any more, in either spelling.
+        // And it is NOT on the beacon, in either spelling.
         expect(beacons[0].hasOwnProperty('last_req')).toBe(false);
     });
 

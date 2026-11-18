@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Core\Db;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The MySQL dialect: its DDL vocabulary and its schema introspection.
  *
@@ -22,9 +16,7 @@ namespace OWA\Core\Db;
  * (partition budgets, index shapes) that was measured once and should not be
  * re-derived per transport.
  *
- * THE CONSTANTS ARE GUARDED. They were previously bare define() calls in
- * Mysql.php, which was safe only because exactly one driver ever loaded. With a
- * second driver in the tree, two files can be autoloaded in one process -- a
+ * THE CONSTANTS ARE GUARDED. Two drivers can be autoloaded in one process -- a
  * test suite covering both will do it -- and a redefinition is a PHP warning
  * that CI fails on. Same values either way, so first-definer-wins is correct.
  *
@@ -161,7 +153,7 @@ if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_L
  * The remedy for instant-added columns. MySQL 8 adds a column without touching
  * the rows, leaving row-format metadata that EXCHANGE PARTITION then refuses
  * against a freshly created staging table. FORCE rewrites the table and clears
- * it. REBUILD PARTITION does not -- measured.
+ * it. REBUILD PARTITION does not.
  */
 if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'ALTER TABLE %s FORCE'); }
 /*
@@ -184,8 +176,7 @@ if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_RE
 /*
  * SEVERAL COLUMN CHANGES IN ONE STATEMENT, still rebuilding rather than instant.
  *
- * Registering ten custom dimensions costs ONE rebuild this way: ten columns in
- * one ALTER measured 13,664ms against 13,057ms for one, a 5% margin, where ten
+ * Registering ten custom dimensions costs ONE rebuild this way, where ten
  * separate statements would be ten rebuilds. INPLACE is not an optimisation
  * here -- the default is INSTANT, and an instant column leaves row-format
  * metadata that makes EXCHANGE PARTITION refuse the swap with error 1731, so
@@ -193,8 +184,8 @@ if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_RE
  *
  * FORCE because INPLACE alone does not rule INSTANT out on MariaDB, where it
  * means "in place or better". An instant ADD there skips the row-size check a
- * CREATE TABLE applies, so a column the ALTER accepted made the staging table
- * every build creates fail with 1118; and an instant DROP leaves the column's
+ * CREATE TABLE applies, so a column the ALTER accepted would make the staging
+ * table every build creates fail with 1118; and an instant DROP leaves the column's
  * bytes in the row, so dropping one freed no room. A forced rebuild is checked
  * like a CREATE and reclaims what it drops. On MySQL, where INPLACE already
  * rebuilds, it costs nothing extra.
@@ -215,9 +206,8 @@ if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLU
  * a number of that type; true and false are 1 and 0. The digit counts keep a
  * conversion inside its type's range, because an out-of-range CAST inside the
  * build's INSERT ... SELECT is an ERROR under STRICT_ALL_TABLES, not a NULL.
- * Measured against RETURNING on MySQL 8.4, the answers are the same except
- * that a decimal or an exponent in an INTEGER dimension is NULL rather than
- * rounded -- RETURNING rounded 3.5 to 4 but gave NULL for "3.5" -- and an empty
+ * The answers match RETURNING on MySQL 8.4 except that a decimal or an
+ * exponent in an INTEGER dimension is NULL rather than rounded, and an empty
  * string in a DOUBLE one is NULL rather than 0.
  *
  * Each takes the document and then the path, and uses both more than once.
@@ -243,14 +233,13 @@ if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOU
  * cube carries both `ts` (epoch microseconds, timezone-free) and `yyyymmdd`
  * (the day, written by PHP in the installation's CONFIGURED timezone). Date
  * functions applied to `ts` use the DATABASE session's timezone, which is a
- * different thing: on this installation MySQL is UTC and OWA is
- * America/Los_Angeles, so HOUR(FROM_UNIXTIME(ts/1000000)) answers 18 where the
- * configured zone says 11, and near midnight the day disagrees with the
- * partition the row is stored in.
+ * different thing: with MySQL on UTC and OWA on America/Los_Angeles,
+ * HOUR(FROM_UNIXTIME(ts/1000000)) answers 18 where the configured zone says
+ * 11, and near midnight the day disagrees with the partition the row is stored
+ * in.
  *
  * yyyymmdd has the zone baked in already, so a part read from it is correct by
  * construction and agrees with the `date` dimension and with the partitioning.
- * Verified against PHP for dayofweek, dayofyear and weekofyear on real rows.
  *
  * Year, month, day and yearMonth are INTEGER ARITHMETIC on purpose: no date
  * type is constructed, and FLOOR/MOD are standard SQL, so those four need no
@@ -324,9 +313,9 @@ if ( ! defined( 'OWA_SQL_DIVISION' ) ) { define('OWA_SQL_DIVISION', '(%s / %s)')
 // The encoding NEW tables are declared with when the entity does not name one.
 //
 // 'utf8' is MySQL's three-byte encoding and cannot hold anything above U+FFFF.
-// It stays the default because it is what every existing table already is, and
-// changing it here would only affect tables created afterwards -- leaving one
-// installation holding a mix with nothing to reconcile them.
+// It is the default because it is what every existing table is, and changing it
+// here would only affect tables created afterwards -- leaving one installation
+// holding a mix with nothing to reconcile them.
 //
 // A table that wants better says so per-entity rather than per-installation.
 // See Entity::getTableCharacterEncoding(): that is how v2 tables can be created
@@ -342,11 +331,9 @@ if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTE
 // mangled in transit by a three-byte connection however the destination column
 // is declared.
 //
-// Raising it costs the older tables nothing. Verified against both: over a
-// utf8mb4 connection a utf8 table still refuses a four-byte character exactly
-// as it did before, three-byte text is unaffected, and a utf8mb4 table stores
-// the character. So the ceiling can be raised once, for everyone, and each
-// table keeps deciding for itself.
+// It costs the utf8 tables nothing: over a utf8mb4 connection a utf8 table still
+// refuses a four-byte character, three-byte text is unaffected, and a utf8mb4
+// table stores the character. Each table decides for itself.
 if ( ! defined( 'OWA_DTD_CONNECTION_ENCODING' ) ) { define('OWA_DTD_CONNECTION_ENCODING', 'utf8mb4'); }
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
 
@@ -363,21 +350,18 @@ if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION' ) ) { define('OWA_DT
 /*
  * THE ROW FORMAT IS DECLARED, NOT INHERITED.
  *
- * It was inherited, and that is a table OWA may not be able to create at all.
  * InnoDB caps the part of a row that lives on the page at about 8,126 bytes --
  * half a 16KB page -- and the formats differ in how much of a long column they
  * can move off it. DYNAMIC leaves a 20-byte pointer; COMPACT and REDUNDANT
  * leave a 768-byte prefix of every such column inline.
  *
- * Measured on the reporting cube, which has ten VARCHAR(1024) columns: under
- * DYNAMIC it is created and takes 25 custom dimensions on top, and under
- * COMPACT or REDUNDANT the server refuses it outright with error 1118. So on
- * an installation whose innodb_default_row_format is not dynamic -- which is a
- * server setting nobody here chose -- v2's cube could not exist.
+ * The reporting cube, with ten VARCHAR(1024) columns, is created under DYNAMIC
+ * and takes 25 custom dimensions on top; under COMPACT or REDUNDANT the server
+ * refuses it with error 1118. So on a server whose innodb_default_row_format is
+ * not dynamic, v2's cube could not exist without this.
  *
- * The default has been dynamic since MySQL 5.7, so declaring it changes
- * nothing on an ordinary server. It removes a dependency on a setting we do
- * not control from a table we cannot do without.
+ * The default has been dynamic since MySQL 5.7, so declaring it changes nothing
+ * on an ordinary server.
  */
 if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT', 'ROW_FORMAT = %s'); }
 if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT_DEFAULT', 'DYNAMIC'); }
@@ -385,14 +369,6 @@ if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_R
 
 /**
  * MySQL Data Access Class
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 trait MysqlDialect
@@ -417,33 +393,22 @@ trait MysqlDialect
     /**
      * The session sql_mode to apply on connect, or null to leave the server's.
      *
-     * OWA sent `SET SESSION sql_mode=''` on every connection for years, which
-     * disables strict mode. That is not free: without it MySQL coerces instead
+     * The default is STRICT_ALL_TABLES: without strict mode MySQL coerces instead
      * of refusing, so a value too long for its column is truncated and a
-     * non-numeric value written to an integer column silently becomes 0. Two
-     * live installs were measured carrying rows whose yyyymmdd -- the partition
-     * key, and the column every date-range report filters on -- had been
-     * coerced to 0 that way, making those rows invisible to reporting.
+     * non-numeric value written to an integer column silently becomes 0 -- a
+     * yyyymmdd of 0 makes a row invisible to reporting. A bad write fails loudly
+     * instead of storing something that looks like data and is not.
      *
-     * The default is now STRICT_ALL_TABLES: a bad write fails loudly instead of
-     * storing something that looks like data and is not.
+     * A third-party module writing through the entity layer may depend on the
+     * coercion. OWA_DB_SQL_MODE in owa-config.php sets the mode:
      *
-     * WHAT CHANGES FOR AN INSTALL
-     * A write that previously succeeded by being coerced now fails. Everything
-     * OWA itself does was fixed before this default moved -- the whole suite
-     * passes under strict, and so does the end-to-end ingestion path on both
-     * drivers -- but a third-party module writing through the entity layer may
-     * not have been. OWA_DB_SQL_MODE is the escape hatch, and reverting is one
-     * line in owa-config.php:
-     *
-     *   define( 'OWA_DB_SQL_MODE', '' );                    // the old behaviour
+     *   define( 'OWA_DB_SQL_MODE', '' );                    // no strict mode
      *   define( 'OWA_DB_SQL_MODE', null );                  // whatever the server sets
-     *   define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' );   // the new default
+     *   define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' );   // the default
      *
      * Chosen over null (leave the server alone) because OWA ships to hosts whose
      * configuration it does not control: an explicit mode means every install
-     * behaves the way the test suite is verified to behave, rather than
-     * inheriting whatever the host decided.
+     * behaves the way the test suite is verified to behave.
      *
      * @return string|null
      */
@@ -593,16 +558,6 @@ trait MysqlDialect
     }
 
     /**
-     * Spare open-file slots on this server, or null if it cannot be read.
-     *
-     * Each partition is a file, and InnoDB caps how many tablespaces it keeps
-     * open at once. That cap is shared with every table already present, so the
-     * headroom for partitions is what is left after them -- not the cap itself.
-     *
-     * @return int|null
-     */
-
-    /**
      * Row count and date range within one partition.
      *
      * Reads the partition itself rather than information_schema, because
@@ -645,12 +600,6 @@ trait MysqlDialect
         ];
     }
 
-    /**
-     * The columns of a table's primary key, in key order.
-     *
-     * @param string $table_name
-     * @return string[]
-     */
     /**
      * A table's column names, optionally only those with a prefix.
      *
@@ -781,6 +730,12 @@ trait MysqlDialect
         return $counters;
     }
 
+    /**
+     * The columns of a table's primary key, in key order.
+     *
+     * @param string $table_name
+     * @return string[]
+     */
     public function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
@@ -802,16 +757,6 @@ trait MysqlDialect
         return $cols;
     }
 
-    /**
-     * Is there already an index covering exactly these columns?
-     *
-     * Matched on the column list rather than the index name, so an index MySQL
-     * named itself -- site_id, site_id_2 -- is recognised as covering site_id.
-     *
-     * @param string $table_name
-     * @param string $column_name  one column, or a comma-separated list
-     * @return bool
-     */
     /**
      * Whether a table is already there.
      *
@@ -844,6 +789,11 @@ trait MysqlDialect
     }
 
     /**
+     * Is there already an index covering exactly these columns?
+     *
+     * Matched on the column list rather than the index name, so an index MySQL
+     * named itself -- site_id, site_id_2 -- is recognised as covering site_id.
+     *
      * @param  string $table_name
      * @param  string $column_name  one column, or several comma-separated
      * @return bool

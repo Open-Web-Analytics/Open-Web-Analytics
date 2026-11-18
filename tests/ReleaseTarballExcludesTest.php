@@ -5,12 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * Every root-level tooling file is kept out of the release tarball.
  *
- * The exclude list in .github/workflows/main.yml named its paths one at a time,
- * so a config file added to the repository root shipped to users unless someone
- * remembered to extend the list. Nobody did for
- * playwright.install-nostash.config.js, which went out in the 1.13.0 tarball --
- * inert, because tests/ is excluded and nothing in an installation reads it, but
- * not part of a release either.
+ * The exclude list in .github/workflows/main.yml must cover every root-level
+ * tooling file, or a config file added to the repository root ships to users.
  *
  * This asserts the list covers what is in the tree now, rather than that it
  * contains any particular string: a pattern rewritten from an exact path to a

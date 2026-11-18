@@ -9,12 +9,11 @@ namespace OWA\Module\Base\Entity;
  *
  * The `definition` column holds exactly the same JSON a report in
  * modules/Base/reports/ holds, and it is rendered by the same
- * Core\ConfiguredReport. That is not a coincidence -- the format was built for
- * it. The renderer is fixed rather than named by the definition, formatters are
- * selected by NAME and never carried as code, and excludeColumns is a list of
- * names rather than a fragment of script. Each of those was a deliberate
- * narrowing so that one day a definition could come from a user; this is that
- * day, and none of them may be relaxed.
+ * Core\ConfiguredReport. The renderer is fixed rather than named by the
+ * definition, formatters are selected by NAME and never carried as code, and
+ * excludeColumns is a list of names rather than a fragment of script -- which
+ * is what makes a definition safe to take from a user. None of them may be
+ * relaxed.
  *
  * OF ONE PROPERTY (`property_id`), as reporting is: it is listed, opened,
  * edited and drawn on that Property alone, and its names are checked against
@@ -28,13 +27,6 @@ namespace OWA\Module\Base\Entity;
  * reached by its URL renders for anyone with view_reports on its Property,
  * which is what makes the URL shareable. The report can show nothing its
  * reader could not already query for themselves.
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @since       owa 1.8.0
  */
 
 class CustomReport extends \OWA\Core\Entity {
@@ -79,17 +71,12 @@ class CustomReport extends \OWA\Core\Entity {
          * A report CONFIGURES a query: metrics against dimensions, drawn by one
          * of the widget types. A visualization COMPUTES -- a funnel counts
          * ordered stages over the event stream, which no arrangement of metrics
-         * and dimensions expresses. That distinction is why goal-funnel kept a
-         * controller when 62 of 64 reports became JSON.
+         * and dimensions expresses, so a visualization has a controller of its
+         * own.
          *
          * Two types on one table rather than two tables, because everything
          * around them is identical: access control, ownership, editable titles,
          * the roster, delete. Only how they are drawn differs.
-         *
-         * They are NOT shown together, though -- the reporting nav gives
-         * visualizations their own group. A list mixing "Pages by source" with
-         * "Checkout funnel" invites the reader to expect the same knobs on
-         * both, and they do not have them.
          */
         $report_type = new \OWA\Module\Base\Classes\DbColumn( 'report_type', OWA_DTD_VARCHAR255 );
         $report_type->setIndex();
@@ -116,9 +103,7 @@ class CustomReport extends \OWA\Core\Entity {
          * nothing its reader could not query for themselves. What ownership
          * governs is the ROSTER, so this flag governs the roster too.
          *
-         * NULL on every row written before this column existed, which reads as
-         * not shared -- the state those rows were already in. Nothing is
-         * backfilled, for the same reason report_type is not.
+         * NULL reads as not shared.
          */
         $is_shared = new \OWA\Module\Base\Classes\DbColumn( 'is_shared', OWA_DTD_TINYINT );
         $is_shared->setIndex();

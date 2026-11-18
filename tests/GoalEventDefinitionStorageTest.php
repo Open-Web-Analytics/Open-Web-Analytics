@@ -201,8 +201,9 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /**
      * An @ in a regex condition is part of the pattern (#909).
      *
-     * The pattern is delimited by @, so an email address in it used to end it
-     * early: it never matched, and the save form called it invalid.
+     * The pattern is delimited by @, so an unescaped @ -- an email address --
+     * would end it early: it would never match, and the save form would call
+     * it invalid.
      */
     public function testAnAtSignInARegexIsPartOfThePattern(): void
     {
@@ -546,8 +547,8 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * A goal event with NO conditions matches nothing.
      *
      * An empty rule is vacuously true, and treating it that way would count
-     * every event on the site. This install already had a goal that could never
-     * fire; one that fires for everything is the worse direction to be wrong in.
+     * every event on the site. A goal that can never fire is a mistake; one that
+     * fires for everything is the worse direction to be wrong in.
      */
     public function testAGoalEventDefinitionWithNoConditionsMatchesNothing(): void
     {
@@ -560,12 +561,11 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /**
      * THE TRIGGER GATES THE MATCH.
      *
-     * trigger_event_type has been stored since Update025 and was read by
-     * NOTHING, so a goal declared on a page view was evaluated against every
-     * event on the site. It went unnoticed because a condition on a page column
-     * finds that column NULL on a click -- but a condition on host, or on
-     * device_type, would have fired on scrolls, clicks and session_start alike,
-     * counting several goal events for one visit to one page.
+     * Ungated, a goal declared on a page view would be evaluated against every
+     * event on the site. A condition on a page column finds that column NULL on
+     * a click, but a condition on host, or on device_type, would fire on
+     * scrolls, clicks and session_start alike, counting several goal events for
+     * one visit to one page.
      */
     public function testAGoalOnlyMatchesItsTriggerEventType(): void
     {
@@ -586,7 +586,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /**
      * AN EMPTY TRIGGER MATCHES NOTHING.
      *
-     * It used to mean every event type. No writer produces one -- Update025
+     * No writer produces one -- Update025
      * gives every migrated goal event a trigger and GoalEventDefinitionSave defaults one --
      * and "every event" would mark a page view and the session_start and
      * first_visit materialized beside it: three goal events for one visit.
@@ -726,16 +726,9 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /**
      * DELETING A GOAL EVENT DELETES ITS CONDITIONS.
      *
-     * It did not. Entity::delete() removes one row from one table and nothing
-     * overrode it, so every goal event ever deleted left its conditions behind
-     * with nothing able to reach them: a condition row carries no site_id and no
-     * property_id, and is reachable only through its goal event.
-     *
-     * The count on the test install when it was found: 31 of 40 condition rows
-     * pointed at a goal event that no longer existed, left by e2e fixtures that
-     * create a goal and delete it. The reason nobody noticed is that an
-     * unreachable row is also an invisible one -- until one of those 64-bit ids
-     * collides with a new goal event's and a condition somebody deleted starts
+     * A condition row carries no site_id and no property_id, and is reachable only
+     * through its goal event, so one left behind is invisible -- until its 64-bit
+     * id collides with a new goal event's and a condition somebody deleted starts
      * deciding what is marked.
      */
     public function testDeletingAGoalEventDefinitionDeletesItsConditions(): void
@@ -786,8 +779,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     }
 
     /**
-     * Update048 deletes the orphans that accumulated before the cascade existed,
-     * and ONLY those.
+     * Update048 deletes orphaned conditions, and ONLY those.
      *
      * The second half is the part worth asserting: a cleanup that also removed a
      * live definition's conditions would silently stop that definition marking, and
@@ -919,11 +911,9 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /* ---------------- counting ---------------- */
 
     /*
-     * The count mode was clamped to once per session on every save, because a
-     * 1.x goal was a column on the session row and could not record a second
-     * match. Goal events are rows now and marking honours both modes
-     * (GoalMarkingTest), so the save stores what was chosen, and the form and
-     * the list are GoalEventDefinitionCountModeTest's.
+     * The save stores the count mode chosen: goal events are rows, and marking
+     * honours both modes (GoalMarkingTest). The form and the list are
+     * GoalEventDefinitionCountModeTest's.
      */
 
     /** The save stores the submitted count mode through countMode(), and nothing clamps it. */

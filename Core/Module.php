@@ -1,33 +1,9 @@
 <?php
 namespace OWA\Core;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Abstract Module Class
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * NavLink: one report nav link, as getLinkStruct() builds it. NavItem: a nav
  * subgroup, a NavLink with its links under `subgroup`; only `subgroup` when a
@@ -66,13 +42,6 @@ abstract class Module {
      * @var string
      */
     public $version;
-
-    /**
-     * Schema Version of Module
-     *
-     * @var string
-     */
-    //var $schema_version = 1;
 
     /**
      * Name of author of module
@@ -245,18 +214,11 @@ abstract class Module {
         // runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
         $this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
         
-        //parent::__construct();
-        
         /**
          * Initial registration calls
          */
         $this->init();
         
-        /**
-         * Register Filters
-         */
-        //$this->registerFilters();
-
         /**
          * Register Metrics
          */
@@ -389,10 +351,9 @@ abstract class Module {
 
         /*
          * Once per module, event and handler. A module attaches its handlers
-         * when it is constructed, and constructing one again -- to activate
-         * it, to read what it registers -- attached every handler a second
-         * time, so each event was handled twice for the rest of the process:
-         * a beacon's raw rows written twice, a blocked beacon counted twice.
+         * when it is constructed, and it can be constructed again -- to
+         * activate it, to read what it registers -- which would otherwise
+         * handle each event twice for the rest of the process.
          * The handler is a new object each time, so it is known by its class.
          */
         $key = $this->name . '|' . ( is_object( $handler_name ) ? get_class( $handler_name ) : $dir . '/' . $handler_name ) . '::' . $method;
@@ -573,9 +534,7 @@ abstract class Module {
      * under a module nobody reads.
      *
      * No `autoload` on an entry means that setting is lazy. No chrome keys mean
-     * it is code-only and will never appear on a screen, which is how a setting
-     * stays out of the UI now -- rather than by being absent from template
-     * markup and present in a denylist that fails open.
+     * it is code-only and will never appear on a screen.
      *
      * A module ships one only if it has settings of its own (or activation
      * constants). Its is_active and schema_version are OWA's bookkeeping and
@@ -631,14 +590,8 @@ abstract class Module {
             $declared_settings = (array) $decl['settings'];
 
             /*
-             * ADDED, not merely merged when mentioned.
-             *
-             * An earlier version only applied these to keys the module's file
-             * already listed, which meant a module that did not mention
-             * is_active simply had no is_active in the registry -- and every
-             * installation then reported its own stored is_active and
-             * schema_version as values nothing declares. Every module has
-             * these because this class gives every module these.
+             * ADDED, not merely merged when mentioned: every module has is_active and
+             * schema_version, whether or not its file lists them.
              */
             foreach ( $mechanical as $key => $args ) {
 
@@ -681,20 +634,13 @@ abstract class Module {
     /**
      * Register a settings screen: its nav entry AND its page title, once.
      *
-     * The two used to be declared in different places -- 'anchortext' here and
-     * a headline the view set for itself -- so they drifted, and a reader was
-     * given two names for one screen. base.optionsGeneral was "Main
-     * Configuration" in the nav and "General Configuration Options" on the
-     * page; three other screens had the same split.
-     *
      * `title` is the one name. The nav renders it, and the framework hands it
      * to the page, so a screen registered this way CANNOT disagree with itself.
      * A view that sets its own headline is then a bug rather than a second
      * opinion, which is what SettingsPageTitleTest asserts.
      *
      * Keys: do, title, capability, group, order. `priviledge` and `anchortext`
-     * are still written for registerSettingsPanel's consumers, which read the
-     * older shape.
+     * are also written, for registerSettingsPanel's consumers.
      *
      * @param array<string, mixed> $page
      * @return true
@@ -729,10 +675,8 @@ abstract class Module {
         $page['section'] = $page['section'] ?? $page['group'];
 
         /*
-         * What the viewer must have. Recorded before now and then ignored --
-         * the nav hard-coded edit_settings for every registered page, so a
-         * page asking for something stricter was shown to anyone who could
-         * edit settings at all.
+         * What the viewer must have, so a page asking for something stricter than
+         * edit_settings is shown only to those who have it.
          */
         $page['capability'] = $page['capability'] ?? 'edit_settings';
 
@@ -872,9 +816,8 @@ abstract class Module {
     /**
      * A navigation ref pointing at a report by its id.
      *
-     * Reports are reached through one action now, so the action alone no longer
-     * says which report -- addNavigationLink('base.reportPages') has nothing to
-     * become except the pair.
+     * Reports are reached through one action, so the action alone does not say
+     * which report.
      *
      *     $this->addNavigationLinkInSubGroup(
      *         'Content', $this->reportRef( 'pages' ), 'Top Pages', 1 );
@@ -1018,13 +961,11 @@ abstract class Module {
                     $all_tables_are_new = false;
                 }
 
-                //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
                 if ($status != true) {
                     \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
                     $errors = true;
-                    //return false;
                 }
 
             }
@@ -1048,14 +989,12 @@ abstract class Module {
             /*
              * The schema version, written only when it is provably correct.
              *
-             * Writing the REQUIRED version unconditionally was wrong on a re-run:
-             * CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so the
-             * version jumped to the latest while the tables stayed old. update()
-             * selects work with `$seq > $current_schema_version`, so every update
-             * in between was skipped -- permanently, since nothing revisits them
-             * and isSchemaCurrent() then answers true. Reachable from the admin
-             * UI, whose "Activate" control calls install(): deactivate a module,
-             * upgrade OWA, activate it again, and its migrations were gone.
+             * Writing the REQUIRED version unconditionally would be wrong on a
+             * re-run: CREATE TABLE IF NOT EXISTS leaves existing tables
+             * untouched, and update() selects work with
+             * `$seq > $current_schema_version`, so every update in between would
+             * be skipped for good. The admin UI's "Activate" control calls
+             * install(), so deactivate, upgrade, activate reaches here.
              *
              * Three cases, and only the first two can be answered here:
              *
@@ -1075,15 +1014,10 @@ abstract class Module {
             if ( ! $recorded ) {
 
                 /*
-                 * Freshness alone decides it. A second clause for "the module
-                 * requires schema 1, so nothing could be pending" was correct
-                 * but unreachable: only base registers entities, so for every
-                 * other module the loop above never runs and this is already
-                 * true, and for base it is already false. An untestable branch
-                 * that no module can exercise is one nobody will notice going
-                 * wrong -- and omitting it fails in the safe direction, since
-                 * the cost is a version left unrecorded rather than one
-                 * wrongly claimed current.
+                 * Freshness alone decides it: only base registers entities, so for every
+                 * other module the loop above never runs and this is already true. Omitting a
+                 * "requires schema 1" clause fails in the safe direction -- a version left
+                 * unrecorded rather than one wrongly claimed current.
                  */
                 if ( $all_tables_are_new ) {
 
@@ -1138,24 +1072,14 @@ abstract class Module {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
         $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
-        //print_r($files);
 
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
         // extract sequence
         foreach ($files as $k => $v) {
             // Update files are PSR-4 class files: UpdateNNN.php, holding class
-            // UpdateNNN. The sequence is the NNN.
-            //
-            // This used to be substr($name, 0, -4) + settype('integer'), which
-            // worked while the files were named '011.php'. The PSR-4 relocation
-            // renamed them to 'Update011.php' -- required, because PSR-4 maps
-            // OWA\Module\Base\Update\Update011 to Base/Update/Update011.php and
-            // '011' is not a legal class name -- but this parser was not
-            // updated with them. (int) 'Update011' is 0, so the guard below
-            // ('0 > current_schema_version') was never true and NO update could
-            // run on any install, while the CLI still reported success because
-            // the loop simply completed over an empty set.
+            // UpdateNNN. The sequence is the NNN: (int) 'Update011' is 0, so the digits
+            // are taken explicitly.
             $classname = substr($v['name'], 0, -4);
 
             if ( ! preg_match( '/^Update(\d+)$/', $classname, $seq_match ) ) {
@@ -1187,8 +1111,6 @@ abstract class Module {
 
         // sort the array
         ksort($this->updates, SORT_NUMERIC);
-
-        //print_r(array_keys($this->updates));
 
         foreach ($this->updates as $k => $obj) {
 
@@ -1302,10 +1224,7 @@ abstract class Module {
         if (empty($current_schema)) {
             $current_schema = 1;
 
-            // if this is the base module then we need to let filters know to install the base schema
             if ($this->name === 'base') {
-            //    $s = owa_coreAPI::serviceSingleton();
-            //    $s->setInstallRequired();
             }
         }
 
@@ -1475,7 +1394,6 @@ abstract class Module {
             'description'     => $map['description'],
             'group'         => $map['group']
         ];
-        //print_r($definition);
         $this->metrics[ $map['name'] ][] = $definition;
 
     }
@@ -1539,8 +1457,7 @@ abstract class Module {
      * A dimension is a name, a column and what to call it -- data, not code --
      * so it belongs in a file beside the other vocabularies core reads:
      * `reports/*.json`, `config/tracking_properties.json`,
-     * `<module>/settings.php`. Fifty of them as a literal inside a class was
-     * the thing that made that obvious.
+     * `<module>/settings.php`.
      *
      * Every module gets this for free, like settings: ship the file and the
      * dimensions are registered. Nothing has to be added to a module class.
@@ -1853,9 +1770,8 @@ abstract class Module {
      * @param string $type       the type/category of implementation: actions|event_queues
      * @param string $key        the key name of the specific implmentation
      * @param string $class_name the name of the class, PSR-4 autoloadable
-     * @param array<mixed>|string $params passed to the class's constructor. A module written before
-     *                                     PSR-4 passes a class file path here and the array after it;
-     *                                     the path is ignored.
+     * @param array<mixed>|string $params passed to the class's constructor. A class file path here
+     *                                     (with the array after it) is ignored.
      * @param array<mixed> $legacy_params the constructor's array, when $params is a path
      * @return void
      */
@@ -1866,7 +1782,7 @@ abstract class Module {
             $params = $legacy_params;
         }
 
-        // The second element was the class file; it is kept, empty, so the shape does not change.
+        // The second element is a class file path, kept empty so the shape stays.
         \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $type, $key, [ $class_name, '', $params ] );
     }
 

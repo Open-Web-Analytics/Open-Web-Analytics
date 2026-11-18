@@ -1,36 +1,8 @@
 <?php
 namespace OWA\Module\Base\View;
 
-
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
-
 /**
  * View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 class Error extends \OWA\Core\View {
@@ -52,9 +24,8 @@ class Error extends \OWA\Core\View {
         /*
          * The message is shown ONCE, in the page's error banner (msgs.php in
          * the wrapper), which reads a headline and a message. Controllers pass
-         * either getMsg()'s array or a plain string; a string reached the
-         * banner as something with neither key, so it drew an empty red box and
-         * the text was echoed again, unstyled, below it.
+         * either getMsg()'s array or a plain string, which is turned into the
+         * one shape here.
          */
         $this->t->set( 'error_msg', self::bannerMessage( $data['error_msg'] ?? null ) );
 

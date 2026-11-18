@@ -7,15 +7,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * An entity refuses a column it does not declare, by name.
  *
- * THE RECURRING MISTAKE THIS NAMES. An update that drops a column has a down()
- * that must put it back -- and by then the entity no longer declares it,
- * because removing it is what up() did. addColumn() and addColumnIfMissing()
- * both ask the entity for the definition, get an undefined array key and a null
- * DbColumn, and the down() fails without saying why.
+ * THE MISTAKE THIS NAMES. An update that drops a column has a down() that
+ * must put it back -- and by then the entity no longer declares it, because
+ * removing it is what up() did. addColumn() and addColumnIfMissing() both ask
+ * the entity for the definition, so the entity refuses the name rather than
+ * handing back a null DbColumn.
  *
  * It surfaces only in the schema upgrade cycle, which is the one CI job that
  * runs a down() at all -- so it lands far from the change that caused it, in a
- * log nobody reads by choice. Twice now.
+ * log nobody reads by choice.
  *
  * The fix is always the same, so the message states it: a down() restoring a
  * removed column spells out its own type, the way Update039 and Update046 do.

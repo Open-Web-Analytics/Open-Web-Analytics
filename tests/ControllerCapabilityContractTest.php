@@ -153,22 +153,18 @@ final class ControllerCapabilityContractTest extends TestCase
     /**
      * base.updatesApply declares NO capability and NO nonce, deliberately.
      *
-     * Pinned as its own test because it reverses an earlier decision and the
-     * reasoning has to survive: the schema must be brought forward before the
-     * rest of the application can be relied on, and the authentication path is
-     * part of what may be waiting on it. Gating it made the documented upgrade
-     * unusable for a signed-out admin -- reported as #979 -- because
-     * base.updates renders anonymously, so its Apply link carried a nonce minted
-     * with no user_id, and createNonce() binds to user_id, so that nonce could
-     * never verify once they signed in. The request was turned away and correct
-     * credentials appeared to be rejected.
+     * The schema must be brought forward before the rest of the application
+     * can be relied on, and the authentication path is part of what may be
+     * waiting on it. base.updates renders anonymously, so its Apply link would
+     * carry a nonce minted with no user_id, and createNonce() binds to
+     * user_id, so that nonce could never verify once the admin signed in: the
+     * documented upgrade would be unusable for a signed-out admin.
      *
      * WordPress takes the same position for the equivalent step:
      * wp-admin/upgrade.php loads wp-load.php rather than admin.php and calls
      * wp_upgrade() with no capability check and no nonce.
      *
-     * Re-gating it would reintroduce that flow, so this fails rather than lets
-     * it happen quietly.
+     * This fails rather than lets a re-gating happen quietly.
      */
     public function testUpdatesApplyIsDeliberatelyUngated(): void
     {

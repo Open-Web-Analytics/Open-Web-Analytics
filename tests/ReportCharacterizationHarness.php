@@ -100,12 +100,8 @@ final class ReportCharacterizationHarness
     /**
      * Every report that is configuration, by the id it is registered under.
      *
-     * THE DIRECTORY IS THE LIST. There used to be a hand-kept map here, of report
-     * id to the controller each one replaced, plus a second list for reports
-     * authored as JSON from the start. Both were scaffolding for the conversion,
-     * and a report authored afterwards had to be added to one of them before any
-     * test would look at it -- so the four that were never converted, Scroll Depth
-     * among them, had never been checked for diagnostics at all.
+     * THE DIRECTORY IS THE LIST, so a report authored as a definition is
+     * checked without being added anywhere by hand.
      *
      * @return string[]
      */
@@ -205,12 +201,9 @@ final class ReportCharacterizationHarness
     public static function observe( object $controller ): array
     {
         /*
-         * Diagnostics are part of the snapshot, not noise to be swallowed.
-         *
-         * These controllers had never been executed by a test before this
-         * harness, and the first CI run surfaced three deprecations and a
-         * warning that had been there all along. Recording them means a report
-         * cannot start warning -- or keep warning -- without a test saying so.
+         * Diagnostics are part of the snapshot, not noise to be swallowed:
+         * recording them means a report cannot start warning -- or keep warning --
+         * without a test saying so.
          */
         $diagnostics = [];
 

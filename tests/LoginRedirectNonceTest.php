@@ -35,11 +35,6 @@ final class LoginRedirectNonceTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    /**
-     * get_current_url() builds 'go' from the request, which does not exist under
-     * CLI -- without this the redirect is empty for every case and the assertions
-     * below would pass for the wrong reason.
-     */
     /** @var mixed request_type before the test, put back after it */
     private $savedRequestType;
 
@@ -48,6 +43,11 @@ final class LoginRedirectNonceTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedRequestType);
     }
 
+    /**
+     * get_current_url() builds 'go' from the request, which does not exist under
+     * CLI -- without this the redirect is empty for every case and the assertions
+     * below would pass for the wrong reason.
+     */
     protected function setUp(): void
     {
         $_SERVER['HTTP_HOST']   = 'owa.example.test';
@@ -69,10 +69,8 @@ final class LoginRedirectNonceTest extends TestCase
     private function setsGo(bool $nonceRequired): bool
     {
         /*
-         * ReportingHome stands in for "any ordinary controller". It used to be
-         * base.sites, the roster screen, which was retired when reporting
-         * started landing on the last Profile viewed -- nothing here depends on
-         * which controller it is, only that it is one.
+         * ReportingHome stands in for "any ordinary controller": nothing here
+         * depends on which controller it is, only that it is one.
          */
         $controller = new \OWA\Module\Base\Controller\ReportingHome([]);
 
@@ -120,11 +118,8 @@ final class LoginRedirectNonceTest extends TestCase
      * to say so in its name -- NotificationMarkReadRest, not
      * NotificationReadRest -- which is what `Mark` covers.
      *
-     * `Save` was added with the custom report builder. It is a write verb in
-     * the same sense as the rest -- nothing named Save is read-only -- so it
-     * does not blunt anything. `Create` and `Revoke` came with application
-     * passwords, on the same grounds. `Flush` and `Reset` came when the cache
-     * flush and the settings reset, both writes, began to require one.
+     * `Save`, `Create`, `Revoke`, `Flush` and `Reset` are write verbs in the
+     * same sense as the rest: nothing named with one is read-only.
      */
     public function testOnlyWriteControllersRequireANonce()
     {

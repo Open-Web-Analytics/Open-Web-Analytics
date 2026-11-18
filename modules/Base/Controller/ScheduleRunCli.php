@@ -15,8 +15,7 @@ namespace OWA\Module\Base\Controller;
  * the floor never binds and an in-app schedule always means what it says. A
  * coarser line would let an operator configure a job for `* * * * *` and have it
  * silently run every five minutes, and configuration that quietly cannot do what
- * it says is worse than none. A boot costs about 66ms, so the whole day's ticks
- * are around 95 seconds of CPU.
+ * it says is worse than none. A boot costs tens of milliseconds.
  *
  *   cmd=schedule-run                        run everything due
  *   cmd=schedule-run --dry-run              report what would run, change nothing

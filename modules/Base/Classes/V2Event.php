@@ -58,13 +58,11 @@ class V2Event {
      *
      * $ts DOES NOT SEPARATE TWO BEACONS. It is the edge receipt, stamped when
      * each request boots, and beacons that a mobile connection holds back and
-     * then releases together reach two processes in the same microsecond:
-     * measured on app.openwebanalytics.com, two clicks 77ms apart on the device
-     * arrived 1.5ms apart and derived one id, and the second was lost. The
-     * tracker's event_seq, counted per session on the device, is what tells
+     * then releases together can reach two processes in the same microsecond.
+     * The tracker's event_seq, counted per session on the device, is what tells
      * them apart; a redelivered beacon carries the same one, so it still
      * collapses. Without one -- an older tracker, a migrated v1 row -- the
-     * formula is the five inputs alone, so those ids derive as they always did.
+     * formula is the five inputs alone.
      *
      * Uniqueness is required within a partition, not globally: the key is (id,
      * yyyymmdd), so two events a week apart may share an id with no effect.

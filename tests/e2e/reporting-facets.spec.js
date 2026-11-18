@@ -3,29 +3,21 @@
  * The reporting engine, exercised on its facets against known numbers.
  *
  * WHY THIS EXISTS
- * The existing reporting spec asserts that the dashboard RENDERS -- grids
- * present, dropdown sprites loaded, column widths aligned -- and its only
- * numeric assertion is `expect(gridText).toMatch(/\b2\b/)`, which passes if the
- * digit 2 appears anywhere on the page. Every number on every report could be
- * wrong and it would stay green.
- *
- * It did. Varnish was stripping owa_source from the request before PHP ever saw
- * it, so the Source Detail report ran with NO constraint and showed the same
- * unfiltered total for google, facebook and everything else. A person noticed;
- * the suite did not. These are the assertions that would have failed.
+ * Asserting that the dashboard RENDERS says nothing about its numbers: a proxy
+ * stripping a constraint parameter would leave every source showing the same
+ * unfiltered total and the page rendering fine.
  *
  * WHAT IT COVERS
  * The facets a report is actually made of, rather than any particular report:
  * constraints, sorts, secondary dimensions, and reconciliation between the
- * dimensional rows and the aggregate. There are 69 report controllers and
- * ~60 are pure declaration -- metrics, dimensions, sort, a link template -- so
- * testing the engine's facets covers what all of them do, and one bespoke
- * report per facet would not.
+ * dimensional rows and the aggregate. Most reports are pure declaration --
+ * metrics, dimensions, sort, a link template -- so testing the engine's facets
+ * covers what all of them do.
  *
  * Asserted through the REST API rather than the UI: it is the same engine the
  * grids read from, and the numbers are the thing under test. One case at the end
- * does go through the rendered page, because the bug that prompted this lived in
- * the URL the page emits, not in the engine.
+ * does go through the rendered page, because the URL the page emits is part of
+ * the path.
  */
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -158,10 +150,8 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
         const errors = JSON.stringify(data.errors || []);
 
         /*
-         * The engine now takes the first of the two outcomes this test always
-         * allowed: it REFUSES the query rather than running it unfiltered. So
-         * there is no aggregate to read -- reading one unguarded is what this
-         * assertion used to do, and it threw once the refusal landed.
+         * The engine REFUSES the query rather than running it unfiltered, so
+         * there may be no aggregate to read.
          */
         const value = data.aggregates && data.aggregates.sessions
             ? Number(data.aggregates.sessions.value)

@@ -49,7 +49,7 @@ final class OwaSingletonTest extends TestCase
         $this->assertSame( $first, owa::singleton() );
         $this->assertSame( $first, owa::singleton( [ 'request_type' => 'cli' ] ) );
 
-        // Called on an instance, as the method allowed before it was static.
+        // Called on an instance, which PHP allows for a static method.
         $this->assertSame( $first, $GLOBALS['owa_test_instance']->singleton() );
         $this->assertNotSame( $GLOBALS['owa_test_instance'], $first );
     }

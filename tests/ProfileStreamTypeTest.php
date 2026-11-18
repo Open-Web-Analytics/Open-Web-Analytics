@@ -8,16 +8,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * An Observation Profile says what KIND of thing it observes, and that decides
  * which identifier it needs.
  *
- * The domain was REQUIRED to create a Profile, and the reason was 2009: a
- * site's identity was md5( domain ), so the domain was primary-key material. It
- * had to be present, carry a scheme, and be unique. Identity is minted now, and
- * all three rules had outlived their reason into preventing exactly what the
- * hierarchy was built to allow -- a second Profile for a website already
- * tracked, and anything without a domain being observed at all.
+ * Identity is minted, so a domain is not primary-key material: requiring one
+ * -- present, with a scheme, unique -- would prevent a second Profile for a
+ * website already tracked, and anything without a domain being observed at
+ * all.
  *
- * Moving the domain up to the Property was the obvious fix and the wrong one.
- * The answer is to type the LEAF: a property carries no URL, and each Profile
- * declares its kind and supplies what that kind needs.
+ * Moving the domain up to the Property would be the wrong fix. The leaf is
+ * typed: a Property carries no URL, and each Profile declares its kind and
+ * supplies what that kind needs.
  */
 final class ProfileStreamTypeTest extends TestCase
 {

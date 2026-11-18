@@ -10,9 +10,8 @@ use OWA\Module\Base\Classes\FunnelStep;
  * A funnel's steps as the save takes them (VisualizationSave), and one bad
  * step must not hide the next.
  *
- * validate() used to `return` the moment it met an incomplete step. That
- * ACCEPTED the half-filled step, skipped every later step, and abandoned the
- * rest of validate() with them.
+ * validate() checks every step: returning at the first incomplete one would
+ * accept it, skip every later step, and abandon the rest of validate().
  *
  * A step is an event and conditions on it (Classes\FunnelStep). A page is a
  * page_view with a page_path condition, which is what these mostly post. A row
@@ -218,7 +217,7 @@ final class FunnelStepValidationTest extends TestCase
         $this->assertFalse( $this->refuses( [ $this->step( 'Basket', '/products/a:b' ) ] ) );
     }
 
-    /** A bad FIRST step used to stop the loop, so nothing after it was looked at. */
+    /** A bad FIRST step does not stop the loop: every step after it is looked at. */
     public function testABadFirstStepDoesNotHideALaterOne(): void
     {
         $errors = $this->errors( [

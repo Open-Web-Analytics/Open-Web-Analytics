@@ -1,30 +1,5 @@
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2010 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Result Set Object
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @web            <a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
- * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.5.0
  */
 
 // OWA is defined by owa.format.js; this module augments it (OWA.resultSet = ... etc.). jQuery
@@ -45,7 +20,6 @@ OWA.resultSet = function( attributes ) {
 OWA.resultSet.prototype = {
 
     getMetricLabel : function(name) {
-        //alert(this.resultSet.aggregates[name].label);
         if (this.aggregates[name].label.length > 0) {
             return this.aggregates[name].label;
         } else {
@@ -87,15 +61,6 @@ OWA.resultSet.prototype = {
 
 /**
  * Result Set Explorer Library
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @web            <a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
- * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
  */
  
 OWA.resultSetExplorer = function(dom_id, options) {
@@ -210,9 +175,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 OWA.resultSetExplorer.prototype = {
 
     /*
-     * A view name -> the method that draws it. 'sparkline' was here, mapped to
-     * a makeSparkline() that no longer exists: a metric box draws its own
-     * sparkline (OWA.sparkline), and asking for that view threw.
+     * A view name -> the method that draws it.
      */
     viewMethods: {
         grid: 'refreshGrid',
@@ -292,10 +255,8 @@ OWA.resultSetExplorer.prototype = {
      * Group the grid by exactly these dimensions.
      *
      * The list-based sibling of changeDimension(), which swaps ONE name for
-     * another. The grid has always grouped by a LIST -- changeDimension reads
-     * `dimensions` off the result set's own URL, replaces an entry if it finds
-     * the old name and APPENDS if it does not -- so the list is the real model
-     * and the single "secondary dimension" select was a one-slot view of it.
+     * another: changeDimension reads `dimensions` off the result set's own URL,
+     * replaces an entry if it finds the old name and APPENDS if it does not.
      *
      * changeDimension stays, because secondary_dimension_change is a public
      * event and something outside this file may still fire it.
@@ -484,9 +445,7 @@ OWA.resultSetExplorer.prototype = {
     },
 
     dynamicFunc : function (func){
-        //alert(func[0]);
         var args = Array.prototype.slice.call(func, 1);
-        //alert(args);
         this[func[0]].apply(this, args);
     },
 
@@ -653,24 +612,15 @@ OWA.resultSetExplorer.prototype = {
 
                     for (var y in this.columnLinks) {
                         if (this.columnLinks.hasOwnProperty(y)) {
-                            //alert(this.dom_id + ' : '+y);
                             var template = this.columnLinks[y].template;
 
                             /*
                              * The linked column may not be in this result set.
                              *
-                             * A link template is registered once, for a column
-                             * the report was built with -- but the reader can
-                             * now change WHICH dimensions the grid groups by,
-                             * and swapping one out takes its column with it. A
-                             * template for a column that is no longer there has
-                             * nothing to apply to.
-                             *
-                             * Latent until the dimension controls could replace
-                             * the FIRST dimension: the old single-slot picker
-                             * only ever changed the secondary one, so the
-                             * linked column could not disappear and this read
-                             * ...[y].name on undefined only in theory.
+                             * A link template is registered once, for a column the report was built
+                             * with -- but the reader can change WHICH dimensions the grid groups by,
+                             * and swapping one out takes its column with it. A template for a column
+                             * that is not there has nothing to apply to.
                              */
                             if ( ! this.resultSet.resultsRows[i][y] ) {
                                 continue;
@@ -681,7 +631,6 @@ OWA.resultSetExplorer.prototype = {
                             }
 
                             if (this.resultSet.resultsRows[i][y].name.length > 0) {
-                                //if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
 
                                 for (var z in this.columnLinks[y].params) {
 
@@ -707,8 +656,6 @@ OWA.resultSetExplorer.prototype = {
             // convery yyyymmdd to javascript timestamp as  flot requires that
             case 'yyyymmdd':
 
-                //date = jQuery.datepicker.parseDate('yymmdd', value);
-                //value = Date.parse(date);
                 var year = value.substring(0,4) * 1;
                 var month = (value.substring(4,6) * 1) -1;
                 var day = value.substring(6,8) * 1;
@@ -731,9 +678,7 @@ OWA.resultSetExplorer.prototype = {
         var curr_date = d.getUTCDate();
         var curr_month = d.getUTCMonth() + 1;
         var curr_year = d.getUTCFullYear();
-        //alert(d+' date: '+curr_month);
         var date =  curr_month + "/" + curr_date + "/" + curr_year;
-        //var date =  curr_month + "/" + curr_date;
         return date;
     },
 
@@ -1350,7 +1295,6 @@ OWA.dataGrid.range = function ( rs ) {
     };
 };
 
-/** A row's share of the total, "16.5%", or '' when there is none to give. */
 /**
  * A compared cell's change, on a line of its own under the value: up or down
  * and by how much, with the comparison's own value and dates as its title.
@@ -1362,6 +1306,9 @@ OWA.dataGrid.changeEl = function ( cell, compare ) {
     return jQuery( '<span class="owa_gridChange"></span>' ).addClass( d.cls ).attr( 'title', d.title ).text( d.text );
 };
 
+/**
+ * A row's share of the total, "16.5%", or '' when there is none to give.
+ */
 OWA.dataGrid.share = function ( value, total ) {
 
     var v = parseFloat( value );

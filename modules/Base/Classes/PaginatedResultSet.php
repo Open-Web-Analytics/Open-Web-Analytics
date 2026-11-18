@@ -1,33 +1,9 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Pagination
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  *
  * @phpstan-import-type PeriodInfo from \OWA\Module\Base\Classes\TimePeriod
  * @phpstan-import-type Readiness from \OWA\Module\Base\Classes\Cube\Status
@@ -375,8 +351,6 @@ class PaginatedResultSet {
      */
     public function setResultSetUrls( $query_params ) {
         
-        //owa_coreAPI::debug('result set urls query params: ' . $query_params);
-        
         $urls = [];
         $auth = \OWA\Core\Auth::get_instance();
         $api_url = \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');
@@ -504,8 +478,6 @@ class PaginatedResultSet {
         }
     }
 
-    // @todo move this to a proper xml view
-    //json formatting has been moved to owa_jsonView
     /**
      * @return array<int, ResultRow>
      */

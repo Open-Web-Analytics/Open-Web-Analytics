@@ -26,30 +26,14 @@ final class EventRawEntityTest extends TestCase
         $columns = $this->raw()->getColumns();
 
         /*
-         * 66. It was 62: element_path went and is_outbound arrived (Update053, net
-         * zero), then file_name and file_extension were promoted out of `params`
-         * (Update054) and search_term after them, which needed no migration at all --
-         * Update034 builds this table from the entity and v2 has never shipped.
-         * screen_resolution (Update058) is a VARCHAR(16) the tracker sends on
-         * every event. 67 with created_at (Update063), when a row reached raw --
-         * raw only: the cube entity drops it, so it costs the custom-dimension
-         * ceiling nothing. 73 with the six prior_touch_* columns (Update066), raw
-         * only for the same reason: the cube's attributed_* is their reading. 76
-         * with element_anchor, anchor_x and anchor_y (Update073), where on the
-         * clicked element the heatmap draws a click: a BIGINT and two SMALLINTs,
-         * which left the measured ceiling on MySQL 8.4 at 36. 75 without
-         * remote_host (Update074), a VARCHAR(255) that no dimension read. 76
-         * with value (Update077), what a goal event is worth: a BIGINT. 78 with
-         * spam_score and spam_rules (Update082), a DECIMAL(6,1) and a VARCHAR(255):
-         * raw only, so the cube entity drops both and the ceiling does not move.
-         *
-         * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
-         * param-bound first-class properties were deliberately left in the bag --
-         * most installs will never group by an element class or a form name, and a
-         * column is width on every row of every Property. Promoting nine of them
-         * was measured at taking the custom-dimension ceiling from 62 to 37 on
-         * MySQL 8.4. This number moving is how that decision gets noticed being
-         * reversed one column at a time.
+         * A COUNT IS THE POINT HERE, not an inconvenience. A column is width on every
+         * row of every Property, and the custom-dimension ceiling falls with each one:
+         * promoting nine param-bound first-class properties would take it from 62 to
+         * 37 on MySQL 8.4, so most stay in the bag -- most installs will never group by
+         * an element class or a form name. This number moving is how promoting one
+         * gets noticed. Columns that are raw only (created_at, prior_touch_*,
+         * spam_score, spam_rules) are dropped by the cube entity and cost the ceiling
+         * nothing.
          */
         $this->assertCount(78, $columns);
 
@@ -227,16 +211,10 @@ final class EventRawEntityTest extends TestCase
     }
 
     /**
-     * The collection gate is GONE, not merely defaulted off.
-     *
-     * `v2_raw_collection` was development scaffolding for exercising ingest
-     * against one site, and while it existed it had to be denylisted from the
-     * options form -- that form persists whatever it is posted minus a denylist
-     * that fails open, and an install-wide value is what every Profile inherits.
-     * Now that the tracker sends v2-shaped events there is nothing to gate on,
-     * so the setting, its default and its denylist entry all go. Asserted as an
-     * absence because a leftover default would be read by nothing and a
-     * leftover denylist entry would protect a setting that no longer exists.
+     * There is no collection gate: no `v2_raw_collection` setting, default or
+     * denylist entry. Asserted as an absence because a leftover default would be
+     * read by nothing and a leftover denylist entry would protect a setting that
+     * does not exist.
      */
     public function testTheCollectionGateIsGoneEntirely(): void
     {

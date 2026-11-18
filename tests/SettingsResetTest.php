@@ -21,8 +21,7 @@ class SettingsResetProbe extends \OWA\Module\Base\Classes\Settings
 /**
  * Settings::reset($module) resets THAT module's stored settings.
  *
- * It used to write $module's schema version into base's stored settings
- * whatever module it was given. It now replaces the module's own values,
+ * It replaces the module's own values,
  * keeping its schema version and is_active (database state, not
  * configuration), and base's install flag; a module that is not installed is
  * refused.

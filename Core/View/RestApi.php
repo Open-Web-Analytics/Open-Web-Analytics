@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Core\View;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Rest API view
  *
@@ -42,11 +26,8 @@ class RestApi extends \OWA\Core\View {
      */
     public function pre() {
 
-        // The response is JSON. It was optionally JSONP -- the same body wrapped
-        // in a caller-named function so it could be loaded with a <script> tag,
-        // which is a same-origin-policy bypass. The two overlays that needed it
-        // now fetch over CORS, so the wrapper only widened who could read the
-        // response.
+        // The response is JSON, never JSONP: a body wrapped in a caller-named
+        // function is a same-origin-policy bypass. The overlays fetch over CORS.
         $type = 'json';
 
        // set header if the request is from the API endpoint. Could be an internal request.
@@ -165,23 +146,15 @@ class RestApi extends \OWA\Core\View {
     /**
      * An entity as { properties: { <column>: { value: ... } } }.
      *
-     * This is the shape the REST API has always published, and #977 retired it
-     * without a deprecation path. It was right about the leak it found -- an
-     * entity handed to json_encode() emitted _tableProperties, wasPersisted,
-     * cache and dirty alongside the property bag -- but it fixed that by
-     * flattening the bag to bare values, which removed the leak AND the
-     * contract. Every deployed consumer reading properties.<col>.value broke,
-     * including the WordPress plugin, whose site picker collapses to a single
-     * empty option because the lookup yields null.
+     * The shape the REST API publishes: consumers, the WordPress plugin among
+     * them, read properties.<col>.value.
      *
-     * Built FROM getPublicProperties() rather than from the raw property bag,
-     * so everything #977 was actually protecting still holds by construction:
-     * internals never enter, and a private column -- a user's password -- is
-     * dropped before this sees it. The nesting is restored; the leak is not.
+     * Built FROM getPublicProperties() rather than from the raw property bag:
+     * internals (_tableProperties, wasPersisted, cache, dirty) never enter, and
+     * a private column -- a user's password -- is dropped before this sees it.
      *
-     * Only 'value' is emitted per column. The old shape carried whatever public
-     * members DbColumn happened to have, which meant schema details rode along
-     * in a public payload; consumers read .value, and that is what is promised.
+     * Only 'value' is emitted per column, so no schema detail rides along in a
+     * public payload.
      *
      * @return array{properties: array<string, array{value: mixed}>} a column's value is of the column's type
      */
@@ -234,8 +207,8 @@ class RestApi extends \OWA\Core\View {
      * Decides whether an Origin belongs to one of this installation's sites.
      *
      * Matching is on **host**, not on the stored string. Sites are commonly
-     * stored with an `http://` scheme while being served over https -- both
-     * production installs are -- so a browser sends an `https://` Origin and
+     * stored with an `http://` scheme while being served over https, so a
+     * browser sends an `https://` Origin and
      * comparing the stored value verbatim would refuse exactly the requests
      * this is for. Hosts are compared in full and case-insensitively; a
      * prefix or suffix match is what lets `evil-example.com` pass as
@@ -342,9 +315,7 @@ class RestApi extends \OWA\Core\View {
         // Announce that the response body and its CORS headers depend on the
         // Origin, so a shared cache cannot serve one site's allowed-origin
         // header to a request from another. Sent whether or not the Origin is
-        // allowed, because the refusal is origin-dependent too. Varnish sits in
-        // front of this installation, which makes it a live concern rather than
-        // a formality.
+        // allowed, because the refusal is origin-dependent too.
         header( 'Vary: Origin', false );
 
         // no Origin means this is not a cross-origin request.

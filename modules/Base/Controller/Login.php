@@ -1,24 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 class Login extends \OWA\Core\Controller {
 
     public function __construct( $params ) {
@@ -74,12 +56,10 @@ class Login extends \OWA\Core\Controller {
 
         // return login form with error msg
         $this->setView('base.loginForm');
-        // $go is a local of action(); reading it here silently yielded null, so a
-        // failed login dropped the redirect target and sent the user to the
-        // default landing page instead of back where they were headed. Re-derive
-        // it from the request, sanitised the same way action() does.
+        // $go is a local of action(), so it is re-derived from the request,
+        // sanitised the same way action() does, to send a failed login back where
+        // it was headed.
         $this->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') ));
-        //$this->set('error_code', 2002);
         $this->set('user_id', $this->getParam('user_id'));
     }
 }

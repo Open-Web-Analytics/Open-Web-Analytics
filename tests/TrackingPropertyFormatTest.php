@@ -9,27 +9,17 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * The property registry's four axes, each checked.
  *
- * The file used to group properties under request / client / server, and that
- * grouping carried three facts at once: how a value gets set, what it may be
- * read from, and -- because a callback reads whatever is already on the event --
- * the order derivations must run in. Anything implicit in a position is
- * something no test can hold, and four separate faults were living in that gap:
+ * Every entry says: set_by, from, events, and column when it differs. A fact
+ * left implicit in a position is one no test can hold, and drifts:
  *
- *   - the column a property lands in was stated in three other places
- *     (GoalVocabulary::SOURCE, the row builder's literal, the per-event param
- *     list) and two of them disagreed, which is how a purchase came to store its
- *     currency and no amount;
- *   - `events` absent meant "every event", so numeric_value -- declared with a
- *     default of 0 -- rode every page view carrying a param the event never had;
- *   - `default_value: false` was declared on four VARCHAR properties and three
- *     integers, where it either could not fire or put a boolean on the event for
- *     the row builder to launder into NULL;
- *   - and a beacon could assert tagged_source, which is attribution, because
- *     "client-settable" was a list beside the registry rather than a property of
- *     it.
- *
- * Every entry now says: set_by, from, events, and column when it differs. This
- * file is what stops the next one drifting.
+ *   - the column a property lands in, stated in more than one place, comes to
+ *     disagree -- a purchase storing its currency and no amount;
+ *   - `events` absent as "every event" puts a param declared with a default of
+ *     0 on every page view;
+ *   - `default_value: false` on a VARCHAR or an integer either cannot fire or
+ *     puts a boolean on the event for the row builder to launder into NULL;
+ *   - "client-settable" as a list beside the registry lets a beacon assert
+ *     tagged_source, which is attribution.
  */
 final class TrackingPropertyFormatTest extends TestCase
 {
@@ -68,7 +58,7 @@ final class TrackingPropertyFormatTest extends TestCase
         }
     }
 
-    /** The old spellings of the axis are gone, not merely unused. */
+    /** No entry carries a superseded spelling of the axis. */
     public function testNoEntryCarriesTheSupersededKeys(): void
     {
         foreach ( $this->registry() as $name => $definition ) {
@@ -164,8 +154,8 @@ final class TrackingPropertyFormatTest extends TestCase
      *
      * This is the whole reason the axis is declared. A request that could set its
      * own city, its own region or its own campaign source is a request that can
-     * forge what a report says, and that refusal used to be a list maintained
-     * beside the registry -- which is a list that can be forgotten.
+     * forge what a report says, and the refusal is the registry's, not a list
+     * maintained beside it that can be forgotten.
      */
     public function testOnlyAClientPropertyIsAdmittedFromTheWire(): void
     {
@@ -249,10 +239,9 @@ final class TrackingPropertyFormatTest extends TestCase
      * EVERY PROPERTY HAS EXACTLY ONE DESTINATION: a column, a params key, or
      * explicitly neither.
      *
-     * `column` used to be declared only when it differed from the property name,
-     * so an absent key meant "same name" -- and 32 of the entries have no column
-     * at all, which made columnFor() answer `last_req`, `form_id` and
-     * `session_referer` with total confidence. A guess that is right most of the
+     * Declared only when it differed from the property name, an absent `column`
+     * would mean "same name", and columnFor() would answer `last_req`, `form_id`
+     * and `session_referer` -- which have no column -- with total confidence. A guess that is right most of the
      * time is worse than no answer, because nothing downstream can tell which
      * kind it got.
      *
@@ -312,33 +301,18 @@ final class TrackingPropertyFormatTest extends TestCase
         /*
          * A MINIMUM PER BUCKET, not one number for all three.
          *
-         * It was `> 5` everywhere, which was a "is this test reading the file at
-         * all" guard and stopped being true of the small bucket: `nowhere` is now
-         * just the two request-scoped marker flags, is_new_session_start and
-         * is_new_visitor_created. Those raise the session_start and first_visit
-         * rows and are deliberately stored nowhere themselves -- the row they
-         * raise IS the record.
-         *
-         * Five properties used to sit there because five were computed and
-         * discarded: HTTP_HOST, client_ts_usec, last_req and the two day counts.
-         * Each is now removed rather than tolerated, so the bucket shrank for a
-         * good reason and the floor has to say what it expects instead of
-         * demanding the old size.
-         *
-         * It grew by eleven with spam detection: the beacon request's headers and
-         * the two URLs as they arrived (request_*, received_*), read by
-         * Classes\Spam and deliberately stored nowhere.
+         * `nowhere` holds the two request-scoped marker flags, is_new_session_start
+         * and is_new_visitor_created, which raise the session_start and first_visit
+         * rows and are deliberately stored nowhere themselves -- the row they raise
+         * IS the record -- and the beacon request's headers and the two URLs as they
+         * arrived (request_*, received_*), read by Classes\Spam.
          */
         /*
-         * `param` came down from 10 to 9 when file_name and file_extension were
-         * promoted to columns and is_outbound was added (Update053, Update054). Net
-         * minus two on the bag and plus three on the columns.
-         *
-         * The floor is deliberately NOT the exact count. Nine of the eleven
-         * param-bound first-class properties were left in the bag on purpose --
-         * most installs will never group by an element class or a form name -- and
-         * the test that notices one leaving is EventRawEntityTest's column count,
-         * which is exact. This one only has to fail if the file stops being read.
+         * The `param` floor is deliberately NOT the exact count. Nine of the eleven
+         * param-bound first-class properties stay in the bag on purpose -- most
+         * installs will never group by an element class or a form name -- and the
+         * test that notices one leaving is EventRawEntityTest's column count, which
+         * is exact. This one only has to fail if the file stops being read.
          */
         $floors = [ 'column' => 30, 'param' => 9, 'nowhere' => 1 ];
 
@@ -353,11 +327,9 @@ final class TrackingPropertyFormatTest extends TestCase
     }
 
     /**
-     * A params key reaches the row, and the row builder no longer keeps its own
-     * list of them.
-     *
-     * The hand-written map is where the purchase params went missing: it named
-     * the column spellings while the wire sent the ct_ ones. Asserting the two
+     * A params key reaches the row, and the row builder keeps no list of its own:
+     * a hand-written map can name the column spellings while the wire sends the
+     * ct_ ones. Asserting the two
      * agree is the guard; asserting a couple of the renames by name is what makes
      * a failure readable.
      */

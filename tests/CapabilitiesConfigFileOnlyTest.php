@@ -13,21 +13,18 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * access to the specific site. Both are shipped with the code and customised
  * from owa-config.php.
  *
- * This used to be enforced by a strip: the keys were removed from whatever
- * load() had fetched. Base declares them STATIC now, so the boot query never
- * asks for them and persistSetting() refuses to create one -- there is nothing
- * arriving to strip. The property to assert therefore changed from "it was
- * removed" to "it is never stored and never read", which is what these check.
+ * Base declares them STATIC, so the boot query never asks for them and
+ * persistSetting() refuses to create one: these check that they are never
+ * stored and never read.
  *
  * The contract has two sides and both need pinning. A value in the data store
  * does not reach the running config. A value established from the config file
  * does: owa-config.php is included from inside the settings object before the
  * configuration entity exists, so it writes the defaults array.
  *
- * The second half is the one worth guarding. The demo installation opens its
- * reports to unauthenticated visitors with a single config-file call, and a
- * change here that broke the one documented way to customise this would be a
- * poor trade for the tidiness it bought.
+ * The second half is the one worth guarding: it is the one documented way to
+ * customise this. The demo installation opens its reports to unauthenticated
+ * visitors with a single config-file call.
  */
 final class CapabilitiesConfigFileOnlyTest extends TestCase
 {
@@ -85,9 +82,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
     /**
      * And a row in the table does not reach the running config.
      *
-     * The end-to-end version of what the strip used to prove with a pure
-     * function call. A real row, a real reload, and the shipped policy still
-     * standing.
+     * A real row, a real reload, and the shipped policy still standing.
      */
     public function testARowInTheTableDoesNotReachTheRunningConfig(): void
     {
