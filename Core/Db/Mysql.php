@@ -1,24 +1,6 @@
 <?php
 namespace OWA\Core\Db;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-
 // The MySQL DDL vocabulary and schema introspection now live in the
 // MysqlDialect trait, shared with the PDO driver. `use` below is what defines
 // the OWA_DTD_* / OWA_SQL_* constants -- they are dialect, not transport.

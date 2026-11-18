@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Core\Db;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The MySQL dialect: its DDL vocabulary and its schema introspection.
  *
@@ -385,14 +379,6 @@ if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_R
 
 /**
  * MySQL Data Access Class
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 
 trait MysqlDialect

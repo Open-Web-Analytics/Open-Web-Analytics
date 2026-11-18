@@ -1,20 +1,6 @@
 <?php
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /**
  * Where a report's widgets sit.
  *
@@ -34,11 +20,6 @@ namespace OWA\Core;
  * resized to match. The symptom appears far from the cause -- one bad number in
  * one definition, and a different report's chart is the wrong size. So an
  * over-wide span becomes full-bleed instead, which is what the author meant.
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
  */
 class ReportGrid {
 

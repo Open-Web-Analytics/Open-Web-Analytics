@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * The custom report builder.
  *
@@ -29,8 +13,6 @@ namespace OWA\Module\Base\Controller;
  * name the validator then refuses, and the author would have no way to tell a
  * typo from a name that was never real. It is the same reason a segment
  * filter (ReportSegment) reads its options from the result-set manager.
- *
- * @since owa 1.8.0
  */
 /*
  * A REPORTING screen, not an options screen.

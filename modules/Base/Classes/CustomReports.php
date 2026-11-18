@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * Custom reports: storing them, listing them, and deciding what may be stored.
  *
@@ -55,7 +39,6 @@ namespace OWA\Module\Base\Classes;
  * and it means the author is told at the moment they can still fix it, rather
  * than being handed a report that is broken every time it is opened.
  *
- * @since owa 1.8.0
  *
  * A definition, and each widget in it, is decoded JSON: key => value of any
  * type, checked where it is read. A Report is a stored row with its

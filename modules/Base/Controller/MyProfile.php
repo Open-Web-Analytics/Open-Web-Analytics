@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * The signed-in user's own account.
  *
@@ -25,8 +9,6 @@ namespace OWA\Module\Base\Controller;
  * acts on whoever is signed in, so it takes no user_id: a screen that accepted
  * one would have to prove the requester may edit that account, and there is no
  * reason for this screen to be able to edit any account but its own.
- *
- * @since owa 1.8.0
  */
 class MyProfile extends \OWA\Core\AdminController {
 

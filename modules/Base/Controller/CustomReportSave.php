@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * Stores what the builder produced.
  *
@@ -27,8 +11,6 @@ namespace OWA\Module\Base\Controller;
  *
  * Nonce-required, like every other form that writes: without it, a link
  * somebody follows could quietly rewrite one of their reports.
- *
- * @since owa 1.8.0
  */
 class CustomReportSave extends \OWA\Core\AdminController {
 

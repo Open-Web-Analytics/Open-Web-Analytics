@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 /**
  * Minimal PHP template engine — set vars, then include-and-buffer a template
  * file. OWA\Core\Template extends this with all the OWA-specific rendering
@@ -24,13 +8,6 @@ namespace OWA\Core;
  * includes/template_class.php; relocated into Core/ during the Phase-6 PSR-4
  * migration. The old `CachedTemplate` subclass was dropped as dead code — it
  * had no instantiations or references anywhere in the tree.)
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @since        owa 1.0.0
  */
 // Templates set properties they do not declare; this attribute is PHP 8.2's
 // supported way to allow it.

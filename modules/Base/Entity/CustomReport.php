@@ -28,13 +28,6 @@ namespace OWA\Module\Base\Entity;
  * reached by its URL renders for anyone with view_reports on its Property,
  * which is what makes the URL shareable. The report can show nothing its
  * reader could not already query for themselves.
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @since       owa 1.8.0
  */
 
 class CustomReport extends \OWA\Core\Entity {

@@ -1,22 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright 2006 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
-
 /**
  * The custom report roster.
  *
@@ -39,8 +23,6 @@ namespace OWA\Module\Base\Controller;
  * Ownership decides what is LISTED and what may be opened, the same set
  * (CustomReports::mayView()): an admin sees every report; everyone else the
  * ones they created and the ones their authors have shared.
- *
- * @since owa 1.8.0
  */
 class CustomReports extends \OWA\Core\ReportController {
 
