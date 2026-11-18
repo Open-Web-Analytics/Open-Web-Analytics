@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Migration;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * v1's orders (owa_commerce_transaction_fact) into purchase events, with their
  * line items (owa_commerce_line_item_fact).

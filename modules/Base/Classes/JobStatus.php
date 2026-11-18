@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The scheduler's view of a job: its schedule, its state row, and whether it is
  * behind and why.

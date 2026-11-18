@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The signed-in user's application passwords: the list, the form that makes
  * one, and a revoke button on each.

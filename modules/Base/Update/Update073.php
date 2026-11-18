@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * element_anchor, anchor_x and anchor_y arrive on owa_event_raw and every cube:
  * where on the clicked element a click landed, which the heatmap draws it by.

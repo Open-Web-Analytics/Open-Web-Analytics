@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): beacons on their way into
  * ingest, through the IntakeQueue of the configured backend (backend()).

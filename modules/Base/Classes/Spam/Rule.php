@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * One spam rule: a name, the rule set it belongs to, its points, and a test.
  *

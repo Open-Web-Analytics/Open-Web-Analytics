@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The page the beacon names is not on the Profile's site: its host (from
  * page_location, the wire's p_l) is neither the Profile's domain nor a

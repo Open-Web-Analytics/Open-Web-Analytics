@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * page_depth, previous_page_path and next_page_path arrive on every cube: the
  * Page Depth, Previous Page Path and Next Page Path dimensions.

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Delete the stored rows of the removed Hello example module: every row with
  * module 'hello', at every scope. The module is a page in the wiki

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Sec-CH-UA-Platform names a different operating system from the user agent's:
  * "Linux" with a Mac or Windows agent, "Windows" with an Android or iOS one.

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * A queued job's lease, handed to its controller so heartbeat() extends it
  * exactly as it extends a scheduled job's JobLease.

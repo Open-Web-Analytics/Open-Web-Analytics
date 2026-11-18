@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The user agent claims a browser (Client::claimsBrowser()) and Accept-Encoding
  * is not what a browser sends: missing, exactly `gzip`, or a list with no

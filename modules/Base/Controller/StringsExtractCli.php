@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Write the English string catalogue, conf/strings/en.php, from the code, and
  * the list of its keys the reporting JavaScript uses, conf/strings/script-keys.php.

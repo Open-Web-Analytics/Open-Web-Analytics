@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The page URL's query string is longer than 200 characters, and not longer
  * than 500 (QUERY_VERY_LONG takes those, so the two never fire together).

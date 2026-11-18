@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Beacon;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Normalises an incoming beacon into the CURRENT format, once, before anything
  * reads it.

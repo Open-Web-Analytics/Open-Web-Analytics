@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * One queued admin job (PLAN 2.30.5): a registered CLI command and its
  * arguments, run once by the scheduler.

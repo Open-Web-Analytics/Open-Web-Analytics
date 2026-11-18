@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Migration;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * 1.14's metric and dimension names, and what each is in v2.
  *

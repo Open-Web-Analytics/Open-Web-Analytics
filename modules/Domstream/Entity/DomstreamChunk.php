@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Domstream\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * One chunk of a recording: what it is, not what it holds.
  *

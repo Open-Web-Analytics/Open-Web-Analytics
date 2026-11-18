@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Which database servers OWA 2.0 runs on: MySQL 8.0.21 or later, or MariaDB
  * 10.11 or later.
