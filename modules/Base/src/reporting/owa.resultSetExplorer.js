@@ -222,7 +222,7 @@ OWA.resultSetExplorer.prototype = {
 
             dims = dims.split(',');
 
-            if ( OWA.util.in_array(oldname, dims) ) {
+            if ( dims.includes( oldname ) ) {
 
                 // loop through dims looking for the current sec. dim
                 for (var i=0; i < dims.length; i++) {
