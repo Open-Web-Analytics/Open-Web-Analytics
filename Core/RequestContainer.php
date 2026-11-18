@@ -202,7 +202,7 @@ class RequestContainer {
                 
             } else if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
                 
-                // merge in POST vars. GET and POST can occure on the same request.		
+                // merge in POST vars. GET and POST can occure on the same request.
                 $params = array_merge( $_GET, $_POST);
             }
             

@@ -56,8 +56,8 @@ class RestApi extends \OWA\Core\View {
             \OWA\Core\Lib::setContentTypeHeader( $type );
             
             // set cahce-control header to avid downstream caching.
-            header("Cache-Control: max-age=0");		
-            
+            header("Cache-Control: max-age=0");
+
             // add CORS request headers
             $this->addCorsHeaders();
        }
@@ -83,7 +83,7 @@ class RestApi extends \OWA\Core\View {
         
         $http_response = [
             
-            'status_code'	=> http_response_code()
+            'status_code'   => http_response_code()
         ];
         
         $this->body->set('http_response', $http_response);

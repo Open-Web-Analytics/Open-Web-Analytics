@@ -3097,7 +3097,7 @@ class CoreAPI {
                     }
                     
                     $params['rest_route'] = $route;
-                    $controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], '', $params );					
+                    $controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], '', $params );
                     return \OWA\Core\CoreAPI::runController( $controller );
                 
                 } else {

@@ -2993,7 +2993,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $this->resultSet->generate( $dresults, $this->query_params, [
                     
                     'resultsPerPage' => $this->getlimit(),
-                    'page'			 => $this->getPage()
+                    'page'           => $this->getPage()
                 ] );
                 
             }

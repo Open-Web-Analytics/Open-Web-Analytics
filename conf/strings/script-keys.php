@@ -5,7 +5,7 @@
 // The keys of conf/strings/en.php that the reporting JavaScript uses (OWA.l(),
 // OWA.ln()). A page in a translated locale is sent the translations of these.
 //
-return array(
+return [
     '%1$s by %2$s',
     '%1$s of %2$s',
     '%1$s of %2$s users has no known location.',
@@ -253,4 +253,4 @@ return array(
     'trend granularity' . "\x04" . 'Day',
     'trend granularity' . "\x04" . 'Hour',
     'trend granularity' . "\x04" . 'Month',
-);
+];

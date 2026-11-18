@@ -49,8 +49,8 @@ namespace OWA\Core\Validation;
              
             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'A value is required.' ) );
             $this->hasError();
-        }	
-         
+        }
+
          $error = $this->getErrorMsg();
 
          if (empty($error)) {

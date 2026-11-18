@@ -97,8 +97,8 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
                     
                     if ( $test === substr( $secret, 0, 12 ) ) {
                         // write new line
-                        fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \OWA\Core\CoreAPI::secureRandomString(64) ) );	
-                        
+                        fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \OWA\Core\CoreAPI::secureRandomString(64) ) );
+
                         $replaced = true;
                         $mod = true;
                         //skip the restof the loop as we already found the match
@@ -108,11 +108,11 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
                     
                 }
                 
-                if ( ! $replaced )	{
+                if ( ! $replaced )  {
                     
                     fwrite( $new_config, $line);
                     
-                }        	
+                }
             }
             
             fclose( $new_config );

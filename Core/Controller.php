@@ -838,8 +838,8 @@ class Controller extends \OWA\Core\Base {
         
         $new_data = [
             
-            'do' 			=> $do,
-            'view_method'	=> 'redirect'
+            'do'            => $do,
+            'view_method'   => 'redirect'
         ];
         
 /*
@@ -881,7 +881,7 @@ class Controller extends \OWA\Core\Base {
         }
 
         \OWA\Core\CoreAPI::debug( 'setRedirectAction', $new_data );
-        $this->data = $new_data;		
+        $this->data = $new_data;
 
         // need to remove these unsets once they are no longer set in the main doAction method
         if (array_key_exists('params', $this->data)) {
@@ -1097,10 +1097,10 @@ class Controller extends \OWA\Core\Base {
         if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
             
             $this->setView('base.restApi');
-            $this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
+            $this->set('error_msg', ['headline' => \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
                 ? self::legacyApiKeyMessage()
                 : \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
-            http_response_code(401);	
+            http_response_code(401);
         } else {
             $this->setRedirectAction('base.loginForm');
 

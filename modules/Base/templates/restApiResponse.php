@@ -3,10 +3,10 @@
     
 $_response = [
             
-            'requestId'			=> $view->request_id,
-            'httpResponse'		=> $view->http_response,
-            'error'				=> $view->error,
-            'data'				=> null
+            'requestId'         => $view->request_id,
+            'httpResponse'      => $view->http_response,
+            'error'             => $view->error,
+            'data'              => null
 
 ];
 

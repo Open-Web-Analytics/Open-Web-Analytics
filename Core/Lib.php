@@ -190,7 +190,7 @@ class Lib {
             
         } else {
             
-            $url = 'http';	
+            $url = 'http';
         }
         
         if ( isset( $_SERVER['HTTP_HOST'] ) ) {

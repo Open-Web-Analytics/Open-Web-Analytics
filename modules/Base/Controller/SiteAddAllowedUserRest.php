@@ -35,23 +35,23 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
     public function validate() {
 
         // both identifiers must be present
-        $this->addValidation('siteId', $this->getParam('siteId'), 'required', ['stopOnError'	=> true]);
-        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'	=> true]);
+        $this->addValidation('siteId', $this->getParam('siteId'), 'required', ['stopOnError'    => true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'  => true]);
 
         // the site must exist - rejects bogus siteIds before any relation is written
         $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', [
-            'entity'	=> 'base.site',
-            'column'	=> 'site_id',
-            'errorMsg'	=> $this->getMsg(3208),
-            'stopOnError'	=> true
+            'entity'    => 'base.site',
+            'column'    => 'site_id',
+            'errorMsg'  => $this->getMsg(3208),
+            'stopOnError'   => true
         ]);
 
         // the user must exist - rejects bogus user_ids before any relation is written
         $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', [
-            'entity'	=> 'base.user',
-            'column'	=> 'user_id',
-            'errorMsg'	=> $this->getMsg(3001),
-            'stopOnError'	=> true
+            'entity'    => 'base.user',
+            'column'    => 'user_id',
+            'errorMsg'  => $this->getMsg(3001),
+            'stopOnError'   => true
         ]);
     }
 
@@ -83,8 +83,8 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
         $response = [
 
-            'site'			=> $s->getProperties(),
-            'allowed_user'	=> $u->getProperties( ['password', 'temp_passkey', 'session_epoch'] )
+            'site'          => $s->getProperties(),
+            'allowed_user'  => $u->getProperties( ['password', 'temp_passkey', 'session_epoch'] )
         ];
 
         $this->set('response', $response);

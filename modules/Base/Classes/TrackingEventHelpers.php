@@ -1915,7 +1915,7 @@ class TrackingEventHelpers {
         /*
          * Control characters first, and before the scheme is read. Browsers
          * strip tab, newline and carriage return from inside a scheme, so
-         * "java	script:" is javascript: to a browser while parse_url() sees
+         * "java    script:" is javascript: to a browser while parse_url() sees
          * something else entirely -- the check and the consumer have to agree
          * about what the string is.
          */

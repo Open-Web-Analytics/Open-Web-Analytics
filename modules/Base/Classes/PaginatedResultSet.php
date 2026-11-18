@@ -331,8 +331,8 @@ class PaginatedResultSet {
         
         $defaults = [
             
-            'resultsPerPage'	=> 10,
-            'page'				=> 1
+            'resultsPerPage'    => 10,
+            'page'              => 1
         ];
         
         if ( ! empty( $results ) ) {
@@ -384,9 +384,9 @@ class PaginatedResultSet {
         $this->base_url = $api_url;
         
         // add query params
-        $query_params['do'] 		= 'reports';
-        $query_params['module'] 	= 'base';
-        $query_params['version'] 	= 'v1';
+        $query_params['do']         = 'reports';
+        $query_params['module']     = 'base';
+        $query_params['version']    = 'v1';
         
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls

@@ -74,8 +74,8 @@ class ReportsRest extends \OWA\Core\ReportController {
         // if no report name is specified do these validations necesary for generic resultSet.
         if ( ! $this->get('report_name') ) {
             
-            // metrics are required for resultset queries		
-            $this->addValidation( 'metrics', $this->getParam('metrics'), 'required', ['stopOnError'	=> true] );
+            // metrics are required for resultset queries
+            $this->addValidation( 'metrics', $this->getParam('metrics'), 'required', ['stopOnError' => true] );
             
             // make sure period string is valid
             if ( $this->get( 'period' ) ) {

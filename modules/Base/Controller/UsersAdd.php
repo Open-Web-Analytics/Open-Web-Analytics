@@ -43,10 +43,10 @@ class UsersAdd extends \OWA\Core\AdminController {
 
     public function validate() {
         
-        $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['stopOnError'	=> true]);
-        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'	=> true]);
-        $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'	=> true]);
-        $this->addValidation('role', $this->getParam('role'), 'required', ['stopOnError'	=> true]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['stopOnError'  => true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'  => true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'  => true]);
+        $this->addValidation('role', $this->getParam('role'), 'required', ['stopOnError'    => true]);
         
         $roles = \OWA\Core\CoreAPI::getAllRoles();
         $this->addValidation('role', $this->getParam('role'), 'inArray', ['possible_values' => $roles, 'stopOnError' => true] );
@@ -90,10 +90,10 @@ class UsersAdd extends \OWA\Core\AdminController {
 
             $u_properties = [
                 
-                'user_id'	=> $u->get('user_id'),
+                'user_id'   => $u->get('user_id'),
                 'email_address' => $u->get( 'email_address'),
-                'real_name'		=>	$u->get( 'real_name' ),
-                'role'			=>	$u->get('role')
+                'real_name'     =>  $u->get( 'real_name' ),
+                'role'          =>  $u->get('role')
             ];
         }
         
