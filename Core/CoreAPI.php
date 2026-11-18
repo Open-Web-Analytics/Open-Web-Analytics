@@ -1836,6 +1836,10 @@ class CoreAPI {
      * Returns a consolidated list of nav links from all active modules for a particular view
      * and named navigation element.
      *
+     * A module adds one with Module::addViewNavigationLink(). 1.0 modules
+     * wrote such links into nav_links with their own view and nav_name; that
+     * form is no longer read.
+     *
      * @param string $view
      * @param string $nav_name the name of the navigation element that you want links for
      * @param string $sortby the array value to sort the navigation array by
@@ -1849,30 +1853,16 @@ class CoreAPI {
 
         foreach ($service->modules as $k => $v) {
 
-            // If the module does not have nav links, register them. needed in case this function is called twice on
-            // same view.
-            if (empty($v->nav_links)):
+            // Registered once: registerNavigation() adds to what is there.
+            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
+
                 $v->registerNavigation();
-            endif;
-
-            $module_nav = $v->getNavigationLinks();
-
-
-            if (!empty($module_nav)) {
-                // assemble the navigation for a specific view's named navigation element'
-                foreach ($module_nav as $key => $value) {
-
-                    // A link registered for a group rather than a named view
-                    // nav has neither key, and is not one of these.
-                    if ( ! isset( $value['view'], $value['nav_name'] ) ) {
-
-                        continue;
-                    }
-
-                    $links[$value['view']][$value['nav_name']][] = $value;
-                }
             }
 
+            foreach ( $v->getViewNavigationLinks() as $link ) {
+
+                $links[ $link['view'] ][ $link['nav_name'] ][] = $link;
+            }
         }
 
         // nav_view: one view's named nav, from every module, before it is sorted.
@@ -1907,7 +1897,7 @@ class CoreAPI {
 
             // If the module does not have nav links, register them. needed in case this function is called twice on
             // same view.
-            if ( empty( $v->nav_links ) ) {
+            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
 
                 $v->registerNavigation();
             }
