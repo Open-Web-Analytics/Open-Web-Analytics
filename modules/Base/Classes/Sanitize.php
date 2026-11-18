@@ -132,7 +132,11 @@ class Sanitize {
                 $output = preg_replace( '/<\/' . $tag . '\b[^>]*>/i', '', $output );
             }
         } else {
-            $output = strip_tags($input);
+            // A tag is a < followed by a letter, /, ! or ?, as an HTML parser
+            // reads one; it runs to the next > or, unclosed, to the end. Any
+            // other < is text: strip_tags() treated "<5" as an unclosed tag, so
+            // the constraint pageViews<5 arrived as "pageViews".
+            $output = preg_replace( '/<!--.*?(?:-->|$)|<[a-zA-Z\/!?][^>]*(?:>|$)/s', '', (string) $input );
         }
 
         return $output;
