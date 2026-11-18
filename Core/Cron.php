@@ -1,10 +1,5 @@
 <?php
 namespace OWA\Core;
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
 /**
  * Cron expressions, and deciding whether a schedule is due.
  *

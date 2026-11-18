@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Sec-CH-UA-Mobile disagrees with the user agent's Mobile token: ?1 while the
  * agent has no "Mobile", or ?0 while it has one.

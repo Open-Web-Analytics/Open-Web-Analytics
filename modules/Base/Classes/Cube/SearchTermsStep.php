@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Cube;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * search_terms: the tag if there was one, else what the search engine put in
  * its own query parameter.

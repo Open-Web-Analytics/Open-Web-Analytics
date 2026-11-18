@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * A Profile's tracking bundle (PLAN 2.24): one static file at
  * public/tracker/<site_id>.js holding the Profile's configuration, the lazy

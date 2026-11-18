@@ -1,10 +1,5 @@
 <?php
 namespace OWA\Module\Base\Controller;
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
 /**
  * Keep a fixed window of data: add the periods ahead, drop the ones behind.
  *

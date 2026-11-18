@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * What the v1 migration expects to find in raw, per pass, site and day,
  * recorded as each batch is written (FactMigrator::apply()) so reconciliation

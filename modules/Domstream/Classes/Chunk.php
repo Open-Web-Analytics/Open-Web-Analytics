@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Domstream\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * A `domstream` tracking event, checked and turned into the two rows it is
  * stored as -- or refused, with the reason.

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The user agent claims a Chromium browser that sends User-Agent Client Hints,
  * Chromium 89 or later, and the beacon request carried no Sec-CH-UA.

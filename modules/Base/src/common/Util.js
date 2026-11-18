@@ -288,16 +288,9 @@ class Util {
         // must be string
         return Util.dechex(Util.crc32(domain));
     }
-    
 
-      
     /**
      * Left-pad a number with zeros to a fixed width.
-     *
-     * Was a wrapper over a 38-line str_pad() port of PHP's, called with
-     * STR_PAD_LEFT and '0' and nothing else -- the port's other three pad
-     * types, its custom pad strings and its multi-character padding were all
-     * unreachable. padStart is the same operation, and it is in the language.
      */
     static zeroFill ( number, length ) {
 

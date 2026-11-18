@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * owa_user.api_key is dropped. The legacy API key signs nothing in (a request
  * carrying one is refused, see Auth::carriesLegacyApiKey()) and no user is

@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Spam\Rules;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * A client hint holds a value real Chromium never sends: a Sec-CH-UA-Platform
  * outside ChPlatformMismatch::PLATFORMS, such as "Mac OS X", or a

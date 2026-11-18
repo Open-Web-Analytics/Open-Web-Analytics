@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The visitors a v1 migration pass wrote rows for, per site and day: one row
  * per (source, site_id, yyyymmdd, visitor_id), recorded with each batch.

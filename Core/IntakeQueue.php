@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The tracking intake's contract (PLAN 2.30.3): what the tracker-ingest queue
  * must do, whatever it runs on.

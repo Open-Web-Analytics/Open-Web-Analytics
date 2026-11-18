@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * owa_queue_item goes (PLAN 2.30.6): the database event queue's table, which
  * nothing reads on v2. Failed beacons are retried through the tracker-ingest
