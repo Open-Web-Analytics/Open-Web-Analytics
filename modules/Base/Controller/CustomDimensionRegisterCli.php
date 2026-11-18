@@ -48,9 +48,9 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Registers a collected key as a custom dimension, adding a column to the Property\'s reporting cube. Existing rows are not backfilled; rebuild the range with cube-rebuild to fill them.',
-            'arguments'   => array(
+            'arguments'   => [
                 'property=<id>'                 => 'Required. The Property.',
                 'key=<key>[,<key>...]'          => 'Required. The collected key, or several separated by commas, which are added in one table rebuild.',
                 'scope=<' . implode( '|', \OWA\Module\Base\Entity\CustomDimension::scopes() ) . '>'
@@ -60,8 +60,8 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
                 'label=<text>'                  => 'The name shown in reports. Only with a single key.',
                 '--defer'                       => 'Record the registration and leave the column to the next build or apply job.',
                 '--dry-run'                     => 'Report what would be registered, and change nothing.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -82,18 +82,18 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
                                 . 'several in one rebuild.' );
         }
 
-        $requests = array();
+        $requests = [];
 
         foreach ( $keys as $key ) {
 
-            $requests[] = array(
+            $requests[] = [
                 'key'    => $key,
                 'scope'  => (string) $this->getParam( 'scope' ),
                 'type'   => (string) $this->getParam( 'type' ),
                 // One label for several keys would be wrong, so a label is only
                 // taken when one key was named.
                 'label'  => count( $keys ) === 1 ? (string) $this->getParam( 'label' ) : '',
-            );
+            ];
         }
 
         if ( $this->getParam( 'dry-run' ) ) {
@@ -155,7 +155,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         $cli   = $class->newInstanceWithoutConstructor();
 
         $params = $class->getProperty( 'params' );
-        $params->setValue( $cli, array( 'property' => $property_id ) );
+        $params->setValue( $cli, [ 'property' => $property_id ] );
 
         $cli->action();
     }
@@ -170,7 +170,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
     protected function reportPlan( $property_id, array $requests ) {
 
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
-        $names = array();
+        $names = [];
 
         foreach ( $requests as $request ) {
 
@@ -184,5 +184,3 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
             implode( ', ', $names ), $table ) );
     }
 }
-
-?>

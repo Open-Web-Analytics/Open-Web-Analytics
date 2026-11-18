@@ -40,12 +40,12 @@ namespace OWA\Module\Base\Classes;
 class JobQueue {
 
     /** Used where a command declares no policy of its own (see policyFor()). */
-    const DEFAULT_POLICY = array(
+    const DEFAULT_POLICY = [
         'max_attempts'  => 3,
-        'backoff'       => array( 60, 300, 900 ),
+        'backoff'       => [ 60, 300, 900 ],
         // Longer than a job may run, or a second tick claims it mid-run.
         'lease_seconds' => 300,
-    );
+    ];
 
     /** What last_error holds; STRICT mode refuses a longer value. */
     const ERROR_LENGTH = 1000;
@@ -153,7 +153,7 @@ class JobQueue {
 
         $policy['max_attempts']  = max( 1, (int) $policy['max_attempts'] );
         $policy['lease_seconds'] = max( 1, (int) $policy['lease_seconds'] );
-        $policy['backoff']       = array_values( array_map( 'intval', (array) $policy['backoff'] ) ) ?: array( 60 );
+        $policy['backoff']       = array_values( array_map( 'intval', (array) $policy['backoff'] ) ) ?: [ 60 ];
 
         return $policy;
     }
@@ -174,7 +174,7 @@ class JobQueue {
      * @param  int         $delay    seconds before it may run
      * @return string|false  the job's id
      */
-    public static function enqueue( $command, array $params = array(), $key = null, $delay = 0 ) {
+    public static function enqueue( $command, array $params = [], $key = null, $delay = 0 ) {
 
         $command = (string) $command;
 
@@ -208,7 +208,7 @@ class JobQueue {
 
                 $db->query( sprintf(
                     'UPDATE %s SET params = ?, run_after = LEAST(run_after, ?) WHERE id = ? AND status = ?', self::table() ),
-                    array( $json, $due, $existing, 'pending' ) );
+                    [ $json, $due, $existing, 'pending' ] );
 
                 return $existing;
             }
@@ -219,8 +219,8 @@ class JobQueue {
         $inserted = $db->query( sprintf(
             'INSERT INTO %s (id, command, params, dedupe_key, status, run_after, attempts, max_attempts,'
           . ' lease_seconds, backoff, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)', self::table() ),
-            array( $id, $command, $json, $key, 'pending', $due, $policy['max_attempts'],
-                   $policy['lease_seconds'], implode( ',', $policy['backoff'] ), $now ) );
+            [ $id, $command, $json, $key, 'pending', $due, $policy['max_attempts'],
+                   $policy['lease_seconds'], implode( ',', $policy['backoff'] ), $now ] );
 
         if ( $inserted !== false ) {
 
@@ -238,7 +238,7 @@ class JobQueue {
     private static function pendingWithKey( $key ) {
 
         $row = self::db()->get_row( sprintf(
-            'SELECT id FROM %s WHERE dedupe_key = ? AND status = ?', self::table() ), array( $key, 'pending' ) );
+            'SELECT id FROM %s WHERE dedupe_key = ? AND status = ?', self::table() ), [ $key, 'pending' ] );
 
         return $row ? (string) $row['id'] : null;
     }
@@ -266,13 +266,13 @@ class JobQueue {
 
             $row = $db->get_row( sprintf(
                 'SELECT * FROM %s WHERE status = ? AND run_after <= ?%s ORDER BY run_after, id LIMIT 1 FOR UPDATE SKIP LOCKED',
-                self::table(), $fit ), array( 'pending', $now ) );
+                self::table(), $fit ), [ 'pending', $now ] );
 
             if ( ! $row && $db->queryErrorCount() === $errors ) {
 
                 $row = $db->get_row( sprintf(
                     'SELECT * FROM %s WHERE status = ? AND lease_until < ?%s ORDER BY lease_until, id LIMIT 1 FOR UPDATE SKIP LOCKED',
-                    self::table(), $fit ), array( 'running', $now ) );
+                    self::table(), $fit ), [ 'running', $now ] );
             }
 
             if ( $row && $db->queryErrorCount() === $errors ) {
@@ -282,7 +282,7 @@ class JobQueue {
                 $db->query( sprintf(
                     'UPDATE %s SET status = ?, dedupe_key = NULL, attempts = attempts + 1, lease_until = ?,'
                   . ' started_at = ? WHERE id = ?', self::table() ),
-                    array( 'running', $lease, $now, $row['id'] ) );
+                    [ 'running', $lease, $now, $row['id'] ] );
             }
 
             if ( $db->queryErrorCount() === $errors ) {
@@ -364,7 +364,7 @@ class JobQueue {
      */
     public static function drain( $deadline, callable $run ) {
 
-        $counts = array( 'done' => 0, 'retried' => 0, 'failed' => 0, 'exhausted' => 0 );
+        $counts = [ 'done' => 0, 'retried' => 0, 'failed' => 0, 'exhausted' => 0 ];
         $first  = true;
 
         self::$connection_lost = false;
@@ -412,7 +412,7 @@ class JobQueue {
 
             } catch ( \Throwable $t ) {
 
-                $outcome = array( 'outcome' => 'failed', 'message' => get_class( $t ) . ': ' . $t->getMessage() );
+                $outcome = [ 'outcome' => 'failed', 'message' => get_class( $t ) . ': ' . $t->getMessage() ];
             }
 
             $state = (string) ( $outcome['outcome'] ?? 'failed' );
@@ -443,7 +443,7 @@ class JobQueue {
 
         self::db()->query( sprintf(
             'UPDATE %s SET status = ?, lease_until = NULL, finished_at = ? WHERE id = ?', self::table() ),
-            array( 'done', self::now(), $id ) );
+            [ 'done', self::now(), $id ] );
     }
 
     /**
@@ -455,7 +455,7 @@ class JobQueue {
 
         self::db()->query( sprintf(
             'UPDATE %s SET status = ?, lease_until = NULL, finished_at = ?, last_error = ? WHERE id = ?', self::table() ),
-            array( 'failed', self::now(), self::bound( $error ), $id ) );
+            [ 'failed', self::now(), self::bound( $error ), $id ] );
     }
 
     /**
@@ -478,12 +478,12 @@ class JobQueue {
         }
 
         $steps = array_values( array_filter( array_map( 'intval', explode( ',', (string) $job['backoff'] ) ),
-            fn ( $s ) => $s >= 0 ) ) ?: array( 60 );
+            fn ( $s ) => $s >= 0 ) ) ?: [ 60 ];
         $delay = $steps[ min( $attempts - 1, count( $steps ) - 1 ) ];
 
         self::db()->query( sprintf(
             'UPDATE %s SET status = ?, lease_until = NULL, run_after = ?, last_error = ? WHERE id = ?', self::table() ),
-            array( 'pending', self::now() + $delay, self::bound( $error ?: 'Failed.' ), $job['id'] ) );
+            [ 'pending', self::now() + $delay, self::bound( $error ?: 'Failed.' ), $job['id'] ] );
 
         return true;
     }
@@ -510,7 +510,7 @@ class JobQueue {
         $db  = self::db();
         $sql = sprintf( 'UPDATE %s SET status = ?, attempts = 0, last_error = NULL, run_after = ?, finished_at = NULL'
                       . ' WHERE status = ?', self::table() );
-        $params = array( 'pending', self::now(), 'failed' );
+        $params = [ 'pending', self::now(), 'failed' ];
 
         if ( $id !== 'all' ) {
 
@@ -532,7 +532,7 @@ class JobQueue {
     public static function forget( $id ) {
 
         $db = self::db();
-        $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', self::table() ), array( (string) $id ) );
+        $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', self::table() ), [ (string) $id ] );
 
         return (int) $db->getAffectedRows() > 0;
     }
@@ -548,12 +548,12 @@ class JobQueue {
         $db      = self::db();
         $removed = 0;
 
-        foreach ( array( 'done' => self::KEEP_DONE, 'failed' => self::KEEP_FAILED ) as $status => $keep ) {
+        foreach ( [ 'done' => self::KEEP_DONE, 'failed' => self::KEEP_FAILED ] as $status => $keep ) {
 
             do {
 
                 $db->query( sprintf( 'DELETE FROM %s WHERE status = ? AND finished_at < ? LIMIT %d',
-                    self::table(), self::PRUNE_BATCH ), array( $status, self::now() - $keep ) );
+                    self::table(), self::PRUNE_BATCH ), [ $status, self::now() - $keep ] );
 
                 $n = (int) $db->getAffectedRows();
                 $removed += $n;
@@ -575,9 +575,9 @@ class JobQueue {
         $now  = self::now();
         $rows = (array) self::db()->get_results( sprintf(
             'SELECT status, (run_after <= ?) AS is_due, COUNT(*) AS n, MIN(run_after) AS oldest'
-          . ' FROM %s GROUP BY status, is_due', self::table() ), array( $now ) );
+          . ' FROM %s GROUP BY status, is_due', self::table() ), [ $now ] );
 
-        $out = array( 'due' => 0, 'delayed' => 0, 'running' => 0, 'failed' => 0, 'done' => 0, 'oldest_due_age' => null );
+        $out = [ 'due' => 0, 'delayed' => 0, 'running' => 0, 'failed' => 0, 'done' => 0, 'oldest_due_age' => null ];
 
         foreach ( $rows as $row ) {
 
@@ -614,7 +614,7 @@ class JobQueue {
     public static function listJobs( $status = null, $limit = 50 ) {
 
         $where  = $status ? ' WHERE status = ?' : '';
-        $params = $status ? array( (string) $status ) : array();
+        $params = $status ? [ (string) $status ] : [];
 
         return (array) self::db()->get_results( sprintf(
             'SELECT id, command, params, status, attempts, max_attempts, run_after, last_error, created_at, finished_at'
@@ -637,8 +637,6 @@ class JobQueue {
 
         return (bool) self::db()->get_row( sprintf(
             'SELECT id FROM %s WHERE command = ? AND status IN (?, ?) LIMIT 1', self::table() ),
-            array( (string) $command, 'pending', 'running' ) );
+            [ (string) $command, 'pending', 'running' ] );
     }
 }
-
-?>

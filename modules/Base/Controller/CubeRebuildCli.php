@@ -89,17 +89,17 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Rebuilds the reporting cubes from the raw event table, one partition at a time. With no property=, covers every existing cube and every Property with raw events in the range, creating a cube on a Property\'s first data. Dates select partitions, so a range is widened to the whole partitions it touches.',
-            'arguments'   => array(
+            'arguments'   => [
                 'from=<yyyymmdd>' => 'First date to rebuild. With no to=, the range runs through today. With no dates at all, the range is yesterday and today, and a cube that is behind is caught up from its oldest unsettled partition.',
                 'to=<yyyymmdd>'   => 'Last date to rebuild, inclusive. With no from=, the range starts today.',
                 'days=<n>'        => 'The last n days, today included. n must be 1 or more. Ignored when from= or to= is given.',
                 'property=<id>'   => 'Rebuild only this Property\'s cube, whether or not it has collected anything in the range.',
                 '--dry-run'       => 'Print each partition\'s build statement, and change nothing. Says whether a missing cube would be created.',
                 'steps=1'         => 'After each partition, print the time and row count of every build step.',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -132,7 +132,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     public static function jobQueuePolicy() {
 
-        return array( 'lease_seconds' => self::JOB_LEASE );
+        return [ 'lease_seconds' => self::JOB_LEASE ];
     }
 
     public function __construct( $params ) {
@@ -181,7 +181,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         $built   = 0;
         $locked  = 0;
         $skipped = 0;
-        $stopped = array();
+        $stopped = [];
 
         /*
          * A ROUTINE RUN is one given no dates: what the scheduler runs. Only it
@@ -287,7 +287,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * and refusing it would make the command useless for the one case
              * an operator reaches for it.
              */
-            return array( $only );
+            return [ $only ];
         }
 
         $collecting = \OWA\Module\Base\Classes\Cube\Cubes::collecting(
@@ -336,7 +336,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function rebuildProperty( $property_id, array $range, $dry_run, $routine = false ) {
 
-        $none  = array( 'built' => 0, 'failed' => 0, 'locked' => 0 );
+        $none  = [ 'built' => 0, 'failed' => 0, 'locked' => 0 ];
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
 
@@ -371,7 +371,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 'Another build of %s is already running; skipped. A build is convergent, '
               . 'so the run in progress produces what this one would.', $table ) );
 
-            return array( 'built' => 0, 'failed' => 0, 'locked' => 1, 'skipped' => 0, 'stopped' => '' );
+            return [ 'built' => 0, 'failed' => 0, 'locked' => 1, 'skipped' => 0, 'stopped' => '' ];
         }
 
         try {
@@ -397,9 +397,9 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function buildUnderLock( $property_id, $table, array $range, $dry_run, $lock, $routine = false ) {
 
-        $none    = array( 'built' => 0, 'failed' => 0, 'locked' => 0, 'skipped' => 0, 'stopped' => '' );
-        $bad     = array( 'built' => 0, 'failed' => 1, 'locked' => 0, 'skipped' => 0,
-                          'stopped' => sprintf( '%s could not be prepared', $table ) );
+        $none    = [ 'built' => 0, 'failed' => 0, 'locked' => 0, 'skipped' => 0, 'stopped' => '' ];
+        $bad     = [ 'built' => 0, 'failed' => 1, 'locked' => 0, 'skipped' => 0,
+                          'stopped' => sprintf( '%s could not be prepared', $table ) ];
         $db      = \OWA\Core\CoreAPI::dbSingleton();
         $created = false;
 
@@ -871,7 +871,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             $to   = $to !== null ? $this->asDate( $to ) : $today;
 
             return ( $from && $to && $from <= $to )
-                ? array( 'from' => $from, 'to' => $to ) : null;
+                ? [ 'from' => $from, 'to' => $to ] : null;
         }
 
         $days = $this->getParam( 'days' );
@@ -883,10 +883,10 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 return null;
             }
 
-            return array(
+            return [
                 'from' => (int) date( 'Ymd', strtotime( '-' . ( (int) $days - 1 ) . ' days' ) ),
                 'to'   => $today,
-            );
+            ];
         }
 
         /*
@@ -908,10 +908,10 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * One day rather than one idle timeout because a day is the smallest
          * unit a partition is cut on, and session_length is half an hour.
          */
-        return array(
+        return [
             'from' => (int) date( 'Ymd', strtotime( '-1 day' ) ),
             'to'   => $today,
-        );
+        ];
     }
 
     /**
@@ -932,5 +932,3 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         return ( $d && $d->format( 'Ymd' ) === $value ) ? (int) $value : null;
     }
 }
-
-?>

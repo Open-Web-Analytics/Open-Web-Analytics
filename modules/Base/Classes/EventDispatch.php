@@ -41,24 +41,24 @@ class EventDispatch {
      *
      * @var array<int, callable> observer id => listener
      */
-    public $listeners = array();
+    public $listeners = [];
 
     /**
      * Stores listener IDs by event type
      *
      * @var array<string, list<int>> dispatch name => observer ids
      */
-    public $listenersByEventType = array();
+    public $listenersByEventType = [];
 
     /**
      * Stores listener IDs by filter type
      *
      * @var array<string, array<int, list<int>>> filter name => priority => observer ids
      */
-    public $listenersByFilterType = array();
+    public $listenersByFilterType = [];
 
     /** @var array{} nothing reads or writes it */
-    public $queues    = array();
+    public $queues    = [];
 
 
     /**
@@ -136,7 +136,7 @@ class EventDispatch {
      */
     public function attach($event_name, $observer, $key = null) {
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $event_name as $name ) {
 
@@ -171,7 +171,7 @@ class EventDispatch {
     }
 
     /** @var array<string,array<string,int>> event => registration key => observer id */
-    private $attached_keys = array();
+    private $attached_keys = [];
 
     /**
      * Attach
@@ -279,7 +279,7 @@ class EventDispatch {
 
         $dispatch_name = (string) $dispatch_name;
 
-        $ids = (array) ( $this->listenersByEventType[ $dispatch_name ] ?? array() );
+        $ids = (array) ( $this->listenersByEventType[ $dispatch_name ] ?? [] );
 
         $segments = explode( '.', $dispatch_name );
 
@@ -293,7 +293,7 @@ class EventDispatch {
             $prefix .= $segment;
 
             $ids = array_merge( $ids, (array) (
-                $this->listenersByEventType[ $prefix . self::NAMESPACE_WILDCARD ] ?? array() ) );
+                $this->listenersByEventType[ $prefix . self::NAMESPACE_WILDCARD ] ?? [] ) );
 
             $prefix .= '.';
         }
@@ -311,7 +311,7 @@ class EventDispatch {
      */
     public function notify($event) {
 
-        $responses = array();
+        $responses = [];
         \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
         //print_r($this->listenersByEventType[$event_type] );
         //print $event->getEventType();
@@ -344,7 +344,7 @@ class EventDispatch {
 
                 $class = self::listenerName( $listener );
 
-                $responses[ $class ] = call_user_func_array( $listener, array( $event ) );
+                $responses[ $class ] = call_user_func_array( $listener, [ $event ] );
 
                 \OWA\Core\CoreAPI::debug( sprintf( "%s event handled by %s.",
                     $event->getEventType(), $class ) );
@@ -472,5 +472,3 @@ class EventDispatch {
         return $event;
     }
 }
-
-?>

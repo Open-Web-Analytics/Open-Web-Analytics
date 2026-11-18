@@ -37,12 +37,12 @@ final class DisplayZeroTest extends TestCase
 
     public static function zeroProvider(): array
     {
-        return array(
-            'integer zero' => array(0, '0'),
-            'string zero'  => array('0', '0'),
-            'float zero'   => array(0.0, '0'),
-            'false'        => array(false, ''),
-        );
+        return [
+            'integer zero' => [0, '0'],
+            'string zero'  => ['0', '0'],
+            'float zero'   => [0.0, '0'],
+            'false'        => [false, ''],
+        ];
     }
 
     /** Genuinely absent values still render as nothing. */

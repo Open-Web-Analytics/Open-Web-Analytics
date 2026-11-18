@@ -203,7 +203,7 @@ class CustomDimension extends \OWA\Core\Entity {
          * this exists to catch, and it is why uniqueness is on the COLUMN
          * rather than on the key.
          */
-        $this->addCompositeIndex( 'property_column', array( 'property_id', 'column_name' ) );
+        $this->addCompositeIndex( 'property_column', [ 'property_id', 'column_name' ] );
     }
 
     /**
@@ -213,7 +213,7 @@ class CustomDimension extends \OWA\Core\Entity {
      */
     public static function scopes() {
 
-        return array( self::SCOPE_EVENT, self::SCOPE_USER );
+        return [ self::SCOPE_EVENT, self::SCOPE_USER ];
     }
 
     /**
@@ -223,14 +223,12 @@ class CustomDimension extends \OWA\Core\Entity {
      */
     public static function types() {
 
-        return array( self::TYPE_STRING, self::TYPE_INTEGER, self::TYPE_DECIMAL );
+        return [ self::TYPE_STRING, self::TYPE_INTEGER, self::TYPE_DECIMAL ];
     }
 
     /** @return string[] */
     public static function states() {
 
-        return array( self::STATE_PENDING, self::STATE_APPLIED, self::STATE_FAILED );
+        return [ self::STATE_PENDING, self::STATE_APPLIED, self::STATE_FAILED ];
     }
 }
-
-?>

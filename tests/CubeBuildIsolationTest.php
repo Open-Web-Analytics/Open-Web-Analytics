@@ -68,5 +68,3 @@ final class CubeBuildIsolationTest extends TestCase
         $this->assertSame($expected, Builder::levelToRestore($variables));
     }
 }
-
-?>

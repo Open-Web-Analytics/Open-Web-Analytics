@@ -39,7 +39,7 @@ final class DispatchNameSeparationTest extends TestCase
     /** An event nothing marked routes on its own type. */
     public function testAnInternalEventRoutesOnItsOwnName(): void
     {
-        foreach ( array( 'install_complete', 'base.reset_password', 'init' ) as $type ) {
+        foreach ( [ 'install_complete', 'base.reset_password', 'init' ] as $type ) {
 
             $event = $this->event( $type );
 
@@ -69,7 +69,7 @@ final class DispatchNameSeparationTest extends TestCase
 
         $this->assertNotEmpty( $ingest, 'nothing is registered for the tracking namespace' );
 
-        $this->assertSame( array(), array_intersect( $listeners, $ingest ),
+        $this->assertSame( [], array_intersect( $listeners, $ingest ),
             'an internal event is reaching the tracking handlers' );
     }
 
@@ -101,7 +101,7 @@ final class DispatchNameSeparationTest extends TestCase
         $notice = \OWA\Core\CoreAPI::getEventDispatch()->makeEvent( 'base.new_session' );
 
         // exactly what announce() does
-        $notice->setProperties( array( 'event_type' => 'page_view', 'site_id' => 'x' ) );
+        $notice->setProperties( [ 'event_type' => 'page_view', 'site_id' => 'x' ] );
 
         $this->assertSame( 'page_view', $notice->get( 'event_type' ),
             'the contradictory property is really there -- that is the trap' );
@@ -131,7 +131,7 @@ final class DispatchNameSeparationTest extends TestCase
         $inherited = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
         // Never setEventType(): only the copied property, as announce() leaves it.
-        $inherited->setProperties( array( 'event_type' => 'page_view', 'site_id' => 'x' ) );
+        $inherited->setProperties( [ 'event_type' => 'page_view', 'site_id' => 'x' ] );
 
         $this->assertSame( 'page_view', $inherited->get( 'event_type' ),
             'the property is there -- that is the whole point' );
@@ -175,7 +175,7 @@ final class DispatchNameSeparationTest extends TestCase
 
         $properties = (array) $event->getProperties();
 
-        foreach ( array( 'dispatch_name', 'dispatchName', 'event_name' ) as $key ) {
+        foreach ( [ 'dispatch_name', 'dispatchName', 'event_name' ] as $key ) {
 
             $this->assertArrayNotHasKey( $key, $properties,
                 $key . ' must not be in the property bag' );
@@ -210,7 +210,7 @@ final class DispatchNameSeparationTest extends TestCase
         $this->assertContains( 'page_view', $names,
             'the registered names were not read -- this asserts nothing without them' );
 
-        $offenders = array();
+        $offenders = [];
 
         $files = array_merge(
             (array) glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ),
@@ -236,7 +236,7 @@ final class DispatchNameSeparationTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "A tracking event is dispatched under the `tracking.` namespace, so a "
           . "handler registered under its bare name is never reached:\n  "
           . implode( "\n  ", $offenders )

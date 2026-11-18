@@ -27,7 +27,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
     }
 
     public function action() {
@@ -50,5 +50,3 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
     }
 }
-
-?>

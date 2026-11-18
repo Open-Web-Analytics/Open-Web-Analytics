@@ -78,5 +78,3 @@ SQL;
         return true;
     }
 }
-
-?>

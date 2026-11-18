@@ -180,7 +180,7 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
 
         try {
 
-            $busy = new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) );
+            $busy = new UpdatesApplyLockProbe( [ 'do' => 'base.updatesApply' ] );
             $busy->action();
 
             $this->assertSame( 0, UpdatesApplyLockProbe::$applied );
@@ -191,13 +191,13 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
             $held->release();
         }
 
-        $free = new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) );
+        $free = new UpdatesApplyLockProbe( [ 'do' => 'base.updatesApply' ] );
         $free->action();
 
         $this->assertSame( 1, UpdatesApplyLockProbe::$applied );
 
         // And it let go: the next request applies them too.
-        ( new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) ) )->action();
+        ( new UpdatesApplyLockProbe( [ 'do' => 'base.updatesApply' ] ) )->action();
 
         $this->assertSame( 2, UpdatesApplyLockProbe::$applied );
     }

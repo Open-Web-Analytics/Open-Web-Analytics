@@ -14,15 +14,15 @@ final class JobLeaseSizesTest extends CliControllerTestCase
     {
         $D = \OWA\Module\Base\Controller\DrainTrackerIngestCli::class;
 
-        $this->assertSame(2 * $D::BUDGET, (new $D(array()))->getJobLease());
-        $this->assertSame(20, (new $D(array('seconds' => '10')))->getJobLease());
+        $this->assertSame(2 * $D::BUDGET, (new $D([]))->getJobLease());
+        $this->assertSame(20, (new $D(['seconds' => '10']))->getJobLease());
     }
 
     public function testTheCubeRebuildsLeaseCoversTwoOfItsTicks(): void
     {
         $C = \OWA\Module\Base\Controller\CubeRebuildCli::class;
 
-        $this->assertSame(600, (new $C(array()))->getJobLease());
+        $this->assertSame(600, (new $C([]))->getJobLease());
         $this->assertSame(600, \OWA\Module\Base\Classes\JobQueue::policyFor('cube-rebuild')['lease_seconds']);
         $this->assertLessThan(\OWA\Core\Controller\Cli::DEFAULT_JOB_LEASE, $C::JOB_LEASE);
     }
@@ -44,7 +44,7 @@ final class JobLeaseSizesTest extends CliControllerTestCase
             public function refresh($seconds) { $this->asked = (int) $seconds; return true; }
         };
 
-        $cli = new \OWA\Module\Base\Controller\CubeRebuildCli(array());
+        $cli = new \OWA\Module\Base\Controller\CubeRebuildCli([]);
         $cli->setJobLease($lease);
 
         (new ReflectionMethod($cli, 'heartbeat'))->invoke($cli);

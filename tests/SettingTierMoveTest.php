@@ -53,7 +53,7 @@ final class SettingTierMoveTest extends TestCase
             return;
         }
 
-        foreach ( array( $this->key, 'anonymize_ips', 'log_named_users' ) as $name ) {
+        foreach ( [ $this->key, 'anonymize_ips', 'log_named_users' ] as $name ) {
 
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', $name );
             \OWA\Core\CoreAPI::clearScopedSetting( 'property', $this->propertyId, 'base', $name );
@@ -263,7 +263,7 @@ final class SettingTierMoveTest extends TestCase
         } );
 
         try {
-            $this->assertSame( array(), $config->getModuleSettings( 'no_such_module_here' ) );
+            $this->assertSame( [], $config->getModuleSettings( 'no_such_module_here' ) );
 
         } finally {
             restore_error_handler();
@@ -367,7 +367,7 @@ final class SettingTierMoveTest extends TestCase
         try {
             // A raw array, as a beacon arrives: the check reads the site_id of the event built from it.
             $this->assertFalse(
-                \OWA\Core\CoreAPI::logEvent( 'page_view', array( 'site_id' => $this->siteId ) ),
+                \OWA\Core\CoreAPI::logEvent( 'page_view', [ 'site_id' => $this->siteId ] ),
                 'A signed-in user was logged on a Profile that does not log named users.' );
         } finally {
             $cu->setUserData( 'user_id', $was );

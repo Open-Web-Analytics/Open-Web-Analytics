@@ -39,7 +39,7 @@ final class SpamRequestHeaderRulesTest extends TestCase
     const WEBVIEW        = 'Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A.230805.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36';
 
     /** A real Chrome 148 beacon's headers, from app's WAF log (as the brief gave them). */
-    const CHROME_148 = array(
+    const CHROME_148 = [
         'sec-ch-ua-platform' => '"Windows"',
         'user-agent'         => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
         'sec-ch-ua'          => '"Not/A)Brand";v="99", "Chromium";v="148"',
@@ -48,19 +48,19 @@ final class SpamRequestHeaderRulesTest extends TestCase
         'sec-fetch-mode'     => 'no-cors',
         'sec-fetch-dest'     => 'empty',
         'accept-encoding'    => 'gzip, deflate, br, zstd',
-    );
+    ];
 
     /** The 4 November attack's beacon headers. */
-    const ATTACK = array(
+    const ATTACK = [
         'user-agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
         'accept-language' => 'en-US,en;q=0.9',
         'referer'         => 'https://www.openwebanalytics.com/',
         'accept-encoding' => 'gzip',
-    );
+    ];
 
     private function fires(string $rule, array $headers): bool
     {
-        return (new $rule())->test(new \OWA\Module\Base\Classes\Event(), $headers + array('user-agent' => ''));
+        return (new $rule())->test(new \OWA\Module\Base\Classes\Event(), $headers + ['user-agent' => '']);
     }
 
     private static function chrome(int $major): string
@@ -75,13 +75,13 @@ final class SpamRequestHeaderRulesTest extends TestCase
         $event->setEventType('page_view');
         $event->set('page_location', $page);
 
-        $properties = array(
+        $properties = [
             'user-agent' => 'HTTP_USER_AGENT', 'sec-fetch-mode' => 'request_sec_fetch_mode',
             'sec-fetch-site' => 'request_sec_fetch_site', 'sec-fetch-dest' => 'request_sec_fetch_dest',
             'sec-ch-ua' => 'request_sec_ch_ua', 'sec-ch-ua-platform' => 'request_sec_ch_ua_platform',
             'sec-ch-ua-mobile' => 'request_sec_ch_ua_mobile', 'accept-encoding' => 'request_accept_encoding',
             'accept-language' => 'request_accept_language', 'referer' => 'request_referer',
-        );
+        ];
 
         foreach ($headers as $header => $value) {
             $event->set($properties[$header], $value);

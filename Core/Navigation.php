@@ -34,7 +34,7 @@ final class Navigation {
 
         $items = \OWA\Core\CoreAPI::filter( $filter, $items, ...$context );
         $user  = \OWA\Core\CoreAPI::getCurrentUser();
-        $out   = array();
+        $out   = [];
 
         foreach ( (array) $items as $item ) {
 
@@ -54,5 +54,3 @@ final class Navigation {
         return $out;
     }
 }
-
-?>

@@ -6,13 +6,11 @@
  * name in the data directory.
  */
 return [
-	['domain' => 'amazon'],
-	['domain' => 'ebay'],
-	['domain' => 'etsy'],
-	['domain' => 'walmart'],
-	['domain' => 'aliexpress'],
-	['domain' => 'shopping.google.com'],
-	['domain' => 'target.com'],
+    ['domain' => 'amazon'],
+    ['domain' => 'ebay'],
+    ['domain' => 'etsy'],
+    ['domain' => 'walmart'],
+    ['domain' => 'aliexpress'],
+    ['domain' => 'shopping.google.com'],
+    ['domain' => 'target.com'],
 ];
-
-?>

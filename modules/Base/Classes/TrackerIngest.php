@@ -51,7 +51,7 @@ class TrackerIngest {
      * nothing to the dead-letter queue. No step may pass 12 hours, SQS's
      * longest visibility timeout.
      */
-    const BACKOFF = array( 60, 300, 900, 3600, 21600 );
+    const BACKOFF = [ 60, 300, 900, 3600, 21600 ];
 
     /** How long a dead letter that is not replayed stays hidden before a replay looks at it again. */
     const REPLAY_RECHECK = 3600;
@@ -123,7 +123,7 @@ class TrackerIngest {
      */
     public static function queue() {
 
-        static $built = array();
+        static $built = [];
 
         if ( self::$queue ) {
 
@@ -241,12 +241,12 @@ class TrackerIngest {
      */
     public static function envelope( $event ) {
 
-        return array(
+        return [
             'v'          => self::ENVELOPE_VERSION,
             'type'       => (string) $event->getEventType(),
             'properties' => (array) $event->getProperties(),
             'queued_at'  => time(),
-        );
+        ];
     }
 
     /**
@@ -271,7 +271,7 @@ class TrackerIngest {
         $event->setEventType( $envelope['type'] );
         $event->replaceProperties( $properties );
         // Validated: numeric only (Event::loadFromArray()).
-        $event->loadFromArray( array_intersect_key( $properties, array( 'guid' => 1, 'timestamp' => 1 ) ) );
+        $event->loadFromArray( array_intersect_key( $properties, [ 'guid' => 1, 'timestamp' => 1 ] ) );
         $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $envelope['type'] ) );
 
         return $event;
@@ -407,7 +407,7 @@ class TrackerIngest {
             return true;
         }
 
-        \OWA\Core\CoreAPI::performAction( $processor, array( 'event' => $event ) );
+        \OWA\Core\CoreAPI::performAction( $processor, [ 'event' => $event ] );
 
         return $event->getStatus() !== Event::failed;
     }
@@ -480,7 +480,7 @@ class TrackerIngest {
      */
     public static function forwardFallback( $deadline ) {
 
-        $counts   = array( 'forwarded' => 0, 'waiting' => 0, 'dead' => 0 );
+        $counts   = [ 'forwarded' => 0, 'waiting' => 0, 'dead' => 0 ];
         $fallback = self::fallback();
 
         if ( ! $fallback || $fallback->isProbablyEmpty() ) {
@@ -545,7 +545,7 @@ class TrackerIngest {
      */
     public static function drain( $deadline ) {
 
-        $counts = array( 'ingested' => 0, 'released' => 0, 'dead' => 0 );
+        $counts = [ 'ingested' => 0, 'released' => 0, 'dead' => 0 ];
         $queue  = self::queue();
 
         // So queueError() afterwards speaks for this drain.
@@ -620,11 +620,11 @@ class TrackerIngest {
      */
     public static function replay( $once_only, $deadline ) {
 
-        $counts    = array( 'replayed' => 0, 'kept' => 0, 'unreadable' => 0, 'expired' => 0 );
+        $counts    = [ 'replayed' => 0, 'kept' => 0, 'unreadable' => 0, 'expired' => 0 ];
         $main      = self::queue();
         $dlq       = $main->deadLetterQueue();
 
-        foreach ( array( $main, $dlq ) as $q ) {
+        foreach ( [ $main, $dlq ] as $q ) {
 
             if ( $q && method_exists( $q, 'clearLastError' ) ) {
 
@@ -703,5 +703,3 @@ class TrackerIngest {
         return $message->dead_at;
     }
 }
-
-?>

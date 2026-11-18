@@ -15,7 +15,7 @@ $owa_c = (array) $view->cube;
 <div id="panel">
 
 <div class="owa_panelIntro">
-    <a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatus' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( '← All reporting cubes' ) ); ?></a>
+    <a href="<?php echo $view->makeLink( [ 'do' => 'base.cubeStatus' ] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( '← All reporting cubes' ) ); ?></a>
 </div>
 
 <?php if ( ! $owa_c ): ?>

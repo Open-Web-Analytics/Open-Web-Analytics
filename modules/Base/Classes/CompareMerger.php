@@ -48,12 +48,12 @@ namespace OWA\Module\Base\Classes;
 class CompareMerger {
 
     /** The dimensions whose values are a position on the time axis, and their unit. */
-    const TIME_AXIS = array(
+    const TIME_AXIS = [
         'date'      => 'day',
         'dateHour'  => 'hour',
         'yearMonth' => 'month',
         'year'      => 'year',
-    );
+    ];
 
     /**
      * The dimensions a comparison query can restrict to the rows on the page.
@@ -79,14 +79,14 @@ class CompareMerger {
      */
     public static function merge( $rs, $crs, array $dims, array $main, array $cmp, $compare ) {
 
-        $rs->compare = array(
+        $rs->compare = [
             'compare'    => (string) $compare,
             'startDate'  => (string) $cmp[0],
             'endDate'    => (string) $cmp[1],
-            'aggregates' => (array) ( $crs->aggregates ?? array() ),
-        );
+            'aggregates' => (array) ( $crs->aggregates ?? [] ),
+        ];
 
-        $rs->aggregates = self::mergeCells( (array) $rs->aggregates, (array) ( $crs->aggregates ?? array() ) );
+        $rs->aggregates = self::mergeCells( (array) $rs->aggregates, (array) ( $crs->aggregates ?? [] ) );
 
         /*
          * A TREND -- grouped by a time axis, alone or broken out by another
@@ -98,9 +98,9 @@ class CompareMerger {
          */
         if ( array_intersect( $dims, array_keys( self::TIME_AXIS ) ) ) {
 
-            $rs->compare['rows'] = array();
+            $rs->compare['rows'] = [];
 
-            foreach ( (array) ( $crs->resultsRows ?? array() ) as $row ) {
+            foreach ( (array) ( $crs->resultsRows ?? [] ) as $row ) {
 
                 foreach ( $dims as $d ) {
 
@@ -120,16 +120,16 @@ class CompareMerger {
             return $rs;
         }
 
-        $index = array();
+        $index = [];
 
-        foreach ( (array) ( $crs->resultsRows ?? array() ) as $row ) {
+        foreach ( (array) ( $crs->resultsRows ?? [] ) as $row ) {
 
             $index[ self::key( $row, $dims, $cmp, $main ) ] = $row;
         }
 
         foreach ( $rs->resultsRows as $i => $row ) {
 
-            $match = $index[ self::key( $row, $dims, $main, $main ) ] ?? array();
+            $match = $index[ self::key( $row, $dims, $main, $main ) ] ?? [];
 
             $rs->resultsRows[ $i ] = self::mergeCells( $row, $match );
         }
@@ -224,7 +224,7 @@ class CompareMerger {
      */
     private static function key( array $row, array $dims, array $from, array $to ) {
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $dims as $d ) {
 

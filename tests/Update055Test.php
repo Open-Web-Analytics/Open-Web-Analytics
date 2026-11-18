@@ -49,7 +49,7 @@ final class Update055Test extends IngestionTestCase
 
         if ( $this->createdCube ) {
 
-            foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
+            foreach ( [ '', '_rebuild', '_computed' ] as $suffix ) {
                 \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
                     \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::FIXTURE_PROPERTY ), $suffix ) );
             }

@@ -17,10 +17,10 @@
  *   $owa_stepNo      its number, 0 for the blank row Add a step copies
  *   $owa_stepErrors  messages about it
  */
-$owa_step       = (array) ( $owa_step ?? array() );
+$owa_step       = (array) ( $owa_step ?? [] );
 $owa_stepIndex  = (int) ( $owa_stepIndex ?? 0 );
 $owa_stepNo     = (int) ( $owa_stepNo ?? 0 );
-$owa_stepErrors = (array) ( $owa_stepErrors ?? array() );
+$owa_stepErrors = (array) ( $owa_stepErrors ?? [] );
 
 $owa_picked = (string) ( $owa_step['picked'] ?? \OWA\Module\Base\Classes\FunnelStep::DEFAULT_EVENT );
 $owa_other  = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
@@ -72,13 +72,13 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
         </div>
 
         <ul class="constraintList owa_funnelConditions" data-owa-repeatable>
-        <?php foreach ( (array) ( $owa_step['conditions'] ?? array() ) as $owa_cond ):?>
+        <?php foreach ( (array) ( $owa_step['conditions'] ?? [] ) as $owa_cond ):?>
             <li class="constraintRow owa_funnelCondition" data-saved-property="<?php $view->out( (string) ( $owa_cond['property'] ?? '' ) );?>">
                 <span class="constraintDimensionPicker">
                     <select class="dim-list owa_funnelConditionProperty"
                             name="stepConditionProperty[<?php echo $owa_stepIndex;?>][]"
                             aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Property' ) );?>">
-                    <?php foreach ( (array) ( $owa_step['properties'] ?? array() ) as $owa_prop ):?>
+                    <?php foreach ( (array) ( $owa_step['properties'] ?? [] ) as $owa_prop ):?>
                         <option value="<?php $view->out( $owa_prop['name'] );?>"
                             data-description="<?php $view->out( $owa_prop['description'] ?? '' );?>"
                             <?php echo ( (string) ( $owa_cond['property'] ?? '' ) === (string) $owa_prop['name'] ) ? 'selected' : '';?>><?php $view->out( $owa_prop['label'] );?></option>

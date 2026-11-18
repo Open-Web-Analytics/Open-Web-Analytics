@@ -12,12 +12,12 @@ use OWA\Core\MetricSets;
 
 return function () {
 
-    $cell    = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), trim( (string) $v ) );
+    $cell    = fn ( $v ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], trim( (string) $v ) );
     $metrics = (array) CoreAPI::getAllMetrics();
 
     $label = function ( $name ) use ( $metrics ) {
 
-        $first = is_array( $metrics[ $name ] ?? null ) ? reset( $metrics[ $name ] ) : array();
+        $first = is_array( $metrics[ $name ] ?? null ) ? reset( $metrics[ $name ] ) : [];
 
         return (string) ( $first['label'] ?? $first['params']['label'] ?? '' ) ?: '`' . $name . '`';
     };

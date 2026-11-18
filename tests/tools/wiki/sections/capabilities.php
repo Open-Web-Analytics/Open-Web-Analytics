@@ -13,10 +13,10 @@ use OWA\Core\Module;
 return function () {
 
     $fields = Module::settingsRegistry()['fields'];
-    $roles  = (array) ( $fields['base|capabilities']['default'] ?? array() );
-    $scoped = (array) ( $fields['base|capabilitiesThatRequireSiteAccess']['default'] ?? array() );
+    $roles  = (array) ( $fields['base|capabilities']['default'] ?? [] );
+    $scoped = (array) ( $fields['base|capabilitiesThatRequireSiteAccess']['default'] ?? [] );
 
-    $holders = array();
+    $holders = [];
 
     foreach ( $roles as $role => $capabilities ) {
 

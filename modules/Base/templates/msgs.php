@@ -33,16 +33,16 @@
         <li>
             <?php if (isset($validation_error['headline'])) : ?><b><?php $view->out( $validation_error['headline'] ); ?>!</b><?php endif; ?>
             <?php 
-	            
-	            if (isset($validation_error['message'])) {
-	            
-	            	$view->out( $validation_error['message'] ); 
-	             
-	             } else {
-		             // backwards compatabilitiy wth old style msgs used by validators
-		             $view->out( $validation_error );
-	             }
-	        ?>
+                
+                if (isset($validation_error['message'])) {
+                
+                    $view->out( $validation_error['message'] ); 
+                 
+                 } else {
+                     // backwards compatabilitiy wth old style msgs used by validators
+                     $view->out( $validation_error );
+                 }
+            ?>
         </li>
         <?php endforeach;?>
     </ul>

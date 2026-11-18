@@ -42,7 +42,3 @@ class InstallDefaultsEntry extends \OWA\Core\Controller\Install {
         $this->setSubview( 'base.installDefaultsEntry', self::SCREEN );
     }
 }
-
-
-
-?>

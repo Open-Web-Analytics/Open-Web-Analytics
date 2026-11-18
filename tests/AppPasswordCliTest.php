@@ -14,7 +14,7 @@ use OWA\Module\Base\Classes\AppPasswords;
 final class AppPasswordCliTest extends CliControllerTestCase
 {
     /** @var string[] users whose passwords to delete */
-    private $users = array();
+    private $users = [];
 
     protected function tearDown(): void
     {
@@ -40,18 +40,18 @@ final class AppPasswordCliTest extends CliControllerTestCase
      */
     private function run_(string $class, array $params): array
     {
-        $map = array(
+        $map = [
             \OWA\Module\Base\Controller\AppPasswordCreateCli::class => AppPasswordCreateCliCapture::class,
             \OWA\Module\Base\Controller\AppPasswordListCli::class   => AppPasswordListCliCapture::class,
             \OWA\Module\Base\Controller\AppPasswordRevokeCli::class => AppPasswordRevokeCliCapture::class,
-        );
+        ];
 
         \OWA\Core\Controller\Cli::$exit_code = 0;
 
         $cli = new $map[$class]($params);
         $cli->action();
 
-        return array($cli, $cli->written);
+        return [$cli, $cli->written];
     }
 
     private function create(array $params): array
@@ -70,7 +70,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
     {
         $user_id = $this->user();
 
-        list($cli, $out) = $this->create(array('user' => $user_id, 'name' => 'Nightly export'));
+        list($cli, $out) = $this->create(['user' => $user_id, 'name' => 'Nightly export']);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
 
@@ -91,7 +91,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
 
         $before = is_file($log) ? filesize($log) : 0;
 
-        list(, $out) = $this->create(array('user' => $this->user(), 'name' => 'Deploy hook', 'scope' => 'full'));
+        list(, $out) = $this->create(['user' => $this->user(), 'name' => 'Deploy hook', 'scope' => 'full']);
 
         clearstatcache();
         $logged = (string) file_get_contents($log, false, null, $before);
@@ -112,18 +112,18 @@ final class AppPasswordCliTest extends CliControllerTestCase
 
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
         $this->assertSame($exit_code, \OWA\Core\Controller\Cli::$exit_code);
-        $this->assertSame(array(), $out, 'Nothing printed as if a token.');
-        $this->assertSame(array(), AppPasswords::forUser($user_id));
+        $this->assertSame([], $out, 'Nothing printed as if a token.');
+        $this->assertSame([], AppPasswords::forUser($user_id));
     }
 
     public static function refusedCreates(): array
     {
-        return array(
-            'no user'      => array(array('name' => 'x'), 2),
-            'unknown user' => array(array('user' => 'nobody-' . uniqid() . '@owatest.example.com', 'name' => 'x'), 1),
-            'no name'      => array(array('user' => '{user}'), 2),
-            'bad scope'    => array(array('user' => '{user}', 'name' => 'x', 'scope' => 'admin'), 2),
-        );
+        return [
+            'no user'      => [['name' => 'x'], 2],
+            'unknown user' => [['user' => 'nobody-' . uniqid() . '@owatest.example.com', 'name' => 'x'], 1],
+            'no name'      => [['user' => '{user}'], 2],
+            'bad scope'    => [['user' => '{user}', 'name' => 'x', 'scope' => 'admin'], 2],
+        ];
     }
 
     public function testListShowsTheIdAndNoSecret(): void
@@ -131,7 +131,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
         $user_id = $this->user();
         $made    = AppPasswords::create($user_id, 'Export script', AppPasswords::SCOPE_FULL);
 
-        list(, $out) = $this->run_(\OWA\Module\Base\Controller\AppPasswordListCli::class, array('user' => $user_id));
+        list(, $out) = $this->run_(\OWA\Module\Base\Controller\AppPasswordListCli::class, ['user' => $user_id]);
 
         $text = implode("\n", $out);
 
@@ -148,7 +148,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
         $kept    = AppPasswords::create($user_id, 'New', AppPasswords::SCOPE_FULL);
 
         list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class,
-            array('user' => $user_id, 'id' => $gone['lookup_id']));
+            ['user' => $user_id, 'id' => $gone['lookup_id']]);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
         $this->assertNull(AppPasswords::verify($gone['token']));
@@ -162,7 +162,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
         $made  = AppPasswords::create($owner, 'Theirs', AppPasswords::SCOPE_FULL);
 
         list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class,
-            array('user' => $other, 'id' => $made['lookup_id']));
+            ['user' => $other, 'id' => $made['lookup_id']]);
 
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
         $this->assertSame(1, \OWA\Core\Controller\Cli::$exit_code);
@@ -176,10 +176,10 @@ final class AppPasswordCliTest extends CliControllerTestCase
         AppPasswords::create($user_id, 'Two', AppPasswords::SCOPE_READ);
 
         list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class,
-            array('user' => $user_id, 'all' => true));
+            ['user' => $user_id, 'all' => true]);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
-        $this->assertSame(array(), AppPasswords::forUser($user_id));
+        $this->assertSame([], AppPasswords::forUser($user_id));
     }
 
     public function testRevokeWithNeitherIdNorAllIsRefused(): void
@@ -187,7 +187,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
         $user_id = $this->user();
         $made    = AppPasswords::create($user_id, 'Kept', AppPasswords::SCOPE_FULL);
 
-        list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class, array('user' => $user_id));
+        list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class, ['user' => $user_id]);
 
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
         $this->assertSame(2, \OWA\Core\Controller\Cli::$exit_code);
@@ -196,9 +196,9 @@ final class AppPasswordCliTest extends CliControllerTestCase
 
     public function testTheCommandsNeedEditUsers(): void
     {
-        foreach (array('AppPasswordCreateCli', 'AppPasswordListCli', 'AppPasswordRevokeCli') as $name) {
+        foreach (['AppPasswordCreateCli', 'AppPasswordListCli', 'AppPasswordRevokeCli'] as $name) {
             $class = '\\OWA\\Module\\Base\\Controller\\' . $name;
-            $this->assertSame('edit_users', (new $class(array()))->getRequiredCapability(), $name);
+            $this->assertSame('edit_users', (new $class([]))->getRequiredCapability(), $name);
         }
     }
 }
@@ -206,7 +206,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
 /** What a command wrote to standard output, kept instead of printed. */
 trait CapturesCliOutput
 {
-    public $written = array();
+    public $written = [];
 
     protected function write($lines)
     {

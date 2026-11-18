@@ -33,7 +33,7 @@ class Update074 extends \OWA\Core\Update {
      */
     public function up( $force = false ) {
 
-        return $this->dropColumns( array( 'remote_host' ) );
+        return $this->dropColumns( [ 'remote_host' ] );
     }
 
     /** The column comes back empty: what it held is not kept anywhere. */
@@ -42,5 +42,3 @@ class Update074 extends \OWA\Core\Update {
         return $this->restoreColumn( 'remote_host', OWA_DTD_VARCHAR255 );
     }
 }
-
-?>

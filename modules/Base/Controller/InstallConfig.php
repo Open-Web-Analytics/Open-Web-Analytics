@@ -199,5 +199,3 @@ class InstallConfig extends \OWA\Core\Controller\Install {
         $this->setSubview('base.installConfigEntry');
     }
 }
-
-?>

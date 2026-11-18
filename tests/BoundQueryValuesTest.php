@@ -38,9 +38,9 @@ final class BoundQueryValuesTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query(sprintf('DELETE FROM %s WHERE job_name = ?',
-            \OWA\Core\CoreAPI::entityFactory('base.job_lock')->getTableName()), array(self::JOB));
+            \OWA\Core\CoreAPI::entityFactory('base.job_lock')->getTableName()), [self::JOB]);
         $db->query(sprintf('DELETE FROM %s WHERE user_id = ?',
-            \OWA\Core\CoreAPI::entityFactory('base.custom_report_favorite')->getTableName()), array(self::USER));
+            \OWA\Core\CoreAPI::entityFactory('base.custom_report_favorite')->getTableName()), [self::USER]);
     }
 
     public function testAJobLockIsTakenReadExtendedAndReleasedByItsOwner(): void
@@ -70,12 +70,12 @@ final class BoundQueryValuesTest extends TestCase
 
     public function testFavoritesAreFoundForAUserIdWithAQuote(): void
     {
-        $this->assertSame(array(), \OWA\Module\Base\Classes\CustomReportFavorites::idsFor(self::USER));
+        $this->assertSame([], \OWA\Module\Base\Classes\CustomReportFavorites::idsFor(self::USER));
 
         \OWA\Module\Base\Classes\CustomReportFavorites::toggle('987654321', self::USER);
 
         $this->assertTrue(\OWA\Module\Base\Classes\CustomReportFavorites::isFavorite('987654321', self::USER));
-        $this->assertSame(array('987654321' => true), \OWA\Module\Base\Classes\CustomReportFavorites::idsFor(self::USER));
+        $this->assertSame(['987654321' => true], \OWA\Module\Base\Classes\CustomReportFavorites::idsFor(self::USER));
 
         \OWA\Module\Base\Classes\CustomReportFavorites::toggle('987654321', self::USER);
 

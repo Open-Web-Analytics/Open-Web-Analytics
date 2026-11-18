@@ -132,7 +132,7 @@ final class WikiDocsReportingRegistryTest extends TestCase
         self::assertNotEmpty( $m );
 
         foreach ( $m as $row ) {
-            self::assertNotContains( trim( $row[2] ), array( '', '—' ), "raw column {$row[1]} has no description" );
+            self::assertNotContains( trim( $row[2] ), [ '', '—' ], "raw column {$row[1]} has no description" );
         }
     }
 
@@ -144,7 +144,7 @@ final class WikiDocsReportingRegistryTest extends TestCase
         self::assertNotEmpty( $m );
 
         foreach ( $m as $row ) {
-            self::assertNotContains( trim( $row[2] ), array( '', '—' ), "cube column {$row[1]} has no description" );
+            self::assertNotContains( trim( $row[2] ), [ '', '—' ], "cube column {$row[1]} has no description" );
         }
 
         // A description is not one of a column's inputs.

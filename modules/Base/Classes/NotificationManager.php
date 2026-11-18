@@ -107,12 +107,12 @@ class NotificationManager {
 
         $url = trim( (string) ( $item['url'] ?? '' ) );
 
-        return array(
+        return [
             'title' => mb_substr( (string) ( $item['title'] ?? '' ), 0, self::MAX_TITLE_CHARS ),
             // mb_strcut: at most this many bytes, never half a character.
             'body'  => mb_strcut( (string) ( $item['body'] ?? '' ), 0, self::MAX_BODY_BYTES ),
             'url'   => self::isLinkable( $url ) && mb_strlen( $url ) <= self::MAX_URL_CHARS ? $url : '',
-        );
+        ];
     }
 
     /**
@@ -140,7 +140,7 @@ class NotificationManager {
      */
     public static function fromGithubReleases( $decoded ) {
 
-        $items = array();
+        $items = [];
 
         foreach ( (array) $decoded as $release ) {
 
@@ -160,7 +160,7 @@ class NotificationManager {
 
             $published = isset( $release['published_at'] ) ? strtotime( (string) $release['published_at'] ) : false;
 
-            $items[] = array(
+            $items[] = [
                 'source_key'   => (string) $release['id'],
                 // A release can be published without a name; the tag always
                 // exists and is what people call it anyway.
@@ -168,7 +168,7 @@ class NotificationManager {
                 'body'         => (string) ( $release['body'] ?? '' ),
                 'url'          => (string) ( $release['html_url'] ?? '' ),
                 'published_at' => $published ?: 0,
-            );
+            ];
         }
 
         return $items;
@@ -199,7 +199,7 @@ class NotificationManager {
         $text = preg_replace( '/\[([^\]]*)\]\([^)]*\)/', '$1', $text );
         // Bullets, emphasis and the stray backtick.
         $text = preg_replace( '/^\s{0,3}[-*+]\s+/m', ' ', $text );
-        $text = str_replace( array( '**', '__', '`', '>' ), ' ', $text );
+        $text = str_replace( [ '**', '__', '`', '>' ], ' ', $text );
 
         $text = trim( preg_replace( '/\s+/', ' ', (string) $text ) );
 
@@ -431,7 +431,7 @@ class NotificationManager {
         // above any real count: a release every week for a decade is ~500.
         $db->limit( self::MAX_ROWS );
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -486,7 +486,7 @@ class NotificationManager {
 
             // Nobody is not a user. Returning nothing here would show a
             // logged-out viewer every notification ever stored, all unread.
-            return array();
+            return [];
         }
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -495,14 +495,14 @@ class NotificationManager {
         $db->selectColumn( '*' );
         $db->where( 'user_id', (string) $userId );
 
-        $states = array();
+        $states = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $states[ (string) $row['notification_id'] ] = array(
+            $states[ (string) $row['notification_id'] ] = [
                 'read'      => ( (int) ( $row['read_at'] ?? 0 ) ) > 0,
                 'dismissed' => ( (int) ( $row['dismissed_at'] ?? 0 ) ) > 0,
-            );
+            ];
         }
 
         return $states;

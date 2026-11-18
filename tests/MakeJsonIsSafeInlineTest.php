@@ -36,8 +36,8 @@ final class MakeJsonIsSafeInlineTest extends TestCase
     public function testTheOutputParses(): void
     {
         $this->assertSame(
-            array( 'reportId' => 'dashboard', 'siteId' => 'abc123' ),
-            $this->decoded( array( 'reportId' => 'dashboard', 'siteId' => 'abc123' ) ) );
+            [ 'reportId' => 'dashboard', 'siteId' => 'abc123' ],
+            $this->decoded( [ 'reportId' => 'dashboard', 'siteId' => 'abc123' ] ) );
     }
 
     /**
@@ -47,7 +47,7 @@ final class MakeJsonIsSafeInlineTest extends TestCase
      */
     public function testAValueCannotEscapeTheScriptBlock( string $payload ): void
     {
-        $json = $this->json( array( 'q' => $payload ) );
+        $json = $this->json( [ 'q' => $payload ] );
 
         /*
          * < > & ' never appear in JSON's own syntax, so any occurrence would be
@@ -55,7 +55,7 @@ final class MakeJsonIsSafeInlineTest extends TestCase
          * list because it IS the string delimiter -- the check for it is that
          * the payload does not appear verbatim, below.
          */
-        foreach ( array( '<', '>', "'", '&' ) as $raw ) {
+        foreach ( [ '<', '>', "'", '&' ] as $raw ) {
             $this->assertStringNotContainsString( $raw, $json,
                 "a raw $raw reached the inline script" );
         }
@@ -73,13 +73,13 @@ final class MakeJsonIsSafeInlineTest extends TestCase
 
     public static function breakoutAttempts(): array
     {
-        return array(
-            'closing tag'   => array( '</script><script>alert(1)</script>' ),
-            'quote'         => array( 'he said "hi"' ),
-            'single quote'  => array( "it's" ),
-            'ampersand'     => array( 'a & b' ),
-            'attribute'     => array( '" onmouseover=alert(1) x="' ),
-        );
+        return [
+            'closing tag'   => [ '</script><script>alert(1)</script>' ],
+            'quote'         => [ 'he said "hi"' ],
+            'single quote'  => [ "it's" ],
+            'ampersand'     => [ 'a & b' ],
+            'attribute'     => [ '" onmouseover=alert(1) x="' ],
+        ];
     }
 
     /**
@@ -93,11 +93,11 @@ final class MakeJsonIsSafeInlineTest extends TestCase
     {
         $payload = 'value\\';
 
-        $this->assertSame( $payload, $this->decoded( array( 'q' => $payload ) )['q'] );
+        $this->assertSame( $payload, $this->decoded( [ 'q' => $payload ] )['q'] );
 
         // the old escape left the backslash alone; assert we no longer do
         $this->assertStringNotContainsString( 'value\\"',
-            $this->json( array( 'q' => $payload ) ) );
+            $this->json( [ 'q' => $payload ] ) );
     }
 
     /**
@@ -108,14 +108,14 @@ final class MakeJsonIsSafeInlineTest extends TestCase
      */
     public function testStoredEntitiesAreDecodedForTheScript(): void
     {
-        $this->assertSame( 'Grüße', $this->decoded( array( 'q' => 'Gr&uuml;&szlig;e' ) )['q'] );
-        $this->assertSame( 'a & b', $this->decoded( array( 'q' => 'a &amp; b' ) )['q'] );
+        $this->assertSame( 'Grüße', $this->decoded( [ 'q' => 'Gr&uuml;&szlig;e' ] )['q'] );
+        $this->assertSame( 'a & b', $this->decoded( [ 'q' => 'a &amp; b' ] )['q'] );
     }
 
     /** Values stay strings, as they always have been. */
     public function testValuesRemainStrings(): void
     {
-        $out = $this->decoded( array( 'n' => 42, 'b' => true, 'f' => 1.5 ) );
+        $out = $this->decoded( [ 'n' => 42, 'b' => true, 'f' => 1.5 ] );
 
         foreach ( $out as $key => $value ) {
             $this->assertIsString( $value, "$key stopped being a string" );
@@ -130,15 +130,15 @@ final class MakeJsonIsSafeInlineTest extends TestCase
      */
     public function testAListIsStillEmittedAsAnObject(): void
     {
-        $json = $this->json( array( 'a', 'b' ) );
+        $json = $this->json( [ 'a', 'b' ] );
 
         $this->assertStringStartsWith( '{', $json );
-        $this->assertSame( array( '0' => 'a', '1' => 'b' ), json_decode( $json, true ) );
+        $this->assertSame( [ '0' => 'a', '1' => 'b' ], json_decode( $json, true ) );
     }
 
     /** An empty array used to return '}' on its own. */
     public function testAnEmptyArrayIsAnEmptyObject(): void
     {
-        $this->assertSame( '{}', $this->json( array() ) );
+        $this->assertSame( '{}', $this->json( [] ) );
     }
 }

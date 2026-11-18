@@ -31,12 +31,12 @@ class PartitionStatusCli extends PartitionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Reports how each partitioned table is laid out: what it covers, at what granularity, how much of the partition ceiling it uses, what is in the catch-all and how long the lead lasts. Read-only.',
-            'arguments'   => array(
+            'arguments'   => [
                 'table=<name>' => 'Report only this table.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -56,7 +56,7 @@ class PartitionStatusCli extends PartitionsCli {
         }
 
         $budget  = $this->factTableBudget();
-        $layouts = array();
+        $layouts = [];
 
         foreach ( $tables as $table ) {
 
@@ -71,10 +71,10 @@ class PartitionStatusCli extends PartitionsCli {
             $layouts[ $table ] = $layout;
         }
 
-        $lines = array( sprintf(
+        $lines = [ sprintf(
             'Partition status, %s. Ceiling: %d partitions per table (%s).',
             date( 'Y-m-d' ), $budget['limit'], $budget['reason']
-        ) );
+        ) ];
 
         foreach ( $layouts as $table => $layout ) {
 
@@ -101,18 +101,18 @@ class PartitionStatusCli extends PartitionsCli {
 
         if ( ! $layout['partitioned'] ) {
 
-            return array( sprintf(
+            return [ sprintf(
                 '%s: not partitioned.', $table
-            ) );
+            ) ];
         }
 
-        $lines = array( sprintf(
+        $lines = [ sprintf(
             '%s: %d partitions (%d bounded + catch-all), %d%% of the ceiling.',
             $table,
             $layout['total'],
             $layout['spans'],
             $budget['limit'] > 0 ? (int) round( $layout['total'] / $budget['limit'] * 100 ) : 0
-        ) );
+        ) ];
 
         if ( $layout['covers'] ) {
 
@@ -156,7 +156,7 @@ class PartitionStatusCli extends PartitionsCli {
      */
     protected function describeTiers( $table, $layout ) {
 
-        $lines = array();
+        $lines = [];
 
         foreach ( $layout['tiers'] as $tier ) {
 
@@ -221,28 +221,28 @@ class PartitionStatusCli extends PartitionsCli {
             // Only reachable if something outside these commands removed it.
             // Worth flagging loudly, because inserts past the last boundary do
             // not fall back anywhere -- MySQL rejects the row.
-            return array(
+            return [
                 '  catch-all     NONE -- rows dated past the last boundary will be REJECTED, not '
               . 'stored. Run cmd=partition-rotate to restore it.'
-            );
+            ];
         }
 
         if ( $layout['contents'] === null ) {
 
-            return array( sprintf(
+            return [ sprintf(
                 '  catch-all     %s (contents could not be read)', $layout['catch_all']
-            ) );
+            ) ];
         }
 
         if ( ! $layout['contents']['rows'] ) {
 
-            return array( sprintf(
+            return [ sprintf(
                 '  catch-all     %s, empty -- every row is in a dated partition.',
                 $layout['catch_all']
-            ) );
+            ) ];
         }
 
-        return array(
+        return [
             sprintf(
                 '  catch-all     %s, %s rows dated %s to %s',
                 $layout['catch_all'],
@@ -253,7 +253,7 @@ class PartitionStatusCli extends PartitionsCli {
             '                Those rows are queryable and are not at risk. They are outside the '
           . 'dated partitions, so reports covering them cannot prune and retention cannot drop '
           . 'them. The next cmd=partition-rotate moves them into dated partitions.',
-        );
+        ];
     }
 
     /**
@@ -266,28 +266,28 @@ class PartitionStatusCli extends PartitionsCli {
 
         if ( $layout['ahead'] === null ) {
 
-            return array( '  lead          unknown -- no bounded partitions to read a boundary from.' );
+            return [ '  lead          unknown -- no bounded partitions to read a boundary from.' ];
         }
 
         if ( $layout['ahead'] <= 0 ) {
 
-            return array( sprintf(
+            return [ sprintf(
                 '  lead          NONE -- boundaries stop at %s, %d day%s ago. Everything logged '
               . 'since then is going to the catch-all. Rotate now.',
                 $this->readable( $layout['through'] ),
                 abs( $layout['ahead'] ),
                 abs( $layout['ahead'] ) === 1 ? '' : 's'
-            ) );
+            ) ];
         }
 
-        return array( sprintf(
+        return [ sprintf(
             '  lead          %d partition%s ahead, through %s -- %d day%s from today.',
             $layout['lead'],
             $layout['lead'] === 1 ? '' : 's',
             $this->readable( $layout['through'] ),
             $layout['ahead'],
             $layout['ahead'] === 1 ? '' : 's'
-        ) );
+        ) ];
     }
 
     /**
@@ -299,8 +299,8 @@ class PartitionStatusCli extends PartitionsCli {
      */
     protected function summarise( $layouts, $budget ) {
 
-        $unpartitioned = array();
-        $overdue       = array();
+        $unpartitioned = [];
+        $overdue       = [];
         $total         = 0;
         $soonest       = null;
         $start         = null;
@@ -341,7 +341,7 @@ class PartitionStatusCli extends PartitionsCli {
             }
         }
 
-        $lines = array( sprintf(
+        $lines = [ sprintf(
             '%d of %d fact tables and cubes partitioned, %d partitions in total%s.',
             count( $layouts ) - count( $unpartitioned ),
             count( $layouts ),
@@ -349,7 +349,7 @@ class PartitionStatusCli extends PartitionsCli {
             ( $start && $end )
                 ? sprintf( ', covering %s to %s', $this->readable( $start ), $this->readable( $end ) )
                 : ''
-        ) );
+        ) ];
 
         if ( $unpartitioned ) {
 

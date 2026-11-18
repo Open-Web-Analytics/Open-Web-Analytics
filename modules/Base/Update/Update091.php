@@ -52,7 +52,7 @@ class Update091 extends \OWA\Core\Update {
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
 
-        $rows = (array) $db->get_results( sprintf( 'SELECT * FROM %s WHERE module = ?', $table ), array( self::MODULE ) );
+        $rows = (array) $db->get_results( sprintf( 'SELECT * FROM %s WHERE module = ?', $table ), [ self::MODULE ] );
 
         if ( ! $rows ) {
 
@@ -60,7 +60,7 @@ class Update091 extends \OWA\Core\Update {
         }
 
         $record = $this->record();
-        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : array();
+        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : [];
 
         foreach ( $rows as $row ) {
 
@@ -81,7 +81,7 @@ class Update091 extends \OWA\Core\Update {
             return false;
         }
 
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE module = ?', $table ), array( self::MODULE ) ) === false ) {
+        if ( $db->query( sprintf( 'DELETE FROM %s WHERE module = ?', $table ), [ self::MODULE ] ) === false ) {
 
             $this->e->notice( 'Removing the Hello module settings failed.' );
 
@@ -117,7 +117,7 @@ class Update091 extends \OWA\Core\Update {
 
         $settings = $this->settings();
 
-        foreach ( (array) ( $record['rows'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['rows'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -129,7 +129,7 @@ class Update091 extends \OWA\Core\Update {
             if ( $settings && $row['scope_type'] === 'install' ) {
 
                 $settings->db_settings[ $row['module'] ][ $row['name'] ] =
-                    @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                    @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
             }
         }
 
@@ -143,5 +143,3 @@ class Update091 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

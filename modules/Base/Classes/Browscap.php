@@ -227,5 +227,3 @@ class Browscap extends \OWA\Core\Base {
             : '';
     }
 }
-
-?>

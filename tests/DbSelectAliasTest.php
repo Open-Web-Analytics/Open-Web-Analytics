@@ -23,7 +23,7 @@ final class DbSelectAliasTest extends TestCase
         $db = $this->db();
         $db->select('count(*)', 'n');
 
-        $this->assertSame(array(array('name' => 'count(*)', 'as' => 'n')), $db->_sqlParams['select_values']);
+        $this->assertSame([['name' => 'count(*)', 'as' => 'n']], $db->_sqlParams['select_values']);
     }
 
     public function testNoAliasIsNone(): void
@@ -31,15 +31,15 @@ final class DbSelectAliasTest extends TestCase
         $db = $this->db();
         $db->select('*');
 
-        $this->assertSame(array(array('name' => '*', 'as' => '')), $db->_sqlParams['select_values']);
+        $this->assertSame([['name' => '*', 'as' => '']], $db->_sqlParams['select_values']);
     }
 
     /** A [column, alias] pair names its own alias, as selectColumn() reads it. */
     public function testAPairKeepsItsAlias(): void
     {
         $db = $this->db();
-        $db->select(array('session_id', 'sid'));
+        $db->select(['session_id', 'sid']);
 
-        $this->assertSame(array(array('name' => 'session_id', 'as' => 'sid')), $db->_sqlParams['select_values']);
+        $this->assertSame([['name' => 'session_id', 'as' => 'sid']], $db->_sqlParams['select_values']);
     }
 }

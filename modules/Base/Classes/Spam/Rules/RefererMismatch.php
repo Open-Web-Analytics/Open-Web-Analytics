@@ -37,5 +37,3 @@ class RefererMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
         return $referer !== '' && $page !== '' && $referer !== $page;
     }
 }
-
-?>

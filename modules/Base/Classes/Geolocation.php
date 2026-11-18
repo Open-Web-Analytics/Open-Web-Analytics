@@ -39,7 +39,7 @@ class Geolocation {
      *
      * @var array<string, string|null>
      */
-    public $properties = array();
+    public $properties = [];
 
     /** @return Geolocation */
     public static function getInstance() {
@@ -66,13 +66,13 @@ class Geolocation {
         
         if (empty($this->properties) || $refresh === true) {
             
-            $geo = array('ip_address'     => $ip_address,
+            $geo = ['ip_address'     => $ip_address,
                          'city'         =>  '',
                          'country'         =>  '',
                          'state'        =>  '',
                          'country_code'    =>    '',
                          'latitude'        =>    '',
-                         'longitude'    =>    '');
+                         'longitude'    =>    ''];
             
             if ( \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
             
@@ -149,5 +149,3 @@ class Geolocation {
     }
     
 }
-
-?>

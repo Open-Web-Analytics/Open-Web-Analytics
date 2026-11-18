@@ -27,6 +27,6 @@
     </form>
 
     <div class="owa_publicAside">
-        <a href="<?php echo $view->makeLink(array('do' => 'base.loginForm'))?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Back to login' ) );?></a>
+        <a href="<?php echo $view->makeLink(['do' => 'base.loginForm'])?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Back to login' ) );?></a>
     </div>
 </div>

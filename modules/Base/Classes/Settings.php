@@ -47,7 +47,7 @@ namespace OWA\Module\Base\Classes;
      public $default_config;
 
      /** @var array<mixed> module => key => the value stored install-wide */
-     public $db_settings = array();
+     public $db_settings = [];
 
      /** @var mixed nothing sets it */
      public $fetched_from_db;
@@ -71,10 +71,10 @@ namespace OWA\Module\Base\Classes;
      private $legacy_blob_present = null;
 
      /** @var array<string, Field>  "module|key" => registration args. The catalogue. */
-     private $registry = array();
+     private $registry = [];
 
      /** @var array<string, FieldSet>  id => fieldset declaration. Chrome only; see registerFieldSet(). */
-     private $fieldsets = array();
+     private $fieldsets = [];
 
      /**
       * @var array<string, bool>  module => true for modules that ship a settings.php.
@@ -83,7 +83,7 @@ namespace OWA\Module\Base\Classes;
       * ALL of its stored settings loaded at boot, exactly as before registration
       * existed, so nothing has to be converted in one go.
       */
-     private $declared_modules = array();
+     private $declared_modules = [];
 
      /** @var bool  whether a read may consult the store on its own. See load(). */
      private $store_ready = false;
@@ -92,7 +92,7 @@ namespace OWA\Module\Base\Classes;
      private $warned_about_undeclared = false;
 
      /** @var array<string, bool>  "module|key" => true for rows the BOOT query already applied. */
-     private $loaded_at_boot = array();
+     private $loaded_at_boot = [];
 
      /**
       * @var bool  guards re-entry.
@@ -104,7 +104,7 @@ namespace OWA\Module\Base\Classes;
      private $resolving = false;
 
      /** @var array<string, bool>  "module|key" => true for registered keys not yet resolved. */
-     private $pending = array();
+     private $pending = [];
 
      /**
       * "module|key" => true once the store has been consulted for this key.
@@ -115,7 +115,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @var array<string, bool>
       */
-     private $loaded = array();
+     private $loaded = [];
 
 
      /**
@@ -304,7 +304,7 @@ namespace OWA\Module\Base\Classes;
 
          $id = $module . '|' . $key;
 
-         $args = $this->registry[ $id ] ?? array();
+         $args = $this->registry[ $id ] ?? [];
 
          /*
           * Records the constant and NOTHING ELSE. Being static follows from
@@ -342,7 +342,7 @@ namespace OWA\Module\Base\Classes;
 
          unset( $this->registry[ $id ]['constant'] );
 
-         if ( $this->registry[ $id ] === array() ) {
+         if ( $this->registry[ $id ] === [] ) {
 
              // It existed only to carry the constant.
              unset( $this->registry[ $id ] );
@@ -356,7 +356,7 @@ namespace OWA\Module\Base\Classes;
       */
      public function configConstants() {
 
-         $out = array();
+         $out = [];
 
          foreach ( $this->registry as $id => $args ) {
 
@@ -396,10 +396,10 @@ namespace OWA\Module\Base\Classes;
         //   define('OWA_PARTITION_DETAIL_MONTHS', 24);
         //
         // See the Partitioning Fact Tables page in the wiki.
-        foreach (array(
+        foreach ([
             'OWA_PARTITION_DETAIL_MONTHS'       => 'partition_detail_months',
             'OWA_PARTITION_MAX_PARTITIONS'      => 'partition_max_partitions',
-        ) as $constant => $key) {
+        ] as $constant => $key) {
 
             if (defined($constant)) {
                 $this->set('base', $key, constant($constant));
@@ -574,7 +574,7 @@ namespace OWA\Module\Base\Classes;
              $in_place_config = $this->config->get('settings');
 
              // A module with nothing in place yet: an override can be all it has.
-             $old_array = (array) ( $in_place_config[$module] ?? array() );
+             $old_array = (array) ( $in_place_config[$module] ?? [] );
 
              $new_array = array_merge($old_array, $config);
 
@@ -674,7 +674,7 @@ namespace OWA\Module\Base\Classes;
 
             // merge default config with overrides fetched from data store
 
-            $new_config = array();
+            $new_config = [];
 
             foreach ($db_settings as $k => $v) {
 
@@ -757,7 +757,7 @@ namespace OWA\Module\Base\Classes;
 
         $rows = (array) $db->get_results( $sql, $params );
 
-        $settings = array();
+        $settings = [];
 
         foreach ( $rows as $row ) {
 
@@ -786,7 +786,7 @@ namespace OWA\Module\Base\Classes;
              * class during unserialize.
              */
             $settings[ $row['module'] ][ $row['name'] ] =
-                unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
         }
 
         return $settings;
@@ -862,12 +862,12 @@ namespace OWA\Module\Base\Classes;
                 // Array data only, same as load() -- see the note there.
                 $settings = unserialize($settings, ['allowed_classes' => false]);
 
-                $new_config = array();
+                $new_config = [];
 
                 foreach ($this->db_settings as $k => $v) {
 
                     if (!is_array($settings[$k])) {
-                        $settings[$k] = array();
+                        $settings[$k] = [];
                     }
 
                     $new_config[$k] = array_merge($settings[$k], $this->db_settings[$k]);
@@ -921,7 +921,7 @@ namespace OWA\Module\Base\Classes;
 
         if ( ! $db->tableExists( $legacy->getTableName() ) ) {
 
-            return array();
+            return [];
         }
 
         /*
@@ -936,13 +936,13 @@ namespace OWA\Module\Base\Classes;
 
         if ( ! $row ) {
 
-            return array();
+            return [];
         }
 
         $settings = unserialize(
-            (string) $row['settings'], array( 'allowed_classes' => false ) );
+            (string) $row['settings'], [ 'allowed_classes' => false ] );
 
-        return is_array( $settings ) ? $settings : array();
+        return is_array( $settings ) ? $settings : [];
      }
 
      /**
@@ -965,7 +965,7 @@ namespace OWA\Module\Base\Classes;
              return $v[ $module ];
          }
 
-         return array();
+         return [];
      }
 
      /**
@@ -1028,7 +1028,7 @@ namespace OWA\Module\Base\Classes;
 
                 $stored[ $module ] = array_merge(
                     isset( $stored[ $module ] ) && is_array( $stored[ $module ] )
-                        ? $stored[ $module ] : array(),
+                        ? $stored[ $module ] : [],
                     (array) $values );
             }
 
@@ -1058,7 +1058,7 @@ namespace OWA\Module\Base\Classes;
 
         $status = true;
 
-        $wanted = array();
+        $wanted = [];
 
         foreach ( $settings as $module => $values ) {
 
@@ -1479,7 +1479,7 @@ namespace OWA\Module\Base\Classes;
          }
 
          $keys  = isset( $args['keys'] ) ? array_map( 'strval', (array) $args['keys'] ) : null;
-         $pairs = array();
+         $pairs = [];
 
          foreach ( explode( ',', $text ) as $entry ) {
 
@@ -1524,7 +1524,7 @@ namespace OWA\Module\Base\Classes;
      public static function mapValue( array $args, array $map ) {
 
          $keys = isset( $args['keys'] ) ? array_map( 'strval', (array) $args['keys'] ) : array_map( 'strval', array_keys( $map ) );
-         $out  = array();
+         $out  = [];
 
          foreach ( $keys as $name ) {
 
@@ -1551,7 +1551,7 @@ namespace OWA\Module\Base\Classes;
              return (string) $value;
          }
 
-         $out = array();
+         $out = [];
 
          foreach ( self::mapValue( $args, $value ) as $name => $v ) {
 
@@ -1767,7 +1767,7 @@ namespace OWA\Module\Base\Classes;
              $entity->getTableName(),
              \OWA\Core\Db::placeholders( count( $mechanical ) ) ), $mechanical );
 
-         $undeclared = array();
+         $undeclared = [];
 
          foreach ( $rows as $row ) {
 
@@ -1815,7 +1815,7 @@ namespace OWA\Module\Base\Classes;
       */
      private function constantExclusion( array &$params ) {
 
-         $parts = array();
+         $parts = [];
 
          foreach ( $this->configConstants() as $module => $keys ) {
 
@@ -1851,7 +1851,7 @@ namespace OWA\Module\Base\Classes;
       */
      public function eagerSettings() {
 
-         $eager = array();
+         $eager = [];
 
          foreach ( $this->registry as $id => $args ) {
 
@@ -1906,7 +1906,7 @@ namespace OWA\Module\Base\Classes;
       */
      private function eagerPredicate( array &$params ) {
 
-         $parts = array();
+         $parts = [];
 
          $names = self::mechanicalSettingNames();
 
@@ -1991,7 +1991,7 @@ namespace OWA\Module\Base\Classes;
       * @param Field  $args  default, autoload, and optional chrome
       * @return void
       */
-     public function registerField( $module, $key, array $args = array() ) {
+     public function registerField( $module, $key, array $args = [] ) {
 
          $id = $module . '|' . $key;
 
@@ -2102,7 +2102,7 @@ namespace OWA\Module\Base\Classes;
 
          if ( ! $this->declared_modules ) {
 
-             return array();
+             return [];
          }
 
          $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -2115,7 +2115,7 @@ namespace OWA\Module\Base\Classes;
              "SELECT module, name FROM %s WHERE scope_type = 'install' AND module IN ( %s )",
              $entity->getTableName(), \OWA\Core\Db::placeholders( count( $modules ) ) ), $modules );
 
-         $problems = array();
+         $problems = [];
 
          foreach ( $rows as $row ) {
 
@@ -2155,13 +2155,13 @@ namespace OWA\Module\Base\Classes;
       */
      public function fieldSetProblems() {
 
-         $problems = array();
+         $problems = [];
 
          foreach ( $this->fieldsets as $id => $set ) {
 
              $module = (string) ( $set['module'] ?? '' );
 
-             foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+             foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
                  $args = $this->registeredField( $module, $key );
 
@@ -2269,7 +2269,7 @@ namespace OWA\Module\Base\Classes;
           * per-Property overrides -- schema_version is the case that matters,
           * and it is why the default is the narrow one.
           */
-         return array_values( (array) ( $args['scopes'] ?? array( 'install' ) ) );
+         return array_values( (array) ( $args['scopes'] ?? [ 'install' ] ) );
      }
 
      /**
@@ -2343,7 +2343,7 @@ namespace OWA\Module\Base\Classes;
 
          return $this->registry[ $module . '|' . $key ]
              ?? $this->mechanicalField( $module, $key )
-             ?? array();
+             ?? [];
      }
 
      /**
@@ -2474,7 +2474,7 @@ namespace OWA\Module\Base\Classes;
              $this->loaded[ $id ] = true;
          }
 
-         $this->pending = array();
+         $this->pending = [];
 
          $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -2484,7 +2484,7 @@ namespace OWA\Module\Base\Classes;
              "SELECT module, name, value FROM %s WHERE scope_type = 'install'",
              $entity->getTableName() ) );
 
-         $stored = array();
+         $stored = [];
 
          foreach ( $rows as $row ) {
 
@@ -2502,7 +2502,7 @@ namespace OWA\Module\Base\Classes;
              }
 
              $stored[ $row['module'] ][ $row['name'] ] =
-                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                 unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
          }
 
          /*
@@ -2591,7 +2591,7 @@ namespace OWA\Module\Base\Classes;
 
          $c = \OWA\Core\CoreAPI::configSingleton();
 
-         $out = array();
+         $out = [];
 
          foreach ( $c->registeredFields() as $id => $args ) {
 
@@ -2617,14 +2617,14 @@ namespace OWA\Module\Base\Classes;
       */
      public static function databaseStateSettings() {
 
-         return array(
-             'base' => array(
+         return [
+             'base' => [
                  'configuration_id' => true,
                  'schema_version'   => true,
                  'install_complete' => true,
                  'is_active'        => true,
-             ),
-         );
+             ],
+         ];
      }
 
      /**
@@ -2741,7 +2741,7 @@ namespace OWA\Module\Base\Classes;
       */
      public function pruneRedundantPersistedSettings() {
 
-         $removed = array();
+         $removed = [];
 
          foreach ( $this->db_settings as $module => $values ) {
 
@@ -2797,46 +2797,46 @@ namespace OWA\Module\Base\Classes;
       */
      public function setMailerDomain( $public_url = null ) {
 
-	     // Only a fallback. This runs from the constructor, BEFORE load() merges
-	     // the stored settings in, so overwriting unconditionally would clobber
-	     // an address set by the config file or by an operator editing the
-	     // defaults -- and the auto-computed value is 'owa@' . SERVER_NAME,
-	     // which an authenticating relay rejects as an envelope sender the
-	     // account does not own ("553 Sender address rejected"). A stored value
-	     // still wins either way; this is about the two earlier layers.
-	     if ( $this->get( 'base', 'mailer-from' ) ) {
+         // Only a fallback. This runs from the constructor, BEFORE load() merges
+         // the stored settings in, so overwriting unconditionally would clobber
+         // an address set by the config file or by an operator editing the
+         // defaults -- and the auto-computed value is 'owa@' . SERVER_NAME,
+         // which an authenticating relay rejects as an envelope sender the
+         // account does not own ("553 Sender address rejected"). A stored value
+         // still wins either way; this is about the two earlier layers.
+         if ( $this->get( 'base', 'mailer-from' ) ) {
 
-		     return;
-	     }
+             return;
+         }
 
-	     // The host OWA is served from, by its configured public URL: the same
-	     // in every request and in CLI and cron, where SERVER_NAME is unset.
-	     // SERVER_NAME, which the web server sets per virtual host, only when
-	     // there is no public URL; 'localhost' when there is neither.
-	     if ( $public_url === null ) {
+         // The host OWA is served from, by its configured public URL: the same
+         // in every request and in CLI and cron, where SERVER_NAME is unset.
+         // SERVER_NAME, which the web server sets per virtual host, only when
+         // there is no public URL; 'localhost' when there is neither.
+         if ( $public_url === null ) {
 
-		     $public_url = defined( 'OWA_PUBLIC_URL' ) ? (string) OWA_PUBLIC_URL : '';
-	     }
+             $public_url = defined( 'OWA_PUBLIC_URL' ) ? (string) OWA_PUBLIC_URL : '';
+         }
 
-	     $mailer_domain = (string) ( parse_url( (string) $public_url, PHP_URL_HOST ) ?: '' );
+         $mailer_domain = (string) ( parse_url( (string) $public_url, PHP_URL_HOST ) ?: '' );
 
-	     if ( $mailer_domain === '' ) {
+         if ( $mailer_domain === '' ) {
 
-		     $mailer_domain = ! empty( $_SERVER['SERVER_NAME'] ) ? (string) $_SERVER['SERVER_NAME'] : 'localhost';
-	     }
+             $mailer_domain = ! empty( $_SERVER['SERVER_NAME'] ) ? (string) $_SERVER['SERVER_NAME'] : 'localhost';
+         }
 
-		 // A dotless domain (e.g. bare 'localhost', or an internal hostname)
-		 // yields 'owa@localhost', which PHPMailer rejects as an invalid From.
-		 // Append '.localdomain' so the default is a valid, deliverable address
-		 // out of the box rather than relying on owa_mailer to repair it at send
-		 // time. owa_mailer::repairFromAddress applies the same rule as a
-		 // backstop for any persisted override.
-		 if ( strpos( $mailer_domain, '.' ) === false ) {
+         // A dotless domain (e.g. bare 'localhost', or an internal hostname)
+         // yields 'owa@localhost', which PHPMailer rejects as an invalid From.
+         // Append '.localdomain' so the default is a valid, deliverable address
+         // out of the box rather than relying on owa_mailer to repair it at send
+         // time. owa_mailer::repairFromAddress applies the same rule as a
+         // backstop for any persisted override.
+         if ( strpos( $mailer_domain, '.' ) === false ) {
 
-			 $mailer_domain .= '.localdomain';
-		 }
+             $mailer_domain .= '.localdomain';
+         }
 
-		 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
+         $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
      }
 
 
@@ -3135,7 +3135,7 @@ namespace OWA\Module\Base\Classes;
             return false;
         }
 
-        $defaults = array( 'schema_version' => $schema_version );
+        $defaults = [ 'schema_version' => $schema_version ];
 
         if ( $module === 'base' ) {
 
@@ -3222,7 +3222,7 @@ namespace OWA\Module\Base\Classes;
         if (!$this->shutdown_registered) {
 
             $this->shutdown_registered = true;
-            register_shutdown_function(array($this, 'saveIfDirty'));
+            register_shutdown_function([$this, 'saveIfDirty']);
         }
     }
 
@@ -3279,7 +3279,7 @@ namespace OWA\Module\Base\Classes;
 
         // check to make sure role exists
         if ( ! isset( $caps[ $role ] ) || ! is_array( $caps[ $role ] ) ) {
-            $caps[ $role ] = array();
+            $caps[ $role ] = [];
         }
 
         //add capability to role
@@ -3311,5 +3311,3 @@ namespace OWA\Module\Base\Classes;
     }
 
 }
-
-?>

@@ -53,6 +53,3 @@ namespace OWA\Core\Validation;
      }
      
  }
- 
- 
-?>

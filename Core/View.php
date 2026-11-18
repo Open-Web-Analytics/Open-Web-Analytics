@@ -52,8 +52,8 @@ class View extends \OWA\Core\Base {
      * besides any state keys the controller adds. A controller building a link
      * on a Template of its own, which has no link state, reads them from here.
      */
-    const LINK_STATE_KEYS = array( 'period', 'startDate', 'endDate', 'siteId', 'propertyId', 'startTime', 'endTime',
-        'compare', 'compareStartDate', 'compareEndDate' );
+    const LINK_STATE_KEYS = [ 'period', 'startDate', 'endDate', 'siteId', 'propertyId', 'startTime', 'endTime',
+        'compare', 'compareStartDate', 'compareEndDate' ];
 
     /**
      * Main view template object
@@ -130,10 +130,10 @@ class View extends \OWA\Core\Base {
     public $is_subview;
 
     /** @var array<string, array<string, mixed>> id => url, path, deps, version, ie_only */
-    public $js = array();
+    public $js = [];
 
     /** @var array<string, array<string, mixed>> path => url, path, deps, version, ie_only */
-    public $css = array();
+    public $css = [];
 
     /** @var bool assembleView() answers postProcess() rather than the page */
     public $postProcessView = false;
@@ -209,9 +209,9 @@ class View extends \OWA\Core\Base {
             // Load subview
             $this->loadSubView($this->data['subview']);
         endif;
-		
-		$this->pre();
-		
+        
+        $this->pre();
+        
         // construct main view.  This might set some properties of the subview.
         if (method_exists($this, 'render')) {
             $this->render($this->data);
@@ -260,7 +260,7 @@ class View extends \OWA\Core\Base {
 
         // assign validation errors
         if (!empty($this->data['validation_errors'])) {
-	        
+            
             $this->t->set('validation_errors', $this->data['validation_errors']);
         }
 
@@ -294,16 +294,16 @@ class View extends \OWA\Core\Base {
         }
     }
     
-	/**
+    /**
      * Abstract pre render hook
      *
      * @return mixed not read
      */
-	public function pre() {
-		
-		return false;
-	}
-	
+    public function pre() {
+        
+        return false;
+    }
+    
     /**
      * Abstract Alternative rendering method reuires the setting of $this->postProcessView to fire
      *
@@ -536,7 +536,7 @@ class View extends \OWA\Core\Base {
      * @param  bool         $ie_only
      * @return void
      */
-    public function setCss($path, $version = null, $deps = array(), $ie_only = false) {
+    public function setCss($path, $version = null, $deps = [], $ie_only = false) {
 
         if ( ! $version ) {
 
@@ -564,7 +564,7 @@ class View extends \OWA\Core\Base {
      * @param  bool         $ie_only
      * @return void
      */
-    public function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
+    public function setJs($name, $path, $version ='', $deps = [], $ie_only = false) {
 
         if (empty($version)) {
 
@@ -620,11 +620,11 @@ class View extends \OWA\Core\Base {
      * @param array<mixed> $p the request's params; the view's params when empty
      * @return void
      */
-    public function _setLinkState( $p = array() ) {
+    public function _setLinkState( $p = [] ) {
 
         // if an array is not passed them just use params
         if ( ! $p ) {
-	        
+            
             $p = $this->get( 'params' );
         }
         
@@ -632,9 +632,9 @@ class View extends \OWA\Core\Base {
         $sp = array_fill_keys( self::LINK_STATE_KEYS, null );
                 
         // final result array
-        $link_params = array();
-		
-		// load the state array with values
+        $link_params = [];
+        
+        // load the state array with values
         if ( ! empty( $p ) ) {
 
             $link_params = array_intersect_key($p, $sp);
@@ -643,17 +643,17 @@ class View extends \OWA\Core\Base {
         // needed for backward compatability with old use of site_id key name
         // @todo research if this is still required.
         if ( array_key_exists( 'site_id', $link_params ) && ! array_key_exists( 'siteId', $link_params ) ) {
-	        
+            
             $link_params['siteId'] = $link_params['site_id'];
         }
-		
-		// pass link stte to the various templates
+        
+        // pass link stte to the various templates
         $this->t->caller_params['link_state'] =  $link_params;
         
         $this->body->caller_params['link_state'] =  $link_params;
 
         if( ! empty( $this->subview ) ) {
-	        
+            
             $this->subview->body->caller_params[ 'link_state' ] =  $link_params;
         }
     }
@@ -684,11 +684,11 @@ class View extends \OWA\Core\Base {
     public function get( $name ) {
 
         if ( array_key_exists( $name, $this->data ) ) {
-	        
+            
             return $this->data[ $name ];
             
         } else {
-	        
+            
             return false;
         }
     }
@@ -732,23 +732,3 @@ class View extends \OWA\Core\Base {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?>

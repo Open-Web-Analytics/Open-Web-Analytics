@@ -16,8 +16,8 @@ final class CleanTrackingTextTest extends TestCase
 
     public function testTextIsKeptAsSent(): void
     {
-        foreach (array('a<b and c>d', '5<10', 'Using <div> tags', 'Tom & Jerry', '"quoted"',
-                       "it's", 'Café 日本', 'Caf&eacute; stays as typed') as $s) {
+        foreach (['a<b and c>d', '5<10', 'Using <div> tags', 'Tom & Jerry', '"quoted"',
+                       "it's", 'Café 日本', 'Caf&eacute; stays as typed'] as $s) {
             $this->assertSame($s, $this->clean($s));
         }
     }
@@ -40,7 +40,7 @@ final class CleanTrackingTextTest extends TestCase
 
     public function testArraysAreCleanedValueByValueAndOtherTypesAreLeft(): void
     {
-        $this->assertSame(array('k' => 'a<b', 'n' => 3, 'f' => false), $this->clean(array('k' => "a<b\x00", 'n' => 3, 'f' => false)));
+        $this->assertSame(['k' => 'a<b', 'n' => 3, 'f' => false], $this->clean(['k' => "a<b\x00", 'n' => 3, 'f' => false]));
         $this->assertNull($this->clean(null));
     }
 }

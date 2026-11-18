@@ -108,7 +108,7 @@ class SitesEditSettings extends \OWA\Core\AdminController {
 
     public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), $owa_site_id );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], $owa_site_id );
         /*
          * The screen the form is on, as base.profileSettings renders it.
          *
@@ -137,14 +137,12 @@ class SitesEditSettings extends \OWA\Core\AdminController {
          * What the form sent -- each value and each switch -- so correcting the
          * reported error and saving again does not write over the rest.
          */
-        $this->set( 'posted', array(
+        $this->set( 'posted', [
             'config'   => (array) $this->getParam( 'config' ),
             'override' => (array) $this->getParam( 'override' ),
-        ) );
+        ] );
 
         // Also the resolved id, so the form posts back to the site it is showing.
         $this->set( 'siteId', $owa_site_id );
     }
 }
-
-?>

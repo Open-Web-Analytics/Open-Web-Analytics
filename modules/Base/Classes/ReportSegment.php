@@ -70,13 +70,13 @@ class ReportSegment {
      * their activity across the whole period. It reads like "the report for
      * that day" and is not.
      */
-    const EXCLUDED_GROUPS = array( 'time' );
+    const EXCLUDED_GROUPS = [ 'time' ];
 
     /** The dimension that names each kind of subject. */
-    const SUBJECT_DIMENSIONS = array(
+    const SUBJECT_DIMENSIONS = [
         'visitor' => 'clientId',
         'session' => 'sessionId',
-    );
+    ];
 
     /** @var string */
     private $propertyId;
@@ -156,7 +156,7 @@ class ReportSegment {
      */
     public function options() {
 
-        $empty = array( 'dimensions' => array(), 'metrics' => array() );
+        $empty = [ 'dimensions' => [], 'metrics' => [] ];
 
         /*
          * No period, no query. A report normally always has one, but its
@@ -194,10 +194,10 @@ class ReportSegment {
             unset( $dimensions[ $group ] );
         }
 
-        return array(
+        return [
             'dimensions' => $dimensions,
             'metrics'    => (array) $rs->relatedMetrics,
-        );
+        ];
     }
 
     /**
@@ -248,10 +248,10 @@ class ReportSegment {
 
             $this->error = implode( ' ', $results->request_errors );
 
-            return array();
+            return [];
         }
 
-        $ids = array();
+        $ids = [];
 
         foreach ( (array) $results->resultsRows as $row ) {
 
@@ -269,7 +269,7 @@ class ReportSegment {
                 number_format( self::LIMIT ), $scope
             );
 
-            return array();
+            return [];
         }
 
         return $ids;
@@ -290,10 +290,10 @@ class ReportSegment {
 
         if ( $this->startDate && $this->endDate ) {
 
-            $timePeriod->set( 'date_range', array(
+            $timePeriod->set( 'date_range', [
                 'startDate' => $this->startDate,
                 'endDate'   => $this->endDate,
-            ) );
+            ] );
 
         } elseif ( $this->period ) {
 
@@ -307,6 +307,6 @@ class ReportSegment {
         $start = $timePeriod->startDate->get( 'yyyymmdd' );
         $end   = $timePeriod->endDate->get( 'yyyymmdd' );
 
-        return ( $start && $end ) ? array( 'start' => $start, 'end' => $end ) : null;
+        return ( $start && $end ) ? [ 'start' => $start, 'end' => $end ] : null;
     }
 }

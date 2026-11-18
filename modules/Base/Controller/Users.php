@@ -54,22 +54,17 @@ class Users extends \OWA\Core\AdminController {
     }
     
     public function success() {
-	    
-	    /*
-	     * The settings chrome: user accounts live in the Organization, so this
-	     * is an Organization screen reached from the site control's nav. The
-	     * install settings nav beside it would offer a way out that has nothing
-	     * to do with where you are.
-	     */
-	    $owa_site_id = $this->resolveCurrentSiteId();
-	    $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        
+        /*
+         * The settings chrome: user accounts live in the Organization, so this
+         * is an Organization screen reached from the site control's nav. The
+         * install settings nav beside it would offer a way out that has nothing
+         * to do with where you are.
+         */
+        $owa_site_id = $this->resolveCurrentSiteId();
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'base.users', [
             'template' => 'users.php',
             'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'User Roster' ), 'users' ] ] );
     }
 }
-
-
-
-
-?>

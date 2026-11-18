@@ -12,5 +12,5 @@
 ?>
 <p>
     <a class="owa-button owa_publicSubmit"
-       href="<?php echo $view->makeLink( array( 'action' => 'base.installCheckEnv' ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Get started' ) );?></a>
+       href="<?php echo $view->makeLink( [ 'action' => 'base.installCheckEnv' ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Get started' ) );?></a>
 </p>

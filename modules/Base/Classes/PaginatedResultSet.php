@@ -45,8 +45,8 @@ class PaginatedResultSet {
      * @var string|null
      */
     public $guid;
-	
-	/**
+    
+    /**
      * Time period of the results
      *
      * @var PeriodInfo|null
@@ -84,22 +84,22 @@ class PaginatedResultSet {
      * @var ResultRow name => cell
      */
     public $aggregates = [];
-	
-	/**
+    
+    /**
      * Data set rows
      *
      * @var array<int, ResultRow> each row name => cell
      */
-	public $resultsRows = [];
-	
-	/**
+    public $resultsRows = [];
+    
+    /**
      * Labels for metrics and dimensions
      *
      * @var array<string, string|null>|null
      */
     public $labels;
-	
-	/**
+    
+    /**
      * Convienence flag set when there are
      * additional pages of results
      *
@@ -207,7 +207,7 @@ class PaginatedResultSet {
      *
      * @var list<string>
      */
-    public $request_errors = array();
+    public $request_errors = [];
 
 
     public function __construct() {
@@ -253,15 +253,15 @@ class PaginatedResultSet {
      * @return void
      */
     public function countResults( $results = [] ) {
-		
-		$results = $results ?: [];
-		
+        
+        $results = $results ?: [];
+        
         $this->resultsTotal = count( $results );
 
         if ($this->resultsPerPage) {
-	        
+            
             $this->total_pages = ceil( ( $this->resultsTotal + $this->calculateOffset() ) / $this->resultsPerPage );
-		
+        
             if ( $this->resultsTotal <= $this->resultsPerPage ) {
             // no more pages
             } else {
@@ -317,8 +317,8 @@ class PaginatedResultSet {
      * @return void
      */
     public function setQueryParams( $params ) {
-	    
-	    $this->queryParams = $params;
+        
+        $this->queryParams = $params;
     }
 
     /**
@@ -328,20 +328,20 @@ class PaginatedResultSet {
      * @return array<int, ResultRow> the rows of this page
      */
     public function generate( $results, $query_params, $options = []) {
-		
-		$defaults = [
-			
-			'resultsPerPage'	=> 10,
-			'page'				=> 1
-		];
-		
+        
+        $defaults = [
+            
+            'resultsPerPage'	=> 10,
+            'page'				=> 1
+        ];
+        
         if ( ! empty( $results ) ) {
-	        
-	        $options = \OWA\Core\Lib::setDefaultParams( $defaults, $options );
-			
-			$this->setPage( $options['page'] );
-		
-			$this->setLimit( $options['resultsPerPage'] );
+            
+            $options = \OWA\Core\Lib::setDefaultParams( $defaults, $options );
+            
+            $this->setPage( $options['page'] );
+        
+            $this->setLimit( $options['resultsPerPage'] );
         
             $this->countResults( $results );
 
@@ -361,42 +361,42 @@ class PaginatedResultSet {
         $this->setResultSetUrls( $query_params );
         
         // geenrated a unique hash of the results
-		$this->createResultSetHash();
+        $this->createResultSetHash();
 
         return $this->resultsRows;
     }
     
     /**
-	 * Constructs REST API request urls for the result set
-	 * (base, self, next and previous, etc.)
-	 *
-	 * @param  array<string, mixed> $query_params
-	 * @return void
-	 */
+     * Constructs REST API request urls for the result set
+     * (base, self, next and previous, etc.)
+     *
+     * @param  array<string, mixed> $query_params
+     * @return void
+     */
     public function setResultSetUrls( $query_params ) {
-		
-		//owa_coreAPI::debug('result set urls query params: ' . $query_params);
-		
+        
+        //owa_coreAPI::debug('result set urls query params: ' . $query_params);
+        
         $urls = [];
         $auth = \OWA\Core\Auth::get_instance();
         $api_url = \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');
-		
-		$this->base_url = $api_url;
-		
-		// add query params
-		$query_params['do'] 		= 'reports';
-		$query_params['module'] 	= 'base';
-		$query_params['version'] 	= 'v1';
+        
+        $this->base_url = $api_url;
+        
+        // add query params
+        $query_params['do'] 		= 'reports';
+        $query_params['module'] 	= 'base';
+        $query_params['version'] 	= 'v1';
         
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls
         if ( $auth->getAuthMethod() === 'cookies' ) {
             $query_params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'], 'GET' );
         }
-		
+        
         // add current page if any
         if ( $this->page ) {
-	        
+            
             $query_params['page'] = $this->page;
         }
         
@@ -415,32 +415,32 @@ class PaginatedResultSet {
             
         $this->self = $urls['self'];
 
-		// build url for next page of result set
+        // build url for next page of result set
         if ( $this->more ) {
-	        
-	        $next_query_params = $query_params;
-	        
-	        if ($this->page) {
-		        
-	            $next_query_params['page'] = $query_params['page'] + 1;
-	            
-	        } else {
-		        
-	            $next_query_params['page'] = 2;
-	        }
-	
-	        $nq = $this->buildQueryString($next_query_params);
-	        
-	        $urls['next'] = sprintf($link_template, $api_url, $nq);
+            
+            $next_query_params = $query_params;
+            
+            if ($this->page) {
+                
+                $next_query_params['page'] = $query_params['page'] + 1;
+                
+            } else {
+                
+                $next_query_params['page'] = 2;
+            }
+    
+            $nq = $this->buildQueryString($next_query_params);
+            
+            $urls['next'] = sprintf($link_template, $api_url, $nq);
             
             
             $this->next = $urls['next'];
         }
-		
-		// build previous url if page is greater than 2
+        
+        // build previous url if page is greater than 2
         if ( $this->page >=2 ) {
-	        
-	        $previous_query_params = $query_params;
+            
+            $previous_query_params = $query_params;
             
             $previous_query_params['page'] = $query_params['page'] - 1;
             
@@ -463,7 +463,7 @@ class PaginatedResultSet {
      */
     public function buildQueryString($params, $seperator = '&') {
 
-        $new = array();
+        $new = [];
         // OWA's own API URLs carry no prefix. The wire namespace ('ns') still
         // governs cookies and tracker params.
         foreach ($params as $k => $v) {
@@ -529,7 +529,7 @@ class PaginatedResultSet {
         $rows = $this->getDataRows();
 
         if ($rows) {
-            $series = array();
+            $series = [];
             foreach ($rows as $row) {
                 foreach($row as $item) {
                     if ($item['name'] === $name) {
@@ -566,7 +566,7 @@ class PaginatedResultSet {
      */
     public function setAggregateMetric($name, $value, $label, $data_type, $formatted_value = '') {
 
-        $this->aggregates[$name] = array('result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value);
+        $this->aggregates[$name] = ['result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value];
     }
 
     /**
@@ -581,14 +581,14 @@ class PaginatedResultSet {
      */
     public function appendRow($row_num, $type, $name, $value, $label, $data_type, $formatted_value = '') {
 
-        $this->resultsRows[$row_num][$name] = array(
+        $this->resultsRows[$row_num][$name] = [
             'result_type'         => $type,
             'name'                 => $name,
             'value'             => $value,
             'label'             => $label,
             'data_type'         => $data_type,
             'formatted_value'     => $formatted_value
-        );
+        ];
     }
 
     /**
@@ -644,5 +644,3 @@ class PaginatedResultSet {
         }
     }
 }
-
-?>

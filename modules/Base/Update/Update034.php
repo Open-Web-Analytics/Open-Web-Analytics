@@ -43,7 +43,7 @@ class Update034 extends \OWA\Core\Update {
      */
     private function tables() {
 
-        return array( 'base.event_raw', 'base.visitor_acquisition' );
+        return [ 'base.event_raw', 'base.visitor_acquisition' ];
     }
 
     /**
@@ -152,5 +152,3 @@ class Update034 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

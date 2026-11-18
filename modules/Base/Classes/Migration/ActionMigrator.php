@@ -33,10 +33,10 @@ class ActionMigrator extends FactMigrator {
         $original = trim( (string) $r['action_name'] );
         $name     = self::eventName( $original );
 
-        $extra = array(
+        $extra = [
             'eps_group' => $r['action_group'] ?? null,
             'eps_label' => $r['action_label'] ?? null,
-        );
+        ];
 
         if ( isset( $r['numeric_value'] ) && is_numeric( $r['numeric_value'] ) ) {
 
@@ -48,7 +48,7 @@ class ActionMigrator extends FactMigrator {
             $extra['eps_action_name'] = $original;
         }
 
-        return array( $this->baseEvent( $r, $refs, $name, $extra ) );
+        return [ $this->baseEvent( $r, $refs, $name, $extra ) ];
     }
 
     /**
@@ -96,5 +96,3 @@ class ActionMigrator extends FactMigrator {
             \OWA\Core\CoreAPI::trackingDispatchName( $name ) );
     }
 }
-
-?>

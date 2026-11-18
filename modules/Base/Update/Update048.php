@@ -55,7 +55,7 @@ class Update048 extends \OWA\Core\Update {
         $db->selectFrom( $goal->getTableName() );
         $db->selectColumn( 'id' );
 
-        $live = array();
+        $live = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -66,7 +66,7 @@ class Update048 extends \OWA\Core\Update {
         $db->selectFrom( $condition->getTableName() );
         $db->selectColumn( 'id, goal_event_id' );
 
-        $orphans = array();
+        $orphans = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -114,5 +114,3 @@ class Update048 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

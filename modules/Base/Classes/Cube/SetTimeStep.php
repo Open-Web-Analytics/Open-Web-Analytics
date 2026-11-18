@@ -46,7 +46,7 @@ class SetTimeStep extends Step {
 
     public function requires() {
 
-        return array( Context::VISITOR );
+        return [ Context::VISITOR ];
     }
 
     public function execute( Context $context ) {
@@ -54,5 +54,3 @@ class SetTimeStep extends Step {
         return sprintf( OWA_SQL_JSON_VALUE_UNSIGNED, $this->document, $this->path );
     }
 }
-
-?>

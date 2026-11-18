@@ -34,7 +34,7 @@ final class LibRandomIdTest extends TestCase
 
     public function testIdsDoNotRepeat(): void
     {
-        $ids = array();
+        $ids = [];
 
         for ($i = 0; $i < 1000; $i++) {
             $ids[] = \OWA\Core\Lib::randomId();

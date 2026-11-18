@@ -50,16 +50,16 @@ class Update078 extends \OWA\Core\Update {
     public $schema_version = 78;
 
     /** Old metric name => new. */
-    const METRICS = array(
+    const METRICS = [
         'goalConversions'              => 'goalEvents',
         'goalConversionRatePerSession' => 'goalEventsPerSession',
         'goalConversionRatePerUser'    => 'goalEventsPerUser',
-    );
+    ];
 
     /** Old metric set name => new (Core\MetricSets). */
-    const SETS = array(
+    const SETS = [
         'conversions' => 'goals',
-    );
+    ];
 
     /**
      * @param  bool $force
@@ -89,8 +89,8 @@ class Update078 extends \OWA\Core\Update {
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
 
         // Narrowed by text, decided by structure: a row only mentioning a name is decoded and left.
-        $like   = array();
-        $params = array();
+        $like   = [];
+        $params = [];
 
         foreach ( array_merge( array_keys( $metrics ), array_keys( $sets ) ) as $name ) {
 
@@ -123,7 +123,7 @@ class Update078 extends \OWA\Core\Update {
             }
 
             if ( $db->query( sprintf( 'UPDATE %s SET definition = ? WHERE id = ?', $table ),
-                    array( $text, $row['id'] ) ) === false ) {
+                    [ $text, $row['id'] ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Renaming the goal metrics in custom report %s failed.', $row['id'] ) );
 
@@ -158,7 +158,7 @@ class Update078 extends \OWA\Core\Update {
      * @param  array<string, string> $sets     from => to
      * @return string|null
      */
-    public static function rewriteStored( $stored, array $metrics, array $sets = array() ) {
+    public static function rewriteStored( $stored, array $metrics, array $sets = [] ) {
 
         $stored     = (string) $stored;
         $definition = self::decode( $stored );
@@ -213,7 +213,7 @@ class Update078 extends \OWA\Core\Update {
      * @param  array<string, string> $sets        from => to
      * @return array<string, mixed>
      */
-    public static function rename( array $definition, array $metrics, array $sets = array() ) {
+    public static function rename( array $definition, array $metrics, array $sets = [] ) {
 
         if ( isset( $definition['metrics'] ) ) {
 
@@ -222,7 +222,7 @@ class Update078 extends \OWA\Core\Update {
 
         if ( isset( $definition['metricSets'] ) && is_array( $definition['metricSets'] ) ) {
 
-            $declared = array();
+            $declared = [];
 
             foreach ( $definition['metricSets'] as $key => $set ) {
 
@@ -299,7 +299,7 @@ class Update078 extends \OWA\Core\Update {
 
         if ( isset( $widget['formatters'] ) && is_array( $widget['formatters'] ) ) {
 
-            $formatters = array();
+            $formatters = [];
 
             foreach ( $widget['formatters'] as $column => $formatter ) {
 
@@ -378,5 +378,3 @@ class Update078 extends \OWA\Core\Update {
         return isset( $map[ $name ] ) ? str_replace( $name, $map[ $name ], $part ) : $part;
     }
 }
-
-?>

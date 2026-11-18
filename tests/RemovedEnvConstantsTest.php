@@ -12,15 +12,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class RemovedEnvConstantsTest extends TestCase
 {
-    private const REMOVED = array(
+    private const REMOVED = [
         'OWA_PATH', 'OWA_DIR', 'OWA_BASE_DIR', 'OWA_BASE_CLASSES_DIR', 'OWA_BASE_MODULE_DIR',
         'OWA_BASE_CLASS_DIR', 'OWA_PLUGIN_DIR', 'OWA_CONF_DIR', 'OWA_THEMES_DIR', 'OWA_VERSION',
         'OWA_VENDOR_DIR', 'OWA_MODULES_DIR', 'OWA_TEMPLATE_DIR',
         // The file cache is removed.
         'OWA_CACHE_DIR', 'OWA_CACHE_OBJECTS',
-    );
+    ];
 
-    private const CONFIG_ONLY = array( 'OWA_DATA_DIR', 'OWA_MAXMIND_DATA_DIR' );
+    private const CONFIG_ONLY = [ 'OWA_DATA_DIR', 'OWA_MAXMIND_DATA_DIR' ];
 
     /** @return iterable<string> every PHP file of the tree, tests included */
     private static function files(): iterable
@@ -33,7 +33,7 @@ final class RemovedEnvConstantsTest extends TestCase
             }
         }
 
-        foreach (array('Core', 'modules', 'api', 'conf', 'tests') as $dir) {
+        foreach (['Core', 'modules', 'api', 'conf', 'tests'] as $dir) {
             $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $dir, FilesystemIterator::SKIP_DOTS));
 
             foreach ($it as $file) {
@@ -47,13 +47,13 @@ final class RemovedEnvConstantsTest extends TestCase
 
     public function testNoCodeReadsOrDefinesThem(): void
     {
-        $found = array();
+        $found = [];
         $count = 0;
 
         foreach (self::files() as $file) {
             $count++;
             $tokens = array_values(array_filter(token_get_all((string) file_get_contents($file)),
-                static fn ($t) => !is_array($t) || !in_array($t[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)));
+                static fn ($t) => !is_array($t) || !in_array($t[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)));
             $where = substr($file, strlen(\OWA\Core\Env::root()) + 1);
 
             foreach ($tokens as $i => $t) {
@@ -66,7 +66,7 @@ final class RemovedEnvConstantsTest extends TestCase
                 }
 
                 // define( 'NAME', ... ) or defined( 'NAME' )
-                if ($t[0] === T_STRING && in_array(strtolower($t[1]), array('define', 'defined'), true)
+                if ($t[0] === T_STRING && in_array(strtolower($t[1]), ['define', 'defined'], true)
                     && ($tokens[$i + 1] ?? null) === '(' && is_array($tokens[$i + 2] ?? null)
                     && $tokens[$i + 2][0] === T_CONSTANT_ENCAPSED_STRING) {
 
@@ -85,7 +85,7 @@ final class RemovedEnvConstantsTest extends TestCase
         }
 
         $this->assertGreaterThan(500, $count, 'the scan read too few files to mean anything');
-        $this->assertSame(array(), $found);
+        $this->assertSame([], $found);
     }
 
     public function testNoneIsDefinedAfterBoot(): void

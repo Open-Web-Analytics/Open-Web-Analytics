@@ -52,5 +52,3 @@ class AcceptEncodingNotBrowser extends \OWA\Module\Base\Classes\Spam\Rule {
             || (bool) preg_match( '/,\S/', $value );
     }
 }
-
-?>

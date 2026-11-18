@@ -263,14 +263,14 @@ class Update062 extends \OWA\Core\Update {
     }
 
     /** Each pass, in the order it runs. */
-    const PASSES = array(
+    const PASSES = [
         'RequestMigrator'  => 'page views',
         'ClickMigrator'    => 'clicks',
         'ActionMigrator'   => 'actions',
         'PurchaseMigrator' => 'purchases',
         'VisitorMigrator'  => 'visitor store',
         'GoalMigrator'     => 'goal completions',
-    );
+    ];
 
     /**
      * Undo every pass, last first. Rows are deleted by the ids their v1 rows
@@ -335,7 +335,7 @@ class Update062 extends \OWA\Core\Update {
      */
     private static function v1QueueFiles( $dir ) {
 
-        return array_values( array_filter( array_merge( array( $dir . 'events.txt' ), (array) glob( $dir . 'unprocessed/*' ) ), 'is_file' ) );
+        return array_values( array_filter( array_merge( [ $dir . 'events.txt' ], (array) glob( $dir . 'unprocessed/*' ) ), 'is_file' ) );
     }
 
     /**
@@ -368,7 +368,7 @@ class Update062 extends \OWA\Core\Update {
         $dir  = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
         $path = $dir . ( $this->archive_name ?: 'update062-v1-queue-' . date( 'Ymd-His' ) . '.txt' );
 
-        $moved = array( 'lines' => 0, 'files' => 0, 'path' => $path );
+        $moved = [ 'lines' => 0, 'files' => 0, 'path' => $path ];
 
         foreach ( self::v1QueueFiles( $dir ) as $file ) {
 
@@ -379,8 +379,8 @@ class Update062 extends \OWA\Core\Update {
                 return null;
             }
 
-            $v1   = array();
-            $keep = array();
+            $v1   = [];
+            $keep = [];
 
             foreach ( explode( "\n", (string) stream_get_contents( $fh ) ) as $line ) {
 
@@ -461,11 +461,11 @@ class Update062 extends \OWA\Core\Update {
 
         if ( $db->tableExists( $table ) ) {
 
-            $row  = $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE status = ?', $table ), array( 'unhandled' ) );
+            $row  = $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE status = ?', $table ), [ 'unhandled' ] );
             $rows = (int) ( $row['n'] ?? 0 );
         }
 
-        return array( 'file_lines' => $lines, 'queue_rows' => $rows );
+        return [ 'file_lines' => $lines, 'queue_rows' => $rows ];
     }
 
     /**
@@ -476,10 +476,10 @@ class Update062 extends \OWA\Core\Update {
      */
     public function preflight( $migrator ) {
 
-        $lines   = array( 'v1 page views, per site and year:' );
+        $lines   = [ 'v1 page views, per site and year:' ];
         $total   = 0;
         $orphans = 0;
-        $unknown = array();
+        $unknown = [];
 
         foreach ( $migrator->volume() as $row ) {
 
@@ -541,7 +541,7 @@ class Update062 extends \OWA\Core\Update {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $tables = $this->partitioned_tables ?? array_merge(
-            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
+            [ \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ],
             array_values( \OWA\Module\Base\Classes\Cube\Cubes::existing() ) );
 
         // As partition-rotate reads them, so it finds the result already in shape.
@@ -628,5 +628,3 @@ class Update062 extends \OWA\Core\Update {
         return new $class( $this->prefix, \OWA\Module\Base\Classes\Migration\FactMigrator::BATCH, $since );
     }
 }
-
-?>

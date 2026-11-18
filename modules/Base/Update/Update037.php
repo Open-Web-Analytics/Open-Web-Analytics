@@ -71,5 +71,3 @@ class Update037 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

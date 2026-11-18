@@ -14,14 +14,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class EnvTest extends TestCase
 {
     /** @var array<string, mixed> */
-    private array $saved = array();
+    private array $saved = [];
 
     protected function tearDown(): void
     {
         foreach ($this->saved as $key => $value) {
             \OWA\Core\CoreAPI::setSetting('base', $key, $value);
         }
-        $this->saved = array();
+        $this->saved = [];
     }
 
     private function setForTest(string $key, $value): void

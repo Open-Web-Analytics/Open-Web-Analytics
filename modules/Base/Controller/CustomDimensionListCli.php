@@ -21,12 +21,12 @@ class CustomDimensionListCli extends CustomDimensionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Lists registered custom dimensions and how many more each Property has room for.',
-            'arguments'   => array(
+            'arguments'   => [
                 'property=<id>' => 'List only this Property\'s. Defaults to every Property that has one.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -43,8 +43,8 @@ class CustomDimensionListCli extends CustomDimensionsCli {
             }
 
             $cubes = isset( $cubes[ $only ] )
-                ? array( $only => $cubes[ $only ] )
-                : array( $only => \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $only ) );
+                ? [ $only => $cubes[ $only ] ]
+                : [ $only => \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $only ) ];
         }
 
         if ( ! $cubes ) {
@@ -105,5 +105,3 @@ class CustomDimensionListCli extends CustomDimensionsCli {
                 : '' ) );
     }
 }
-
-?>

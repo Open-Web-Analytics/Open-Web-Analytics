@@ -43,13 +43,13 @@ namespace OWA\Core\Validation;
          
          if ( $values ) {
 
-         	$entity->getByColumn($this->getConfig('column'), $values );
-		 
-		} else {
-			 
-			$this->setErrorMessage( \OWA\Core\CoreAPI::t( 'A value is required.' ) );
-			$this->hasError();
-		}	
+             $entity->getByColumn($this->getConfig('column'), $values );
+         
+        } else {
+             
+            $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'A value is required.' ) );
+            $this->hasError();
+        }	
          
          $error = $this->getErrorMsg();
 
@@ -66,5 +66,3 @@ namespace OWA\Core\Validation;
          }
      }
  }
- 
-?>

@@ -18,18 +18,18 @@ final class SpamScoreTest extends TestCase
 
     private static $registered = false;
 
-    private $settings = array();
+    private $settings = [];
 
     protected function setUp(): void
     {
         if (!self::$registered) {
-            \OWA\Core\CoreAPI::registerFilter(RuleSets::FILTER, array(self::class, 'adjustSets'));
+            \OWA\Core\CoreAPI::registerFilter(RuleSets::FILTER, [self::class, 'adjustSets']);
             self::$registered = true;
         }
 
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        foreach (array('spam_detection', 'spam_threshold') as $key) {
+        foreach (['spam_detection', 'spam_threshold'] as $key) {
             $this->settings[$key] = $c->get('base', $key);
         }
     }
@@ -50,11 +50,11 @@ final class SpamScoreTest extends TestCase
             return $sets;
         }
 
-        foreach ((array) (self::$adjust['drop'] ?? array()) as $set) {
+        foreach ((array) (self::$adjust['drop'] ?? []) as $set) {
             unset($sets[$set]);
         }
 
-        foreach ((array) (self::$adjust['add'] ?? array()) as $set => $classes) {
+        foreach ((array) (self::$adjust['add'] ?? []) as $set => $classes) {
             $sets[$set] = $classes;
         }
 
@@ -76,8 +76,8 @@ final class SpamScoreTest extends TestCase
 
     public function testTheLevelsAndTheirSets(): void
     {
-        $this->assertSame(array('user_agent'), array_keys(RuleSets::forLevel('normal')));
-        $this->assertSame(array('user_agent', 'request_headers', 'page_origin', 'query_string'),
+        $this->assertSame(['user_agent'], array_keys(RuleSets::forLevel('normal')));
+        $this->assertSame(['user_agent', 'request_headers', 'page_origin', 'query_string'],
             array_keys(RuleSets::forLevel('strict')));
 
         $this->assertSame(array_keys(RuleSets::SETS), array_keys(RuleSets::forLevel('strict')),
@@ -106,9 +106,9 @@ final class SpamScoreTest extends TestCase
     /** The filter can drop a set that misbehaves, and is told the level. */
     public function testTheFilterDropsASet(): void
     {
-        self::$adjust = array('drop' => array('request_headers'));
+        self::$adjust = ['drop' => ['request_headers']];
 
-        $this->assertSame(array('user_agent', 'page_origin', 'query_string'), array_keys(RuleSets::forLevel('strict')));
+        $this->assertSame(['user_agent', 'page_origin', 'query_string'], array_keys(RuleSets::forLevel('strict')));
         $this->assertSame('strict', self::$adjust['saw_level']);
 
         // The attack's agent and headers meet only request_headers rules.
@@ -122,20 +122,20 @@ final class SpamScoreTest extends TestCase
     /** ...and a module can add one; only the rules of the level's sets run. */
     public function testTheFilterAddsASetAndTheScoreIsTheSum(): void
     {
-        self::$adjust = array('add' => array('test' => array(
+        self::$adjust = ['add' => ['test' => [
             SpamScoreTestRuleSmall::class, SpamScoreTestRuleLarge::class, SpamScoreTestRuleNegative::class,
-            SpamScoreTestRuleSilent::class)));
+            SpamScoreTestRuleSilent::class]]];
 
         $verdict = Score::of($this->quiet(), 'normal');
 
-        $this->assertSame(array('TEST_LARGE' => 4.0, 'TEST_SMALL' => 2.5, 'TEST_NEGATIVE' => -1.0), $verdict['fired']);
+        $this->assertSame(['TEST_LARGE' => 4.0, 'TEST_SMALL' => 2.5, 'TEST_NEGATIVE' => -1.0], $verdict['fired']);
         $this->assertSame(5.5, $verdict['score'], 'the plain sum');
         $this->assertSame('TEST_LARGE=4.0 TEST_SMALL=2.5 TEST_NEGATIVE=-1.0', $verdict['rules']);
     }
 
     public function testASetThatIsNotARuleIsSkipped(): void
     {
-        self::$adjust = array('add' => array('test' => array(\stdClass::class, 'NoSuchRuleClass', SpamScoreTestRuleSmall::class)));
+        self::$adjust = ['add' => ['test' => [\stdClass::class, 'NoSuchRuleClass', SpamScoreTestRuleSmall::class]]];
 
         $this->assertSame('TEST_SMALL=2.5', Score::of($this->quiet(), 'normal')['rules']);
     }
@@ -143,9 +143,9 @@ final class SpamScoreTest extends TestCase
     /** A name spam_rules or owa_spam_block cannot hold is skipped. */
     public function testARuleWithoutARuleNameIsSkipped(): void
     {
-        self::$adjust = array('add' => array('test' => array(
+        self::$adjust = ['add' => ['test' => [
             SpamScoreTestRuleLongName::class, SpamScoreTestRuleSpacedName::class, SpamScoreTestRuleNoName::class,
-            SpamScoreTestRuleAbstract::class, SpamScoreTestRuleSmall::class)));
+            SpamScoreTestRuleAbstract::class, SpamScoreTestRuleSmall::class]]];
 
         $this->assertSame('TEST_SMALL=2.5', Score::of($this->quiet(), 'normal')['rules']);
     }
@@ -153,32 +153,32 @@ final class SpamScoreTest extends TestCase
     /** A second rule of a name already taken is skipped: the first keeps it. */
     public function testASecondRuleOfANameIsSkipped(): void
     {
-        self::$adjust = array('add' => array(
-            'test' => array(SpamScoreTestRuleSmall::class),
-            'other' => array(SpamScoreTestRuleSmallAgain::class, SpamScoreTestRuleLarge::class),
-        ));
+        self::$adjust = ['add' => [
+            'test' => [SpamScoreTestRuleSmall::class],
+            'other' => [SpamScoreTestRuleSmallAgain::class, SpamScoreTestRuleLarge::class],
+        ]];
 
         $verdict = Score::of($this->quiet(), 'normal');
 
-        $this->assertSame(array('TEST_LARGE' => 4.0, 'TEST_SMALL' => 2.5), $verdict['fired']);
+        $this->assertSame(['TEST_LARGE' => 4.0, 'TEST_SMALL' => 2.5], $verdict['fired']);
         $this->assertSame(6.5, $verdict['score']);
     }
 
     /** A rule that throws is not met, and the rest still score the beacon. */
     public function testARuleThatThrowsIsNotMet(): void
     {
-        self::$adjust = array('add' => array('test' => array(
-            SpamScoreTestRuleThrows::class, SpamScoreTestRuleSmall::class)));
+        self::$adjust = ['add' => ['test' => [
+            SpamScoreTestRuleThrows::class, SpamScoreTestRuleSmall::class]]];
 
         $verdict = Score::of($this->quiet(), 'normal');
 
-        $this->assertSame(array('TEST_SMALL' => 2.5), $verdict['fired']);
+        $this->assertSame(['TEST_SMALL' => 2.5], $verdict['fired']);
     }
 
     /** Every shipped rule's name is one a module's would have to be. */
     public function testEveryShippedRuleHasARuleName(): void
     {
-        $names = array();
+        $names = [];
 
         foreach (RuleSets::SETS as $classes) {
             foreach ($classes as $class) {
@@ -197,23 +197,23 @@ final class SpamScoreTest extends TestCase
 
         $this->assertSame(0.0, $verdict['score'], $verdict['rules']);
         $this->assertSame('', $verdict['rules']);
-        $this->assertSame(array(), $verdict['fired']);
+        $this->assertSame([], $verdict['fired']);
     }
 
     /** Highest points first; equal points by name, so the text is stable. */
     public function testOrderAndFormat(): void
     {
-        $ordered = Score::ordered(array('B_RULE' => 1.0, 'Z_RULE' => 5.0, 'A_RULE' => 1.0, 'M_RULE' => 2.5));
+        $ordered = Score::ordered(['B_RULE' => 1.0, 'Z_RULE' => 5.0, 'A_RULE' => 1.0, 'M_RULE' => 2.5]);
 
-        $this->assertSame(array('Z_RULE', 'M_RULE', 'A_RULE', 'B_RULE'), array_keys($ordered));
+        $this->assertSame(['Z_RULE', 'M_RULE', 'A_RULE', 'B_RULE'], array_keys($ordered));
         $this->assertSame('Z_RULE=5.0 M_RULE=2.5 A_RULE=1.0 B_RULE=1.0', Score::format($ordered));
-        $this->assertSame('', Score::format(array()));
+        $this->assertSame('', Score::format([]));
     }
 
     /** Cut to whole entries at the column's 255 characters. */
     public function testTheRulesTextIsTrimmedToWholeEntries(): void
     {
-        $fired = array();
+        $fired = [];
 
         for ($i = 10; $i < 30; $i++) {
             $fired[sprintf('A_RATHER_LONG_RULE_NAME_%02d', $i)] = 1.0;
@@ -237,10 +237,10 @@ final class SpamScoreTest extends TestCase
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        foreach (array(
-            array(5.0, 5.0), array('7.5', 7.5), array(' 2.5 ', 2.5), array('', null), array(null, null),
-            array('not a number', null),
-        ) as list($stored, $expected)) {
+        foreach ([
+            [5.0, 5.0], ['7.5', 7.5], [' 2.5 ', 2.5], ['', null], [null, null],
+            ['not a number', null],
+        ] as list($stored, $expected)) {
             $c->set('base', 'spam_threshold', $stored);
             $this->assertSame($expected, Score::threshold(), var_export($stored, true));
         }
@@ -284,7 +284,7 @@ final class SpamScoreTest extends TestCase
         $carrier->set('spam_score', 2.5);
         $carrier->set('spam_rules', 'NO_CLIENT_HINTS=2.5');
 
-        foreach (array('session_start', 'first_visit', 'A Goal Named By Its Definition') as $name) {
+        foreach (['session_start', 'first_visit', 'A Goal Named By Its Definition'] as $name) {
             $built = \OWA\Module\Base\Classes\TrackingEventHelpers::materialize($carrier, $name);
 
             $this->assertSame(2.5, $built->get('spam_score'), $name);
@@ -305,8 +305,8 @@ final class SpamScoreTest extends TestCase
         $this->assertSame('"Windows"', $headers['sec-ch-ua-platform']);
         $this->assertSame('', $headers['sec-ch-ua'], 'a header the request did not carry');
         $this->assertSame('MyApp/1.2', $headers['user-agent']);
-        $this->assertSame(array('user-agent', 'sec-fetch-mode', 'sec-fetch-site', 'sec-fetch-dest', 'sec-ch-ua',
-            'sec-ch-ua-platform', 'sec-ch-ua-mobile', 'accept-encoding', 'accept-language', 'referer'), array_keys($headers));
+        $this->assertSame(['user-agent', 'sec-fetch-mode', 'sec-fetch-site', 'sec-fetch-dest', 'sec-ch-ua',
+            'sec-ch-ua-platform', 'sec-ch-ua-mobile', 'accept-encoding', 'accept-language', 'referer'], array_keys($headers));
     }
 
     /** The edge reads them from the request, and keeps one already on the event. */
@@ -338,14 +338,14 @@ final class SpamScoreTest extends TestCase
     {
         $request = \OWA\Module\Base\Classes\TrackingEventHelpers::requestProperties();
 
-        foreach (array(
+        foreach ([
             'request_sec_fetch_mode', 'request_sec_fetch_site', 'request_sec_fetch_dest', 'request_sec_ch_ua',
             'request_sec_ch_ua_platform', 'request_sec_ch_ua_mobile', 'request_accept_encoding',
             'request_accept_language', 'request_referer', 'received_page_location', 'received_referer',
-        ) as $name) {
+        ] as $name) {
             $this->assertArrayHasKey($name, $request);
             $this->assertSame('', \OWA\Module\Base\Classes\TrackingEventHelpers::columnFor($name), "$name is stored by nothing");
-            $this->assertSame(array(), \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(array($name => 'x')));
+            $this->assertSame([], \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams([$name => 'x']));
         }
     }
 }

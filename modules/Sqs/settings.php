@@ -17,14 +17,14 @@
  * OWA_SQS_QUEUE_URL activates the module and makes sqs the tracking intake's
  * queue backend (Core\ModuleActivation).
  */
-return array(
+return [
 
     'module' => 'sqs',
 
-    'activated_by'      => array( 'OWA_SQS_QUEUE_URL' ),
+    'activated_by'      => [ 'OWA_SQS_QUEUE_URL' ],
     'intake_queue_type' => 'sqs',
 
-    'settings' => array(
+    'settings' => [
 
         /*
          * Read on log.php's path when the intake is sqs, so eager. No
@@ -33,7 +33,7 @@ return array(
          * is used (Classes\Sqs::region()). The region in an AWS profile is not
          * read.
          */
-        'region' => array(
+        'region' => [
             'storable'    => true,
             'autoload'    => true,
             'type'        => 'text',
@@ -41,16 +41,16 @@ return array(
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'An AWS region looks like us-east-1.' ),
             'label'       => \OWA\Core\CoreAPI::t( 'AWS Region' ),
             'description' => \OWA\Core\CoreAPI::t( 'The region the tracker-ingest queues live in, such as us-east-1.' ),
-        ),
+        ],
 
         /*
          * The last provisioning outcome -- ok, at, error, queue URLs -- for
          * the settings screen. Written by Classes\Sqs::provision(), never by
          * a form.
          */
-        'provisioned' => array(
+        'provisioned' => [
             'storable' => true,
             'internal' => true,
-        ),
-    ),
-);
+        ],
+    ],
+];

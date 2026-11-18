@@ -30,7 +30,7 @@ class Update088 extends \OWA\Core\Update {
     public $down_does_not_restore = 'the scheme 1.x stored on each Profile and Property domain.';
 
     /** The entities whose domain column this rewrites, by key. */
-    const ENTITIES = array( 'site' => 'base.site', 'property' => 'base.property' );
+    const ENTITIES = [ 'site' => 'base.site', 'property' => 'base.property' ];
 
     /**
      * @param  bool $force
@@ -58,7 +58,7 @@ class Update088 extends \OWA\Core\Update {
                 }
 
                 if ( $db->query( sprintf( 'UPDATE %s SET domain = ? WHERE id = ?', $this->tableFor( self::ENTITIES[ $key ] ) ),
-                        array( $to, (string) $row['id'] ) ) === false ) {
+                        [ $to, (string) $row['id'] ] ) === false ) {
 
                     $this->e->notice( sprintf( 'Rewriting the domain of %s %s failed.', $key, $row['id'] ) );
 
@@ -83,5 +83,3 @@ class Update088 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

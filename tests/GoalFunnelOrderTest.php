@@ -107,7 +107,7 @@ final class GoalFunnelOrderTest extends TestCase
 
         $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
 
-        foreach (array('', '_rebuild', '_computed') as $suffix) {
+        foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $cube, $suffix));
         }
 
@@ -133,20 +133,20 @@ final class GoalFunnelOrderTest extends TestCase
         self::tearDownAfterClass();
 
         $property = \OWA\Core\CoreAPI::entityFactory('base.property');
-        $property->setProperties(array(
+        $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Funnel order fixture',
             'domain'        => 'funnel.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
-        ));
+        ]);
 
         if (!$property->create()) {
             throw new \RuntimeException('seeding owa_property failed');
         }
 
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->setProperties(array(
+        $site->setProperties([
             // A Profile's primary key is `id`; site_id is the string a beacon
             // quotes and the funnel filters on.
             'id'          => self::PROPERTY * 10,
@@ -154,7 +154,7 @@ final class GoalFunnelOrderTest extends TestCase
             'property_id' => self::PROPERTY,
             'name'        => 'Funnel order fixture profile',
             'domain'      => 'funnel.test',
-        ));
+        ]);
 
         if (!$site->create()) {
             throw new \RuntimeException('seeding owa_site failed');
@@ -185,22 +185,22 @@ final class GoalFunnelOrderTest extends TestCase
         $s5a = '9200000000000000206'; $s5b = '9200000000000000207';
         $s6 = '9200000000000000208'; $s7 = '9200000000000000209';
 
-        $hits = array(
+        $hits = [
             /*
              * v1 goes through with something in between. INDIRECTLY followed:
              * the next step has to come later, not next. A funnel that demanded
              * the very next event would report almost nobody on a real site.
              */
-            array($v1, $s1, '/a', 0),
-            array($v1, $s1, '/c', 5),
-            array($v1, $s1, '/b', 10),
+            [$v1, $s1, '/a', 0],
+            [$v1, $s1, '/c', 5],
+            [$v1, $s1, '/b', 10],
 
             /* Saw both, never /b AFTER /a. Not a pass. */
-            array($v2, $s2, '/b', 0),
-            array($v2, $s2, '/a', 10),
+            [$v2, $s2, '/b', 0],
+            [$v2, $s2, '/a', 10],
 
             /* Entered and stopped. */
-            array($v3, $s3, '/a', 0),
+            [$v3, $s3, '/a', 0],
 
             /*
              * v4 is the visitor a MIN-per-step implementation gets wrong.
@@ -210,9 +210,9 @@ final class GoalFunnelOrderTest extends TestCase
              * reads the funnel as out of order and drops them -- and they went
              * through it: /a at 10, /b at 20.
              */
-            array($v4, $s4a, '/b', 0),
-            array($v4, $s4b, '/a', 10),
-            array($v4, $s4b, '/b', 20),
+            [$v4, $s4a, '/b', 0],
+            [$v4, $s4b, '/a', 10],
+            [$v4, $s4b, '/b', 20],
 
             /*
              * v5 separates the two SCOPES.
@@ -221,15 +221,15 @@ final class GoalFunnelOrderTest extends TestCase
              * the funnel; as a VISIT neither half did -- the second visit never
              * saw /a, and a closed funnel is entered at step one.
              */
-            array($v5, $s5a, '/a', 0),
-            array($v5, $s5b, '/b', 30),
+            [$v5, $s5a, '/a', 0],
+            [$v5, $s5b, '/b', 30],
 
             /*
              * v6 never entered. A CLOSED funnel does not count somebody who
              * arrived at the last step and never saw the first -- they are not
              * counted in step 2 and then dropped, they are simply not in it.
              */
-            array($v6, $s6, '/b', 0),
+            [$v6, $s6, '/b', 0],
 
             /*
              * v7 does both steps at the SAME INSTANT.
@@ -248,9 +248,9 @@ final class GoalFunnelOrderTest extends TestCase
              * and the alternative settles it by coin flip. Each event is still
              * spent once. So v7 PASSES.
              */
-            array($v7, $s7, '/a', 40),
-            array($v7, $s7, '/b', 40),
-        );
+            [$v7, $s7, '/a', 40],
+            [$v7, $s7, '/b', 40],
+        ];
 
         $built = (int) round( microtime(true) * 1000000 );
 
@@ -260,7 +260,7 @@ final class GoalFunnelOrderTest extends TestCase
 
             $row = \OWA\Module\Base\Classes\Cube\Cubes::entityFor(self::PROPERTY);
 
-            $row->setProperties(array(
+            $row->setProperties([
                 'id'         => (string) (9200000000000000000 + $i),
                 'site_id'    => self::SITE,
                 'visitor_id' => $visitor,
@@ -279,7 +279,7 @@ final class GoalFunnelOrderTest extends TestCase
                 'acq_source' => 'direct',
                 'acq_medium' => 'direct',
                 'built_at'   => $built,
-            ));
+            ]);
 
             if (!$row->create()) {
                 throw new \RuntimeException('seeding the fixture cube failed');
@@ -294,18 +294,18 @@ final class GoalFunnelOrderTest extends TestCase
     {
         $this->seed();
 
-        $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(array(
+        $controller = new \OWA\Module\Base\Controller\VisualizationFunnel([
             'propertyId' => (string) self::PROPERTY,
             'period' => 'today',
-        ));
+        ]);
 
         $m = new ReflectionMethod($controller, 'countFunnel');
 
         // Written here as pages; a page step is a page_view event on its path (Classes\FunnelStep).
         $steps = array_map(static function ($step) {
-            return array('kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => array(
-                array('property' => 'page_path', 'operator' => 'exact', 'value' => $step['path']),
-            ));
+            return ['kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => [
+                ['property' => 'page_path', 'operator' => 'exact', 'value' => $step['path']],
+            ]];
         }, $steps);
 
         return $m->invoke($controller, $steps, $scope);
@@ -313,7 +313,7 @@ final class GoalFunnelOrderTest extends TestCase
 
     private function steps(): array
     {
-        return array(array('path' => '/a'), array('path' => '/b'));
+        return [['path' => '/a'], ['path' => '/b']];
     }
 
     public function testAStepIsOnlyReachedAfterTheOneBeforeIt(): void
@@ -351,7 +351,7 @@ final class GoalFunnelOrderTest extends TestCase
     /** Reversing the steps reverses who passed through, which pins the ordering. */
     public function testTheOrderOfTheStepsIsWhatDecides(): void
     {
-        $reversed = array(array('path' => '/b'), array('path' => '/a'));
+        $reversed = [['path' => '/b'], ['path' => '/a']];
 
         $counts = $this->funnel($reversed, 'visitor');
 
@@ -406,7 +406,7 @@ final class GoalFunnelOrderTest extends TestCase
      */
     public function testTheSameStepTwiceNeedsTwoVisits(): void
     {
-        $counts = $this->funnel(array(array('path' => '/a'), array('path' => '/a')), 'visitor');
+        $counts = $this->funnel([['path' => '/a'], ['path' => '/a']], 'visitor');
 
         $this->assertSame(6, $counts[0], 'everyone who saw /a at least once');
 
@@ -422,7 +422,7 @@ final class GoalFunnelOrderTest extends TestCase
      */
     public function testARepeatedPageSatisfiesARepeatedStep(): void
     {
-        $counts = $this->funnel(array(array('path' => '/b'), array('path' => '/b')), 'visitor');
+        $counts = $this->funnel([['path' => '/b'], ['path' => '/b']], 'visitor');
 
         $this->assertSame(6, $counts[0], 'everyone except v3 saw /b');
         $this->assertSame(1, $counts[1], 'only v4 saw /b twice');
@@ -501,25 +501,25 @@ final class GoalFunnelOrderTest extends TestCase
     public function testAFunnelNobodyWalkedIsZeroAtEveryStep(): void
     {
         $counts = $this->funnel(
-            array(array('path' => '/nobody-has-been-here'), array('path' => '/nor-here')),
+            [['path' => '/nobody-has-been-here'], ['path' => '/nor-here']],
             'visitor');
 
-        $this->assertSame(array(0, 0), $counts);
+        $this->assertSame([0, 0], $counts);
     }
 
     public function testAnEmptyFunnelCountsNothingRatherThanThrowing(): void
     {
-        $this->assertSame(array(), $this->funnel(array(), 'visitor'));
+        $this->assertSame([], $this->funnel([], 'visitor'));
     }
 
     /** The scope comes off the URL, and an unknown one is not an error. */
     public function testScopeIsReadFromTheUrlAndDefaultsToVisitor(): void
     {
-        foreach (array('' => 'visitor', 'visitor' => 'visitor',
-                       'session' => 'session', 'nonsense' => 'visitor') as $asked => $expected) {
+        foreach (['' => 'visitor', 'visitor' => 'visitor',
+                       'session' => 'session', 'nonsense' => 'visitor'] as $asked => $expected) {
 
             $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(
-                array('siteId' => self::SITE) + ($asked === '' ? array() : array('funnelScope' => $asked))
+                ['siteId' => self::SITE] + ($asked === '' ? [] : ['funnelScope' => $asked])
             );
 
             $m = new ReflectionMethod($controller, 'scope');

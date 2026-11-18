@@ -30,7 +30,7 @@ final class DomstreamPlayLinkTest extends TestCase
 
         \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
             "INSERT INTO owa_site (id, site_id, property_id, name, domain) VALUES (%s, ?, 0, 'Play link fixture', 'www.example.test')",
-            $entity->generateId( self::SITE ) ), array( self::SITE ) );
+            $entity->generateId( self::SITE ) ), [ self::SITE ] );
     }
 
     protected function tearDown(): void
@@ -42,7 +42,7 @@ final class DomstreamPlayLinkTest extends TestCase
 
     private function dropSite(): void
     {
-        \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_site WHERE site_id = ?', array( self::SITE ) );
+        \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_site WHERE site_id = ?', [ self::SITE ] );
     }
 
     private function playUrl( string $location ): string
@@ -52,13 +52,13 @@ final class DomstreamPlayLinkTest extends TestCase
 
         $m = new ReflectionMethod( $controller, 'playerPayload' );
 
-        return (string) $m->invoke( $controller, array(
+        return (string) $m->invoke( $controller, [
             'recording_id'  => '4921417228',
             'site_id'       => self::SITE,
             'page_location' => $location,
             'viewport_w'    => 1280,
             'viewport_h'    => 800,
-        ) )['url'];
+        ] )['url'];
     }
 
     public function testAWebPageIsPlayedWhereItWasRecorded(): void
@@ -72,12 +72,12 @@ final class DomstreamPlayLinkTest extends TestCase
     /** @return array<string, array{string}> */
     public static function offTheDomain(): array
     {
-        return array(
-            'another host'          => array( 'https://elsewhere.test/pricing' ),
-            'a host ending like it' => array( 'https://badexample.test/pricing' ),
-            'the domain as a path'  => array( 'https://elsewhere.test/example.test' ),
-            'the domain as a user'  => array( 'https://example.test@elsewhere.test/' ),
-        );
+        return [
+            'another host'          => [ 'https://elsewhere.test/pricing' ],
+            'a host ending like it' => [ 'https://badexample.test/pricing' ],
+            'the domain as a path'  => [ 'https://elsewhere.test/example.test' ],
+            'the domain as a user'  => [ 'https://example.test@elsewhere.test/' ],
+        ];
     }
 
     /**
@@ -91,14 +91,14 @@ final class DomstreamPlayLinkTest extends TestCase
     /** @return array<string, array{string}> */
     public static function notPages(): array
     {
-        return array(
-            'javascript'        => array( 'javascript:alert(1)' ),
-            'mixed case'        => array( 'JaVaScRiPt:alert(1)' ),
-            'data'              => array( 'data:text/html,<script>1</script>' ),
-            'no scheme'         => array( 'example.test/pricing' ),
-            'protocol relative' => array( '//example.test/pricing' ),
-            'empty'             => array( '' ),
-        );
+        return [
+            'javascript'        => [ 'javascript:alert(1)' ],
+            'mixed case'        => [ 'JaVaScRiPt:alert(1)' ],
+            'data'              => [ 'data:text/html,<script>1</script>' ],
+            'no scheme'         => [ 'example.test/pricing' ],
+            'protocol relative' => [ '//example.test/pricing' ],
+            'empty'             => [ '' ],
+        ];
     }
 
     /**

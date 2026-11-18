@@ -23,7 +23,7 @@ final class PropertyAdminScreensTest extends TestCase
     }
 
     /** The view a settings screen names once its action() has run. */
-    private function viewAfterAction( string $class, array $params = array() ): string
+    private function viewAfterAction( string $class, array $params = [] ): string
     {
         $controller = new $class( $params );
         $controller->action();
@@ -36,8 +36,8 @@ final class PropertyAdminScreensTest extends TestCase
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $actions = (array) $service->getMap( 'actions' );
 
-        foreach ( array( 'base.propertyProfile', 'base.propertyEdit',
-                         'base.organizationProfile', 'base.organizationEdit' ) as $action ) {
+        foreach ( [ 'base.propertyProfile', 'base.propertyEdit',
+                         'base.organizationProfile', 'base.organizationEdit' ] as $action ) {
 
             $this->assertArrayHasKey(
                 $action, $actions,
@@ -54,12 +54,12 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testARefusedSaveShowsTheFormAsItWasSent(): void
     {
-        $config   = array( 'base' => array( 'example_setting' => 'typed value' ) );
-        $override = array( 'base' => array( 'example_setting' => '1' ) );
+        $config   = [ 'base' => [ 'example_setting' => 'typed value' ] ];
+        $override = [ 'base' => [ 'example_setting' => '1' ] ];
 
-        $controller = new \OWA\Module\Base\Controller\PropertyEdit( array(
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit( [
             'name' => 'Typed name', 'propertyType' => 'web', 'domain' => '',
-            'description' => 'Typed description', 'config' => $config, 'override' => $override ) );
+            'description' => 'Typed description', 'config' => $config, 'override' => $override ] );
 
         $controller->errorAction();
         $data = $this->data( $controller );
@@ -69,14 +69,14 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'Typed name', $data['property']['name'] ?? null );
         $this->assertSame( 'Typed description', $data['property']['description'] ?? null );
         $this->assertSame( 'web', $data['property']['property_type'] ?? null );
-        $this->assertSame( array( 'config' => $config, 'override' => $override ), $data['posted'] ?? null );
+        $this->assertSame( [ 'config' => $config, 'override' => $override ], $data['posted'] ?? null );
         $this->assertSame( 3002, $data['error_code'] ?? null );
     }
 
     /** Renaming is capability-gated and nonce-protected, like every other mutation. */
     public function testTheRenameIsGuardedLikeOtherMutations(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PropertyEdit( array() );
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit( [] );
 
         $this->assertSame( 'edit_sites', $controller->getRequiredCapability() );
 
@@ -95,7 +95,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testABlankNameIsRefused(): void
     {
         $controller = new \OWA\Module\Base\Controller\PropertyEdit(
-            array( 'propertyId' => '123', 'name' => '   ' ) );
+            [ 'propertyId' => '123', 'name' => '   ' ] );
 
         $controller->validate();
 
@@ -106,7 +106,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $property = new \ReflectionProperty( $validator, 'validations' );
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $property->getValue( $validator ) as $validation ) {
             $names[] = $validation['name'];
@@ -129,12 +129,12 @@ final class PropertyAdminScreensTest extends TestCase
 
         if ( ! $validator ) {
 
-            return array();
+            return [];
         }
 
         $property = new \ReflectionProperty( $validator, 'validations' );
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $property->getValue( $validator ) as $validation ) {
             $names[] = $validation['name'];
@@ -154,7 +154,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testAWebPropertyMustHaveADomain(): void
     {
         $controller = new \OWA\Module\Base\Controller\PropertyEdit(
-            array( 'name' => 'Example', 'propertyType' => 'web', 'domain' => '  ' ) );
+            [ 'name' => 'Example', 'propertyType' => 'web', 'domain' => '  ' ] );
 
         $controller->validate();
 
@@ -172,7 +172,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testAnAppPropertyIsNotAskedForADomain(): void
     {
         $controller = new \OWA\Module\Base\Controller\PropertyEdit(
-            array( 'name' => 'Example', 'propertyType' => 'app', 'domain' => '' ) );
+            [ 'name' => 'Example', 'propertyType' => 'app', 'domain' => '' ] );
 
         $controller->validate();
 
@@ -190,7 +190,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testAnUnknownPropertyKindIsTreatedAsWeb(): void
     {
         $controller = new \OWA\Module\Base\Controller\PropertyEdit(
-            array( 'name' => 'Example', 'propertyType' => 'nonsense', 'domain' => '' ) );
+            [ 'name' => 'Example', 'propertyType' => 'nonsense', 'domain' => '' ] );
 
         $controller->validate();
 
@@ -282,7 +282,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheOrganizationCanBeRenamedAndIsGuardedTheSameWay(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OrganizationEdit( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationEdit( [] );
 
         $this->assertSame( 'edit_settings', $controller->getRequiredCapability() );
 
@@ -327,7 +327,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $template = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
-        foreach ( array( 'owa_siteControlOrgs', 'owa_siteControlProperties' ) as $column ) {
+        foreach ( [ 'owa_siteControlOrgs', 'owa_siteControlProperties' ] as $column ) {
 
             $this->assertStringContainsString(
                 $column, $template, "The control is missing its $column column." );
@@ -392,8 +392,8 @@ final class PropertyAdminScreensTest extends TestCase
         $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
 
         $checked   = 0;
-        $untitled  = array();
-        $duplicate = array();
+        $untitled  = [];
+        $duplicate = [];
 
         foreach ( $panels as $items ) {
 
@@ -420,8 +420,8 @@ final class PropertyAdminScreensTest extends TestCase
 
                 // The screen's View class, if it has one, or the template its
                 // controller declares (Controller::setSubview()).
-                foreach ( array( $dir . 'View/' . ucfirst( $name ) . '.php',
-                                 $dir . 'Controller/' . ucfirst( $name ) . '.php' ) as $file ) {
+                foreach ( [ $dir . 'View/' . ucfirst( $name ) . '.php',
+                                 $dir . 'Controller/' . ucfirst( $name ) . '.php' ] as $file ) {
 
                     if ( ! file_exists( $file ) ) {
                         continue;
@@ -439,12 +439,12 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertGreaterThan( 0, $checked,
             'no settings panel was found, so this checked nothing.' );
 
-        $this->assertSame( array(), $untitled,
+        $this->assertSame( [], $untitled,
             "These settings screens are registered without a title, so the nav has "
           . "nothing to label them with and the page has nothing to head itself with:\n"
           . implode( "\n", $untitled ) );
 
-        $this->assertSame( array(), $duplicate,
+        $this->assertSame( [], $duplicate,
             "A settings screen is titled by registerSettingsPage() and nowhere else. "
           . "These state a second name, which is how the two drifted apart before:\n"
           . implode( "\n", $duplicate ) );
@@ -454,7 +454,7 @@ final class PropertyAdminScreensTest extends TestCase
     {
         $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
 
-        $actions = array();
+        $actions = [];
 
         foreach ( $panels as $items ) {
             foreach ( (array) $items as $item ) {
@@ -462,9 +462,9 @@ final class PropertyAdminScreensTest extends TestCase
             }
         }
 
-        foreach ( array( 'base.users'        => 'the Organization',
+        foreach ( [ 'base.users'        => 'the Organization',
                          'base.sites'        => 'the site control',
-                         'base.goalEventDefinitions' => 'a Profile' ) as $gone => $where ) {
+                         'base.goalEventDefinitions' => 'a Profile' ] as $gone => $where ) {
 
             $this->assertNotContains(
                 $gone, $actions,
@@ -504,8 +504,8 @@ final class PropertyAdminScreensTest extends TestCase
          * What this still guards is that each TIER is reachable, which is what
          * the control is for.
          */
-        foreach ( array( 'base.organizationProfile' => 'the Organization',
-                         'base.propertyProfile'     => 'a Property' ) as $action => $what ) {
+        foreach ( [ 'base.organizationProfile' => 'the Organization',
+                         'base.propertyProfile'     => 'a Property' ] as $action => $what ) {
 
             $this->assertStringContainsString(
                 $action, $template,
@@ -518,19 +518,19 @@ final class PropertyAdminScreensTest extends TestCase
          * way to add one, and the roster's rows lead to each Profile's own
          * screens.
          */
-        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $profiles = (array) ( $method->invoke( $controller, '', 'p' )['Profiles'] ?? array() );
+        $profiles = (array) ( $method->invoke( $controller, '', 'p' )['Profiles'] ?? [] );
 
         $this->assertSame( 'base.sitesProfile', end( $profiles )['do'] ?? null,
             'No way from a Property to a new Profile.' );
-        $this->assertSame( array( 'propertyId' => 'p' ), end( $profiles )['params'] ?? null );
+        $this->assertSame( [ 'propertyId' => 'p' ], end( $profiles )['params'] ?? null );
 
         $roster = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/property_profiles.php' );
 
-        foreach ( array( 'base.sitesProfile', 'base.profileSettings', 'base.sitesInvocation' ) as $action ) {
+        foreach ( [ 'base.sitesProfile', 'base.profileSettings', 'base.sitesInvocation' ] as $action ) {
 
             $this->assertStringContainsString( "'do' => '$action'", $roster,
                 "The roster does not lead to $action." );
@@ -567,7 +567,7 @@ final class PropertyAdminScreensTest extends TestCase
             $this->markTestSkipped( 'The screens load the Organization from the database.' );
         }
 
-        foreach ( array( 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ) as $screen ) {
+        foreach ( [ 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ] as $screen ) {
 
             $this->assertSame( 'base.optionsHierarchy',
                 $this->viewAfterAction( "\\OWA\\Module\\Base\\Controller\\{$screen}" ),
@@ -633,7 +633,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheHierarchyHasItsOwnNestedNav(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
@@ -646,7 +646,7 @@ final class PropertyAdminScreensTest extends TestCase
         /* My Preferences needs no context either -- it is about the person, not
            about anything in the tree -- so it is present here too, at the head. */
         $this->assertSame(
-            array( 'My Preferences', 'Instance', 'Organization' ), array_keys( $bare ),
+            [ 'My Preferences', 'Instance', 'Organization' ], array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -660,14 +660,14 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'My Preferences', 'Instance', 'Organization', 'Property', 'Profiles' ),
+            [ 'My Preferences', 'Instance', 'Organization', 'Property', 'Profiles' ],
             array_keys( $withProperty ) );
     }
 
     /** Every item declares the capability that gates it. */
     public function testEveryNavItemIsGated(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
@@ -714,7 +714,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheProfileFormsAreSeparateScreens(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
@@ -722,8 +722,8 @@ final class PropertyAdminScreensTest extends TestCase
 
         // The tabs of the Profile's page, in this order.
         $this->assertSame(
-            array( 'base.sitesInvocation' => 'Tracking tag', 'base.profileSettings' => 'Observation settings',
-                   'base.sitesProfile' => 'Details' ),
+            [ 'base.sitesInvocation' => 'Tracking tag', 'base.profileSettings' => 'Observation settings',
+                   'base.sitesProfile' => 'Details' ],
             array_column( $nav['Observation Profile'], 'label', 'do' ) );
 
         $profile = array_column( $nav['Observation Profile'], 'label', 'do' );
@@ -763,7 +763,7 @@ final class PropertyAdminScreensTest extends TestCase
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
 
-        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
 
@@ -790,7 +790,7 @@ final class PropertyAdminScreensTest extends TestCase
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
 
-        $controller = new \OWA\Module\Base\Controller\PropertyProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\PropertyProfile( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
 
@@ -799,7 +799,7 @@ final class PropertyAdminScreensTest extends TestCase
         /* Every Profile of each Property -- the requirement is MEMBERSHIP, not
            a particular one, so recording only one per Property would assert
            something stricter than the code promises. */
-        $byProperty = array();
+        $byProperty = [];
 
         foreach ( (array) $allowed->invoke( $controller ) as $site ) {
 
@@ -847,9 +847,9 @@ final class PropertyAdminScreensTest extends TestCase
 
         $allowed = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
 
-        $byProperty = array();
+        $byProperty = [];
 
-        foreach ( (array) $allowed->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( array() ) ) as $site ) {
+        foreach ( (array) $allowed->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( [] ) ) as $site ) {
 
             if ( $site->get( 'property_id' ) ) {
                 $byProperty[ (string) $site->get( 'property_id' ) ][] = $site->get( 'site_id' );
@@ -865,21 +865,21 @@ final class PropertyAdminScreensTest extends TestCase
         $profiles   = $byProperty[ $propertyId ];
 
         $this->assertContains(
-            $method->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( array( 'propertyId' => $propertyId ) ) ),
+            $method->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( [ 'propertyId' => $propertyId ] ) ),
             $profiles, 'The propertyId on the request was ignored.' );
     }
 
     /** Each screen says what it is for, in the hierarchy's words. */
     public function testEveryHierarchyScreenExplainsItself(): void
     {
-        $screens = array(
+        $screens = [
             'organization_profile.php'   => 'Organization',
             'property_profile.php'       => 'Property',
             'property_access.php'        => 'Property',
             'profile_settings.php'       => 'Observation Profile',
             'sites_addoredit.php'        => 'Observation Profile',
             'goal_event_definitions.php' => 'Observation Profile',
-        );
+        ];
 
         foreach ( $screens as $template => $term ) {
 
@@ -916,9 +916,9 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheScreensDoNotSpeakOfSitesOrWebsites(): void
     {
-        $templates = array( 'organization_profile.php', 'property_profile.php',
+        $templates = [ 'organization_profile.php', 'property_profile.php',
                             'property_access.php', 'profile_settings.php',
-                            'sites_addoredit.php' );
+                            'sites_addoredit.php' ];
 
         foreach ( $templates as $template ) {
 
@@ -948,12 +948,12 @@ final class PropertyAdminScreensTest extends TestCase
              * decides which identifier it needs, and there is no other word for
              * the web one. Same for naming what a domain points at.
              */
-            foreach ( array(
+            foreach ( [
                 'website or application being observed',
                 'domain of the website being observed',
                 'website or product is called',
                 'A website',
-            ) as $approved ) {
+            ] as $approved ) {
 
                 $prose = str_replace( $approved, '', $prose );
             }
@@ -973,7 +973,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testNothingFollowsTheSaveButton(): void
     {
-        $templates = array( 'organization_profile.php', 'property_profile.php' );
+        $templates = [ 'organization_profile.php', 'property_profile.php' ];
 
         foreach ( $templates as $template ) {
 
@@ -1037,7 +1037,7 @@ final class PropertyAdminScreensTest extends TestCase
             'max-width', $panel,
             'The pane shrink-wraps its content, so every screen wraps at a different column.' );
 
-        foreach ( array( 'organization_profile.php', 'property_profile.php' ) as $template ) {
+        foreach ( [ 'organization_profile.php', 'property_profile.php' ] as $template ) {
 
             $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
@@ -1065,15 +1065,15 @@ final class PropertyAdminScreensTest extends TestCase
 
         $this->assertStringNotContainsString( 'hierarchy_tier', $view );
         $this->assertStringContainsString(
-            "foreach ( array( 'siteId', 'propertyId' ) as \$key )", $view,
+            "foreach ( [ 'siteId', 'propertyId' ] as \$key )", $view,
             'A screen that sets only siteId or propertyId would leave the column without its Property.' );
     }
 
     /** One description per screen. */
     public function testNoScreenDescribesItselfTwice(): void
     {
-        foreach ( array( 'organization_profile.php', 'property_profile.php',
-                         'property_access.php', 'profile_settings.php' ) as $template ) {
+        foreach ( [ 'organization_profile.php', 'property_profile.php',
+                         'property_access.php', 'profile_settings.php' ] as $template ) {
 
             $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
@@ -1113,7 +1113,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         // Sizes are the type scale's variables, declared on :root in rem.
         preg_match_all( '/(--owa-text-[a-z]+):\s*([\d.]+)rem/', $css, $tokens, PREG_SET_ORDER );
-        $scale = array();
+        $scale = [];
         foreach ( $tokens as $token ) {
             $scale[ $token[1] ] = (float) $token[2];
         }
@@ -1171,7 +1171,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* Add is a different route from edit: no id. */
         $this->assertStringContainsString(
-            "array( 'do' => 'base.propertyProfile' )", $template,
+            "[ 'do' => 'base.propertyProfile' ]", $template,
             'The Properties column has no add link, only per-row edit links.' );
 
         /* The Profile is added to the Property whose roster it is. */
@@ -1191,7 +1191,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testAPropertyCanBeAddedNotOnlyEdited(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PropertyProfile( array() );
+        $controller = new \OWA\Module\Base\Controller\PropertyProfile( [] );
         $controller->action();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
@@ -1244,7 +1244,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testInstallWideOptionsHeadTheSameNav(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OptionsModules( array() );
+        $controller = new \OWA\Module\Base\Controller\OptionsModules( [] );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
@@ -1265,14 +1265,14 @@ final class PropertyAdminScreensTest extends TestCase
             'Your own settings head the nav; they belong to no scope in the tree.' );
 
         $this->assertSame(
-            array( 'Instance', 'Organization' ),
-            array_values( array_diff( $groups, array( 'My Preferences' ) ) ),
+            [ 'Instance', 'Organization' ],
+            array_values( array_diff( $groups, [ 'My Preferences' ] ) ),
             'Install-wide options are the widest scope in the tree, so they head it -- the '
             . 'order reads install, Organization, Property, Profile.' );
 
         $actions = array_column( $nav['Instance'], 'do' );
 
-        foreach ( array( 'base.optionsGeneral', 'base.optionsModules' ) as $expected ) {
+        foreach ( [ 'base.optionsGeneral', 'base.optionsModules' ] as $expected ) {
             $this->assertContains( $expected, $actions );
         }
 
@@ -1283,7 +1283,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* Those screens render in the hierarchy wrapper, or the nav would
            vanish the moment you used it. */
-        foreach ( array( 'OptionsGeneral', 'OptionsModules' ) as $screen ) {
+        foreach ( [ 'OptionsGeneral', 'OptionsModules' ] as $screen ) {
 
             $this->assertSame( 'base.optionsHierarchy',
                 $this->viewAfterAction( "\\OWA\\Module\\Base\\Controller\\{$screen}" ), $screen );
@@ -1307,8 +1307,8 @@ final class PropertyAdminScreensTest extends TestCase
         $c = \OWA\Core\CoreAPI::configSingleton();
         $c->set( 'maxmind_geoip', 'db_edition', $c->get( 'maxmind_geoip', 'db_edition' ) );
 
-        foreach ( array( \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip::class,
-                         \OWA\Module\Sqs\Controller\OptionsSqs::class ) as $module ) {
+        foreach ( [ \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip::class,
+                         \OWA\Module\Sqs\Controller\OptionsSqs::class ] as $module ) {
 
             $this->assertSame( 'base.optionsHierarchy', $this->viewAfterAction( $module ),
                 "$module still renders in the retired settings menu." );

@@ -61,18 +61,18 @@ class Update070 extends \OWA\Core\Update {
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
 
-        $held = array();
-        $rows = array();
+        $held = [];
+        $rows = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 "SELECT * FROM %s WHERE scope_type = 'profile' AND module = 'base' AND name = ?", $table ),
-                array( self::NAME ) ) as $row ) {
+                [ self::NAME ] ) as $row ) {
 
             $row = (array) $row;
             $rows[ (string) $row['id'] ] = $row;
 
             // NULL is no value: that Profile inherits, like one with no row.
-            $held[ (string) $row['scope_id'] ] = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+            $held[ (string) $row['scope_id'] ] = @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
         }
 
         if ( ! $rows ) {
@@ -80,7 +80,7 @@ class Update070 extends \OWA\Core\Update {
             return true;
         }
 
-        $properties = array();
+        $properties = [];
 
         foreach ( array_keys( $held ) as $site_id ) {
 
@@ -96,8 +96,8 @@ class Update070 extends \OWA\Core\Update {
 
         // The first run's copy is the one down() restores.
         $record = $this->record();
-        $record['profiles']   = ( isset( $record['profiles'] ) && is_array( $record['profiles'] ) ? $record['profiles'] : array() ) + $rows;
-        $record['properties'] = isset( $record['properties'] ) && is_array( $record['properties'] ) ? $record['properties'] : array();
+        $record['profiles']   = ( isset( $record['profiles'] ) && is_array( $record['profiles'] ) ? $record['profiles'] : [] ) + $rows;
+        $record['properties'] = isset( $record['properties'] ) && is_array( $record['properties'] ) ? $record['properties'] : [];
 
         foreach ( array_keys( $properties ) as $property ) {
 
@@ -120,10 +120,10 @@ class Update070 extends \OWA\Core\Update {
             $property = (string) $property;
             $own      = $db->get_row( sprintf(
                 "SELECT value FROM %s WHERE scope_type = 'property' AND scope_id = ? AND module = 'base' AND name = ?", $table ),
-                array( $property, self::NAME ) );
+                [ $property, self::NAME ] );
 
             $inherited = $own
-                ? (bool) @unserialize( (string) ( (array) $own )['value'], array( 'allowed_classes' => false ) )
+                ? (bool) @unserialize( (string) ( (array) $own )['value'], [ 'allowed_classes' => false ] )
                 : (bool) \OWA\Core\CoreAPI::getSetting( 'base', self::NAME );
 
             $on = false;
@@ -137,8 +137,8 @@ class Update070 extends \OWA\Core\Update {
 
             if ( $db->query( sprintf( 'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
                     . " VALUES (?, 'property', ?, 'base', ?, ?, 1, ?) ON DUPLICATE KEY UPDATE value = ?", $table ),
-                    array( $setting->makeId( 'property', $property, 'base', self::NAME ), $property, self::NAME,
-                        serialize( $on ), time(), serialize( $on ) ) ) === false ) {
+                    [ $setting->makeId( 'property', $property, 'base', self::NAME ), $property, self::NAME,
+                        serialize( $on ), time(), serialize( $on ) ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Moving %s to Property %s failed.', self::NAME, $property ) );
 
@@ -147,7 +147,7 @@ class Update070 extends \OWA\Core\Update {
         }
 
         if ( $db->query( sprintf( "DELETE FROM %s WHERE scope_type = 'profile' AND module = 'base' AND name = ?",
-                $table ), array( self::NAME ) ) === false ) {
+                $table ), [ self::NAME ] ) === false ) {
 
             $this->e->notice( sprintf( 'Removing the Profile rows of %s failed.', self::NAME ) );
 
@@ -168,7 +168,7 @@ class Update070 extends \OWA\Core\Update {
             return $this->approximately();
         }
 
-        foreach ( (array) ( $record['profiles'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['profiles'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -178,11 +178,11 @@ class Update070 extends \OWA\Core\Update {
             }
         }
 
-        foreach ( (array) ( $record['properties'] ?? array() ) as $property => $row ) {
+        foreach ( (array) ( $record['properties'] ?? [] ) as $property => $row ) {
 
             $restored = $row === null
                 ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->settingTable() ),
-                    array( $this->settingId( 'property', (string) $property, self::NAME ) ) ) !== false
+                    [ $this->settingId( 'property', (string) $property, self::NAME ) ] ) !== false
                 : $this->restoreRow( (array) $row );
 
             if ( ! $restored ) {
@@ -217,7 +217,7 @@ class Update070 extends \OWA\Core\Update {
 
         $rows = (array) $db->get_results( sprintf(
             "SELECT * FROM %s WHERE scope_type = 'property' AND module = 'base' AND name = ?", $table ),
-            array( self::NAME ) );
+            [ self::NAME ] );
 
         foreach ( $rows as $row ) {
 
@@ -227,8 +227,8 @@ class Update070 extends \OWA\Core\Update {
 
                 if ( $db->query( sprintf( 'INSERT IGNORE INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
                         . " VALUES (?, 'profile', ?, 'base', ?, ?, ?, ?)", $table ),
-                        array( $setting->makeId( 'profile', $site_id, 'base', self::NAME ), $site_id, self::NAME,
-                            $row['value'], $row['autoload'], time() ) ) === false ) {
+                        [ $setting->makeId( 'profile', $site_id, 'base', self::NAME ), $site_id, self::NAME,
+                            $row['value'], $row['autoload'], time() ] ) === false ) {
 
                     $this->e->notice( sprintf( 'Restoring %s to Profile %s failed.', self::NAME, $site_id ) );
 
@@ -251,7 +251,7 @@ class Update070 extends \OWA\Core\Update {
     private function scopedRow( $scope_type, $scope_id, $name = self::NAME ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
-            array( $this->settingId( $scope_type, $scope_id, $name ) ) );
+            [ $this->settingId( $scope_type, $scope_id, $name ) ] );
 
         return $row ? (array) $row : null;
     }
@@ -267,5 +267,3 @@ class Update070 extends \OWA\Core\Update {
         return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId( $scope_type, (string) $scope_id, 'base', $name );
     }
 }
-
-?>

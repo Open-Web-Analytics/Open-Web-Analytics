@@ -23,12 +23,12 @@ namespace OWA\Core\View;
  * This view assembles the response to REST API requests
  */
 class RestApi extends \OWA\Core\View {
-	
-	public function __construct() {
-	 	
-	 	parent::__construct();
-	 	
-	 	// load templates
+    
+    public function __construct() {
+        
+        parent::__construct();
+        
+        // load templates
         $this->t->set_template('wrapper_blank.php');
         
         $this->body->set_template('restApiResponse.php');
@@ -49,42 +49,42 @@ class RestApi extends \OWA\Core\View {
         // response.
         $type = 'json';
 
-	   // set header if the request is from the API endpoint. Could be an internal request.
-	   
-	   if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
-		   
-			\OWA\Core\Lib::setContentTypeHeader( $type );
-			
-			// set cahce-control header to avid downstream caching.
-			header("Cache-Control: max-age=0");		
-			
-			// add CORS request headers
-			$this->addCorsHeaders();
-	   }
+       // set header if the request is from the API endpoint. Could be an internal request.
+       
+       if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
+           
+            \OWA\Core\Lib::setContentTypeHeader( $type );
+            
+            // set cahce-control header to avid downstream caching.
+            header("Cache-Control: max-age=0");		
+            
+            // add CORS request headers
+            $this->addCorsHeaders();
+       }
 
-	   
-		// Generate GUID for response
-	    $request = \OWA\Core\CoreAPI::getRequest();
+       
+        // Generate GUID for response
+        $request = \OWA\Core\CoreAPI::getRequest();
 
         $this->body->set('request_id', $request->guid );
-	    	    
-	    $error = array();
-	    
-	    // set error msgs
+                
+        $error = [];
+        
+        // set error msgs
         if ( array_key_exists( 'error_msg', $this->data ) ) {
-	        
+            
             $error[] = $this->data['error_msg'];
         }
         
         if ( array_key_exists( 'validation_errors', $this->data ) ) {
-	        
+            
             $error[] = $this->data['validation_errors'];
         }
         
-        $http_response = array(
-	        
-	        'status_code'	=> http_response_code()
-        );
+        $http_response = [
+            
+            'status_code'	=> http_response_code()
+        ];
         
         $this->body->set('http_response', $http_response);
         $this->body->set('data', '');
@@ -112,7 +112,7 @@ class RestApi extends \OWA\Core\View {
      */
     public function setResponseData( $data ) {
 
-	    $this->body->set( 'response_data', self::toResponseData( $data ) );
+        $this->body->set( 'response_data', self::toResponseData( $data ) );
     }
 
     /**
@@ -137,29 +137,29 @@ class RestApi extends \OWA\Core\View {
      */
     protected static function toResponseData( $data, $depth = 0 ) {
 
-	    if ( $depth > 10 ) {
+        if ( $depth > 10 ) {
 
-		    return null;
-	    }
+            return null;
+        }
 
-	    if ( $data instanceof \OWA\Core\Entity ) {
+        if ( $data instanceof \OWA\Core\Entity ) {
 
-		    return self::toPropertyBag( $data );
-	    }
+            return self::toPropertyBag( $data );
+        }
 
-	    if ( is_array( $data ) ) {
+        if ( is_array( $data ) ) {
 
-		    $out = array();
+            $out = [];
 
-		    foreach ( $data as $k => $v ) {
+            foreach ( $data as $k => $v ) {
 
-			    $out[ $k ] = self::toResponseData( $v, $depth + 1 );
-		    }
+                $out[ $k ] = self::toResponseData( $v, $depth + 1 );
+            }
 
-		    return $out;
-	    }
+            return $out;
+        }
 
-	    return $data;
+        return $data;
     }
 
     /**
@@ -187,14 +187,14 @@ class RestApi extends \OWA\Core\View {
      */
     protected static function toPropertyBag( \OWA\Core\Entity $entity ) {
 
-	    $properties = array();
+        $properties = [];
 
-	    foreach ( (array) $entity->getPublicProperties() as $column => $value ) {
+        foreach ( (array) $entity->getPublicProperties() as $column => $value ) {
 
-		    $properties[ $column ] = array( 'value' => $value );
-	    }
+            $properties[ $column ] = [ 'value' => $value ];
+        }
 
-	    return array( 'properties' => $properties );
+        return [ 'properties' => $properties ];
     }
     
     /**
@@ -263,7 +263,7 @@ class RestApi extends \OWA\Core\View {
 
         // An Origin is a scheme and a host. Anything else -- 'null', a bare
         // path, a javascript: URL -- is refused rather than coerced.
-        if ( ! $originHost || ! $scheme || ! in_array( strtolower( $scheme ), array( 'http', 'https' ), true ) ) {
+        if ( ! $originHost || ! $scheme || ! in_array( strtolower( $scheme ), [ 'http', 'https' ], true ) ) {
 
             return null;
         }
@@ -336,8 +336,8 @@ class RestApi extends \OWA\Core\View {
      */
     public function addCorsHeaders() {
 
-	    $s = \OWA\Core\CoreAPI::serviceSingleton();
-	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
 
         // Announce that the response body and its CORS headers depend on the
         // Origin, so a shared cache cannot serve one site's allowed-origin
@@ -347,7 +347,7 @@ class RestApi extends \OWA\Core\View {
         // a formality.
         header( 'Vary: Origin', false );
 
-	    // no Origin means this is not a cross-origin request.
+        // no Origin means this is not a cross-origin request.
         if ( ! $HTTP_ORIGIN ) {
 
             return;

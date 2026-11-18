@@ -62,7 +62,7 @@ final class Update054Test extends TestCase
     {
         $columns = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getColumns();
 
-        $kept = array(
+        $kept = [
             'dom_element_class' => 'click',
             'dom_element_name'  => 'click',
             'dom_element_text'  => 'click',
@@ -76,7 +76,7 @@ final class Update054Test extends TestCase
             'ct_order_source'   => 'purchase',
             'ct_gateway'        => 'purchase',
             'ct_line_items'     => 'purchase',
-        );
+        ];
 
         foreach ( $kept as $property => $event ) {
 

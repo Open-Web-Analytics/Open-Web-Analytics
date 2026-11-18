@@ -58,14 +58,14 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @var array<string, mixed>
      */
-    public $params = array();
+    public $params = [];
 
     /**
      * The lables for calculated measures
      *
      * @var array<string, string|null>
      */
-    public $labels = array();
+    public $labels = [];
 
     /**
      * Data Access Object
@@ -79,7 +79,7 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @var list<string>
      */
-    public $dimensions = array();
+    public $dimensions = [];
 
     /** @var int|string|null */
     public $page = 1;
@@ -94,7 +94,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * and what each means. The first found in a clause is the one it means, so
      * a value may contain any operator that comes later.
      */
-    const CONSTRAINT_OPERATORS = array(
+    const CONSTRAINT_OPERATORS = [
         '==' => 'is',
         '!=' => 'is not',
         '>=' => 'is at least',
@@ -105,26 +105,26 @@ class ResultSetManager extends \OWA\Core\Base {
         '!~' => 'does not match the regular expression',
         '=@' => 'contains',
         '!@' => 'does not contain',
-    );
+    ];
 
     /** @var list<string> The keys of CONSTRAINT_OPERATORS, set by the constructor. */
-    public $constraint_operators = array();
+    public $constraint_operators = [];
     /** @var \OWA\Module\Base\Classes\PaginatedResultSet */
     public $resultSet;
     /** @var list<string> the metrics asked for */
-    public $metrics = array();
+    public $metrics = [];
     /** @var list<string> the children of calculated metrics added to the select, removed from the result */
-    public $childMetrics = array();
+    public $childMetrics = [];
     /** @var array<string, \OWA\Core\Metric> name => the calculated metric */
-    public $calculatedMetrics = array();
+    public $calculatedMetrics = [];
     /** @var array<string, mixed> the request as the result set's URLs carry it */
-    public $query_params = array();
+    public $query_params = [];
     /** @var \OWA\Core\Entity|null the cube entity, set by loadBaseEntity() */
     public $baseEntity;
     /** @var array<string, \OWA\Core\Metric> metric name => the metric object, set by loadMetric() */
-    public $metricObjects = array();
+    public $metricObjects = [];
     /** @var list<string> */
-    public $errors = array();
+    public $errors = [];
 
     /**
      * Errors that mean the REQUEST is malformed, as opposed to noise.
@@ -136,9 +136,9 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @var list<string>
      */
-    public $request_errors = array();
+    public $request_errors = [];
     /** @var array<string, callable(mixed): mixed> data type => formatter */
-    public $formatters = array();
+    public $formatters = [];
     /** @var Segment|null */
     public $segment;
     /** @var string day, month or year */
@@ -162,16 +162,16 @@ class ResultSetManager extends \OWA\Core\Base {
             $this->db = \OWA\Core\CoreAPI::dbSingleton();
         }
 
-        $this->formatters = array(
+        $this->formatters = [
             //'yyyymmdd' => array($this, 'dateFormatter'),
-            'timestamp'        => array($this, 'formatSeconds'),
-            'percentage'     => array($this, 'formatPercentage'),
-            'integer'         => array($this, 'numberFormatter'),
-            'boolean'         => array($this, 'booleanFormatter'),
-            'milliseconds'    => array($this, 'formatMilliseconds'),
-            'datetime'        => array($this, 'formatDateTime'),
-            'currency'        => array($this, 'formatCurrency')
-        );
+            'timestamp'        => [$this, 'formatSeconds'],
+            'percentage'     => [$this, 'formatPercentage'],
+            'integer'         => [$this, 'numberFormatter'],
+            'boolean'         => [$this, 'booleanFormatter'],
+            'milliseconds'    => [$this, 'formatMilliseconds'],
+            'datetime'        => [$this, 'formatDateTime'],
+            'currency'        => [$this, 'formatCurrency']
+        ];
         
         $this->resultSet = new \OWA\Module\Base\Classes\PaginatedResultSet();
 
@@ -192,7 +192,7 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         if ( ! \OWA\Core\Lib::isEmpty( $value ) ) {
-            $this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
+            $this->params['constraints'][$name] = ['operator' => $operator, 'value' => $value, 'name' => $name];
         }
     }
 
@@ -218,11 +218,11 @@ class ResultSetManager extends \OWA\Core\Base {
         if (is_array($array)) {
 
             if ( ! isset($this->params['constraints']) ) {
-                $this->params['constraints'] = array();
+                $this->params['constraints'] = [];
             }
 
             // How many times each name has come up in this list.
-            $seen = array();
+            $seen = [];
 
             foreach ($array as $constraint) {
 
@@ -267,7 +267,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     continue;
                 }
 
-                if ( in_array( $constraint['operator'] ?? '', array( '=~', '!~' ), true ) ) {
+                if ( in_array( $constraint['operator'] ?? '', [ '=~', '!~' ], true ) ) {
 
                     $problem = self::regexProblem( (string) $constraint['value'] );
 
@@ -303,12 +303,12 @@ class ResultSetManager extends \OWA\Core\Base {
                     $key = $name . '#' . $seen[ $name ];
 
                     // 'key' keeps it apart in the query too (Db::where()).
-                    $this->params['constraints'][ $key ] = array(
+                    $this->params['constraints'][ $key ] = [
                         'operator' => $constraint['operator'] ?: '=',
                         'value'    => $constraint['value'],
                         'name'     => $name,
                         'key'      => $key,
-                    );
+                    ];
                 }
             }
         }
@@ -324,7 +324,7 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     private static function repeatsARepeat( $pattern ) {
 
-        $stack = array( false );   // per open group: does it contain a repeat
+        $stack = [ false ];   // per open group: does it contain a repeat
         $len   = strlen( $pattern );
 
         for ( $i = 0; $i < $len; $i++ ) {
@@ -434,7 +434,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     return \OWA\Core\CoreAPI::t( 'it uses a backreference.' );
                 }
 
-                if ( in_array( $next, array( 'K', 'C', 'N', 'o' ), true ) ) {
+                if ( in_array( $next, [ 'K', 'C', 'N', 'o' ], true ) ) {
 
                     return 'it uses \\' . $next . $mysql;
                 }
@@ -536,7 +536,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 return sprintf( 'it uses (?%s%s', $kind, $mysql );
             }
 
-            if ( in_array( $kind, array( ':', '=', '!', '<', '>', '#' ), true ) ) {
+            if ( in_array( $kind, [ ':', '=', '!', '<', '>', '#' ], true ) ) {
 
                 continue;
             }
@@ -732,8 +732,8 @@ class ResultSetManager extends \OWA\Core\Base {
             return $this->parseConstraintsString($string);
         }
     }
-	
-	/**
+    
+    /**
      * Transforms a comma separated string of constraints into array
      * The string format is used in REST API calls.
      *
@@ -743,7 +743,7 @@ class ResultSetManager extends \OWA\Core\Base {
     public function parseConstraintsString($string) {
 
         $constraints = explode(',', (string) $string);
-        $constraint_array = array();
+        $constraint_array = [];
 
         foreach($constraints as $constraint) {
 
@@ -764,7 +764,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     // As written, less the escapes constraintValue() adds: stored
                     // values are the text that was sent, so a filter on
                     // "Tom &amp; Jerry" means those characters.
-                    $constraint_array[] = array('name' => $name, 'value' => self::readConstraintValue( $value ), 'operator' => $operator);
+                    $constraint_array[] = ['name' => $name, 'value' => self::readConstraintValue( $value ), 'operator' => $operator];
                     $parsed = true;
                     break;
                 }
@@ -792,7 +792,7 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     public static function constraintValue( $value ) {
 
-        return str_replace( array( '%', ',' ), array( '%25', '%2C' ), (string) $value );
+        return str_replace( [ '%', ',' ], [ '%25', '%2C' ], (string) $value );
     }
 
     /**
@@ -958,7 +958,7 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         $objects = $this->metricObjects;
-        $names   = array();
+        $names   = [];
 
         /*
          * Every metric the statement reads: the ones asked for, and any a
@@ -976,7 +976,7 @@ class ResultSetManager extends \OWA\Core\Base {
             }
         }
 
-        foreach ( (array) ( $this->params['orderby'] ?? array() ) as $sort ) {
+        foreach ( (array) ( $this->params['orderby'] ?? [] ) as $sort ) {
 
             if ( isset( $sort[0] ) && $this->isMetric( $sort[0] ) ) {
 
@@ -1013,8 +1013,8 @@ class ResultSetManager extends \OWA\Core\Base {
 
         return $shared;
     }
-	
-	/**
+    
+    /**
      * Generate constraint clause using metrics and dimensions
      *
      * @param  Constraint             $constraint
@@ -1142,8 +1142,8 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         $parsed = $this->parseConstraintsString( $segment );
-        $metrics = array();
-        $dimensions = array();
+        $metrics = [];
+        $dimensions = [];
 
         foreach ( $parsed as $item ) {
 
@@ -1177,7 +1177,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
         }
 
-        $this->segment = array('metrics' => $metrics, 'dimensions' => $dimensions);
+        $this->segment = ['metrics' => $metrics, 'dimensions' => $dimensions];
     }
 
     /**
@@ -1198,7 +1198,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return array_keys($this->segment['metrics']);
         } else {
 
-            return array();
+            return [];
         }
     }
 
@@ -1211,7 +1211,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             return array_keys( $this->segment['dimensions'] );
         } else {
-            return array();
+            return [];
         }
     }
 
@@ -1263,7 +1263,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function getDimensionsFromConstraints() {
 
-        $dims = array();
+        $dims = [];
 
         $constraints = $this->getConstraints();
         //print_r($constraints);
@@ -1285,7 +1285,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function getMetricNamesFromConstraints() {
 
-        $metrics = array();
+        $metrics = [];
         foreach ($this->getConstraints() as $k => $constraint) {
 
             if ( $this->isMetric( $constraint['name'] ) ) {
@@ -1517,7 +1517,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             $sorts = explode(',', $string);
 
-            $sort_array = array();
+            $sort_array = [];
 
             foreach ($sorts as $sort) {
 
@@ -1633,7 +1633,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /** The dimensions a trend is drawn over: one row per interval of the period. */
-    const TREND_AXES = array( 'date', 'dateHour', 'yearMonth', 'year' );
+    const TREND_AXES = [ 'date', 'dateHour', 'yearMonth', 'year' ];
 
     /**
      * Whether the query is by a trend's axis (TREND_AXES), so bounded by the period rather than paged.
@@ -1660,14 +1660,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       if ($startDate && $endDate) {
       
           $period_name = 'date_range';
-          $map = array('startDate' => $startDate, 'endDate' => $endDate);
+          $map = ['startDate' => $startDate, 'endDate' => $endDate];
           $dimension_name = 'date';
           $format = 'yyyymmdd';
       
       } elseif ($startTime && $endTime) {
       
           $period_name = 'time_range';
-          $map = array('startTime' => $startTime, 'endTime' => $endTime);
+          $map = ['startTime' => $startTime, 'endTime' => $endTime];
           $dimension_name = 'timestamp';
           $format = 'timestamp';
       
@@ -1699,7 +1699,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $end = $this->timePeriod->endDate->get($format);
       
         // set time period constraint for query
-        $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
+        $this->setConstraint($dimension_name, ['start' => $start, 'end' => $end], 'BETWEEN');
 
         // A TIME bound also gets a closed DATE bound, derived here.
         //
@@ -1728,7 +1728,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             $this->setConstraint(
                 'date',
-                array( 'start' => date( 'Ymd', (int) $start ), 'end' => date( 'Ymd', (int) $end ) ),
+                [ 'start' => date( 'Ymd', (int) $start ), 'end' => date( 'Ymd', (int) $end ) ],
                 'BETWEEN'
             );
         }
@@ -1770,12 +1770,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 $this->setConstraint(
                     'timestamp',
-                    array( 'start' => $startTs, 'end' => $endTs ),
+                    [ 'start' => $startTs, 'end' => $endTs ],
                     'BETWEEN'
                 );
             }
         }
-  		}
+        }
     }
 
     /**
@@ -1784,14 +1784,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function applyMetaDataToResults( $results ) {
 
-        $new_rows = array();
+        $new_rows = [];
         
         if ( $results ) {
 
-	        foreach ($results as $row) {
-	
-	            $new_rows[] = $this->applyMetaDataToSingleResultRow( $row );
-	        }
+            foreach ($results as $row) {
+    
+                $new_rows[] = $this->applyMetaDataToSingleResultRow( $row );
+            }
         }
 
         return $new_rows;
@@ -1803,7 +1803,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function applyMetaDataToSingleResultRow($row) {
 
-        $new_row = array();
+        $new_row = [];
 
         foreach ($row as $k => $v) {
 
@@ -1842,14 +1842,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
 
 
-            $new_row[$k] = array(
+            $new_row[$k] = [
                 'result_type' => $type,
                 'name'           => $k,
                 'value'       => $v,
                 'formatted_value' => $type === 'dimension'
                                      ? $this->formatDimensionValue( $data_type, $v )
                                      : $this->formatValue($data_type, $v),
-                'label' => $this->getLabel($k), 'data_type' => $data_type);
+                'label' => $this->getLabel($k), 'data_type' => $data_type];
         }
 
         return $new_row;
@@ -1973,7 +1973,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @return mixed null as it came
      */
     public function numberFormatter($value) {
-	if(is_null($value)){
+    if(is_null($value)){
             return $value;
         }
         return \OWA\Core\Strings::formatNumber( $value );
@@ -2280,12 +2280,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $this->getCalculatedMetricByName($metric_name);
         }
     }
-	
-	/**
-	 * Generates select statment from metrics
-	 *
-	 * @return void
-	 */
+    
+    /**
+     * Generates select statment from metrics
+     *
+     * @return void
+     */
     public function applyMetrics() {
         //print_r($this->metrics);
         foreach($this->metrics as $k => $metric_name) {
@@ -2399,7 +2399,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
          * and the totals read only their rows (keptGroupsCondition()), so a
          * distinct count is distinct across them, not a sum of each group's.
          */
-        $metric_constraints = $this->dimensions ? $this->metricConstraints() : array();
+        $metric_constraints = $this->dimensions ? $this->metricConstraints() : [];
 
         if ( $metric_constraints ) {
 
@@ -2475,7 +2475,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function metricConstraints() {
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $this->getConstraints() as $key => $constraint ) {
 
@@ -2508,7 +2508,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return null;
         }
 
-        return array( sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $inner[0] ), $inner[1] );
+        return [ sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $inner[0] ), $inner[1] ];
     }
 
     /**
@@ -2521,7 +2521,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function groupKeySql() {
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $this->groupColumns() as $column ) {
 
@@ -2540,7 +2540,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public static function groupKeyOf( array $row, array $dimensions ) {
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $dimensions as $name ) {
 
@@ -2558,7 +2558,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     private function groupColumns() {
 
-        $columns = array();
+        $columns = [];
 
         foreach ( (array) $this->dimensions as $dimension_name ) {
 
@@ -2624,7 +2624,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $sql = $inner->generateSelectQuerySql();
 
-        return array( $sql, $inner->getBindings() );
+        return [ $sql, $inner->getBindings() ];
     }
 
     /**
@@ -2695,7 +2695,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function setRowWindow( $offset, $count ) {
 
-        $this->row_window = array( max( 0, (int) $offset ), max( 1, (int) $count ) );
+        $this->row_window = [ max( 0, (int) $offset ), max( 1, (int) $count ) ];
         $this->limit      = $this->row_window[1];
         $this->page       = 1;
     }
@@ -2813,7 +2813,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         // if there is a limit set then respect the limit and try to paginate the results by over querying
         } elseif ( $this->getLimit() ) {
-	        
+            
             // query for more than we need
             \OWA\Core\CoreAPI::debug('applying limit of: ' . $this->getLimit() );
             
@@ -2854,7 +2854,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->db->offset( $this->calculateOffset() );
             
         } else {
-	        
+            
             $this->page = 1;
         }
 
@@ -2871,18 +2871,18 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @return int|float
      */
     public function calculateOffset() {
-		
-		if ( $this->page > 1 ) {
-		
-        	return $this->limit * ( $this->page - 1 );
+        
+        if ( $this->page > 1 ) {
+        
+            return $this->limit * ( $this->page - 1 );
         
         } else {
-	        
-	        return 0;
+            
+            return 0;
         }
     }
 
-   	/**
+    /**
      * Generates a reporting result set using metrics and dimension
      *
      * @return \OWA\Module\Base\Classes\PaginatedResultSet
@@ -2937,22 +2937,22 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             
             // merge into result set
             if ( $results ) {
-	            
+                
                 $this->resultSet->aggregates = array_merge( $this->applyMetaDataToSingleResultRow( $results ), $this->resultSet->aggregates );
             }
-			
-			$dresults = [];
+            
+            $dresults = [];
             // setup dimensional query if dimensions were specified in query
             if ( ! empty( $this->dimensions ) ) {
-				
-				// Apply sorts
+                
+                // Apply sorts
                 if ( array_key_exists( 'orderby', $this->params ) ) {
                 
                     $sorts = $this->params['orderby'];
                     
                     // apply sort by
                     if ($sorts) {
-	                    
+                        
                         $this->applySorts();
                     
                         foreach ($sorts as $sort) {
@@ -2960,10 +2960,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             $this->resultSet->sortColumn = $sort[0];
                             
                             if (isset($sort[1])){
-	                            
+                                
                                 $this->resultSet->sortOrder = strtolower($sort[1]);
                             } else {
-	                            
+                                
                                 $this->resultSet->sortOrder = 'asc';
                             }
                         }
@@ -2991,9 +2991,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [
-	                
-	                'resultsPerPage' => $this->getlimit(),
-	                'page'			 => $this->getPage()
+                    
+                    'resultsPerPage' => $this->getlimit(),
+                    'page'			 => $this->getPage()
                 ] );
                 
             }
@@ -3006,15 +3006,15 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
               
             $this->resultSet = $this->computeCalculatedMetrics( $this->resultSet );
         }
-		
-		// set any metric/dimension combination errors
+        
+        // set any metric/dimension combination errors
         $this->resultSet->errors = $this->errors;
         $this->resultSet->request_errors = $this->request_errors;
-		
+        
         // None when the query named something that is not a metric or a dimension.
-        $this->resultSet->setRelatedDimensions( $bm ? $this->relatedDimensions() : array() );
+        $this->resultSet->setRelatedDimensions( $bm ? $this->relatedDimensions() : [] );
 
-        $this->resultSet->setRelatedMetrics( $bm ? $this->relatedMetrics() : array() );
+        $this->resultSet->setRelatedMetrics( $bm ? $this->relatedMetrics() : [] );
 
         return $this->resultSet;
     }
@@ -3045,8 +3045,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $this->applyConstraints( $segment['dimensions'], $db, $segment_entity);
 
                 // apply siteId, startDate, and endDate constraints
-                $constraint_names = array('siteId', 'date');
-                $constraints_apply = array();
+                $constraint_names = ['siteId', 'date'];
+                $constraints_apply = [];
                 //print_r($this->params['constraints']);
                 foreach ( $constraint_names as $name ) {
 
@@ -3083,7 +3083,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
                     $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
 
-                foreach ( $rs->getRowCount() > 0 ? $rs->resultsRows : array() as $k => $row ) {
+                foreach ( $rs->getRowCount() > 0 ? $rs->resultsRows : [] as $k => $row ) {
 
                     $v = $cm->computeDifference(
                         $row[ $cm->getMinuend() ]['value'] ?? null,
@@ -3178,11 +3178,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     public function relatedDimensions() {
 
-        $dims = array();
+        $dims = [];
 
         foreach ( $this->dimensionRegistry()->onEntity( \OWA\Core\Module::FACT_ENTITY ) as $ddim ) {
 
-            $dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
+            $dims[ $ddim['family'] ][] = [ 'name' => $ddim['name'], 'label' => $ddim['label'] ];
         }
 
         return $dims;
@@ -3201,9 +3201,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     public function relatedMetrics() {
 
         $all       = \OWA\Core\CoreAPI::serviceSingleton()->getAllMetrics();
-        $built     = array();
-        $plain     = array();
-        $related   = array();
+        $built     = [];
+        $plain     = [];
+        $related   = [];
 
         foreach ( $all as $metric_name => $implementations ) {
 
@@ -3211,7 +3211,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 $m = \OWA\Core\CoreAPI::metricFactory( $implementation['class'], $implementation['params'] );
 
-                $built[] = array( $metric_name, $implementation, $m );
+                $built[] = [ $metric_name, $implementation, $m ];
 
                 if ( ! $m->isCalculated() ) {
 
@@ -3227,13 +3227,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 continue;
             }
 
-            $related[ $implementation['group'] ][] = array(
+            $related[ $implementation['group'] ][] = [
                 'name'        => $metric_name,
                 'label'       => $implementation['label'],
                 'description' => $implementation['description'],
                 'group'       => $implementation['group'],
                 'metric_type' => $implementation['params']['metric_type'] ?? ''
-            );
+            ];
         }
 
         return $related;

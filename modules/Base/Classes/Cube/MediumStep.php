@@ -62,7 +62,7 @@ class MediumStep extends Step {
 
     public function requires() {
 
-        return array( $this->join );
+        return [ $this->join ];
     }
 
     public function execute( Context $context ) {
@@ -100,5 +100,3 @@ class MediumStep extends Step {
             SiteLists::matches( $host, 'search', $context ) );
     }
 }
-
-?>

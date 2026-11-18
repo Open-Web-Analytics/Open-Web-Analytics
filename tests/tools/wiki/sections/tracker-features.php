@@ -28,9 +28,9 @@ return function () {
     $labels = (array) CoreAPI::filter( 'tracker_feature_labels', TrackerBundle::FEATURE_LABELS );
 
     // module => [ setting => command ], Base first.
-    $sources = array( 'base' => TrackerBundle::HIT_SETTINGS + TrackerBundle::FEATURE_SETTINGS );
+    $sources = [ 'base' => TrackerBundle::HIT_SETTINGS + TrackerBundle::FEATURE_SETTINGS ];
     $names   = array_keys( Module::settingsRegistry()['declared'] );
-    $display = array();
+    $display = [];
 
     foreach ( CoreAPI::getPresentModules() as $dir ) {
 
@@ -52,7 +52,7 @@ return function () {
     }
 
     $out  = "| Setting | Command | Status label | In the default `features` list |\n|---|---|---|---|\n";
-    $seen = array();
+    $seen = [];
 
     foreach ( $sources as $module => $settings ) {
 

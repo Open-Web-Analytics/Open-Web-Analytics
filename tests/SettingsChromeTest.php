@@ -19,10 +19,10 @@ final class SettingsChromeTest extends TestCase
                 return $this->data;
             }
             public function expected($siteId, $propertyId) {
-                return array(
+                return [
                     'site_hierarchy' => $this->getSiteHierarchy($this->getSitesAllowedForCurrentUser()),
                     'hierarchy_nav'  => $this->getHierarchyNav($siteId, $propertyId),
-                );
+                ];
             }
         };
     }

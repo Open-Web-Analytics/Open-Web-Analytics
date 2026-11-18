@@ -16,11 +16,11 @@
  */
 $owa_ke = (array) $view->goalEventDefinition;
 
-$owa_operators = array(
+$owa_operators = [
     \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT  => 'Exactly Matching',
     \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_BEGINS => 'Begins With',
     \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX  => 'Matches Regex',
-);
+];
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
@@ -64,8 +64,8 @@ $owa_operators = array(
              * property list follows the event, and the pickers are searchable and
              * describe what they offer.
              */
-            $owa_conditions = $view->conditions ?: array( array(
-                'condition_property' => '', 'condition_operator' => '', 'condition_value' => '' ) );
+            $owa_conditions = $view->conditions ?: [ [
+                'condition_property' => '', 'condition_operator' => '', 'condition_value' => '' ] ];
             ?>
             <div class="owa_goalBuilder"
                  data-not-carried-label="<?php $view->out( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ) );?>"

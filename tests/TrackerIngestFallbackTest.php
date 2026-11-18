@@ -32,13 +32,13 @@ final class TrackerIngestFallbackTest extends TestCase
     private string $dir = '';
 
     /** @var array<string,mixed> */
-    private array $saved = array();
+    private array $saved = [];
 
     protected function setUp(): void
     {
         $this->dir = sys_get_temp_dir() . '/owa-fallback-' . bin2hex(random_bytes(4)) . '/';
 
-        foreach (array(array('sqs', 'region'), array('base', 'request_type')) as [$m, $k]) {
+        foreach ([['sqs', 'region'], ['base', 'request_type']] as [$m, $k]) {
             $this->saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
         \OWA\Core\CoreAPI::setSetting('sqs', 'region', 'us-east-1');
@@ -64,7 +64,7 @@ final class TrackerIngestFallbackTest extends TestCase
     {
         $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType('page_view');
-        $event->setProperties(array('page_url' => 'https://example.test/' . $n, 'site_id' => 'fallback-test'));
+        $event->setProperties(['page_url' => 'https://example.test/' . $n, 'site_id' => 'fallback-test']);
 
         return $event;
     }
@@ -77,7 +77,7 @@ final class TrackerIngestFallbackTest extends TestCase
 
     private function fileQueue(): FileEventQueue
     {
-        return new FileEventQueue(array('path' => $this->dir, 'max_receives' => TrackerIngest::MAX_RECEIVES));
+        return new FileEventQueue(['path' => $this->dir, 'max_receives' => TrackerIngest::MAX_RECEIVES]);
     }
 
     // ---------------------------------------------------------------------
@@ -113,7 +113,7 @@ final class TrackerIngestFallbackTest extends TestCase
         $arrived = TrackerIngest::envelope($this->event());
         $this->logDuring(fn () => TrackerIngest::retryLater($this->event(), $arrived));
 
-        $this->assertSame(array($arrived, 60), $kept->sent[0]);
+        $this->assertSame([$arrived, 60], $kept->sent[0]);
     }
 
     public function testATakenBeaconDoesNotTouchTheFallback(): void
@@ -124,7 +124,7 @@ final class TrackerIngestFallbackTest extends TestCase
 
         $this->assertTrue(TrackerIngest::send($this->event()));
         $this->assertCount(1, $main->sent);
-        $this->assertSame(array(), $kept->sent);
+        $this->assertSame([], $kept->sent);
     }
 
     /** The fallback could never forward it, so it is not kept: refused, and said so. */
@@ -143,8 +143,8 @@ final class TrackerIngestFallbackTest extends TestCase
         });
 
         $this->assertFalse($ok);
-        $this->assertSame(array(), $main->sent);
-        $this->assertSame(array(), $kept->sent);
+        $this->assertSame([], $main->sent);
+        $this->assertSame([], $kept->sent);
         $this->assertStringContainsString('size limit of 200 bytes', $log);
     }
 
@@ -160,12 +160,12 @@ final class TrackerIngestFallbackTest extends TestCase
     {
         $mock = new MockHandler();
         $timeout = fn ($cmd) => new \Aws\Exception\AwsException('cURL error 28: Operation timed out', $cmd,
-            array('connection_error' => true));
+            ['connection_error' => true]);
         // The first attempt and its one retry (Sqs::LOGGER_RETRIES).
         $mock->append($timeout, $timeout);
         Sqs::$handler = $mock;
 
-        $sqs = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+        $sqs = new SqsQueue(['name' => 'owa-tracker-ingest-test']);
         (new ReflectionProperty($sqs, 'url'))->setValue($sqs, 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-test');
 
         $file = $this->fileQueue();
@@ -205,9 +205,9 @@ final class TrackerIngestFallbackTest extends TestCase
         $kept = $this->kept(3);
         $this->use($main, $kept);
 
-        $this->assertSame(array('forwarded' => 3, 'waiting' => 0, 'dead' => 0), TrackerIngest::forwardFallback(time() + 30));
+        $this->assertSame(['forwarded' => 3, 'waiting' => 0, 'dead' => 0], TrackerIngest::forwardFallback(time() + 30));
         $this->assertCount(3, $main->sent);
-        $this->assertSame(array('ack', 'ack', 'ack'), array_column($kept->calls, 0));
+        $this->assertSame(['ack', 'ack', 'ack'], array_column($kept->calls, 0));
     }
 
     /** Nothing is received from the fallback while the intake cannot be read: its receive limit is not spent. */
@@ -218,9 +218,9 @@ final class TrackerIngestFallbackTest extends TestCase
         $kept = $this->kept(2);
         $this->use($main, $kept);
 
-        $this->assertSame(array('forwarded' => 0, 'waiting' => 2, 'dead' => 0), TrackerIngest::forwardFallback(time() + 30));
+        $this->assertSame(['forwarded' => 0, 'waiting' => 2, 'dead' => 0], TrackerIngest::forwardFallback(time() + 30));
         $this->assertSame(0, $kept->receives);
-        $this->assertSame(array(), $main->sent);
+        $this->assertSame([], $main->sent);
     }
 
     /** The intake stops answering part-way: what was received and not sent waits a minute. */
@@ -231,8 +231,8 @@ final class TrackerIngestFallbackTest extends TestCase
         $kept = $this->kept(3);
         $this->use($main, $kept);
 
-        $this->assertSame(array('forwarded' => 1, 'waiting' => 2, 'dead' => 0), TrackerIngest::forwardFallback(time() + 30));
-        $this->assertSame(array(array('ack'), array('release', 60), array('release', 60)), $kept->calls);
+        $this->assertSame(['forwarded' => 1, 'waiting' => 2, 'dead' => 0], TrackerIngest::forwardFallback(time() + 30));
+        $this->assertSame([['ack'], ['release', 60], ['release', 60]], $kept->calls);
     }
 
     public function testWhatCannotBeForwardedIsDeadLetteredInTheFallback(): void
@@ -242,14 +242,14 @@ final class TrackerIngestFallbackTest extends TestCase
         $kept = new FallbackTestIntake();
         $big  = $this->event('big');
         $big->set('page_title', str_repeat('x', 500));
-        $kept->pending = array(
+        $kept->pending = [
             new IntakeMessage('r1', null, 1, 'garbage'),
             new IntakeMessage('r2', TrackerIngest::envelope($big), 1),
-        );
+        ];
         $this->use($main, $kept);
 
-        $this->assertSame(array('forwarded' => 0, 'waiting' => 0, 'dead' => 2), TrackerIngest::forwardFallback(time() + 30));
-        $this->assertSame(array('dead', 'dead'), array_column($kept->calls, 0));
+        $this->assertSame(['forwarded' => 0, 'waiting' => 0, 'dead' => 2], TrackerIngest::forwardFallback(time() + 30));
+        $this->assertSame(['dead', 'dead'], array_column($kept->calls, 0));
     }
 
     /** End to end: kept in a file, forwarded to SQS, gone from the file. */
@@ -259,17 +259,17 @@ final class TrackerIngestFallbackTest extends TestCase
         $file->send(TrackerIngest::envelope($this->event('kept')));
 
         $mock = new MockHandler();
-        $sent = array();
+        $sent = [];
         $mock->append(
-            new Result(array('Attributes' => array('ApproximateNumberOfMessages' => '0'))),
+            new Result(['Attributes' => ['ApproximateNumberOfMessages' => '0']]),
             function ($cmd) use (&$sent) {
                 $sent[] = json_decode($cmd['MessageBody'], true);
-                return new Result(array());
+                return new Result([]);
             }
         );
         Sqs::$handler = $mock;
 
-        $sqs = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+        $sqs = new SqsQueue(['name' => 'owa-tracker-ingest-test']);
         (new ReflectionProperty($sqs, 'url'))->setValue($sqs, 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-test');
         $this->use($sqs, $file);
 
@@ -287,11 +287,11 @@ final class TrackerIngestFallbackTest extends TestCase
     // The drain command
     // ---------------------------------------------------------------------
 
-    private function drain(array $params = array()): \OWA\Module\Base\Controller\DrainTrackerIngestCli
+    private function drain(array $params = []): \OWA\Module\Base\Controller\DrainTrackerIngestCli
     {
         $class = new ReflectionClass(\OWA\Module\Base\Controller\DrainTrackerIngestCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
-        $class->getProperty('params')->setValue($cli, $params + array('seconds' => 2));
+        $class->getProperty('params')->setValue($cli, $params + ['seconds' => 2]);
 
         $this->logDuring(fn () => $cli->action());
 
@@ -326,7 +326,7 @@ final class TrackerIngestFallbackTest extends TestCase
         $kept = $this->kept(1);
         $this->use($main, $kept);
 
-        $outcome = $this->drain(array('forward_only' => 1))->getCliOutcome();
+        $outcome = $this->drain(['forward_only' => 1])->getCliOutcome();
 
         $this->assertSame('ok', $outcome['outcome']);
         $this->assertCount(1, $main->sent, 'forwarded');
@@ -339,7 +339,7 @@ final class TrackerIngestFallbackTest extends TestCase
         $main->readable = false;
         $this->use($main, $this->kept(1));
 
-        $this->assertSame('failed', $this->drain(array('forward_only' => 1))->getCliOutcome()['outcome']);
+        $this->assertSame('failed', $this->drain(['forward_only' => 1])->getCliOutcome()['outcome']);
     }
 
     // ---------------------------------------------------------------------
@@ -379,12 +379,12 @@ final class TrackerIngestFallbackTest extends TestCase
 class FallbackTestIntake implements IntakeQueue
 {
     /** @var IntakeMessage[] */
-    public array $pending = array();
+    public array $pending = [];
 
     /** @var array<int, array{0:array,1:int}> envelope and delay, per send it took */
-    public array $sent = array();
+    public array $sent = [];
 
-    public array $calls = array();
+    public array $calls = [];
 
     public int $receives = 0;
 
@@ -414,7 +414,7 @@ class FallbackTestIntake implements IntakeQueue
             return false;
         }
 
-        $this->sent[] = array($envelope, $delay);
+        $this->sent[] = [$envelope, $delay];
 
         return true;
     }
@@ -425,7 +425,7 @@ class FallbackTestIntake implements IntakeQueue
 
         if ($this->pending_but_unreadable) {
             $this->error = 'AccessDenied';
-            return array();
+            return [];
         }
 
         return array_splice($this->pending, 0, $max);
@@ -433,21 +433,21 @@ class FallbackTestIntake implements IntakeQueue
 
     public function ack(IntakeMessage $message)
     {
-        $this->calls[] = array('ack');
+        $this->calls[] = ['ack'];
 
         return true;
     }
 
     public function release(IntakeMessage $message, $delay)
     {
-        $this->calls[] = array('release', $delay);
+        $this->calls[] = ['release', $delay];
 
         return true;
     }
 
     public function deadLetter(IntakeMessage $message, $reason)
     {
-        $this->calls[] = array('dead', $reason);
+        $this->calls[] = ['dead', $reason];
 
         return true;
     }
@@ -465,10 +465,10 @@ class FallbackTestIntake implements IntakeQueue
     public function stats()
     {
         if (!$this->readable) {
-            return array('messages' => null, 'oldest_age' => null, 'error' => 'AccessDenied');
+            return ['messages' => null, 'oldest_age' => null, 'error' => 'AccessDenied'];
         }
 
-        return array('messages' => count($this->pending), 'oldest_age' => null);
+        return ['messages' => count($this->pending), 'oldest_age' => null];
     }
 
     public function lastError()

@@ -23,5 +23,3 @@ class UsersRest extends \OWA\Core\View\RestApi {
         $this->setResponseData( $this->get('users_objs') );
     }
 }
-
-?>

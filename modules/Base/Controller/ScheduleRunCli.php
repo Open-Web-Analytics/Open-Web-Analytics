@@ -35,16 +35,16 @@ class ScheduleRunCli extends SchedulerCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Runs every scheduled job that is due. The one command that belongs in cron, every minute.',
-            'arguments'   => array(
+            'arguments'   => [
                 '--dry-run'       => 'Report what would run, and change nothing.',
                 'job=<name>'      => 'With --force or --force-release: the job to act on.',
                 '--force'         => 'With job=: run the job now, whatever its schedule.',
                 '--force-release' => 'With job=: drop a lock left by a process that died.',
                 '--prune-orphans' => 'Forget the state of jobs that are no longer registered.',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -107,7 +107,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( $only ) {
 
-            $jobs = array( $only => $jobs[ $only ] );
+            $jobs = [ $only => $jobs[ $only ] ];
         }
 
         foreach ( $jobs as $name => $job ) {
@@ -147,11 +147,11 @@ class ScheduleRunCli extends SchedulerCli {
         $counts = \OWA\Module\Base\Classes\JobQueue::drain( $deadline,
             function ( $command, array $params, array $row ) {
 
-                $controller = $this->makeController( array( 'command' => $command, 'params' => $params ) );
+                $controller = $this->makeController( [ 'command' => $command, 'params' => $params ] );
 
                 if ( ! $controller ) {
 
-                    return array( 'outcome' => 'failed', 'message' => 'controller could not be constructed' );
+                    return [ 'outcome' => 'failed', 'message' => 'controller could not be constructed' ];
                 }
 
                 $controller->setJobLease(
@@ -396,10 +396,10 @@ class ScheduleRunCli extends SchedulerCli {
             // uncaught one would end the whole run and every job after it.
             // \Throwable rather than \Exception: a TypeError from a third-party
             // command must not take the dispatcher with it.
-            $outcome = array(
+            $outcome = [
                 'outcome' => 'failed',
                 'message' => sprintf( '%s: %s', get_class( $t ), $t->getMessage() ),
-            );
+            ];
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'Job "%s" threw %s: %s', $name, get_class( $t ), $t->getMessage()
@@ -419,7 +419,7 @@ class ScheduleRunCli extends SchedulerCli {
             time(),
             // Only ok and refused satisfy the occurrence. A refusal is an answer
             // about it; a failure is not, so the job stays due and is retried.
-            in_array( $outcome['outcome'], array( 'ok', 'refused' ), true ) ? $slot : null
+            in_array( $outcome['outcome'], [ 'ok', 'refused' ], true ) ? $slot : null
         );
     }
 
@@ -489,30 +489,30 @@ class ScheduleRunCli extends SchedulerCli {
      */
     protected function readOutcome( $controller, $data ) {
 
-        $data = is_array( $data ) ? $data : array();
+        $data = is_array( $data ) ? $data : [];
 
         // doAction() intercepts on its own account before reaching action().
         if ( isset( $data['view'] ) && $data['view'] === 'base.error' ) {
 
-            return array( 'outcome' => 'failed', 'message' => 'capability check failed' );
+            return [ 'outcome' => 'failed', 'message' => 'capability check failed' ];
         }
 
         if ( isset( $data['view'] ) && $data['view'] === 'base.genericCli' ) {
 
-            return array( 'outcome' => 'refused', 'message' => 'schema updates are pending' );
+            return [ 'outcome' => 'refused', 'message' => 'schema updates are pending' ];
         }
 
         if ( method_exists( $controller, 'getCliOutcome' ) ) {
 
             $outcome = $controller->getCliOutcome();
 
-            return array(
+            return [
                 'outcome' => isset( $outcome['outcome'] ) ? $outcome['outcome'] : 'ok',
                 'message' => isset( $outcome['message'] ) ? $outcome['message'] : '',
-            );
+            ];
         }
 
-        return array( 'outcome' => 'ok', 'message' => '' );
+        return [ 'outcome' => 'ok', 'message' => '' ];
     }
 
     /**

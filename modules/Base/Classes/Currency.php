@@ -22,7 +22,7 @@ namespace OWA\Module\Base\Classes;
 class Currency {
 
     /** ISO 4217 exponents other than 2. */
-    const EXPONENTS = array(
+    const EXPONENTS = [
         // No minor unit.
         'BIF' => 0, 'CLP' => 0, 'DJF' => 0, 'GNF' => 0, 'ISK' => 0, 'JPY' => 0,
         'KMF' => 0, 'KRW' => 0, 'PYG' => 0, 'RWF' => 0, 'UGX' => 0, 'UYI' => 0,
@@ -32,7 +32,7 @@ class Currency {
         'TND' => 3,
         // Four.
         'CLF' => 4, 'UYW' => 4,
-    );
+    ];
 
     /** The exponent for currencies not listed above, and for an unknown code. */
     const DEFAULT_EXPONENT = 2;
@@ -121,5 +121,3 @@ class Currency {
         return ( (float) $minor ) / pow( 10, self::exponent( $code ) );
     }
 }
-
-?>

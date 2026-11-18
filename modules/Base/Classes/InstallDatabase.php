@@ -64,31 +64,31 @@ final class InstallDatabase {
 
         if ( self::organizationIdFrom( $name ) === null ) {
 
-            return array( 'ok' => false, 'error' => sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a database name OWA can use.' ), $name ) );
+            return [ 'ok' => false, 'error' => sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a database name OWA can use.' ), $name ) ];
         }
 
         $server = self::server();
 
         if ( ! $server ) {
 
-            return array( 'ok' => false, 'error' => \OWA\Core\CoreAPI::t( 'Could not connect to the database server with these details.' ) );
+            return [ 'ok' => false, 'error' => \OWA\Core\CoreAPI::t( 'Could not connect to the database server with these details.' ) ];
         }
 
         if ( $server->databaseExists( $name ) ) {
 
-            return array( 'ok' => false, 'error' => sprintf(
+            return [ 'ok' => false, 'error' => sprintf(
                 \OWA\Core\CoreAPI::t( 'A database named %s already exists on this server. Choose "Use an existing database" to install into it.' ),
-                $name ) );
+                $name ) ];
         }
 
         if ( ! $server->createDatabase( $name ) ) {
 
-            return array( 'ok' => false, 'error' => sprintf(
+            return [ 'ok' => false, 'error' => sprintf(
                 \OWA\Core\CoreAPI::t( 'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".' ),
-                $server->lastQueryError() ?: 'permission denied', $name, OWA_DTD_CHARACTER_ENCODING_UTF8, $name ) );
+                $server->lastQueryError() ?: 'permission denied', $name, OWA_DTD_CHARACTER_ENCODING_UTF8, $name ) ];
         }
 
-        return array( 'ok' => true, 'error' => null );
+        return [ 'ok' => true, 'error' => null ];
     }
 
     /**
@@ -154,5 +154,3 @@ final class InstallDatabase {
         return $db->connection_status ? $db : null;
     }
 }
-
-?>

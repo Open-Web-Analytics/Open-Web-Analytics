@@ -69,19 +69,19 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
         $contracts = json_decode( (string) file_get_contents(
             \OWA\Core\Env::root() . '/tests/fixtures/beacon_contracts.json' ), true );
 
-        $names = array();
+        $names = [];
 
         /*
          * A contract is keyed by the event it describes, and a variant is
          * suffixed -- page_view.campaign is a page_view -- so the base name
          * before the first dot is the vocabulary.
          */
-        foreach ( array_keys( (array) ( $contracts[ self::CURRENT ] ?? array() ) ) as $shape ) {
+        foreach ( array_keys( (array) ( $contracts[ self::CURRENT ] ?? [] ) ) as $shape ) {
 
             $names[ strtok( (string) $shape, '.' ) ] = true;
         }
 
-        return array_map( function ( $n ) { return array( $n ); }, array_keys( $names ) );
+        return array_map( function ( $n ) { return [ $n ]; }, array_keys( $names ) );
     }
 
     /**
@@ -125,7 +125,7 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
 
-        $this->fireEvent( $name, array(
+        $this->fireEvent( $name, [
             'site_id'       => $this->site,
             'visitor_id'    => $visitor,
             'session_id'    => $session,
@@ -136,7 +136,7 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
             // purchase needs a total for its own columns; harmless elsewhere.
             'ct_order_id'   => 'accepts-' . $name,
             'ct_total'      => '1.00',
-        ) );
+        ] );
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();
         $rows = (array) $db->get_results( sprintf(

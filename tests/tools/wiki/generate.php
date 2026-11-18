@@ -58,15 +58,15 @@ if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( \OWA\Core\Env::root() . '/owa-
 function owa_wiki_module_overrides() {
 
     if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) !== realpath( __FILE__ ) ) {
-        return array();
+        return [];
     }
 
-    $out = array();
+    $out = [];
 
     foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
 
         if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m ) ) {
-            $out[ $m[1] ] = array( 'is_active' => true );
+            $out[ $m[1] ] = [ 'is_active' => true ];
         }
     }
 
@@ -92,7 +92,7 @@ function owa_wiki_boot() {
 
     if ( ! $owa ) {
         $owa = new owa( array_merge( owa_wiki_module_overrides(),
-            array( 'base' => array( 'request_type' => 'cli' ) ) ) );
+            [ 'base' => [ 'request_type' => 'cli' ] ] ) );
     }
 
     return $owa;
@@ -103,7 +103,7 @@ function owa_wiki_boot() {
  */
 function owa_wiki_section_files() {
 
-    $files = array();
+    $files = [];
 
     foreach ( glob( SECTIONS_DIR . '/*.{php,js}', GLOB_BRACE ) as $path ) {
         $files[ pathinfo( $path, PATHINFO_FILENAME ) ] = $path;
@@ -122,7 +122,7 @@ function owa_wiki_resolve( $name ) {
     $files = owa_wiki_section_files();
 
     if ( isset( $files[ $name ] ) ) {
-        return array( $files[ $name ], null );
+        return [ $files[ $name ], null ];
     }
 
     // Longest prefix first, so event-properties-click finds event-properties.php
@@ -132,7 +132,7 @@ function owa_wiki_resolve( $name ) {
     while ( ( $dash = strrpos( substr( $name, 0, $dash ), '-' ) ) !== false ) {
 
         if ( isset( $files[ substr( $name, 0, $dash ) ] ) ) {
-            return array( $files[ substr( $name, 0, $dash ) ], substr( $name, $dash + 1 ) );
+            return [ $files[ substr( $name, 0, $dash ) ], substr( $name, $dash + 1 ) ];
         }
     }
 
@@ -226,8 +226,8 @@ try {
             exit( 2 );
         }
 
-        $cache   = array();
-        $changed = array();
+        $cache   = [];
+        $changed = [];
 
         foreach ( glob( $dir . '/*.md' ) as $path ) {
 

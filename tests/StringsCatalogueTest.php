@@ -193,7 +193,7 @@ final class StringsCatalogueTest extends TestCase
         $seen      = 0;
 
         foreach ((array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets() as $id => $set) {
-            foreach (array('legend', 'description') as $key) {
+            foreach (['legend', 'description'] as $key) {
                 $text = (string) ($set[$key] ?? '');
 
                 if ($text !== '') {

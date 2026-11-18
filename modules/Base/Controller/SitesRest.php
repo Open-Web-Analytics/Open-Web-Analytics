@@ -44,9 +44,9 @@ class SitesRest extends \OWA\Core\ReportController {
     
 
     public function success() {
-	    
-	    http_response_code(200);
-	    
+        
+        http_response_code(200);
+        
         $this->setView( 'base.sitesRest' );
     }
 }

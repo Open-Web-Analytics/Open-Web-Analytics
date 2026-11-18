@@ -23,7 +23,7 @@ class IsEntranceStep extends Step {
 
     public function requires() {
 
-        return array( Context::SESSION );
+        return [ Context::SESSION ];
     }
 
     public function execute( Context $context ) {
@@ -33,5 +33,3 @@ class IsEntranceStep extends Step {
             Context::RAW, Context::pageViewKey( Context::RAW ), Context::SESSION );
     }
 }
-
-?>

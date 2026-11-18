@@ -66,7 +66,3 @@ class UsersSetPassword extends \OWA\Core\Controller {
     }
 
 }
-
-
-
-?>

@@ -20,8 +20,8 @@ final class FunnelMathTest extends TestCase
     /** One row of the funnel query: a subject, a time, an id, a flag per step. */
     private function row( $subject, $ts, array $flags, $rid = null ): array
     {
-        $row = array( 'subj' => $subject, 'ts' => (string) $ts,
-                      'rid' => (string) ( $rid ?? ( $ts . $subject ) ) );
+        $row = [ 'subj' => $subject, 'ts' => (string) $ts,
+                      'rid' => (string) ( $rid ?? ( $ts . $subject ) ) ];
 
         foreach ( $flags as $i => $flag ) {
             $row[ 's' . $i ] = (string) $flag;
@@ -38,13 +38,13 @@ final class FunnelMathTest extends TestCase
     /** The ordinary case: one subject walks the whole path in order. */
     public function testASubjectWhoWalksThePathCountsInEveryStep(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 1, 0 ) ),
-            $this->row( 'v1', 300, array( 0, 0, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 1, 0 ] ),
+            $this->row( 'v1', 300, [ 0, 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 1, 1 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 1, 1 ], $this->walk( $rows, 3 ) );
     }
 
     /**
@@ -66,16 +66,16 @@ final class FunnelMathTest extends TestCase
      */
     public function testAStepVisitedBeforeTheFunnelStartedDoesNotDropTheSubject(): void
     {
-        $rows = array(
+        $rows = [
             // /docs, before any of this began.
-            $this->row( 'v1', 1000, array( 0, 0, 1 ) ),
+            $this->row( 'v1', 1000, [ 0, 0, 1 ] ),
             // and then the funnel, in order.
-            $this->row( 'v1', 1100, array( 1, 0, 0 ) ),
-            $this->row( 'v1', 1200, array( 0, 1, 0 ) ),
-            $this->row( 'v1', 1300, array( 0, 0, 1 ) ),
-        );
+            $this->row( 'v1', 1100, [ 1, 0, 0 ] ),
+            $this->row( 'v1', 1200, [ 0, 1, 0 ] ),
+            $this->row( 'v1', 1300, [ 0, 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 1, 1 ), $this->walk( $rows, 3 ),
+        $this->assertSame( [ 1, 1, 1 ], $this->walk( $rows, 3 ),
             'A subject who really did complete the funnel was dropped because the last step\'s '
             . 'page was also visited before the funnel started.' );
     }
@@ -83,12 +83,12 @@ final class FunnelMathTest extends TestCase
     /** A subject who stops halfway counts in the steps they reached, and no further. */
     public function testASubjectWhoStopsCountsOnlyAsFarAsTheyGot(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 1, 0 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 1, 0 ] ),
+        ];
 
-        $this->assertSame( array( 1, 1, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 1, 0 ], $this->walk( $rows, 3 ) );
     }
 
     /**
@@ -100,12 +100,12 @@ final class FunnelMathTest extends TestCase
      */
     public function testASubjectWhoNeverReachedTheFirstStepIsNotInTheFunnel(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 0, 1, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 0, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 0, 1, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 0, 0, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 0, 0, 0 ], $this->walk( $rows, 3 ) );
     }
 
     /**
@@ -116,15 +116,15 @@ final class FunnelMathTest extends TestCase
      */
     public function testEventsBetweenTheStepsDoNotBreakTheSequence(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0, 0 ) ),
-            $this->row( 'v1', 150, array( 0, 0, 0 ) ),
-            $this->row( 'v1', 160, array( 0, 0, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 1, 0 ) ),
-            $this->row( 'v1', 300, array( 0, 0, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0, 0 ] ),
+            $this->row( 'v1', 150, [ 0, 0, 0 ] ),
+            $this->row( 'v1', 160, [ 0, 0, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 1, 0 ] ),
+            $this->row( 'v1', 300, [ 0, 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 1, 1 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 1, 1 ], $this->walk( $rows, 3 ) );
     }
 
     /**
@@ -136,17 +136,17 @@ final class FunnelMathTest extends TestCase
      */
     public function testOneEventAdvancesAtMostOneStep(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 1, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 1, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 0, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 0, 0 ], $this->walk( $rows, 3 ) );
 
         // Two events, two stages -- and at a LATER time, so this is the
         // ordinary case rather than the tie handled below.
-        $rows[] = $this->row( 'v1', 200, array( 1, 1, 1 ) );
+        $rows[] = $this->row( 'v1', 200, [ 1, 1, 1 ] );
 
-        $this->assertSame( array( 1, 1, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 1, 0 ], $this->walk( $rows, 3 ) );
     }
 
     /**
@@ -171,16 +171,16 @@ final class FunnelMathTest extends TestCase
      */
     public function testTwoEventsInOneSecondCanSatisfyTwoSteps(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0 ), 'a' ),
-            $this->row( 'v1', 100, array( 0, 1 ), 'b' ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0 ], 'a' ),
+            $this->row( 'v1', 100, [ 0, 1 ], 'b' ),
+        ];
 
-        $this->assertSame( array( 1, 1 ), $this->walk( $rows, 2 ) );
+        $this->assertSame( [ 1, 1 ], $this->walk( $rows, 2 ) );
 
         // And the same pair in the other order, which is the whole point: the
         // arrival order inside a second must not change the answer.
-        $this->assertSame( array( 1, 1 ), $this->walk( array_reverse( $rows ), 2 ) );
+        $this->assertSame( [ 1, 1 ], $this->walk( array_reverse( $rows ), 2 ) );
     }
 
     /**
@@ -192,32 +192,32 @@ final class FunnelMathTest extends TestCase
      */
     public function testATieCannotSpendOneEventTwice(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 1, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 1, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 0, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 0, 0 ], $this->walk( $rows, 3 ) );
 
         // Two events that each satisfy everything advance exactly two stages.
-        $rows[] = $this->row( 'v1', 100, array( 1, 1, 1 ), 'second' );
+        $rows[] = $this->row( 'v1', 100, [ 1, 1, 1 ], 'second' );
 
-        $this->assertSame( array( 1, 1, 0 ), $this->walk( $rows, 3 ) );
+        $this->assertSame( [ 1, 1, 0 ], $this->walk( $rows, 3 ) );
     }
 
     /** Each subject is counted once, and every subject is counted. */
     public function testEverySubjectIsCountedIncludingTheLast(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 1 ) ),
-            $this->row( 'v2', 100, array( 1, 0 ) ),
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 1 ] ),
+            $this->row( 'v2', 100, [ 1, 0 ] ),
             // v3 is last, which is the case a tally that only runs when the
             // subject CHANGES would miss.
-            $this->row( 'v3', 100, array( 1, 0 ) ),
-            $this->row( 'v3', 200, array( 0, 1 ) ),
-        );
+            $this->row( 'v3', 100, [ 1, 0 ] ),
+            $this->row( 'v3', 200, [ 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 3, 2 ), $this->walk( $rows, 2 ) );
+        $this->assertSame( [ 3, 2 ], $this->walk( $rows, 2 ) );
     }
 
     /**
@@ -228,14 +228,14 @@ final class FunnelMathTest extends TestCase
      */
     public function testRunningTheFunnelTwiceCountsOnce(): void
     {
-        $rows = array(
-            $this->row( 'v1', 100, array( 1, 0 ) ),
-            $this->row( 'v1', 200, array( 0, 1 ) ),
-            $this->row( 'v1', 300, array( 1, 0 ) ),
-            $this->row( 'v1', 400, array( 0, 1 ) ),
-        );
+        $rows = [
+            $this->row( 'v1', 100, [ 1, 0 ] ),
+            $this->row( 'v1', 200, [ 0, 1 ] ),
+            $this->row( 'v1', 300, [ 1, 0 ] ),
+            $this->row( 'v1', 400, [ 0, 1 ] ),
+        ];
 
-        $this->assertSame( array( 1, 1 ), $this->walk( $rows, 2 ) );
+        $this->assertSame( [ 1, 1 ], $this->walk( $rows, 2 ) );
     }
 
     /**
@@ -247,18 +247,18 @@ final class FunnelMathTest extends TestCase
      */
     public function testNoStepCanOutCountTheStepBeforeIt(): void
     {
-        $rows = array();
+        $rows = [];
 
         // A crowd who all reach the last step and only some of whom reach the
         // first, which is the shape that broke independent counting.
         for ( $i = 0; $i < 20; $i++ ) {
 
-            $rows[] = $this->row( 'v' . $i, 100, array( 0, 0, 1 ) );
+            $rows[] = $this->row( 'v' . $i, 100, [ 0, 0, 1 ] );
 
             if ( $i % 2 === 0 ) {
 
-                $rows[] = $this->row( 'v' . $i, 200, array( 1, 0, 0 ) );
-                $rows[] = $this->row( 'v' . $i, 300, array( 0, 1, 0 ) );
+                $rows[] = $this->row( 'v' . $i, 200, [ 1, 0, 0 ] );
+                $rows[] = $this->row( 'v' . $i, 300, [ 0, 1, 0 ] );
             }
         }
 
@@ -271,13 +271,13 @@ final class FunnelMathTest extends TestCase
         }
 
         // 10 reached / and /pricing; none of them saw /docs afterwards.
-        $this->assertSame( array( 10, 10, 0 ), $counts );
+        $this->assertSame( [ 10, 10, 0 ], $counts );
     }
 
     /** Nobody in the funnel is zeroes, not an empty array. */
     public function testAnEmptyResultIsAZeroForEveryStep(): void
     {
-        $this->assertSame( array( 0, 0, 0 ), $this->walk( array(), 3 ) );
+        $this->assertSame( [ 0, 0, 0 ], $this->walk( [], 3 ) );
     }
 
     /**
@@ -290,12 +290,12 @@ final class FunnelMathTest extends TestCase
     public function testItWalksAGeneratorWithoutMaterialisingIt(): void
     {
         $rows = function () {
-            yield $this->row( 'v1', 100, array( 1, 0 ) );
-            yield $this->row( 'v1', 200, array( 0, 1 ) );
-            yield $this->row( 'v2', 100, array( 1, 0 ) );
+            yield $this->row( 'v1', 100, [ 1, 0 ] );
+            yield $this->row( 'v1', 200, [ 0, 1 ] );
+            yield $this->row( 'v2', 100, [ 1, 0 ] );
         };
 
-        $this->assertSame( array( 2, 1 ),
+        $this->assertSame( [ 2, 1 ],
             \OWA\Module\Base\Controller\VisualizationFunnel::walk( $rows(), 2 ) );
     }
 }

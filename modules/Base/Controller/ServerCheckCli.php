@@ -44,10 +44,10 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Prints this server\'s role, what it serves, the tracking queue backend and anything owa-config.php is missing for the role. On a collector, sends a test message to the queue and receives and deletes it, and with OWA_TRACKING_URL set requests its own log.php through it. Exits 1 when something is missing or a test fails.',
-            'arguments'   => array(),
-        );
+            'arguments'   => [],
+        ];
     }
 
     public function __construct( $params ) {
@@ -64,7 +64,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
         $backends = \OWA\Core\ModuleActivation::queueBackends();
         $problems = $role->configProblems( $defined, $backends, \OWA\Core\ModuleActivation::queueBackendConstants() );
 
-        $lines = array(
+        $lines = [
             'Server role:      ' . $role->name(),
             'Serves:           ' . implode( ', ', $role->requestTypes() ),
             'Scheduler:        ' . ( $role->runsScheduler() ? 'runs here' : 'does not run here' ),
@@ -73,7 +73,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
                 ? implode( ', ', array_map( fn ( $type, $constant ) => $type . ' (' . $constant . ')', array_keys( $backends ), $backends ) )
                 : 'file' ),
             'Tracking events:  ' . ( \OWA\Module\Base\Classes\TrackerIngest::isQueued() ? 'queued' : 'written as they arrive' ),
-        );
+        ];
 
         $lines[] = 'Missing:          ' . ( $problems ? '' : 'nothing' );
 
@@ -125,11 +125,11 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
         if ( (int) $status === 200 && stripos( (string) $type, 'image/gif' ) === 0 ) {
 
-            return array( 'ok' => true, 'message' => sprintf( 'ok: %s answers.', $url ) );
+            return [ 'ok' => true, 'message' => sprintf( 'ok: %s answers.', $url ) ];
         }
 
-        return array( 'ok' => false, 'message' => sprintf( '%s answered %s%s, not log.php\'s image.', $url,
-            $status ? 'HTTP ' . (int) $status : 'nothing', $type ? ' (' . $type . ')' : '' ) );
+        return [ 'ok' => false, 'message' => sprintf( '%s answered %s%s, not log.php\'s image.', $url,
+            $status ? 'HTTP ' . (int) $status : 'nothing', $type ? ' (' . $type . ')' : '' ) ];
     }
 
     /**
@@ -138,23 +138,23 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
      */
     private static function fetch( $url ) {
 
-        $context = stream_context_create( array( 'http' => array(
+        $context = stream_context_create( [ 'http' => [
             'method'        => 'GET',
             'timeout'       => 10,
             'ignore_errors' => true,
             'header'        => "User-Agent: Open Web Analytics server-check\r\n",
-        ) ) );
+        ] ] );
 
         $stream = @fopen( $url, 'rb', false, $context );
 
         if ( ! $stream ) {
 
-            return array( 0, '' );
+            return [ 0, '' ];
         }
 
         // Every response's headers, a followed redirect's included.
         $meta    = stream_get_meta_data( $stream );
-        $headers = is_array( $meta['wrapper_data'] ?? null ) ? $meta['wrapper_data'] : array();
+        $headers = is_array( $meta['wrapper_data'] ?? null ) ? $meta['wrapper_data'] : [];
 
         fclose( $stream );
 
@@ -175,7 +175,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
             }
         }
 
-        return array( $status, $type );
+        return [ $status, $type ];
     }
 
     /**
@@ -187,18 +187,18 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
         $token    = bin2hex( random_bytes( 8 ) );
         $started  = microtime( true );
-        $envelope = array(
+        $envelope = [
             // Not ENVELOPE_VERSION: a drain that takes it does not ingest it.
             'v'          => 0,
             'type'       => 'owa-server-check',
-            'properties' => array( 'check' => $token ),
+            'properties' => [ 'check' => $token ],
             'queued_at'  => time(),
-        );
+        ];
 
         if ( ! $queue->send( $envelope ) ) {
 
-            return array( 'ok' => false, 'message' => 'failed to send: '
-                . ( \OWA\Module\Base\Classes\TrackerIngest::queueError( $queue ) ?: 'refused' ) );
+            return [ 'ok' => false, 'message' => 'failed to send: '
+                . ( \OWA\Module\Base\Classes\TrackerIngest::queueError( $queue ) ?: 'refused' ) ];
         }
 
         $deadline = $started + self::ROUND_TRIP_SECONDS;
@@ -215,7 +215,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
             if ( ! $messages && $error ) {
 
-                return array( 'ok' => false, 'message' => 'sent, but receiving failed: ' . $error );
+                return [ 'ok' => false, 'message' => 'sent, but receiving failed: ' . $error ];
             }
 
             $mine = null;
@@ -237,12 +237,12 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
                 if ( ! $queue->ack( $mine ) ) {
 
-                    return array( 'ok' => false, 'message' => 'sent and received, but deleting failed: '
-                        . ( \OWA\Module\Base\Classes\TrackerIngest::queueError( $queue ) ?: 'refused' ) );
+                    return [ 'ok' => false, 'message' => 'sent and received, but deleting failed: '
+                        . ( \OWA\Module\Base\Classes\TrackerIngest::queueError( $queue ) ?: 'refused' ) ];
                 }
 
-                return array( 'ok' => true, 'message' => sprintf(
-                    'ok: sent, received and deleted a test message in %.1f s.', microtime( true ) - $started ) );
+                return [ 'ok' => true, 'message' => sprintf(
+                    'ok: sent, received and deleted a test message in %.1f s.', microtime( true ) - $started ) ];
             }
 
             if ( microtime( true ) < $deadline ) {
@@ -252,9 +252,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
         } while ( microtime( true ) < $deadline );
 
-        return array( 'ok' => false, 'message' => sprintf(
-            'sent, but not received back within %d seconds. A drain may have taken it first.', self::ROUND_TRIP_SECONDS ) );
+        return [ 'ok' => false, 'message' => sprintf(
+            'sent, but not received back within %d seconds. A drain may have taken it first.', self::ROUND_TRIP_SECONDS ) ];
     }
 }
-
-?>

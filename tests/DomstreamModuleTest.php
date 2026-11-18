@@ -120,12 +120,12 @@ final class DomstreamModuleTest extends TestCase
 
         try {
             $config = $this->module()->addToBundle(
-                array('options' => array(), 'features' => array(array('trackPageView')), 'plugins' => array()),
+                ['options' => [], 'features' => [['trackPageView']], 'plugins' => []],
                 'zz-domstream-profile');
 
-            $this->assertSame(array(array('trackPageView'), array('trackDomStream')), $config['features'],
+            $this->assertSame([['trackPageView'], ['trackDomStream']], $config['features'],
                 'after what was there');
-            $this->assertSame(array('domstream'), $config['plugins']);
+            $this->assertSame(['domstream'], $config['plugins']);
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting('profile', 'zz-domstream-profile', 'domstream', 'record');

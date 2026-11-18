@@ -47,7 +47,7 @@ class Observer extends \OWA\Core\Base {
      */
     public function handleEvent( $action ) {
 
-        \OWA\Core\CoreAPI::performAction( $action, array( 'event' => $this->m ) );
+        \OWA\Core\CoreAPI::performAction( $action, [ 'event' => $this->m ] );
 
         return \OWA\Core\CoreAPI::debug( sprintf( 'Handled Event. Action: %s', $action ) );
     }
@@ -86,5 +86,3 @@ class Observer extends \OWA\Core\Base {
         return new \OWA\Module\Base\Classes\Mailer();
     }
 }
-
-?>

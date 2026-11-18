@@ -39,7 +39,7 @@ class Lib {
      * @return string PascalCase directory / namespace segment
      */
     public static function moduleDirName($name) {
-        static $cache = array();
+        static $cache = [];
         if ( isset( $cache[ $name ] ) ) {
             return $cache[ $name ];
         }
@@ -55,7 +55,7 @@ class Lib {
      * @return string
      */
     public static function implode_assoc($inner_glue, $outer_glue, $array) {
-       $output = array();
+       $output = [];
        foreach( $array as $key => $item ) {
               $output[] = $key . $inner_glue . $item;
         }
@@ -75,7 +75,7 @@ class Lib {
 
         $timestamp = $timestamp ?? time();
 
-        return array(
+        return [
 
                 'year'                 => date("Y", $timestamp),
                 'month'             => date("n", $timestamp),
@@ -87,7 +87,7 @@ class Lib {
                 'minute'             => date("i", $timestamp),
                 'second'             => date("s", $timestamp),
                 'timestamp'            => $timestamp
-            );
+            ];
     }
 
     /**
@@ -110,10 +110,10 @@ class Lib {
     /**
      * @return true|null true when this hop arrived over TLS
      */
-	public static function isHttps() {
-		
-		// check for https
-		
+    public static function isHttps() {
+        
+        // check for https
+        
         // Only signals describing THIS hop count.
         //
         // HTTP_ORIGIN and HTTP_REFERER used to be accepted here, and both are
@@ -133,17 +133,17 @@ class Lib {
         // The forwarding headers stay: a terminating proxy sets them, and that
         // is how TLS actually reaches OWA in a normal deployment.
         if(
-        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
-        	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
-        	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
-        	|| ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
-		) {
-			return true;
-		}
+            ( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
+            || ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
+            || ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
+            || ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
+        ) {
+            return true;
+        }
 
         return null;
-	}
-	
+    }
+    
     /**
      * The current request's URL as the browser addressed it: public_url, then
      * the request's path below this installation.
@@ -183,15 +183,15 @@ class Lib {
      * @return string
      */
     public static function get_current_url() {
-		
-		if ( self::isHttps() ) {
-			
-			$url = 'https';
-			
-		} else {
-			
-			$url = 'http';	
-		}
+        
+        if ( self::isHttps() ) {
+            
+            $url = 'https';
+            
+        } else {
+            
+            $url = 'http';	
+        }
         
         if ( isset( $_SERVER['HTTP_HOST'] ) ) {
             // contains port number
@@ -253,7 +253,7 @@ class Lib {
      * @param string $class_suffix
      * @return object
      */
-    public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = array(), $class_suffix = '') {
+    public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = [], $class_suffix = '') {
 
         $class = $class_prefix . $class_name . $class_suffix;
 
@@ -361,7 +361,7 @@ class Lib {
      * @param list<string> $also_hosts see resolveRedirectUrl()
      * @return null
      */
-    public static function redirectBrowser($url, array $also_hosts = array()) {
+    public static function redirectBrowser($url, array $also_hosts = []) {
 
         // 302 redirect to URL
         header ('Location: '.\OWA\Core\Lib::resolveRedirectUrl( $url, $also_hosts ));
@@ -389,7 +389,7 @@ class Lib {
      * @param  string[] $also_hosts
      * @return string
      */
-    public static function resolveRedirectUrl( $url, array $also_hosts = array() ) {
+    public static function resolveRedirectUrl( $url, array $also_hosts = [] ) {
 
         $base = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
         $url  = trim( (string) $url );
@@ -432,7 +432,7 @@ class Lib {
         // and would otherwise be mistaken for a relative path.
         $scheme = strtolower( $parts['scheme'] ?? '' );
 
-        if ( $scheme !== '' && ! in_array( $scheme, array( 'http', 'https' ), true ) ) {
+        if ( $scheme !== '' && ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
 
             return $base;
         }
@@ -485,7 +485,7 @@ class Lib {
     public static function rekeyArray($array, $new_keys) {
 
         $new_keys = $new_keys;
-        $new_array = array();
+        $new_array = [];
         foreach ($array as $k => $v) {
 
             if (array_key_exists($k, $new_keys)) {
@@ -510,7 +510,7 @@ class Lib {
      */
     public static function stripParams($params, $ns = '') {
 
-        $striped_params = array();
+        $striped_params = [];
 
         if (!empty($ns)) {
 
@@ -564,7 +564,7 @@ class Lib {
         $get = self::buildRedirectQuery(
             $data,
             '',
-            array( 'view_method', 'auth_status' )
+            [ 'view_method', 'auth_status' ]
         );
 
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
@@ -596,7 +596,7 @@ class Lib {
      * @param  list<string> $control_params names that steer the framework, not the view
      * @return string
      */
-    public static function buildRedirectQuery( $data, $ns = '', $control_params = array() ) {
+    public static function buildRedirectQuery( $data, $ns = '', $control_params = [] ) {
 
         $get = '';
 
@@ -741,7 +741,7 @@ class Lib {
      */
     public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 
-        $state = array();
+        $state = [];
 
         if (!empty($string_state)):
 
@@ -778,7 +778,7 @@ class Lib {
      */
     public static function listDir($start_dir='.', $recursive = true) {
 
-        $files = array();
+        $files = [];
 
         if (is_dir($start_dir)):
 
@@ -796,7 +796,7 @@ class Lib {
                         $files = array_merge($files, \OWA\Core\Lib::listDir($filepath));
                     endif;
                 else:
-                    array_push($files, array('name' => $file, 'path' => $filepath));
+                    array_push($files, ['name' => $file, 'path' => $filepath]);
                 endif;
             }
 
@@ -904,7 +904,7 @@ class Lib {
      */
     public static function parseCliArgs( $argv ) {
 
-        $params = array();
+        $params = [];
 
         for ( $i = 1; $i < count( $argv ); $i++ ) {
 
@@ -950,10 +950,10 @@ class Lib {
             $type = 'html';
         }
 
-        $content_types = array('html' => 'text/html',
+        $content_types = ['html' => 'text/html',
                                'xml' => 'text/xml',
                                'json' => 'application/json',
-                               'csv' => 'text/csv');
+                               'csv' => 'text/csv'];
 
         if (array_key_exists($type, $content_types)) {
             $mime = $content_types[$type];
@@ -1161,8 +1161,8 @@ class Lib {
     public static function isEmpty($value) {
 
         if ( empty( $value ) && ! is_numeric( $value ) ) {
-	        
-	        return true;
+            
+            return true;
         }
 
         return null;
@@ -1209,10 +1209,10 @@ class Lib {
      * @param  list<string> $ommit part names: scheme, host, port, user, pass, path, query, fragment
      * @return string
      */
-    public static function unparseUrl($parsed_url, $ommit = array() ) {
+    public static function unparseUrl($parsed_url, $ommit = [] ) {
 
         $url = '';
-        $p = array();
+        $p = [];
 
         $p['scheme']   = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
         $p['host']     = isset($parsed_url['host']) ? $parsed_url['host'] : '';
@@ -1240,7 +1240,7 @@ class Lib {
      * signature, the overlay token, a password and the password-reset key (k),
      * each also with the owa_ prefix.
      */
-    const LOG_REDACTED_PARAMS = array( 'apiKey', 'signature', 'overlayToken', 'password', 'k' );
+    const LOG_REDACTED_PARAMS = [ 'apiKey', 'signature', 'overlayToken', 'password', 'k' ];
 
     /**
      * A URL as written to the log: each LOG_REDACTED_PARAMS value replaced
@@ -1262,18 +1262,18 @@ class Lib {
      *         is neither IPv4 nor IPv6
      */
     public static function anonymizeIp( $ip_address ) {
-	    
-	    $ipv4NetMask = "255.255.255.0";
-	    $ipv6NetMask = "ffff:ffff:ffff:ffff:0000:0000:0000:0000";
-	    
-	    $packed_address = inet_pton( $ip_address);
+        
+        $ipv4NetMask = "255.255.255.0";
+        $ipv6NetMask = "ffff:ffff:ffff:ffff:0000:0000:0000:0000";
+        
+        $packed_address = inet_pton( $ip_address);
 
         if ( strlen( $packed_address ) == 4 ) {
-	        
+            
             return inet_ntop( inet_pton( $ip_address ) & inet_pton( $ipv4NetMask ) );
             
         } elseif ( strlen( $packed_address ) == 16 ) {
-	        
+            
             return inet_ntop( inet_pton( $ip_address ) & inet_pton( $ipv6NetMask ) );
         }
 
@@ -1288,7 +1288,7 @@ class Lib {
      */
     public static function isNotPrivateIp( $ip_address ) {
 
-		return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ] );
+        return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ] );
     }
     
     /**
@@ -1297,11 +1297,11 @@ class Lib {
      * @return true|null
      */
     public static function keyExistsNotEmpty( $key, $array ) {
-	    
-	    if ( array_key_exists($key, $array) && ! empty( $array[ $key ] ) )  {
-		    
-		    return true;
-	    }
+        
+        if ( array_key_exists($key, $array) && ! empty( $array[ $key ] ) )  {
+            
+            return true;
+        }
 
         return null;
     }
@@ -1314,11 +1314,11 @@ class Lib {
      * @return array<mixed>|null null unless both are arrays
      */
     public static function setDefaultParams( $defaults, $params ) {
-	    
-	    if ( is_array( $defaults ) && is_array( $params ) ) {
-	    
-	    	return array_merge( $defaults, array_filter( $params) );
-	    }
+        
+        if ( is_array( $defaults ) && is_array( $params ) ) {
+        
+            return array_merge( $defaults, array_filter( $params) );
+        }
 
         return null;
     }
@@ -1382,5 +1382,3 @@ class Lib {
     
 
 }
-
-?>

@@ -36,27 +36,27 @@ final class RefererCrawlRemovedTest extends TestCase
 
     public static function goneProvider(): array
     {
-        return array(
-            'the setting' => array(
+        return [
+            'the setting' => [
                 'fetch_refering_page_info',
                 'modules/Base/Classes/Settings.php',
                 'the setting survives, so something still reads it',
-            ),
-            'the options control' => array(
+            ],
+            'the options control' => [
                 'fetch_refering_page_info',
                 'modules/Base/templates/options_general.php',
                 'the options screen offers a setting that no longer exists',
-            ),
-        );
+            ],
+        ];
     }
 
     /** The CLI command that crawled every stored referer is gone too. */
     public function testTheCrawlCommandIsGone(): void
     {
-        foreach ( array(
+        foreach ( [
             'modules/Base/Controller/CrawlReferralCli.php',
             'modules/Base/View/CrawlReferralCli.php',
-        ) as $file ) {
+        ] as $file ) {
 
             $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/' . $file );
         }
@@ -78,7 +78,7 @@ final class RefererCrawlRemovedTest extends TestCase
      */
     public function testNothingCallsTheCrawler(): void
     {
-        $callers = array();
+        $callers = [];
 
         $dirs = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator( \OWA\Core\Env::root() . '/modules' ) );
@@ -95,6 +95,6 @@ final class RefererCrawlRemovedTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $callers );
+        $this->assertSame( [], $callers );
     }
 }

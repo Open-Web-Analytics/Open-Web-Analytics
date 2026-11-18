@@ -50,6 +50,13 @@ jobs:
       - name: Static analysis (PHPStan)
         run: composer run-script phpstan
 
+      # .php-cs-fixer.dist.php: spaces, [], no closing tag, a newline at the
+      # end. Fails on any file it would change. Formatting does not vary with
+      # the PHP version, so one leg runs it.
+      - name: Coding style (PHP-CS-Fixer)
+        if: matrix.php == '8.2'
+        run: composer run-script cs
+
       - name: Unit tests (PHPUnit)
         run: composer run-script test
 

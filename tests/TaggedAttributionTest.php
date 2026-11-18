@@ -57,17 +57,17 @@ final class TaggedAttributionTest extends TestCase
      */
     public function testTheClaimIsNotSettableFromTheWire(): void
     {
-        $admitted = Helpers::admitRequestParams( array(
+        $admitted = Helpers::admitRequestParams( [
             'tagged_source'   => 'newsletter',
             'tagged_medium'   => 'email',
             'tagged_campaign' => 'summer',
             'tagged_ad'       => 'creative-a',
             'tagged_terms'    => 'blue widgets',
             'page_location'   => 'https://example.test/?owa_source=newsletter',
-        ) );
+        ] );
 
         $this->assertSame(
-            array( 'page_location' => 'https://example.test/?owa_source=newsletter' ),
+            [ 'page_location' => 'https://example.test/?owa_source=newsletter' ],
             $admitted,
             'A beacon reports the URL of the page. The tags are the server\'s reading of '
             . 'that URL on the session-starting beacon, so a request asserting one is '
@@ -93,17 +93,17 @@ final class TaggedAttributionTest extends TestCase
          * let them straight through, while the allowlist refuses them for the
          * stronger reason that nothing declares them as settable.
          */
-        $kept = Helpers::admitRequestParams( array(
+        $kept = Helpers::admitRequestParams( [
             'source'       => 'forged',
             'medium'       => 'forged',
             'campaign'     => 'forged',
             'ad'           => 'forged',
             'ad_type'      => 'forged',
             'search_terms' => 'forged',
-        ) );
+        ] );
 
         $this->assertSame(
-            array(), $kept,
+            [], $kept,
             'A request set the resolved attribution directly.' );
     }
 
@@ -135,14 +135,14 @@ final class TaggedAttributionTest extends TestCase
         $config = json_decode(
             (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
-        $registered = array();
+        $registered = [];
         foreach ( (array) $config as $scope => $properties ) {
             $registered = array_merge( $registered, array_keys( (array) $properties ) );
         }
 
-        foreach ( array( 'location_id', 'source_id', 'host_id', 'ua_id', 'os_id',
+        foreach ( [ 'location_id', 'source_id', 'host_id', 'ua_id', 'os_id',
                          'referer_id', 'document_id', 'ad_id', 'campaign_id',
-                         'referring_search_term_id' ) as $id ) {
+                         'referring_search_term_id' ] as $id ) {
 
             $this->assertNotContains( $id, $registered,
                 "$id is derived in the pipeline again; it belongs to its dimension" );

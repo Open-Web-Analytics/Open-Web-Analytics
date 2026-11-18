@@ -14,7 +14,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class SitesEditRedirectTest extends TestCase
 {
     /** Rows a test created, removed afterwards. */
-    private $site = array();
+    private $site = [];
 
     protected function setUp(): void
     {
@@ -42,20 +42,20 @@ final class SitesEditRedirectTest extends TestCase
 
     public function testARenameReturnsToTheEditForm(): void
     {
-        $add = new \OWA\Module\Base\Controller\SitesAdd( array(
+        $add = new \OWA\Module\Base\Controller\SitesAdd( [
             'domain'     => 'sites-edit-redirect.example.test',
             'name'       => 'Sites edit redirect ' . uniqid(),
             'streamType' => 'web',
-        ) );
+        ] );
         $add->action();
 
-        $this->site = (array) ( $this->data( $add )['site'] ?? array() );
+        $this->site = (array) ( $this->data( $add )['site'] ?? [] );
         $this->assertNotEmpty( $this->site['site_id'] ?? '', 'The Profile was not created.' );
 
-        $edit = new \OWA\Module\Base\Controller\SitesEdit( array(
+        $edit = new \OWA\Module\Base\Controller\SitesEdit( [
             'siteId' => $this->site['site_id'],
             'name'   => 'Renamed ' . uniqid(),
-        ) );
+        ] );
         $edit->action();
 
         $data = $this->data( $edit );

@@ -23,13 +23,13 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
 
         // An overlay (heatmap, recording player) reads this route with its
         // scoped token; no other route accepts one.
-        $this->setAuthMethods( array( 'overlay_token', 'app_password', 'cookies' ) );
+        $this->setAuthMethods( [ 'overlay_token', 'app_password', 'cookies' ] );
     }
 
     public function validate() {
 
-        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required', array( 'stopOnError' => true ) );
-        $this->addValidation( 'recording_id', $this->getParam( 'recording_id' ), 'required', array( 'stopOnError' => true ) );
+        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required', [ 'stopOnError' => true ] );
+        $this->addValidation( 'recording_id', $this->getParam( 'recording_id' ), 'required', [ 'stopOnError' => true ] );
     }
 
     public function action() {
@@ -45,12 +45,12 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
      */
     public static function recording( $site_id, $recording_id ) {
 
-        $out = array(
+        $out = [
             'recording_id' => $recording_id,
             'viewport_w'   => null,
             'viewport_h'   => null,
-            'samples'      => array(),
-        );
+            'samples'      => [],
+        ];
 
         if ( ! preg_match( '/^[1-9][0-9]{0,18}$/', $recording_id ) ) {
 
@@ -69,7 +69,7 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
             . ' JOIN %s p ON p.id = c.id AND p.yyyymmdd = c.yyyymmdd'
             . ' WHERE c.site_id = ? AND c.recording_id = ? ORDER BY c.seq ASC',
             $chunk->getTableName(), $payload->getTableName() ),
-            array( $site_id, $recording_id ) );
+            [ $site_id, $recording_id ] );
 
         foreach ( $rows as $row ) {
 
@@ -106,5 +106,3 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         $this->restResponse( 422, 'response' );
     }
 }
-
-?>

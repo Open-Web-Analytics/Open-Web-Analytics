@@ -26,7 +26,7 @@ class TrackerDefaults {
 
             $decoded = json_decode( (string) @file_get_contents( \OWA\Core\Env::root() . '/' . self::FILE ), true );
 
-            self::$defaults = is_array( $decoded ) ? $decoded : array();
+            self::$defaults = is_array( $decoded ) ? $decoded : [];
         }
 
         return self::$defaults;
@@ -38,7 +38,7 @@ class TrackerDefaults {
      */
     public static function get( $key ) {
 
-        return array_values( (array) ( self::all()[ $key ] ?? array() ) );
+        return array_values( (array) ( self::all()[ $key ] ?? [] ) );
     }
 
     /**

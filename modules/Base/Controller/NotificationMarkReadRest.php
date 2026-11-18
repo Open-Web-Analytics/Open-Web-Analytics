@@ -29,7 +29,7 @@ class NotificationMarkReadRest extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'notificationId', $this->getParam('notificationId'), 'required',
-            array( 'stopOnError' => true ) );
+            [ 'stopOnError' => true ] );
     }
 
     public function action() {

@@ -83,9 +83,9 @@ class VisualizationEdit extends \OWA\Core\ReportController {
             }
         }
 
-        $definition = $report ? (array) $report['definition'] : array();
+        $definition = $report ? (array) $report['definition'] : [];
 
-        $stored = isset( $definition['steps'] ) ? (array) $definition['steps'] : array();
+        $stored = isset( $definition['steps'] ) ? (array) $definition['steps'] : [];
 
         /*
          * A refused save redirects back here carrying what was typed, so the
@@ -107,14 +107,14 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         $this->set( 'visualizationId', $id );
         $this->set( 'visualization', $this->getParam( 'name' ) !== null
-            ? array(
+            ? [
                 'id'                 => $id,
                 'name'               => $this->getParam( 'name' ),
                 'visualization_type' => $type,
                 // Carried back on a refused save, like the name is. The stored
                 // row already has it on the other branch.
                 'is_shared'          => $this->getParam( 'isShared' ) ? 1 : 0,
-              )
+              ]
             : (array) $report );
         $this->set( 'visualizationType', $type );
         $this->set( 'visualizationTypeLabel',
@@ -156,7 +156,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $this->set( 'conditionVocabulary', self::vocabulary( $customDimensions ) );
         $this->set( 'steps', self::formSteps( $submitted ?: $stored, $customDimensions ) );
         // The row Add a step copies.
-        $this->set( 'blankStep', self::formSteps( array( array() ), $customDimensions )[0] );
+        $this->set( 'blankStep', self::formSteps( [ [] ], $customDimensions )[0] );
 
         /*
          * The step cap, read from the controller that enforces it so the form
@@ -201,12 +201,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      */
     private static function customProperties( array $customDimensions ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $customDimensions as $dimension ) {
 
-            $out[] = array( 'name' => (string) $dimension['column'], 'label' => (string) $dimension['label'],
-                'description' => (string) $dimension['description'], 'carried' => true );
+            $out[] = [ 'name' => (string) $dimension['column'], 'label' => (string) $dimension['label'],
+                'description' => (string) $dimension['description'], 'carried' => true ];
         }
 
         return $out;
@@ -232,51 +232,51 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $default = \OWA\Module\Base\Classes\FunnelStep::DEFAULT_EVENT;
         $custom  = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
         $columns = array_column( $customDimensions, 'label', 'column' );
-        $out     = array();
+        $out     = [];
 
-        foreach ( $steps ?: array( array() ) as $step ) {
+        foreach ( $steps ?: [ [] ] as $step ) {
 
             $step = (array) $step;
 
             $isEvent = ( $step['kind'] ?? '' ) === \OWA\Module\Base\Classes\FunnelStep::KIND_EVENT;
             $picked  = $isEvent ? (string) ( $step['event'] ?? '' ) : $default;
 
-            $conditions = array();
+            $conditions = [];
 
-            foreach ( $isEvent ? (array) ( $step['conditions'] ?? array() ) : array() as $condition ) {
+            foreach ( $isEvent ? (array) ( $step['conditions'] ?? [] ) : [] as $condition ) {
 
                 if ( is_array( $condition ) ) {
 
-                    $conditions[] = array(
+                    $conditions[] = [
                         'property' => (string) ( $condition['property'] ?? '' ),
                         'operator' => (string) ( $condition['operator'] ?? '' ),
                         'value'    => (string) ( $condition['value'] ?? '' ),
-                    );
+                    ];
                 }
             }
 
             if ( ! $conditions ) {
 
-                $conditions[] = array( 'property' => $picked === $default
+                $conditions[] = [ 'property' => $picked === $default
                     ? \OWA\Module\Base\Classes\FunnelStep::DEFAULT_PROPERTY : '',
-                    'operator' => \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT, 'value' => '' );
+                    'operator' => \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT, 'value' => '' ];
             }
 
             $typed = $picked === $custom ? (string) ( $step['custom_event'] ?? '' ) : '';
             $event = $picked === $custom ? ( $typed !== '' ? $typed : $custom ) : $picked;
 
             // A custom dimension is not one of the event's properties, so it is not passed as "in use".
-            $inUse = array();
+            $inUse = [];
 
             foreach ( $conditions as $condition ) {
 
                 if ( ! isset( $columns[ $condition['property'] ] ) ) {
 
-                    $inUse[] = array( 'condition_property' => $condition['property'] );
+                    $inUse[] = [ 'condition_property' => $condition['property'] ];
                 }
             }
 
-            $out[] = array(
+            $out[] = [
                 'name'         => $isEvent ? (string) ( $step['name'] ?? '' ) : '',
                 'picked'       => $picked,
                 'custom_event' => $typed,
@@ -284,7 +284,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
                 'conditions'   => $conditions,
                 'properties'   => array_merge( GoalEventDefinitionEdit::conditionProperties( $event, $inUse ),
                     self::customProperties( $customDimensions ) ),
-            );
+            ];
         }
 
         return $out;
@@ -337,12 +337,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         if ( $encoded === '' ) {
 
-            return array();
+            return [];
         }
 
         $errors = json_decode( $encoded, true );
 
-        return is_array( $errors ) ? $errors : array();
+        return is_array( $errors ) ? $errors : [];
     }
 
     /**
@@ -360,12 +360,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         if ( $encoded === '' ) {
 
-            return array();
+            return [];
         }
 
         $steps = json_decode( $encoded, true );
 
-        return is_array( $steps ) ? $steps : array();
+        return is_array( $steps ) ? $steps : [];
     }
 
     public function success() {

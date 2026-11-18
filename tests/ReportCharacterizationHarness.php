@@ -26,9 +26,9 @@ final class ReportCharacterizationHarness
      * way. Each keeps its controller through the conversion (see the design
      * note), so none of these is a report the harness needs to protect.
      */
-    private const PREFETCHING = array(
+    private const PREFETCHING = [
         'VisualizationFunnel',
-    );
+    ];
 
     /**
      * Files under Controller/Report*.php that are not reports.
@@ -40,7 +40,7 @@ final class ReportCharacterizationHarness
      * because of where it lives, and this harness noticed the moment it was
      * added, which is the drift detection working rather than a nuisance.
      */
-    private const NOT_A_REPORT = array( 'ReportsRest', 'Report' );
+    private const NOT_A_REPORT = [ 'ReportsRest', 'Report' ];
 
     /**
      * A fixed value for every request parameter a report reads.
@@ -111,7 +111,7 @@ final class ReportCharacterizationHarness
      */
     public static function definitionIds(): array
     {
-        $ids = array();
+        $ids = [];
 
         foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ) as $file ) {
             $ids[] = basename( $file, '.json' );
@@ -188,7 +188,7 @@ final class ReportCharacterizationHarness
 
         $controller = new $class( array_fill_keys( $params, self::SENTINEL ) );
 
-        return array( 'params' => $params ) + self::observe( $controller );
+        return [ 'params' => $params ] + self::observe( $controller );
     }
 
     /**
@@ -212,7 +212,7 @@ final class ReportCharacterizationHarness
          * warning that had been there all along. Recording them means a report
          * cannot start warning -- or keep warning -- without a test saying so.
          */
-        $diagnostics = array();
+        $diagnostics = [];
 
         set_error_handler( static function ( $no, $msg, $file, $line ) use ( &$diagnostics ) {
             $diagnostics[] = basename( (string) $file ) . ':' . $line . ' ' . $msg;
@@ -225,7 +225,7 @@ final class ReportCharacterizationHarness
             restore_error_handler();
         }
 
-        $data = array();
+        $data = [];
 
         foreach ( (array) $controller->data as $key => $value ) {
             $data[ $key ] = self::normalise( $value );
@@ -233,10 +233,10 @@ final class ReportCharacterizationHarness
 
         ksort( $data );
 
-        return array(
+        return [
             'diagnostics' => $diagnostics,
             'config'      => $data,
-        );
+        ];
     }
 
     /** @param mixed $value */
@@ -248,7 +248,7 @@ final class ReportCharacterizationHarness
 
         if ( is_array( $value ) ) {
 
-            $out = array();
+            $out = [];
 
             foreach ( $value as $k => $v ) {
                 $out[ $k ] = self::normalise( $v );
@@ -287,7 +287,7 @@ final class ReportCharacterizationHarness
          *
          * Sorted, so a snapshot of the same report is the same every time.
          */
-        $params = array_keys( (array) ( $definition['params'] ?? array() ) );
+        $params = array_keys( (array) ( $definition['params'] ?? [] ) );
         sort( $params );
 
         $controller = new \OWA\Core\ConfiguredReport(
@@ -295,7 +295,7 @@ final class ReportCharacterizationHarness
 
         $controller->setDefinition( $definition );
 
-        return array( 'params' => $params ) + self::observe( $controller );
+        return [ 'params' => $params ] + self::observe( $controller );
     }
 
 }

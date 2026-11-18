@@ -110,7 +110,7 @@ trait CubeColumn {
             $present = (array) $db->get_results( sprintf(
                 "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
 
-            if ( ! $present || $db->alterColumnsRebuilding( $table, array(), array( $column ) ) ) {
+            if ( ! $present || $db->alterColumnsRebuilding( $table, [], [ $column ] ) ) {
 
                 continue;
             }
@@ -145,7 +145,7 @@ trait CubeColumn {
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            $add = array();
+            $add = [];
 
             foreach ( $columns as $column ) {
 
@@ -187,7 +187,7 @@ trait CubeColumn {
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            $drop = array();
+            $drop = [];
 
             foreach ( $columns as $column ) {
 
@@ -197,7 +197,7 @@ trait CubeColumn {
                 }
             }
 
-            if ( ! $drop || $db->alterColumnsRebuilding( $table, array(), $drop ) ) {
+            if ( ! $drop || $db->alterColumnsRebuilding( $table, [], $drop ) ) {
 
                 continue;
             }
@@ -282,7 +282,7 @@ trait CubeColumn {
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
 
-        foreach ( array_merge( array( $raw ),
+        foreach ( array_merge( [ $raw ],
                   \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) as $table ) {
 
             $existing = (array) $db->get_results( sprintf(
@@ -343,7 +343,7 @@ trait CubeColumn {
              * it.
              */
             foreach ( array_merge( \OWA\Module\Base\Classes\Cube\Cubes::allTables(),
-                      array( $raw ) ) as $table ) {
+                      [ $raw ] ) as $table ) {
 
                 $existing = (array) $db->get_results( sprintf(
                     "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
@@ -357,7 +357,7 @@ trait CubeColumn {
                 // on MySQL 8.0.29+ and the row version it leaves is 1731 at the
                 // next swap. Raw is never swapped, so it takes the plain drop.
                 if ( $table !== $raw
-                  && $db->alterColumnsRebuilding( $table, array(), array( $column ) ) ) {
+                  && $db->alterColumnsRebuilding( $table, [], [ $column ] ) ) {
 
                     continue;
                 }
@@ -374,5 +374,3 @@ trait CubeColumn {
         return $this->clearCubeInstantColumns();
     }
 }
-
-?>

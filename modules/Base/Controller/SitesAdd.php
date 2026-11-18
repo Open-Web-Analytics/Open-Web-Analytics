@@ -35,16 +35,16 @@ namespace OWA\Module\Base\Controller;
  */
 
 class SitesAdd extends \OWA\Core\AdminController {
-	
-	public function __construct( $params ) {
-		
-		$this->setRequiredCapability('edit_sites');
-		
-		parent::__construct( $params );
-	}
-	
+    
+    public function __construct( $params ) {
+        
+        $this->setRequiredCapability('edit_sites');
+        
+        parent::__construct( $params );
+    }
+    
     public function init() {
-	    
+        
         $this->setNonceRequired();
       
     }
@@ -75,8 +75,8 @@ class SitesAdd extends \OWA\Core\AdminController {
         );
         
         if ( $site ) {
-	        
-	    	\OWA\Core\CoreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
+            
+            \OWA\Core\CoreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
 
             // A web Profile's bundle is there when its snippet is first pasted (PLAN 2.30.7).
             if ( $site->get( 'stream_type' ) === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
@@ -86,7 +86,7 @@ class SitesAdd extends \OWA\Core\AdminController {
         }
         
         // createSite() answers null when it could not create one.
-        $this->set( 'site', $site ? $site->_getProperties() : array() );
+        $this->set( 'site', $site ? $site->_getProperties() : [] );
         
     }
     
@@ -121,11 +121,11 @@ class SitesAdd extends \OWA\Core\AdminController {
         if ( $this->getParam( 'propertyId' ) ) {
 
             $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
-                array(
+                [
                     'entity'   => 'base.property',
                     'column'   => 'id',
                     'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
-                ) );
+                ] );
 
             return;
         }
@@ -137,7 +137,7 @@ class SitesAdd extends \OWA\Core\AdminController {
          * selector.
          */
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
     }
 
     /**
@@ -156,13 +156,13 @@ class SitesAdd extends \OWA\Core\AdminController {
         if ( $type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
             $this->addValidation( 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
-                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
+                [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ] );
 
             return;
         }
 
         $this->addValidation( 'appId', trim( (string) $this->getParam( 'appId' ) ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Bundle ID or package name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Bundle ID or package name is required.' ) ] );
     }
     
     public function success() {
@@ -177,7 +177,7 @@ class SitesAdd extends \OWA\Core\AdminController {
          * Through get() 'site' was always empty, so every new Profile fell
          * through to base.reportingHome, the dashboard of the first site.
          */
-        $site = (array) ( $this->data['site'] ?? array() );
+        $site = (array) ( $this->data['site'] ?? [] );
 
         if ( ! empty( $site['site_id'] ) ) {
 
@@ -194,7 +194,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
     public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.sitesProfile');
         /*
          * 3002 -- "the form had errors" -- not 3311.
@@ -212,5 +212,3 @@ class SitesAdd extends \OWA\Core\AdminController {
     }
 
 }
-
-?>

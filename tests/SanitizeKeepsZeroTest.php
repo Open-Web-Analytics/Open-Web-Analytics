@@ -19,22 +19,22 @@ final class SanitizeKeepsZeroTest extends TestCase
     public function testZeroSurvives(): void
     {
         $this->assertSame('0', Sanitize::cleanInput('0'));
-        $this->assertSame('0', Sanitize::cleanInput('0', array('remove_html' => true, 'escape_html' => false)));
+        $this->assertSame('0', Sanitize::cleanInput('0', ['remove_html' => true, 'escape_html' => false]));
     }
 
     public function testZeroSurvivesInsideARequest(): void
     {
         $this->assertSame(
-            array('config' => array('base.raw_retention_months' => '0', 'base.cube_retention_months' => '12')),
-            Sanitize::cleanInput(array('config' => array('base.raw_retention_months' => '0', 'base.cube_retention_months' => '12')),
-                array('remove_html' => true, 'escape_html' => false)));
+            ['config' => ['base.raw_retention_months' => '0', 'base.cube_retention_months' => '12']],
+            Sanitize::cleanInput(['config' => ['base.raw_retention_months' => '0', 'base.cube_retention_months' => '12']],
+                ['remove_html' => true, 'escape_html' => false]));
     }
 
     public function testEmptyIsStillNothing(): void
     {
         $this->assertNull(Sanitize::cleanInput(''));
         $this->assertNull(Sanitize::cleanInput(null));
-        $this->assertNull(Sanitize::cleanInput(array()));
-        $this->assertSame(array('a' => null), Sanitize::cleanInput(array('a' => '')));
+        $this->assertNull(Sanitize::cleanInput([]));
+        $this->assertSame(['a' => null], Sanitize::cleanInput(['a' => '']));
     }
 }

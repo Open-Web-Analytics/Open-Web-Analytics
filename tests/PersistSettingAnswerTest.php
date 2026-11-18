@@ -26,7 +26,7 @@ final class PersistSettingAnswerTest extends TestCase
     use SettingsSingletonSnapshot;
 
     /** @var list<array{module: string, keys: array}> */
-    public static $heard = array();
+    public static $heard = [];
 
     /** @var bool */
     public static $listening = false;
@@ -77,10 +77,10 @@ final class PersistSettingAnswerTest extends TestCase
         if (!self::$attached) {
             \OWA\Core\CoreAPI::getEventDispatch()->attach('base.install_settings_saved', function ($event) {
                 if (PersistSettingAnswerTest::$listening) {
-                    PersistSettingAnswerTest::$heard[] = array(
+                    PersistSettingAnswerTest::$heard[] = [
                         'module' => (string) $event->get('module'),
                         'keys'   => (array) $event->get('keys'),
-                    );
+                    ];
                 }
 
                 return OWA_EHS_EVENT_HANDLED;
@@ -88,18 +88,18 @@ final class PersistSettingAnswerTest extends TestCase
             self::$attached = true;
         }
 
-        $c = new PersistSettingAnswerOptionsUpdate(array(
-            'config' => array(
+        $c = new PersistSettingAnswerOptionsUpdate([
+            'config' => [
                 'base.attribution_lookback_days' => '90',
                 'base.currencyISO3'              => 'US',
-            ),
-        ));
+            ],
+        ]);
 
-        self::$heard     = array();
+        self::$heard     = [];
         self::$listening = true;
         $c->action();
         self::$listening = false;
 
-        $this->assertSame(array(array('module' => 'base', 'keys' => array('attribution_lookback_days'))), self::$heard);
+        $this->assertSame([['module' => 'base', 'keys' => ['attribution_lookback_days']]], self::$heard);
     }
 }

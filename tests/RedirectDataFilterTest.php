@@ -25,7 +25,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class RedirectDataFilterTest extends TestCase
 {
-    private function controller( array $params = array() )
+    private function controller( array $params = [] )
     {
         return new class( $params ) extends \OWA\Core\Controller {
 
@@ -54,7 +54,7 @@ final class RedirectDataFilterTest extends TestCase
     {
         $c = $this->controller();
         $c->set('kept', 'scalar');
-        $c->set('modules', array('base', 'maxmind'));
+        $c->set('modules', ['base', 'maxmind']);
         $c->set('thing', new stdClass);
 
         $c->setRedirectAction('base.optionsGeneral');
@@ -76,9 +76,9 @@ final class RedirectDataFilterTest extends TestCase
     public function testTheValuesWerePresentBeforeTheRedirectWasSet(): void
     {
         $c = $this->controller();
-        $c->set('modules', array('base'));
+        $c->set('modules', ['base']);
 
-        $this->assertSame(array('base'), $c->data['modules']);
+        $this->assertSame(['base'], $c->data['modules']);
 
         $c->setRedirectAction('base.optionsGeneral');
 
@@ -91,7 +91,7 @@ final class RedirectDataFilterTest extends TestCase
      */
     public function testTheRequestsPropertyGoesWithTheRedirect(): void
     {
-        $c = $this->controller(array('propertyId' => 'prop-42'));
+        $c = $this->controller(['propertyId' => 'prop-42']);
 
         $c->setRedirectAction('base.optionsGeneral');
 
@@ -101,12 +101,12 @@ final class RedirectDataFilterTest extends TestCase
     /** A Property the controller names, or none (one it deleted), wins. */
     public function testAPropertyTheControllerSetsWins(): void
     {
-        $c = $this->controller(array('propertyId' => 'prop-42'));
+        $c = $this->controller(['propertyId' => 'prop-42']);
         $c->set('propertyId', 'prop-7');
         $c->setRedirectAction('base.propertyProfiles');
         $this->assertSame('prop-7', $c->data['propertyId']);
 
-        $c = $this->controller(array('propertyId' => 'prop-42'));
+        $c = $this->controller(['propertyId' => 'prop-42']);
         $c->set('propertyId', '');
         $c->setRedirectAction('base.reportingHome');
         $this->assertSame('', $c->data['propertyId']);
@@ -125,10 +125,10 @@ final class RedirectDataFilterTest extends TestCase
     public function testTheRedirectCarriesTheReportLinkStateWithoutTheProfile(): void
     {
         $this->assertSame(
-            array_values(array_diff(\OWA\Core\View::LINK_STATE_KEYS, array('siteId'))),
+            array_values(array_diff(\OWA\Core\View::LINK_STATE_KEYS, ['siteId'])),
             \OWA\Core\Controller::reportState());
 
-        $c = $this->controller(array('propertyId' => 'p1', 'siteId' => 's1', 'compare' => 'previous_period'));
+        $c = $this->controller(['propertyId' => 'p1', 'siteId' => 's1', 'compare' => 'previous_period']);
         $c->setRedirectAction('base.optionsGeneral');
 
         $this->assertSame('previous_period', $c->data['compare'] ?? null);

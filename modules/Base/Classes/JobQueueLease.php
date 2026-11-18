@@ -46,7 +46,7 @@ class JobQueueLease {
 
         $db->query( sprintf( 'UPDATE %s SET lease_until = ? WHERE id = ? AND status = ?',
             \OWA\Module\Base\Classes\JobQueue::table() ),
-            array( \OWA\Module\Base\Classes\JobQueue::now() + max( $this->lease_seconds, (int) $seconds ), $this->id, 'running' ) );
+            [ \OWA\Module\Base\Classes\JobQueue::now() + max( $this->lease_seconds, (int) $seconds ), $this->id, 'running' ] );
 
         return (int) $db->getAffectedRows() > 0;
     }
@@ -61,5 +61,3 @@ class JobQueueLease {
         return true;
     }
 }
-
-?>

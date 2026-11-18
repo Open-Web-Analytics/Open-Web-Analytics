@@ -17,7 +17,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportingHomeTest extends TestCase
 {
-    private function redirect( array $params = array() ): array
+    private function redirect( array $params = [] ): array
     {
         $controller = new \OWA\Module\Base\Controller\ReportingHome( $params );
         $controller->action();
@@ -74,10 +74,10 @@ final class ReportingHomeTest extends TestCase
 
             $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
 
-            $cookies->setValue( $request, array_merge( (array) $original, array(
+            $cookies->setValue( $request, array_merge( (array) $original, [
                 $ns . \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE
                     => '987654321987',
-            ) ) );
+            ] ) );
 
             $data = $this->redirect();
 

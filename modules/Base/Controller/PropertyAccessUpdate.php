@@ -27,13 +27,13 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', array( 'stopOnError' => true ) );
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', [ 'stopOnError' => true ] );
 
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists', array(
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists', [
             'entity'   => 'base.property',
             'column'   => 'id',
             'errorMsg' => $this->getMsg( 3218 ),
-        ) );
+        ] );
     }
 
     public function action() {
@@ -43,8 +43,8 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
 
         \OWA\Module\Base\Classes\PropertyGrants::apply(
             (string) $this->getParam( 'propertyId' ),
-            is_array( $rendered ) ? $rendered : array(),
-            is_array( $checked )  ? $checked  : array()
+            is_array( $rendered ) ? $rendered : [],
+            is_array( $checked )  ? $checked  : []
         );
 
         $this->setStatusCode( 3217 );
@@ -57,5 +57,3 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
         $this->set( 'error_code', 3218 );
     }
 }
-
-?>

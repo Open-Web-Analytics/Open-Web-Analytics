@@ -26,7 +26,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
     private $site;
 
     /** @var array settings to restore */
-    private $saved = array();
+    private $saved = [];
 
     /** @var string */
     private $queueDir = '';
@@ -55,7 +55,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         Blocks::$table = 'owa_' . self::TABLE;
 
-        foreach (array('spam_detection', 'spam_threshold', 'queue_tracking_events') as $key) {
+        foreach (['spam_detection', 'spam_threshold', 'queue_tracking_events'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -86,7 +86,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
     /** A first page view of a new visitor, with these request headers as the edge captures them. */
     private function beacon(bool $fetchMetadata, string $visitor = ''): array
     {
-        $props = array(
+        $props = [
             'site_id'    => $this->site,
             'visitor_id' => $visitor !== '' ? $visitor : $this->uniqueGuid(),
             'session_id' => $this->uniqueSessionId(),
@@ -101,7 +101,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
             'request_accept_encoding' => 'gzip, deflate, br, zstd',
             'request_accept_language' => 'en-US,en;q=0.9',
             'request_referer'         => 'https://www.' . self::DOMAIN . '/spam',
-        );
+        ];
 
         if ($fetchMetadata) {
             $props['request_sec_fetch_mode'] = 'no-cors';
@@ -116,9 +116,9 @@ final class SpamScoreIngestTest extends IngestionTestCase
     private function rowsFor(string $visitor): array
     {
         $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
-            'SELECT * FROM owa_event_raw WHERE site_id = ? AND visitor_id = ?', array($this->site, $visitor));
+            'SELECT * FROM owa_event_raw WHERE site_id = ? AND visitor_id = ?', [$this->site, $visitor]);
 
-        $byType = array();
+        $byType = [];
 
         foreach ($rows as $row) {
             $row = (array) $row;
@@ -134,11 +134,11 @@ final class SpamScoreIngestTest extends IngestionTestCase
     /** @return array<string,int> rule => blocked, for this test's Profile */
     private function blocked(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
             'SELECT rule, SUM(blocked) AS n FROM owa_' . self::TABLE . ' WHERE site_id = ? GROUP BY rule',
-            array($this->site)) as $row) {
+            [$this->site]) as $row) {
             $row = (array) $row;
             $out[$row['rule']] = (int) $row['n'];
         }
@@ -155,13 +155,13 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         $rows = $this->rowsFor($props['visitor_id']);
 
-        foreach (array('page_view', 'session_start', 'first_visit') as $type) {
+        foreach (['page_view', 'session_start', 'first_visit'] as $type) {
             $this->assertArrayHasKey($type, $rows, "$type was not stored");
             $this->assertEquals(2.5, (float) $rows[$type]['spam_score'], "$type's score");
             $this->assertSame('NO_CLIENT_HINTS=2.5', $rows[$type]['spam_rules'], "$type's rules");
         }
 
-        $this->assertSame(array(), $this->blocked(), 'nothing was blocked');
+        $this->assertSame([], $this->blocked(), 'nothing was blocked');
     }
 
     public function testABeaconAtTheThresholdWritesNothingAndIsCounted(): void
@@ -169,16 +169,16 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $props = $this->beacon(false);
         $this->fireEvent('base.page_request', $props);
 
-        $this->assertSame(array(), $this->rowsFor($props['visitor_id']), 'a blocked beacon writes no row at all');
+        $this->assertSame([], $this->rowsFor($props['visitor_id']), 'a blocked beacon writes no row at all');
 
         $acquisition = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $acquisition->load($props['visitor_id'], 'visitor_id');
         $this->assertFalse((bool) $acquisition->wasPersisted(), 'nor the visitor store');
 
-        $this->assertSame(array('*' => 1, 'NO_CLIENT_HINTS' => 1, 'NO_FETCH_METADATA' => 1), $this->blocked());
+        $this->assertSame(['*' => 1, 'NO_CLIENT_HINTS' => 1, 'NO_FETCH_METADATA' => 1], $this->blocked());
 
         $day = (int) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'SELECT MAX(yyyymmdd) AS d FROM owa_' . self::TABLE . ' WHERE site_id = ?', array($this->site))['d'];
+            'SELECT MAX(yyyymmdd) AS d FROM owa_' . self::TABLE . ' WHERE site_id = ?', [$this->site])['d'];
         $this->assertSame((int) $this->lastEvent()->get('yyyymmdd'), $day, 'the day raw would have filed it under');
     }
 
@@ -191,7 +191,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->fireEvent('base.page_request', $this->beacon(false));
 
         $this->assertSame(6, Blocks::$writes - $before, 'three keys, twice');
-        $this->assertSame(array('*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2), $this->blocked());
+        $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2], $this->blocked());
     }
 
     /** A blank threshold stores the beacon, scored. */
@@ -207,7 +207,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertArrayHasKey('page_view', $rows);
         $this->assertEquals(7.5, (float) $rows['page_view']['spam_score']);
         $this->assertSame('NO_FETCH_METADATA=5.0 NO_CLIENT_HINTS=2.5', $rows['page_view']['spam_rules']);
-        $this->assertSame(array(), $this->blocked());
+        $this->assertSame([], $this->blocked());
     }
 
     /** Normal runs the user agent rules alone, so the same beacon scores 0.0 and is stored. */
@@ -233,7 +233,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
     public function testTheQueuedPathKeepsTheHeadersAndCountsOncePerDrain(): void
     {
         $this->queueDir = sys_get_temp_dir() . '/owa-spam-queue-' . bin2hex(random_bytes(4)) . '/';
-        TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(array('path' => $this->queueDir));
+        TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $this->queueDir]);
         \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
 
         $stored = $this->beacon(true);
@@ -241,14 +241,14 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertTrue((bool) $this->fireEvent('base.page_request', $this->beacon(false)));
         $this->assertTrue((bool) $this->fireEvent('base.page_request', $this->beacon(false)));
 
-        $this->assertSame(array(), $this->rowsFor($stored['visitor_id']), 'queued, not yet ingested');
+        $this->assertSame([], $this->rowsFor($stored['visitor_id']), 'queued, not yet ingested');
 
         // The envelopes carry what the edge captured: read from the queue's file, before the drain receives them.
         $lines = array_values(array_filter(array_map('trim',
             (array) @file($this->queueDir . 'events.txt'))));
         $this->assertCount(3, $lines, 'three beacons queued');
 
-        $first = (array) (json_decode($lines[0], true)['e']['properties'] ?? array());
+        $first = (array) (json_decode($lines[0], true)['e']['properties'] ?? []);
         $this->assertSame('no-cors', $first['request_sec_fetch_mode'] ?? null);
         $this->assertSame('https://www.' . self::DOMAIN . '/spam', $first['request_referer'] ?? null);
         $this->assertSame('https://www.' . self::DOMAIN . '/spam', $first['received_page_location'] ?? null);
@@ -259,7 +259,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame(3, $counts['ingested']);
         $this->assertSame(3, Blocks::$writes - $before, 'one statement per key for the whole drain');
         $this->assertFalse(Blocks::batching(), 'the drain closed its batch');
-        $this->assertSame(array('*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2), $this->blocked());
+        $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2], $this->blocked());
 
         $rows = $this->rowsFor($stored['visitor_id']);
         $this->assertArrayHasKey('page_view', $rows, 'the beacon under the threshold was stored by the drain');
@@ -270,23 +270,23 @@ final class SpamScoreIngestTest extends IngestionTestCase
     public function testABatchWritesOnFlush(): void
     {
         Blocks::begin();
-        Blocks::record(20261104, $this->site, array('NO_FETCH_METADATA'));
-        Blocks::record(20261104, $this->site, array('NO_FETCH_METADATA', 'NO_CLIENT_HINTS'));
+        Blocks::record(20261104, $this->site, ['NO_FETCH_METADATA']);
+        Blocks::record(20261104, $this->site, ['NO_FETCH_METADATA', 'NO_CLIENT_HINTS']);
 
-        $this->assertSame(array(), $this->blocked(), 'nothing written while the batch is open');
+        $this->assertSame([], $this->blocked(), 'nothing written while the batch is open');
         $this->assertSame(2, Blocks::pending()['20261104|' . $this->site . '|*']);
 
         $this->assertTrue(Blocks::flush());
-        $this->assertSame(array('*' => 2, 'NO_CLIENT_HINTS' => 1, 'NO_FETCH_METADATA' => 2), $this->blocked());
+        $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 1, 'NO_FETCH_METADATA' => 2], $this->blocked());
 
         // Added to, not replaced.
-        Blocks::record(20261104, $this->site, array());
+        Blocks::record(20261104, $this->site, []);
         $this->assertSame(3, $this->blocked()['*']);
     }
 
     public function testTheTableIsKeyedByDayProfileAndRule(): void
     {
-        $keys = array();
+        $keys = [];
 
         foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
             "SHOW KEYS FROM owa_" . self::TABLE . " WHERE Key_name = 'PRIMARY'") as $row) {
@@ -296,6 +296,6 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         ksort($keys);
 
-        $this->assertSame(array('yyyymmdd', 'site_id', 'rule'), array_values($keys));
+        $this->assertSame(['yyyymmdd', 'site_id', 'rule'], array_values($keys));
     }
 }

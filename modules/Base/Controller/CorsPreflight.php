@@ -23,8 +23,8 @@ class CorsPreflight extends \OWA\Core\Controller {
     }
 
     public function success() {
-	    
-	    http_response_code(200);
+        
+        http_response_code(200);
 
         $this->setView( 'base.corsPreflight' );
     }

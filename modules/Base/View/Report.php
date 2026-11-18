@@ -63,7 +63,7 @@ class Report extends \OWA\Core\View {
 
         unset($this->report_params['guid']);
         unset($this->report_params['caller']);
-		$this->t->set('params', $this->report_params);
+        $this->t->set('params', $this->report_params);
         $this->body->set('params', $this->report_params);
         $this->subview->body->set('params', $this->report_params);
 
@@ -98,7 +98,7 @@ class Report extends \OWA\Core\View {
         $this->body->set('hideReportHead', $this->get('hideReportHead') );
         $this->body->set('title_actions', $this->get('title_actions') );
         $this->body->set('title_count', $this->get('title_count') );
-        $this->body->set('title_tags', $this->get('title_tags') ?: array() );
+        $this->body->set('title_tags', $this->get('title_tags') ?: [] );
 
         $this->body->set('currentSiteId', $this->get('currentSiteId'));
         $this->body->set('currentPropertyId', $this->get('currentPropertyId'));
@@ -114,9 +114,9 @@ class Report extends \OWA\Core\View {
         $period = $this->get('period');
 
         // The Property, which is what every report the nav links to is of.
-        $link_state = array(
+        $link_state = [
             'propertyId' => $this->get('currentPropertyId')
-        );
+        ];
 
         if ( $period->get() === 'date_range' ) {
 
@@ -152,7 +152,7 @@ class Report extends \OWA\Core\View {
         $this->setJs('owa.reporting', 'base/dist/owa.reporting-combined-min.js');
         
         // css libs to be loaded
-		$this->setCss("base/css/font-awesome/css/all.min.css");
+        $this->setCss("base/css/font-awesome/css/all.min.css");
         $this->setCss("base/css/owa.reporting-css-combined.css");
         $additionalCss = \OWA\Core\CoreAPI::getSetting( 'base', 'additionalCss' );
         if (is_array($additionalCss)) {
@@ -184,11 +184,3 @@ class Report extends \OWA\Core\View {
     }
 
 }
-
-
-
-
-
-
-
-?>

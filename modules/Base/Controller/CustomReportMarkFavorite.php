@@ -80,7 +80,7 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
          */
         if ( $this->getParam( 'returnTo' ) === 'roster' ) {
 
-            foreach ( array( 'rosterSort', 'rosterDesc', 'rosterMine', 'rosterFavorites' ) as $key ) {
+            foreach ( [ 'rosterSort', 'rosterDesc', 'rosterMine', 'rosterFavorites' ] as $key ) {
 
                 $value = (string) $this->getParam( $key );
 

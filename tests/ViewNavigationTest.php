@@ -53,7 +53,7 @@ final class ViewNavigationTest extends TestCase
 
         $nav = (array) \OWA\Core\CoreAPI::getNavigation('probe.view', 'probe_nav');
 
-        $this->assertSame(array('probe.first', 'probe.second'), array_column($nav, 'ref'));
+        $this->assertSame(['probe.first', 'probe.second'], array_column($nav, 'ref'));
         $this->assertSame('First', $nav[0]['anchortext']);
         $this->assertSame('view_reports', $nav[0]['priviledge']);
     }
@@ -76,7 +76,7 @@ final class ViewNavigationTest extends TestCase
     {
         $this->inject($this->probe());
 
-        $this->assertSame(array('probe.elsewhere'),
+        $this->assertSame(['probe.elsewhere'],
             array_column((array) \OWA\Core\CoreAPI::getNavigation('probe.view', 'other_nav'), 'ref'));
         $this->assertFalse(\OWA\Core\CoreAPI::getNavigation('probe.view', 'no_such_nav'));
     }
@@ -85,9 +85,9 @@ final class ViewNavigationTest extends TestCase
     public function testANavLinksEntryNamingItsViewIsNotRead(): void
     {
         $m = $this->probe();
-        $m->nav_links = array(array(
+        $m->nav_links = [[
             'view' => 'probe.view', 'nav_name' => 'legacy_nav', 'ref' => 'probe.legacy', 'anchortext' => 'Legacy', 'order' => 1,
-        ));
+        ]];
         $this->inject($m);
 
         $this->assertFalse(\OWA\Core\CoreAPI::getNavigation('probe.view', 'legacy_nav'));

@@ -27,8 +27,8 @@
 <fieldset>
 
     <legend>
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'Goal Event Definitions' ) ); ?> <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.goalEventDefinitionEdit', 'propertyId' => $view->propertyId ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Goal Event Definition' ) ); ?></a>)</span>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Goal Event Definitions' ) ); ?> <span class="legend_link">(<a href="<?php echo $view->makeLink( [
+            'do' => 'base.goalEventDefinitionEdit', 'propertyId' => $view->propertyId ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Goal Event Definition' ) ); ?></a>)</span>
     </legend>
 
 <?php if ( empty( $view->goalEventDefinitions ) ):?>
@@ -88,8 +88,8 @@
                 <td data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?>"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
                 <td data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?>"><?php $view->out( $owa_ke['is_active'] ? \OWA\Core\CoreAPI::t( 'Active' ) : \OWA\Core\CoreAPI::t( 'Inactive' ) );?></td>
                 <td class="owa_rowActions">
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventDefinitionEdit',
-                        'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) ); ?></a>
+                    <a href="<?php echo $view->makeLink( [ 'do' => 'base.goalEventDefinitionEdit',
+                        'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) ); ?></a>
                 </td>
             </tr>
         <?php endforeach;?>

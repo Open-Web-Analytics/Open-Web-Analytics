@@ -61,5 +61,3 @@ class MigrationProgress extends \OWA\Core\Entity {
         return \OWA\Core\Lib::wideStringGuid( $source . '|' . $site_id );
     }
 }
-
-?>

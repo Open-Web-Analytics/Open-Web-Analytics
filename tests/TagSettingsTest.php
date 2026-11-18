@@ -18,13 +18,13 @@ final class TagSettingsTest extends TestCase
     }
 
     /** Base's tag fieldsets, one per job. */
-    const BASE_SETS = array('base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
-                            'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit', 'base.trackingPrivacy');
+    const BASE_SETS = ['base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
+                            'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit', 'base.trackingPrivacy'];
 
     private function tagSet(string $id = 'base.trackingClicks'): array
     {
         $set = SettingsForm::registeredFieldSet($id);
-        $this->assertNotSame(array(), $set, "$id is registered");
+        $this->assertNotSame([], $set, "$id is registered");
 
         return $set;
     }
@@ -51,7 +51,7 @@ final class TagSettingsTest extends TestCase
 
     public function testEveryTagSettingIsDeclaredForTheInstallAndTheProperty(): void
     {
-        $keys = array();
+        $keys = [];
 
         foreach (self::BASE_SETS as $id) {
             $set = $this->tagSet($id);
@@ -103,16 +103,16 @@ final class TagSettingsTest extends TestCase
         $this->assertNotNull($args);
         $this->assertSame('boolean', $args['type']);
         $this->assertTrue($args['default']);
-        $this->assertSame(array('install', 'property', 'profile'), $args['scopes']);
+        $this->assertSame(['install', 'property', 'profile'], $args['scopes']);
         $this->assertSame('Honor Privacy Signals', $args['label']);
 
-        foreach (array('Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other', 'legal requirement') as $phrase) {
+        foreach (['Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other', 'legal requirement'] as $phrase) {
             $this->assertStringContainsString($phrase, $args['description']);
         }
 
-        $this->assertSame(array('tracker_honor_privacy_signals'), $this->tagSet('base.trackingPrivacy')['settings']);
+        $this->assertSame(['tracker_honor_privacy_signals'], $this->tagSet('base.trackingPrivacy')['settings']);
 
-        foreach (array('property', 'profile') as $level) {
+        foreach (['property', 'profile'] as $level) {
             $this->assertStringContainsString('config[base.tracker_honor_privacy_signals]',
                 SettingsForm::scopedFieldSet($this->tagSet('base.trackingPrivacy'), $level, 'zz-tag-' . $level, 'owa_'), $level);
         }
@@ -145,13 +145,13 @@ final class TagSettingsTest extends TestCase
 
     public static function refused(): array
     {
-        return array(
-            'a threshold of 0'       => array('tracker_scroll_thresholds', '0, 50', 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.'),
-            'a threshold over 100'   => array('tracker_scroll_thresholds', '50, 101', 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.'),
-            'an extension with a dot'=> array('tracker_download_extensions', 'pdf, .zip', 'Download File Extensions is a comma-separated list of file extensions, without the dot.'),
-            'a domain with a space'  => array('tracker_cookie_domain', 'bad domain', 'Tracker Cookie Domain is a domain name, such as example.com.'),
-            'a lifetime over 400'    => array('tracker_session_cookie_days', '500', 'Session Cookie Lifetime (days) is a whole number from 0 to 400.'),
-        );
+        return [
+            'a threshold of 0'       => ['tracker_scroll_thresholds', '0, 50', 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.'],
+            'a threshold over 100'   => ['tracker_scroll_thresholds', '50, 101', 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.'],
+            'an extension with a dot'=> ['tracker_download_extensions', 'pdf, .zip', 'Download File Extensions is a comma-separated list of file extensions, without the dot.'],
+            'a domain with a space'  => ['tracker_cookie_domain', 'bad domain', 'Tracker Cookie Domain is a domain name, such as example.com.'],
+            'a lifetime over 400'    => ['tracker_session_cookie_days', '500', 'Session Cookie Lifetime (days) is a whole number from 0 to 400.'],
+        ];
     }
 
     public function testZeroDaysAndAnEmptyDomainAreAccepted(): void
@@ -169,17 +169,17 @@ final class TagSettingsTest extends TestCase
         \OWA\Core\CoreAPI::clearScopedSetting('profile', $site_id, 'base', 'tracker_clicks');
 
         try {
-            $c = new \OWA\Module\Base\Controller\SitesEditTagSettings(array(
+            $c = new \OWA\Module\Base\Controller\SitesEditTagSettings([
                 'siteId'   => $site_id,
-                'config'   => array('base.tracker_clicks' => '0'),
-                'override' => array('base.tracker_clicks' => '1'),
-            ));
+                'config'   => ['base.tracker_clicks' => '0'],
+                'override' => ['base.tracker_clicks' => '1'],
+            ]);
             $c->action();
 
             $this->assertFalse(\OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', 'tracker_clicks'));
 
             // Switched off: back to inheriting.
-            (new \OWA\Module\Base\Controller\SitesEditTagSettings(array('siteId' => $site_id)))->action();
+            (new \OWA\Module\Base\Controller\SitesEditTagSettings(['siteId' => $site_id]))->action();
 
             $this->assertNull(\OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', 'tracker_clicks'));
 
@@ -192,11 +192,11 @@ final class TagSettingsTest extends TestCase
     {
         $site_id = $this->aSiteId();
 
-        $c = new \OWA\Module\Base\Controller\SitesEditTagSettings(array(
+        $c = new \OWA\Module\Base\Controller\SitesEditTagSettings([
             'siteId'   => $site_id,
-            'config'   => array('base.tracker_session_cookie_days' => '500'),
-            'override' => array('base.tracker_session_cookie_days' => '1'),
-        ));
+            'config'   => ['base.tracker_session_cookie_days' => '500'],
+            'override' => ['base.tracker_session_cookie_days' => '1'],
+        ]);
 
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
         $v->doValidations();

@@ -110,6 +110,3 @@ $_owa_messages = [
     // Report related
     3600 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Unknown error.' )],
 ];
-
-
-?>

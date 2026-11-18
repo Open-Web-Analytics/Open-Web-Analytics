@@ -89,8 +89,8 @@ final class TrackerReservedEventNamesTest extends TestCase
     {
         $reserved = $this->trackerReserved();
 
-        foreach ( array( \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START,
-                         \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT ) as $marker ) {
+        foreach ( [ \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START,
+                         \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT ] as $marker ) {
 
             $this->assertContains( $marker, $reserved,
                 $marker . ' is a stored event type and must be reserved' );
@@ -117,7 +117,7 @@ final class TrackerReservedEventNamesTest extends TestCase
         $this->assertContains( 'exception', $sent,
             'the pattern no longer finds the names Tracker.js sends; this test is stale' );
 
-        $this->assertSame( array(), array_values( array_diff( $sent, $this->trackerReserved() ) ),
+        $this->assertSame( [], array_values( array_diff( $sent, $this->trackerReserved() ) ),
             'Tracker.js sends these events under names a site can also take' );
     }
 
@@ -164,13 +164,13 @@ final class TrackerReservedEventNamesTest extends TestCase
      */
     public function testTheServerAdmitsCustomNamesButNotNonsense(): void
     {
-        foreach ( array( 'my_site_signup', 'newsletter_opt_in', 'A', 'a_b_9' ) as $legal ) {
+        foreach ( [ 'my_site_signup', 'newsletter_opt_in', 'A', 'a_b_9' ] as $legal ) {
 
             $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $legal ),
                 $legal . ' is a legal custom event name and must be admitted' );
         }
 
-        foreach ( array(
+        foreach ( [
             '',                 // nothing
             '_leading',         // must start with a letter
             '9starts_numeric',  // must start with a letter
@@ -178,7 +178,7 @@ final class TrackerReservedEventNamesTest extends TestCase
             'has-hyphen',
             'my.signup',        // a dot is not legal for a custom name
             str_repeat( 'a', 41 ),
-        ) as $illegal ) {
+        ] as $illegal ) {
 
             $this->assertFalse( \OWA\Core\CoreAPI::isTrackingEventType( $illegal ),
                 var_export( $illegal, true ) . ' must not be admitted as an event name' );

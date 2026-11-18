@@ -29,6 +29,7 @@ final class ReleaseTarballExcludesTest extends TestCase {
         'webpack*.js',
         'phpunit.xml',
         'phpstan*.neon',
+        '.php-cs-fixer*.php',
         'composer.json',
         'composer.lock',
         'package.json',
@@ -130,5 +131,25 @@ final class ReleaseTarballExcludesTest extends TestCase {
         }
 
         $this->assertTrue( $covered, './.build would ship in the release tarball' );
+    }
+
+    /**
+     * PHP-CS-Fixer's cache, written beside its config by `composer cs`.
+     * Asserted by name, because the file exists only after a run.
+     */
+    public function testTheCodingStyleCacheIsExcluded(): void {
+
+        $covered = false;
+
+        foreach ( $this->excludes() as $pattern ) {
+
+            if ( fnmatch( $pattern, './.php-cs-fixer.cache' ) ) {
+
+                $covered = true;
+                break;
+            }
+        }
+
+        $this->assertTrue( $covered, './.php-cs-fixer.cache would ship in the release tarball' );
     }
 }

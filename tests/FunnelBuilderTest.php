@@ -10,7 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class FunnelBuilderTest extends TestCase
 {
-    private function call( object $o, string $method, array $args = array() )
+    private function call( object $o, string $method, array $args = [] )
     {
         $m = new ReflectionMethod( $o, $method );
 
@@ -32,7 +32,7 @@ final class FunnelBuilderTest extends TestCase
         $segment = function ( string $saved, string $reader ) {
 
             $funnel = new \OWA\Module\Base\Controller\VisualizationFunnel(
-                array( 'constraints' => $reader, 'period' => 'last_thirty_days' ) );
+                [ 'constraints' => $reader, 'period' => 'last_thirty_days' ] );
 
             $this->setPrivate( $funnel, \OWA\Module\Base\Controller\VisualizationFunnel::class,
                 'savedConstraints', $saved );
@@ -55,10 +55,10 @@ final class FunnelBuilderTest extends TestCase
      */
     public function testWithNoPeriodTheSegmentUsesTheReportsOwn(): void
     {
-        $funnel = new \OWA\Module\Base\Controller\VisualizationFunnel( array( 'constraints' => 'pagePath=@/' ) );
+        $funnel = new \OWA\Module\Base\Controller\VisualizationFunnel( [ 'constraints' => 'pagePath=@/' ] );
 
         // What pre() does on a request with no period: the default one.
-        $funnel->period = \OWA\Core\CoreAPI::makeTimePeriod( null, array() );
+        $funnel->period = \OWA\Core\CoreAPI::makeTimePeriod( null, [] );
 
         $bounds = $this->call( $funnel, 'segment' )->bounds();
 
@@ -69,8 +69,8 @@ final class FunnelBuilderTest extends TestCase
 
     private static function page( string $path, string $name = '' ): array
     {
-        return array( 'name' => $name, 'event' => 'page_view', 'match' => 'all', 'conditions' => array(
-            array( 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ) ) );
+        return [ 'name' => $name, 'event' => 'page_view', 'match' => 'all', 'conditions' => [
+            [ 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ] ] ];
     }
 
     /**
@@ -81,37 +81,37 @@ final class FunnelBuilderTest extends TestCase
      */
     public function testThePreviewCountsTheStepsItWasSent(): void
     {
-        $sent = array(
+        $sent = [
             self::page( '/blog/' ),
             self::page( '', 'Left blank' ),
-            array( 'kind' => 'path', 'path' => '/old', 'name' => 'A path step' ),
+            [ 'kind' => 'path', 'path' => '/old', 'name' => 'A path step' ],
             self::page( '/pricing', 'Pricing' ),
-            array( 'name' => '', 'event' => 'newsletter_signup', 'match' => 'any', 'conditions' => array() ),
-        );
+            [ 'name' => '', 'event' => 'newsletter_signup', 'match' => 'any', 'conditions' => [] ],
+        ];
 
-        $preview = new \OWA\Module\Base\Controller\VisualizationPreview( array(
+        $preview = new \OWA\Module\Base\Controller\VisualizationPreview( [
             'steps'        => json_encode( $sent ),
             'funnelFilter' => 'pagePath=@/blog/',
-        ) );
+        ] );
 
         $visualization = $this->call( $preview, 'visualization' );
 
-        $this->assertSame( array(
-            array( 'name' => '/blog/', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
-                'conditions' => array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => '/blog/' ) ),
-                'step_number' => 1 ),
-            array( 'name' => 'Pricing', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
-                'conditions' => array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => '/pricing' ) ),
-                'step_number' => 2 ),
-            array( 'name' => 'newsletter_signup', 'kind' => 'event', 'event' => 'newsletter_signup', 'match' => 'any',
-                'conditions' => array(), 'step_number' => 3 ),
-        ), $visualization['definition']['steps'] );
+        $this->assertSame( [
+            [ 'name' => '/blog/', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
+                'conditions' => [ [ 'property' => 'page_path', 'operator' => 'exact', 'value' => '/blog/' ] ],
+                'step_number' => 1 ],
+            [ 'name' => 'Pricing', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
+                'conditions' => [ [ 'property' => 'page_path', 'operator' => 'exact', 'value' => '/pricing' ] ],
+                'step_number' => 2 ],
+            [ 'name' => 'newsletter_signup', 'kind' => 'event', 'event' => 'newsletter_signup', 'match' => 'any',
+                'conditions' => [], 'step_number' => 3 ],
+        ], $visualization['definition']['steps'] );
 
         $this->assertSame( 'pagePath=@/blog/', $visualization['definition']['constraints'] );
 
-        $many = new \OWA\Module\Base\Controller\VisualizationPreview( array(
+        $many = new \OWA\Module\Base\Controller\VisualizationPreview( [
             'steps' => json_encode( array_fill( 0, 15, self::page( '/x' ) ) ),
-        ) );
+        ] );
 
         $this->assertCount( \OWA\Module\Base\Controller\VisualizationSave::MAX_STEPS,
             $this->call( $many, 'visualization' )['definition']['steps'] );
@@ -120,11 +120,11 @@ final class FunnelBuilderTest extends TestCase
     /** Anything but a list of steps is no steps, not an error. */
     public function testThePreviewIgnoresStepsThatAreNotAList(): void
     {
-        foreach ( array( '', 'not json', '"a string"', '{"kind":"path"}', '[1,2]' ) as $steps ) {
+        foreach ( [ '', 'not json', '"a string"', '{"kind":"path"}', '[1,2]' ] as $steps ) {
 
-            $preview = new \OWA\Module\Base\Controller\VisualizationPreview( array( 'steps' => $steps ) );
+            $preview = new \OWA\Module\Base\Controller\VisualizationPreview( [ 'steps' => $steps ] );
 
-            $this->assertSame( array(), $this->call( $preview, 'visualization' )['definition']['steps'], $steps );
+            $this->assertSame( [], $this->call( $preview, 'visualization' )['definition']['steps'], $steps );
         }
     }
 
@@ -134,13 +134,13 @@ final class FunnelBuilderTest extends TestCase
         $words = \OWA\Module\Base\Classes\CustomReports::constraintsInWords(
             'pagePath=@/blog/,sessionCampaign!=(not set),pagePath!=/x' );
 
-        $this->assertSame( array(
+        $this->assertSame( [
             'Page Path contains /blog/',
             $words[1],
             'Page Path is not /x',
-        ), $words );
+        ], $words );
 
         $this->assertStringEndsWith( ' has a value', $words[1] );
-        $this->assertSame( array(), \OWA\Module\Base\Classes\CustomReports::constraintsInWords( '' ) );
+        $this->assertSame( [], \OWA\Module\Base\Classes\CustomReports::constraintsInWords( '' ) );
     }
 }

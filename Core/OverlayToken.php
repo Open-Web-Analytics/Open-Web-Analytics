@@ -67,9 +67,9 @@ class OverlayToken {
      * see, any metrics, any dimensions. It sits in the URL fragment on the
      * tracked site, where any other script on that page can read it.
      */
-    const SCOPE = array( 'siteId', 'propertyId', 'metrics', 'dimensions',
+    const SCOPE = [ 'siteId', 'propertyId', 'metrics', 'dimensions',
         'period', 'startDate', 'endDate', 'startTime', 'endTime',
-        'compare', 'compareStartDate', 'compareEndDate' );
+        'compare', 'compareStartDate', 'compareEndDate' ];
 
     /**
      * Mints a token authorising exactly one action on one resource.
@@ -88,23 +88,23 @@ class OverlayToken {
      *                                       an absent key is bound to ''
      * @return    string    a URL-safe token
      */
-    public static function mint( $userId, $action, $resourceKey, $resource, $ttl = self::DEFAULT_TTL, array $scope = array() ) {
+    public static function mint( $userId, $action, $resourceKey, $resource, $ttl = self::DEFAULT_TTL, array $scope = [] ) {
 
-        $bound = array();
+        $bound = [];
 
         foreach ( self::SCOPE as $key ) {
 
             $bound[ $key ] = (string) ( $scope[ $key ] ?? '' );
         }
 
-        $claims = array(
+        $claims = [
             'user_id'      => (string) $userId,
             'action'       => (string) $action,
             'resource_key' => (string) $resourceKey,
             'resource'     => (string) $resource,
             'scope'        => $bound,
             'exp'          => time() + (int) $ttl,
-        );
+        ];
 
         $payload = self::encode( $claims );
 
@@ -154,7 +154,7 @@ class OverlayToken {
             return null;
         }
 
-        foreach ( array( 'user_id', 'action', 'resource_key', 'resource', 'scope', 'exp' ) as $required ) {
+        foreach ( [ 'user_id', 'action', 'resource_key', 'resource', 'scope', 'exp' ] as $required ) {
 
             if ( ! array_key_exists( $required, $claims ) ) {
 

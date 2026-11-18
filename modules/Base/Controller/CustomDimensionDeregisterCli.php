@@ -34,14 +34,14 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Removes a custom dimension from a Property, and drops its cube column with the values in it. The collected values stay in the raw events, so registering again and rebuilding brings them back.',
-            'arguments'   => array(
+            'arguments'   => [
                 'property=<id>' => 'Required. The Property.',
                 'key=<key>'     => 'Required. The collected key to stop reporting on.',
                 '--defer'       => 'Remove the registration now and leave the column drop to the next build or apply job.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -85,10 +85,8 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
         $cli   = $class->newInstanceWithoutConstructor();
 
         $params = $class->getProperty( 'params' );
-        $params->setValue( $cli, array( 'property' => $property_id ) );
+        $params->setValue( $cli, [ 'property' => $property_id ] );
 
         $cli->action();
     }
 }
-
-?>

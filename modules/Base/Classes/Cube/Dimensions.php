@@ -101,7 +101,7 @@ class Dimensions {
     const CAPACITY_SUFFIX = '_capacity';
 
     /** @var array<string, int> property id => measured capacity, for this request only */
-    private static $capacity = array();
+    private static $capacity = [];
 
     /** The entity a custom dimension is registered against: the cube's. */
     const CUBE_ENTITY = 'base.event';
@@ -185,7 +185,7 @@ class Dimensions {
         while ( $lo < $hi ) {
 
             $mid     = intdiv( $lo + $hi + 1, 2 );
-            $columns = array();
+            $columns = [];
 
             for ( $i = 0; $i < $mid; $i++ ) {
 
@@ -201,7 +201,7 @@ class Dimensions {
                 $lo   = $mid;
                 $room = $mid;
 
-                $db->alterColumnsRebuilding( $scratch, array(), array_keys( $columns ) );
+                $db->alterColumnsRebuilding( $scratch, [], array_keys( $columns ) );
 
             } else {
 
@@ -252,7 +252,7 @@ class Dimensions {
 
         if ( ! ctype_digit( (string) $property_id ) ) {
 
-            return array();
+            return [];
         }
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
@@ -280,7 +280,7 @@ class Dimensions {
 
         $key = (string) $row['dimension_key'];
 
-        return array(
+        return [
             'family'           => 'custom',
             'name'             => (string) $row['column_name'],
             'entity'           => self::CUBE_ENTITY,
@@ -293,7 +293,7 @@ class Dimensions {
             'foreign_key_name' => '',
             'data_type'        => (string) $row['data_type'],
             'denormalized'     => true,
-        );
+        ];
     }
 
     /**
@@ -318,7 +318,7 @@ class Dimensions {
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' )->getTableName();
 
-        $ids = array();
+        $ids = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 "SELECT DISTINCT property_id AS p FROM %s WHERE state <> '%s'",
@@ -342,10 +342,10 @@ class Dimensions {
      */
     public static function columnsOf( array $row ) {
 
-        $columns = array(
+        $columns = [
             $row['column_name'] => self::definitionFor(
                 (string) $row['data_type'], (int) $row['max_length'] ),
-        );
+        ];
 
         if ( (string) $row['scope'] === CustomDimension::SCOPE_USER ) {
 
@@ -412,8 +412,8 @@ class Dimensions {
 
         $fail = function ( $message ) {
 
-            return array( 'ok' => false, 'error' => $message,
-                'registered' => array(), 'columns' => array() );
+            return [ 'ok' => false, 'error' => $message,
+                'registered' => [], 'columns' => [] ];
         };
 
         $table = Cubes::tableFor( $property_id );
@@ -439,15 +439,15 @@ class Dimensions {
                 \OWA\Core\CoreAPI::t( '%s does not exist yet. A Property\'s cube is created when it first collects data.' ), $table ) );
         }
 
-        $existing = array();
+        $existing = [];
 
         foreach ( self::forProperty( $property_id ) as $row ) {
 
             $existing[ $row['column_name'] ] = $row;
         }
 
-        $definitions = array();
-        $validated   = array();
+        $definitions = [];
+        $validated   = [];
 
         // Measured once for the whole call, not per request: it is the same
         // answer for every one of them and it costs an ALTER or five.
@@ -479,7 +479,7 @@ class Dimensions {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
 
-            $entity->setProperties( array(
+            $entity->setProperties( [
                 'id'            => $entity->generateId( $property_id . ':' . $row['column_name'] ),
                 'property_id'   => (int) $property_id,
                 'scope'         => $row['scope'],
@@ -490,7 +490,7 @@ class Dimensions {
                 'label'         => $row['label'],
                 'creation_date' => time(),
                 'state'         => CustomDimension::STATE_PENDING,
-            ) );
+            ] );
 
             if ( $entity->create() !== true ) {
 
@@ -500,12 +500,12 @@ class Dimensions {
             }
         }
 
-        return array(
+        return [
             'ok'         => true,
             'error'      => '',
             'registered' => $validated,
             'columns'    => array_keys( $definitions ),
-        );
+        ];
     }
 
     /**
@@ -539,14 +539,14 @@ class Dimensions {
             return \OWA\Core\CoreAPI::t( 'This Property has no reporting cube yet. It is created when the Property first collects data.' );
         }
 
-        $existing = array();
+        $existing = [];
 
         foreach ( self::forProperty( $property_id ) as $row ) {
 
             $existing[ $row['column_name'] ] = $row;
         }
 
-        $checked = self::validate( $request, $existing, array(),
+        $checked = self::validate( $request, $existing, [],
             self::capacityFor( $property_id ) );
 
         return isset( $checked['error'] ) ? (string) $checked['error'] : '';
@@ -576,8 +576,8 @@ class Dimensions {
 
         if ( ! $table || ! $column ) {
 
-            return array( 'ok' => false, 'error' => \OWA\Core\CoreAPI::t( 'A Property id and a key are required.' ),
-                'columns' => array() );
+            return [ 'ok' => false, 'error' => \OWA\Core\CoreAPI::t( 'A Property id and a key are required.' ),
+                'columns' => [] ];
         }
 
         $found = null;
@@ -592,8 +592,8 @@ class Dimensions {
 
         if ( ! $found ) {
 
-            return array( 'ok' => false, 'columns' => array(), 'error' => sprintf(
-                \OWA\Core\CoreAPI::t( '%s is not registered against Property %s.' ), $key, $property_id ) );
+            return [ 'ok' => false, 'columns' => [], 'error' => sprintf(
+                \OWA\Core\CoreAPI::t( '%s is not registered against Property %s.' ), $key, $property_id ) ];
         }
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
@@ -602,15 +602,15 @@ class Dimensions {
 
         if ( $entity->delete() === false ) {
 
-            return array( 'ok' => false, 'columns' => array(), 'error' => sprintf(
-                \OWA\Core\CoreAPI::t( 'Could not remove the registration for %s.' ), $key ) );
+            return [ 'ok' => false, 'columns' => [], 'error' => sprintf(
+                \OWA\Core\CoreAPI::t( 'Could not remove the registration for %s.' ), $key ) ];
         }
 
         // It stops being a dimension of the Property's queries now.
         \OWA\Module\Base\Classes\DimensionRegistry::forget( $property_id );
 
-        return array( 'ok' => true, 'error' => '',
-            'columns' => array_keys( self::columnsOf( $found ) ) );
+        return [ 'ok' => true, 'error' => '',
+            'columns' => array_keys( self::columnsOf( $found ) ) ];
     }
 
     /**
@@ -634,8 +634,8 @@ class Dimensions {
      */
     public static function reconcile( $property_id ) {
 
-        $nothing = array( 'ok' => true, 'changed' => false, 'added' => array(),
-            'dropped' => array(), 'error' => '', 'skipped' => array() );
+        $nothing = [ 'ok' => true, 'changed' => false, 'added' => [],
+            'dropped' => [], 'error' => '', 'skipped' => [] ];
 
         $table = Cubes::tableFor( $property_id );
         $db    = \OWA\Core\CoreAPI::dbSingleton();
@@ -646,8 +646,8 @@ class Dimensions {
         }
 
         $present  = self::registeredColumnsOn( $table );
-        $wanted   = array();
-        $rows     = array();
+        $wanted   = [];
+        $rows     = [];
 
         foreach ( self::forProperty( $property_id ) as $row ) {
 
@@ -665,12 +665,12 @@ class Dimensions {
 
             // Still reconcile the STATES: a row can say pending against a
             // column that is already there, after a failed write or a rollback.
-            self::recordStates( $property_id, $present, array() );
+            self::recordStates( $property_id, $present, [] );
 
             return $nothing;
         }
 
-        $skipped = array();
+        $skipped = [];
 
         if ( $add || $drop ) {
 
@@ -693,21 +693,21 @@ class Dimensions {
 
                 self::recordStates( $property_id, self::registeredColumnsOn( $table ), $skipped );
 
-                return array( 'ok' => false, 'changed' => false, 'added' => array(),
-                    'dropped' => array(), 'error' => $message, 'skipped' => $skipped );
+                return [ 'ok' => false, 'changed' => false, 'added' => [],
+                    'dropped' => [], 'error' => $message, 'skipped' => $skipped ];
             }
         }
 
         self::recordStates( $property_id, self::registeredColumnsOn( $table ), $skipped );
 
-        return array(
+        return [
             'ok'      => true,
             'changed' => (bool) ( $add || $drop ),
             'added'   => array_keys( $add ),
             'dropped' => array_values( $drop ),
             'error'   => '',
             'skipped' => $skipped,
-        );
+        ];
     }
 
     /**
@@ -774,14 +774,14 @@ class Dimensions {
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
 
             $entity->load( $row['id'] );
-            $entity->setProperties( array(
+            $entity->setProperties( [
                 'state'         => $state,
                 'state_message' => substr( $message, 0, 255 ),
-            ) );
+            ] );
 
             if ( $state === CustomDimension::STATE_APPLIED && ! $row['applied_date'] ) {
 
-                $entity->setProperties( array( 'applied_date' => time() ) );
+                $entity->setProperties( [ 'applied_date' => time() ] );
             }
 
             $entity->update();
@@ -807,17 +807,17 @@ class Dimensions {
 
         if ( ! preg_match( self::KEY_PATTERN, $key ) ) {
 
-            return array( 'error' => sprintf(
+            return [ 'error' => sprintf(
                 \OWA\Core\CoreAPI::t( '"%s" is not a valid property name. Use a letter, then letters, digits or underscores; at most 40 characters.' ),
-                $key ) );
+                $key ) ];
         }
 
         $scope = isset( $request['scope'] ) ? (string) $request['scope'] : '';
 
         if ( ! in_array( $scope, CustomDimension::scopes(), true ) ) {
 
-            return array( 'error' => sprintf( \OWA\Core\CoreAPI::t( 'Scope must be one of %s.' ),
-                implode( ', ', CustomDimension::scopes() ) ) );
+            return [ 'error' => sprintf( \OWA\Core\CoreAPI::t( 'Scope must be one of %s.' ),
+                implode( ', ', CustomDimension::scopes() ) ) ];
         }
 
         $type = isset( $request['type'] ) && $request['type'] !== ''
@@ -825,8 +825,8 @@ class Dimensions {
 
         if ( ! in_array( $type, CustomDimension::types(), true ) ) {
 
-            return array( 'error' => sprintf( \OWA\Core\CoreAPI::t( 'Type must be one of %s.' ),
-                implode( ', ', CustomDimension::types() ) ) );
+            return [ 'error' => sprintf( \OWA\Core\CoreAPI::t( 'Type must be one of %s.' ),
+                implode( ', ', CustomDimension::types() ) ) ];
         }
 
         /*
@@ -840,11 +840,11 @@ class Dimensions {
         if ( $held >= $capacity ) {
 
             // The server's own row limit can bind below the usual cap; say which.
-            return array( 'error' => $capacity < self::MAX_PER_PROPERTY
+            return [ 'error' => $capacity < self::MAX_PER_PROPERTY
                 ? sprintf( \OWA\Core\CoreAPI::t( 'This Property has room for %d custom dimensions on this server (usually %d) and already has %d. De-register one first.' ),
                     $capacity, self::MAX_PER_PROPERTY, $held )
                 : sprintf( \OWA\Core\CoreAPI::t( 'This Property has room for %d custom dimensions and already has %d. De-register one first.' ),
-                    $capacity, $held ) );
+                    $capacity, $held ) ];
         }
 
         $column = self::columnFor( $key );
@@ -853,36 +853,34 @@ class Dimensions {
         // the two and therefore the one that has to fit.
         if ( strlen( $column . CustomDimension::SET_TS_SUFFIX ) > 64 ) {
 
-            return array( 'error' => sprintf(
-                \OWA\Core\CoreAPI::t( '"%s" makes a column name longer than 64 characters.' ), $key ) );
+            return [ 'error' => sprintf(
+                \OWA\Core\CoreAPI::t( '"%s" makes a column name longer than 64 characters.' ), $key ) ];
         }
 
         if ( isset( $existing[ $column ] ) ) {
 
-            return array( 'error' => sprintf( $existing[ $column ]['dimension_key'] === $key
+            return [ 'error' => sprintf( $existing[ $column ]['dimension_key'] === $key
                     ? \OWA\Core\CoreAPI::t( '%s is already registered as %s.' )
                     : \OWA\Core\CoreAPI::t( '%s is already registered as %s. Column names ignore case.' ),
-                $column, $existing[ $column ]['dimension_key'] ) );
+                $column, $existing[ $column ]['dimension_key'] ) ];
         }
 
         if ( isset( $in_this_call[ $column ] ) ) {
 
-            return array( 'error' => sprintf(
-                \OWA\Core\CoreAPI::t( 'two of these derive the same column, %s.' ), $column ) );
+            return [ 'error' => sprintf(
+                \OWA\Core\CoreAPI::t( 'two of these derive the same column, %s.' ), $column ) ];
         }
 
         $label = isset( $request['label'] ) && $request['label'] !== ''
             ? (string) $request['label'] : $key;
 
-        return array(
+        return [
             'scope'         => $scope,
             'dimension_key' => $key,
             'column_name'   => $column,
             'data_type'     => $type,
             'max_length'    => $type === CustomDimension::TYPE_STRING ? self::DIMENSION_LENGTH : 0,
             'label'         => $label,
-        );
+        ];
     }
 }
-
-?>

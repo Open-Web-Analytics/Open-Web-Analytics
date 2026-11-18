@@ -66,7 +66,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
          */
         $rows = NotificationManager::undismissedFor( $userId, NotificationManager::MAX_ROWS );
 
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $row ) {
 
@@ -81,7 +81,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
              * can throw most away is a page-load cost for nothing. Anyone who
              * wants the whole thing follows the link.
              */
-            $out[] = array(
+            $out[] = [
                 'id'           => $row['id'],
                 // Read notifications STAY in the list; they just stop being
                 // bold and stop counting towards the badge.
@@ -96,7 +96,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
                                     : NotificationManager::excerpt( $row['body'] ?? '' ),
                 'url'          => $row['url'],
                 'published_at' => (int) $row['published_at'],
-            );
+            ];
         }
 
         $this->set( 'notifications', $out );

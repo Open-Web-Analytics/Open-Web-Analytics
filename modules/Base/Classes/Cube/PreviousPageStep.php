@@ -24,7 +24,7 @@ class PreviousPageStep extends Step {
 
     public function requires() {
 
-        return array( Context::PAGES );
+        return [ Context::PAGES ];
     }
 
     public function execute( Context $context ) {
@@ -34,5 +34,3 @@ class PreviousPageStep extends Step {
             Context::RAW, Context::PAGES, $context->literal( self::ENTRANCE ) );
     }
 }
-
-?>

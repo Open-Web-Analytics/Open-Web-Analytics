@@ -152,5 +152,3 @@ class Update053 extends \OWA\Core\Update {
         return $this->clearCubeInstantColumns();
     }
 }
-
-?>

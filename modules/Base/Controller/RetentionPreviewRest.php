@@ -31,7 +31,7 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
 
     public function action() {
 
-        $this->set( 'response', array( 'preview' => (array) \OWA\Module\Base\Classes\Retention::preview( self::proposed( (array) $this->params ) ) ) );
+        $this->set( 'response', [ 'preview' => (array) \OWA\Module\Base\Classes\Retention::preview( self::proposed( (array) $this->params ) ) ] );
     }
 
     /**
@@ -45,9 +45,9 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
      */
     public static function proposed( array $params ) {
 
-        $out = array();
+        $out = [];
 
-        foreach ( array( 'raw' => 'raw', 'cube_default' => 'cube_default', 'cube' => 'cube' ) as $param => $key ) {
+        foreach ( [ 'raw' => 'raw', 'cube_default' => 'cube_default', 'cube' => 'cube' ] as $param => $key ) {
 
             if ( ! array_key_exists( $param, $params ) || $params[ $param ] === null ) {
 
@@ -86,5 +86,3 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
         $this->restResponse( 200, 'response' );
     }
 }
-
-?>

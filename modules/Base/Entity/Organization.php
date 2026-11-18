@@ -37,5 +37,3 @@ class Organization extends \OWA\Core\Entity {
         $this->setProperty( $creation_date );
     }
 }
-
-?>

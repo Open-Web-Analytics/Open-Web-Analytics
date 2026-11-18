@@ -25,11 +25,11 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
 final class ReportRegistryTest extends TestCase
 {
     /** Report-defining keys: what a report IS, as opposed to request scaffolding. */
-    private const DEFINING = array(
+    private const DEFINING = [
         'subview', 'view_method', 'metrics', 'dimensions', 'sort', 'resultsPerPage',
         'constraints', 'trendChartMetric', 'gridTitle',
         'excludeColumns', 'dimensionLink', 'dimension', 'title', 'titleSuffix',
-    );
+    ];
 
     protected function setUp(): void
     {
@@ -50,7 +50,7 @@ final class ReportRegistryTest extends TestCase
      */
     public function testEveryDefinitionFileIsRegisteredAndEveryRegistrationHasOne(): void
     {
-        $registered = array();
+        $registered = [];
 
         foreach ( $this->registry() as $id => $def ) {
 
@@ -99,7 +99,7 @@ final class ReportRegistryTest extends TestCase
 
         $this->assertNotEmpty( $registry );
 
-        $controllers = array();
+        $controllers = [];
 
         foreach ( $registry as $id => $def ) {
             if ( ! empty( $def['controller'] ) ) {
@@ -110,7 +110,7 @@ final class ReportRegistryTest extends TestCase
         // Every report reachable as an action must be reachable as an id, or
         // moving nav onto ids would silently drop reports out of the interface.
         // Asked of every ACTIVE module: an inactive one registers neither.
-        $files = array();
+        $files = [];
 
         foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
             foreach ( (array) glob( $module->path . 'Controller/Report*.php' ) as $file ) {
@@ -131,7 +131,7 @@ final class ReportRegistryTest extends TestCase
              * has no id because it is not something you can navigate TO by id;
              * it is what decides the id.
              */
-            if ( in_array( $name, array( 'ReportsRest', 'Report', 'ReportingHome' ), true ) ) {
+            if ( in_array( $name, [ 'ReportsRest', 'Report', 'ReportingHome' ], true ) ) {
                 continue;
             }
 
@@ -174,9 +174,9 @@ final class ReportRegistryTest extends TestCase
         $restore = DomstreamFixtures::registerReport();
 
         try {
-            $direct = (array) ( new $class( array() ) )->doAction();
+            $direct = (array) ( new $class( [] ) )->doAction();
             $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => $id ) ) )->doAction();
+                [ 'reportId' => $id ] ) )->doAction();
         } finally {
             $restore();
         }
@@ -207,9 +207,9 @@ final class ReportRegistryTest extends TestCase
          * domstreams prefetches result sets, so the characterization harness
          * could not snapshot it; this is the coverage it gets instead.
          */
-        return array(
-            'bespoke stays'  => array( 'domstreams', '\OWA\Module\Domstream\Controller\ReportDomstreams' ),
-        );
+        return [
+            'bespoke stays'  => [ 'domstreams', '\OWA\Module\Domstream\Controller\ReportDomstreams' ],
+        ];
     }
 
     /**
@@ -229,7 +229,7 @@ final class ReportRegistryTest extends TestCase
         $this->requireDb();
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => $id ) ) )->doAction();
+            [ 'reportId' => $id ] ) )->doAction();
 
         $this->assertNotEmpty( $data['subview'] ?? '',
             "report '$id' did not render from its definition" );
@@ -245,12 +245,12 @@ final class ReportRegistryTest extends TestCase
 
     public static function convertedReportProvider(): array
     {
-        return array(
-            'pages'           => array( 'pages',           'base.reportPages' ),
-            'entry-pages'     => array( 'entry-pages',     'base.reportEntryPages' ),
-            'referring-sites' => array( 'referring-sites', 'base.reportReferringSites' ),
-            'traffic'         => array( 'traffic',         'base.reportTraffic' ),
-        );
+        return [
+            'pages'           => [ 'pages',           'base.reportPages' ],
+            'entry-pages'     => [ 'entry-pages',     'base.reportEntryPages' ],
+            'referring-sites' => [ 'referring-sites', 'base.reportReferringSites' ],
+            'traffic'         => [ 'traffic',         'base.reportTraffic' ],
+        ];
     }
 
     /**
@@ -261,10 +261,10 @@ final class ReportRegistryTest extends TestCase
     {
         $this->requireDb();
 
-        $viaId = (array) ( new \OWA\Module\Base\Controller\Report( array(
+        $viaId = (array) ( new \OWA\Module\Base\Controller\Report( [
             'reportId' => 'dom-clicks',
             'pagePath' => Harness::SENTINEL,
-        ) ) )->doAction();
+        ] ) )->doAction();
 
         $this->assertStringContainsString( Harness::SENTINEL, (string) ( $viaId['constraints'] ?? '' ),
             'the delegated report built its constraint without the parameter' );
@@ -274,7 +274,7 @@ final class ReportRegistryTest extends TestCase
     {
         $before = http_response_code();
 
-        ( new \OWA\Module\Base\Controller\Report( array( 'reportId' => 'no-such-report' ) ) )
+        ( new \OWA\Module\Base\Controller\Report( [ 'reportId' => 'no-such-report' ] ) )
             ->doAction();
 
         $this->assertSame( 404, http_response_code(),
@@ -287,7 +287,7 @@ final class ReportRegistryTest extends TestCase
     {
         $before = http_response_code();
 
-        ( new \OWA\Module\Base\Controller\Report( array() ) )->doAction();
+        ( new \OWA\Module\Base\Controller\Report( [] ) )->doAction();
 
         $this->assertSame( 400, http_response_code() );
 
@@ -331,7 +331,7 @@ final class ReportRegistryTest extends TestCase
         $user->setAuthStatus( false );
 
         $refused = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages' ) ) )->doAction();
+            [ 'reportId' => 'pages' ] ) )->doAction();
 
         $this->assertArrayNotHasKey( 'subview', $refused,
             'an unauthenticated request reached the report through base.report' );
@@ -342,13 +342,13 @@ final class ReportRegistryTest extends TestCase
         $user->setAuthStatus( true );
 
         $allowed = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages' ) ) )->doAction();
+            [ 'reportId' => 'pages' ] ) )->doAction();
 
         // Reaching the report is what this asserts, not whether it has data to
         // draw: with no cube for the resolved Profile's Property the report
         // is reached and shows why instead (ReportController::post()).
         $this->assertContains( $allowed['subview'] ?? null,
-            array( 'base.reportWidgets', 'base.reportNotReady' ) );
+            [ 'base.reportWidgets', 'base.reportNotReady' ] );
     }
 
     /**
@@ -369,7 +369,7 @@ final class ReportRegistryTest extends TestCase
     public function testTheDispatcherDeclaresNoCapabilityOfItsOwn(): void
     {
         $dispatcher = new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages' ) );
+            [ 'reportId' => 'pages' ] );
 
         $this->assertSame( '', (string) $dispatcher->getRequiredCapability(),
             'base.report declaring a capability means a report can be gated by two '

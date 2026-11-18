@@ -101,7 +101,7 @@ class Hosts {
 
         $own = self::of( $domain );
 
-        return $own === '' ? array() : array( $own );
+        return $own === '' ? [] : [ $own ];
     }
 
     /**
@@ -116,18 +116,16 @@ class Hosts {
 
         if ( (string) $site_id === '' ) {
 
-            return array();
+            return [];
         }
 
         $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         if ( ! $site->wasPersisted() ) {
 
-            return array();
+            return [];
         }
 
         return self::profileHosts( $site->getDomainName() );
     }
 }
-
-?>

@@ -44,7 +44,7 @@ class Realtime {
     const VISITOR_EVENTS = 100;
 
     /** @var string[] every statement run, in order */
-    public $statements = array();
+    public $statements = [];
 
     /** @var string */
     private $property_id;
@@ -75,10 +75,10 @@ class Realtime {
         // yyyymmdd is written in the installation's zone, so the window's
         // days are read in it too. Two days when the window spans midnight.
         $zone       = new \DateTimeZone( JobStatus::timezone() );
-        $this->days = array(
+        $this->days = [
             (int) ( new \DateTimeImmutable( '@' . intdiv( $this->start, 1000000 ) ) )->setTimezone( $zone )->format( 'Ymd' ),
             (int) ( new \DateTimeImmutable( '@' . intdiv( $this->end, 1000000 ) ) )->setTimezone( $zone )->format( 'Ymd' ),
-        );
+        ];
     }
 
     /** @return array<string, mixed> every card, in one answer */
@@ -86,12 +86,12 @@ class Realtime {
 
         $recent_start = $this->end - self::RECENT_MINUTES * 60 * 1000000;
 
-        return array(
-            'window'      => array( 'start' => $this->start, 'end' => $this->end, 'minutes' => self::WINDOW_MINUTES ),
-            'activeUsers' => array(
+        return [
+            'window'      => [ 'start' => $this->start, 'end' => $this->end, 'minutes' => self::WINDOW_MINUTES ],
+            'activeUsers' => [
                 'last30' => $this->users( $this->start ),
                 'last5'  => $this->users( $recent_start ),
-            ),
+            ],
             'perMinute'   => $this->perMinute(),
             'pages'       => $this->pages(),
             'events'      => $this->events(),
@@ -102,7 +102,7 @@ class Realtime {
             'devices'     => $this->devices(),
             'recent'      => $this->recent(),
             'queued'      => \OWA\Module\Base\Classes\TrackerIngest::isQueued(),
-        );
+        ];
     }
 
     /**
@@ -115,10 +115,10 @@ class Realtime {
 
         if ( ! ctype_digit( (string) $visitor_id ) ) {
 
-            return array();
+            return [];
         }
 
-        return array_map( array( $this, 'event' ), $this->rows(
+        return array_map( [ $this, 'event' ], $this->rows(
             'SELECT id, ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r'
           . ' WHERE {window} AND r.visitor_id = ' . (string) $visitor_id
           . ' ORDER BY ts DESC, id DESC LIMIT ' . self::VISITOR_EVENTS ) );
@@ -168,8 +168,8 @@ class Realtime {
 
         return array_map( function ( $r ) {
 
-            return array( 'path' => $r['page_path'], 'title' => $r['title'],
-                'views' => (int) $r['views'], 'users' => (int) $r['users'] );
+            return [ 'path' => $r['page_path'], 'title' => $r['title'],
+                'views' => (int) $r['views'], 'users' => (int) $r['users'] ];
 
         }, $this->rows(
             "SELECT page_path, MAX(page_title) AS title, SUM(event_type = 'page_view') AS views,"
@@ -184,7 +184,7 @@ class Realtime {
 
         return array_map( function ( $r ) {
 
-            return array( 'name' => $r['event_type'], 'count' => (int) $r['n'] );
+            return [ 'name' => $r['event_type'], 'count' => (int) $r['n'] ];
 
         }, $this->rows(
             'SELECT event_type, COUNT(*) AS n FROM {raw} r WHERE {window}'
@@ -201,13 +201,13 @@ class Realtime {
      */
     private function goals() {
 
-        $out = array( 'total' => 0, 'byGoal' => array() );
+        $out = [ 'total' => 0, 'byGoal' => [] ];
 
         foreach ( $this->rows( 'SELECT r.event_type, COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1'
                 . ' GROUP BY r.event_type ORDER BY n DESC, r.event_type' ) as $r ) {
 
             $out['total']   += (int) $r['n'];
-            $out['byGoal'][] = array( 'name' => (string) $r['event_type'], 'count' => (int) $r['n'] );
+            $out['byGoal'][] = [ 'name' => (string) $r['event_type'], 'count' => (int) $r['n'] ];
         }
 
         return $out;
@@ -230,8 +230,8 @@ class Realtime {
 
         return array_map( function ( $r ) {
 
-            return array( 'source' => $r['source'], 'medium' => $r['medium'],
-                'campaign' => $r['campaign'], 'users' => (int) $r['users'] );
+            return [ 'source' => $r['source'], 'medium' => $r['medium'],
+                'campaign' => $r['campaign'], 'users' => (int) $r['users'] ];
 
         }, $this->rows(
             "SELECT CASE WHEN a.acq_ts IS NULL THEN NULL"
@@ -252,7 +252,7 @@ class Realtime {
 
         return array_map( function ( $r ) {
 
-            return array( 'code' => $r['country_code'], 'name' => $r['country'], 'users' => (int) $r['users'] );
+            return [ 'code' => $r['country_code'], 'name' => $r['country'], 'users' => (int) $r['users'] ];
 
         }, $this->rows(
             'SELECT country_code, MAX(country) AS country, COUNT(DISTINCT visitor_id) AS users'
@@ -280,7 +280,7 @@ class Realtime {
 
         return array_map( function ( $r ) {
 
-            return array( 'type' => $r['device_type'], 'users' => (int) $r['users'] );
+            return [ 'type' => $r['device_type'], 'users' => (int) $r['users'] ];
 
         }, $this->rows(
             'SELECT device_type, COUNT(DISTINCT visitor_id) AS users FROM {raw} r WHERE {window}'
@@ -292,7 +292,7 @@ class Realtime {
      */
     private function recent() {
 
-        return array_map( array( $this, 'event' ), $this->rows(
+        return array_map( [ $this, 'event' ], $this->rows(
             'SELECT id, ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r WHERE {window}'
           . ' ORDER BY ts DESC, id DESC LIMIT ' . self::RECENT_EVENTS ) );
     }
@@ -305,7 +305,7 @@ class Realtime {
      */
     private function event( array $r ) {
 
-        return array(
+        return [
             'ts'      => (int) $r['ts'],
             'type'    => $r['event_type'],
             'path'    => $r['page_path'],
@@ -315,7 +315,7 @@ class Realtime {
             // As text: a visitor id is a 64-bit integer, past what JSON's
             // numbers hold exactly in a browser.
             'visitor' => (string) $r['visitor_id'],
-        );
+        ];
     }
 
     /**
@@ -340,8 +340,8 @@ class Realtime {
         $window = sprintf( '%s AND r.yyyymmdd BETWEEN %d AND %d AND r.ts > %d AND r.ts <= %d',
             $sites, min( $this->days ), max( $this->days ), $from !== null ? (int) $from : $this->start, $this->end );
 
-        $sql = str_replace( array( '{raw}', '{window}' ),
-            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(), $window ), $sql );
+        $sql = str_replace( [ '{raw}', '{window}' ],
+            [ \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(), $window ], $sql );
 
         $this->statements[] = $sql;
 
@@ -349,5 +349,3 @@ class Realtime {
             (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $this->site_ids ) );
     }
 }
-
-?>

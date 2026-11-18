@@ -112,5 +112,3 @@ class DatabaseRequirement {
         return preg_replace( '/\.0$/', '', (string) $version );
     }
 }
-
-?>

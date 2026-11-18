@@ -82,7 +82,7 @@ return function ( $arg = null ) {
     $source = implode( '', array_slice( $lines, $method->getStartLine() - 1,
         $method->getEndLine() - $method->getStartLine() + 1 ) );
 
-    $constants = array(); // module|key => OWA_*
+    $constants = []; // module|key => OWA_*
 
     preg_match_all( "/setFromConfigConstant\(\s*'(\w+)',\s*'(\w+)',[^;]*?'(OWA_\w+)'\s*\)/", $source, $m, PREG_SET_ORDER );
 
@@ -106,7 +106,7 @@ return function ( $arg = null ) {
     // A constant can supply a key no module declares (data_dir).
     foreach ( $constants as $id => $const ) {
         if ( ! isset( $fields[ $id ] ) ) {
-            $fields[ $id ] = array();
+            $fields[ $id ] = [];
         }
     }
 
@@ -147,7 +147,7 @@ return function ( $arg = null ) {
 
         $stored = ! empty( $a['storable'] ) || ! empty( $a['autoload'] );
 
-        $type = array();
+        $type = [];
 
         if ( ! empty( $a['type'] ) ) {
             $type[] = $a['type'];
@@ -176,25 +176,25 @@ return function ( $arg = null ) {
             $desc = '**' . $label . '**' . ( $desc !== '' ? ' — ' . $desc : '' );
         }
 
-        return array(
+        return [
             '`' . $key . '`',
             isset( $constants[ $id ] ) ? '`' . $constants[ $id ] . '`' : '',
             ( ! empty( $a['secret'] ) || ! array_key_exists( 'default', $a ) || $a['default'] === null )
                 ? '' : $value( $a['default'] ),
             implode( '; ', $type ),
-            $stored ? implode( ', ', (array) ( $a['scopes'] ?? array( 'install' ) ) ) : '',
+            $stored ? implode( ', ', (array) ( $a['scopes'] ?? [ 'install' ] ) ) : '',
             $stored ? 'database' : 'config only',
             $desc,
-        );
+        ];
     };
 
     $table = function ( array $ids ) use ( $row ) {
 
-        $head = array( 'Setting', 'Constant', 'Default', 'Type', 'Scopes', 'Stored in', 'Description' );
+        $head = [ 'Setting', 'Constant', 'Default', 'Type', 'Scopes', 'Stored in', 'Description' ];
         $rows = array_map( $row, $ids );
 
         // A column that is empty in every row says nothing about this table.
-        $keep = array();
+        $keep = [];
 
         foreach ( array_keys( $head ) as $i ) {
             foreach ( $rows as $r ) {
@@ -206,14 +206,14 @@ return function ( $arg = null ) {
         }
 
         $cells = function ( $r ) use ( $keep ) {
-            $out = array();
+            $out = [];
             foreach ( $keep as $i ) {
                 $out[] = $r[ $i ] === '' ? '—' : $r[ $i ];
             }
             return '| ' . implode( ' | ', $out ) . ' |';
         };
 
-        $lines = array( $cells( $head ), '|' . str_repeat( '---|', count( $keep ) ) );
+        $lines = [ $cells( $head ), '|' . str_repeat( '---|', count( $keep ) ) ];
 
         foreach ( $rows as $r ) {
             $lines[] = $cells( $r );
@@ -222,7 +222,7 @@ return function ( $arg = null ) {
         return implode( "\n", $lines );
     };
 
-    $byModule = array();
+    $byModule = [];
 
     foreach ( array_keys( $fields ) as $id ) {
 
@@ -242,7 +242,7 @@ return function ( $arg = null ) {
     }
     unset( $ids );
 
-    $groups = array();
+    $groups = [];
 
     foreach ( $fieldsets as $fs ) {
         if ( ! empty( $fs['group'] ) ) {
@@ -266,11 +266,11 @@ return function ( $arg = null ) {
 
         // By declared order, then by module so Base's come first at equal order.
         usort( $sets, function ( $a, $b ) {
-            return array( $a['module'] !== 'base', (int) ( $a['order'] ?? PHP_INT_MAX ) )
-               <=> array( $b['module'] !== 'base', (int) ( $b['order'] ?? PHP_INT_MAX ) );
+            return [ $a['module'] !== 'base', (int) ( $a['order'] ?? PHP_INT_MAX ) ]
+               <=> [ $b['module'] !== 'base', (int) ( $b['order'] ?? PHP_INT_MAX ) ];
         } );
 
-        $out = array();
+        $out = [];
 
         foreach ( $sets as $fs ) {
 
@@ -297,7 +297,7 @@ return function ( $arg = null ) {
             $arg, implode( ', ', array_keys( $byModule ) ), implode( ', ', array_keys( $groups ) ) ) );
     }
 
-    $out = array();
+    $out = [];
 
     foreach ( $byModule as $module => $ids ) {
         $out[] = '### `' . $module . "`\n\n" . $table( $ids );

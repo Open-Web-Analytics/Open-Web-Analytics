@@ -30,10 +30,10 @@ final class ServerOwnedPropertyTest extends TestCase
 {
     public function testAComputedPropertyCannotBeSetFromTheWire(): void
     {
-        $kept = Helpers::admitRequestParams( array(
+        $kept = Helpers::admitRequestParams( [
             'browser' => 'ludhiana',
             'is_robot'   => '1',
-        ) );
+        ] );
 
         $this->assertArrayNotHasKey(
             'browser', $kept,
@@ -58,13 +58,13 @@ final class ServerOwnedPropertyTest extends TestCase
          * device's own counter and is client-set by design, because nothing else
          * knows the order in which a page built its events.
          */
-        $kept = Helpers::admitRequestParams( array(
+        $kept = Helpers::admitRequestParams( [
             'ip_address' => '1.2.3.4',
             'ts'         => '999',
             'is_robot'   => '0',
-        ) );
+        ] );
 
-        $this->assertSame( array(), $kept );
+        $this->assertSame( [], $kept );
     }
 
     public function testLocationAndHostAreRefusedFromTheWire(): void
@@ -84,15 +84,15 @@ final class ServerOwnedPropertyTest extends TestCase
          *     so accepting one lets a request report a page under a host it
          *     was not served from.
          */
-        $kept = Helpers::admitRequestParams( array(
+        $kept = Helpers::admitRequestParams( [
             'country' => 'India',
             'city'    => 'Ludhiana',
             'state'   => 'Punjab',
             'host'    => 'example.com',
-        ) );
+        ] );
 
         $this->assertSame(
-            array(), $kept,
+            [], $kept,
             'Location and host must never be accepted from a request. The only properties a '
             . 'tracking request may set are the ones the tracker sends.' );
     }
@@ -113,14 +113,14 @@ final class ServerOwnedPropertyTest extends TestCase
      */
     public function testAnUnregisteredPropertyIsRefused(): void
     {
-        $this->assertSame( array(), Helpers::admitRequestParams( array(
+        $this->assertSame( [], Helpers::admitRequestParams( [
             'nobody_declared_this' => 'x',
             'cv1_name'             => 'forged',
-        ) ), 'the gate is an allowlist; an undeclared name has no way in' );
+        ] ), 'the gate is an allowlist; an undeclared name has no way in' );
 
         $this->assertSame(
-            array( 'eps_plan' => 'pro', 'cv1' => 'k|v' ),
-            Helpers::admitRequestParams( array( 'eps_plan' => 'pro', 'cv1' => 'k|v' ) ),
+            [ 'eps_plan' => 'pro', 'cv1' => 'k|v' ],
+            Helpers::admitRequestParams( [ 'eps_plan' => 'pro', 'cv1' => 'k|v' ] ),
             'a custom value and an older generation\'s slot are both still admitted' );
     }
 
@@ -140,7 +140,7 @@ final class ServerOwnedPropertyTest extends TestCase
          * second-resolution twin of `ts`, from the same clock reading, and only
          * one of the two ever reached a column.
          */
-        foreach ( array( 'browser_type', 'country', 'ip_address', 'ts' ) as $name ) {
+        foreach ( [ 'browser_type', 'country', 'ip_address', 'ts' ] as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }
@@ -160,18 +160,18 @@ final class ServerOwnedPropertyTest extends TestCase
         $this->assertArrayNotHasKey( 'is_outbound', $serverOwned );
 
         $this->assertSame(
-            array( 'target_url' => 'https://elsewhere.example/x', 'is_outbound' => '1' ),
-            Helpers::admitRequestParams( array(
+            [ 'target_url' => 'https://elsewhere.example/x', 'is_outbound' => '1' ],
+            Helpers::admitRequestParams( [
                 'target_url'  => 'https://elsewhere.example/x',
                 'is_outbound' => '1',
-            ) ),
+            ] ),
             'the client decides outbound, so the gate has to let it through' );
 
         /*
          * full_host is gone with the v1 handlers that read it -- the reverse-DNS
          * name reached no raw column and no cube pass. host, which does, stays.
          */
-        foreach ( array( 'country', 'city', 'state', 'host' ) as $name ) {
+        foreach ( [ 'country', 'city', 'state', 'host' ] as $name ) {
 
             $this->assertArrayHasKey(
                 $name, $serverOwned,

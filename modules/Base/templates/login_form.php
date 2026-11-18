@@ -33,6 +33,6 @@
     </form>
 
     <div class="owa_publicAside">
-        <a href="<?php echo $view->makeLink(array('do' => 'base.passwordResetForm'))?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Forgot your password?' ) ); ?></a>
+        <a href="<?php echo $view->makeLink(['do' => 'base.passwordResetForm'])?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Forgot your password?' ) ); ?></a>
     </div>
 </div>

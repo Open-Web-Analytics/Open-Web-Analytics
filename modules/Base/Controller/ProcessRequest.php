@@ -46,5 +46,3 @@ class ProcessRequest extends \OWA\Module\Base\Controller\ProcessEvent {
         return $this->addToEventQueue();
     }
 }
-
-?>

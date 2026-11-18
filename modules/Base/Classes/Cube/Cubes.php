@@ -49,7 +49,7 @@ class Cubes {
     const PREFIX = 'event_';
 
     /** @var array<string,string> site id => Property id, for this request */
-    private static $property_of_site = array();
+    private static $property_of_site = [];
 
     /**
      * The cube table for a Property.
@@ -121,7 +121,7 @@ class Cubes {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $prefix = \OWA\Core\Entity::TABLE_PREFIX . self::PREFIX;
-        $cubes  = array();
+        $cubes  = [];
 
         // Escaped, not bound: a server-side prepared SHOW TABLES takes no placeholder.
         foreach ( (array) $db->get_results( sprintf(
@@ -206,12 +206,12 @@ class Cubes {
 
         if ( ! ctype_digit( (string) $property_id ) ) {
 
-            return array();
+            return [];
         }
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
-        $ids  = array();
+        $ids  = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 'SELECT site_id FROM %s WHERE property_id = %s',
@@ -291,7 +291,7 @@ class Cubes {
           . 'WHERE e.yyyymmdd >= %d AND e.yyyymmdd <= %d GROUP BY s.property_id',
             $raw, OWA_SQL_JOIN_LEFT_OUTER, $site, (int) $from, (int) $to ) );
 
-        $properties = array();
+        $properties = [];
         $orphans    = 0;
 
         foreach ( $rows as $row ) {
@@ -310,11 +310,11 @@ class Cubes {
 
         sort( $properties, SORT_STRING );
 
-        return array( 'properties' => $properties, 'orphan_rows' => $orphans );
+        return [ 'properties' => $properties, 'orphan_rows' => $orphans ];
     }
 
     /** @var array<int|string, bool> property id => bool, for this request; a numeric id is an int key */
-    protected static $exists = array();
+    protected static $exists = [];
 
     /**
      * Whether a Property's cube exists, asked once per request.
@@ -351,7 +351,7 @@ class Cubes {
      */
     public static function forgetExistence() {
 
-        self::$exists = array();
+        self::$exists = [];
     }
 
     /**
@@ -376,7 +376,7 @@ class Cubes {
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
 
         $cubes = self::existing();
-        $out   = array();
+        $out   = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 "SELECT DISTINCT s.property_id AS property_id FROM %s s "
@@ -451,5 +451,3 @@ class Cubes {
         return $entity->createTable() !== false;
     }
 }
-
-?>

@@ -36,17 +36,17 @@ namespace OWA\Module\Base\Classes;
 class State {
 
     /** @var array<mixed> store name => its values (key => value), or a single value */
-    public $stores = array();
+    public $stores = [];
     /** @var array<string, StoreMeta> store name => how it is kept, as registerStore() was told */
-    public $stores_meta = array();
+    public $stores_meta = [];
     /** @var mixed nothing sets it */
     public $is_dirty;
     /** @var list<string>|null the stores set, once per set */
     public $dirty_stores;
     /** @var list<string> the stores that carry a cookie domain hash */
-    public $stores_with_cdh = array();
+    public $stores_with_cdh = [];
     /** @var array<list<string>> store name => every value the request's cookies carried for it */
-    public $initial_state = array();
+    public $initial_state = [];
 
     public function __construct() {
 
@@ -67,13 +67,13 @@ class State {
      */
     public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {
 
-        $this->stores_meta[$name] = array(
+        $this->stores_meta[$name] = [
             'expiration'     => $expiration,
             'length'         => $length,
             'format'         => $format,
             'type'             => $type,
             'cdh_required'     => $cdh
-        );
+        ];
 
         if ( $cdh ) {
             $this->stores_with_cdh[] = $name;
@@ -139,7 +139,7 @@ class State {
             if ( array_key_exists($store, $this->stores)) {
 
                 if ( ! is_array( $this->stores[$store] ) ) {
-                    $new_store = array();
+                    $new_store = [];
                     // check to see if we need ot ad a cdh
                     if ( $this->isCdhRequired($store) ) {
                         $new_store['cdh'] = $this->getCookieDomainHash();
@@ -262,8 +262,8 @@ class State {
         if ( ! $value && isset( $this->initial_state[$store] ) ) {
             $possible_values = $this->initial_state[$store];
         } else {
-	        //owa_coreAPI::debug( $this->initial_state );
-	        \OWA\Core\CoreAPI::debug("NO state store: $store found");
+            //owa_coreAPI::debug( $this->initial_state );
+            \OWA\Core\CoreAPI::debug("NO state store: $store found");
             return;
         }
 
@@ -383,5 +383,3 @@ class State {
         return \OWA\Core\Lib::crc32AsHex($domain);
     }
 }
-
-?>

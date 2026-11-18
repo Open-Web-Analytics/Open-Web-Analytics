@@ -488,7 +488,7 @@ trait MysqlDialect
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
-            return array();
+            return [];
         }
 
         $sql = "SELECT PARTITION_NAME AS name, PARTITION_DESCRIPTION AS less_than, TABLE_ROWS AS rows_ "
@@ -498,15 +498,15 @@ trait MysqlDialect
 
         $rows = $this->get_results( sprintf( $sql, $table_name ) );
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $rows as $row ) {
 
-            $out[] = array(
+            $out[] = [
                 'name'      => $row['name'],
                 'less_than' => $row['less_than'],
                 'rows'      => (int) $row['rows_'],
-            );
+            ];
         }
 
         return $out;
@@ -589,7 +589,7 @@ trait MysqlDialect
         $row = $this->get_row( sprintf( "SELECT TABLE_ROWS AS n, DATA_LENGTH + INDEX_LENGTH AS bytes "
             . "FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $table_name ) );
 
-        return $row ? array( 'rows' => (int) $row['n'], 'bytes' => (int) $row['bytes'] ) : null;
+        return $row ? [ 'rows' => (int) $row['n'], 'bytes' => (int) $row['bytes'] ] : null;
     }
 
     /**
@@ -620,7 +620,7 @@ trait MysqlDialect
      */
     public function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
 
-        foreach ( array( $table_name, $partition, $column ) as $identifier ) {
+        foreach ( [ $table_name, $partition, $column ] as $identifier ) {
 
             if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $identifier ) ) {
 
@@ -638,11 +638,11 @@ trait MysqlDialect
             return null;
         }
 
-        return array(
+        return [
             'rows' => (int) $row['n'],
             'min'  => $row['lo'] === null ? null : (string) $row['lo'],
             'max'  => $row['hi'] === null ? null : (string) $row['hi'],
-        );
+        ];
     }
 
     /**
@@ -667,7 +667,7 @@ trait MysqlDialect
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
           || ( $prefix !== '' && ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $prefix ) ) ) {
 
-            return array();
+            return [];
         }
 
         // The table name is substituted FIRST and the LIKE appended after, so
@@ -686,7 +686,7 @@ trait MysqlDialect
 
         $sql .= ' ORDER BY ORDINAL_POSITION';
 
-        $columns = array();
+        $columns = [];
 
         foreach ( (array) $this->get_results( $sql ) as $row ) {
 
@@ -766,7 +766,7 @@ trait MysqlDialect
             return $counters;
         }
 
-        $counters = array();
+        $counters = [];
 
         foreach ( (array) $this->get_results(
                 "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS "
@@ -785,14 +785,14 @@ trait MysqlDialect
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
-            return array();
+            return [];
         }
 
         $sql = "SELECT COLUMN_NAME AS c FROM information_schema.STATISTICS "
              . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND INDEX_NAME = 'PRIMARY' "
              . "ORDER BY SEQ_IN_INDEX";
 
-        $cols = array();
+        $cols = [];
 
         foreach ( (array) $this->get_results( sprintf( $sql, $table_name ) ) as $row ) {
 

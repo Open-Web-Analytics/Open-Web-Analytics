@@ -17,7 +17,7 @@ use OWA\Module\Base\Controller\OverlayLauncher;
  */
 final class InternalDimensionTest extends TestCase
 {
-    const INTERNAL = array( 'clickX', 'clickY', 'elementAnchor', 'anchorX', 'anchorY' );
+    const INTERNAL = [ 'clickX', 'clickY', 'elementAnchor', 'anchorX', 'anchorY' ];
 
     private static function picked(): array
     {

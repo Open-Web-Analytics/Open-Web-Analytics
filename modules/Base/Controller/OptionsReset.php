@@ -56,5 +56,3 @@ class OptionsReset extends \OWA\Core\AdminController {
         $this->setRedirectAction('base.optionsGeneral');
     }
 }
-
-?>

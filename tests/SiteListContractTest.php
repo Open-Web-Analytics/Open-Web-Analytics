@@ -43,7 +43,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class SiteListContractTest extends TestCase
 {
     /** What a /v1/sites entry carries; the plugin depends on the first three. */
-    private const PAYLOAD_FIELDS = array(
+    private const PAYLOAD_FIELDS = [
         'site_id',      // the tracking id -- what ends up in the tag
         'name',         // NOT the plugin's picker label -- see the note below
         'domain',       // the plugin labels with site_id and domain
@@ -66,7 +66,7 @@ final class SiteListContractTest extends TestCase
          * set exactly.
          */
         'property_id',
-    );
+    ];
 
     public function testThePayloadFieldsAreExactlyWhatWasPublished(): void
     {
@@ -248,7 +248,7 @@ final class SiteListContractTest extends TestCase
         $view   = new \OWA\Module\Base\View\SitesRest();
         $method = new \ReflectionMethod( $view, 'addPropertyNames' );
 
-        $emitted = $method->invoke( $view, array( 'contract-probe' => $site ) );
+        $emitted = $method->invoke( $view, [ 'contract-probe' => $site ] );
 
         $this->assertArrayHasKey( 'contract-probe', $emitted );
 

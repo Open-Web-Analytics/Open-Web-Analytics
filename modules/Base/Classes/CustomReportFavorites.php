@@ -87,7 +87,7 @@ class CustomReportFavorites {
 
         if ( (string) $user_id === '' ) {
 
-            return array();
+            return [];
         }
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
@@ -97,7 +97,7 @@ class CustomReportFavorites {
             'SELECT custom_report_id FROM %s WHERE user_id = ?',
             $entity->getTableName() ), [ (string) $user_id ] );
 
-        $ids = array();
+        $ids = [];
 
         foreach ( $rows as $row ) {
 

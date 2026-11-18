@@ -33,7 +33,7 @@ final class NavigationSubGroupTest extends TestCase
 
         $this->assertSame('probe.home', $entry['ref']);
         $this->assertSame('Probe', $entry['anchortext']);
-        $this->assertSame(array('probe.first'), array_column($entry['subgroup'], 'ref'));
+        $this->assertSame(['probe.first'], array_column($entry['subgroup'], 'ref'));
     }
 
     /** Declared again, the subgroup takes the new label, link and order, and keeps its links. */
@@ -49,7 +49,7 @@ final class NavigationSubGroupTest extends TestCase
         $this->assertSame('probe.other', $entry['ref']);
         $this->assertSame('Renamed', $entry['anchortext']);
         $this->assertSame(4, $entry['order']);
-        $this->assertSame(array('probe.first'), array_column($entry['subgroup'], 'ref'));
+        $this->assertSame(['probe.first'], array_column($entry['subgroup'], 'ref'));
     }
 
     /** The order Base registers in, subgroup then links, is unchanged. */
@@ -59,19 +59,19 @@ final class NavigationSubGroupTest extends TestCase
         $m->addNavigationSubGroup('Probe', 'probe.home', 'Probe', 3, 'view_reports', 'Reports', 'fa fa-probe');
         $m->addNavigationLinkInSubGroup('Probe', 'probe.first', 'First', 1);
 
-        $this->assertSame(array(
+        $this->assertSame([
             'ref'        => 'probe.home',
             'anchortext' => 'Probe',
             'order'      => 3,
             'priviledge' => 'view_reports',
             'icon_class' => 'fa fa-probe',
-            'subgroup'   => array(array(
+            'subgroup'   => [[
                 'ref'        => 'probe.first',
                 'anchortext' => 'First',
                 'order'      => 1,
                 'priviledge' => 'view_reports',
                 'icon_class' => '',
-            )),
-        ), $m->getNavigationLinks()['Reports']['Probe']);
+            ]],
+        ], $m->getNavigationLinks()['Reports']['Probe']);
     }
 }

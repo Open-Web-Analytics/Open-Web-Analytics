@@ -28,7 +28,7 @@ final class RequestType {
     const CLI      = 'cli';
     const INSTALL  = 'install';
 
-    const ALL = array( self::TRACKING, self::UI, self::REST, self::CLI, self::INSTALL );
+    const ALL = [ self::TRACKING, self::UI, self::REST, self::CLI, self::INSTALL ];
 
     /** The request type a caller that names none is given. */
     const DEFAULT_TYPE = self::UI;
@@ -65,6 +65,6 @@ final class RequestType {
      */
     public static function isWebApp() {
 
-        return ! in_array( self::current(), array( self::REST, self::CLI ), true );
+        return ! in_array( self::current(), [ self::REST, self::CLI ], true );
     }
 }

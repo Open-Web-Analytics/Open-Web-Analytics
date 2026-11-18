@@ -31,12 +31,12 @@ final class FormsReportTest extends TestCase
     const SESSION = 8885100000000094;
 
     /** page => array( form starts, form submits ) */
-    const FORMS = array(
-        '/contact' => array( 4, 3 ),
-        '/search'  => array( 1, 2 ),
-        '/signup'  => array( 5, 1 ),
-        '/about'   => array( 0, 0 ),
-    );
+    const FORMS = [
+        '/contact' => [ 4, 3 ],
+        '/search'  => [ 1, 2 ],
+        '/signup'  => [ 5, 1 ],
+        '/about'   => [ 0, 0 ],
+    ];
 
     public static function setUpBeforeClass(): void
     {
@@ -47,26 +47,26 @@ final class FormsReportTest extends TestCase
         self::dropFixture();
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setProperties( array(
+        $property->setProperties( [
             'id'            => self::PROPERTY,
             'name'          => 'Forms report fixture',
             'domain'        => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
-        ) );
+        ] );
 
         if ( ! $property->create() ) {
             throw new \RuntimeException( 'seeding owa_property failed' );
         }
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->setProperties( array(
+        $site->setProperties( [
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
             'property_id' => self::PROPERTY,
             'name'        => 'Forms report fixture profile',
             'domain'      => 'example.test',
-        ) );
+        ] );
 
         if ( ! $site->create() ) {
             throw new \RuntimeException( 'seeding owa_site failed' );
@@ -105,7 +105,7 @@ final class FormsReportTest extends TestCase
 
         foreach ( self::FORMS as $page => $counts ) {
 
-            $rows = array( 'page_view' );
+            $rows = [ 'page_view' ];
             $rows = array_merge( $rows,
                 array_fill( 0, $counts[0], 'form_start' ),
                 array_fill( 0, $counts[1], 'form_submit' ) );
@@ -119,7 +119,7 @@ final class FormsReportTest extends TestCase
 
                 $event = Cubes::entityFor( self::PROPERTY );
 
-                $event->setProperties( array(
+                $event->setProperties( [
                     'id'             => 940000 + $n,
                     'event_type'     => $type,
                     'site_id'        => self::SITE,
@@ -129,7 +129,7 @@ final class FormsReportTest extends TestCase
                     'ts'             => $ts + $n,
                     'yyyymmdd'       => $day,
                     'page_path'      => $page,
-                ) );
+                ] );
 
                 if ( ! $event->create() ) {
                     throw new \RuntimeException( sprintf(
@@ -154,7 +154,7 @@ final class FormsReportTest extends TestCase
         $db->query( sprintf( 'DELETE FROM %s WHERE id = %d',
             \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName(), self::PROPERTY ) );
 
-        foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
+        foreach ( [ '', '_rebuild', '_computed' ] as $suffix ) {
             $db->query( sprintf( 'DROP TABLE IF EXISTS %s%s', Cubes::tableFor( self::PROPERTY ), $suffix ) );
         }
     }
@@ -180,7 +180,7 @@ final class FormsReportTest extends TestCase
     {
         $build = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'buildConstraints' );
 
-        return $build->invoke( null, $report['settings']['constraints'], array() );
+        return $build->invoke( null, $report['settings']['constraints'], [] );
     }
 
     /** The named widget's query, run with the report's own constraints. */
@@ -212,33 +212,33 @@ final class FormsReportTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame( array(), (array) $rs->errors, "the '$widgetId' query did not resolve" );
+        $this->assertSame( [], (array) $rs->errors, "the '$widgetId' query did not resolve" );
 
         return (array) $rs->resultsRows;
     }
 
     public function testFormsByPageCountStartsAndSubmitsMostSubmittedFirst(): void
     {
-        $got = array();
+        $got = [];
 
         foreach ( $this->runWidget( 'pages' ) as $row ) {
-            $got[ $row['pagePath']['value'] ] = array(
+            $got[ $row['pagePath']['value'] ] = [
                 (int) $row['formStarts']['value'],
                 (int) $row['formSubmits']['value'],
-            );
+            ];
         }
 
-        $this->assertSame( array(
-            '/contact' => array( 4, 3 ),
-            '/search'  => array( 1, 2 ),
-            '/signup'  => array( 5, 1 ),
-        ), $got, 'one row per page with a form, most submits first; /about has none' );
+        $this->assertSame( [
+            '/contact' => [ 4, 3 ],
+            '/search'  => [ 1, 2 ],
+            '/signup'  => [ 5, 1 ],
+        ], $got, 'one row per page with a form, most submits first; /about has none' );
     }
 
     /** Submits over starts, and a double submit takes a page past 100%. */
     public function testSubmitRateIsSubmitsOverStarts(): void
     {
-        $got = array();
+        $got = [];
 
         foreach ( $this->runWidget( 'pages' ) as $row ) {
             $got[ $row['pagePath']['value'] ] = (float) $row['formSubmitRate']['value'];
@@ -280,9 +280,9 @@ final class FormsReportTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame( array(), (array) $rs->errors );
+        $this->assertSame( [], (array) $rs->errors );
 
-        $got = array();
+        $got = [];
 
         foreach ( (array) $rs->resultsRows as $row ) {
             $got[ $row['eventName']['value'] ] = (int) $row['eventCount']['value'];
@@ -290,6 +290,6 @@ final class FormsReportTest extends TestCase
 
         ksort( $got );
 
-        $this->assertSame( array( 'form_start' => 10, 'form_submit' => 6 ), $got );
+        $this->assertSame( [ 'form_start' => 10, 'form_submit' => 6 ], $got );
     }
 }

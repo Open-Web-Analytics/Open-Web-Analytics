@@ -62,18 +62,18 @@ class Status {
 
         $job = \OWA\Module\Base\Classes\JobStatus::forJob( self::JOB );
         $ids = array_unique( array_merge( array_keys( Cubes::existing() ), Cubes::awaitingFirstBuild() ) );
-        $out = array();
+        $out = [];
 
         foreach ( $ids as $property_id ) {
 
             $out[] = self::summary( (string) $property_id, $job );
         }
 
-        $rank = array( self::RED => 0, self::YELLOW => 1, self::GREEN => 2 );
+        $rank = [ self::RED => 0, self::YELLOW => 1, self::GREEN => 2 ];
 
         usort( $out, function ( $a, $b ) use ( $rank ) {
 
-            return array( $rank[ $a['level'] ], $a['name'] ) <=> array( $rank[ $b['level'] ], $b['name'] );
+            return [ $rank[ $a['level'] ], $a['name'] ] <=> [ $rank[ $b['level'] ], $b['name'] ];
         } );
 
         return $out;
@@ -92,15 +92,15 @@ class Status {
         $table = Cubes::tableFor( $property_id );
         $db    = \OWA\Core\CoreAPI::dbSingleton();
 
-        $out = array(
+        $out = [
             'property_id' => (string) $property_id,
             'name'        => self::propertyName( $property_id ),
             'table'       => $table,
             'exists'      => $table !== '' && $db->tableExists( $table ),
-            'checks'      => array(),
+            'checks'      => [],
             'behind_from' => null,
             'scheduler'   => $job,
-        );
+        ];
 
         $scheduler = self::schedulerCheck( $job );
 
@@ -151,8 +151,8 @@ class Status {
 
         $out = self::summary( $property_id );
 
-        $out['days']       = array();
-        $out['partitions'] = array();
+        $out['days']       = [];
+        $out['partitions'] = [];
         $out['dimensions'] = Dimensions::forProperty( $property_id );
 
         if ( ! $out['exists'] ) {
@@ -187,8 +187,8 @@ class Status {
 
         $builder = new Builder( $property_id );
         $spans   = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
-        $built   = array();
-        $rows    = array();
+        $built   = [];
+        $rows    = [];
 
         for ( $i = 0; $i < self::DAYS; $i++ ) {
 
@@ -202,14 +202,14 @@ class Status {
 
             $built_at = $span ? $built[ $span['name'] ] : null;
 
-            $rows[] = array(
+            $rows[] = [
                 'day'       => $day,
                 'raw'       => (int) ( $raw[ $day ] ?? 0 ),
                 'cube'      => (int) ( $cube[ $day ] ?? 0 ),
                 'partition' => $span ? $span['name'] : '',
                 'built_at'  => $built_at,
                 'settled'   => $span ? $builder->isSettled( $span, $built_at ) : false,
-            );
+            ];
         }
 
         return $rows;
@@ -272,27 +272,27 @@ class Status {
 
         if ( $property_id === '' ) {
 
-            return array(
+            return [
                 'state'       => 'no_property',
                 'headline'    => \OWA\Core\CoreAPI::t( 'This Profile belongs to no Property.' ),
                 'message'     => \OWA\Core\CoreAPI::t( 'Reports are built per Property. Assign this Profile to a Property.' ),
                 'cron'        => '',
                 'property_id' => '',
-            );
+            ];
         }
 
         if ( $scheduler_down ) {
 
-            return array(
+            return [
                 'state'       => 'scheduler',
                 'headline'    => \OWA\Core\CoreAPI::t( 'Reports need the job scheduler.' ),
                 'message'     => \OWA\Core\CoreAPI::t( 'Scheduled jobs build the reporting data and are not running. Add this line to the crontab of the user that owns the OWA files:' ),
                 'cron'        => \OWA\Module\Base\Classes\SchedulerHealth::cronLine(),
                 'property_id' => (string) $property_id,
-            );
+            ];
         }
 
-        return array(
+        return [
             'state'       => 'waiting',
             'headline'    => \OWA\Core\CoreAPI::t( 'No reporting data yet.' ),
             'message'     => ( $next
@@ -302,7 +302,7 @@ class Status {
                 . ' ' . \OWA\Core\CoreAPI::t( 'Each Observation Profile\'s Tracking Tag page shows whether data has arrived.' ),
             'cron'        => '',
             'property_id' => (string) $property_id,
-        );
+        ];
     }
 
     /**
@@ -371,7 +371,7 @@ class Status {
         $spans = $db->getPartitionSpans( $table );
         $today = (int) date( 'Ymd' );
 
-        $out = array(
+        $out = [
             'count'          => count( $spans ),
             'first'          => $spans ? (int) $spans[0]['start'] : null,
             'lead_end'       => $spans ? (int) end( $spans )['less_than'] : null,
@@ -379,7 +379,7 @@ class Status {
             'today_daily'    => false,
             'catch_all'      => '',
             'catch_all_rows' => 0,
-        );
+        ];
 
         foreach ( $spans as $span ) {
 
@@ -620,14 +620,14 @@ class Status {
 
             if ( ! $sites ) {
 
-                return array();
+                return [];
             }
 
             $params = array_map( 'strval', array_values( $sites ) );
             $where .= ' AND site_id IN (' . \OWA\Core\Db::placeholders( count( $params ) ) . ')';
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE %s GROUP BY yyyymmdd', $table, $where ), $params ) as $row ) {
@@ -701,7 +701,7 @@ class Status {
      */
     protected static function check( $key, $label, $level, $detail ) {
 
-        return array( 'key' => $key, 'label' => $label, 'level' => $level, 'detail' => $detail );
+        return [ 'key' => $key, 'label' => $label, 'level' => $level, 'detail' => $detail ];
     }
 
     /**
@@ -730,5 +730,3 @@ class Status {
         return $level;
     }
 }
-
-?>

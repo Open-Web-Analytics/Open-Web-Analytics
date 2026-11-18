@@ -56,10 +56,10 @@ class GoalMigrator extends FactMigrator {
     const NOT_LOCATED = 'goal_not_located';
 
     /** @var array<int|string, Located|false> definition id => compiled predicate plus 'name', or false */
-    private $compiled = array();
+    private $compiled = [];
 
     /** @var array<string, mixed> site_id => property id, as propertyFor() gives it */
-    private $properties = array();
+    private $properties = [];
 
     protected static function progressKey() {
 
@@ -73,7 +73,7 @@ class GoalMigrator extends FactMigrator {
 
     protected function events( array $r, array $refs ) {
 
-        return array();
+        return [];
     }
 
     /** This pass writes no raw rows of its own, so there is nothing to count. */
@@ -116,7 +116,7 @@ class GoalMigrator extends FactMigrator {
                     . ' WHERE e.site_id = ? AND e.visitor_id = ? AND e.session_id = ?'
                     . ' AND e.yyyymmdd BETWEEN ? AND ? AND e.is_goal_event = 0 AND %s ORDER BY e.ts, e.id LIMIT 1',
                     $raw, $predicate['sql'] ),
-                    array_merge( array( (string) $r['site_id'], (string) $r['visitor_id'], (string) $r['id'], $day, $next ),
+                    array_merge( [ (string) $r['site_id'], (string) $r['visitor_id'], (string) $r['id'], $day, $next ],
                         $predicate['params'] ) );
 
                 if ( empty( $trigger['id'] ) ) {
@@ -181,8 +181,8 @@ class GoalMigrator extends FactMigrator {
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
-        $skip    = array( 'id', 'event_type', 'is_goal_event', 'created_at', 'params' );
-        $columns = array();
+        $skip    = [ 'id', 'event_type', 'is_goal_event', 'created_at', 'params' ];
+        $columns = [];
 
         foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::materializedProperties( $name ) as $property ) {
 
@@ -196,9 +196,9 @@ class GoalMigrator extends FactMigrator {
 
         $id = \OWA\Module\Base\Classes\V2Event::id( $trigger['site_id'], $trigger['visitor_id'], $trigger['session_id'], $trigger['ts'], $name );
 
-        $insert = array( 'id', 'event_type', 'is_goal_event', 'created_at' );
-        $select = array( '?', '?', '1', '?' );
-        $params = array( $id, (string) $name, (int) round( microtime( true ) * 1000000 ) );
+        $insert = [ 'id', 'event_type', 'is_goal_event', 'created_at' ];
+        $select = [ '?', '?', '1', '?' ];
+        $params = [ $id, (string) $name, (int) round( microtime( true ) * 1000000 ) ];
 
         if ( $value !== null ) {
 
@@ -221,7 +221,7 @@ class GoalMigrator extends FactMigrator {
             $raw->getTableName(), implode( ', ', $insert ), implode( ', ', $columns ),
             implode( ', ', $select ),
             implode( ', ', array_map( function ( $c ) { return 't.' . $c; }, $columns ) ) ),
-            array_merge( $params, array( $trigger['id'], (int) $trigger['yyyymmdd'] ) ) ) !== false;
+            array_merge( $params, [ $trigger['id'], (int) $trigger['yyyymmdd'] ] ) ) !== false;
     }
 
     /**
@@ -258,10 +258,10 @@ class GoalMigrator extends FactMigrator {
             \OWA\Module\Base\Classes\Currency::ofProperty( (string) $this->properties[ $site_id ] ) );
         $currency = $currency !== '' ? $currency : 'USD';
 
-        return array(
+        return [
             'value'    => \OWA\Module\Base\Classes\Currency::toMinorUnits( $v1 / 100, $currency ),
             'currency' => $currency,
-        );
+        ];
     }
 
     /** @var bool|null whether raw has a `value` column, asked once */
@@ -310,7 +310,7 @@ class GoalMigrator extends FactMigrator {
 
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
             'SELECT id FROM %s WHERE property_id = ? AND goal_number = ? ORDER BY id LIMIT 1',
-            $goal->getTableName() ), array( (string) $property_id, (int) $goal_number ) );
+            $goal->getTableName() ), [ (string) $property_id, (int) $goal_number ] );
 
         return isset( $row['id'] ) ? (string) $row['id'] : null;
     }
@@ -346,14 +346,14 @@ class GoalMigrator extends FactMigrator {
                 ? ( new \OWA\Module\Base\Classes\GoalEventDefinitionPredicate() )->compile( $goal, 'e' )
                 : false;
 
-            $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => $this->eventName( $goal ) ) : false;
+            $this->compiled[ $id ] = $compiled ? $compiled + [ 'name' => $this->eventName( $goal ) ] : false;
         }
 
         return $this->compiled[ $id ] ?: null;
     }
 
     /** @var array<string, array<int|string, mixed>> property id => definition id => its name once Update075 has run, as stored */
-    private $renamed = array();
+    private $renamed = [];
 
     /**
      * The name a definition's goal events carry: the one Update075 gives it,
@@ -376,7 +376,7 @@ class GoalMigrator extends FactMigrator {
 
             $rows = array_map( function ( $r ) { return (array) $r; }, (array) $this->db()->get_results( sprintf(
                 'SELECT id, property_id, name FROM %s WHERE property_id = ? ORDER BY id', $goal->getTableName() ),
-                array( $property ) ) );
+                [ $property ] ) );
 
             /*
              * The names as STORED, under the renames. Not the entity's: it is
@@ -435,8 +435,8 @@ class GoalMigrator extends FactMigrator {
                     if ( $this->db()->query( sprintf(
                             'DELETE FROM %s WHERE site_id = ? AND visitor_id = ? AND session_id = ?'
                           . ' AND yyyymmdd BETWEEN ? AND ? AND event_type = ? AND is_goal_event = 1', $raw ),
-                            array( (string) $r['site_id'], (string) $r['visitor_id'], (string) $r['id'],
-                                $day, $next, $predicate['name'] ) ) === false ) {
+                            [ (string) $r['site_id'], (string) $r['visitor_id'], (string) $r['id'],
+                                $day, $next, $predicate['name'] ] ) === false ) {
 
                         throw new \RuntimeException( sprintf( 'v1 migration: reverting goal completions for site %s failed.', $site_id ) );
                     }
@@ -454,5 +454,3 @@ class GoalMigrator extends FactMigrator {
         return $deleted;
     }
 }
-
-?>

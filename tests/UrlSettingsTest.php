@@ -18,7 +18,7 @@ final class UrlSettingsTest extends TestCase
     {
         $s = new \OWA\Module\Base\Classes\Settings();
 
-        foreach ($set + array('tracking_url' => '', 'assets_url' => '') as $key => $value) {
+        foreach ($set + ['tracking_url' => '', 'assets_url' => ''] as $key => $value) {
             $s->set('base', $key, $value);
         }
 
@@ -27,7 +27,7 @@ final class UrlSettingsTest extends TestCase
 
     public function testByDefaultBothAreUnderThePublicUrl(): void
     {
-        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
+        $s = $this->settings(['public_url' => 'https://owa.example.test/']);
 
         $this->assertSame('https://owa.example.test/', $s->trackingUrl());
         $this->assertSame('https://owa.example.test/public/', $s->assetsUrl());
@@ -36,7 +36,7 @@ final class UrlSettingsTest extends TestCase
     /** Derived when read: a public_url set later (the installer, a test) is followed by both. */
     public function testBothFollowAPublicUrlSetAfterBoot(): void
     {
-        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
+        $s = $this->settings(['public_url' => 'https://owa.example.test/']);
         $s->trackingUrl();
         $s->assetsUrl();
 
@@ -50,9 +50,9 @@ final class UrlSettingsTest extends TestCase
     public function testTheBootedInstallFollowsItsPublicUrl(): void
     {
         $c     = \OWA\Core\CoreAPI::configSingleton();
-        $saved = array();
+        $saved = [];
 
-        foreach (array('public_url', 'tracking_url', 'assets_url') as $key) {
+        foreach (['public_url', 'tracking_url', 'assets_url'] as $key) {
             $saved[$key] = $c->get('base', $key);
         }
 
@@ -75,7 +75,7 @@ final class UrlSettingsTest extends TestCase
 
     public function testATrackingUrlIsWhereLogPhpIs(): void
     {
-        $s = $this->settings(array('public_url' => 'https://owa.example.test/', 'tracking_url' => 'https://t.example.test'));
+        $s = $this->settings(['public_url' => 'https://owa.example.test/', 'tracking_url' => 'https://t.example.test']);
 
         $this->assertSame('https://t.example.test/', $s->trackingUrl(), 'a slash is added');
         $this->assertSame('https://owa.example.test/public/', $s->assetsUrl());
@@ -83,7 +83,7 @@ final class UrlSettingsTest extends TestCase
 
     public function testAnAssetsUrlServesPublic(): void
     {
-        $s = $this->settings(array('public_url' => 'https://owa.example.test/', 'assets_url' => 'https://cdn.example.test/owa//'));
+        $s = $this->settings(['public_url' => 'https://owa.example.test/', 'assets_url' => 'https://cdn.example.test/owa//']);
 
         $this->assertSame('https://cdn.example.test/owa/', $s->assetsUrl());
         $this->assertSame('https://owa.example.test/', $s->trackingUrl());
@@ -92,7 +92,7 @@ final class UrlSettingsTest extends TestCase
     /** setupPaths() stores no derived value, so nothing can go stale. */
     public function testBootStoresNoDerivedUrl(): void
     {
-        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
+        $s = $this->settings(['public_url' => 'https://owa.example.test/']);
         (new \ReflectionMethod($s, 'setupPaths'))->invoke($s);
 
         $this->assertSame('', (string) $s->get('base', 'tracking_url'));

@@ -13,19 +13,19 @@ return function () {
 
     $code = fn ( $v ) => '`' . str_replace( '`', "'", (string) $v ) . '`';
 
-    $verbs = array(
+    $verbs = [
         'equals'      => 'is',
         'one_of'      => 'is one of',
         'contains'    => 'contains',
         'starts_with' => 'starts with',
         'ends_with'   => 'ends with',
         'regex'       => 'matches',
-    );
+    ];
 
     $render = function ( array $group ) use ( &$render, $code, $verbs ) {
 
         $mode  = isset( $group['all'] ) ? 'all' : 'any';
-        $parts = array();
+        $parts = [];
 
         foreach ( (array) $group[ $mode ] as $cond ) {
 

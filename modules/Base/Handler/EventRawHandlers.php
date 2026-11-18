@@ -100,7 +100,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * goal marking a goal event per definition met. See Ingest.
          */
         $events = \OWA\Module\Base\Classes\Ingest::at(
-            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, [ $event ] );
 
         return $this->saveTrackingEvents( array_values( (array) $events ), $event );
     }
@@ -114,7 +114,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function saveTrackingEvents( array $events, $incoming ) {
 
-        $rows = array();
+        $rows = [];
 
         foreach ( $events as $event ) {
 
@@ -246,7 +246,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          */
         $site_id = $event->getSiteId();
 
-        $row = array(
+        $row = [
 
             'id' => \OWA\Module\Base\Classes\V2Event::id(
                 $site_id, $visitor_id, $session_id, $ts, $name, $this->number( $event->get( 'event_seq' ) ) ),
@@ -382,7 +382,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
             'params' => $this->params( $event ),
-        );
+        ];
 
         return $row;
     }
@@ -395,7 +395,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected static function utf8Params( array $params ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $params as $name => $value ) {
 
@@ -431,7 +431,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function params( $event ) {
 
-        $params = array();
+        $params = [];
 
         // Custom variables, by NAME. 1.x stores them in five numbered slots and
         // then has to report cv3 as a dimension whose meaning differs per site;
@@ -741,7 +741,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     protected function queueLateRebuilds( array $rows ) {
 
         $before = (int) date( 'Ymd', strtotime( '-1 day' ) );
-        $queued = array();
+        $queued = [];
 
         foreach ( $rows as $row ) {
 
@@ -763,7 +763,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             $queued[ $key ] = true;
 
             \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
-                array( 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ),
+                [ 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ],
                 $key, self::LATE_REBUILD_DELAY );
         }
     }
@@ -799,7 +799,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function announce( $event, array $rows ) {
 
-        $names = array();
+        $names = [];
 
         foreach ( $rows as $row ) {
 
@@ -808,11 +808,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
 
-        $announcements = array(
+        $announcements = [
             \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START => 'base.new_session',
             \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT   => 'base.new_visitor',
             'page_view'                                             => 'base.new_page_view',
-        );
+        ];
 
         foreach ( $announcements as $marker => $announcement ) {
 
@@ -852,7 +852,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function writeUserProperties( $event, $row ) {
 
-        $incoming = array();
+        $incoming = [];
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
@@ -912,7 +912,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $existing = $entity->wasPersisted()
             ? (array) json_decode( (string) $entity->get( 'properties' ), true )
-            : array();
+            : [];
 
         $merged  = $existing;
         $changed = false;
@@ -932,7 +932,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
                 continue;
             }
 
-            $merged[ $name ] = array( 'v' => $value, 'ts' => $ts );
+            $merged[ $name ] = [ 'v' => $value, 'ts' => $ts ];
             $changed = true;
         }
 
@@ -954,7 +954,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         if ( $entity->wasPersisted() ) {
 
-            $entity->setProperties( array( 'properties' => $json ) );
+            $entity->setProperties( [ 'properties' => $json ] );
 
             // update('visitor_id'): the no-argument form keys on an `id`
             // column and this table has none.
@@ -968,12 +968,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return true;
         }
 
-        $entity->setProperties( array(
+        $entity->setProperties( [
             'visitor_id' => $row['visitor_id'],
             'site_id'    => $row['site_id'],
             'properties' => $json,
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
-        ) );
+        ] );
 
         /*
          * No acq_ts. The row exists to hold a property, and the acquisition is
@@ -1028,13 +1028,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return true;
         }
 
-        $touch = array(
+        $touch = [
             'last_touch_source'       => $row['tagged_source'],
             'last_touch_medium'       => $row['tagged_medium'],
             'last_touch_campaign'     => $row['tagged_campaign'],
             'last_touch_ad'           => $row['tagged_ad'],
             'last_touch_referer_host' => $row['referer_host'],
-        );
+        ];
 
         if ( ! array_filter( $touch, function ( $v ) { return $v !== null && trim( (string) $v ) !== ''; } ) ) {
 
@@ -1053,7 +1053,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             $ok = $db->query( sprintf(
                 'UPDATE %s SET %s WHERE visitor_id = ? AND (last_touch_ts IS NULL OR last_touch_ts < ?)',
                 $table, $set ),
-                array_merge( array_values( $touch ), array( $row['visitor_id'], $touch['last_touch_ts'] ) ) );
+                array_merge( array_values( $touch ), [ $row['visitor_id'], $touch['last_touch_ts'] ] ) );
 
             return $ok === false ? false : (int) $db->getAffectedRows();
         };
@@ -1072,11 +1072,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return true;
         }
 
-        $columns = array_merge( array(
+        $columns = array_merge( [
             'visitor_id' => $row['visitor_id'],
             'site_id'    => $row['site_id'],
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
-        ), $touch );
+        ], $touch );
 
         $inserted = $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)',
             $table, implode( ', ', array_keys( $columns ) ),
@@ -1136,7 +1136,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return true;
         }
 
-        $acquisition = array(
+        $acquisition = [
             'acq_source'       => $row['tagged_source'],
             'acq_medium'       => $row['tagged_medium'],
             'acq_campaign'     => $row['tagged_campaign'],
@@ -1144,7 +1144,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_search_terms' => $row['tagged_search_terms'],
             'acq_referer_url'  => $row['referer_url'],
             'acq_referer_host' => $row['referer_host'],
-        );
+        ];
 
         // Nothing to stamp and not the landing: no row. See above.
         if ( ! $landing
@@ -1175,7 +1175,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
                 return true;
             }
 
-            $entity->setProperties( $acquisition + array( 'acq_ts' => $row['ts'] ) );
+            $entity->setProperties( $acquisition + [ 'acq_ts' => $row['ts'] ] );
 
             // update('visitor_id'), not update(): the no-argument form keys on
             // an `id` column, and this table has none -- its primary key is
@@ -1192,7 +1192,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return true;
         }
 
-        $entity->setProperties( $acquisition + array(
+        $entity->setProperties( $acquisition + [
             'visitor_id' => $row['visitor_id'],
             'site_id'    => $row['site_id'],
             'acq_ts'     => $row['ts'],
@@ -1200,7 +1200,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             // the one it is creating the row in so expiry has something to
             // read before a pass has ever run.
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
-        ) );
+        ] );
 
         if ( $entity->create() !== true ) {
 
@@ -1343,5 +1343,3 @@ class EventRawHandlers extends \OWA\Core\Observer {
         return $value ? 1 : 0;
     }
 }
-
-?>

@@ -55,7 +55,7 @@ class Retention {
      * minutes per 100,000 events when raw fits the database's buffer pool, and
      * about 3 when it does not. An estimate shown as a range, not a promise.
      */
-    const REBUILD_MS_PER_EVENT = array( 0.9, 1.8 );
+    const REBUILD_MS_PER_EVENT = [ 0.9, 1.8 ];
 
     /** @return int raw's window in months; 0 keeps everything */
     public static function rawMonths() {
@@ -167,8 +167,8 @@ class Retention {
      */
     public static function dropsFor( $table, $months ) {
 
-        $out    = array( 'table' => $table, 'months' => self::months( $months ), 'cutoff' => self::cutoff( $months ),
-                         'effective' => null, 'partitions' => array(), 'rows' => 0 );
+        $out    = [ 'table' => $table, 'months' => self::months( $months ), 'cutoff' => self::cutoff( $months ),
+                         'effective' => null, 'partitions' => [], 'rows' => 0 ];
         $db     = \OWA\Core\CoreAPI::dbSingleton();
 
         if ( ! $out['cutoff'] || ! $db->isPartitioned( $table ) ) {
@@ -207,9 +207,9 @@ class Retention {
      * @param int|null $raw     raw's window, to ask "what if"
      * @return list<Backfill> from and to are yyyymmdd; minutes are [ low, high ]
      */
-    public static function backfills( array $cube_months = array(), $raw = null ) {
+    public static function backfills( array $cube_months = [], $raw = null ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( Cube\Cubes::existing() as $property_id => $table ) {
 
@@ -262,7 +262,7 @@ class Retention {
             return null;
         }
 
-        return array(
+        return [
             'property_id' => (string) $property_id,
             'table'       => $table,
             'from'        => $from,
@@ -270,7 +270,7 @@ class Retention {
             'held_from'   => (int) $held,
             'events'      => $events,
             'minutes'     => self::rebuildMinutes( $events ),
-        );
+        ];
     }
 
     /**
@@ -287,7 +287,7 @@ class Retention {
         foreach ( $backfills as $b ) {
 
             $ok = \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
-                array( 'property' => $b['property_id'], 'from' => (string) $b['from'], 'to' => (string) $b['to'] ),
+                [ 'property' => $b['property_id'], 'from' => (string) $b['from'], 'to' => (string) $b['to'] ],
                 'cube-backfill:' . $b['property_id'] );
 
             if ( $ok !== false ) {
@@ -309,10 +309,10 @@ class Retention {
 
         list( $low, $high ) = self::REBUILD_MS_PER_EVENT;
 
-        return array(
+        return [
             max( 1, (int) round( $events * $low / 60000 ) ),
             max( 1, (int) round( $events * $high / 60000 ) ),
-        );
+        ];
     }
 
     /**
@@ -344,19 +344,19 @@ class Retention {
         $raw_now = self::rawMonths();
         $raw_new = array_key_exists( 'raw', $proposed ) ? self::months( $proposed['raw'] ) : $raw_now;
 
-        $sections = array();
+        $sections = [];
 
         // RAW, shorter: the one change that destroys data.
         if ( self::shorter( $raw_new, $raw_now ) ) {
 
             $drop = self::dropsFor( self::rawTable(), $raw_new );
-            $sections[] = array( 'tone' => 'danger', 'title' => sprintf( \OWA\Core\CoreAPI::tn( 'Delete event data older than %d month?', 'Delete event data older than %d months?', $raw_new ), $raw_new ),
-                'proceed' => \OWA\Core\CoreAPI::t( 'Save and delete' ), 'paragraphs' => self::rawParagraphs( $raw_new, $drop ) );
+            $sections[] = [ 'tone' => 'danger', 'title' => sprintf( \OWA\Core\CoreAPI::tn( 'Delete event data older than %d month?', 'Delete event data older than %d months?', $raw_new ), $raw_new ),
+                'proceed' => \OWA\Core\CoreAPI::t( 'Save and delete' ), 'paragraphs' => self::rawParagraphs( $raw_new, $drop ) ];
         }
 
         // CUBES: which Properties change, and how.
-        $cube_now = array();
-        $cube_new = array();
+        $cube_now = [];
+        $cube_new = [];
 
         foreach ( Cube\Cubes::existing() as $property_id => $table ) {
 
@@ -383,8 +383,8 @@ class Retention {
             $cube_new[ $pid ] = self::cubeMonths( $pid, $raw_new, $setting );
         }
 
-        $shorter = array();
-        $longer  = array();
+        $shorter = [];
+        $longer  = [];
 
         foreach ( $cube_new as $pid => $months ) {
 
@@ -401,13 +401,13 @@ class Retention {
         // A cube shortened only because raw was is covered by raw's section.
         if ( $shorter && ! self::shorter( $raw_new, $raw_now ) ) {
 
-            $sections[] = array( 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Shorten reporting data?' ), 'proceed' => \OWA\Core\CoreAPI::t( 'Save' ),
-                'paragraphs' => self::cubeShorterParagraphs( $shorter ) );
+            $sections[] = [ 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Shorten reporting data?' ), 'proceed' => \OWA\Core\CoreAPI::t( 'Save' ),
+                'paragraphs' => self::cubeShorterParagraphs( $shorter ) ];
         }
 
         if ( $longer ) {
 
-            $owed = array();
+            $owed = [];
 
             foreach ( $longer as $pid => $months ) {
 
@@ -421,14 +421,14 @@ class Retention {
 
             if ( $owed ) {
 
-                $sections[] = array( 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Rebuild older reporting data?' ),
-                    'proceed' => \OWA\Core\CoreAPI::t( 'Save and rebuild' ), 'paragraphs' => self::rebuildParagraphs( $owed ) );
+                $sections[] = [ 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Rebuild older reporting data?' ),
+                    'proceed' => \OWA\Core\CoreAPI::t( 'Save and rebuild' ), 'paragraphs' => self::rebuildParagraphs( $owed ) ];
             }
         }
 
         if ( ! $sections ) {
 
-            return array( 'needed' => false );
+            return [ 'needed' => false ];
         }
 
         $lead = $sections[0];
@@ -442,20 +442,20 @@ class Retention {
             }
         }
 
-        $paragraphs = array();
+        $paragraphs = [];
 
         foreach ( $sections as $s ) {
 
             $paragraphs = array_merge( $paragraphs, $s['paragraphs'] );
         }
 
-        return array(
+        return [
             'needed'     => true,
             'tone'       => $lead['tone'],
             'title'      => $lead['title'],
             'paragraphs' => $paragraphs,
             'proceed'    => $lead['proceed'],
-        );
+        ];
     }
 
     /**
@@ -467,7 +467,7 @@ class Retention {
 
         $when = self::when();
 
-        $out = array();
+        $out = [];
 
         if ( $drop['partitions'] ) {
 
@@ -503,7 +503,7 @@ class Retention {
             ? sprintf( \OWA\Core\CoreAPI::tn( '%d month', '%d months', reset( $months ) ), reset( $months ) )
             : \OWA\Core\CoreAPI::t( 'their new window' );
 
-        return array(
+        return [
             $properties === 1
                 ? sprintf( \OWA\Core\CoreAPI::t( 'At %1$s, reports for this Property stop showing data older than %2$s.' ),
                     self::when(), $window )
@@ -511,7 +511,7 @@ class Retention {
                     'At %1$s, reports for %3$d Properties stop showing data older than %2$s.', $properties ),
                     self::when(), $window, $properties ),
             \OWA\Core\CoreAPI::t( 'The event data is kept. Lengthening this again rebuilds those months, as far back as event data is kept.' ),
-        );
+        ];
     }
 
     /**
@@ -536,7 +536,7 @@ class Retention {
         $properties = count( $owed );
         $count      = \OWA\Core\Strings::formatNumber( $events );
 
-        return array(
+        return [
             $properties === 1
                 ? sprintf( \OWA\Core\CoreAPI::tn( 'Reports for this Property are rebuilt back to %1$s from the event data: about %2$s event.',
                     'Reports for this Property are rebuilt back to %1$s from the event data: about %2$s events.', $events ),
@@ -548,7 +548,7 @@ class Retention {
                 . 'saving when the scheduler is running. Until it finishes, reports show the months they hold now.' ),
                 $low === $high ? sprintf( \OWA\Core\CoreAPI::tn( 'about %d minute', 'about %d minutes', $low ), $low )
                                : sprintf( \OWA\Core\CoreAPI::t( 'roughly %1$d to %2$d minutes' ), $low, $high ) ),
-        );
+        ];
     }
 
     /**

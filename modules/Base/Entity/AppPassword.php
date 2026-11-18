@@ -41,14 +41,14 @@ class AppPassword extends \OWA\Core\Entity {
         $lookup = new \OWA\Module\Base\Classes\DbColumn( 'lookup_id', OWA_DTD_VARCHAR16 );
         $lookup->setNotNull();
         $this->setProperty( $lookup );
-        $this->addUniqueIndex( self::LOOKUP_INDEX, array( 'lookup_id' ) );
+        $this->addUniqueIndex( self::LOOKUP_INDEX, [ 'lookup_id' ] );
 
         // owa_user.user_id: the password acts as this user, with their role at
         // the time of each request.
         $user = new \OWA\Module\Base\Classes\DbColumn( 'user_id', OWA_DTD_VARCHAR255 );
         $user->setNotNull();
         $this->setProperty( $user );
-        $this->addCompositeIndex( self::USER_INDEX, array( 'user_id' ) );
+        $this->addCompositeIndex( self::USER_INDEX, [ 'user_id' ] );
 
         // What the user called it, so they can tell which client it belongs to.
         $name = new \OWA\Module\Base\Classes\DbColumn( 'name', OWA_DTD_VARCHAR255 );
@@ -65,7 +65,7 @@ class AppPassword extends \OWA\Core\Entity {
         $scope->setNotNull();
         $this->setProperty( $scope );
 
-        foreach ( array( 'created_at', 'last_used_at' ) as $name ) {
+        foreach ( [ 'created_at', 'last_used_at' ] as $name ) {
             $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( $name, OWA_DTD_INT ) );
         }
 
@@ -73,5 +73,3 @@ class AppPassword extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'last_used_ip', OWA_DTD_VARCHAR45 ) );
     }
 }
-
-?>

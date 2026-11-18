@@ -106,7 +106,7 @@ class AttributedStep extends Step {
      */
     private static function anyPresent( array $columns ) {
 
-        $tests = array();
+        $tests = [];
 
         foreach ( $columns as $column ) {
 
@@ -116,5 +116,3 @@ class AttributedStep extends Step {
         return '(' . implode( ' OR ', $tests ) . ')';
     }
 }
-
-?>

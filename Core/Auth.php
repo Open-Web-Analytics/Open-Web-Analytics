@@ -55,7 +55,7 @@ class Auth extends \OWA\Core\Base {
      *
      * @var array<string, mixed>
      */
-    public $credentials = array();
+    public $credentials = [];
 
     /**
      * Status of Authentication
@@ -97,7 +97,7 @@ class Auth extends \OWA\Core\Base {
      * the login form's user_id and password on the login action, and an
      * overlay token on the routes an overlay reads.
      */
-    const NAMED_ONLY_METHODS = array( 'login_form', 'overlay_token' );
+    const NAMED_ONLY_METHODS = [ 'login_form', 'overlay_token' ];
 
     /**
      * Auth class Singleton
@@ -157,12 +157,12 @@ class Auth extends \OWA\Core\Base {
                 ? ! in_array( $method, self::NAMED_ONLY_METHODS, true )
                 : in_array( $method, (array) $methods, true );
         };
-		
+        
         $this->legacy_api_key_refused = false;
 
         // check existing auth status first in case someone else took care of this already.
         if (\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated()) {
-	        \OWA\Core\CoreAPI::debug('User is already authenticated.');
+            \OWA\Core\CoreAPI::debug('User is already authenticated.');
             $ret = true;
 
         } elseif ( self::carriesLegacyApiKey() ) {
@@ -213,7 +213,7 @@ class Auth extends \OWA\Core\Base {
         // filter results for modules can add their own auth logic.
         $ret = $this->eq->filter('auth_status', $ret);
 
-        return array('auth_status' => $ret);
+        return ['auth_status' => $ret];
 
     }
 
@@ -227,7 +227,7 @@ class Auth extends \OWA\Core\Base {
     public static function routedAction() {
 
         $rest  = (string) \OWA\Core\CoreAPI::getRequestParam('rest_params');
-        $parts = $rest !== '' ? explode( '/', $rest ) : array();
+        $parts = $rest !== '' ? explode( '/', $rest ) : [];
 
         return count( $parts ) >= 3
             ? (string) $parts[2]
@@ -350,7 +350,7 @@ class Auth extends \OWA\Core\Base {
             return null;
         }
 
-        return array( 'token' => $token, 'user_id' => $user_id );
+        return [ 'token' => $token, 'user_id' => $user_id ];
     }
 
     /**
@@ -466,7 +466,7 @@ class Auth extends \OWA\Core\Base {
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
         $this->credentials['password'] = $credential;
         unset( $this->credentials['new_password'] );
-		\OWA\Core\CoreAPI::debug('auth by cookies');
+        \OWA\Core\CoreAPI::debug('auth by cookies');
         // lookup user if not already done.
         if ($this->_is_user == false) {
 
@@ -707,8 +707,8 @@ class Auth extends \OWA\Core\Base {
      * The request parameters and headers of the legacy API key sign-in, which
      * application passwords replace.
      */
-    const LEGACY_API_KEY_PARAMS  = array( 'apiKey', 'signature' );
-    const LEGACY_API_KEY_HEADERS = array( 'HTTP_X_API_KEY', 'HTTP_X_SIGNATURE' );
+    const LEGACY_API_KEY_PARAMS  = [ 'apiKey', 'signature' ];
+    const LEGACY_API_KEY_HEADERS = [ 'HTTP_X_API_KEY', 'HTTP_X_SIGNATURE' ];
 
     /**
      * Whether a typed password is the account's: the stored hash, or, for an
@@ -765,12 +765,12 @@ class Auth extends \OWA\Core\Base {
     private static function sessionHmac( $user_id, $session_epoch, $password_hash, $expires ) {
 
         // Only user_id is free text, and it comes first, so the fields cannot run together.
-        $data = implode( '|', array(
+        $data = implode( '|', [
             (string) $user_id,
             (int) $session_epoch,
             (int) $expires,
             substr( (string) $password_hash, 8, 4 ),
-        ) );
+        ] );
 
         return hash_hmac( 'sha256', $data, \OWA\Core\CoreAPI::getSalt( 'auth' ) );
     }
@@ -892,5 +892,3 @@ class Auth extends \OWA\Core\Base {
         return $this->auth_method;
     }
 }
-
-?>

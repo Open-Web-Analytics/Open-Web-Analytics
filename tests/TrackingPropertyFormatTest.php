@@ -73,7 +73,7 @@ final class TrackingPropertyFormatTest extends TestCase
     {
         foreach ( $this->registry() as $name => $definition ) {
 
-            foreach ( array( 'wire', 'request-source', 'scope' ) as $gone ) {
+            foreach ( [ 'wire', 'request-source', 'scope' ] as $gone ) {
 
                 $this->assertArrayNotHasKey( $gone, $definition,
                     "$name carries '$gone'; the transport key, the request key and the "
@@ -143,7 +143,7 @@ final class TrackingPropertyFormatTest extends TestCase
 
             foreach ( $definition['from'] as $source ) {
 
-                $upstream = $registry[ $source ] ?? array();
+                $upstream = $registry[ $source ] ?? [];
 
                 if ( ( $upstream['set_by'] ?? '' ) !== 'event' ) {
 
@@ -169,11 +169,11 @@ final class TrackingPropertyFormatTest extends TestCase
      */
     public function testOnlyAClientPropertyIsAdmittedFromTheWire(): void
     {
-        $refused = array();
+        $refused = [];
 
         foreach ( $this->registry() as $name => $definition ) {
 
-            $admitted = Helpers::admitRequestParams( array( $name => 'x' ) );
+            $admitted = Helpers::admitRequestParams( [ $name => 'x' ] );
 
             if ( $definition['set_by'] === 'client' ) {
 
@@ -181,21 +181,21 @@ final class TrackingPropertyFormatTest extends TestCase
                    the ct_* family, and it is the key that has to be admitted. */
                 foreach ( $definition['from'] as $key ) {
 
-                    $this->assertSame( array( $key => 'x' ),
-                        Helpers::admitRequestParams( array( $key => 'x' ) ),
+                    $this->assertSame( [ $key => 'x' ],
+                        Helpers::admitRequestParams( [ $key => 'x' ] ),
                         "$name is client-set and its wire key '$key' was refused" );
                 }
 
                 continue;
             }
 
-            if ( $admitted !== array() ) {
+            if ( $admitted !== [] ) {
 
                 $refused[] = $name;
             }
         }
 
-        $this->assertSame( array(), $refused,
+        $this->assertSame( [], $refused,
             "These are set by the request or derived from other properties, and a beacon "
             . "was able to assert them:\n  " . implode( "\n  ", $refused ) );
     }
@@ -206,7 +206,7 @@ final class TrackingPropertyFormatTest extends TestCase
         foreach ( $this->registry() as $name => $definition ) {
 
             $expected = $definition['set_by'] === 'client'
-                ? $definition['from'] : array();
+                ? $definition['from'] : [];
 
             $this->assertSame( $expected, Helpers::wireKeysFor( $name ),
                 "wireKeysFor($name) disagrees with the registry" );
@@ -264,7 +264,7 @@ final class TrackingPropertyFormatTest extends TestCase
     {
         $columns = $this->rawColumns();
 
-        $counts = array( 'column' => 0, 'param' => 0, 'nowhere' => 0 );
+        $counts = [ 'column' => 0, 'param' => 0, 'nowhere' => 0 ];
 
         foreach ( $this->registry() as $name => $definition ) {
 
@@ -340,7 +340,7 @@ final class TrackingPropertyFormatTest extends TestCase
          * the test that notices one leaving is EventRawEntityTest's column count,
          * which is exact. This one only has to fail if the file stops being read.
          */
-        $floors = array( 'column' => 30, 'param' => 9, 'nowhere' => 1 );
+        $floors = [ 'column' => 30, 'param' => 9, 'nowhere' => 1 ];
 
         $this->assertSame( array_keys( $floors ), array_keys( $counts ),
             'a destination kind appeared or vanished' );
@@ -367,7 +367,7 @@ final class TrackingPropertyFormatTest extends TestCase
 
         $method = new ReflectionMethod( $handler, 'declaredParams' );
 
-        foreach ( array( 'purchase', 'click', 'file_download', 'custom_event' ) as $event_name ) {
+        foreach ( [ 'purchase', 'click', 'file_download', 'custom_event' ] as $event_name ) {
 
             $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
             $event->setEventType( $event_name );

@@ -22,22 +22,22 @@ final class TrackerIngestTest extends TestCase
     private const TYPE = 'zz_intake_test';
 
     /** @var array<string,mixed> settings to restore */
-    private array $saved = array();
+    private array $saved = [];
 
     protected function setUp(): void
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
-        foreach (array('queue_tracking_events', 'server_role', 'raw_retention_months') as $key) {
+        foreach (['queue_tracking_events', 'server_role', 'raw_retention_months'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
         IntakeTestProcessor::$outcome = 'ok';
-        IntakeTestProcessor::$seen    = array();
+        IntakeTestProcessor::$seen    = [];
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->setMapValue('actions', 'test.intakeProcessor',
-            array('class_name' => IntakeTestProcessor::class, 'file' => __FILE__));
+            ['class_name' => IntakeTestProcessor::class, 'file' => __FILE__]);
         $s->setMapValue('event_processors', \OWA\Core\CoreAPI::trackingDispatchName(self::TYPE), 'test.intakeProcessor');
     }
 
@@ -59,11 +59,11 @@ final class TrackerIngestTest extends TestCase
     /** A site the drain's site check answers for without a database (setUp()). */
     const SITE = 'tracker-ingest-test-site';
 
-    private function event(array $properties = array()): Event
+    private function event(array $properties = []): Event
     {
         $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType(self::TYPE);
-        $event->setProperties($properties + array('page_url' => 'https://example.test/', 'site_id' => self::SITE));
+        $event->setProperties($properties + ['page_url' => 'https://example.test/', 'site_id' => self::SITE]);
 
         return $event;
     }
@@ -79,10 +79,10 @@ final class TrackerIngestTest extends TestCase
 
     public function testAnEventRoundTripsThroughItsEnvelope(): void
     {
-        $sent     = $this->event(array('site_id' => 'abc'));
+        $sent     = $this->event(['site_id' => 'abc']);
         $envelope = TrackerIngest::envelope($sent);
 
-        $this->assertSame(array('v', 'type', 'properties', 'queued_at'), array_keys($envelope));
+        $this->assertSame(['v', 'type', 'properties', 'queued_at'], array_keys($envelope));
         $this->assertSame(1, $envelope['v']);
         $this->assertNotFalse(json_encode($envelope), 'it is JSON, not a PHP object');
 
@@ -98,11 +98,11 @@ final class TrackerIngestTest extends TestCase
     {
         $good = TrackerIngest::envelope($this->event());
 
-        foreach (array(
-            'a later version'       => array('v' => 2) + $good,
-            'no type'               => array_diff_key($good, array('type' => 1)),
-            'properties not a list' => array('properties' => 'x') + $good,
-        ) as $why => $envelope) {
+        foreach ([
+            'a later version'       => ['v' => 2] + $good,
+            'no type'               => array_diff_key($good, ['type' => 1]),
+            'properties not a list' => ['properties' => 'x'] + $good,
+        ] as $why => $envelope) {
             $this->assertNull(TrackerIngest::event($envelope), $why);
         }
     }
@@ -161,7 +161,7 @@ final class TrackerIngestTest extends TestCase
     public function testATypeThatIsNotAnIntakeIsAnError(): void
     {
         \OWA\Core\CoreAPI::serviceSingleton()->setMapValue('event_queue_types', 'zz-not-an-intake',
-            array(NotAnIntake::class, __FILE__, array()));
+            [NotAnIntake::class, __FILE__, []]);
         TrackerIngest::$backend = 'zz-not-an-intake';
 
         try {
@@ -181,8 +181,8 @@ final class TrackerIngestTest extends TestCase
         $q = new MemoryIntake();
 
         $this->assertSame('ingested', TrackerIngest::ingestMessage($q, $this->message()));
-        $this->assertSame(array('ack'), array_column($q->calls, 0));
-        $this->assertSame(array(self::TYPE), IntakeTestProcessor::$seen);
+        $this->assertSame(['ack'], array_column($q->calls, 0));
+        $this->assertSame([self::TYPE], IntakeTestProcessor::$seen);
     }
 
     /** A handler failure is a retry after the back-off step for its attempt; about 7.3 hours from first to last. */
@@ -191,10 +191,10 @@ final class TrackerIngestTest extends TestCase
         IntakeTestProcessor::$outcome = 'failed';
         $q = new MemoryIntake();
 
-        foreach (array(1 => 60, 2 => 300, 3 => 900, 4 => 3600, 5 => 21600) as $count => $delay) {
-            $q->calls = array();
+        foreach ([1 => 60, 2 => 300, 3 => 900, 4 => 3600, 5 => 21600] as $count => $delay) {
+            $q->calls = [];
             $this->assertSame('released', TrackerIngest::ingestMessage($q, $this->message(null, $count)));
-            $this->assertSame(array(array('release', $delay)), $q->calls, "attempt $count");
+            $this->assertSame([['release', $delay]], $q->calls, "attempt $count");
         }
 
         $this->assertSame(26460, array_sum(TrackerIngest::BACKOFF));
@@ -208,7 +208,7 @@ final class TrackerIngestTest extends TestCase
         $q = new MemoryIntake();
 
         $this->assertSame('dead', TrackerIngest::ingestMessage($q, $this->message(null, TrackerIngest::MAX_RECEIVES)));
-        $this->assertSame(array(array('dead', 'Not ingested in 6 attempts.')), $q->calls);
+        $this->assertSame([['dead', 'Not ingested in 6 attempts.']], $q->calls);
     }
 
     public function testAnIngestThatThrowsIsReleased(): void
@@ -232,17 +232,17 @@ final class TrackerIngestTest extends TestCase
         $q = new MemoryIntake();
 
         $this->assertSame('dead', TrackerIngest::ingestMessage($q, new IntakeMessage('r', null, 1, 'O:9:"owa_event"')));
-        $this->assertSame('dead', TrackerIngest::ingestMessage($q, $this->message(array('v' => 9))));
-        $this->assertSame(array(), IntakeTestProcessor::$seen);
+        $this->assertSame('dead', TrackerIngest::ingestMessage($q, $this->message(['v' => 9])));
+        $this->assertSame([], IntakeTestProcessor::$seen);
     }
 
     public function testTheDrainStopsWhenTheQueueIsEmpty(): void
     {
         $q = new MemoryIntake();
-        $q->pending = array($this->message(), $this->message(), $this->message());
+        $q->pending = [$this->message(), $this->message(), $this->message()];
         TrackerIngest::$queue = $q;
 
-        $this->assertSame(array('ingested' => 3, 'released' => 0, 'dead' => 0), TrackerIngest::drain(time() + 30));
+        $this->assertSame(['ingested' => 3, 'released' => 0, 'dead' => 0], TrackerIngest::drain(time() + 30));
     }
 
     public function testAQuietQueueIsNotReceivedFrom(): void
@@ -263,14 +263,14 @@ final class TrackerIngestTest extends TestCase
     private function deadLetters(): array
     {
         $main = new MemoryIntake();
-        $main->dlq->pending = array(
-            new IntakeMessage('fresh', TrackerIngest::envelope($this->event(array('n' => 'fresh'))), 6, '', false, 'Not ingested in 6 attempts.', time()),
-            new IntakeMessage('again', TrackerIngest::envelope($this->event(array('n' => 'again'))), 6, '', true, 'Not ingested in 6 attempts.', time()),
+        $main->dlq->pending = [
+            new IntakeMessage('fresh', TrackerIngest::envelope($this->event(['n' => 'fresh'])), 6, '', false, 'Not ingested in 6 attempts.', time()),
+            new IntakeMessage('again', TrackerIngest::envelope($this->event(['n' => 'again'])), 6, '', true, 'Not ingested in 6 attempts.', time()),
             new IntakeMessage('bad', null, 1, 'O:9:"owa_event"', false, 'Not a tracker-ingest envelope this version reads.', time()),
-        );
+        ];
         TrackerIngest::$queue = $main;
 
-        return array($main, $main->dlq);
+        return [$main, $main->dlq];
     }
 
     /** Daily: each dead letter goes back once, marked; one replayed before stays; one that never decoded stays. */
@@ -278,7 +278,7 @@ final class TrackerIngestTest extends TestCase
     {
         [$main, $dlq] = $this->deadLetters();
 
-        $this->assertSame(array('replayed' => 1, 'kept' => 1, 'unreadable' => 1, 'expired' => 0), TrackerIngest::replay(true, time() + 30));
+        $this->assertSame(['replayed' => 1, 'kept' => 1, 'unreadable' => 1, 'expired' => 0], TrackerIngest::replay(true, time() + 30));
 
         $this->assertCount(1, $main->calls);
         $this->assertSame('send', $main->calls[0][0]);
@@ -286,11 +286,11 @@ final class TrackerIngestTest extends TestCase
         $this->assertSame(0, $main->calls[0][2], 'due at once');
         $this->assertTrue($main->calls[0][3], 'marked as replayed');
 
-        $this->assertSame(array(
-            array('ack'),
-            array('release', TrackerIngest::REPLAY_RECHECK),
-            array('release', TrackerIngest::REPLAY_RECHECK),
-        ), $dlq->calls, 'what stays is released past this run, not left to loop');
+        $this->assertSame([
+            ['ack'],
+            ['release', TrackerIngest::REPLAY_RECHECK],
+            ['release', TrackerIngest::REPLAY_RECHECK],
+        ], $dlq->calls, 'what stays is released past this run, not left to loop');
     }
 
     /** By hand, after the cause is fixed: everything that decodes, replayed before or not. */
@@ -298,8 +298,8 @@ final class TrackerIngestTest extends TestCase
     {
         [$main, $dlq] = $this->deadLetters();
 
-        $this->assertSame(array('replayed' => 2, 'kept' => 0, 'unreadable' => 1, 'expired' => 0), TrackerIngest::replay(false, time() + 30));
-        $this->assertSame(array('fresh', 'again'), array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
+        $this->assertSame(['replayed' => 2, 'kept' => 0, 'unreadable' => 1, 'expired' => 0], TrackerIngest::replay(false, time() + 30));
+        $this->assertSame(['fresh', 'again'], array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
     }
 
     /** Dead letters of events two years old, beside the three of deadLetters(). */
@@ -308,11 +308,11 @@ final class TrackerIngestTest extends TestCase
         $old = time() - 730 * 86400;
 
         // Its edge receipt, in microseconds, is the event's time.
-        $by_ts = TrackerIngest::envelope($this->event(array('n' => 'old-ts', 'ts' => $old * 1000000)));
+        $by_ts = TrackerIngest::envelope($this->event(['n' => 'old-ts', 'ts' => $old * 1000000]));
         $by_ts['queued_at'] = time();
 
         // Without one, when it was queued.
-        $by_queued = TrackerIngest::envelope($this->event(array('n' => 'old-queued')));
+        $by_queued = TrackerIngest::envelope($this->event(['n' => 'old-queued']));
         $by_queued['queued_at'] = $old;
 
         $dlq->pending[] = new IntakeMessage('old-ts', $by_ts, 6, '', false, 'Not ingested in 6 attempts.', time());
@@ -328,14 +328,14 @@ final class TrackerIngestTest extends TestCase
         [$main, $dlq] = $this->deadLetters();
         $this->oldDeadLetters($dlq);
 
-        $this->assertSame(array('replayed' => 2, 'kept' => 2, 'unreadable' => 2, 'expired' => 0), TrackerIngest::replay(true, time() + 30));
-        $this->assertSame(array('fresh', 'old-ts'), array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
+        $this->assertSame(['replayed' => 2, 'kept' => 2, 'unreadable' => 2, 'expired' => 0], TrackerIngest::replay(true, time() + 30));
+        $this->assertSame(['fresh', 'old-ts'], array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
     }
 
     /** A 12-month window: dead letters of older events are deleted, replayed or not, by hand or daily; newer ones are not. */
     public function testADeadLetterOlderThanTheRetentionWindowIsDeleted(): void
     {
-        foreach (array(true, false) as $once_only) {
+        foreach ([true, false] as $once_only) {
             \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', 12);
             [$main, $dlq] = $this->deadLetters();
             $this->oldDeadLetters($dlq);
@@ -344,7 +344,7 @@ final class TrackerIngestTest extends TestCase
 
             $this->assertSame(3, $counts['expired']);
             $this->assertSame(1, $counts['unreadable'], 'the recent unreadable one is kept');
-            $this->assertSame($once_only ? array('fresh') : array('fresh', 'again'),
+            $this->assertSame($once_only ? ['fresh'] : ['fresh', 'again'],
                 array_map(fn ($c) => $c[1]['properties']['n'], $main->calls), 'no old event is sent back');
             $this->assertCount($counts['expired'] + $counts['replayed'],
                 array_filter($dlq->calls, fn ($c) => $c[0] === 'ack'), 'deleted, not released');
@@ -365,11 +365,11 @@ final class TrackerIngestTest extends TestCase
     public function testAReplayedBeaconIsReceivedFromTheMainQueueAfresh(): void
     {
         $dir  = sys_get_temp_dir() . '/owa-replay-' . bin2hex(random_bytes(4)) . '/';
-        $main = new \OWA\Module\Base\Classes\FileEventQueue(array('path' => $dir));
+        $main = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
         TrackerIngest::$queue = $main;
 
         try {
-            $main->send(TrackerIngest::envelope($this->event(array('n' => 'a'))));
+            $main->send(TrackerIngest::envelope($this->event(['n' => 'a'])));
             $main->deadLetter($main->receive(10, 300)[0], 'gave up');
 
             $this->assertSame(1, TrackerIngest::replay(true, time() + 30)['replayed']);
@@ -410,10 +410,10 @@ final class TrackerIngestTest extends TestCase
         $q = new MemoryIntake();
         TrackerIngest::$queue = $q;
 
-        $arrived = TrackerIngest::envelope($this->event(array('n' => 'as-arrived')));
+        $arrived = TrackerIngest::envelope($this->event(['n' => 'as-arrived']));
         TrackerIngest::retryLater($this->event(), $arrived);
 
-        $this->assertSame(array('send', $arrived, 60, false), $q->calls[0]);
+        $this->assertSame(['send', $arrived, 60, false], $q->calls[0]);
     }
 
     /** notify() marks the event failed rather than queueing it anywhere. */
@@ -437,7 +437,7 @@ class IntakeTestProcessor extends \OWA\Core\Controller
     public static string $outcome = 'ok';
 
     /** @var string[] event types it was handed */
-    public static array $seen = array();
+    public static array $seen = [];
 
     public function action()
     {
@@ -458,9 +458,9 @@ class IntakeTestProcessor extends \OWA\Core\Controller
 class MemoryIntake implements IntakeQueue
 {
     /** @var IntakeMessage[] */
-    public array $pending = array();
+    public array $pending = [];
 
-    public array $calls = array();
+    public array $calls = [];
 
     public int $receives = 0;
 
@@ -480,7 +480,7 @@ class MemoryIntake implements IntakeQueue
 
     public function send(array $envelope, $delay = 0, $replayed = false)
     {
-        $this->calls[] = array('send', $envelope, $delay, $replayed);
+        $this->calls[] = ['send', $envelope, $delay, $replayed];
 
         return true;
     }
@@ -494,21 +494,21 @@ class MemoryIntake implements IntakeQueue
 
     public function ack(IntakeMessage $message)
     {
-        $this->calls[] = array('ack');
+        $this->calls[] = ['ack'];
 
         return true;
     }
 
     public function release(IntakeMessage $message, $delay)
     {
-        $this->calls[] = array('release', $delay);
+        $this->calls[] = ['release', $delay];
 
         return true;
     }
 
     public function deadLetter(IntakeMessage $message, $reason)
     {
-        $this->calls[] = array('dead', $reason);
+        $this->calls[] = ['dead', $reason];
 
         return true;
     }
@@ -525,14 +525,14 @@ class MemoryIntake implements IntakeQueue
 
     public function stats()
     {
-        return array('messages' => count($this->pending), 'oldest_age' => null);
+        return ['messages' => count($this->pending), 'oldest_age' => null];
     }
 }
 
 /** A registered queue type that does not meet the intake contract. */
 class NotAnIntake
 {
-    public function __construct($map = array())
+    public function __construct($map = [])
     {
     }
 }

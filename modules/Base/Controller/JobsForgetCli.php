@@ -7,15 +7,13 @@ class JobsForgetCli extends JobsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Deletes one job from the one-off job queue.',
-            'arguments'   => array(
+            'arguments'   => [
                 'id=<id>' => 'Required. The job to delete.',
-            ),
-        );
+            ],
+        ];
     }
 
     const MODE = 'forget';
 }
-
-?>

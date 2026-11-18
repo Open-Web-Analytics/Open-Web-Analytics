@@ -27,7 +27,7 @@ final class SettingsStoreConsolidationTest extends TestCase
     private const MODULE = 'zz_consolidation_test';
 
     /** @var array list of array{type,id,name} written by a test */
-    private $written = array();
+    private $written = [];
 
     private function requireDb(): void
     {
@@ -48,7 +48,7 @@ final class SettingsStoreConsolidationTest extends TestCase
                 $row['type'], $row['id'], self::MODULE, $row['name'] );
         }
 
-        $this->written = array();
+        $this->written = [];
 
         \OWA\Core\CoreAPI::settingCacheFlush();
     }
@@ -57,16 +57,16 @@ final class SettingsStoreConsolidationTest extends TestCase
     {
         \OWA\Core\CoreAPI::setScopedSetting( $type, $id, self::MODULE, $name, $value );
 
-        $this->written[] = array( 'type' => $type, 'id' => $id, 'name' => $name );
+        $this->written[] = [ 'type' => $type, 'id' => $id, 'name' => $name ];
     }
 
     private function chain( array $levels ): array
     {
-        $chain = array();
+        $chain = [];
 
         foreach ( $levels as $type => $id ) {
 
-            $chain[] = array( 'type' => $type, 'id' => $id );
+            $chain[] = [ 'type' => $type, 'id' => $id ];
         }
 
         return $chain;
@@ -89,8 +89,8 @@ final class SettingsStoreConsolidationTest extends TestCase
 
         \OWA\Core\CoreAPI::settingCacheFlush();
 
-        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( array(
-            'profile' => 'S1', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) ) );
+        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( [
+            'profile' => 'S1', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ] ) );
 
         $this->assertSame( '7days', $rows['effective'][ self::MODULE . '|persistence' ],
             'the profile row outranks the property and install rows it coexists with' );
@@ -106,14 +106,14 @@ final class SettingsStoreConsolidationTest extends TestCase
 
         \OWA\Core\CoreAPI::settingCacheFlush();
 
-        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( array(
-            'profile' => 'S9', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) ) );
+        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( [
+            'profile' => 'S9', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ] ) );
 
         $this->assertSame( '400days', $rows['effective'][ self::MODULE . '|persistence' ],
             'S9 holds nothing, so its Property answers' );
 
-        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( array(
-            'profile' => 'S9', 'property' => 'P9', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) ) );
+        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( [
+            'profile' => 'S9', 'property' => 'P9', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ] ) );
 
         $this->assertSame( '30days', $rows['effective'][ self::MODULE . '|persistence' ],
             'neither the Profile nor its Property holds one, so install answers' );
@@ -157,8 +157,8 @@ final class SettingsStoreConsolidationTest extends TestCase
 
         \OWA\Core\CoreAPI::settingCacheFlush();
 
-        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( array(
-            'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) ) );
+        $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( [
+            'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ] ) );
 
         $key = self::MODULE . '|a_flag';
 
@@ -182,7 +182,7 @@ final class SettingsStoreConsolidationTest extends TestCase
     {
         $this->requireDb();
 
-        foreach ( array( 'a', 'b', 'c', 'd', 'e' ) as $name ) {
+        foreach ( [ 'a', 'b', 'c', 'd', 'e' ] as $name ) {
 
             $this->write( 'property', 'P1', $name, 'value-' . $name );
         }
@@ -190,7 +190,7 @@ final class SettingsStoreConsolidationTest extends TestCase
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $chain = $this->chain( array( 'profile' => 'S1', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) );
+        $chain = $this->chain( [ 'profile' => 'S1', 'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ] );
 
         $before = (int) $db->num_queries;
 
@@ -199,7 +199,7 @@ final class SettingsStoreConsolidationTest extends TestCase
         $this->assertSame( 1, (int) $db->num_queries - $before,
             'one query builds the whole chain' );
 
-        foreach ( array( 'a', 'b', 'c', 'd', 'e' ) as $name ) {
+        foreach ( [ 'a', 'b', 'c', 'd', 'e' ] as $name ) {
 
             $this->assertSame( 'value-' . $name,
                 $rows['effective'][ self::MODULE . '|' . $name ] );
@@ -277,7 +277,7 @@ final class SettingsStoreConsolidationTest extends TestCase
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         // Declared, as only a declared key may be stored.
-        $c->registerField( self::MODULE, 'autoload_probe', array( 'default' => 'd', 'storable' => true ) );
+        $c->registerField( self::MODULE, 'autoload_probe', [ 'default' => 'd', 'storable' => true ] );
         $c->persistSetting( self::MODULE, 'autoload_probe', 'stored' );
         $c->save();
 

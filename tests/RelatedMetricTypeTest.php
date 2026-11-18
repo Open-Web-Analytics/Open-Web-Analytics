@@ -16,7 +16,7 @@ final class RelatedMetricTypeTest extends TestCase
     private function related(): array
     {
         $rsm    = new \OWA\Module\Base\Classes\ResultSetManager;
-        $byName = array();
+        $byName = [];
 
         foreach ( $rsm->relatedMetrics() as $group => $metrics ) {
 

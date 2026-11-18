@@ -31,7 +31,7 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
         $this->set( 'propertyId', $propertyId );
         $this->set( 'goalEventDefinitions', self::listForProperty( $propertyId ) );
 
-        $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
+        $this->settingsChrome( [ 'propertyId' => $propertyId ], '', $propertyId );
         $this->setSubview( 'base.goalEventDefinitions', [
             'template' => 'goal_event_definitions.php',
             'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'Goal Event Definitions' ),
@@ -51,7 +51,7 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
 
         if ( ! $propertyId ) {
 
-            return array();
+            return [];
         }
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
@@ -85,15 +85,15 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
              * so the definition row itself carries none -- reading one off it
              * showed an empty cell for every definition.
              */
-            $summary = array();
+            $summary = [];
 
             foreach ( $definition->loadConditions() as $condition ) {
 
-                $summary[] = array(
+                $summary[] = [
                     'property' => $condition->get( 'condition_property' ),
                     'operator' => $condition->get( 'condition_operator' ),
                     'value'    => $condition->get( 'condition_value' ),
-                );
+                ];
             }
 
             $rows[ $i ]['conditions']       = $summary;

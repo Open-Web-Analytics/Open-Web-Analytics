@@ -70,14 +70,14 @@ class Metric extends \OWA\Core\Base {
      *
      * @var MetricCondition
      */
-    protected $condition = array();
+    protected $condition = [];
 
     /**
      * Current Time
      *
      * @var array<string, int|string> as Lib::time_now() answers; nothing here sets it
      */
-    public $time_now = array();
+    public $time_now = [];
     
     /**
      * Data
@@ -91,14 +91,14 @@ class Metric extends \OWA\Core\Base {
      *
      * @var array<string, mixed> name => value, any type
      */
-    public $params = array();
+    public $params = [];
         
     /**
      * The lables for calculated measures
      *
      * @var array<string, string> name => label
      */
-    public $labels = array();
+    public $labels = [];
     
     /**
      * Data Access Object
@@ -124,7 +124,7 @@ class Metric extends \OWA\Core\Base {
      *
      * @var list<string>
      */
-    public $select = array();
+    public $select = [];
     
     /**
      * The counted column, qualified by the entity's alias. See setColumn().
@@ -147,7 +147,7 @@ class Metric extends \OWA\Core\Base {
     public $name;
     
     /** @var list<string> */
-    public $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
+    public $supported_data_types = ['percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds'];
 
     /**
      * The aggregation (count, distinct_count, sum, boolean_true_count,
@@ -167,7 +167,7 @@ class Metric extends \OWA\Core\Base {
     /**
      * @param array<string, mixed> $params the caller's params, any type
      */
-    public function __construct($params = array()) {
+    public function __construct($params = []) {
         
         if (!empty($params)) {
             $this->params = $params;
@@ -430,7 +430,7 @@ class Metric extends \OWA\Core\Base {
                         (string) $this->getName(), (string) $this->type ) );
             }
             
-            return array( $statement, $this->getName() );
+            return [ $statement, $this->getName() ];
         }
         
     }
@@ -543,7 +543,7 @@ class Metric extends \OWA\Core\Base {
      *
      * @var list<string> metric names
      */
-    public $child_metrics = array();
+    public $child_metrics = [];
 
     /**
      * @param  string $name a metric name
@@ -622,11 +622,11 @@ class Metric extends \OWA\Core\Base {
 
         $operator = isset( $this->condition['operator'] ) ? (string) $this->condition['operator'] : '=';
 
-        return array(
+        return [
             $this->qualify( $this->condition['column'] ),
             $this->condition['value'],
             $operator === '<>' ? '!=' : $operator,
-        );
+        ];
     }
 
     /** @return bool */
@@ -649,7 +649,7 @@ class Metric extends \OWA\Core\Base {
      */
     protected function renderCondition() {
 
-        $allowed = array( '=', '!=', '<>', '>', '<', '>=', '<=' );
+        $allowed = [ '=', '!=', '<>', '>', '<', '>=', '<=' ];
 
         $asked = isset( $this->condition['operator'] )
             ? (string) $this->condition['operator'] : '=';
@@ -906,5 +906,3 @@ class Metric extends \OWA\Core\Base {
         }
     }
 }
-
-?>

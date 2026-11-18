@@ -67,5 +67,3 @@ class NewVsReturningStep extends Step {
             $context->literal( self::IS_NEW ) );
     }
 }
-
-?>

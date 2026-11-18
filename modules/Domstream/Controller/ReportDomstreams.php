@@ -69,10 +69,10 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         $this->set( 'domstreams', $this->asResultSet( $recordings, $total ) );
         $this->set( 'domstreams_total', $total );
-        $this->set( 'domstreams_pagination', (object) array(
+        $this->set( 'domstreams_pagination', (object) [
             'page'        => $page,
             'total_pages' => (int) ceil( $total / self::PER_PAGE ),
-        ) );
+        ] );
 
         $this->setSubview( 'domstream.reportDomstreams', [
             'template' => 'report_domstreams.php',
@@ -123,7 +123,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
          * every Property's recordings.
          */
         $sites  = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( (string) $this->getParam( 'propertyId' ) );
-        $where  = array( $sites ? 'site_id IN (' . implode( ',', array_fill( 0, count( $sites ), '?' ) ) . ')' : '1 = 0' );
+        $where  = [ $sites ? 'site_id IN (' . implode( ',', array_fill( 0, count( $sites ), '?' ) ) . ')' : '1 = 0' ];
         $params = $sites;
 
         $bounds = $this->segment()->bounds();
@@ -158,7 +158,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             }
         }
 
-        return array( 'sql' => implode( ' AND ', $where ), 'params' => $params );
+        return [ 'sql' => implode( ' AND ', $where ), 'params' => $params ];
     }
 
     /**
@@ -193,7 +193,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $scope['params'] );
 
-        return $rows === null ? array() : (array) $rows;
+        return $rows === null ? [] : (array) $rows;
     }
 
     /**
@@ -225,7 +225,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
      */
     private function asResultSet( array $recordings, $total ) {
 
-        $rows = array();
+        $rows = [];
 
         foreach ( $recordings as $r ) {
 
@@ -233,7 +233,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             $started = intdiv( (int) $r['started'], 1000000 );
             $length  = intdiv( (int) $r['length_ms'], 1000 );
 
-            $rows[] = array(
+            $rows[] = [
                 'recorded'   => self::cell( 'dimension', 'recorded', 'Recorded', $started,
                                     date( 'M j, Y g:i a', $started ), 'number' ),
                 'page'       => self::cell( 'dimension', 'page', 'Page',
@@ -251,15 +251,15 @@ class ReportDomstreams extends \OWA\Core\ReportController {
                  * overlayLink formatter turns them into the link.
                  */
                 'play'       => self::cell( 'dimension', 'play', '', $this->playerPayload( $r ), 'Play' ),
-            );
+            ];
         }
 
-        return array(
+        return [
             'resultsRows'     => $rows,
             'resultsReturned' => count( $rows ),
             'resultsTotal'    => $total,
             'guid'            => md5( json_encode( $rows ) ),
-        );
+        ];
     }
 
     /**
@@ -272,13 +272,13 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         $template = new \OWA\Core\Template();
 
-        $api_url = $template->makeOverlayApiLink( array(
+        $api_url = $template->makeOverlayApiLink( [
             'recording_id' => (string) $r['recording_id'],
             'siteId'       => (string) $r['site_id'],
             'module'       => 'domstream',
             'version'      => 'v1',
             'do'           => 'domstreams',
-        ), 'recording_id' );
+        ], 'recording_id' );
 
         $url = (string) $r['page_location'];
 
@@ -294,21 +294,21 @@ class ReportDomstreams extends \OWA\Core\ReportController {
          * (OWA.dataGrid's overlayLink).
          */
         if ( \OWA\Module\Base\Classes\ProfileDomains::originOf( $url,
-                \OWA\Module\Base\Classes\ProfileDomains::of( array( (string) $r['site_id'] ) ) ) === '' ) {
+                \OWA\Module\Base\Classes\ProfileDomains::of( [ (string) $r['site_id'] ] ) ) === '' ) {
 
             $url = '';
         }
 
-        return array(
-            'overlay' => trim( base64_encode( $template->makeParamString( array(
+        return [
+            'overlay' => trim( base64_encode( $template->makeParamString( [
                 'action'  => 'loadPlayer',
                 'api_url' => $api_url,
-            ), true, 'json' ) ), "\0" ),
+            ], true, 'json' ) ), "\0" ),
             'url'    => $url,
             'width'  => (int) $r['viewport_w'],
             'height' => (int) $r['viewport_h'],
             'label'  => \OWA\Core\CoreAPI::t( 'Play' ),
-        );
+        ];
     }
 
     /**
@@ -333,15 +333,13 @@ class ReportDomstreams extends \OWA\Core\ReportController {
      */
     private static function cell( $type, $name, $label, $value, $formatted = null, $dataType = 'string' ) {
 
-        return array(
+        return [
             'result_type'     => $type,
             'name'            => $name,
             'label'           => $label,
             'value'           => $value,
             'formatted_value' => $formatted === null ? (string) $value : $formatted,
             'data_type'       => $dataType,
-        );
+        ];
     }
 }
-
-?>

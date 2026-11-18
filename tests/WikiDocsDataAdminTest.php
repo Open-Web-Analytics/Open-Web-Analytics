@@ -96,7 +96,7 @@ final class WikiDocsDataAdminTest extends TestCase
         $source = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Auth.php' );
 
         $this->assertStringContainsString( 'AppPasswords::READ_METHODS', $source );
-        $this->assertStringNotContainsString( "array( 'GET', 'HEAD' )", $source );
+        $this->assertStringNotContainsString( "[ 'GET', 'HEAD' ]", $source );
     }
 
     public function testTheCustomDimensionLimitsAreTheEnforcedOnes(): void

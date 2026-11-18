@@ -42,7 +42,7 @@ final class EmbeddedSettingRemovedTest extends TestCase
         $key = $this->currentPasskey();
 
         $controller = new \OWA\Module\Base\Controller\UsersPasswordEntry(
-            array( 'k' => $key, 'is_embedded' => '1' ) );
+            [ 'k' => $key, 'is_embedded' => '1' ] );
 
         $controller->action();
 
@@ -68,8 +68,8 @@ final class EmbeddedSettingRemovedTest extends TestCase
 
         preg_match_all( '/<input type="hidden" name="([^"]+)" value="([^"]*)"/', $html, $m );
 
-        $this->assertSame( array( 'k', 'action' ), $m[1] );
-        $this->assertSame( array( $key, 'base.usersChangePassword' ), $m[2] );
+        $this->assertSame( [ 'k', 'action' ], $m[1] );
+        $this->assertSame( [ $key, 'base.usersChangePassword' ], $m[2] );
     }
 
     /**
@@ -78,12 +78,12 @@ final class EmbeddedSettingRemovedTest extends TestCase
      */
     public function testChangingAPasswordSetsNoEmbeddedFlag(): void
     {
-        $controller = new \OWA\Module\Base\Controller\UsersChangePassword( array(
+        $controller = new \OWA\Module\Base\Controller\UsersChangePassword( [
             'k'           => self::PASSKEY_HEX,
             'password'    => 'abcdefgh1',
             'password2'   => 'abcdefgh1',
             'is_embedded' => '1',
-        ) );
+        ] );
 
         $controller->action();
 

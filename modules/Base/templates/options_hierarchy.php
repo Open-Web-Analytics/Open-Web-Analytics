@@ -34,8 +34,8 @@
                 <?php
                     $owa_rail   = $view->navRail( $view->report_nav, (string) $view->nav_property_id,
                         (array) $view->params, (string) $view->nav_access_site, true );
-                    $owa_column = array( 'title' => \OWA\Core\CoreAPI::t( 'Settings' ),
-                        'groups' => $view->settingsColumn( $view->hierarchy_nav, (array) $view->params ) );
+                    $owa_column = [ 'title' => \OWA\Core\CoreAPI::t( 'Settings' ),
+                        'groups' => $view->settingsColumn( $view->hierarchy_nav, (array) $view->params ) ];
                     include( 'nav_shell.php' );
                 ?>
             </div>

@@ -22,7 +22,7 @@ namespace OWA\Module\Base\Classes\Migration;
 class CustomReportRewriter {
 
     /** @var string[] */
-    private $changes = array();
+    private $changes = [];
 
     /** @var array<string, list<array{id: string, label: string}>>|null report ids by dimension, read once */
     private $more_targets = null;
@@ -36,7 +36,7 @@ class CustomReportRewriter {
      */
     public function rewrite( array $definition ) {
 
-        $this->changes = array();
+        $this->changes = [];
 
         if ( isset( $definition['metrics'] ) ) {
 
@@ -48,9 +48,9 @@ class CustomReportRewriter {
             }
         }
 
-        $widgets = array();
+        $widgets = [];
 
-        foreach ( (array) ( $definition['widgets'] ?? array() ) as $i => $widget ) {
+        foreach ( (array) ( $definition['widgets'] ?? [] ) as $i => $widget ) {
 
             $where  = sprintf( 'widget %d', $i + 1 );
             $widget = is_array( $widget ) ? $this->widget( $widget, $where ) : $widget;
@@ -63,7 +63,7 @@ class CustomReportRewriter {
 
         $definition['widgets'] = $widgets;
 
-        return array( 'definition' => $definition, 'changes' => $this->changes );
+        return [ 'definition' => $definition, 'changes' => $this->changes ];
     }
 
     /**
@@ -73,7 +73,7 @@ class CustomReportRewriter {
      */
     private function widget( array $widget, $where ) {
 
-        $query = (array) ( $widget['query'] ?? array() );
+        $query = (array) ( $widget['query'] ?? [] );
 
         if ( isset( $query['metrics'] ) ) {
 
@@ -202,7 +202,7 @@ class CustomReportRewriter {
             foreach ( $dimensions as $dimension ) {
 
                 $fits = $fits || in_array( $widget['more']['reportId'],
-                    array_column( $this->more_targets[ $dimension ] ?? array(), 'id' ), true );
+                    array_column( $this->more_targets[ $dimension ] ?? [], 'id' ), true );
             }
 
             if ( ! $fits ) {
@@ -224,7 +224,7 @@ class CustomReportRewriter {
             $column = (string) $widget['link']['linkColumn'];
 
             if ( ! in_array( $widget['link']['template']['reportId'],
-                    array_column( $this->link_targets[ $column ] ?? array(), 'id' ), true ) ) {
+                    array_column( $this->link_targets[ $column ] ?? [], 'id' ), true ) ) {
 
                 $this->changes[] = sprintf( '%s: its row link to report "%s" is removed; that report is not'
                     . ' read by %s', $where, $widget['link']['template']['reportId'], $column );
@@ -246,7 +246,7 @@ class CustomReportRewriter {
      */
     private function names( $value, $kind, $where ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( self::asNames( $value ) as $name ) {
 
@@ -319,7 +319,7 @@ class CustomReportRewriter {
      */
     private function constraints( $constraints, $where ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( explode( ',', $constraints ) as $clause ) {
 
@@ -343,7 +343,7 @@ class CustomReportRewriter {
 
                 $translated = V1Names::VALUES[ $name ][ strtolower( trim( $value ) ) ] ?? null;
 
-                if ( $translated !== null && in_array( $operator, array( '==', '!=' ), true ) ) {
+                if ( $translated !== null && in_array( $operator, [ '==', '!=' ], true ) ) {
 
                     $out[] = 'newVsReturning' . $operator . $translated;
                     $this->changes[] = sprintf( '%s constraint: %s -> newVsReturning%s%s',
@@ -353,7 +353,7 @@ class CustomReportRewriter {
                 }
             }
 
-            if ( $name === 'medium' && in_array( $operator, array( '==', '!=' ), true ) ) {
+            if ( $name === 'medium' && in_array( $operator, [ '==', '!=' ], true ) ) {
 
                 $moved = V1Names::MEDIUM_VALUES[ strtolower( trim( $value ) ) ] ?? null;
 
@@ -404,7 +404,7 @@ class CustomReportRewriter {
      */
     private function link( array $link, $where ) {
 
-        foreach ( array( 'linkColumn', 'valueColumns' ) as $key ) {
+        foreach ( [ 'linkColumn', 'valueColumns' ] as $key ) {
 
             if ( ! isset( $link[ $key ] ) ) {
 
@@ -448,5 +448,3 @@ class CustomReportRewriter {
         return array_values( array_filter( array_map( 'trim', $names ), static fn ( $name ) => $name !== '' ) );
     }
 }
-
-?>

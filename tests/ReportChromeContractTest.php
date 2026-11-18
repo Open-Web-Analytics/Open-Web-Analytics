@@ -75,16 +75,16 @@ final class ReportChromeContractTest extends TestCase
      */
     public static function reportProvider(): array
     {
-        return array(
+        return [
             // Resolves an id: which goal's funnel to draw.
-            'VisualizationFunnel' => array( '\OWA\Module\Base\Controller\VisualizationFunnel',
-                array( 'goalNumber' => 1 ) ),
+            'VisualizationFunnel' => [ '\OWA\Module\Base\Controller\VisualizationFunnel',
+                [ 'goalNumber' => 1 ] ],
 
             // A module's report. Paged, and reached without a page path -- its
             // "latest recordings" mode, which is the one that needs no fixture.
-            'ReportDomstreams' => array( '\OWA\Module\Domstream\Controller\ReportDomstreams',
-                array( 'page' => 1 ) ),
-        );
+            'ReportDomstreams' => [ '\OWA\Module\Domstream\Controller\ReportDomstreams',
+                [ 'page' => 1 ] ],
+        ];
     }
 
     private function assertHasChrome( array $data, string $context ): void
@@ -107,7 +107,7 @@ final class ReportChromeContractTest extends TestCase
         // The picker and the filter read these from params, not from the top
         // level -- and the report's own links carry them onward, which is how
         // the selection survives a drill-down.
-        foreach ( array( 'propertyId', 'period', 'startDate', 'endDate' ) as $key ) {
+        foreach ( [ 'propertyId', 'period', 'startDate', 'endDate' ] as $key ) {
             $this->assertArrayHasKey( $key, $data['params'],
                 "$context: params.$key is missing, so the selection cannot travel" );
         }
@@ -155,7 +155,7 @@ final class ReportChromeContractTest extends TestCase
          * report's heading is worse than an error. So a chrome test has to
          * arrive with the report's parameters, or it is testing the error view.
          */
-        $params = array( 'reportId' => $id );
+        $params = [ 'reportId' => $id ];
 
         foreach ( self::declaredParams( $id ) as $name ) {
 
@@ -174,27 +174,27 @@ final class ReportChromeContractTest extends TestCase
 
         if ( ! is_readable( $file ) ) {
 
-            return array();
+            return [];
         }
 
         $def = json_decode( (string) file_get_contents( $file ), true );
 
-        return array_keys( (array) ( $def['params'] ?? array() ) );
+        return array_keys( (array) ( $def['params'] ?? [] ) );
     }
 
     /** @return array<string, array{0:string}> */
     public static function registryRouteProvider(): array
     {
-        return array(
-            'pages'           => array( 'pages' ),
-            'entry-pages'     => array( 'entry-pages' ),
-            'browsers'        => array( 'browsers' ),
-            'referring-sites' => array( 'referring-sites' ),
+        return [
+            'pages'           => [ 'pages' ],
+            'entry-pages'     => [ 'entry-pages' ],
+            'browsers'        => [ 'browsers' ],
+            'referring-sites' => [ 'referring-sites' ],
 
             // A parameterised detail report, and one carrying a panel widget:
-            'campaigns'       => array( 'campaigns' ),
-            'dom-clicks'      => array( 'dom-clicks' ),
-        );
+            'campaigns'       => [ 'campaigns' ],
+            'dom-clicks'      => [ 'dom-clicks' ],
+        ];
     }
 
     /**
@@ -210,14 +210,14 @@ final class ReportChromeContractTest extends TestCase
         // domstreams, not the funnel: the funnel is a VISUALIZATION now, a row
         // reached as custom-<id> rather than a registered report id, so it has
         // no registry route for a direct route to be compared against.
-        $params = array();
+        $params = [];
 
         $restore = DomstreamFixtures::registerReport();
 
         try {
             $direct = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams( $params ) )->doAction();
             $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => 'domstreams' ) + $params ) )->doAction();
+                [ 'reportId' => 'domstreams' ] + $params ) )->doAction();
         } finally {
             $restore();
         }
@@ -226,13 +226,13 @@ final class ReportChromeContractTest extends TestCase
         $viaIdKeys  = array_keys( $viaId['params'] );
 
         // Everything the direct route hands the view must survive the extra hop.
-        $this->assertSame( array(), array_diff( $directKeys, $viaIdKeys ),
+        $this->assertSame( [], array_diff( $directKeys, $viaIdKeys ),
             'the delegated route dropped params the direct route provides' );
 
         // ...and the only thing it adds is the id that got it there. Asserted
         // exactly rather than ignored, so a dispatcher that started injecting
         // its own state into the view would be visible here.
-        $this->assertSame( array( 'reportId' ), array_values( array_diff( $viaIdKeys, $directKeys ) ),
+        $this->assertSame( [ 'reportId' ], array_values( array_diff( $viaIdKeys, $directKeys ) ),
             'the delegated route added params beyond the reportId that addressed it' );
 
         $this->assertSame( count( $direct['sites'] ), count( $viaId['sites'] ),
@@ -256,12 +256,12 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testReportsReachedByIdGetDistinctContainerIds(): void
     {
-        $ids = array();
+        $ids = [];
 
-        foreach ( array( 'pages', 'entry-pages', 'browsers', 'referring-sites' ) as $id ) {
+        foreach ( [ 'pages', 'entry-pages', 'browsers', 'referring-sites' ] as $id ) {
 
             $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => $id, 'do' => 'base.report' ) ) )->doAction();
+                [ 'reportId' => $id, 'do' => 'base.report' ] ) )->doAction();
 
             $ids[ $id ] = $data['dom_id'];
         }
@@ -289,7 +289,7 @@ final class ReportChromeContractTest extends TestCase
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
         $data = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams(
-            array( 'do' => 'domstream.reportDomstreams', 'page' => 1 ) ) )->doAction();
+            [ 'do' => 'domstream.reportDomstreams', 'page' => 1 ] ) )->doAction();
 
         $this->assertSame( 'domstream-reportDomstreams', $data['dom_id'] );
     }
@@ -305,7 +305,7 @@ final class ReportChromeContractTest extends TestCase
     public function testTheContainerIdHoldsOnlySafeCharacters(): void
     {
         $data = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams(
-            array( 'do' => 'domstream.reportDomstreams', 'page' => 1, 'reportId' => "x'];alert(1);//\"<b>" ) ) )->doAction();
+            [ 'do' => 'domstream.reportDomstreams', 'page' => 1, 'reportId' => "x'];alert(1);//\"<b>" ] ) )->doAction();
 
         $this->assertMatchesRegularExpression( '/^[A-Za-z0-9-]+$/', (string) $data['dom_id'] );
 
@@ -328,7 +328,7 @@ final class ReportChromeContractTest extends TestCase
     {
         // Reached by id: pages is configuration now and has no other route.
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages' ) ) )->doAction();
+            [ 'reportId' => 'pages' ] ) )->doAction();
 
         /*
          * Named keys rather than a count.
@@ -343,7 +343,7 @@ final class ReportChromeContractTest extends TestCase
 
         $addedByPre = array_diff( array_keys( $data ), array_keys( $declared ) );
 
-        foreach ( array( 'sites', 'currentSiteId', 'params', 'is_default_period', 'dom_id' ) as $key ) {
+        foreach ( [ 'sites', 'currentSiteId', 'params', 'is_default_period', 'dom_id' ] as $key ) {
 
             $this->assertContains( $key, $addedByPre,
                 "doAction() did not add '$key' over action(), so pre() cannot have run" );

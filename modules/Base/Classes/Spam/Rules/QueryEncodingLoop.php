@@ -29,8 +29,8 @@ class QueryEncodingLoop extends \OWA\Module\Base\Classes\Spam\Rule {
 
     public function test( $event, array $headers ) {
 
-        foreach ( array( \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event ),
-                         \OWA\Module\Base\Classes\Spam\Received::referrer( $event ) ) as $url ) {
+        foreach ( [ \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event ),
+                         \OWA\Module\Base\Classes\Spam\Received::referrer( $event ) ] as $url ) {
 
             if ( preg_match( self::PATTERN, $url ) ) {
 
@@ -41,5 +41,3 @@ class QueryEncodingLoop extends \OWA\Module\Base\Classes\Spam\Rule {
         return false;
     }
 }
-
-?>

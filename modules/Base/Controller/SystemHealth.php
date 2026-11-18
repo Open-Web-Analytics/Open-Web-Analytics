@@ -34,5 +34,3 @@ class SystemHealth extends \OWA\Core\AdminController {
             'template' => 'system_health.php', 'vars' => [ 'sections' ] ] );
     }
 }
-
-?>

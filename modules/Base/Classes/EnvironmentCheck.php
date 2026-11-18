@@ -45,12 +45,12 @@ class EnvironmentCheck {
      * database driver the installer takes a full page of connection details and
      * then fails on connect, which reads as "my credentials are wrong".
      */
-    const REQUIRED_EXTENSIONS = array(
+    const REQUIRED_EXTENSIONS = [
         'json'     => 'Encoding stored report definitions and API responses.',
         'mbstring' => 'Handling non-ASCII page titles, URLs and search terms.',
         'pcre'     => 'Matching URLs, goal conditions and constraint values.',
         'zlib'     => 'Compressing and reading session recordings.',
-    );
+    ];
 
     /**
      * A path as a check shows it: in full for cmd=instance-info and System
@@ -84,7 +84,7 @@ class EnvironmentCheck {
      */
     public static function all( $config_file, $relative = false ) {
 
-        $checks = array();
+        $checks = [];
 
         $checks[] = self::check(
             \OWA\Core\CoreAPI::t( 'PHP version' ),
@@ -127,9 +127,9 @@ class EnvironmentCheck {
             sprintf( \OWA\Core\CoreAPI::t( 'Create %s, or set OWA_DATA_DIR in owa-config.php to a directory that exists.' ), self::shown( $data, $relative ) ),
             'The data directory exists: `owa-data/` in the OWA directory, or `OWA_DATA_DIR`.' );
 
-        foreach ( array(
-            \OWA\Core\CoreAPI::t( 'Log directory' )   => array( $data . 'logs/', '`logs/` in the data directory is writable.' ),
-        ) as $label => list( $path, $requires ) ) {
+        foreach ( [
+            \OWA\Core\CoreAPI::t( 'Log directory' )   => [ $data . 'logs/', '`logs/` in the data directory is writable.' ],
+        ] as $label => list( $path, $requires ) ) {
 
             $checks[] = self::check(
                 $label,
@@ -219,7 +219,7 @@ class EnvironmentCheck {
      */
     public static function databaseDriver( $pdo_mysql, $mysqli, $mysqlnd, $db_type = 'mysql' ) {
 
-        $found = array();
+        $found = [];
 
         if ( $pdo_mysql ) {
             $found[] = 'pdo_mysql';
@@ -279,12 +279,12 @@ class EnvironmentCheck {
      */
     public static function check( $name, $value, $passed, $msg, $requires = '' ) {
 
-        return array(
+        return [
             'name'     => $name,
             'value'    => $value,
             'passed'   => (bool) $passed,
             'msg'      => $passed ? '' : $msg,
             'requires' => (string) $requires,
-        );
+        ];
     }
 }

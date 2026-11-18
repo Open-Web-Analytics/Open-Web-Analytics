@@ -31,5 +31,3 @@ class UaParserSpider extends \OWA\Module\Base\Classes\Spam\Rule {
         return strtolower( $this->client( $headers )->deviceFamily() ) === 'spider';
     }
 }
-
-?>

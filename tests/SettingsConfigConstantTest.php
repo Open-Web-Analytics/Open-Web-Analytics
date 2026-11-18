@@ -36,7 +36,7 @@ final class SettingsConfigConstantTest extends TestCase
     /** @return array<string,string> */
     private function probe(): array
     {
-        $descriptors = array( 1 => array( 'pipe', 'w' ), 2 => array( 'pipe', 'w' ) );
+        $descriptors = [ 1 => [ 'pipe', 'w' ], 2 => [ 'pipe', 'w' ] ];
 
         $proc = proc_open(
             escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( self::PROBE ),
@@ -50,7 +50,7 @@ final class SettingsConfigConstantTest extends TestCase
         fclose( $pipes[2] );
         proc_close( $proc );
 
-        $out = array();
+        $out = [];
 
         foreach ( explode( "\n", $stdout ) as $line ) {
 

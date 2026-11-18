@@ -92,7 +92,3 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
 
 
 }
-
-
-
-?>

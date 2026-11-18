@@ -20,7 +20,7 @@ return static function () {
 
     $pattern = substr( Dimensions::KEY_PATTERN, 1, -1 );
 
-    $rows = array(
+    $rows = [
         'A key'
             => sprintf( 'matches `%s`: a letter, then letters, digits and underscores, up to %d characters',
                 $pattern, (int) $m[1] + 1 ),
@@ -35,7 +35,7 @@ return static function () {
         'Custom properties kept on one event, per scope'
             => sprintf( '%d; ingest drops any beyond that and still records the event',
                 \OWA\Module\Base\Handler\EventRawHandlers::MAX_CUSTOM_PROPERTIES ),
-    );
+    ];
 
     $out = "| Limit | Value |\n|---|---|\n";
 

@@ -33,7 +33,7 @@ namespace OWA\Core;
 
 
 class ReportController extends \OWA\Core\AdminController {
-	
+    
 
     /**
      * Whether this screen draws data from the reporting cube.
@@ -60,7 +60,7 @@ class ReportController extends \OWA\Core\AdminController {
      * @var bool
      */
     protected $filters_by_site = false;
-	
+    
     /**
      * Constructor
      *
@@ -108,14 +108,14 @@ class ReportController extends \OWA\Core\AdminController {
         }
 
         $compare = $period->getCompareFromMap( $params );
-        $labels  = array();
+        $labels  = [];
 
         foreach ( \OWA\Module\Base\Classes\TimePeriod::COMPARE_PERIODS as $key => $label ) {
 
-            $labels[] = array( 'key' => $key, 'label' => $label );
+            $labels[] = [ 'key' => $key, 'label' => $label ];
         }
 
-        return array(
+        return [
             'today'            => $today,
             'presets'          => $presets,
             'compares'         => $labels,
@@ -125,7 +125,7 @@ class ReportController extends \OWA\Core\AdminController {
             'compare'          => $compare ? $compare['compare'] : '',
             'compareStartDate' => $compare ? $compare['startDate'] : '',
             'compareEndDate'   => $compare ? $compare['endDate'] : '',
-        );
+        ];
     }
 
     /**
@@ -171,21 +171,21 @@ class ReportController extends \OWA\Core\AdminController {
 
         $range = new \OWA\Core\Validation\DateRange();
 
-        $range->setValues( array(
+        $range->setValues( [
             'period'    => $this->getParam('period'),
             'startDate' => $this->getParam('startDate'),
             'endDate'   => $this->getParam('endDate'),
-        ) );
+        ] );
 
         $this->setValidation( 'dateRange', $range );
 
         $compare = new \OWA\Core\Validation\CompareRange();
 
-        $compare->setValues( array(
+        $compare->setValues( [
             'compare'          => $this->getParam('compare'),
             'compareStartDate' => $this->getParam('compareStartDate'),
             'compareEndDate'   => $this->getParam('compareEndDate'),
-        ) );
+        ] );
 
         $this->setValidation( 'compareRange', $compare );
 
@@ -199,13 +199,13 @@ class ReportController extends \OWA\Core\AdminController {
                 'period',
                 $period,
                 'inArray',
-                array(
+                [
                     'possible_values' => $timePeriod->getValidPeriods(),
                     'stopOnError'     => true,
                     'errorMsg'        => sprintf(
                         \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ),
                         htmlspecialchars( (string) $period, ENT_QUOTES ) ),
-                )
+                ]
             );
         }
     }
@@ -328,12 +328,12 @@ class ReportController extends \OWA\Core\AdminController {
 
             $property_id = $propertyId;
 
-            $this->set( 'report_as_of', array(
+            $this->set( 'report_as_of', [
                 'timezone'    => (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' ) ?: date_default_timezone_get() ),
                 'warning'     => \OWA\Module\Base\Classes\Cube\Status::asOfWarning( $property_id ),
                 'property_id' => $property_id,
                 'can_view'    => \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_modules' ),
-            ) );
+            ] );
         }
 
         /*
@@ -490,7 +490,7 @@ class ReportController extends \OWA\Core\AdminController {
             return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
         }
 
-        $allowed = array();
+        $allowed = [];
 
         foreach ( (array) $sites as $site ) {
 
@@ -551,25 +551,25 @@ class ReportController extends \OWA\Core\AdminController {
             $propertyId
         );
 
-        $links = array();
+        $links = [];
 
         foreach ( $favorites as $i => $report ) {
 
-            $links[] = array(
-                'ref' => array(
+            $links[] = [
+                'ref' => [
                     'do'       => 'base.report',
                     'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $report['id'],
-                ),
+                ],
                 'anchortext' => $report['name'],
                 'order'      => $i,
                 'priviledge' => 'view_reports',
                 'icon_class' => 'fas fa-star',
                 'heading'    => \OWA\Core\CoreAPI::t( 'Favorites' ),
-            );
+            ];
         }
 
-        $nav['Custom Reports'] = array(
-            'ref'        => array( 'do' => 'base.customReports' ),
+        $nav['Custom Reports'] = [
+            'ref'        => [ 'do' => 'base.customReports' ],
             'anchortext' => \OWA\Core\CoreAPI::t( 'Custom Reports' ),
             'order'      => 999,
             'priviledge' => 'view_site_list',
@@ -577,14 +577,14 @@ class ReportController extends \OWA\Core\AdminController {
             // The rail's column lists the roster first, under this name.
             'overview_label' => \OWA\Core\CoreAPI::t( 'All reports' ),
             'keeps_column'   => true,
-            'current_for'    => array(
-                array( 'do' => 'base.report', 'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . '*' ),
-                array( 'do' => 'base.customReportEdit' ),
-                array( 'do' => 'base.visualizationEdit' ),
-                array( 'do' => 'base.visualizations' ),
-            ),
+            'current_for'    => [
+                [ 'do' => 'base.report', 'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . '*' ],
+                [ 'do' => 'base.customReportEdit' ],
+                [ 'do' => 'base.visualizationEdit' ],
+                [ 'do' => 'base.visualizations' ],
+            ],
             'subgroup'   => $links,
-        );
+        ];
 
         return $nav;
     }
@@ -630,5 +630,3 @@ class ReportController extends \OWA\Core\AdminController {
         $this->set('hideSitesFilter', true);
     }
 }
-
-?>

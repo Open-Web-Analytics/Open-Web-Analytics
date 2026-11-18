@@ -59,10 +59,10 @@ final class SettingsDeclarationContractTest extends TestCase
         $declared = $this->baseDeclaration();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? [] ) )
             as $key ) {
 
-            $args = (array) ( $declared[ $key ] ?? array() );
+            $args = (array) ( $declared[ $key ] ?? [] );
 
             $this->assertArrayNotHasKey( 'storable', $args, sprintf(
                 'base.%s is config-file-only and must never be storable', $key ) );
@@ -86,7 +86,7 @@ final class SettingsDeclarationContractTest extends TestCase
         $mechanical = \OWA\Core\Module::mechanicalSettings();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base'] ?? [] ) )
             as $key ) {
 
             if ( isset( $mechanical[ $key ] ) ) {
@@ -97,7 +97,7 @@ final class SettingsDeclarationContractTest extends TestCase
                 continue;
             }
 
-            $args = (array) ( $declared[ $key ] ?? array() );
+            $args = (array) ( $declared[ $key ] ?? [] );
 
             /*
              * The property that matters is that the PRUNE CANNOT DROP IT, and
@@ -136,9 +136,9 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testEverySettingTheCodePersistsIsDeclaredStorable(): void
     {
-        $roots = array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules', \OWA\Core\Env::root() . '/tests' );
+        $roots = [ \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules', \OWA\Core\Env::root() . '/tests' ];
 
-        $found = array();
+        $found = [];
 
         foreach ( $roots as $root ) {
 
@@ -180,7 +180,7 @@ final class SettingsDeclarationContractTest extends TestCase
 
                 // Only modules that have declared are held to this; an
                 // un-adopted module is still resolved wholesale.
-                $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() );
+                $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? [] );
 
                 $this->assertArrayNotHasKey( $module, $declared, sprintf(
                     '%s.%s is persisted by code but %s does not declare it, so the '
@@ -213,9 +213,9 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testEverySettingTheCodeReadsIsDeclared(): void
     {
-        $roots = array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules' );
+        $roots = [ \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules' ];
 
-        $found = array();
+        $found = [];
 
         foreach ( $roots as $root ) {
 
@@ -241,9 +241,9 @@ final class SettingsDeclarationContractTest extends TestCase
         $this->assertNotEmpty( $found, 'the scan found no getSetting() calls at all' );
 
         $c        = $this->settings();
-        $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() );
+        $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? [] );
 
-        $undeclared = array();
+        $undeclared = [];
 
         foreach ( array_keys( $found ) as $id ) {
 
@@ -259,7 +259,7 @@ final class SettingsDeclarationContractTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $undeclared, sprintf(
+        $this->assertSame( [], $undeclared, sprintf(
             "read but not declared: %s\n"
           . 'Each is a setting whose stored value would be written and never read, '
           . 'because declaring anything takes the module out of the wholesale clause.',
@@ -271,7 +271,7 @@ final class SettingsDeclarationContractTest extends TestCase
     {
         $problems = $this->settings()->fieldSetProblems();
 
-        $this->assertSame( array(), $problems, "\n  " . implode( "\n  ", $problems ) );
+        $this->assertSame( [], $problems, "\n  " . implode( "\n  ", $problems ) );
     }
 
     /**
@@ -292,16 +292,16 @@ final class SettingsDeclarationContractTest extends TestCase
             (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Controller/SitesEditTagSettings.php' ),
             'the Profile\'s Tracking Tag screen saves the tracking_tag group' );
 
-        return array(
-            'profile' => array(
+        return [
+            'profile' => [
                 'Observation settings' => $call( \OWA\Module\Base\Controller\SitesEditSettings::class, 'scopedFieldSets' ),
                 'Tracking tag'         => \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ),
-            ),
-            'property' => array(
+            ],
+            'property' => [
                 'Details'        => $call( \OWA\Module\Base\Controller\PropertyEdit::class, 'scopedFieldSets' ),
-                'Data retention' => array( $call( \OWA\Module\Base\Controller\PropertyRetentionUpdate::class, 'fieldSet' ) ),
-            ),
-        );
+                'Data retention' => [ $call( \OWA\Module\Base\Controller\PropertyRetentionUpdate::class, 'fieldSet' ) ],
+            ],
+        ];
     }
 
     /**
@@ -315,23 +315,23 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testEveryLevelASettingDeclaresIsOfferedByAScreen(): void
     {
-        $offered = array();
+        $offered = [];
 
         foreach ( $this->screensBelowTheInstall() as $level => $screens ) {
             foreach ( $screens as $sets ) {
                 foreach ( $sets as $set ) {
-                    foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+                    foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
                         $offered[ $level ][ $set['module'] . '|' . $key ] = true;
                     }
                 }
             }
         }
 
-        $this->assertNotEmpty( $offered['profile'] ?? array(), 'the Profile screens offer something' );
-        $this->assertNotEmpty( $offered['property'] ?? array(), 'the Property screens offer something' );
+        $this->assertNotEmpty( $offered['profile'] ?? [], 'the Profile screens offer something' );
+        $this->assertNotEmpty( $offered['property'] ?? [], 'the Property screens offer something' );
 
-        $active  = array_unique( array_merge( array( 'base' ), (array) \OWA\Core\CoreAPI::getActiveModules() ) );
-        $missing = array();
+        $active  = array_unique( array_merge( [ 'base' ], (array) \OWA\Core\CoreAPI::getActiveModules() ) );
+        $missing = [];
 
         foreach ( $this->settings()->registeredFields() as $id => $args ) {
 
@@ -342,7 +342,7 @@ final class SettingsDeclarationContractTest extends TestCase
                 continue;
             }
 
-            foreach ( (array) ( $args['scopes'] ?? array() ) as $level ) {
+            foreach ( (array) ( $args['scopes'] ?? [] ) as $level ) {
 
                 if ( $level !== 'install' && empty( $offered[ $level ][ $id ] ) ) {
                     $missing[] = str_replace( '|', '.', $id ) . ' at ' . $level;
@@ -350,7 +350,7 @@ final class SettingsDeclarationContractTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $missing, sprintf(
+        $this->assertSame( [], $missing, sprintf(
             "declared for a level no screen offers: %s\n"
           . 'Offer it on that level\'s screen, or remove the level from its scopes.',
             implode( ', ', $missing ) ) );
@@ -366,18 +366,18 @@ final class SettingsDeclarationContractTest extends TestCase
     {
         $c = $this->settings();
 
-        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'timezone' ) );
-        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'spam_detection' ) );
-        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'spam_threshold' ) );
+        $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'timezone' ) );
+        $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'spam_detection' ) );
+        $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'spam_threshold' ) );
         $this->assertFalse( $c->isRegistered( 'base', 'log_robots' ), 'spam_threshold replaced it (Update084)' );
-        $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', 'goals' ) );
+        $this->assertSame( [ 'install', 'profile' ], $c->scopesFor( 'base', 'goals' ) );
 
-        foreach ( array( 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ) as $key ) {
-            $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', $key ),
+        foreach ( [ 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ] as $key ) {
+            $this->assertSame( [ 'install', 'profile' ], $c->scopesFor( 'base', $key ),
                 "base.$key is offered on the Profile only" );
         }
 
-        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'directory_index_pages' ) );
+        $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'directory_index_pages' ) );
     }
 
     /**
@@ -390,8 +390,8 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testTheDirectoryIndexListIsOnNoScreen(): void
     {
-        foreach ( array( \OWA\Module\Base\Module::class, \OWA\Module\Domstream\Module::class,
-                         \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class ) as $class ) {
+        foreach ( [ \OWA\Module\Base\Module::class, \OWA\Module\Domstream\Module::class,
+                         \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class ] as $class ) {
 
             $module = new $class();
             $module->registerActions();
@@ -401,13 +401,13 @@ final class SettingsDeclarationContractTest extends TestCase
         $sets = $this->settings()->registeredFieldSets();
 
         // An install screen's and a Profile screen's, so the loop below has something to check.
-        foreach ( array( 'base.tracking', 'base.profileObservation' ) as $id ) {
+        foreach ( [ 'base.tracking', 'base.profileObservation' ] as $id ) {
             $this->assertArrayHasKey( $id, $sets, 'the fieldsets this checks were registered' );
         }
 
         foreach ( $sets as $id => $set ) {
-            foreach ( array( 'directory_index_pages', 'default_page' ) as $key ) {
-                $this->assertNotContains( $key, (array) ( $set['settings'] ?? array() ), "fieldset $id offers base.$key" );
+            foreach ( [ 'directory_index_pages', 'default_page' ] as $key ) {
+                $this->assertNotContains( $key, (array) ( $set['settings'] ?? [] ), "fieldset $id offers base.$key" );
             }
         }
 
@@ -431,6 +431,6 @@ final class SettingsDeclarationContractTest extends TestCase
 
         $problems = $this->settings()->declarationProblems();
 
-        $this->assertSame( array(), $problems, "\n  " . implode( "\n  ", $problems ) );
+        $this->assertSame( [], $problems, "\n  " . implode( "\n  ", $problems ) );
     }
 }

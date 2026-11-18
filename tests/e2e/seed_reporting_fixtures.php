@@ -547,7 +547,7 @@ function seedCube(): array
 
     if (! $property_id) {
 
-        return array('status' => 'no property on the fixture site');
+        return ['status' => 'no property on the fixture site'];
     }
 
     $db  = \OWA\Core\CoreAPI::dbSingleton();
@@ -559,14 +559,14 @@ function seedCube(): array
 
     if (empty($span['lo'])) {
 
-        return array('status' => 'no raw rows to build from');
+        return ['status' => 'no raw rows to build from'];
     }
 
     $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id);
 
     if (! $db->tableExists($table) && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
 
-        return array('status' => 'could not create the cube');
+        return ['status' => 'could not create the cube'];
     }
 
     /*
@@ -581,7 +581,7 @@ function seedCube(): array
 
     $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
     $rows    = 0;
-    $failed  = array();
+    $failed  = [];
 
     foreach ($builder->partitions((int) $span['lo'], (int) $span['hi']) as $partition) {
 
@@ -596,12 +596,12 @@ function seedCube(): array
         $rows += (int) $result['rows'];
     }
 
-    return array(
+    return [
         'property'   => $property_id,
         'days'       => $span['lo'] . '-' . $span['hi'],
         'rows_built' => $rows,
         'failed'     => $failed,
-    );
+    ];
 }
 
 /**
@@ -1407,7 +1407,7 @@ function teardown(): array
             // creating one and swapping it leaves them behind, and the next
             // build derives staging from the live cube's DDL rather than from
             // whatever is sitting there.
-            foreach (array('', '_rebuild', '_computed') as $suffix) {
+            foreach (['', '_rebuild', '_computed'] as $suffix) {
                 $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $table, $suffix));
             }
 
@@ -1432,7 +1432,7 @@ function teardown(): array
         $db->selectColumn('id');
         $db->selectColumn('property_id');
         $db->where('domain', E2E_NEW_SITE_DOMAIN);
-        $properties = array();
+        $properties = [];
         foreach ((array) $db->getAllRows() as $row) {
             \OWA\Core\CoreAPI::entityFactory('base.site')->delete($row['id'], 'id');
             $properties[$row['property_id']] = true;

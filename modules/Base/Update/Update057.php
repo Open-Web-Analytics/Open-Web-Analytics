@@ -91,7 +91,7 @@ class Update057 extends \OWA\Core\Update {
     private function tables() {
 
         return array_merge(
-            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
+            [ \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ],
             \OWA\Module\Base\Classes\Cube\Cubes::allTables() );
     }
 
@@ -107,5 +107,3 @@ class Update057 extends \OWA\Core\Update {
             $table, self::INDEX ) );
     }
 }
-
-?>

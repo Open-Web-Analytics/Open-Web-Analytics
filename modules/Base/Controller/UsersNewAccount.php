@@ -50,8 +50,3 @@ class UsersNewAccount extends \OWA\Core\Controller {
     }
 
 }
-
-
-
-
-?>

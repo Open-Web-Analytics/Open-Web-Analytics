@@ -66,5 +66,3 @@ class Install extends \OWA\Core\Base{
     }
 
 }
-
-?>

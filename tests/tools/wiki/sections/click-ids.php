@@ -9,7 +9,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 return function () {
 
-    $rows = array(); // source|medium => params
+    $rows = []; // source|medium => params
 
     foreach ( TrackingEventHelpers::CLICK_IDS as $param => list( $source, $medium ) ) {
         $rows[ $source . '|' . $medium ][] = $param;

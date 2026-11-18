@@ -17,12 +17,12 @@ final class SqsOptionsPageTest extends TestCase {
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    private function render( array $overrides = array() ): string {
+    private function render( array $overrides = [] ): string {
 
         $template = new \OWA\Core\Template( 'sqs' );
         $template->setTemplateFile( 'sqs', 'options_sqs.php' );
 
-        $data = array_merge( array(
+        $data = array_merge( [
             'settings_fieldsets'  => owa_test_page_fieldsets( 'sqs.optionsSqs', \OWA\Module\Sqs\Module::class ),
             'queue_name'          => 'owa-tracker-ingest-abc123def456',
             'dlq_name'            => 'owa-tracker-ingest-abc123def456-dlq',
@@ -32,7 +32,7 @@ final class SqsOptionsPageTest extends TestCase {
             'in_use'              => false,
             'queued'              => false,
             'settings_page_title' => 'AWS SQS',
-        ), $overrides );
+        ], $overrides );
 
         foreach ( $data as $key => $value ) {
             $template->set( $key, $value );
@@ -63,10 +63,10 @@ final class SqsOptionsPageTest extends TestCase {
         $this->assertStringContainsString( 'cmd=tracker-ingest-provision', $this->render() );
 
         $this->assertStringContainsString( 'In place since',
-            $this->render( array( 'provisioned' => array( 'ok' => true, 'at' => 1700000000, 'error' => null ) ) ) );
+            $this->render( [ 'provisioned' => [ 'ok' => true, 'at' => 1700000000, 'error' => null ] ] ) );
 
-        $failed = $this->render( array( 'provisioned' => array(
-            'ok' => false, 'at' => 1700000000, 'error' => 'AccessDenied on sqs:CreateQueue <b>' ) ) );
+        $failed = $this->render( [ 'provisioned' => [
+            'ok' => false, 'at' => 1700000000, 'error' => 'AccessDenied on sqs:CreateQueue <b>' ] ] );
 
         $this->assertStringContainsString( 'AccessDenied on sqs:CreateQueue', $failed );
         $this->assertStringNotContainsString( '<b>', $failed, 'an AWS error is escaped' );
@@ -85,15 +85,15 @@ final class SqsOptionsPageTest extends TestCase {
 
         $this->assertStringContainsString( 'until <code>owa-config.php</code> sets <code>OWA_SQS_QUEUE_URL</code>', $this->render() );
         $this->assertStringContainsString( 'every beacon is queued here',
-            $this->render( array( 'in_use' => true, 'queued' => true ) ) );
+            $this->render( [ 'in_use' => true, 'queued' => true ] ) );
         $this->assertStringContainsString( "OWA_QUEUE_TRACKING_EVENTS', true",
-            $this->render( array( 'in_use' => true, 'queued' => false ) ) );
+            $this->render( [ 'in_use' => true, 'queued' => false ] ) );
     }
 
     public function testACollectorsConfigurationNamesTheRoleAndTheQueueUrl(): void {
 
-        $html = $this->render( array( 'provisioned' => array( 'ok' => true, 'at' => 1700000000, 'error' => null,
-            'main' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456' ) ) );
+        $html = $this->render( [ 'provisioned' => [ 'ok' => true, 'at' => 1700000000, 'error' => null,
+            'main' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456' ] ] );
 
         $this->assertStringContainsString( "OWA_SERVER_ROLE', 'collector'", $html );
         $this->assertStringContainsString( "OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456'", $html );

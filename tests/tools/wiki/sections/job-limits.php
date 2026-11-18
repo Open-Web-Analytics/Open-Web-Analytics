@@ -20,7 +20,7 @@ return static function () {
 
         $seconds = (int) $seconds;
 
-        foreach ( array( 86400 => 'day', 3600 => 'hour', 60 => 'minute', 1 => 'second' ) as $unit => $name ) {
+        foreach ( [ 86400 => 'day', 3600 => 'hour', 60 => 'minute', 1 => 'second' ] as $unit => $name ) {
 
             if ( $seconds >= $unit && $seconds % $unit === 0 ) {
                 $n = intdiv( $seconds, $unit );
@@ -36,13 +36,13 @@ return static function () {
     // The delay after each failure that is retried: JobQueue::retryOrFail()
     // takes step (attempt - 1), the last step repeating.
     $steps  = array_values( $policy['backoff'] );
-    $delays = array();
+    $delays = [];
 
     for ( $attempt = 1; $attempt < (int) $policy['max_attempts']; $attempt++ ) {
         $delays[] = $time( $steps[ min( $attempt - 1, count( $steps ) - 1 ) ] );
     }
 
-    $rows = array(
+    $rows = [
         'Time one `schedule-run` tick may spend starting jobs'
             => $time( \OWA\Module\Base\Controller\ScheduleRunCli::MAX_RUNTIME ),
         'A job\'s lock lease when its command sets none'
@@ -63,7 +63,7 @@ return static function () {
             => $time( JobQueue::KEEP_DONE ),
         'How long a failed one-off job is kept'
             => $time( JobQueue::KEEP_FAILED ),
-    );
+    ];
 
     $out = "| Limit | Value |\n|---|---|\n";
 

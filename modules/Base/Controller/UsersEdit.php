@@ -78,7 +78,7 @@ class UsersEdit extends \OWA\Core\AdminController {
 
     public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');
         /*
          * 3002 -- "the form had errors" -- not 3311.
@@ -96,6 +96,3 @@ class UsersEdit extends \OWA\Core\AdminController {
     }
 
 }
-
-
-?>

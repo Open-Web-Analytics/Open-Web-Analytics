@@ -42,9 +42,9 @@ final class ProfileSettingsScreenTest extends TestCase
      */
     private function holdProfile( string $site_id ): void
     {
-        $this->held = array( $site_id, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
+        $this->held = [ $site_id, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SELECT * FROM %s WHERE scope_type = 'profile' AND scope_id = ?",
-            \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), array( $site_id ) ) );
+            \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), [ $site_id ] ) ];
     }
 
     /** The held rows put back exactly, and nothing else at that Profile. */
@@ -60,7 +60,7 @@ final class ProfileSettingsScreenTest extends TestCase
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
 
-        $db->query( sprintf( "DELETE FROM %s WHERE scope_type = 'profile' AND scope_id = ?", $table ), array( $site_id ) );
+        $db->query( sprintf( "DELETE FROM %s WHERE scope_type = 'profile' AND scope_id = ?", $table ), [ $site_id ] );
 
         foreach ( $rows as $row ) {
             $row = (array) $row;
@@ -100,7 +100,7 @@ final class ProfileSettingsScreenTest extends TestCase
     {
         $this->requireDb();
 
-        $controller = new \OWA\Module\Base\Controller\ProfileSettings( array() );
+        $controller = new \OWA\Module\Base\Controller\ProfileSettings( [] );
         $controller->action();
 
         $data = $this->data( $controller );
@@ -117,7 +117,7 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $expected = $this->aSiteId();
 
-        $controller = new \OWA\Module\Base\Controller\ProfileSettings( array() );
+        $controller = new \OWA\Module\Base\Controller\ProfileSettings( [] );
         $controller->action();
 
         $this->assertSame( $expected, $this->data( $controller )['siteId'],
@@ -130,7 +130,7 @@ final class ProfileSettingsScreenTest extends TestCase
         $site_id = $this->aSiteId();
 
         $controller = new \OWA\Module\Base\Controller\ProfileSettings(
-            array( 'siteId' => $site_id ) );
+            [ 'siteId' => $site_id ] );
         $controller->action();
 
         $data = $this->data( $controller );
@@ -149,11 +149,11 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+        $controller = new \OWA\Module\Base\Controller\SitesEditSettings( [
             'siteId'   => $site_id,
-            'config'   => array( 'base.query_string_filters' => 'sessionid' ),
-            'override' => array( 'base.query_string_filters' => '1' ),
-        ) );
+            'config'   => [ 'base.query_string_filters' => 'sessionid' ],
+            'override' => [ 'base.query_string_filters' => '1' ],
+        ] );
 
         $controller->errorAction();
 
@@ -182,14 +182,14 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        $screen = new \OWA\Module\Base\Controller\ProfileSettings( array( 'siteId' => $site_id ) );
+        $screen = new \OWA\Module\Base\Controller\ProfileSettings( [ 'siteId' => $site_id ] );
         $screen->action();
 
-        $refusal = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+        $refusal = new \OWA\Module\Base\Controller\SitesEditSettings( [
             'siteId'   => $site_id,
-            'config'   => array( 'base.query_string_filters' => 'sessionid' ),
-            'override' => array( 'base.query_string_filters' => '1' ),
-        ) );
+            'config'   => [ 'base.query_string_filters' => 'sessionid' ],
+            'override' => [ 'base.query_string_filters' => '1' ],
+        ] );
         $refusal->errorAction();
 
         $shown   = $this->data( $screen );
@@ -201,7 +201,7 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->assertSame( $site_id, $refused['site']['site_id'] ?? null,
             'the template reads the Profile it renders from here' );
 
-        foreach ( array( 'site_hierarchy', 'hierarchy_nav' ) as $key ) {
+        foreach ( [ 'site_hierarchy', 'hierarchy_nav' ] as $key ) {
             $this->assertArrayHasKey( $key, $refused, 'the wrapper reads this, and an unset view var throws in ViewScope' );
         }
     }
@@ -232,7 +232,7 @@ final class ProfileSettingsScreenTest extends TestCase
     {
         $this->requireDb();
 
-        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array( 'siteId' => 'owa-no-such-profile-redirect' ) );
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( [ 'siteId' => 'owa-no-such-profile-redirect' ] );
         $c->action();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
@@ -256,43 +256,43 @@ final class ProfileSettingsScreenTest extends TestCase
             $this->markTestSkipped( 'needs a Profile with a Property' );
         }
 
-        $held = array(
+        $held = [
             'property' => \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $property_id, 'base', $key ),
             'profile'  => \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-        );
+        ];
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
-        \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, array( 'source' => 'src' ) );
+        \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, [ 'source' => 'src' ] );
 
         $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
 
-        $this->assertSame( array( 'source' => 'src' ), $inherited, 'the Property\'s value is what the Profile inherits' );
+        $this->assertSame( [ 'source' => 'src' ], $inherited, 'the Property\'s value is what the Profile inherits' );
 
         $save = function ( array $params ) use ( $site_id ) {
 
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array( 'siteId' => $site_id ) + $params );
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( [ 'siteId' => $site_id ] + $params );
             $c->action();
         };
 
         try {
-            $save( array(
-                'config'   => array( 'base.campaignKeys' => 'source=src' ),
-                'override' => array( 'base.campaignKeys' => '1' ),
-            ) );
+            $save( [
+                'config'   => [ 'base.campaignKeys' => 'source=src' ],
+                'override' => [ 'base.campaignKeys' => '1' ],
+            ] );
 
             $this->assertSame( $inherited,
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
                 'switched on, the value is this Profile\'s own even when it matches what it inherits' );
 
             // Switched off: the disabled control is not submitted, so nothing arrives for it.
-            $save( array() );
+            $save( [] );
 
             $this->assertNull(
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
                 'switched off, the Profile goes back to inheriting' );
 
         } finally {
-            foreach ( array( 'profile' => $site_id, 'property' => $property_id ) as $type => $id ) {
+            foreach ( [ 'profile' => $site_id, 'property' => $property_id ] as $type => $id ) {
 
                 \OWA\Core\CoreAPI::clearScopedSetting( $type, $id, 'base', $key );
 
@@ -320,8 +320,8 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $save = function ( $value ) use ( $site_id, $key ) {
 
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                'siteId' => $site_id, 'config' => array( 'base.' . $key => $value ) ) );
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( [
+                'siteId' => $site_id, 'config' => [ 'base.' . $key => $value ] ] );
             $c->action();
         };
 
@@ -347,11 +347,11 @@ final class ProfileSettingsScreenTest extends TestCase
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'tracker_page_views' );
 
-        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( [
             'siteId'   => $site_id,
-            'config'   => array( 'base.tracker_page_views' => '0' ),
-            'override' => array( 'base.tracker_page_views' => '1' ),
-        ) );
+            'config'   => [ 'base.tracker_page_views' => '0' ],
+            'override' => [ 'base.tracker_page_views' => '1' ],
+        ] );
         $c->action();
 
         $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' ) );
@@ -361,14 +361,14 @@ final class ProfileSettingsScreenTest extends TestCase
      * The Profile settings the tracking path and the visitor announcement read
      * at Profile scope, each with the control its declared type takes.
      */
-    private const OFFERED = array(
+    private const OFFERED = [
         'anonymize_ips'     => '<select name="owa_config[base.anonymize_ips]"',
         'excluded_ips'      => '<input type="text" size="50" name="owa_config[base.excluded_ips]"',
         'log_named_users'   => '<select name="owa_config[base.log_named_users]"',
         'campaignKeys'      => '<input type="text" size="50" name="owa_config[base.campaignKeys]"',
         'announce_visitors' => '<select name="owa_config[base.announce_visitors]"',
         'notice_email'      => '<input type="text" size="50" name="owa_config[base.notice_email]"',
-    );
+    ];
 
     private function screenHtml( string $site_id = '' ): string
     {
@@ -393,11 +393,11 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->assertStringContainsString( 'name="owa_config[base.query_string_filters]"', $html, 'base.query_string_filters is still offered' );
 
         // Retired (domain_aliases, default_page), and default_page's install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
-        foreach ( array( 'domain_aliases', 'default_page', 'directory_index_pages' ) as $key ) {
+        foreach ( [ 'domain_aliases', 'default_page', 'directory_index_pages' ] as $key ) {
             $this->assertStringNotContainsString( '[base.' . $key . ']', $html, "base.$key is offered on the Profile" );
         }
 
-        foreach ( array( 'Page URLs', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
+        foreach ( [ 'Page URLs', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ] as $legend ) {
             $this->assertStringContainsString( '<legend>' . $legend . '</legend>', $html );
         }
     }
@@ -405,8 +405,8 @@ final class ProfileSettingsScreenTest extends TestCase
     /** The template and the save controller read one list. */
     public function testTheTemplateRendersTheGroupItsControllerSaves(): void
     {
-        foreach ( array( 'modules/Base/templates/profile_settings.php',
-                         'modules/Base/Controller/SitesEditSettings.php' ) as $file ) {
+        foreach ( [ 'modules/Base/templates/profile_settings.php',
+                         'modules/Base/Controller/SitesEditSettings.php' ] as $file ) {
 
             $code = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 
@@ -426,19 +426,19 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        $posted = array(
-            'anonymize_ips'     => array( '1', true ),
-            'excluded_ips'      => array( '203.0.113.9, 198.51.100.7', '203.0.113.9, 198.51.100.7' ),
-            'log_named_users'   => array( '0', false ),
-            'campaignKeys'      => array( 'source=src, medium=channel', array( 'source' => 'src', 'medium' => 'channel' ) ),
-            'announce_visitors' => array( '1', true ),
-            'notice_email'      => array( 'owner@example.test', 'owner@example.test' ),
-        );
+        $posted = [
+            'anonymize_ips'     => [ '1', true ],
+            'excluded_ips'      => [ '203.0.113.9, 198.51.100.7', '203.0.113.9, 198.51.100.7' ],
+            'log_named_users'   => [ '0', false ],
+            'campaignKeys'      => [ 'source=src, medium=channel', [ 'source' => 'src', 'medium' => 'channel' ] ],
+            'announce_visitors' => [ '1', true ],
+            'notice_email'      => [ 'owner@example.test', 'owner@example.test' ],
+        ];
 
         $this->holdProfile( $site_id );
 
-        $config   = array();
-        $override = array();
+        $config   = [];
+        $override = [];
 
         foreach ( $posted as $key => list( $value ) ) {
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
@@ -447,8 +447,8 @@ final class ProfileSettingsScreenTest extends TestCase
             $override[ 'base.' . $key ] = '1';
         }
 
-        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-            'siteId' => $site_id, 'config' => $config, 'override' => $override ) );
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( [
+            'siteId' => $site_id, 'config' => $config, 'override' => $override ] );
         $c->action();
 
         foreach ( $posted as $key => list( , $stored ) ) {
@@ -457,14 +457,14 @@ final class ProfileSettingsScreenTest extends TestCase
                 "base.$key was not stored at the Profile" );
         }
 
-        $this->assertSame( array( 'source' => 'src', 'medium' => 'channel' ),
+        $this->assertSame( [ 'source' => 'src', 'medium' => 'channel' ],
             \OWA\Core\CoreAPI::getSetting( 'base', 'campaignKeys', 'profile', $site_id ),
             'the reader resolves the Profile\'s value' );
 
         // Every switch off, and the text fields emptied as a person would.
-        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( [
             'siteId' => $site_id,
-            'config' => array( 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ) ) );
+            'config' => [ 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ] ] );
         $c->action();
 
         foreach ( array_keys( $posted ) as $key ) {
@@ -479,11 +479,11 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        $problems = array();
+        $problems = [];
 
         foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $set ) {
             $problems += \OWA\Module\Base\Classes\SettingsForm::scopedProblems( $set, 'profile', $site_id,
-                array( 'base.campaignKeys' => 'sorce=src' ), array( 'base.campaignKeys' => '1' ) );
+                [ 'base.campaignKeys' => 'sorce=src' ], [ 'base.campaignKeys' => '1' ] );
         }
 
         $this->assertArrayHasKey( 'base.campaignKeys', $problems );

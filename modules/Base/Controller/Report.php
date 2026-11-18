@@ -150,7 +150,7 @@ class Report extends \OWA\Core\AdminController {
          * refused rather than rendered, because both silent outcomes are worse
          * than an error -- see ConfiguredReport::constraintParams().
          */
-        $missing = array();
+        $missing = [];
 
         foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {
 
@@ -189,9 +189,9 @@ class Report extends \OWA\Core\AdminController {
 
         $type = (string) ( $report['visualization_type'] ?? '' );
 
-        $controllers = array(
+        $controllers = [
             'funnel' => 'base.visualizationFunnel',
-        );
+        ];
 
         if ( ! isset( $controllers[ $type ] ) ) {
 
@@ -315,7 +315,7 @@ class Report extends \OWA\Core\AdminController {
             return $this->reportCannotBeDrawn( $id, $error );
         }
 
-        $missing = array();
+        $missing = [];
 
         foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {
 
@@ -408,8 +408,8 @@ class Report extends \OWA\Core\AdminController {
                   === \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION;
 
         $link = $is_viz
-            ? array( 'do' => 'base.visualizationEdit', 'visualizationId' => $report['id'] )
-            : array( 'do' => 'base.customReportEdit',  'customReportId'  => $report['id'] );
+            ? [ 'do' => 'base.visualizationEdit', 'visualizationId' => $report['id'] ]
+            : [ 'do' => 'base.customReportEdit',  'customReportId'  => $report['id'] ];
 
         /*
          * The link state, so the editor opens on the Property the reader is
@@ -424,17 +424,17 @@ class Report extends \OWA\Core\AdminController {
             $state['propertyId'] = (string) $data['currentPropertyId'];
         }
 
-        $data['title_actions'] = array(
-            array(
-                'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
+        $data['title_actions'] = [
+            [
+                'url'   => ( new \OWA\Core\Template( null, [ 'link_state' => $state ] ) )
                                ->makeLink( $link, true ),
                 'label' => $is_viz ? \OWA\Core\CoreAPI::t( 'Edit visualization' ) : \OWA\Core\CoreAPI::t( 'Edit report' ),
                 'icon'  => 'fas fa-pencil-alt',
                 // An icon, not a labelled button: the label names the row's own
                 // title, which is right beside it.
                 'iconOnly' => true,
-            ),
-        );
+            ],
+        ];
 
         return $data;
     }
@@ -482,15 +482,15 @@ class Report extends \OWA\Core\AdminController {
         $starred = \OWA\Module\Base\Classes\CustomReportFavorites::isFavorite(
             (string) $report['id'], $user_id );
 
-        $star = array(
+        $star = [
             // add_state TRUE, or the round trip drops propertyId and period and the
             // reader lands on a different view of the report than they left.
             // add_nonce TRUE, because the target action demands one.
             'url' => ( new \OWA\Core\Template() )->makeLink(
-                array(
+                [
                     'do'             => 'base.customReportMarkFavorite',
                     'customReportId' => $report['id'],
-                ), true, '', false, true ),
+                ], true, '', false, true ),
             'label'    => $starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ),
             /*
              * Filled when it is one of yours, outline when it is not -- the
@@ -499,11 +499,11 @@ class Report extends \OWA\Core\AdminController {
              */
             'icon'     => $starred ? 'fas fa-star' : 'far fa-star',
             'iconOnly' => true,
-        );
+        ];
 
-        $existing = isset( $data['title_actions'] ) ? (array) $data['title_actions'] : array();
+        $existing = isset( $data['title_actions'] ) ? (array) $data['title_actions'] : [];
 
-        $data['title_actions'] = array_merge( array( $star ), $existing );
+        $data['title_actions'] = array_merge( [ $star ], $existing );
 
         return $data;
     }
@@ -523,7 +523,7 @@ class Report extends \OWA\Core\AdminController {
             return $data;
         }
 
-        $data['title_tags'] = array_merge( (array) ( $data['title_tags'] ?? array() ), array( 'Shared' ) );
+        $data['title_tags'] = array_merge( (array) ( $data['title_tags'] ?? [] ), [ 'Shared' ] );
 
         return $data;
     }
@@ -575,9 +575,9 @@ class Report extends \OWA\Core\AdminController {
             http_response_code( 500 );
         }
 
-        return \OWA\Core\CoreAPI::displayView( array( 'error_msg' => sprintf(
+        return \OWA\Core\CoreAPI::displayView( [ 'error_msg' => sprintf(
             \OWA\Core\CoreAPI::t( 'This saved report cannot be drawn: %s Edit the report to fix it.' ),
-            rtrim( $error, '.' ) . '.' ) ), 'base.error' );
+            rtrim( $error, '.' ) . '.' ) ], 'base.error' );
     }
 
     /**
@@ -653,5 +653,3 @@ class Report extends \OWA\Core\AdminController {
     }
 
 }
-
-?>

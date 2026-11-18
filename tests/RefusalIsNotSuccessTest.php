@@ -44,12 +44,12 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
 
     private function newUserParams(): array
     {
-        return array(
+        return [
             'user_id'       => 'refused-' . $this->tok,
             'email_address' => 'refused-' . $this->tok . '@owatest.example.com',
             'real_name'     => 'Refused ' . $this->tok,
             'role'          => 'viewer',
-        );
+        ];
     }
 
     /** @dataProvider webWrites */
@@ -69,10 +69,10 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
 
     public static function webWrites(): array
     {
-        return array(
-            'add a user'    => array(\OWA\Module\Base\Controller\UsersAdd::class, 3000),
-            'delete a user' => array(\OWA\Module\Base\Controller\UsersDelete::class, 3004),
-        );
+        return [
+            'add a user'    => [\OWA\Module\Base\Controller\UsersAdd::class, 3000],
+            'delete a user' => [\OWA\Module\Base\Controller\UsersDelete::class, 3004],
+        ];
     }
 
     public function testNoUserIsAddedWithoutANonce(): void

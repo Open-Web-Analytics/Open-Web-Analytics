@@ -8,12 +8,12 @@
  */
 return static function ( $arg = null ) {
 
-    $cell = static fn ( $v ) => str_replace( array( '|', "\r", "\n" ), array( '\\|', ' ', ' ' ), trim( (string) $v ) );
+    $cell = static fn ( $v ) => str_replace( [ '|', "\r", "\n" ], [ '\\|', ' ', ' ' ], trim( (string) $v ) );
     $code = static fn ( $v ) => '`' . $cell( $v ) . '`';
 
     $where = static function ( array $p ) use ( $code ) {
 
-        $c = $p['condition'] ?? array();
+        $c = $p['condition'] ?? [];
 
         if ( ! $c || ! isset( $c['column'] ) ) {
             return '';
@@ -46,20 +46,20 @@ return static function ( $arg = null ) {
         return isset( $p['metric_type'] ) && $p['metric_type'] !== '' ? $code( $p['metric_type'] ) : '—';
     };
 
-    $groups = array();
+    $groups = [];
 
     foreach ( (array) \OWA\Core\CoreAPI::getAllMetrics() as $name => $declarations ) {
 
-        $first  = is_array( $declarations ) ? reset( $declarations ) : array();
-        $params = (array) ( $first['params'] ?? array() );
+        $first  = is_array( $declarations ) ? reset( $declarations ) : [];
+        $params = (array) ( $first['params'] ?? [] );
         $group  = (string) ( $first['group'] ?? $params['group'] ?? '' );
 
-        $groups[ $group !== '' ? $group : 'Other' ][ $name ] = array(
+        $groups[ $group !== '' ? $group : 'Other' ][ $name ] = [
             'label'       => $first['label'] ?? $params['label'] ?? '',
             'description' => $first['description'] ?? $params['description'] ?? '',
             'type'        => $params['data_type'] ?? '',
             'computed'    => $computed( $params ),
-        );
+        ];
     }
 
     ksort( $groups );

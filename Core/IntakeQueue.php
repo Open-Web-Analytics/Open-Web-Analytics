@@ -112,5 +112,3 @@ interface IntakeQueue {
      */
     public function stats();
 }
-
-?>

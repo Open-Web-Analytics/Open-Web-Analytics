@@ -51,7 +51,7 @@ class SitesInvocation extends \OWA\Core\View {
         $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Tracking Tag' ));
         $this->body->set('site', $site);
         $this->body->set('name', $name);
-        $this->body->set('options', array());
+        $this->body->set('options', []);
         // load body template
         $this->body->set_template('sites_invocation.php');
 

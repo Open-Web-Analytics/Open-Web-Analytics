@@ -145,7 +145,7 @@ class Sanitize {
      * @access    public
      * @static
      */
-    public static function stripHtml( $input = '', $tags = array() ) {
+    public static function stripHtml( $input = '', $tags = [] ) {
 
         if ($tags) {
             // Each tag is stripped from what the previous pass left. Every pass
@@ -229,7 +229,7 @@ class Sanitize {
      * @access public
      * @static
      */
-    public static function cleanInput($input, $options = array()) {
+    public static function cleanInput($input, $options = []) {
 
         /*
          * NOT empty(). It is true for "0", so every request parameter and every
@@ -237,12 +237,12 @@ class Sanitize {
          * could not save 0 into an integer setting, and a page titled "0" was
          * stored with no title.
          */
-        if ($input === null || $input === '' || $input === false || $input === array()) {
+        if ($input === null || $input === '' || $input === false || $input === []) {
             return;
         }
 
         $options = array_merge(
-            array(
+            [
                 'hidden_spaces'     => true,
                 'remove_html'     => false,
                 'encode'         => true,
@@ -250,12 +250,12 @@ class Sanitize {
                 'carriage'        => true,
                 'unicode'         => true,
                 'escape_html'     => true,
-                'backslash'     => true),
+                'backslash'     => true],
             $options);
 
         if (is_array($input)) {
 
-            $output = array();
+            $output = [];
             foreach ($input as $k => $v) {
                 $output[$k] = \OWA\Module\Base\Classes\Sanitize::cleanInput($v, $options);
             }
@@ -325,7 +325,7 @@ class Sanitize {
 
         if ( is_array( $input ) ) {
 
-            $output = array();
+            $output = [];
 
             foreach ( $input as $k => $v ) {
 
@@ -375,7 +375,7 @@ class Sanitize {
     public static function cleanUrl( $url ) {
 
         $url = \OWA\Module\Base\Classes\Sanitize::cleanInput($url,
-            array(
+            [
                 'hidden_spaces' => true,
                 'remove_html'     => true,
                 'encode'         => false,
@@ -384,7 +384,7 @@ class Sanitize {
                 'unicode'         => true,
                 'escape_html'     => true,
                 'backslash'     => false
-            )
+            ]
         );
         if ( $url ){
             return trim(str_replace('&amp;', '&', $url));
@@ -424,7 +424,7 @@ class Sanitize {
             return $url;
         }
 
-        $allowed = array( 'http', 'https', 'mailto', 'ftp', 'tel' );
+        $allowed = [ 'http', 'https', 'mailto', 'ftp', 'tel' ];
 
         if ( in_array( strtolower( $m[1] ), $allowed, true ) ) {
             return $url;
@@ -449,7 +449,7 @@ class Sanitize {
              }
          }
 
-         return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, array() );
+         return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, [] );
     }
 
     /**
@@ -513,5 +513,3 @@ class Sanitize {
         return json_encode( $decoded );
     }
 }
-
-?>

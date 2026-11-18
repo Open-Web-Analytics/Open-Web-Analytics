@@ -26,7 +26,7 @@ final class ErrorActionResultTest extends TestCase
     /** A controller whose validation always fails. */
     private function failing( callable $errorAction ): object
     {
-        return new class( array(), $errorAction ) extends \OWA\Core\Controller {
+        return new class( [], $errorAction ) extends \OWA\Core\Controller {
 
             /** @var callable */
             private $onError;
@@ -64,7 +64,7 @@ final class ErrorActionResultTest extends TestCase
      */
     public function testAReturnedResultIsUsed(): void
     {
-        $delegated = array( 'view' => 'base.report', 'subview' => 'base.customReportEdit' );
+        $delegated = [ 'view' => 'base.report', 'subview' => 'base.customReportEdit' ];
 
         $controller = $this->failing( static function () use ( $delegated ) {
 
@@ -115,7 +115,7 @@ final class ErrorActionResultTest extends TestCase
 
             $self->set( 'ran', 'empty' );
 
-            return array();
+            return [];
         } );
 
         $result = (array) $controller->doAction();
@@ -145,7 +145,7 @@ final class ErrorActionResultTest extends TestCase
      */
     public function testAControllerWithoutAnErrorActionAnswersWithTheErrorPage(): void
     {
-        $controller = new class( array() ) extends \OWA\Core\Controller {
+        $controller = new class( [] ) extends \OWA\Core\Controller {
 
             public function validate() {
 

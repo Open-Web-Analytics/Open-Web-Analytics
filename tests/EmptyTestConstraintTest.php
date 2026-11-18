@@ -22,7 +22,7 @@ final class EmptyTestConstraintTest extends TestCase
         $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
 
         return preg_replace( '/\s+/', ' ', trim( $m->invoke( $db, $type,
-            array( array( 'name' => $name, 'operator' => $operator, 'value' => '(not set)' ) ) ) ) );
+            [ [ 'name' => $name, 'operator' => $operator, 'value' => '(not set)' ] ] ) ) );
     }
 
     public function testEmptyMatchesNullAndTheEmptyString(): void
@@ -48,27 +48,27 @@ final class EmptyTestConstraintTest extends TestCase
     public function testTheNotSetLabelMapsToTheEmptyTest( string $operator, string $value, string $expected ): void
     {
         $this->assertSame( $expected, ResultSetManager::emptyTestFor(
-            array( 'name' => 'sessionCampaign', 'operator' => $operator, 'value' => $value ) ) );
+            [ 'name' => 'sessionCampaign', 'operator' => $operator, 'value' => $value ] ) );
     }
 
     public function testARangeValueIsNotTheEmptyTest(): void
     {
         // Every report's date range is a BETWEEN constraint holding an array;
         // casting it to a string raised "Array to string conversion".
-        $this->assertSame( '', ResultSetManager::emptyTestFor( array(
+        $this->assertSame( '', ResultSetManager::emptyTestFor( [
             'name' => 'yyyymmdd', 'operator' => 'BETWEEN',
-            'value' => array( 'start' => 20260101, 'end' => 20260131 ) ) ) );
+            'value' => [ 'start' => 20260101, 'end' => 20260131 ] ] ) );
     }
 
     public static function mappings(): array
     {
-        return array(
-            'equals'              => array( '==', '(not set)', 'empty' ),
-            'not equals'          => array( '!=', '(not set)', 'notempty' ),
-            'other operator'      => array( '=@', '(not set)', '' ),
-            'ordinary value'      => array( '!=', 'spring-sale', '' ),
-            'the literal "null"'  => array( '!=', 'null', '' ),
-        );
+        return [
+            'equals'              => [ '==', '(not set)', 'empty' ],
+            'not equals'          => [ '!=', '(not set)', 'notempty' ],
+            'other operator'      => [ '=@', '(not set)', '' ],
+            'ordinary value'      => [ '!=', 'spring-sale', '' ],
+            'the literal "null"'  => [ '!=', 'null', '' ],
+        ];
     }
 
     /** End to end against the server: which rows each form keeps. */
@@ -86,15 +86,15 @@ final class EmptyTestConstraintTest extends TestCase
 
         $tags = function ( $operator ) use ( $db, $rows ) {
             $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
-            $where = $m->invoke( $db, 'WHERE', array( array(
-                'name' => 't.campaign', 'operator' => $operator, 'value' => '(not set)' ) ) );
+            $where = $m->invoke( $db, 'WHERE', [ [
+                'name' => 't.campaign', 'operator' => $operator, 'value' => '(not set)' ] ] );
             $tags = array_column( (array) $db->get_results( "SELECT t.tag FROM $rows $where" ), 'tag' );
             sort( $tags );
             return $tags;
         };
 
-        $this->assertSame( array( 'tagged' ), $tags( 'notempty' ) );
-        $this->assertSame( array( 'blank', 'null' ), $tags( 'empty' ) );
+        $this->assertSame( [ 'tagged' ], $tags( 'notempty' ) );
+        $this->assertSame( [ 'blank', 'null' ], $tags( 'empty' ) );
     }
 
     /** A metric has no "(not set)"; asking is an error, not a silent no-op. */
@@ -105,7 +105,7 @@ final class EmptyTestConstraintTest extends TestCase
         }
 
         $rsm = new ResultSetManager;
-        $rsm->applyConstraint( array( 'name' => 'sessions', 'operator' => '!=', 'value' => '(not set)' ),
+        $rsm->applyConstraint( [ 'name' => 'sessions', 'operator' => '!=', 'value' => '(not set)' ],
             \OWA\Core\CoreAPI::dbSingleton() );
 
         $p = new \ReflectionProperty( $rsm, 'errors' );

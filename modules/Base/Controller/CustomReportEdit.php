@@ -136,7 +136,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * widget, which meant a report could be saved without a single choice
          * having been made, and what came out was a table of nothing.
          */
-        $definition = $report ? (array) $report['definition'] : array();
+        $definition = $report ? (array) $report['definition'] : [];
 
         $name = $report ? $report['name'] : '';
 
@@ -273,7 +273,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      */
     private static function choices( $registry ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $registry as $name => $entry ) {
 
@@ -287,7 +287,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
             $label = '';
 
-            foreach ( array( 'label', 'name' ) as $key ) {
+            foreach ( [ 'label', 'name' ] as $key ) {
 
                 if ( ! empty( $entry[ $key ] ) && is_string( $entry[ $key ] ) ) {
 
@@ -296,10 +296,10 @@ class CustomReportEdit extends \OWA\Core\ReportController {
                 }
             }
 
-            $out[] = array(
+            $out[] = [
                 'name'  => (string) $name,
                 'label' => $label !== '' ? $label : (string) $name,
-            );
+            ];
         }
 
         usort( $out, static function ( $a, $b ) {

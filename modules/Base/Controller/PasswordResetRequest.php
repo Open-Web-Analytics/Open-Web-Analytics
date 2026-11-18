@@ -74,5 +74,3 @@ class PasswordResetRequest extends \OWA\Core\Controller {
         $this->set('error_msg', $this->getMsg(2001, ['message' => [$email_address]]));
     }
 }
-
-?>

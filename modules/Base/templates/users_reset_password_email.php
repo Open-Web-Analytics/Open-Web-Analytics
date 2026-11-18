@@ -5,4 +5,4 @@
 <?php $owa_hours = (int) ( \OWA\Module\Base\Entity\User::RESET_TTL / 3600 );
       $view->out( sprintf( \OWA\Core\CoreAPI::tn( 'The link works for %d hour.', 'The link works for %d hours.', $owa_hours ), $owa_hours ) );?></p>
 
-<?php echo $view->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $view->key));
+<?php echo $view->makeAbsoluteLink(['do' => 'base.usersPasswordEntry', 'k' => $view->key]);

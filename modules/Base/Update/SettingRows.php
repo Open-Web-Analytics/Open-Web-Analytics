@@ -88,12 +88,12 @@ trait SettingRows {
 
         if ( ! $row ) {
 
-            return array();
+            return [];
         }
 
-        $record = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+        $record = @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
 
-        return is_array( $record ) ? $record : array();
+        return is_array( $record ) ? $record : [];
     }
 
     /**
@@ -105,7 +105,7 @@ trait SettingRows {
     private function row( $name ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
-            array( $this->installId( $name ) ) );
+            [ $this->installId( $name ) ] );
 
         return $row ? (array) $row : null;
     }
@@ -133,7 +133,7 @@ trait SettingRows {
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
             'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
           . " VALUES (?, 'install', ?, 'base', ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?", $this->settingTable() ),
-            array( $this->installId( $name ), self::INSTALL_SCOPE_ID, $name, $value, (int) $autoload, time(), $value ) ) !== false;
+            [ $this->installId( $name ), self::INSTALL_SCOPE_ID, $name, $value, (int) $autoload, time(), $value ] ) !== false;
     }
 
     /**
@@ -155,7 +155,7 @@ trait SettingRows {
     private function deleteRecord() {
 
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->settingTable() ),
-            array( $this->installId( self::BEFORE ) ) ) !== false;
+            [ $this->installId( self::BEFORE ) ] ) !== false;
     }
 
     /**
@@ -181,7 +181,7 @@ trait SettingRows {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( (string) $row['id'] ) ) === false ) {
+        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ (string) $row['id'] ] ) === false ) {
 
             return false;
         }
@@ -190,5 +190,3 @@ trait SettingRows {
             implode( ', ', array_fill( 0, count( $columns ), '?' ) ) ), array_values( $row ) ) !== false;
     }
 }
-
-?>

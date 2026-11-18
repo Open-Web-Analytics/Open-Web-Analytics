@@ -21,7 +21,7 @@ class PageDepthStep extends Step {
 
     public function requires() {
 
-        return array( Context::SESSION );
+        return [ Context::SESSION ];
     }
 
     public function execute( Context $context ) {
@@ -29,5 +29,3 @@ class PageDepthStep extends Step {
         return sprintf( 'NULLIF(%s.session_page_depth, 0)', Context::SESSION );
     }
 }
-
-?>

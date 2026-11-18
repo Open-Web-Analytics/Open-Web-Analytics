@@ -75,7 +75,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     /**
      * @param  array{is_dead_letter?: bool, name?: string, max_receives?: int} $map
      */
-    public function __construct( $map = array() ) {
+    public function __construct( $map = [] ) {
 
         $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
         $this->name           = (string) ( $map['name'] ?? Sqs::queueName() );
@@ -132,15 +132,15 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        $attributes = array(
+        $attributes = [
             'MessageRetentionPeriod' => (string) self::RETENTION,
             'VisibilityTimeout'      => (string) self::VISIBILITY,
-        );
+        ];
 
         if ( $dlq ) {
 
             $arn = $this->call( function ( $c ) use ( $dlq ) {
-                return $c->getQueueAttributes( array( 'QueueUrl' => $dlq->url( false ), 'AttributeNames' => array( 'QueueArn' ) ) );
+                return $c->getQueueAttributes( [ 'QueueUrl' => $dlq->url( false ), 'AttributeNames' => [ 'QueueArn' ] ] );
             }, false );
 
             if ( ! $arn ) {
@@ -148,17 +148,17 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
                 return false;
             }
 
-            $attributes['RedrivePolicy'] = json_encode( array(
+            $attributes['RedrivePolicy'] = json_encode( [
                 'deadLetterTargetArn' => $arn['Attributes']['QueueArn'],
                 'maxReceiveCount'     => $this->max_receives,
-            ) );
+            ] );
         }
 
         $created = $this->call( function ( $c ) use ( $attributes ) {
 
             try {
 
-                return $c->createQueue( array( 'QueueName' => $this->name, 'Attributes' => $attributes ) );
+                return $c->createQueue( [ 'QueueName' => $this->name, 'Attributes' => $attributes ] );
 
             } catch ( \Aws\Sqs\Exception\SqsException $e ) {
 
@@ -167,10 +167,10 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
                     throw $e;
                 }
 
-                $url = $c->getQueueUrl( array( 'QueueName' => $this->name ) )['QueueUrl'];
-                $c->setQueueAttributes( array( 'QueueUrl' => $url, 'Attributes' => $attributes ) );
+                $url = $c->getQueueUrl( [ 'QueueName' => $this->name ] )['QueueUrl'];
+                $c->setQueueAttributes( [ 'QueueUrl' => $url, 'Attributes' => $attributes ] );
 
-                return array( 'QueueUrl' => $url );
+                return [ 'QueueUrl' => $url ];
             }
         }, false );
 
@@ -206,7 +206,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        $attributes = $replayed ? array( 'owa_replayed' => '1' ) : array();
+        $attributes = $replayed ? [ 'owa_replayed' => '1' ] : [];
 
         return $this->sendBody( $body, (int) $delay, $attributes );
     }
@@ -215,22 +215,22 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
 
         $max        = max( 1, (int) $max );
         $visibility = min( self::MAX_VISIBILITY, max( 0, (int) $visibility ) );
-        $messages   = array();
+        $messages   = [];
 
         while ( count( $messages ) < $max ) {
 
             $got = $this->call( function ( $c ) use ( $max, $messages, $visibility ) {
-                return $c->receiveMessage( array(
+                return $c->receiveMessage( [
                     'QueueUrl'              => $this->url(),
                     'MaxNumberOfMessages'   => min( 10, $max - count( $messages ) ),
                     'VisibilityTimeout'     => $visibility,
                     'WaitTimeSeconds'       => 0,
-                    'AttributeNames'        => array( 'ApproximateReceiveCount' ),
-                    'MessageAttributeNames' => array( 'All' ),
-                ) );
+                    'AttributeNames'        => [ 'ApproximateReceiveCount' ],
+                    'MessageAttributeNames' => [ 'All' ],
+                ] );
             } );
 
-            $batch = $got ? (array) ( $got['Messages'] ?? array() ) : array();
+            $batch = $got ? (array) ( $got['Messages'] ?? [] ) : [];
 
             if ( ! $batch ) {
 
@@ -252,7 +252,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     public function ack( \OWA\Core\IntakeMessage $message ) {
 
         return (bool) $this->call( fn ( $c ) => $c->deleteMessage(
-            array( 'QueueUrl' => $this->url(), 'ReceiptHandle' => $message->receipt ) ) );
+            [ 'QueueUrl' => $this->url(), 'ReceiptHandle' => $message->receipt ] ) );
     }
 
     /**
@@ -261,11 +261,11 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
      */
     public function release( \OWA\Core\IntakeMessage $message, $delay ) {
 
-        return (bool) $this->call( fn ( $c ) => $c->changeMessageVisibility( array(
+        return (bool) $this->call( fn ( $c ) => $c->changeMessageVisibility( [
             'QueueUrl'          => $this->url(),
             'ReceiptHandle'     => $message->receipt,
             'VisibilityTimeout' => min( self::MAX_VISIBILITY, max( 0, (int) $delay ) ),
-        ) ) );
+        ] ) );
     }
 
     /**
@@ -281,7 +281,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        $attributes = array( 'owa_reason' => (string) $reason, 'owa_dead_at' => (string) time() );
+        $attributes = [ 'owa_reason' => (string) $reason, 'owa_dead_at' => (string) time() ];
 
         if ( $message->replayed ) {
 
@@ -313,7 +313,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
 
         if ( ! $this->dlq ) {
 
-            $this->dlq = new self( array( 'name' => Sqs::deadLetterName( $this->name ), 'is_dead_letter' => true ) );
+            $this->dlq = new self( [ 'name' => Sqs::deadLetterName( $this->name ), 'is_dead_letter' => true ] );
         }
 
         return $this->dlq;
@@ -322,7 +322,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     /** One GetQueueAttributes call: nothing visible. Approximate, as SQS says. */
     public function isProbablyEmpty() {
 
-        $a = $this->attributes( array( 'ApproximateNumberOfMessages' ) );
+        $a = $this->attributes( [ 'ApproximateNumberOfMessages' ] );
 
         return $a !== null && (int) ( $a['ApproximateNumberOfMessages'] ?? 0 ) === 0;
     }
@@ -342,14 +342,14 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
      */
     public function stats() {
 
-        $a = $this->attributes( array( 'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible',
-                                       'ApproximateNumberOfMessagesDelayed' ) );
+        $a = $this->attributes( [ 'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible',
+                                       'ApproximateNumberOfMessagesDelayed' ] );
 
-        return array(
+        return [
             'messages'   => $a === null ? null : array_sum( array_map( 'intval', $a ) ),
             'oldest_age' => null,
             'error'      => $a === null ? (string) ( $this->last_error ?: \OWA\Core\CoreAPI::t( 'no answer' ) ) : null,
-        );
+        ];
     }
 
     // ---------------------------------------------------------------------
@@ -381,12 +381,12 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
 
         try {
 
-            $this->url = Sqs::client()->getQueueUrl( array( 'QueueName' => $this->name ) )['QueueUrl'];
+            $this->url = Sqs::client()->getQueueUrl( [ 'QueueName' => $this->name ] )['QueueUrl'];
 
         } catch ( \Aws\Sqs\Exception\SqsException $e ) {
 
             $missing = in_array( $e->getAwsErrorCode(),
-                array( 'AWS.SimpleQueueService.NonExistentQueue', 'QueueDoesNotExist' ), true );
+                [ 'AWS.SimpleQueueService.NonExistentQueue', 'QueueDoesNotExist' ], true );
 
             if ( $missing && $provision && ! Sqs::isLogger() && $this->provision() ) {
 
@@ -428,7 +428,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
 
         if ( ! empty( $record['ok'] ) ) {
 
-            foreach ( array( $record['main'] ?? null, $record['dlq'] ?? null ) as $url ) {
+            foreach ( [ $record['main'] ?? null, $record['dlq'] ?? null ] as $url ) {
 
                 if ( $url && basename( (string) parse_url( $url, PHP_URL_PATH ) ) === $this->name ) {
 
@@ -458,9 +458,9 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     private function attributes( array $names ) {
 
         $got = $this->call( fn ( $c ) => $c->getQueueAttributes(
-            array( 'QueueUrl' => $this->url(), 'AttributeNames' => $names ) ) );
+            [ 'QueueUrl' => $this->url(), 'AttributeNames' => $names ] ) );
 
-        return $got ? (array) ( $got['Attributes'] ?? array() ) : null;
+        return $got ? (array) ( $got['Attributes'] ?? [] ) : null;
     }
 
     /**
@@ -473,18 +473,18 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
      */
     private function sendBody( $body, $delay, array $attributes ) {
 
-        $args = array(
+        $args = [
             'MessageBody'  => (string) $body,
             'DelaySeconds' => min( self::MAX_DELAY, max( 0, (int) $delay ) ),
-        );
+        ];
 
         foreach ( $attributes as $k => $v ) {
 
-            $args['MessageAttributes'][ $k ] = array( 'DataType' => 'String', 'StringValue' => (string) $v );
+            $args['MessageAttributes'][ $k ] = [ 'DataType' => 'String', 'StringValue' => (string) $v ];
         }
 
         // The URL inside the call, which has already resolved it or given up.
-        return (bool) $this->call( fn ( $c ) => $c->sendMessage( array( 'QueueUrl' => $this->url ) + $args ) );
+        return (bool) $this->call( fn ( $c ) => $c->sendMessage( [ 'QueueUrl' => $this->url ] + $args ) );
     }
 
     /**
@@ -547,5 +547,3 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return null;
     }
 }
-
-?>

@@ -19,7 +19,7 @@ final class NewPropertyFirstProfileTest extends TestCase
     const ARCHIVED_PROPERTY = 7775000000000097;
 
     /** Ids PropertyEdit minted during a test, removed afterwards. */
-    private $created = array();
+    private $created = [];
 
     /** Whether a pending publish job was already queued before the test. */
     private $publishWasPending = false;
@@ -32,21 +32,21 @@ final class NewPropertyFirstProfileTest extends TestCase
 
         self::dropFixture();
 
-        foreach ( array(
-            self::WEB_PROPERTY      => array( 'web', 'first-profile.example.test', null ),
-            self::APP_PROPERTY      => array( 'app', '', null ),
-            self::ARCHIVED_PROPERTY => array( 'web', 'archived-first-profile.example.test', time() ),
-        ) as $id => list( $type, $domain, $archived ) ) {
+        foreach ( [
+            self::WEB_PROPERTY      => [ 'web', 'first-profile.example.test', null ],
+            self::APP_PROPERTY      => [ 'app', '', null ],
+            self::ARCHIVED_PROPERTY => [ 'web', 'archived-first-profile.example.test', time() ],
+        ] as $id => list( $type, $domain, $archived ) ) {
 
             $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-            $property->setProperties( array(
+            $property->setProperties( [
                 'id'            => $id,
                 'name'          => 'First Profile fixture ' . $id,
                 'domain'        => $domain,
                 'property_type' => $type,
                 'creation_date' => time(),
                 'archived_date' => $archived,
-            ) );
+            ] );
 
             if ( ! $property->create() ) {
                 throw new \RuntimeException( 'seeding owa_property failed' );
@@ -94,7 +94,7 @@ final class NewPropertyFirstProfileTest extends TestCase
 
     private static function dropFixture(): void
     {
-        foreach ( array( self::WEB_PROPERTY, self::APP_PROPERTY, self::ARCHIVED_PROPERTY ) as $id ) {
+        foreach ( [ self::WEB_PROPERTY, self::APP_PROPERTY, self::ARCHIVED_PROPERTY ] as $id ) {
 
             \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $id, 'id' );
         }
@@ -148,11 +148,11 @@ final class NewPropertyFirstProfileTest extends TestCase
 
     public function testAddingAPropertyRedirectsToItsFirstProfile(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PropertyEdit( array(
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit( [
             'name'         => 'First Profile redirect ' . uniqid(),
             'domain'       => 'first-profile-redirect.example.test',
             'propertyType' => 'web',
-        ) );
+        ] );
         $controller->action();
 
         $data = $this->data( $controller );
@@ -164,7 +164,7 @@ final class NewPropertyFirstProfileTest extends TestCase
         $this->assertSame( 3212, $data['status_code'] ?? null );
 
         // ...and the screen it lands on has that Property chosen.
-        $form = $this->profileForm( array( 'propertyId' => $data['propertyId'] ) );
+        $form = $this->profileForm( [ 'propertyId' => $data['propertyId'] ] );
 
         $this->assertSame( (string) $data['propertyId'], $form['propertyId'] );
         $this->assertSame( (string) $data['propertyId'], $form['params']['propertyId'] ?? null );
@@ -172,11 +172,11 @@ final class NewPropertyFirstProfileTest extends TestCase
 
     public function testEditingAPropertyStaysOnItsDetails(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PropertyEdit( array(
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit( [
             'propertyId' => (string) self::WEB_PROPERTY,
             'name'       => 'First Profile fixture ' . self::WEB_PROPERTY,
             'domain'     => 'first-profile.example.test',
-        ) );
+        ] );
         $controller->action();
 
         $data = $this->data( $controller );
@@ -187,7 +187,7 @@ final class NewPropertyFirstProfileTest extends TestCase
 
     public function testAWebPropertysProfileStartsOnItsDomain(): void
     {
-        $form = $this->profileForm( array( 'propertyId' => (string) self::WEB_PROPERTY ) );
+        $form = $this->profileForm( [ 'propertyId' => (string) self::WEB_PROPERTY ] );
 
         $this->assertSame( (string) self::WEB_PROPERTY, $form['propertyId'] );
         $this->assertSame( 'web', $form['site']['stream_type'] ?? null );
@@ -196,7 +196,7 @@ final class NewPropertyFirstProfileTest extends TestCase
 
     public function testAnAppPropertysProfileObservesAnApp(): void
     {
-        $form = $this->profileForm( array( 'propertyId' => (string) self::APP_PROPERTY ) );
+        $form = $this->profileForm( [ 'propertyId' => (string) self::APP_PROPERTY ] );
 
         $this->assertSame( (string) self::APP_PROPERTY, $form['propertyId'] );
         $this->assertSame( 'app', $form['site']['stream_type'] ?? null );
@@ -206,20 +206,20 @@ final class NewPropertyFirstProfileTest extends TestCase
     /** An archived or unknown Property is not offered, so the form starts blank. */
     public function testAnArchivedOrUnknownPropertyIsNotChosen(): void
     {
-        foreach ( array( (string) self::ARCHIVED_PROPERTY, '7775000000000098' ) as $id ) {
+        foreach ( [ (string) self::ARCHIVED_PROPERTY, '7775000000000098' ] as $id ) {
 
-            $form = $this->profileForm( array( 'propertyId' => $id ) );
+            $form = $this->profileForm( [ 'propertyId' => $id ] );
 
             $this->assertSame( '', $form['propertyId'], $id );
-            $this->assertSame( array(), $form['site'], $id );
+            $this->assertSame( [], $form['site'], $id );
         }
     }
 
     public function testTheAddFormWithNoPropertyIsUnchanged(): void
     {
-        $form = $this->profileForm( array() );
+        $form = $this->profileForm( [] );
 
         $this->assertSame( '', $form['propertyId'] );
-        $this->assertSame( array(), $form['site'] );
+        $this->assertSame( [], $form['site'] );
     }
 }

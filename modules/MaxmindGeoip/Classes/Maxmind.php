@@ -60,7 +60,7 @@ class Maxmind extends \OWA\Core\Location {
      * network data and no location fields at all, so an installation pointed at
      * it would look healthy and silently resolve nothing.
      */
-    const EDITIONS = array( 'GeoLite2-City', 'GeoLite2-Country' );
+    const EDITIONS = [ 'GeoLite2-City', 'GeoLite2-Country' ];
 
     /**
      * Which edition this installation reads.
@@ -261,7 +261,7 @@ class Maxmind extends \OWA\Core\Location {
      * @param  string                    $lang
      * @return array<string, string|null>
      */
-    private function mapCityRecord( $record, $location_map = array(), $lang = 'en' ) {
+    private function mapCityRecord( $record, $location_map = [], $lang = 'en' ) {
 
         if ( $record && is_array( $record ) ) {
 
@@ -321,5 +321,3 @@ class Maxmind extends \OWA\Core\Location {
 
 
 }
-
-?>

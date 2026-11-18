@@ -23,13 +23,13 @@ namespace OWA\Module\Base\Classes\Cube;
  */
 class SiteLists {
 
-    const FILES = array(
-        'search'   => array( 'searchengines.php', 'tracking.search_engine_registry' ),
-        'social'   => array( 'socialnetworks.php', 'tracking.social_network_registry' ),
-        'ai'       => array( 'aiassistants.php', 'tracking.ai_assistant_registry' ),
-        'video'    => array( 'videosites.php', 'tracking.video_site_registry' ),
-        'shopping' => array( 'shoppingsites.php', 'tracking.shopping_site_registry' ),
-    );
+    const FILES = [
+        'search'   => [ 'searchengines.php', 'tracking.search_engine_registry' ],
+        'social'   => [ 'socialnetworks.php', 'tracking.social_network_registry' ],
+        'ai'       => [ 'aiassistants.php', 'tracking.ai_assistant_registry' ],
+        'video'    => [ 'videosites.php', 'tracking.video_site_registry' ],
+        'shopping' => [ 'shoppingsites.php', 'tracking.shopping_site_registry' ],
+    ];
 
     /**
      * A list's entries, lowercased, without duplicates.
@@ -44,7 +44,7 @@ class SiteLists {
             throw new \InvalidArgumentException( sprintf( 'no site list "%s"', $list ) );
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::loadConf( self::FILES[ $list ][0], self::FILES[ $list ][1] ) as $entry ) {
 
@@ -69,7 +69,7 @@ class SiteLists {
      */
     public static function matches( $value, $list, Context $context ) {
 
-        $tests = array();
+        $tests = [];
 
         foreach ( self::entries( $list ) as $entry ) {
 
@@ -83,5 +83,3 @@ class SiteLists {
         return $tests ? '(' . implode( ' OR ', $tests ) . ')' : '(1 = 0)';
     }
 }
-
-?>

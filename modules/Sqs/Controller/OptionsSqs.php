@@ -30,7 +30,7 @@ class OptionsSqs extends \OWA\Core\AdminController {
 
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'hierarchy_tier', 0 );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'sqs.optionsSqs', [
             'template' => 'options_sqs.php',
             'vars'     => [ 'queue_name', 'dlq_name', 'credential_source', 'region', 'provisioned', 'in_use', 'queued',

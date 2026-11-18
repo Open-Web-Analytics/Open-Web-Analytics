@@ -32,28 +32,28 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
         parent::__construct($params);
     }
 
-	public function validate() {
+    public function validate() {
 
-		// both identifiers must be present
-		$this->addValidation('siteId', $this->getParam('siteId'), 'required', array('stopOnError'	=> true));
-	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+        // both identifiers must be present
+        $this->addValidation('siteId', $this->getParam('siteId'), 'required', ['stopOnError'	=> true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'	=> true]);
 
-		// the site must exist - rejects bogus siteIds before any relation is written
-		$this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', [
-			'entity'	=> 'base.site',
-			'column'	=> 'site_id',
-			'errorMsg'	=> $this->getMsg(3208),
-			'stopOnError'	=> true
-		]);
+        // the site must exist - rejects bogus siteIds before any relation is written
+        $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', [
+            'entity'	=> 'base.site',
+            'column'	=> 'site_id',
+            'errorMsg'	=> $this->getMsg(3208),
+            'stopOnError'	=> true
+        ]);
 
-		// the user must exist - rejects bogus user_ids before any relation is written
-		$this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', [
-			'entity'	=> 'base.user',
-			'column'	=> 'user_id',
-			'errorMsg'	=> $this->getMsg(3001),
-			'stopOnError'	=> true
-		]);
-	}
+        // the user must exist - rejects bogus user_ids before any relation is written
+        $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', [
+            'entity'	=> 'base.user',
+            'column'	=> 'user_id',
+            'errorMsg'	=> $this->getMsg(3001),
+            'stopOnError'	=> true
+        ]);
+    }
 
     public function action() {
 
@@ -68,12 +68,12 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
         // validate() should already have rejected non-existent entities.
         if ( ! $s->wasPersisted() || ! $u->wasPersisted() ) {
 
-	        $this->set( 'response', [ 'error' => \OWA\Core\CoreAPI::t( 'The site or user does not exist.' ) ] );
-	        $this->errorAction();
+            $this->set( 'response', [ 'error' => \OWA\Core\CoreAPI::t( 'The site or user does not exist.' ) ] );
+            $this->errorAction();
 
-	        // return non-empty data so finishActionCall() does not fall through
-	        // to success() and overwrite the error response code.
-	        return $this->data;
+            // return non-empty data so finishActionCall() does not fall through
+            // to success() and overwrite the error response code.
+            return $this->data;
         }
 
         $relation = \OWA\Core\CoreAPI::entityFactory( 'base.site_user' );
@@ -83,8 +83,8 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
         $response = [
 
-	        'site'			=> $s->getProperties(),
-	        'allowed_user'	=> $u->getProperties( ['password', 'temp_passkey', 'session_epoch'] )
+            'site'			=> $s->getProperties(),
+            'allowed_user'	=> $u->getProperties( ['password', 'temp_passkey', 'session_epoch'] )
         ];
 
         $this->set('response', $response);

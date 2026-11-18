@@ -106,12 +106,12 @@ class Mailer {
         }
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
-        	
-        	if ( \OWA\Core\Lib::inDebug() ) {
-	        	
-	        	$this->mailer->SMTPDebug = SMTP::DEBUG_SERVER;
-        	}
-        	
+            
+            if ( \OWA\Core\Lib::inDebug() ) {
+                
+                $this->mailer->SMTPDebug = SMTP::DEBUG_SERVER;
+            }
+            
             $this->mailer->IsSMTP(); // telling the class to use SMTP
             
             if ( \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-host' ) ) {
@@ -301,5 +301,3 @@ class Mailer {
     }
     
 }
-
-?>

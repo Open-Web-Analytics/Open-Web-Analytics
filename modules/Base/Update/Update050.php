@@ -30,7 +30,7 @@ class Update050 extends \OWA\Core\Update {
 
     public $schema_version = 50;
 
-    const COLUMNS = array( 'transaction_id', 'tax', 'shipping' );
+    const COLUMNS = [ 'transaction_id', 'tax', 'shipping' ];
 
     /**
      * @param  bool $force
@@ -72,5 +72,3 @@ class Update050 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

@@ -126,7 +126,7 @@ class DimensionExpression {
             }
         }
 
-        $terms = array( sprintf( "COALESCE(%%1\$s.%s,'')", $parts[0] ) );
+        $terms = [ sprintf( "COALESCE(%%1\$s.%s,'')", $parts[0] ) ];
 
         for ( $i = 1; $i < count( $parts ); $i++ ) {
 
@@ -152,7 +152,7 @@ class DimensionExpression {
     private static function literal( $value ) {
 
         return "'" . str_replace(
-            array( '\\', "'" ), array( '\\\\', "''" ), (string) $value ) . "'";
+            [ '\\', "'" ], [ '\\\\', "''" ], (string) $value ) . "'";
     }
 
     /**
@@ -180,7 +180,7 @@ class DimensionExpression {
      * hour in yyyymmdd, so it has to come from `ts` and therefore has to be
      * converted.
      */
-    const PARTS = array(
+    const PARTS = [
         'year'       => 'FLOOR(%1$s.%2$s / 10000)',
         'month'      => 'FLOOR(MOD(%1$s.%2$s, 10000) / 100)',
         'day'        => 'MOD(%1$s.%2$s, 100)',
@@ -188,10 +188,10 @@ class DimensionExpression {
         'dayOfWeek'  => null,
         'dayOfYear'  => null,
         'weekOfYear' => null,
-    );
+    ];
 
     /** Parts that read a timestamp and therefore need the timezone. */
-    const CLOCK_PARTS = array( 'hour', 'minute', 'dateHour' );
+    const CLOCK_PARTS = [ 'hour', 'minute', 'dateHour' ];
 
     /**
      * SQL for one component of a date.
@@ -228,11 +228,11 @@ class DimensionExpression {
             return sprintf( $template, '%1$s', $column );
         }
 
-        $calendar = array(
+        $calendar = [
             'dayOfWeek'  => OWA_SQL_DAY_OF_WEEK,
             'dayOfYear'  => OWA_SQL_DAY_OF_YEAR,
             'weekOfYear' => OWA_SQL_WEEK_OF_YEAR,
-        );
+        ];
 
         /*
          * THE EMITTED SQL IS sprintf'd AGAIN, by the seam, to put the alias in.
@@ -299,20 +299,20 @@ class DimensionExpression {
 
         $converted = sprintf( OWA_SQL_LOCAL_DATETIME, $alias . '.' . $column, $zone );
 
-        $readers = array(
+        $readers = [
             'hour'   => OWA_SQL_HOUR,
             'minute' => OWA_SQL_MINUTE,
             // The day and the hour together: 2026092518.
             'dateHour' => OWA_SQL_DATE_HOUR,
-        );
+        ];
 
         $sql = sprintf( $readers[ $part ], $local );
 
         $sql = str_replace( $local, $converted, $sql );
         $sql = str_replace( '%', '%%', $sql );
 
-        return str_replace( array( $alias, $zone ),
-            array( '%1$s', '%2$s' ), $sql );
+        return str_replace( [ $alias, $zone ],
+            [ '%1$s', '%2$s' ], $sql );
     }
 
     /**
@@ -343,5 +343,3 @@ class DimensionExpression {
     }
 
 }
-
-?>

@@ -58,5 +58,3 @@ class Updates extends \OWA\Core\Controller {
         $this->set( 'modules', $modules );
     }
 }
-
-?>

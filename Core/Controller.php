@@ -39,7 +39,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @var array<mixed>
      */
-    public $params = array();
+    public $params = [];
 
     /**
      * Controller Type
@@ -74,7 +74,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @var array<mixed>
      */
-    public $data = array();
+    public $data = [];
 
     /**
      * Capability
@@ -129,8 +129,8 @@ class Controller extends \OWA\Core\Base {
         $this->params = $params;
         
         // set param validators
-		$this->validate();
-		
+        $this->validate();
+        
         // set the default view method
         $this->setViewMethod('delegate');
 
@@ -139,67 +139,67 @@ class Controller extends \OWA\Core\Base {
     }
     
     /**
-	 * Abstract method for setting any controller configuration.
-	 * Fires after constructor but before doAction.
-	 *
-	 * @return mixed not read
-	 */
+     * Abstract method for setting any controller configuration.
+     * Fires after constructor but before doAction.
+     *
+     * @return mixed not read
+     */
     public function init() {
-	    
-	    return false;
+        
+        return false;
     }
     
     
     /**
-	 * Method used to set param validators by concrete class
-	 *
-	 * @return void
-	 */
+     * Method used to set param validators by concrete class
+     *
+     * @return void
+     */
     public function validate() {
-	    
+        
     }
-	
-	/**
-	 * The answer while updates are pending: an error for the CLI and the REST
-	 * API, a redirect to the updates screen for the web app.
-	 *
-	 * @return mixed this controller's data
-	 */
-	public function updateAction() {
-		
-		$error_msg = \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' );
-	                
+    
+    /**
+     * The answer while updates are pending: an error for the CLI and the REST
+     * API, a redirect to the updates screen for the web app.
+     *
+     * @return mixed this controller's data
+     */
+    public function updateAction() {
+        
+        $error_msg = \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' );
+                    
         \OWA\Core\CoreAPI::debug( $error_msg );
         
         switch ( $this->getMode() ) {
             
             case \OWA\Core\RequestType::CLI:
-            	
-            	$this->set('error_msg', $error_msg );
-            	$this->setView('base.genericCli');
-            	$this->set( 'msgs', $error_msg );
-            	
-            	break;
-            	
+                
+                $this->set('error_msg', $error_msg );
+                $this->setView('base.genericCli');
+                $this->set( 'msgs', $error_msg );
+                
+                break;
+                
             case \OWA\Core\RequestType::REST:
             
-            	$this->set('error_msg', $error_msg );
-            	$this->setView('base.restApi');
+                $this->set('error_msg', $error_msg );
+                $this->setView('base.restApi');
             
-            	break;
+                break;
 
             default:
-            	
-            	// reset data
-            	$this->data = array();
-            	//redirect browser to update page
-            	$this->setRedirectAction( 'base.updates' );
+                
+                // reset data
+                $this->data = [];
+                //redirect browser to update page
+                $this->setRedirectAction( 'base.updates' );
                     
-            	break;
+                break;
         }
         
         return $this->data;
-	}
+    }
     /**
      * Handles request from caller
      *
@@ -220,8 +220,8 @@ class Controller extends \OWA\Core\Base {
 
                 if ( $this->pendingUpdateStopsAction() ) {
 
-	            	return $this->updateAction();
-	            }
+                    return $this->updateAction();
+                }
             }
         }
        
@@ -230,22 +230,22 @@ class Controller extends \OWA\Core\Base {
             
             return $this->data;
         }
-		
+        
         /* Check validity of nonce */
         
         // certain web app controllers require nonce verification
         if ( \OWA\Core\RequestType::isWebApp() ) {
-	        
-	        if ($this->is_nonce_required == true) {
-		        
-	            $nonce = $this->getParam('nonce');
-	
-	            if (!$nonce || !$this->verifyNonce($nonce)) {
-	                \OWA\Core\CoreAPI::debug('Nonce is not valid.');
-	                return $this->refused($this->nonceFailedAction());
-	            }
-	        }
-		}
+            
+            if ($this->is_nonce_required == true) {
+                
+                $nonce = $this->getParam('nonce');
+    
+                if (!$nonce || !$this->verifyNonce($nonce)) {
+                    \OWA\Core\CoreAPI::debug('Nonce is not valid.');
+                    return $this->refused($this->nonceFailedAction());
+                }
+            }
+        }
         
         // if the rest api is originating within the web app then we always need to check for a nonce
         // The only way to tell if that's the case is to check if the request was auth'd using "cookies"
@@ -391,21 +391,21 @@ class Controller extends \OWA\Core\Base {
             $this->post();
             return $actionResult;
         } else {
-	        // set output realted params like view, etc.
-	        $this->success();
+            // set output realted params like view, etc.
+            $this->success();
             $this->post();
             return $this->data;
         }
     }
     
     /**
-	 * set output realted params like view, etc.
-	 * called after action because older style controllers might set these details within action()
-	 *
-	 * @return mixed not read
-	 */
+     * set output realted params like view, etc.
+     * called after action because older style controllers might set these details within action()
+     *
+     * @return mixed not read
+     */
     public function success() {
-	    
+        
     }
 
     /**
@@ -536,7 +536,7 @@ class Controller extends \OWA\Core\Base {
      * @param  array<string, mixed> $conf
      * @return null
      */
-    public function addValidation($name, $value, $validation, $conf = array()) {
+    public function addValidation($name, $value, $validation, $conf = []) {
 
         if ( empty( $this->v ) ) {
 
@@ -557,7 +557,7 @@ class Controller extends \OWA\Core\Base {
      */
     public function addValidationError( $name, $msg ) {
 
-        return $this->addValidation( $name, '', 'required', array( 'errorMsg' => $msg ) );
+        return $this->addValidation( $name, '', 'required', [ 'errorMsg' => $msg ] );
     }
 
     /**
@@ -727,7 +727,7 @@ class Controller extends \OWA\Core\Base {
      * @param  array<string, mixed> $params
      * @return \OWA\Module\Base\Classes\TimePeriod
      */
-    public function makeTimePeriod($time_period, $params = array()) {
+    public function makeTimePeriod($time_period, $params = []) {
 
         return \OWA\Core\CoreAPI::makeTimePeriod($time_period, $params);
     }
@@ -824,7 +824,7 @@ class Controller extends \OWA\Core\Base {
      */
     public static function reportState() {
 
-        return array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'siteId' ) ) );
+        return array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, [ 'siteId' ] ) );
     }
 
     /**
@@ -835,53 +835,53 @@ class Controller extends \OWA\Core\Base {
 
         $this->set('view_method', 'redirect');
         $this->set('do', $do);
-		
-		$new_data = [
-			
-			'do' 			=> $do,
-			'view_method'	=> 'redirect'
-		];
-		
+        
+        $new_data = [
+            
+            'do' 			=> $do,
+            'view_method'	=> 'redirect'
+        ];
+        
 /*
-		if ( array_key_exists('status_code', $this->data) && ! empty($this->data['status_code'] ) ) {
-			
-			$new_data['status_code'] = $this->data['status_code'];
-		}
-		
-		if ( array_key_exists('error_code', $this->data) && ! empty($this->data['error_code'] ) ) {
-			
-			$new_data['error_code'] = $this->data['error_code'];
-		}
+        if ( array_key_exists('status_code', $this->data) && ! empty($this->data['status_code'] ) ) {
+            
+            $new_data['status_code'] = $this->data['status_code'];
+        }
+        
+        if ( array_key_exists('error_code', $this->data) && ! empty($this->data['error_code'] ) ) {
+            
+            $new_data['error_code'] = $this->data['error_code'];
+        }
 */
-		
-		foreach ($this->data as $k => $param) {
-			
-			// && , not || . An array satisfies ! is_object and an object
-			// satisfies ! is_array, so with || every value passed and the
-			// filter copied exactly what it was written to hold back.
-			if ( ! is_array( $param ) && ! is_object( $param ) ) {
-				
-				$new_data[$k] = $param;
-			}
-		}
+        
+        foreach ($this->data as $k => $param) {
+            
+            // && , not || . An array satisfies ! is_object and an object
+            // satisfies ! is_array, so with || every value passed and the
+            // filter copied exactly what it was written to hold back.
+            if ( ! is_array( $param ) && ! is_object( $param ) ) {
+                
+                $new_data[$k] = $param;
+            }
+        }
 
-		/*
-		 * What is being looked at goes with every redirect -- the Property and
-		 * the period -- so a save lands on the screen it came from with the
-		 * same ones, an install-wide setting's included. A controller that
-		 * names another Property, or none (one it has just deleted), sets
-		 * propertyId itself.
-		 */
-		foreach ( self::reportState() as $key ) {
+        /*
+         * What is being looked at goes with every redirect -- the Property and
+         * the period -- so a save lands on the screen it came from with the
+         * same ones, an install-wide setting's included. A controller that
+         * names another Property, or none (one it has just deleted), sets
+         * propertyId itself.
+         */
+        foreach ( self::reportState() as $key ) {
 
-			if ( ! array_key_exists( $key, $new_data ) && (string) $this->getParam( $key ) !== '' ) {
+            if ( ! array_key_exists( $key, $new_data ) && (string) $this->getParam( $key ) !== '' ) {
 
-				$new_data[ $key ] = (string) $this->getParam( $key );
-			}
-		}
+                $new_data[ $key ] = (string) $this->getParam( $key );
+            }
+        }
 
         \OWA\Core\CoreAPI::debug( 'setRedirectAction', $new_data );
-		$this->data = $new_data;		
+        $this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method
         if (array_key_exists('params', $this->data)) {
@@ -899,14 +899,14 @@ class Controller extends \OWA\Core\Base {
 
         $this->data[$name] = $value;
     }
-	
-	/**
-	 * Sets the type of controler
-	 * @depricated
-	 * @todo remove this
-	 * @param  string $string
-	 * @return void
-	 */
+    
+    /**
+     * Sets the type of controler
+     * @depricated
+     * @todo remove this
+     * @param  string $string
+     * @return void
+     */
     public function setControllerType($string) {
 
         $this->type = $string;
@@ -919,8 +919,8 @@ class Controller extends \OWA\Core\Base {
      * @return string
      */
     public function getMode() {
-	    
-	    return \OWA\Core\RequestType::current();
+        
+        return \OWA\Core\RequestType::current();
     }
 
     /**
@@ -928,7 +928,7 @@ class Controller extends \OWA\Core\Base {
      * @param  string[] $also_hosts see Lib::resolveRedirectUrl()
      * @return null
      */
-    public function redirectBrowserToUrl($url, array $also_hosts = array()) {
+    public function redirectBrowserToUrl($url, array $also_hosts = []) {
 
         return \OWA\Core\Lib::redirectBrowser($url, $also_hosts);
     }
@@ -1048,32 +1048,32 @@ class Controller extends \OWA\Core\Base {
      */
     public function nonceFailedAction() {
 
-		// Not signed in: the nonce is beside the point, credentials come first.
-		if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
+        // Not signed in: the nonce is beside the point, credentials come first.
+        if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
 
-			return $this->notAuthenticatedAction();
-		}
+            return $this->notAuthenticatedAction();
+        }
 
-		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
+        if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 
-			$this->setView('base.restApi');
-			$this->set('error_msg', $this->getMsg(2005));
-			http_response_code(403);
+            $this->setView('base.restApi');
+            $this->set('error_msg', $this->getMsg(2005));
+            http_response_code(403);
 
-		} else {
+        } else {
 
-			$this->setView('base.error');
-			$this->set('error_msg', $this->getMsg(2005));
+            $this->setView('base.error');
+            $this->set('error_msg', $this->getMsg(2005));
 
-			/*
-			 * Telling someone to go back to where they started is only useful if
-			 * they are given the way back. The screen that rendered the expired
-			 * form is the referring page, and it will mint a fresh nonce. Passed
-			 * on its own, not inside the message: it is client-supplied, and the
-			 * error page escapes it as an attribute.
-			 */
-			$this->set('error_back_url', (string) $this->getReferringPage());
-		}
+            /*
+             * Telling someone to go back to where they started is only useful if
+             * they are given the way back. The screen that rendered the expired
+             * form is the referring page, and it will mint a fresh nonce. Passed
+             * on its own, not inside the message: it is client-supplied, and the
+             * error page escapes it as an attribute.
+             */
+            $this->set('error_back_url', (string) $this->getReferringPage());
+        }
     }
 
     /**
@@ -1093,51 +1093,51 @@ class Controller extends \OWA\Core\Base {
      * @return mixed nothing here; a non-empty answer is doAction()'s
      */
     public function notAuthenticatedAction() {
-		
-		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
-			
-			$this->setView('base.restApi');
-			$this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
-				? self::legacyApiKeyMessage()
-				: \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
-			http_response_code(401);	
-		} else {
-	        $this->setRedirectAction('base.loginForm');
+        
+        if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
+            
+            $this->setView('base.restApi');
+            $this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
+                ? self::legacyApiKeyMessage()
+                : \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
+            http_response_code(401);	
+        } else {
+            $this->setRedirectAction('base.loginForm');
 
-			// 'go' resumes the blocked request after login, which is only safe for
-			// a destination that just renders something.
-			//
-			// A nonce is derived from the current user_id, so one minted before
-			// login can never verify after it -- the request would bounce straight
-			// back to this form, looking to the user like their credentials were
-			// refused. Re-minting it after login is not the fix: that would let a
-			// crafted link name any action and have the server bless it, which is
-			// the CSRF the nonce exists to prevent.
-			//
-			// So a state-changing action is never resumed. What can be resumed is
-			// the page that OFFERED it -- the referring page, which will mint a
-			// fresh nonce for the authenticated identity. That is a destination
-			// that renders rather than one that writes, which is the distinction
-			// that matters here.
-			//
-			// is_nonce_required marks exactly that set: every controller that sets
-			// it is a write (add/edit/delete/activate/update/apply). No report or
-			// view controller does, so deep-linking to a report still resumes.
-			if ( ! $this->is_nonce_required ) {
+            // 'go' resumes the blocked request after login, which is only safe for
+            // a destination that just renders something.
+            //
+            // A nonce is derived from the current user_id, so one minted before
+            // login can never verify after it -- the request would bounce straight
+            // back to this form, looking to the user like their credentials were
+            // refused. Re-minting it after login is not the fix: that would let a
+            // crafted link name any action and have the server bless it, which is
+            // the CSRF the nonce exists to prevent.
+            //
+            // So a state-changing action is never resumed. What can be resumed is
+            // the page that OFFERED it -- the referring page, which will mint a
+            // fresh nonce for the authenticated identity. That is a destination
+            // that renders rather than one that writes, which is the distinction
+            // that matters here.
+            //
+            // is_nonce_required marks exactly that set: every controller that sets
+            // it is a write (add/edit/delete/activate/update/apply). No report or
+            // view controller does, so deep-linking to a report still resumes.
+            if ( ! $this->is_nonce_required ) {
 
-				$this->set('go', urlencode(\OWA\Core\Lib::currentPublicUrl()));
+                $this->set('go', urlencode(\OWA\Core\Lib::currentPublicUrl()));
 
-			} else {
+            } else {
 
-				// A state-changing action is never resumed: the nonce is derived
-				// from user_id, so one minted before signing in cannot verify
-				// afterwards, and re-minting it would let a crafted link name any
-				// action and have the server bless it. Login falls through to
-				// start_page and the user re-initiates from a screen that mints a
-				// nonce for their authenticated identity.
-				$this->set('go', '');
-			}
-		}
+                // A state-changing action is never resumed: the nonce is derived
+                // from user_id, so one minted before signing in cannot verify
+                // afterwards, and re-minting it would let a crafted link name any
+                // action and have the server bless it. Login falls through to
+                // start_page and the user re-initiates from a screen that mints a
+                // nonce for their authenticated identity.
+                $this->set('go', '');
+            }
+        }
     }
 
     /**
@@ -1324,7 +1324,7 @@ class Controller extends \OWA\Core\Base {
             $propertyId = $site->get( 'property_id' );
         }
 
-        $nav = array();
+        $nav = [];
 
         /*
          * YOUR OWN SETTINGS, first.
@@ -1343,22 +1343,22 @@ class Controller extends \OWA\Core\Base {
          * User-level preferences land here as siblings of Profile rather than
          * inside it.
          */
-        $nav['My Preferences'] = array(
-            array(
+        $nav['My Preferences'] = [
+            [
                 'do'         => 'base.myProfile',
                 'label'      => \OWA\Core\CoreAPI::t( 'User profile' ),
-                'params'     => array(),
+                'params'     => [],
                 // What admin, analyst and viewer all carry and nothing else
                 // does -- the capability that means "signed in".
                 'capability' => 'view_site_list',
-            ),
-            array(
+            ],
+            [
                 'do'         => 'base.myAppPasswords',
                 'label'      => \OWA\Core\CoreAPI::t( 'Application passwords' ),
-                'params'     => array(),
+                'params'     => [],
                 'capability' => 'view_site_list',
-            ),
-        );
+            ],
+        ];
 
         /*
          * Install-wide options head the SAME nav now.
@@ -1388,52 +1388,52 @@ class Controller extends \OWA\Core\Base {
             unset( $registered['Instance'] );
         }
 
-        $nav['Organization'] = array(
-            array( 'do' => 'base.organizationProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ), 'params' => array(),
-                   'capability' => 'edit_settings' ),
+        $nav['Organization'] = [
+            [ 'do' => 'base.organizationProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ), 'params' => [],
+                   'capability' => 'edit_settings' ],
             /*
              * User accounts live in the Organization, which is why Users is
              * here and not in the install settings nav -- that put the people
              * belonging to an Organization somewhere that never named one.
              */
-            array( 'do' => 'base.users', 'label' => \OWA\Core\CoreAPI::t( 'Users' ), 'params' => array(),
-                   'capability' => 'edit_users' ),
-        );
+            [ 'do' => 'base.users', 'label' => \OWA\Core\CoreAPI::t( 'Users' ), 'params' => [],
+                   'capability' => 'edit_users' ],
+        ];
 
         if ( $propertyId ) {
 
-            $nav['Property'] = array(
-                array( 'do' => 'base.propertyProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_sites' ),
+            $nav['Property'] = [
+                [ 'do' => 'base.propertyProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
+                       'params' => [ 'propertyId' => $propertyId ],
+                       'capability' => 'edit_sites' ],
                 /*
                  * Goal event definitions describe a behaviour on the WEBSITE,
                  * so they belong here and every Profile of it inherits them.
                  */
-                array( 'do' => 'base.goalEventDefinitions', 'label' => \OWA\Core\CoreAPI::t( 'Goal event definitions' ),
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_settings' ),
+                [ 'do' => 'base.goalEventDefinitions', 'label' => \OWA\Core\CoreAPI::t( 'Goal event definitions' ),
+                       'params' => [ 'propertyId' => $propertyId ],
+                       'capability' => 'edit_settings' ],
                 /*
                  * Custom dimensions belong to the Property because the
                  * reporting cube does -- one cube per Property, so the column a
                  * registration adds is the Property's and two Properties may
                  * use the same key for different things.
                  */
-                array( 'do' => 'base.customDimensions', 'label' => \OWA\Core\CoreAPI::t( 'Custom dimensions' ),
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_settings' ),
-                array( 'do' => 'base.propertyRetention', 'label' => \OWA\Core\CoreAPI::t( 'Data retention' ),
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_settings' ),
+                [ 'do' => 'base.customDimensions', 'label' => \OWA\Core\CoreAPI::t( 'Custom dimensions' ),
+                       'params' => [ 'propertyId' => $propertyId ],
+                       'capability' => 'edit_settings' ],
+                [ 'do' => 'base.propertyRetention', 'label' => \OWA\Core\CoreAPI::t( 'Data retention' ),
+                       'params' => [ 'propertyId' => $propertyId ],
+                       'capability' => 'edit_settings' ],
                 /*
                  * Access is granted to a WEBSITE, not to one way of observing
                  * it, so it belongs to the Property. Stored per Profile;
                  * PropertyGrants reads and writes it across all of them.
                  */
-                array( 'do' => 'base.propertyAccess', 'label' => \OWA\Core\CoreAPI::t( 'Access' ),
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_sites' ),
-            );
+                [ 'do' => 'base.propertyAccess', 'label' => \OWA\Core\CoreAPI::t( 'Access' ),
+                       'params' => [ 'propertyId' => $propertyId ],
+                       'capability' => 'edit_sites' ],
+            ];
         }
 
         /*
@@ -1447,26 +1447,26 @@ class Controller extends \OWA\Core\Base {
          */
         if ( $propertyId ) {
 
-            $nav['Profiles'] = array();
+            $nav['Profiles'] = [];
 
             foreach ( \OWA\Module\Base\Controller\PropertyProfiles::rowsFor( $propertyId ) as $profile ) {
 
-                $nav['Profiles'][] = array(
+                $nav['Profiles'][] = [
                     'do'         => 'base.sitesInvocation',
                     'label'      => (string) ( $profile['name'] ?: $profile['site_id'] ),
-                    'params'     => array( 'siteId' => $profile['site_id'] ),
+                    'params'     => [ 'siteId' => $profile['site_id'] ],
                     'capability' => 'edit_sites',
                     // Filled in below, once the registered tabs are known.
-                    'current_for' => array(),
-                );
+                    'current_for' => [],
+                ];
             }
 
-            $nav['Profiles'][] = array(
+            $nav['Profiles'][] = [
                 'do'         => 'base.sitesProfile',
                 'label'      => \OWA\Core\CoreAPI::t( 'Add profile' ),
-                'params'     => array( 'propertyId' => $propertyId ),
+                'params'     => [ 'propertyId' => $propertyId ],
                 'capability' => 'edit_sites',
-            );
+            ];
         }
 
         /*
@@ -1477,22 +1477,22 @@ class Controller extends \OWA\Core\Base {
          */
         if ( $siteId ) {
 
-            $nav['Observation Profile'] = array(
-                array( 'do' => 'base.sitesInvocation', 'label' => \OWA\Core\CoreAPI::t( 'Tracking tag' ),
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_sites' ),
+            $nav['Observation Profile'] = [
+                [ 'do' => 'base.sitesInvocation', 'label' => \OWA\Core\CoreAPI::t( 'Tracking tag' ),
+                       'params' => [ 'siteId' => $siteId ],
+                       'capability' => 'edit_sites' ],
                 /*
                  * An Observation Profile IS a way of observing, so how it
                  * watches the site is its own screen rather than a second form
                  * stacked under its name.
                  */
-                array( 'do' => 'base.profileSettings', 'label' => \OWA\Core\CoreAPI::t( 'Observation settings' ),
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_sites' ),
-                array( 'do' => 'base.sitesProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
-                       'params' => array( 'siteId' => $siteId, 'edit' => true ),
-                       'capability' => 'edit_sites' ),
-            );
+                [ 'do' => 'base.profileSettings', 'label' => \OWA\Core\CoreAPI::t( 'Observation settings' ),
+                       'params' => [ 'siteId' => $siteId ],
+                       'capability' => 'edit_sites' ],
+                [ 'do' => 'base.sitesProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
+                       'params' => [ 'siteId' => $siteId, 'edit' => true ],
+                       'capability' => 'edit_sites' ],
+            ];
         }
 
         /*
@@ -1527,10 +1527,10 @@ class Controller extends \OWA\Core\Base {
          * one included.
          */
         $tabs = array_merge(
-            array( 'base.sitesInvocation', 'base.profileSettings', 'base.sitesProfile' ),
-            array_column( (array) ( $registered['Observation Profile'] ?? array() ), 'do' ) );
+            [ 'base.sitesInvocation', 'base.profileSettings', 'base.sitesProfile' ],
+            array_column( (array) ( $registered['Observation Profile'] ?? [] ), 'do' ) );
 
-        foreach ( (array) ( $nav['Profiles'] ?? array() ) as $i => $entry ) {
+        foreach ( (array) ( $nav['Profiles'] ?? [] ) as $i => $entry ) {
 
             if ( isset( $entry['current_for'] ) ) {
 
@@ -1574,7 +1574,7 @@ class Controller extends \OWA\Core\Base {
      */
     public static function settingsNavSections( array $panels ) {
 
-        $sections = array();
+        $sections = [];
 
         foreach ( $panels as $items ) {
 
@@ -1589,13 +1589,13 @@ class Controller extends \OWA\Core\Base {
                     $section = 'Instance';
                 }
 
-                $sections[ $section ][] = array(
+                $sections[ $section ][] = [
                     'do'         => $item['do'],
                     'label'      => $item['anchortext'],
-                    'params'     => array(),
+                    'params'     => [],
                     'capability' => (string) ( $item['capability'] ?? 'edit_settings' ),
                     'order'      => (int) ( $item['order'] ?? 1 ),
-                );
+                ];
             }
         }
 
@@ -1606,11 +1606,11 @@ class Controller extends \OWA\Core\Base {
              * pages that both take the default would otherwise swap places
              * between requests for no reason a reader could see.
              */
-            $keyed = array();
+            $keyed = [];
 
             foreach ( $items as $i => $item ) {
 
-                $keyed[] = array( $item['order'], $i, $item );
+                $keyed[] = [ $item['order'], $i, $item ];
             }
 
             sort( $keyed );
@@ -1655,7 +1655,7 @@ class Controller extends \OWA\Core\Base {
         $db->selectColumn( 'id, name' );
 
         $organizations = (array) $db->getAllRows();
-        $org           = $organizations ? $organizations[0] : array( 'id' => '', 'name' => '' );
+        $org           = $organizations ? $organizations[0] : [ 'id' => '', 'name' => '' ];
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $property->getTableName() );
@@ -1669,7 +1669,7 @@ class Controller extends \OWA\Core\Base {
          */
         $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
-        $properties = array();
+        $properties = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -1679,7 +1679,7 @@ class Controller extends \OWA\Core\Base {
                 continue;
             }
 
-            $row['profiles'] = array();
+            $row['profiles'] = [];
             $properties[ $row['id'] ] = $row;
         }
 
@@ -1688,15 +1688,15 @@ class Controller extends \OWA\Core\Base {
          * else sees what they were granted, and a Property none of whose
          * Profiles they can see is dropped rather than shown empty.
          */
-        $unassigned = array();
+        $unassigned = [];
 
         foreach ( $sites as $site ) {
 
-            $entry = array(
+            $entry = [
                 'site_id' => $site->get( 'site_id' ),
                 'name'    => $site->get( 'name' ),
                 'domain'  => $site->get( 'domain' ),
-            );
+            ];
 
             $parent = $site->get( 'property_id' );
 
@@ -1739,18 +1739,18 @@ class Controller extends \OWA\Core\Base {
 
         if ( $unassigned ) {
 
-            $properties['__unassigned'] = array(
+            $properties['__unassigned'] = [
                 'id'       => '',
                 'name'     => \OWA\Core\CoreAPI::t( 'Unassigned' ),
                 'domain'   => '',
                 'profiles' => $unassigned,
-            );
+            ];
         }
 
-        return array(
+        return [
             'organization' => $org,
             'properties'   => array_values( $properties ),
-        );
+        ];
     }
 
     /**
@@ -1762,7 +1762,7 @@ class Controller extends \OWA\Core\Base {
         $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
 
         if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
-            $result = array();
+            $result = [];
            
             $relations = \OWA\Core\CoreAPI::getSitesList();
 
@@ -1787,7 +1787,7 @@ class Controller extends \OWA\Core\Base {
             return $result;
 
         } else {
-	        
+            
             return $currentUser->getAssignedSites();
         }
     }
@@ -1818,5 +1818,3 @@ class Controller extends \OWA\Core\Base {
     }
 
 }
-
-?>

@@ -165,7 +165,7 @@ class Base {
 
         static $_owa_messages;
 
-        $msg = array();
+        $msg = [];
 
         if (empty($_owa_messages)) {
             require(\OWA\Core\Env::confDir() . 'messages.php');
@@ -174,19 +174,19 @@ class Base {
         if ( $code && array_key_exists( $code, $_owa_messages ) ) {
 
             $msg = $_owa_messages[$code];
-			
-			// Substitutions are keyed by the message part they fill in, and each
-			// value is that part's vsprintf() argument list. A caller that fills
-			// in only one part must leave the other one untouched, and a caller
-			// passing a bare scalar means a single argument -- handing either of
-			// those straight to vsprintf() is a TypeError on PHP 8.
-			foreach ( ['headline', 'message'] as $part ) {
+            
+            // Substitutions are keyed by the message part they fill in, and each
+            // value is that part's vsprintf() argument list. A caller that fills
+            // in only one part must leave the other one untouched, and a caller
+            // passing a bare scalar means a single argument -- handing either of
+            // those straight to vsprintf() is a TypeError on PHP 8.
+            foreach ( ['headline', 'message'] as $part ) {
 
-				if ( isset( $msg[ $part ] ) && isset( $substitutions[ $part ] ) ) {
+                if ( isset( $msg[ $part ] ) && isset( $substitutions[ $part ] ) ) {
 
-					$msg[ $part ] = vsprintf( $msg[ $part ], (array) $substitutions[ $part ] );
-				}
-			}
+                    $msg[ $part ] = vsprintf( $msg[ $part ], (array) $substitutions[ $part ] );
+                }
+            }
         }
 
         return $msg;
@@ -205,5 +205,3 @@ class Base {
     }
 
 }
-
-?>

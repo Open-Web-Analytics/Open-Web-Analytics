@@ -43,7 +43,7 @@ class VisitorMigrator extends FactMigrator {
 
     protected function events( array $r, array $refs ) {
 
-        return array();
+        return [];
     }
 
     /** This pass writes no raw rows of its own, so there is nothing to count. */
@@ -63,7 +63,7 @@ class VisitorMigrator extends FactMigrator {
 
         $table   = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
         $columns = array_keys( $out[0] );
-        $params  = array();
+        $params  = [];
 
         foreach ( $out as $row ) {
 
@@ -100,7 +100,7 @@ class VisitorMigrator extends FactMigrator {
             . ' first_session_ad, first_session_search_terms' );
         $referers = $this->lookup( 'referer', array_column( $rows, 'referer_id' ), 'id, url' );
 
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $r ) {
 
@@ -118,7 +118,7 @@ class VisitorMigrator extends FactMigrator {
             $tagged  = self::present( $visitor['first_session_campaign'] ?? null )
                     || self::present( $visitor['first_session_ad'] ?? null );
 
-            $row = array(
+            $row = [
                 'visitor_id'       => (string) $r['visitor_id'],
                 'site_id'          => (string) $r['site_id'],
                 'acq_source'       => $tagged ? self::value( $visitor['first_session_source'] ) : null,
@@ -131,7 +131,7 @@ class VisitorMigrator extends FactMigrator {
                     ? ( \OWA\Module\Base\Classes\V2Event::parseUrl( $referer )['host'] ?: null ) : null,
                 'acq_ts'           => (int) $r['timestamp'] * 1000000,
                 'last_seen'        => (int) substr( (string) $r['yyyymmdd'], 0, 6 ),
-            );
+            ];
 
             $out[] = $row;
         }
@@ -145,14 +145,14 @@ class VisitorMigrator extends FactMigrator {
         $table   = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
         $deleted = 0;
         $after   = null;
-        $scratch = array( 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => array() );
+        $scratch = [ 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => [] ];
 
         while ( $rows = $this->read( $site_id, $after ) ) {
 
             foreach ( $this->acquisitions( $rows, $scratch ) as $row ) {
 
                 $this->db()->query( sprintf( 'DELETE FROM %s WHERE visitor_id = ? AND acq_ts = ?', $table ),
-                    array( $row['visitor_id'], $row['acq_ts'] ) );
+                    [ $row['visitor_id'], $row['acq_ts'] ] );
 
                 $deleted++;
             }
@@ -190,5 +190,3 @@ class VisitorMigrator extends FactMigrator {
         return self::present( $v ) ? self::v1Text( $v ) : null;
     }
 }
-
-?>

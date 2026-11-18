@@ -32,9 +32,9 @@ namespace OWA\Module\Base\Classes\Cube;
 class SourceStep extends Step {
 
     /** Android package => the site it is the app of, as a source. Lower case. */
-    const APP_SOURCES = array(
+    const APP_SOURCES = [
         'com.google.android.googlequicksearchbox' => 'google.com',
-    );
+    ];
 
     /** @var string */
     private $tag;
@@ -67,7 +67,7 @@ class SourceStep extends Step {
 
     public function requires() {
 
-        return array( $this->join );
+        return [ $this->join ];
     }
 
     /**
@@ -116,5 +116,3 @@ class SourceStep extends Step {
             $this->absent, $context->literal( \OWA\Module\Base\Classes\V2Event::UNRESOLVED ), $resolved );
     }
 }
-
-?>

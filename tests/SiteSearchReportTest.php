@@ -30,11 +30,11 @@ final class SiteSearchReportTest extends TestCase
     const SESSION = 8885100000000092;
 
     /** session => the terms it searched, in order */
-    const SEARCHES = array(
-        array( 'boots', 'boots', 'Red Shoes' ),
-        array( 'boots' ),
-        array(),
-    );
+    const SEARCHES = [
+        [ 'boots', 'boots', 'Red Shoes' ],
+        [ 'boots' ],
+        [],
+    ];
 
     public static function setUpBeforeClass(): void
     {
@@ -45,26 +45,26 @@ final class SiteSearchReportTest extends TestCase
         self::dropFixture();
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setProperties( array(
+        $property->setProperties( [
             'id'            => self::PROPERTY,
             'name'          => 'Site search report fixture',
             'domain'        => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
-        ) );
+        ] );
 
         if ( ! $property->create() ) {
             throw new \RuntimeException( 'seeding owa_property failed' );
         }
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->setProperties( array(
+        $site->setProperties( [
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
             'property_id' => self::PROPERTY,
             'name'        => 'Site search report fixture profile',
             'domain'      => 'example.test',
-        ) );
+        ] );
 
         if ( ! $site->create() ) {
             throw new \RuntimeException( 'seeding owa_site failed' );
@@ -102,17 +102,17 @@ final class SiteSearchReportTest extends TestCase
 
         foreach ( self::SEARCHES as $i => $terms ) {
 
-            $rows = array( array( 'page_view', null ) );
+            $rows = [ [ 'page_view', null ] ];
 
             foreach ( $terms as $term ) {
-                $rows[] = array( 'view_search_results', $term );
+                $rows[] = [ 'view_search_results', $term ];
             }
 
             foreach ( $rows as $row ) {
 
                 $event = Cubes::entityFor( self::PROPERTY );
 
-                $event->setProperties( array(
+                $event->setProperties( [
                     'id'             => 920000 + $n,
                     'event_type'     => $row[0],
                     'site_id'        => self::SITE,
@@ -123,7 +123,7 @@ final class SiteSearchReportTest extends TestCase
                     'yyyymmdd'       => $day,
                     'page_path'      => '/search',
                     'search_term'    => $row[1],
-                ) );
+                ] );
 
                 if ( ! $event->create() ) {
                     throw new \RuntimeException( sprintf(
@@ -146,7 +146,7 @@ final class SiteSearchReportTest extends TestCase
         $db->query( sprintf( 'DELETE FROM %s WHERE id = %d',
             \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName(), self::PROPERTY ) );
 
-        foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
+        foreach ( [ '', '_rebuild', '_computed' ] as $suffix ) {
             $db->query( sprintf( 'DROP TABLE IF EXISTS %s%s', Cubes::tableFor( self::PROPERTY ), $suffix ) );
         }
     }
@@ -176,9 +176,9 @@ final class SiteSearchReportTest extends TestCase
 
         $this->assertNotNull( $query, "the report has no widget '$widgetId'" );
 
-        $constraints = array();
+        $constraints = [];
 
-        foreach ( (array) ( $report['settings']['constraints'] ?? array() ) as $c ) {
+        foreach ( (array) ( $report['settings']['constraints'] ?? [] ) as $c ) {
             if ( isset( $c['value'] ) ) {
                 $constraints[] = $c['dimension'] . '==' . $c['value'];
             }
@@ -199,7 +199,7 @@ final class SiteSearchReportTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame( array(), (array) $rs->errors, "the '$widgetId' query did not resolve" );
+        $this->assertSame( [], (array) $rs->errors, "the '$widgetId' query did not resolve" );
 
         return (array) $rs->resultsRows;
     }
@@ -207,17 +207,17 @@ final class SiteSearchReportTest extends TestCase
     /** Each term, most searched first, with the sessions that searched it. */
     public function testSearchTermsCountSearchesAndSessions(): void
     {
-        $got = array();
+        $got = [];
 
         foreach ( $this->runWidget( 'terms' ) as $row ) {
-            $got[] = array( $row['searchTerm']['value'],
-                (int) $row['eventCount']['value'], (int) $row['sessions']['value'] );
+            $got[] = [ $row['searchTerm']['value'],
+                (int) $row['eventCount']['value'], (int) $row['sessions']['value'] ];
         }
 
-        $this->assertSame( array(
-            array( 'boots', 3, 2 ),
-            array( 'Red Shoes', 1, 1 ),
-        ), $got );
+        $this->assertSame( [
+            [ 'boots', 3, 2 ],
+            [ 'Red Shoes', 1, 1 ],
+        ], $got );
     }
 
     /** The trend counts searches, not every event on the site. */

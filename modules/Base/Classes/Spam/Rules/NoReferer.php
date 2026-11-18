@@ -25,5 +25,3 @@ class NoReferer extends \OWA\Module\Base\Classes\Spam\Rule {
         return trim( (string) ( $headers['referer'] ?? '' ) ) === '';
     }
 }
-
-?>

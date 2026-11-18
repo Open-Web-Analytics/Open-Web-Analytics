@@ -98,5 +98,3 @@ class SitesEdit extends \OWA\Core\AdminController {
         $this->setStatusCode( 3201 );
     }
 }
-
-?>

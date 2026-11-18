@@ -60,6 +60,6 @@ final class HomeScreenAppTest extends TestCase
         }
 
         $this->assertFileExists( $dir . 'owa-app-icon-180.png' );
-        $this->assertSame( array( 180, 180 ), array_slice( getimagesize( $dir . 'owa-app-icon-180.png' ), 0, 2 ) );
+        $this->assertSame( [ 180, 180 ], array_slice( getimagesize( $dir . 'owa-app-icon-180.png' ), 0, 2 ) );
     }
 }

@@ -27,7 +27,7 @@ class Login extends \OWA\Core\Controller {
 
         // The one screen that signs someone in. The session is accepted too,
         // after the form, as authenticateUser() has always ordered them.
-        $this->setAuthMethods( array( 'login_form', 'cookies' ) );
+        $this->setAuthMethods( [ 'login_form', 'cookies' ] );
     }
 
     public function validate()
@@ -83,5 +83,3 @@ class Login extends \OWA\Core\Controller {
         $this->set('user_id', $this->getParam('user_id'));
     }
 }
-
-?>

@@ -49,7 +49,7 @@ final class ActionNameValidationTest extends TestCase
     {
         $this->expectException(\Exception::class);
 
-        \OWA\Core\CoreAPI::moduleFactory($action, 'Controller', array());
+        \OWA\Core\CoreAPI::moduleFactory($action, 'Controller', []);
     }
 
     public function testAnActionWithNoSeparatorIsRefused(): void
@@ -59,7 +59,7 @@ final class ActionNameValidationTest extends TestCase
         // fataled deeper in the factory.
         $this->expectException(\Exception::class);
 
-        \OWA\Core\CoreAPI::moduleFactory('reportContent', 'Controller', array());
+        \OWA\Core\CoreAPI::moduleFactory('reportContent', 'Controller', []);
     }
 
     public function testALegitimateActionStillResolves(): void
@@ -68,7 +68,7 @@ final class ActionNameValidationTest extends TestCase
         // still how third-party module actions load.
         // Any action still implemented by a controller will do; dashboard used
         // to be one and is a report definition now.
-        $controller = \OWA\Core\CoreAPI::moduleFactory('base.visualizationFunnel', 'Controller', array());
+        $controller = \OWA\Core\CoreAPI::moduleFactory('base.visualizationFunnel', 'Controller', []);
 
         $this->assertIsObject($controller);
         $this->assertSame('base', $controller->module);

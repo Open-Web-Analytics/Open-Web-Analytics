@@ -45,11 +45,11 @@ class PropertyDelete extends \OWA\Core\AdminController {
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required' );
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
-            array(
+            [
                 'entity'   => 'base.property',
                 'column'   => 'id',
                 'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
-            ) );
+            ] );
     }
 
     public function action() {

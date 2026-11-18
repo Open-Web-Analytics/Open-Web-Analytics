@@ -96,19 +96,19 @@ final class SiteDomainNameTest extends TestCase
 
     public static function installerDomainProvider(): array
     {
-        return array(
-            'a bare domain is left alone'  => array( 'example.com', 'example.com' ),
-            'https is stripped'            => array( 'https://example.com', 'example.com' ),
-            'http is stripped'             => array( 'http://example.com', 'example.com' ),
-            'a trailing slash goes'        => array( 'https://example.com/', 'example.com' ),
-            'a subdomain survives'         => array( 'https://sub.example.co.uk', 'sub.example.co.uk' ),
-            'surrounding space goes'       => array( '  example.com  ', 'example.com' ),
-            'a port is not a scheme'       => array( 'example.com:8080', 'example.com:8080' ),
-            'a scheme in capitals'         => array( 'HTTPS://Example.com/', 'Example.com' ),
-            'a port after a scheme stays'  => array( 'http://localhost:8080/', 'localhost:8080' ),
-            'two schemes, two slashes'     => array( 'https://http://example.com//', 'example.com' ),
-            'another scheme is not http'   => array( 'ftp://example.com', 'ftp://example.com' ),
-        );
+        return [
+            'a bare domain is left alone'  => [ 'example.com', 'example.com' ],
+            'https is stripped'            => [ 'https://example.com', 'example.com' ],
+            'http is stripped'             => [ 'http://example.com', 'example.com' ],
+            'a trailing slash goes'        => [ 'https://example.com/', 'example.com' ],
+            'a subdomain survives'         => [ 'https://sub.example.co.uk', 'sub.example.co.uk' ],
+            'surrounding space goes'       => [ '  example.com  ', 'example.com' ],
+            'a port is not a scheme'       => [ 'example.com:8080', 'example.com:8080' ],
+            'a scheme in capitals'         => [ 'HTTPS://Example.com/', 'Example.com' ],
+            'a port after a scheme stays'  => [ 'http://localhost:8080/', 'localhost:8080' ],
+            'two schemes, two slashes'     => [ 'https://http://example.com//', 'example.com' ],
+            'another scheme is not http'   => [ 'ftp://example.com', 'ftp://example.com' ],
+        ];
     }
 
     /**
@@ -120,7 +120,7 @@ final class SiteDomainNameTest extends TestCase
      */
     public function testWhatTheInstallerStoresSurvivesTheRoundTrip(): void
     {
-        foreach ( array( 'example.com', 'https://example.com/', 'sub.example.co.uk' ) as $typed ) {
+        foreach ( [ 'example.com', 'https://example.com/', 'sub.example.co.uk' ] as $typed ) {
 
             $stored = \OWA\Module\Base\Classes\SiteManager::domainOnly( $typed );
 

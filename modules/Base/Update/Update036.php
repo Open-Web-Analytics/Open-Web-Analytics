@@ -56,10 +56,10 @@ class Update036 extends \OWA\Core\Update {
      */
     private function columns() {
 
-        return array(
+        return [
             'base.event_raw'           => 'referer_host',
             'base.visitor_acquisition' => 'acq_referer_host',
-        );
+        ];
     }
 
     /**
@@ -108,5 +108,3 @@ class Update036 extends \OWA\Core\Update {
     }
 
 }
-
-?>

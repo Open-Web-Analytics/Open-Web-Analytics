@@ -14,41 +14,41 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class TouchTargetTest extends TestCase
 {
-    private const CSS = array( 'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css' );
+    private const CSS = [ 'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css' ];
 
     /**
      * Selector => the properties that must reach 44px for it, in some touch
      * block. A property listed as a|b is met by either.
      */
-    private const TARGETS = array(
-        '.owa .owa_helpMenuToggle'                                  => array( 'width', 'height' ),
-        '.owa .owa_notificationToggle'                              => array( 'width', 'height' ),
-        '.owa .owa_userMenuToggle'                                  => array( 'min-width', 'height' ),
-        '.owa .owa_notificationDismiss'                             => array( 'width', 'height' ),
-        '.owa_siteControlEdit'                                      => array( 'min-width', 'min-height' ),
-        '.owa_grid .owa_gridRowActions'                             => array( 'min-height' ),
-        '.owa_grid .owa_gridSort'                                   => array( 'min-height' ),
-        '.owa_grid .owa_gridButton'                                 => array( 'min-height' ),
-        '.owa_grid .owa_gridIconButton'                             => array( 'width', 'height' ),
-        '.owa_grid .owa_gridChipRemove'                             => array( 'width', 'height' ),
-        '.owa_grid .owa_gridPageSize'                               => array( 'height' ),
-        '.owa .owa_chartGranularity'                                => array( 'height' ),
-        '.owa .owa_metricCarouselArrow'                             => array( 'width', 'min-height' ),
-        '.owa_metricDescribed::before'                              => array( 'height' ),
-        '.owa_grid .owa_gridSortArrow'                              => array( 'min-height' ),
-        '.owa_grid .owa_gridSortArrow::before'                      => array( 'width' ),
-        '.owa .owa_tab'                                             => array( 'min-height' ),
-        '.owa_dialogButtons button.owa-button'                      => array( 'min-height' ),
-        '.owa_dialogClose'                                          => array( 'width', 'height' ),
-        '.owa .owa-override, .owa-override'                         => array( 'min-height' ),
-        '.owa_periodDay'                                            => array( 'height' ),
-    );
+    private const TARGETS = [
+        '.owa .owa_helpMenuToggle'                                  => [ 'width', 'height' ],
+        '.owa .owa_notificationToggle'                              => [ 'width', 'height' ],
+        '.owa .owa_userMenuToggle'                                  => [ 'min-width', 'height' ],
+        '.owa .owa_notificationDismiss'                             => [ 'width', 'height' ],
+        '.owa_siteControlEdit'                                      => [ 'min-width', 'min-height' ],
+        '.owa_grid .owa_gridRowActions'                             => [ 'min-height' ],
+        '.owa_grid .owa_gridSort'                                   => [ 'min-height' ],
+        '.owa_grid .owa_gridButton'                                 => [ 'min-height' ],
+        '.owa_grid .owa_gridIconButton'                             => [ 'width', 'height' ],
+        '.owa_grid .owa_gridChipRemove'                             => [ 'width', 'height' ],
+        '.owa_grid .owa_gridPageSize'                               => [ 'height' ],
+        '.owa .owa_chartGranularity'                                => [ 'height' ],
+        '.owa .owa_metricCarouselArrow'                             => [ 'width', 'min-height' ],
+        '.owa_metricDescribed::before'                              => [ 'height' ],
+        '.owa_grid .owa_gridSortArrow'                              => [ 'min-height' ],
+        '.owa_grid .owa_gridSortArrow::before'                      => [ 'width' ],
+        '.owa .owa_tab'                                             => [ 'min-height' ],
+        '.owa_dialogButtons button.owa-button'                      => [ 'min-height' ],
+        '.owa_dialogClose'                                          => [ 'width', 'height' ],
+        '.owa .owa-override, .owa-override'                         => [ 'min-height' ],
+        '.owa_periodDay'                                            => [ 'height' ],
+    ];
 
     /** Selectors whose type must be 16px or more in a touch block (iOS zooms a field below that). */
-    private const SIXTEEN = array(
+    private const SIXTEEN = [
         '.owa_grid .owa_gridPageSize',
         '.owa .owa_chartGranularity',
-    );
+    ];
 
     /**
      * The rules inside the media blocks a phone or a touch screen matches.
@@ -57,7 +57,7 @@ final class TouchTargetTest extends TestCase
      */
     private static function touchRules(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::CSS as $file ) {
 
@@ -88,12 +88,12 @@ final class TouchTargetTest extends TestCase
                 preg_match_all( '/([^{}]+)\{([^{}]*)\}/', substr( $css, $open + 1, $i - $open - 1 ), $rules, PREG_SET_ORDER );
 
                 foreach ( $rules as $rule ) {
-                    $out[] = array(
+                    $out[] = [
                         'file'      => $file,
                         'query'     => $query,
                         'selectors' => array_map( 'trim', explode( ',', preg_replace( '/\s+/', ' ', trim( $rule[1] ) ) ) ),
                         'body'      => $rule[2],
-                    );
+                    ];
                 }
             }
         }
@@ -115,10 +115,10 @@ final class TouchTargetTest extends TestCase
     /** @return array<string, array{0: string, 1: list<string>}> */
     public static function targets(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::TARGETS as $selector => $properties ) {
-            $out[ $selector ] = array( $selector, $properties );
+            $out[ $selector ] = [ $selector, $properties ];
         }
 
         return $out;
@@ -152,8 +152,8 @@ final class TouchTargetTest extends TestCase
     /** Nothing in a touch block sizes a listed control below 44px, as the header's 34px buttons were. */
     public function testNoTouchRuleShrinksATarget(): void
     {
-        $short = array();
-        $names = array();
+        $short = [];
+        $names = [];
 
         foreach ( array_keys( self::TARGETS ) as $selector ) {
             $names = array_merge( $names, array_map( 'trim', explode( ',', $selector ) ) );
@@ -165,7 +165,7 @@ final class TouchTargetTest extends TestCase
                 continue;
             }
 
-            foreach ( array( 'width', 'height', 'min-width', 'min-height' ) as $property ) {
+            foreach ( [ 'width', 'height', 'min-width', 'min-height' ] as $property ) {
 
                 $px = self::px( $rule['body'], $property );
 
@@ -175,12 +175,12 @@ final class TouchTargetTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $short );
+        $this->assertSame( [], $short );
     }
 
     public function testFieldsAreAtLeastSixteenPixelsOnAPhone(): void
     {
-        $sizes = array();
+        $sizes = [];
 
         foreach ( self::touchRules() as $rule ) {
 

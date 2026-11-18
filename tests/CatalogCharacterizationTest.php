@@ -90,7 +90,7 @@ final class CatalogCharacterizationTest extends TestCase
 
         foreach ( $snapshot['dimensionsDenormalized'] as $name => $byEntity ) {
 
-            $this->assertSame( array( 'base.event' ), array_keys( $byEntity ),
+            $this->assertSame( [ 'base.event' ], array_keys( $byEntity ),
                 $name . ' must resolve against the cube and nothing else' );
         }
     }

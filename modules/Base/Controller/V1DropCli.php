@@ -26,12 +26,12 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Reports the 1.x tracking tables and what they hold; with --drop, drops them. Refused until the 1.x history migration has run.',
-            'arguments'   => array(
+            'arguments'   => [
                 '--drop' => 'Drop the tables.',
-            ),
-        );
+            ],
+        ];
     }
 
     /** The schema at which the migration is complete. */
@@ -69,7 +69,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         }
 
         $read  = $this->rowsReadBySource();
-        $lines = array( 'v1 tables, with what the migration read from each:' );
+        $lines = [ 'v1 tables, with what the migration read from each:' ];
 
         foreach ( $tables as $table ) {
 
@@ -118,10 +118,10 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $db->tableExists( $progress->getTableName() ) ) {
 
-            return array();
+            return [];
         }
 
-        $read = array();
+        $read = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 'SELECT source, SUM(rows_read) AS n FROM %s GROUP BY source', $progress->getTableName() ) ) as $row ) {
@@ -133,5 +133,3 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         return $read;
     }
 }
-
-?>

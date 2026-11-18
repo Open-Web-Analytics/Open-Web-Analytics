@@ -42,16 +42,16 @@ namespace OWA\Core;
 class CoreAPI {
 
     /** @var array<string, bool>  site id => is it registered. See isSiteRegistered(). */
-    protected static $registered_sites = array();
+    protected static $registered_sites = [];
 
     /** @var array<string, SettingRows>  chain key => {effective, own} maps. See settingRowsForChain(). */
-    protected static $setting_row_cache = array();
+    protected static $setting_row_cache = [];
 
     /** @var array<string, array<string, mixed>>  "scope:id" => that scope's OWN rows, keyed module|name. */
-    protected static $setting_scope_cache = array();
+    protected static $setting_scope_cache = [];
 
     /** @var array<string, list<Scope>>  "scope:id" => the scope chain to walk. */
-    protected static $setting_chain_cache = array();
+    protected static $setting_chain_cache = [];
 
     /**
      * How the scopes outrank each other.
@@ -64,12 +64,12 @@ class CoreAPI {
      *
      * @var array<string, int>
      */
-    protected static $setting_scope_rank = array(
+    protected static $setting_scope_rank = [
         'install'      => 1,
         'organization' => 2,
         'property'     => 3,
         'profile'      => 4,
-    );
+    ];
 
 
 
@@ -87,7 +87,7 @@ class CoreAPI {
      * @param  array<string, mixed> $params
      * @return \OWA\Core\CoreAPI
      */
-    public static function singleton($params = array()) {
+    public static function singleton($params = []) {
 
         static $api;
 
@@ -187,8 +187,8 @@ class CoreAPI {
 
 
 
-		if ( $type ) {
-        	$connection_class = "owa_db_" . $type;
+        if ( $type ) {
+            $connection_class = "owa_db_" . $type;
 
             /*
              * A bundled driver's class follows from its token -- pdo_mysql ->
@@ -208,8 +208,8 @@ class CoreAPI {
             }
 
         } else {
-	        
-	        \OWA\Core\CoreAPI::error("$type is not a supported database.");
+            
+            \OWA\Core\CoreAPI::error("$type is not a supported database.");
         }
 
          return true;
@@ -459,8 +459,8 @@ class CoreAPI {
             return self::$setting_row_cache[ $cache_key ];
         }
 
-        $predicates = array();
-        $ranks      = array();
+        $predicates = [];
+        $ranks      = [];
         $params     = [];
 
         foreach ( $chain as $scope ) {
@@ -509,7 +509,7 @@ class CoreAPI {
      */
     protected static function indexSettingRows( $chain, $rows ) {
 
-        $result = array( 'effective' => array(), 'own' => array() );
+        $result = [ 'effective' => [], 'own' => [] ];
 
         /*
          * Seeded empty for every scope in the chain, before any row is seen. A
@@ -523,7 +523,7 @@ class CoreAPI {
 
             if ( ! isset( self::$setting_scope_cache[ $scope_key ] ) ) {
 
-                self::$setting_scope_cache[ $scope_key ] = array();
+                self::$setting_scope_cache[ $scope_key ] = [];
             }
         }
 
@@ -543,7 +543,7 @@ class CoreAPI {
              * read that way: a row holds a scalar or an array of them, and a
              * tampered-with one must not be able to instantiate a class.
              */
-            $value = unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+            $value = unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
 
             $result['own'][ $row['scope_type'] . '|' . $key ] = $value;
 
@@ -632,24 +632,24 @@ class CoreAPI {
              * change what those installs see.
              */
             self::$setting_chain_cache[ 'profile:' . $siteId ] =
-                array( array( 'type' => 'profile', 'id' => (string) $siteId ) );
+                [ [ 'type' => 'profile', 'id' => (string) $siteId ] ];
 
             return null;
         }
 
-        $chain = array( array( 'type' => 'profile', 'id' => (string) $siteId ) );
+        $chain = [ [ 'type' => 'profile', 'id' => (string) $siteId ] ];
 
         $propertyId = (string) ( $rows[0]['property_id'] ?? '' );
 
         if ( $propertyId !== '' ) {
 
-            $chain[] = array( 'type' => 'property', 'id' => $propertyId );
+            $chain[] = [ 'type' => 'property', 'id' => $propertyId ];
 
             $organizationId = (string) ( $rows[0]['organization_id'] ?? '' );
 
             if ( $organizationId !== '' ) {
 
-                $chain[] = array( 'type' => 'organization', 'id' => $organizationId );
+                $chain[] = [ 'type' => 'organization', 'id' => $organizationId ];
             }
         }
 
@@ -662,11 +662,11 @@ class CoreAPI {
 
         self::$setting_chain_cache[ 'profile:' . $siteId ] = $chain;
 
-        return array(
+        return [
             'chain' => $chain,
             'rows'  => self::$setting_row_cache[ $cache_key ]
                 = self::indexSettingRows( $chain, $rows ),
-        );
+        ];
     }
 
     /**
@@ -697,7 +697,7 @@ class CoreAPI {
             return self::$setting_chain_cache[ $key ];
         }
 
-        $chain = array( array( 'type' => $scopeType, 'id' => $scopeId ) );
+        $chain = [ [ 'type' => $scopeType, 'id' => $scopeId ] ];
 
         if ( $scopeType === 'profile' ) {
 
@@ -712,7 +712,7 @@ class CoreAPI {
                 return $chain;
             }
 
-            $chain[] = array( 'type' => 'property', 'id' => $scopeId );
+            $chain[] = [ 'type' => 'property', 'id' => $scopeId ];
         }
 
         if ( $scopeType === 'property' ) {
@@ -724,7 +724,7 @@ class CoreAPI {
 
             if ( $organizationId ) {
 
-                $chain[] = array( 'type' => 'organization', 'id' => $organizationId );
+                $chain[] = [ 'type' => 'organization', 'id' => $organizationId ];
             }
         }
 
@@ -756,7 +756,7 @@ class CoreAPI {
         if ( ! isset( self::$setting_scope_cache[ $scope_key ] ) ) {
 
             \OWA\Core\CoreAPI::settingRowsForChain(
-                array( array( 'type' => $scopeType, 'id' => $scopeId ) ) );
+                [ [ 'type' => $scopeType, 'id' => $scopeId ] ] );
         }
 
         $key = $module . '|' . $name;
@@ -767,7 +767,7 @@ class CoreAPI {
          */
         $own = isset( self::$setting_scope_cache[ $scope_key ] )
             ? self::$setting_scope_cache[ $scope_key ]
-            : array();
+            : [];
 
         return array_key_exists( $key, $own ) ? $own[ $key ] : null;
     }
@@ -783,9 +783,9 @@ class CoreAPI {
      */
     public static function settingCacheFlush() {
 
-        self::$setting_row_cache   = array();
-        self::$setting_scope_cache = array();
-        self::$setting_chain_cache = array();
+        self::$setting_row_cache   = [];
+        self::$setting_scope_cache = [];
+        self::$setting_chain_cache = [];
     }
 
     /**
@@ -1098,7 +1098,7 @@ class CoreAPI {
      */
     public static function forgetRegisteredSites() {
 
-        self::$registered_sites = array();
+        self::$registered_sites = [];
     }
 
     /**
@@ -1147,7 +1147,7 @@ class CoreAPI {
 
             foreach ( (array) $db->getAllRows() as $row ) {
 
-                $values[ $row['name'] ] = unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                $values[ $row['name'] ] = unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
             }
         }
 
@@ -1172,7 +1172,7 @@ class CoreAPI {
         if (array_key_exists($role, $caps)) {
             return $caps[$role];
         } else {
-            return array();
+            return [];
         }
     }
 
@@ -1318,7 +1318,7 @@ class CoreAPI {
 
         list( $module, $file ) = $segments;
 
-        foreach ( array( 'module' => $module, 'action' => $file ) as $part => $value ) {
+        foreach ( [ 'module' => $module, 'action' => $file ] as $part => $value ) {
 
             // D: without it $ also matches before a trailing newline.
             if ( ! preg_match( '/^[a-zA-Z0-9_]+$/D', $value ) ) {
@@ -1418,7 +1418,7 @@ class CoreAPI {
          * pre-PSR-4 directory names -- 'handlers', 'classes' -- so those are
          * read as the directories they became.
          */
-        $dirs = array( 'handlers' => 'Handler', 'classes' => 'Classes', 'filters' => 'Filter' );
+        $dirs = [ 'handlers' => 'Handler', 'classes' => 'Classes', 'filters' => 'Filter' ];
         $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
 
         $nsClass = \OWA\Core\Lib::conventionalClass(
@@ -1452,7 +1452,7 @@ class CoreAPI {
         $class = 'OWA\\Module\\' . $seg . '\\Module';
 
         if ( class_exists( $class ) ) {
-            return new $class( array() );
+            return new $class( [] );
         }
 
         throw new \Exception( sprintf(
@@ -1532,7 +1532,7 @@ class CoreAPI {
      * @param  string       $class_ns
      * @return object
      */
-    public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
+    public static function supportClassFactory($module, $class, $params = [],$class_ns = 'owa_') {
 
         // Base's support classes that live in Core -- 'template' is
         // OWA\Core\Template. Base only: another module naming one means its own.
@@ -1694,11 +1694,11 @@ class CoreAPI {
      * @param array<mixed> $params
      * @return mixed
      */
-    public static function metricFactory($metric_name, $params = array()) {
+    public static function metricFactory($metric_name, $params = []) {
 
         if ( strpos( $metric_name, '.' ) === false ) {
 
-            $registered = \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $metric_name ) ?: array();
+            $registered = \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $metric_name ) ?: [];
             $definition = end( $registered );
 
             if ( ! is_array( $definition ) || empty( $definition['class'] ) ) {
@@ -1707,7 +1707,7 @@ class CoreAPI {
             }
 
             $metric_name = $definition['class'];
-            $params      = array_merge( $definition['params'] ?? array(), $params );
+            $params      = array_merge( $definition['params'] ?? [], $params );
         }
 
 
@@ -1768,7 +1768,7 @@ class CoreAPI {
      */
     public static function getAdminPanels() {
 
-        $panels = array();
+        $panels = [];
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
@@ -1812,7 +1812,7 @@ class CoreAPI {
 
         $map = $service->getMap( 'reports' );
 
-        return is_array( $map ) ? $map : array();
+        return is_array( $map ) ? $map : [];
     }
 
     /**
@@ -1847,7 +1847,7 @@ class CoreAPI {
      */
     public static function getNavigation($view, $nav_name, $sortby ='order') {
 
-        $links = array();
+        $links = [];
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
@@ -1867,7 +1867,7 @@ class CoreAPI {
 
         // nav_view: one view's named nav, from every module, before it is sorted.
         $named = (array) \OWA\Core\CoreAPI::filter( 'nav_view',
-            $links[ $view ][ $nav_name ] ?? array(), $view, $nav_name );
+            $links[ $view ][ $nav_name ] ?? [], $view, $nav_name );
 
         if ( ! $named ) {
 
@@ -1889,7 +1889,7 @@ class CoreAPI {
      */
     public static function getGroupNavigation($group_name, $sortby ='order') {
 
-        $links = array();
+        $links = [];
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
@@ -1927,8 +1927,8 @@ class CoreAPI {
                                  * label, link and order, and gains the links.
                                  */
                                 $merged = array_merge(
-                                    (array) ( $existing['subgroup'] ?? array() ),
-                                    (array) ( $link['subgroup'] ?? array() ) );
+                                    (array) ( $existing['subgroup'] ?? [] ),
+                                    (array) ( $link['subgroup'] ?? [] ) );
 
                                 $links[ $group ][ $subgroup ] = $existing + (array) $link;
 
@@ -1975,7 +1975,7 @@ class CoreAPI {
      */
     public static function sortNavigation( array $entries ) {
 
-        $keyed = array();
+        $keyed = [];
         $i     = 0;
 
         foreach ( $entries as $key => $entry ) {
@@ -1988,7 +1988,7 @@ class CoreAPI {
             $order = is_array( $entry ) && isset( $entry['order'] ) && is_numeric( $entry['order'] )
                 ? (float) $entry['order'] : INF;
 
-            $keyed[] = array( $order, $i++, $key, $entry );
+            $keyed[] = [ $order, $i++, $key, $entry ];
         }
 
         usort( $keyed, function ( $a, $b ) {
@@ -1996,7 +1996,7 @@ class CoreAPI {
             return $a[0] <=> $b[0] ?: $a[1] <=> $b[1];
         } );
 
-        $sorted = array();
+        $sorted = [];
         $list   = array_keys( $entries ) === range( 0, count( $entries ) - 1 );
 
         foreach ( $keyed as $row ) {
@@ -2024,7 +2024,7 @@ class CoreAPI {
         $config = $c->config->get('settings');
 
 
-        $active_modules = array();
+        $active_modules = [];
 
         foreach ($config as $k => $module) {
 
@@ -2050,16 +2050,16 @@ class CoreAPI {
      */
     public static function getPresentModules() {
 
-        static $warned = array();
+        static $warned = [];
 
         $path = rtrim( \OWA\Core\Env::modulesDir(), '/' );
 
         if ( ! is_dir( $path ) ) {
 
-            return array();
+            return [];
         }
 
-        $modules = array();
+        $modules = [];
 
         foreach ( scandir( $path ) as $dir ) {
 
@@ -2105,10 +2105,10 @@ class CoreAPI {
      * @param  array<mixed> $params the controller's params
      * @return mixed what runController() answers; actionNotResolved()'s page when no action is registered under the name
      */
-    public static function performAction( $action, $params = array() ) {
+    public static function performAction( $action, $params = [] ) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-			
+            
         /*
          * The action registry is the only way in. A name no module registered
          * is answered as a missing page, and never turned into a class name:
@@ -2129,7 +2129,7 @@ class CoreAPI {
 
         $controller = \OWA\Core\Lib::simpleFactory( $action_map['class_name'], '', $params );
 
-		return \OWA\Core\CoreAPI::runController( $controller );
+        return \OWA\Core\CoreAPI::runController( $controller );
     }
     
     /**
@@ -2185,7 +2185,7 @@ class CoreAPI {
         }
 
         return self::displayView(
-            array( 'error_msg' => \OWA\Core\CoreAPI::t( 'The page could not be found.' ) ),
+            [ 'error_msg' => \OWA\Core\CoreAPI::t( 'The page could not be found.' ) ],
             'base.error'
         );
     }
@@ -2195,8 +2195,8 @@ class CoreAPI {
      * @return mixed the rendered page or the redirect's answer; nothing when there is no view to show
      */
     public static function runController( $controller ) {
-	    
-	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
+        
+        if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 
             \OWA\Core\CoreAPI::debug("Class is not a controller. no doAction method found.");
             return;
@@ -2248,7 +2248,7 @@ class CoreAPI {
      */
     public static function trackingEventTypes() {
 
-        $names  = array();
+        $names  = [];
         $prefix = self::TRACKING_DISPATCH_NAMESPACE . '.';
         $map    = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_processors' );
 
@@ -2366,18 +2366,18 @@ class CoreAPI {
 
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
 
-		// backwards compatibility with old style messages
-		// @todo is this needed anymore?
+        // backwards compatibility with old style messages
+        // @todo is this needed anymore?
         $class = \OWA\Module\Base\Classes\Event::class;
 
         if ( ! ( $message instanceof $class ) ) {
-	        
+            
             $event = new \OWA\Module\Base\Classes\Event();
             $event->setProperties( $message );
             $event->setEventType( $event_type );
             
         } else {
-	        
+            
             $event = $message;
         }
 
@@ -2429,7 +2429,7 @@ class CoreAPI {
             $cu_user_id = $cu->getUserData('user_id');
 
             if( ! empty( $cu_user_id ) ) {
-				\OWA\Core\CoreAPI::debug("Not logging named user.");
+                \OWA\Core\CoreAPI::debug("Not logging named user.");
                 return false;
             }
         }
@@ -2468,10 +2468,10 @@ class CoreAPI {
          * address; and against the stored one, so a list written with masked
          * addresses still matches. The full address is read here and not kept.
          */
-        $addresses = array_unique( array_filter( array(
+        $addresses = array_unique( array_filter( [
             \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp(),
             (string) $event->get( 'ip_address' ),
-        ), static fn ( $address ) => $address !== '' ) );
+        ], static fn ( $address ) => $address !== '' ) );
 
         foreach ( $addresses as $ip_address ) {
 
@@ -2547,7 +2547,7 @@ class CoreAPI {
             return \OWA\Module\Base\Classes\TrackerIngest::retryLater( $event, $arrived );
         }
 
-        $result = \OWA\Core\CoreAPI::performAction( $processor_action, array( 'event' => $event ) );
+        $result = \OWA\Core\CoreAPI::performAction( $processor_action, [ 'event' => $event ] );
 
         if ( $event->getStatus() === \OWA\Module\Base\Classes\Event::failed ) {
 
@@ -2615,7 +2615,7 @@ class CoreAPI {
      * @param  array<string, mixed> $params
      * @return \OWA\Module\Base\Classes\TimePeriod
      */
-    public static function makeTimePeriod($time_period, $params = array()) {
+    public static function makeTimePeriod($time_period, $params = []) {
 
         $period = new \OWA\Module\Base\Classes\TimePeriod();
 
@@ -2633,7 +2633,7 @@ class CoreAPI {
      * @param  string       $class_file
      * @param  array<mixed> $conf
      */
-    public static function validationFactory($class_file, $conf = array()) {
+    public static function validationFactory($class_file, $conf = []) {
 
         // OWA's own validators by convention: 'required' is
         // OWA\Core\Validation\Required. Otherwise a class
@@ -2707,7 +2707,7 @@ class CoreAPI {
             $domain = \OWA\Core\Lib::sanitizeCookieDomain( $domain );
             
         } else {
-	        
+            
             $domain = \OWA\Core\CoreAPI::getSetting('base', 'cookie_domain');
         }
         if (is_array($cookie_value)) {
@@ -2725,10 +2725,10 @@ class CoreAPI {
 
         // makes cookie to session cookie only
         if (!\OWA\Core\CoreAPI::getSetting('base', 'cookie_persistence')) {
-	        
+            
             $expires = 0;
         }
-		
+        
         setcookie($cookie_name, $cookie_value,
             self::cookieOptions($expires, $path, $domain, self::cookieIsSecure($secure), $httponly));
     }
@@ -2750,7 +2750,7 @@ class CoreAPI {
     }
 
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
-    const CREDENTIAL_COOKIES = array( 'u', 'p' );
+    const CREDENTIAL_COOKIES = [ 'u', 'p' ];
 
     /**
      * A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one.
@@ -3000,7 +3000,7 @@ class CoreAPI {
                 }
             }
         }
-		
+        
         $init = true;
         \OWA\Core\CoreAPI::debug('About to perform action: '.$action);
         return \OWA\Core\CoreAPI::performAction($action, $params);
@@ -3038,7 +3038,7 @@ class CoreAPI {
              */
             if ($request_method == 'OPTIONS') {
 
-                $controller = new \OWA\Module\Base\Controller\CorsPreflight( array() );
+                $controller = new \OWA\Module\Base\Controller\CorsPreflight( [] );
                 return \OWA\Core\CoreAPI::runController( $controller );
             }
 
@@ -3138,22 +3138,22 @@ class CoreAPI {
      */
     private static function restError( $code ) {
 
-        $messages = array(
-            400 => array(
+        $messages = [
+            400 => [
                 'headline'  => \OWA\Core\CoreAPI::t( 'Bad request.' ),
                 'msg'       => \OWA\Core\CoreAPI::t( 'The request names no route.' )
-            ),
-            401 => array(
+            ],
+            401 => [
                 'headline'  => \OWA\Core\CoreAPI::t( 'Not authenticated.' ),
                 'msg'       => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )
-            ),
-        );
+            ],
+        ];
 
         $error_msg = isset( $messages[ $code ] ) ? $messages[ $code ] : $messages[ 400 ];
 
         http_response_code( $code );
 
-        return self::displayView( array( 'error_msg' => $error_msg ), 'base.restApi' );
+        return self::displayView( [ 'error_msg' => $error_msg ], 'base.restApi' );
     }
 
     /**
@@ -3164,18 +3164,18 @@ class CoreAPI {
      * @return RestRoute|void nothing when an argument is empty or no route is registered
      */
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
-	    
-	    if ( ! empty( $request_method )
-	    	&& ! empty( $version )
-	    	&& ! empty( $do )
-	    	&& ! empty( $module )
-	    ){
-		    
-		    $service = \OWA\Core\CoreAPI::serviceSingleton();
-		    $route = $service->getRestApiRoute($module, $version, $do, $request_method );
-			\OWA\Core\CoreAPI::debug($route);
-		    return $route;
-	    }
+        
+        if ( ! empty( $request_method )
+            && ! empty( $version )
+            && ! empty( $do )
+            && ! empty( $module )
+        ){
+            
+            $service = \OWA\Core\CoreAPI::serviceSingleton();
+            $route = $service->getRestApiRoute($module, $version, $do, $request_method );
+            \OWA\Core\CoreAPI::debug($route);
+            return $route;
+        }
     }
 
     /**
@@ -3207,12 +3207,12 @@ class CoreAPI {
         $sites = $db->getAllRows();
 
         if ( ! $sites ) {
-            $sites = array();
+            $sites = [];
         }
         return $sites;
     }
-	
-	
+    
+    
     /**
      * @return \OWA\Module\Base\Classes\EventDispatch
      */
@@ -3371,12 +3371,12 @@ class CoreAPI {
 
         if ( ! $cached_salts ) {
 
-            $cached_salts = array();
+            $cached_salts = [];
             $ns = strtoupper( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
-            foreach (array('NONCE', 'SECRET', 'AUTH') as $f ) {
+            foreach (['NONCE', 'SECRET', 'AUTH'] as $f ) {
 
-                foreach (array('KEY', 'SALT') as $s ) {
+                foreach (['KEY', 'SALT'] as $s ) {
 
                     $const = sprintf("%s%s_%s", $ns, $f, $s);
 
@@ -3494,7 +3494,7 @@ class CoreAPI {
      * @param  int         $delay    seconds before it may run
      * @return string|false  the job's id
      */
-    public static function enqueueJob( $command, array $params = array(), $key = null, $delay = 0 ) {
+    public static function enqueueJob( $command, array $params = [], $key = null, $delay = 0 ) {
 
         return \OWA\Module\Base\Classes\JobQueue::enqueue( $command, $params, $key, $delay );
     }
@@ -3504,7 +3504,7 @@ class CoreAPI {
      * @param  array<mixed> $options
      * @return string
      */
-    public static function getJsTrackerTag( $site_id, $options = array() ) {
+    public static function getJsTrackerTag( $site_id, $options = [] ) {
 
 
         $t = new \OWA\Core\Template();
@@ -3513,7 +3513,7 @@ class CoreAPI {
         // The Profile's own commands, from its tag settings (PLAN 2.24.4).
         $t->set( 'profile_cmds', \OWA\Module\Base\Classes\TrackerBundle::commandLines( $site_id ) );
         // And any a third-party module still adds the old way.
-        $cmds = \OWA\Core\CoreAPI::filter( 'tracker_tag_cmds', array() );
+        $cmds = \OWA\Core\CoreAPI::filter( 'tracker_tag_cmds', [] );
         $t->set( 'cmds', $cmds );
         $t->set('options', $options);
         $t->set_template('js_log_tag.php');
@@ -3714,7 +3714,7 @@ class CoreAPI {
      * @return string|null
      */
     public static function getCurrentUrl() {
-	    
+        
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();
         return $r->getCurrentUrl();
     }
@@ -3735,15 +3735,15 @@ class CoreAPI {
         $ips = \OWA\Core\CoreAPI::getSetting( 'base', 'excluded_ips', 'profile', $siteId );
         
         if ( $ips ) {
-	        
-	        \OWA\Core\CoreAPI::debug('Excluded ip address list: '.$ips);
+            
+            \OWA\Core\CoreAPI::debug('Excluded ip address list: '.$ips);
 
             $ips = trim( $ips );
 
             if ( strpos( $ips, ',' ) ) {
                 $ips = explode( ',', $ips );
             } else {
-                $ips = array( $ips );
+                $ips = [ $ips ];
             }
 
             foreach( $ips as $ip ) {
@@ -3762,34 +3762,34 @@ class CoreAPI {
      * @return mixed the conf array, through the filter
      */
     public static function loadConf( $file_name, $filter_name = '' ) {
-	    
-        $conf = array();
-	    $conf_file = \OWA\Core\Env::confDir() . $file_name;
-	    
-	    if ( file_exists( $conf_file ) ) {
-	    
-	    	$conf = include( $conf_file);
-	    }
-	    
-	    $sup_file = \OWA\Core\Env::dataDir() . $file_name;
-	    
-	    if ( file_exists( $sup_file ) ) {
-		    
-		    $sup_conf = include( $sup_file );
-		    
-		    if ( is_array( $sup_conf) ) {
-		    
-		    	$conf = array_merge( $conf, $sup_conf );
-		    }
-	    }
-	    
-	    // see generic filter name for filtering the final conf array
-	    if ( ! $filter_name ) {
-		    
-		    $filter_name = 'conf.' . $file_name;
-	    }
-	    
-	    return \OWA\Core\CoreAPI::filter( $filter_name, $conf );
+        
+        $conf = [];
+        $conf_file = \OWA\Core\Env::confDir() . $file_name;
+        
+        if ( file_exists( $conf_file ) ) {
+        
+            $conf = include( $conf_file);
+        }
+        
+        $sup_file = \OWA\Core\Env::dataDir() . $file_name;
+        
+        if ( file_exists( $sup_file ) ) {
+            
+            $sup_conf = include( $sup_file );
+            
+            if ( is_array( $sup_conf) ) {
+            
+                $conf = array_merge( $conf, $sup_conf );
+            }
+        }
+        
+        // see generic filter name for filtering the final conf array
+        if ( ! $filter_name ) {
+            
+            $filter_name = 'conf.' . $file_name;
+        }
+        
+        return \OWA\Core\CoreAPI::filter( $filter_name, $conf );
     }
 
     /**
@@ -3834,23 +3834,21 @@ class CoreAPI {
      * @return list<\OWA\Core\Entity>
      */
     public static function loadEntitiesFromArray( $items, $entity_name ) {
-	    
-	    $set = [];
-	    
-	    if ( $items ) {
-		    
-		    foreach ($items as $item ) {
-			    
-			    $entity = \OWA\Core\CoreAPI::entityFactory( $entity_name );
-			    $entity->setProperties( $item );
-			    $set[] = $entity;
-			    
-		    }
-	    }
-	    
-	    return $set;
+        
+        $set = [];
+        
+        if ( $items ) {
+            
+            foreach ($items as $item ) {
+                
+                $entity = \OWA\Core\CoreAPI::entityFactory( $entity_name );
+                $entity->setProperties( $item );
+                $set[] = $entity;
+                
+            }
+        }
+        
+        return $set;
     }
     
     }
-
-?>

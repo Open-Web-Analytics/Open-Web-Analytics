@@ -60,14 +60,14 @@ final class SettingsResetTest extends TestCase
         $probe->config = \OWA\Core\CoreAPI::entityFactory( 'base.configuration' );
         $probe->config->set( 'settings', $real->config->get( 'settings' ) );
 
-        $module = array( 'schema_version' => 3, 'is_active' => true, 'custom_key' => 'customised' );
+        $module = [ 'schema_version' => 3, 'is_active' => true, 'custom_key' => 'customised' ];
         $settings = $probe->config->get( 'settings' );
         $settings['resetprobe'] = $module;
         $settings['base']['schema_version'] = 90;
         $probe->config->set( 'settings', $settings );
 
         $probe->db_settings['resetprobe'] = $module;
-        $probe->db_settings['base'] = array( 'schema_version' => 90, 'install_complete' => true, 'some_base_key' => 'kept' );
+        $probe->db_settings['base'] = [ 'schema_version' => 90, 'install_complete' => true, 'some_base_key' => 'kept' ];
 
         return $probe;
     }
@@ -79,11 +79,11 @@ final class SettingsResetTest extends TestCase
         $this->assertTrue( $s->reset( 'resetprobe' ) );
         $this->assertSame( 1, $s->saved );
 
-        $this->assertSame( array( 'schema_version' => 3, 'is_active' => true ), $s->db_settings['resetprobe'],
+        $this->assertSame( [ 'schema_version' => 3, 'is_active' => true ], $s->db_settings['resetprobe'],
             'its configuration goes; its schema version and is_active stay' );
 
         $this->assertSame(
-            array( 'schema_version' => 90, 'install_complete' => true, 'some_base_key' => 'kept' ),
+            [ 'schema_version' => 90, 'install_complete' => true, 'some_base_key' => 'kept' ],
             $s->db_settings['base'],
             'base is not touched' );
     }
@@ -104,7 +104,7 @@ final class SettingsResetTest extends TestCase
         $s = $this->probe();
 
         $this->assertTrue( $s->reset( 'base' ) );
-        $this->assertSame( array( 'schema_version' => 90, 'install_complete' => true ), $s->db_settings['base'] );
+        $this->assertSame( [ 'schema_version' => 90, 'install_complete' => true ], $s->db_settings['base'] );
     }
 
     public function testAModuleThatIsNotInstalledIsRefused(): void

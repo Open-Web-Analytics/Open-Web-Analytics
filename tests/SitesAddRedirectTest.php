@@ -14,7 +14,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class SitesAddRedirectTest extends TestCase
 {
     /** Rows a test created, removed afterwards. */
-    private $site = array();
+    private $site = [];
 
     protected function setUp(): void
     {
@@ -42,14 +42,14 @@ final class SitesAddRedirectTest extends TestCase
 
     public function testANewProfileLandsOnItsTrackingTag(): void
     {
-        $controller = new \OWA\Module\Base\Controller\SitesAdd( array(
+        $controller = new \OWA\Module\Base\Controller\SitesAdd( [
             'domain'     => 'sites-add-redirect.example.test',
             'name'       => 'Sites add redirect ' . uniqid(),
             'streamType' => 'web',
-        ) );
+        ] );
         $controller->action();
 
-        $this->site = (array) ( $this->data( $controller )['site'] ?? array() );
+        $this->site = (array) ( $this->data( $controller )['site'] ?? [] );
         $this->assertNotEmpty( $this->site['site_id'] ?? '', 'The Profile was not created.' );
 
         $controller->success();
@@ -65,8 +65,8 @@ final class SitesAddRedirectTest extends TestCase
     /** Nothing created: back to the form with an error, not a success message. */
     public function testAFailedCreateReturnsToTheForm(): void
     {
-        $controller = new \OWA\Module\Base\Controller\SitesAdd( array() );
-        $controller->set( 'site', array() );
+        $controller = new \OWA\Module\Base\Controller\SitesAdd( [] );
+        $controller->set( 'site', [] );
         $controller->success();
 
         $data = $this->data( $controller );

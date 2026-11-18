@@ -21,7 +21,7 @@ return function () {
     $list = fn ( array $v ) => $v ? implode( ', ', array_map( $code, $v ) ) : '—';
     $csv  = fn ( $v ) => array_values( array_filter( array_map( 'trim', explode( ',', (string) $v ) ) ) );
 
-    $definitions = array();
+    $definitions = [];
 
     foreach ( $registry as $id => $entry ) {
 
@@ -33,7 +33,7 @@ return function () {
     // Which reports link to which: a widget's link template, its "more" link,
     // and report-links widgets all name a reportId; a widget's row actions name
     // actions, each of which may lead to a report (ConfiguredReport::rowActions).
-    $linked_from = array();
+    $linked_from = [];
     $row_actions = \OWA\Core\ConfiguredReport::rowActions();
 
     foreach ( $definitions as $id => $d ) {
@@ -49,9 +49,9 @@ return function () {
             }
         } );
 
-        foreach ( (array) ( $d['widgets'] ?? array() ) as $widget ) {
+        foreach ( (array) ( $d['widgets'] ?? [] ) as $widget ) {
 
-            foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+            foreach ( (array) ( $widget['rowActions'] ?? [] ) as $name ) {
 
                 $target = $row_actions[ $name ]['reportId'] ?? null;
 
@@ -70,13 +70,13 @@ return function () {
 
         if ( ! $d ) {
 
-            return array( $code( $id ), $what, 'Rendered by ' . $code( $registry[ $id ]['controller'] ), '—', '—' );
+            return [ $code( $id ), $what, 'Rendered by ' . $code( $registry[ $id ]['controller'] ), '—', '—' ];
         }
 
-        $dims    = array();
+        $dims    = [];
         $metrics = $csv( $d['metrics'] ?? '' );
 
-        foreach ( (array) ( $d['widgets'] ?? array() ) as $w ) {
+        foreach ( (array) ( $d['widgets'] ?? [] ) as $w ) {
 
             foreach ( $csv( $w['query']['dimensions'] ?? '' ) as $dim ) {
 
@@ -94,12 +94,12 @@ return function () {
 
             $metrics = isset( $d['metricSets'] ) && is_array( $d['metricSets'] )
                 ? array_map( fn ( $k, $v ) => is_string( $v ) ? $v : $k, array_keys( $d['metricSets'] ), $d['metricSets'] )
-                : array();
+                : [];
         }
 
         $by = $dims ? $list( array_keys( $dims ) ) : 'date';
 
-        $constrained = array();
+        $constrained = [];
 
         $c = $d['settings']['constraints'] ?? '';
 
@@ -130,34 +130,34 @@ return function () {
 
         // A declared parameter the report-wide constraint does not read is
         // still required: a widget's constraint reads it.
-        foreach ( array_keys( (array) ( $d['params'] ?? array() ) ) as $p ) {
+        foreach ( array_keys( (array) ( $d['params'] ?? [] ) ) as $p ) {
 
-            if ( ! in_array( $p, is_array( $c ) ? array_column( $c, 'fromParam' ) : array(), true ) ) {
+            if ( ! in_array( $p, is_array( $c ) ? array_column( $c, 'fromParam' ) : [], true ) ) {
                 $constrained[] = 'the ' . $code( $p ) . ' URL parameter';
             }
         }
 
-        return array(
+        return [
             $code( $id ),
             $what,
             $by,
             $metrics ? $list( $metrics ) : "The Property's metric sets",
             $constrained ? implode( '; ', $constrained ) : '—',
-        );
+        ];
     };
 
     $row = fn ( array $cells ) => '| ' . implode( ' | ', array_map(
-        fn ( $c ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), (string) $c ), $cells ) ) . " |\n";
+        fn ( $c ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], (string) $c ), $cells ) ) . " |\n";
 
     $head = "| Report | Id | What it shows | Groups by | Metrics | Constrained to |\n|---|---|---|---|---|---|\n";
 
     $out    = '';
-    $in_nav = array();
+    $in_nav = [];
     $nav    = (array) CoreAPI::getGroupNavigation( 'Reports' );
 
     foreach ( $nav as $group => $entry ) {
 
-        $links = array_merge( array( $entry ), (array) ( $entry['subgroup'] ?? array() ) );
+        $links = array_merge( [ $entry ], (array) ( $entry['subgroup'] ?? [] ) );
         $rows  = '';
 
         foreach ( $links as $link ) {
@@ -169,7 +169,7 @@ return function () {
             }
 
             $in_nav[ $id ] = true;
-            $rows .= $row( array_merge( array( $link['anchortext'] ), $describe( $id ) ) );
+            $rows .= $row( array_merge( [ $link['anchortext'] ], $describe( $id ) ) );
         }
 
         if ( $rows === '' ) {
@@ -198,10 +198,10 @@ return function () {
         foreach ( $rest as $id ) {
 
             $title = $definitions[ $id ]['title'] ?? $id;
-            $from  = array_keys( $linked_from[ $id ] ?? array() );
+            $from  = array_keys( $linked_from[ $id ] ?? [] );
             sort( $from );
 
-            $out .= $row( array_merge( array( rtrim( $title, ': ' ) ), $describe( $id ), array( $list( $from ) ) ) );
+            $out .= $row( array_merge( [ rtrim( $title, ': ' ) ], $describe( $id ), [ $list( $from ) ] ) );
         }
     }
 

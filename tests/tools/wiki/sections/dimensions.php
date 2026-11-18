@@ -8,9 +8,9 @@
  */
 return static function ( $arg = null ) {
 
-    $cell = static fn ( $v ) => str_replace( array( '|', "\r", "\n" ), array( '\\|', ' ', ' ' ), trim( (string) $v ) );
+    $cell = static fn ( $v ) => str_replace( [ '|', "\r", "\n" ], [ '\\|', ' ', ' ' ], trim( (string) $v ) );
 
-    $families = array();
+    $families = [];
 
     // No Property: the dimensions an installation ships with, which is what
     // the page documents. Custom ones are a Property's own.

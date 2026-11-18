@@ -81,7 +81,7 @@ class GoalEventDefinitionPredicate {
 
         if ( $trigger === '' ) {
 
-            return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+            return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
         }
 
         /*
@@ -97,18 +97,18 @@ class GoalEventDefinitionPredicate {
         if ( ! $conditions
              && ! \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $trigger ) ) {
 
-            return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+            return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
         }
 
-        $rows = array();
+        $rows = [];
 
         foreach ( $conditions as $condition ) {
 
-            $rows[] = array(
+            $rows[] = [
                 'property' => (string) $condition->get( 'condition_property' ),
                 'operator' => (string) $condition->get( 'condition_operator' ),
                 'value'    => (string) $condition->get( 'condition_value' ),
-            );
+            ];
         }
 
         // No index pages: ingest compares the typed path as written, and this has to agree with it.

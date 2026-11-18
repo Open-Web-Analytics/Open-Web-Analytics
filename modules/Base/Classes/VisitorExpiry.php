@@ -169,7 +169,7 @@ class VisitorExpiry {
     public static function deleteBatch( $cutoff, $batch = self::BATCH ) {
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
-        $ids = array();
+        $ids = [];
 
         foreach ( (array) $db->get_results( sprintf(
                 'SELECT v.id FROM %s v WHERE %s LIMIT %d',
@@ -225,5 +225,3 @@ class VisitorExpiry {
         return $deleted;
     }
 }
-
-?>

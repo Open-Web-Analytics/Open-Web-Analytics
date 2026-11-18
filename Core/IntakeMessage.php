@@ -53,5 +53,3 @@ final class IntakeMessage {
         $this->dead_at       = $dead_at === null ? null : (int) $dead_at;
     }
 }
-
-?>

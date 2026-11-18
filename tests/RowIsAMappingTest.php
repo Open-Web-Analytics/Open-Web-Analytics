@@ -41,7 +41,7 @@ final class RowIsAMappingTest extends TestCase
      * A short list that has to stay short: every name on it is a column whose
      * value the registry cannot describe.
      */
-    private const NOT_A_PROPERTY = array(
+    private const NOT_A_PROPERTY = [
         // A hash OF the properties. It cannot be one of them.
         'id'            => 'derived from site, visitor, session, ts and the event name',
         // The v2 name of the event's TYPE. The event_type property is what the
@@ -50,7 +50,7 @@ final class RowIsAMappingTest extends TestCase
         // What could NOT be a column -- site-defined keys and per-event-type
         // values too narrow to earn one. The inverse of this mapping.
         'params'        => 'everything with no column of its own',
-    );
+    ];
 
     /**
      * The identity columns, read into locals above the literal.
@@ -60,7 +60,7 @@ final class RowIsAMappingTest extends TestCase
      * row missing any of them has to read them first, and the id hash is built
      * from the same locals so the row and its id cannot disagree.
      */
-    private const IDENTITY = array( 'site_id', 'visitor_id', 'session_id', 'ts' );
+    private const IDENTITY = [ 'site_id', 'visitor_id', 'session_id', 'ts' ];
 
     /** row()'s body, from the source. */
     private function body(): string
@@ -84,7 +84,7 @@ final class RowIsAMappingTest extends TestCase
         preg_match_all( "/^            '([a-z_0-9]+)'\s*=>\s*(.+?),?\s*$/m",
             $this->body(), $found, PREG_SET_ORDER );
 
-        $entries = array();
+        $entries = [];
 
         foreach ( $found as $entry ) {
 
@@ -103,7 +103,7 @@ final class RowIsAMappingTest extends TestCase
      */
     public function testEveryColumnIsOnePropertyRead(): void
     {
-        $offenders = array();
+        $offenders = [];
 
         foreach ( $this->entries() as $column => $expression ) {
 
@@ -129,7 +129,7 @@ final class RowIsAMappingTest extends TestCase
             $offenders[ $column ] = $expression;
         }
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "A column is being worked out in the row builder. Whatever computes it "
             . "belongs in a callback named by the property registry, so the value and "
             . "its column are one statement:\n"
@@ -146,7 +146,7 @@ final class RowIsAMappingTest extends TestCase
     public function testEveryColumnAgreesWithTheRegistry(): void
     {
         $checked = 0;
-        $wrong   = array();
+        $wrong   = [];
 
         foreach ( $this->entries() as $column => $expression ) {
 
@@ -178,7 +178,7 @@ final class RowIsAMappingTest extends TestCase
         $this->assertGreaterThan( 40, $checked,
             'too few columns matched to be checking anything' );
 
-        $this->assertSame( array(), $wrong,
+        $this->assertSame( [], $wrong,
             "A column is written from a property the registry maps somewhere else "
             . "-- which is how `revenue` came to read a property no entry declares "
             . "and store NULL on every purchase:\n" . var_export( $wrong, true ) );
@@ -203,14 +203,14 @@ final class RowIsAMappingTest extends TestCase
      */
     public function testRowComputesNothing(): void
     {
-        $forbidden = array(
+        $forbidden = [
             'parseUrl', 'canonicalPath', 'filterQuery', 'minorUnits',
             'parse_url', 'preg_', 'explode(', 'substr(', 'strtolower(',
             'str_replace(', 'getSetting(', 'droppedQueryParams',
-        );
+        ];
 
         $body  = $this->body();
-        $found = array();
+        $found = [];
 
         foreach ( $forbidden as $token ) {
 
@@ -220,7 +220,7 @@ final class RowIsAMappingTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $found,
+        $this->assertSame( [], $found,
             'row() is deriving a value: ' . implode( ', ', $found )
             . '. It belongs in a callback the registry names.' );
     }
@@ -259,7 +259,7 @@ final class RowIsAMappingTest extends TestCase
         $this->assertIsArray( $built, 'the identity guard refused an event it should accept' );
 
         $entity  = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
-        $offends = array();
+        $offends = [];
 
         foreach ( $entity->getColumns() as $column ) {
 
@@ -277,7 +277,7 @@ final class RowIsAMappingTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $offends,
+        $this->assertSame( [], $offends,
             'row() handed NULL to a NOT NULL column: ' . implode( ', ', $offends )
             . '. Strict mode aborts the insert, so absence has to resolve to a '
             . 'value -- see flag().' );
@@ -295,7 +295,7 @@ final class RowIsAMappingTest extends TestCase
     public function testEveryDeclaredColumnIsWritten(): void
     {
         $columns = $this->entries();
-        $missing = array();
+        $missing = [];
 
         foreach ( Helpers::allProperties() as $property => $definition ) {
 
@@ -307,7 +307,7 @@ final class RowIsAMappingTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $missing,
+        $this->assertSame( [], $missing,
             "The registry declares a column the row builder never writes:\n"
             . var_export( $missing, true ) );
     }
@@ -321,7 +321,7 @@ final class RowIsAMappingTest extends TestCase
      */
     public function testNoColumnIsUnbacked(): void
     {
-        $backed = array();
+        $backed = [];
 
         foreach ( Helpers::allProperties() as $property => $definition ) {
 
@@ -336,7 +336,7 @@ final class RowIsAMappingTest extends TestCase
         $unbacked = array_values( array_diff( array_keys( $this->entries() ),
             array_keys( $backed ), array_keys( self::NOT_A_PROPERTY ) ) );
 
-        $this->assertSame( array(), $unbacked,
+        $this->assertSame( [], $unbacked,
             'a column appeared that no property declares: '
             . implode( ', ', $unbacked ) );
     }

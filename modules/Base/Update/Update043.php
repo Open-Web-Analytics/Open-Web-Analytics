@@ -158,12 +158,12 @@ class Update043 extends \OWA\Core\Update {
             "SELECT module, name, value FROM %s WHERE scope_type = 'install'",
             $setting->getTableName() ) );
 
-        $settings = array();
+        $settings = [];
 
         foreach ( $rows as $row ) {
 
             $settings[ $row['module'] ][ $row['name'] ] =
-                unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
         }
 
         if ( $settings && ! $this->writeBlob( $legacy, $settings ) ) {
@@ -215,13 +215,13 @@ class Update043 extends \OWA\Core\Update {
 
         if ( ! $row ) {
 
-            return array();
+            return [];
         }
 
         $settings = unserialize(
-            (string) $row['settings'], array( 'allowed_classes' => false ) );
+            (string) $row['settings'], [ 'allowed_classes' => false ] );
 
-        return is_array( $settings ) ? $settings : array();
+        return is_array( $settings ) ? $settings : [];
     }
 
     /**
@@ -290,5 +290,3 @@ class Update043 extends \OWA\Core\Update {
         ] ) !== false;
     }
 }
-
-?>

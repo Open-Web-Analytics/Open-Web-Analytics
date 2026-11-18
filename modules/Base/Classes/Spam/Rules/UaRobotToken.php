@@ -27,7 +27,7 @@ class UaRobotToken extends \OWA\Module\Base\Classes\Spam\Rule {
     const SET    = 'user_agent';
     const POINTS = 5.0;
 
-    const TOKENS = array(
+    const TOKENS = [
         'bot',
         'crawl',
         'spider',
@@ -63,7 +63,7 @@ class UaRobotToken extends \OWA\Module\Base\Classes\Spam\Rule {
         'playwright',
         'selenium',
         'webdriver',
-    );
+    ];
 
     public function test( $event, array $headers ) {
 
@@ -95,5 +95,3 @@ class UaRobotToken extends \OWA\Module\Base\Classes\Spam\Rule {
         return null;
     }
 }
-
-?>

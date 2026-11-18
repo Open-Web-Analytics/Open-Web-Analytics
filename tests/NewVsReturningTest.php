@@ -145,11 +145,11 @@ final class NewVsReturningTest extends TestCase
         $declaration = include \OWA\Core\Env::root() . '/modules/Base/config/metrics.php';
         $metrics     = (array) $declaration['metrics'];
 
-        $this->assertSame(array('column' => 'is_exit', 'value' => 1),
+        $this->assertSame(['column' => 'is_exit', 'value' => 1],
             $metrics['exits']['condition']);
 
         // Entrances, the mirror, likewise a metric over a cube flag.
-        $this->assertSame(array('column' => 'is_entrance', 'value' => 1),
+        $this->assertSame(['column' => 'is_entrance', 'value' => 1],
             $metrics['entrances']['condition']);
 
         // exitRate is exits over page views -- the denominator an exit-page

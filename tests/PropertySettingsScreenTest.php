@@ -18,7 +18,7 @@ final class PropertySettingsScreenTest extends TestCase
     protected function tearDown(): void
     {
         if (owa_test_db_available()) {
-            foreach (array('currencyISO3', 'campaignKeys') as $key) {
+            foreach (['currencyISO3', 'campaignKeys'] as $key) {
                 \OWA\Core\CoreAPI::clearScopedSetting('property', self::PROPERTY, 'base', $key);
             }
         }
@@ -38,7 +38,7 @@ final class PropertySettingsScreenTest extends TestCase
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
 
         if (!$v) {
-            return array();
+            return [];
         }
 
         $v->doValidations();
@@ -62,9 +62,9 @@ final class PropertySettingsScreenTest extends TestCase
 
     public function testTheCurrencyBesideECommerceAndTheNamesBesideTheUtmSwitch(): void
     {
-        $this->assertSame(array('enableEcommerceReporting', 'currencyISO3'),
+        $this->assertSame(['enableEcommerceReporting', 'currencyISO3'],
             SettingsForm::registeredFieldSet('base.propertyReporting')['settings'] ?? null);
-        $this->assertSame(array('attribution_lookback_days', 'campaignUtmParams', 'campaignKeys'),
+        $this->assertSame(['attribution_lookback_days', 'campaignUtmParams', 'campaignKeys'],
             SettingsForm::registeredFieldSet('base.propertyAttribution')['settings'] ?? null);
     }
 
@@ -73,12 +73,12 @@ final class PropertySettingsScreenTest extends TestCase
     {
         $this->assertNull(\OWA\Core\CoreAPI::configSingleton()->valueProblem('base', 'currencyISO3', 'EUR'));
 
-        $c = new \OWA\Module\Base\Controller\PropertyEdit(array(
+        $c = new \OWA\Module\Base\Controller\PropertyEdit([
             'name'     => 'Currency code',
             'domain'   => 'example.test',
-            'config'   => array('base.currencyISO3' => 'dollars'),
-            'override' => array('base.currencyISO3' => '1'),
-        ));
+            'config'   => ['base.currencyISO3' => 'dollars'],
+            'override' => ['base.currencyISO3' => '1'],
+        ]);
 
         $this->assertContains('Currency is a three-letter ISO 4217 code, such as USD.', $this->errors($c));
     }
@@ -90,8 +90,8 @@ final class PropertySettingsScreenTest extends TestCase
             $this->markTestSkipped('writes scoped setting rows');
         }
 
-        $config = array('base.currencyISO3' => 'EUR', 'base.campaignKeys' => 'source=src, campaign=promo');
-        $override = array('base.currencyISO3' => '1', 'base.campaignKeys' => '1');
+        $config = ['base.currencyISO3' => 'EUR', 'base.campaignKeys' => 'source=src, campaign=promo'];
+        $override = ['base.currencyISO3' => '1', 'base.campaignKeys' => '1'];
 
         foreach ($this->sets() as $set) {
             $this->assertTrue(SettingsForm::saveScoped($set, 'property', self::PROPERTY, $config, $override));
@@ -99,7 +99,7 @@ final class PropertySettingsScreenTest extends TestCase
 
         $this->assertSame('EUR',
             \OWA\Core\CoreAPI::getScopedSettingRow('property', self::PROPERTY, 'base', 'currencyISO3'));
-        $this->assertSame(array('source' => 'src', 'campaign' => 'promo'),
+        $this->assertSame(['source' => 'src', 'campaign' => 'promo'],
             \OWA\Core\CoreAPI::getScopedSettingRow('property', self::PROPERTY, 'base', 'campaignKeys'));
 
         $this->assertSame('EUR', \OWA\Core\CoreAPI::getSetting('base', 'currencyISO3', 'property', self::PROPERTY),

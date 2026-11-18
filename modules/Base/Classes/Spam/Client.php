@@ -55,7 +55,7 @@ class Client {
 
         $ua = $this->part( 'ua' );
 
-        return array( (int) ( $ua->major ?? 0 ), (int) ( $ua->minor ?? 0 ) );
+        return [ (int) ( $ua->major ?? 0 ), (int) ( $ua->minor ?? 0 ) ];
     }
 
     /** @return string */
@@ -69,7 +69,7 @@ class Client {
 
         $os = $this->part( 'os' );
 
-        return array( (int) ( $os->major ?? 0 ), (int) ( $os->minor ?? 0 ) );
+        return [ (int) ( $os->major ?? 0 ), (int) ( $os->minor ?? 0 ) ];
     }
 
     /**
@@ -110,7 +110,7 @@ class Client {
     }
 
     /** The parser's Safari families: desktop, iOS, and an iOS app's web view. */
-    const SAFARI_FAMILIES = array( 'Safari', 'Mobile Safari', 'Mobile Safari UI/WKWebView' );
+    const SAFARI_FAMILIES = [ 'Safari', 'Mobile Safari', 'Mobile Safari UI/WKWebView' ];
 
     /**
      * Whether the agent claims to be a browser: Chromium (any browser carrying
@@ -166,14 +166,14 @@ class Client {
 
         $family = strtolower( $this->osFamily() );
 
-        foreach ( array(
+        foreach ( [
             'windows'  => '/^windows/',
             'mac'      => '/^(mac os|macos)/',
             'ios'      => '/^(ios|ipados)$/',
             'android'  => '/^android/',
             'chromeos' => '/^(chrome os|chromium os)$/',
             'linux'    => '/^(linux|ubuntu|debian|fedora|red hat|centos|suse|opensuse|arch linux|linux mint|gentoo|kubuntu|mageia|slackware)/',
-        ) as $class => $pattern ) {
+        ] as $class => $pattern ) {
 
             if ( preg_match( $pattern, $family ) ) {
 
@@ -182,14 +182,14 @@ class Client {
         }
 
         // Tokens, most specific first: an Android agent also says Linux.
-        foreach ( array(
+        foreach ( [
             'android'  => '/android/i',
             'ios'      => '/\b(iphone|ipad|ipod)\b/i',
             'chromeos' => '/\bCrOS\b/',
             'windows'  => '/windows/i',
             'mac'      => '/macintosh|mac os x/i',
             'linux'    => '/linux/i',
-        ) as $class => $pattern ) {
+        ] as $class => $pattern ) {
 
             if ( preg_match( $pattern, $this->ua ) ) {
 
@@ -240,5 +240,3 @@ class Client {
         return new \stdClass();
     }
 }
-
-?>

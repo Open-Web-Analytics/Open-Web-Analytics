@@ -50,9 +50,9 @@ final class ParamNamespaceTest extends TestCase
         $this->server = $_SERVER;
         $this->cookie = $_COOKIE;
 
-        $_GET    = array();
-        $_POST   = array();
-        $_COOKIE = array();
+        $_GET    = [];
+        $_POST   = [];
+        $_COOKIE = [];
 
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_HOST']      = 'owa.example.test';
@@ -86,7 +86,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testBareParamsAreReadOnOwaSOwnEndpoints(): void
     {
-        $_GET = array('do' => 'base.reportingHome', 'siteId' => 'abc123');
+        $_GET = ['do' => 'base.reportingHome', 'siteId' => 'abc123'];
 
         $r = $this->container();
 
@@ -101,7 +101,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testPrefixedParamsAreStillRead(): void
     {
-        $_GET = array('owa_do' => 'base.reportingHome', 'owa_siteId' => 'abc123');
+        $_GET = ['owa_do' => 'base.reportingHome', 'owa_siteId' => 'abc123'];
 
         $r = $this->container();
 
@@ -116,7 +116,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testThePrefixedSpellingWinsACollision(): void
     {
-        $_GET = array('do' => 'base.bare', 'owa_do' => 'base.prefixed');
+        $_GET = ['do' => 'base.bare', 'owa_do' => 'base.prefixed'];
 
         $r = $this->container();
 
@@ -131,7 +131,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testThePrefixedSpellingWinsWhenItArrivesFirst(): void
     {
-        $_GET = array('owa_do' => 'base.prefixed', 'do' => 'base.bare');
+        $_GET = ['owa_do' => 'base.prefixed', 'do' => 'base.bare'];
 
         $r = $this->container();
 
@@ -145,7 +145,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testBareDoAndActionAreFilteredForIncludeExploits(): void
     {
-        $_GET = array('do' => '../../../../etc/passwd');
+        $_GET = ['do' => '../../../../etc/passwd'];
 
         $r = $this->container();
 
@@ -160,7 +160,7 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testBareActionIsRekeyedLikeThePrefixedForm(): void
     {
-        $_GET = array('action' => 'base.login');
+        $_GET = ['action' => 'base.login'];
 
         $r = $this->container();
 
@@ -183,8 +183,8 @@ final class ParamNamespaceTest extends TestCase
     {
         // exactly what the login form sends: the page URL still says
         // do=base.loginForm, the submitted body says action=base.login.
-        $_GET  = array('owa_do' => 'base.loginForm', 'owa_go' => '');
-        $_POST = array('action' => 'base.login', 'user_id' => 'someone', 'password' => 'x');
+        $_GET  = ['owa_do' => 'base.loginForm', 'owa_go' => ''];
+        $_POST = ['action' => 'base.login', 'user_id' => 'someone', 'password' => 'x'];
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
         $r = $this->container();
@@ -202,8 +202,8 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testTheOrderContractHoldsForThePrefixedSpellingToo(): void
     {
-        $_GET  = array('owa_do' => 'base.loginForm');
-        $_POST = array('owa_action' => 'base.login');
+        $_GET  = ['owa_do' => 'base.loginForm'];
+        $_POST = ['owa_action' => 'base.login'];
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
         $r = $this->container();
@@ -223,11 +223,11 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testTheBeaconIsReadUnderEitherSpelling(): void
     {
-        $bare = array(
+        $bare = [
             'event_type' => 'base.page_request',
             'site_id'    => 'beacon-site',
             'page_url'   => 'https://site.example/p',
-        );
+        ];
 
         $_GET = $bare;
         $r = $this->container();
@@ -237,7 +237,7 @@ final class ParamNamespaceTest extends TestCase
         }
 
         // ...and the same beacon from an older, cached tracker.
-        $_GET = array();
+        $_GET = [];
         foreach ( $bare as $name => $value ) {
             $_GET[ 'owa_' . $name ] = $value;
         }
@@ -255,11 +255,11 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testBeaconBracketParamsSurviveTheStrip(): void
     {
-        $_GET = array( 'owa_ct_line_items' => array( 0 => array( 'li_sku' => 'SKU-1' ) ) );
+        $_GET = [ 'owa_ct_line_items' => [ 0 => [ 'li_sku' => 'SKU-1' ] ] ];
 
         $r = $this->container();
 
-        $this->assertSame( array( 0 => array( 'li_sku' => 'SKU-1' ) ), $r->getParam('ct_line_items') );
+        $this->assertSame( [ 0 => [ 'li_sku' => 'SKU-1' ] ], $r->getParam('ct_line_items') );
     }
 
     /* --------------------------------------------------------------- cookies */
@@ -292,7 +292,7 @@ final class ParamNamespaceTest extends TestCase
 
         $r = $this->container();
 
-        $this->assertSame(array('s'), array_keys($r->owa_cookies));
+        $this->assertSame(['s'], array_keys($r->owa_cookies));
     }
 
     /**
@@ -304,7 +304,7 @@ final class ParamNamespaceTest extends TestCase
     public function testASingleCookieIsNotDropped(): void
     {
         $_SERVER['HTTP_COOKIE'] = 'owa_v=visitor-state';
-        $_COOKIE = array('owa_v' => 'visitor-state');
+        $_COOKIE = ['owa_v' => 'visitor-state'];
 
         $r = $this->container();
 
@@ -320,11 +320,11 @@ final class ParamNamespaceTest extends TestCase
     public function testStripParamsFiltersToPrefixedNamesOnly(): void
     {
         $stripped = \OWA\Core\Lib::stripParams(
-            array('owa_do' => 'x', 'do' => 'y', 'my_owa_thing' => 'z', 'owa_' => 'nameless'),
+            ['owa_do' => 'x', 'do' => 'y', 'my_owa_thing' => 'z', 'owa_' => 'nameless'],
             'owa_'
         );
 
-        $this->assertSame(array('do' => 'x'), $stripped);
+        $this->assertSame(['do' => 'x'], $stripped);
     }
 
     /* -------------------------------------------------------- emitted markup */
@@ -362,7 +362,7 @@ final class ParamNamespaceTest extends TestCase
 
         // and that name, sent as a param, resolves to the 'nonce' OWA reads.
         preg_match('/name="([^"]+)"/', $field, $m);
-        $_GET = array($m[1] => 'the-nonce');
+        $_GET = [$m[1] => 'the-nonce'];
 
         $r = $this->container();
 
@@ -377,7 +377,7 @@ final class ParamNamespaceTest extends TestCase
     {
         $t = new \OWA\Core\Template('base');
 
-        $qs = $t->makeParamString(array('do' => 'base.reportingHome', 'siteId' => 'abc'), false);
+        $qs = $t->makeParamString(['do' => 'base.reportingHome', 'siteId' => 'abc'], false);
 
         $this->assertSame('do=base.reportingHome&siteId=abc', $qs);
 

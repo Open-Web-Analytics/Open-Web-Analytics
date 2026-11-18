@@ -14,7 +14,7 @@
 $owa_filter_dimensions = (array) $view->get('domstreams_filter_dimensions');
 $owa_filter_metrics    = (array) $view->get('domstreams_filter_metrics');
 $owa_table             = (array) $view->get('domstreams');
-$owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['resultsRows'] : array();
+$owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['resultsRows'] : [];
 ?>
 
 <div class="owa_reportControls">
@@ -67,7 +67,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
 <?php echo $view->makePaginationFromResultSet(
     $view->get('domstreams_pagination'),
-    array( 'do' => 'base.report', 'reportId' => 'domstreams' ),
+    [ 'do' => 'base.report', 'reportId' => 'domstreams' ],
     true
 );?>
 
@@ -89,18 +89,18 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
      * events against that geometry.
      */
 ?>
-<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( array(
+<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( [
     'grid'        => 'domstreams-grid',
     'item'        => 'domstreams',
     'table'       => $owa_table,
-    'gridOptions' => array( 'columnFormatters' => array( 'play' => 'overlayLink' ) ),
-    'filter'      => array(
+    'gridOptions' => [ 'columnFormatters' => [ 'play' => 'overlayLink' ] ],
+    'filter'      => [
         'ids'         => 'domstream',
         'item'        => 'domstreamConstraints',
         'firstPage'   => true,
         'dimensions'  => $owa_filter_dimensions,
         'metrics'     => $owa_filter_metrics,
         'constraints' => (string) $view->get('domstreams_constraints'),
-    ),
-    'sizedWindow' => array( 'link' => 'a.owa_overlayLink', 'name' => 'OWA Recording' ),
-) ); ?></script>
+    ],
+    'sizedWindow' => [ 'link' => 'a.owa_overlayLink', 'name' => 'OWA Recording' ],
+] ); ?></script>

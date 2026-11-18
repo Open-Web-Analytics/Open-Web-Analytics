@@ -81,8 +81,8 @@ final class Update049Test extends TestCase
     /** The v1 trigger name becomes the v2 event name. */
     public function testTheTriggerBecomesAV2EventName(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_uri', 'exact', '/thanks' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_uri', 'exact', '/thanks' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
@@ -93,25 +93,25 @@ final class Update049Test extends TestCase
     /** The v1 property names become raw column names. */
     public function testTheConditionPropertiesBecomeColumns(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_uri', 'begins', '/thanks' ),
-            array( 'medium',   'exact', 'organic-search' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_uri', 'begins', '/thanks' ],
+            [ 'medium',   'exact', 'organic-search' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
-        $this->assertSame( array( 'page_path', 'tagged_medium' ),
+        $this->assertSame( [ 'page_path', 'tagged_medium' ],
             $this->propertiesOf( $id ) );
     }
 
     /** A 1.14 goal on browser keeps counting: it tested the version, a column still. */
     public function testABrowserConditionTestsTheBrowserVersion(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'browser', 'begins', '120.' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'browser', 'begins', '120.' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
-        $this->assertSame( array( 'browser_version' ), $this->propertiesOf( $id ) );
+        $this->assertSame( [ 'browser_version' ], $this->propertiesOf( $id ) );
     }
 
     /**
@@ -122,13 +122,13 @@ final class Update049Test extends TestCase
      */
     public function testASecondRunChangesNothing(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_uri', 'exact', '/twice' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_uri', 'exact', '/twice' ] ] );
 
         $this->assertTrue( $this->update->up() );
         $this->assertTrue( $this->update->up() );
 
-        $this->assertSame( array( 'page_path' ), $this->propertiesOf( $id ) );
+        $this->assertSame( [ 'page_path' ], $this->propertiesOf( $id ) );
         $this->assertSame( 'page_view', $this->reload( $id )->get( 'trigger_event_type' ) );
         $this->assertSame( 1, (int) $this->reload( $id )->get( 'is_active' ),
             'the second run switched off a goal it had just migrated' );
@@ -145,14 +145,14 @@ final class Update049Test extends TestCase
      */
     public function testAnUntranslatableConditionSwitchesItsGoalOff(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_type', 'exact', 'attachment' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_type', 'exact', 'attachment' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
         $this->assertSame( 0, (int) $this->reload( $id )->get( 'is_active' ) );
 
-        $this->assertSame( array( 'page_type' ), $this->propertiesOf( $id ),
+        $this->assertSame( [ 'page_type' ], $this->propertiesOf( $id ),
             'The condition is left as it was: rewriting it to something that happens '
             . 'to be a column would change what the author asked for.' );
     }
@@ -160,10 +160,10 @@ final class Update049Test extends TestCase
     /** down() switches back on the goals up() switched off, and only those. */
     public function testRollingBackSwitchesTheGoalBackOn(): void
     {
-        \OWA\Core\CoreAPI::persistSetting( 'base', \OWA\Module\Base\Update\Update049::SWITCHED_OFF, array() );
+        \OWA\Core\CoreAPI::persistSetting( 'base', \OWA\Module\Base\Update\Update049::SWITCHED_OFF, [] );
 
-        $off = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_type', 'exact', 'attachment' ) ) );
+        $off = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_type', 'exact', 'attachment' ] ] );
 
         $this->assertTrue( $this->update->up() );
         $this->assertSame( 0, (int) $this->reload( $off )->get( 'is_active' ) );
@@ -171,15 +171,15 @@ final class Update049Test extends TestCase
         $this->assertTrue( $this->update->down() );
 
         $this->assertSame( 1, (int) $this->reload( $off )->get( 'is_active' ) );
-        $this->assertSame( array(), (array) \OWA\Core\CoreAPI::getSetting( 'base',
+        $this->assertSame( [], (array) \OWA\Core\CoreAPI::getSetting( 'base',
             \OWA\Module\Base\Update\Update049::SWITCHED_OFF ) );
     }
 
     /** A goal whose conditions all translate stays on. */
     public function testAMigratedGoalStaysActive(): void
     {
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_uri', 'exact', '/still-on' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_uri', 'exact', '/still-on' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
@@ -202,8 +202,8 @@ final class Update049Test extends TestCase
             $this->markTestSkipped( 'needs a Profile under the Property' );
         }
 
-        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
-            array( 'page_uri', 'begins', '/checkout/done' ) ) );
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, [
+            [ 'page_uri', 'begins', '/checkout/done' ] ] );
 
         $this->assertTrue( $this->update->up() );
 
@@ -216,17 +216,17 @@ final class Update049Test extends TestCase
 
             $event = new \OWA\Module\Base\Classes\Event;
             $event->setEventType( $type );
-            $event->setProperties( array(
+            $event->setProperties( [
                 'site_id'    => $siteId,
                 'visitor_id' => 7775300000000001,
                 'session_id' => 8885300000000001,
                 'ts'         => (int) ( microtime( true ) * 1000000 ),
                 'yyyymmdd'   => (int) date( 'Ymd' ),
                 'page_path'  => '/checkout/done',
-            ) );
+            ] );
 
             $events = \OWA\Module\Base\Classes\Ingest::at(
-                \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
+                \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, [ $event ] );
 
             // A goal event is a row of its own, added to the set (GoalMarking).
             return count( array_filter( $events, static function ( $e ) {
@@ -274,7 +274,7 @@ final class Update049Test extends TestCase
         $db->where( 'goal_event_id', $id );
         $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
             $out[] = (string) $row['condition_property'];

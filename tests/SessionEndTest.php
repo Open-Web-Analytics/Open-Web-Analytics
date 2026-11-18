@@ -14,7 +14,7 @@ use OWA\Core\Auth;
 final class SessionEndTest extends RestControllerTestCase
 {
     /** @var array the state stores before the test */
-    private $stores = array();
+    private $stores = [];
 
     protected function setUp(): void
     {
@@ -44,7 +44,7 @@ final class SessionEndTest extends RestControllerTestCase
     {
         $auth = Auth::get_instance();
 
-        foreach (array('auth_method' => null, '_is_user' => false) as $name => $value) {
+        foreach (['auth_method' => null, '_is_user' => false] as $name => $value) {
             (new \ReflectionProperty($auth, $name))->setValue($auth, $value);
         }
     }
@@ -82,11 +82,11 @@ final class SessionEndTest extends RestControllerTestCase
         $state->stores['u'] = $user_id;
         $state->stores['p'] = $credential;
 
-        return (bool) Auth::get_instance()->authenticateUser(array('cookies'))['auth_status'];
+        return (bool) Auth::get_instance()->authenticateUser(['cookies'])['auth_status'];
     }
 
     /** Runs base.logout's action with these params and answers its data. */
-    private function logout(array $params = array()): array
+    private function logout(array $params = []): array
     {
         $controller = new \OWA\Module\Base\Controller\Logout($params);
         $controller->action();
@@ -127,7 +127,7 @@ final class SessionEndTest extends RestControllerTestCase
         $this->assertTrue($this->signInByCookies($id, $here));
         $this->assertSame('cookies', Auth::get_instance()->getAuthMethod());
 
-        $data = $this->logout(array('nonce' => \OWA\Core\CoreAPI::createNonce('base.logout')));
+        $data = $this->logout(['nonce' => \OWA\Core\CoreAPI::createNonce('base.logout')]);
 
         $this->assertSame('redirect', $data['view_method'] ?? null);
         $this->assertSame('base.loginForm', $data['do'] ?? null);
@@ -146,7 +146,7 @@ final class SessionEndTest extends RestControllerTestCase
 
         $this->assertFalse($this->signInByCookies($id, (time() - 1) . '.' . str_repeat('a', 64)));
 
-        $data = $this->logout(array('nonce' => 'anything'));
+        $data = $this->logout(['nonce' => 'anything']);
 
         $this->assertSame('base.loginForm', $data['do'] ?? null, 'nobody signed in goes to the login form');
         $this->assertArrayNotHasKey('view', $data);
@@ -156,11 +156,11 @@ final class SessionEndTest extends RestControllerTestCase
     /** @return array<string,array{array<string,mixed>}> */
     public static function withoutANonce(): array
     {
-        return array(
-            'no nonce'                  => array(array()),
-            'a wrong nonce'             => array(array('nonce' => 'abcdef0123')),
-            'another action\'s nonce'   => array(array('nonce' => '{base.myProfileSave}')),
-        );
+        return [
+            'no nonce'                  => [[]],
+            'a wrong nonce'             => [['nonce' => 'abcdef0123']],
+            'another action\'s nonce'   => [['nonce' => '{base.myProfileSave}']],
+        ];
     }
 
     /**
@@ -209,7 +209,7 @@ final class SessionEndTest extends RestControllerTestCase
         $nonce = self::logoutNonce($html);
         $this->assertNotNull($nonce, 'the form carries a nonce');
 
-        $data = $this->logout(array('action' => 'base.logout', 'nonce' => $nonce));
+        $data = $this->logout(['action' => 'base.logout', 'nonce' => $nonce]);
 
         $this->assertSame('base.loginForm', $data['do'] ?? null);
         $this->assertSame($before + 1, (int) $this->row($id)->get('session_epoch'));
@@ -242,7 +242,7 @@ final class SessionEndTest extends RestControllerTestCase
         $this->assertTrue($this->signInByCookies($id, $issued));
 
         $manager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
-        $this->assertNotFalse($manager->updateUserPassword(array('user_id' => $id, 'password' => 'a new password ' . $this->tok)));
+        $this->assertNotFalse($manager->updateUserPassword(['user_id' => $id, 'password' => 'a new password ' . $this->tok]));
 
         $this->assertSame($before + 1, (int) $this->row($id)->get('session_epoch'));
         $this->assertFalse($this->isValid($issued, $id));

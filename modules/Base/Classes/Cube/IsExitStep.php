@@ -25,7 +25,7 @@ class IsExitStep extends Step {
 
     public function requires() {
 
-        return array( Context::SESSION );
+        return [ Context::SESSION ];
     }
 
     public function execute( Context $context ) {
@@ -35,5 +35,3 @@ class IsExitStep extends Step {
             Context::RAW, Context::pageViewKey( Context::RAW ), Context::SESSION, $context->closed_before );
     }
 }
-
-?>

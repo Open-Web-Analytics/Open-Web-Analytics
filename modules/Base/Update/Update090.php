@@ -60,10 +60,10 @@ class Update090 extends \OWA\Core\Update {
         $table = $this->tableFor( 'base.setting' );
 
         $count = (int) ( $db->get_row( sprintf( "SELECT COUNT(*) AS n FROM %s WHERE module = 'base' AND name = ?", $table ),
-            array( self::NAME ) )['n'] ?? 0 );
+            [ self::NAME ] )['n'] ?? 0 );
 
         if ( $count && $db->query( sprintf( "DELETE FROM %s WHERE module = 'base' AND name = ?", $table ),
-                array( self::NAME ) ) === false ) {
+                [ self::NAME ] ) === false ) {
 
             $this->e->notice( 'Removing the Domain Aliases setting failed.' );
 
@@ -90,5 +90,3 @@ class Update090 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

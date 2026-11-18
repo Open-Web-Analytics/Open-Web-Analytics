@@ -62,10 +62,10 @@ class VisualizationFunnel extends \OWA\Core\View {
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );
         // Handed to owa.rowsReport.js by the template.
         $this->body->set('funnel_table', $this->get('funnel_table') );
-        $this->body->set('funnel_filter', array(
+        $this->body->set('funnel_filter', [
             'dimensions'  => $this->get('funnel_filter_dimensions'),
             'metrics'     => $this->get('funnel_filter_metrics'),
             'constraints' => $this->get('funnel_constraints'),
-        ) );
+        ] );
     }
 }

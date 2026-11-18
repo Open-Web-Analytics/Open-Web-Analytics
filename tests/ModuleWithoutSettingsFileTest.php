@@ -36,7 +36,7 @@ final class ModuleWithoutSettingsFileTest extends TestCase
     {
         if ( owa_test_db_available() ) {
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->query( 'DELETE FROM owa_setting WHERE module IN ( ?, ? )', array( self::MODULE, 'zz_declares_nothing_probe' ) );
+            $db->query( 'DELETE FROM owa_setting WHERE module IN ( ?, ? )', [ self::MODULE, 'zz_declares_nothing_probe' ] );
         }
 
         if ( is_dir( $this->dir ) ) {
@@ -85,9 +85,9 @@ final class ModuleWithoutSettingsFileTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $insert = "INSERT INTO owa_setting ( id, scope_type, scope_id, module, name, value, creation_date ) VALUES ( ?, 'install', '1', ?, ?, ?, 0 )";
 
-        $this->assertNotFalse( $db->query( $insert, array( 7770000000000101, self::MODULE, 'is_active', serialize( true ) ) ) );
-        $this->assertNotFalse( $db->query( $insert, array( 7770000000000102, self::MODULE, 'schema_version', serialize( 1 ) ) ) );
-        $this->assertNotFalse( $db->query( $insert, array( 7770000000000103, 'zz_declares_nothing_probe', 'colour', serialize( 'red' ) ) ) );
+        $this->assertNotFalse( $db->query( $insert, [ 7770000000000101, self::MODULE, 'is_active', serialize( true ) ] ) );
+        $this->assertNotFalse( $db->query( $insert, [ 7770000000000102, self::MODULE, 'schema_version', serialize( 1 ) ] ) );
+        $this->assertNotFalse( $db->query( $insert, [ 7770000000000103, 'zz_declares_nothing_probe', 'colour', serialize( 'red' ) ] ) );
 
         $undeclared = $this->settings()->undeclaredModules();
 

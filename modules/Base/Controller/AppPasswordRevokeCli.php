@@ -21,14 +21,14 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Revokes a user\'s application password, or all of them. Anything using one stops working immediately.',
-            'arguments'   => array(
+            'arguments'   => [
                 'user=<user id>' => 'Required. The user the password belongs to.',
                 'id=<id>'        => 'The password\'s id, from app-password-list. Required unless --all is given.',
                 '--all'          => 'Revoke every application password the user has.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -67,5 +67,3 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
         \OWA\Core\CoreAPI::notice( sprintf( 'Application password %s of %s revoked.', $lookup_id, $user_id ) );
     }
 }
-
-?>

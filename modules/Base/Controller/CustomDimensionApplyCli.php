@@ -39,12 +39,12 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes. Runs on the scheduler as apply-custom-dimensions.',
-            'arguments'   => array(
+            'arguments'   => [
                 'property=<id>' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -69,7 +69,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
 
         if ( $only !== '' ) {
 
-            $cubes = isset( $existing[ $only ] ) ? array( $only => $existing[ $only ] ) : array();
+            $cubes = isset( $existing[ $only ] ) ? [ $only => $existing[ $only ] ] : [];
 
             if ( ! $cubes ) {
 
@@ -89,7 +89,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
              * which leave no pending row to find -- because naming one is
              * someone asking for it to be brought into line now.
              */
-            $cubes = array();
+            $cubes = [];
 
             foreach ( \OWA\Module\Base\Classes\Cube\Dimensions::propertiesWithPendingWork()
                       as $property_id ) {
@@ -148,7 +148,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s is busy; its build will apply these.', $table ) );
 
-            return array( 'changed' => 0, 'failed' => 0 );
+            return [ 'changed' => 0, 'failed' => 0 ];
         }
 
         try {
@@ -175,11 +175,9 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
                 $result['dropped'] ? 'dropped ' . implode( ', ', $result['dropped'] ) : '' ) );
         }
 
-        return array(
+        return [
             'changed' => $result['changed'] ? 1 : 0,
             'failed'  => ( ! $result['ok'] || $result['skipped'] ) ? 1 : 0,
-        );
+        ];
     }
 }
-
-?>

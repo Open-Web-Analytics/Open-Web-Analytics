@@ -10,13 +10,11 @@
  * does not. Extend it with a file of the same name in the data directory.
  */
 return [
-	['domain' => 'chatgpt.com'],
-	['domain' => 'chat.openai.com'],
-	['domain' => 'gemini.google.com'],
-	['domain' => 'claude.ai'],
-	['domain' => 'copilot.microsoft.com'],
-	['domain' => 'chat.deepseek.com'],
-	['domain' => 'grok.com'],
+    ['domain' => 'chatgpt.com'],
+    ['domain' => 'chat.openai.com'],
+    ['domain' => 'gemini.google.com'],
+    ['domain' => 'claude.ai'],
+    ['domain' => 'copilot.microsoft.com'],
+    ['domain' => 'chat.deepseek.com'],
+    ['domain' => 'grok.com'],
 ];
-
-?>

@@ -208,7 +208,7 @@ final class InstallTimezoneTest extends TestCase
         $c->noteConfigConstant( 'base', 'timezone', 'OWA_TIMEZONE' );
 
         try {
-            $stored = array( 'base' => array( 'timezone' => 'Europe/London', 'other' => 'kept' ) );
+            $stored = [ 'base' => [ 'timezone' => 'Europe/London', 'other' => 'kept' ] ];
             $result = $c->stripSettingsSuppliedByConstants( $stored );
 
             $this->assertArrayNotHasKey('timezone', $result['base'],
@@ -247,7 +247,7 @@ final class InstallTimezoneTest extends TestCase
         }
 
         try {
-            $stored = array( 'base' => array( 'timezone' => 'Europe/London' ) );
+            $stored = [ 'base' => [ 'timezone' => 'Europe/London' ] ];
 
             $this->assertSame( $stored, $c->stripSettingsSuppliedByConstants( $stored ) );
         } finally {
@@ -358,7 +358,7 @@ final class InstallTimezoneTest extends TestCase
          * install on the author's box defines and CI does not -- so the test
          * encoded a fact about one machine.
          */
-        $ledger = $c->configConstants()['base'] ?? array();
+        $ledger = $c->configConstants()['base'] ?? [];
 
         if ( ! $ledger ) {
             $this->markTestSkipped( 'this environment defines no config constants' );
@@ -474,7 +474,7 @@ final class InstallTimezoneTest extends TestCase
         };
 
         $t->fake_constant = $constant;
-        $t->set('defaults', array());
+        $t->set('defaults', []);
         $t->set('db_name', '');
         $t->set_template('install_defaults_entry.php');
 
@@ -577,7 +577,7 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testAFirstRenderWithNoDefaultsRaisesNoWarnings(): void
     {
-        $seen = array();
+        $seen = [];
 
         set_error_handler( static function ( $no, $msg ) use ( &$seen ) {
             $seen[] = $msg;
@@ -590,7 +590,7 @@ final class InstallTimezoneTest extends TestCase
             restore_error_handler();
         }
 
-        $this->assertSame( array(), $seen,
+        $this->assertSame( [], $seen,
             'the wizard must render cleanly before anything has been submitted' );
         $this->assertGreaterThan( 200, substr_count( $html, '<option' ) );
     }
@@ -601,7 +601,7 @@ final class InstallTimezoneTest extends TestCase
         $timezones        = require \OWA\Core\Env::root() . '/conf/country2Timezones.php';
         $countryCode2Name = require \OWA\Core\Env::root() . '/conf/countryCodes2Names.php';
 
-        $offered = array();
+        $offered = [];
 
         foreach ($timezones as $zones) {
             $offered = array_merge($offered, $zones);

@@ -51,7 +51,7 @@ final class E2eWireNamesAreV2Test extends TestCase
          * the event it describes, and a variant is suffixed -- page_view.campaign
          * is a page_view. So the base name before the first dot is the vocabulary.
          */
-        $names = array();
+        $names = [];
 
         foreach ( array_keys( (array) $contracts[ self::CURRENT ] ) as $shape ) {
 
@@ -73,7 +73,7 @@ final class E2eWireNamesAreV2Test extends TestCase
     {
         $compat = require \OWA\Core\Env::root() . '/conf/beacon_compat.php';
 
-        $retired = array_keys( (array) ( $compat['event_names'] ?? array() ) );
+        $retired = array_keys( (array) ( $compat['event_names'] ?? [] ) );
 
         $this->assertNotEmpty( $retired,
             'the compat index lists no event-name renames; this test would pass vacuously' );
@@ -86,7 +86,7 @@ final class E2eWireNamesAreV2Test extends TestCase
         $retired = $this->retiredEventNames();
         $live    = $this->liveEventNames();
 
-        $offenders = array();
+        $offenders = [];
         $scanned   = 0;
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
@@ -125,7 +125,7 @@ final class E2eWireNamesAreV2Test extends TestCase
         $this->assertGreaterThan( 10, $scanned,
             'almost no specs were scanned, so this test is not reading them' );
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "An e2e spec is waiting for an event name the tracker no longer sends. It will "
             . "time out and report that the server stored nothing:\n  "
             . implode( "\n  ", $offenders ) );
@@ -139,7 +139,7 @@ final class E2eWireNamesAreV2Test extends TestCase
     public function testEveryAwaitedNameIsInTheContract(): void
     {
         $live    = $this->liveEventNames();
-        $unknown = array();
+        $unknown = [];
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
 
@@ -156,7 +156,7 @@ final class E2eWireNamesAreV2Test extends TestCase
             }
         }
 
-        $this->assertSame( array(), $unknown,
+        $this->assertSame( [], $unknown,
             "A spec waits for an event name no beacon contract carries:\n  "
             . implode( "\n  ", $unknown ) );
     }
@@ -169,7 +169,7 @@ final class E2eWireNamesAreV2Test extends TestCase
      */
     public function testNoSpecMatchesALongNameOnTheWire(): void
     {
-        $long = array();
+        $long = [];
 
         foreach ( (array) ( require \OWA\Core\Env::root() . '/conf/beacon_compat.php' )['renames'] as $entry ) {
 
@@ -183,7 +183,7 @@ final class E2eWireNamesAreV2Test extends TestCase
 
         $pattern = '#\[\?&\](' . implode( '|', array_map( fn ( $n ) => preg_quote( $n, '#' ), $long ) ) . ')=#';
 
-        $offenders = array();
+        $offenders = [];
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
 
@@ -196,7 +196,7 @@ final class E2eWireNamesAreV2Test extends TestCase
             }
         }
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "A spec matches a property's long name in a beacon URL; the wire carries its short key:\n  "
             . implode( "\n  ", $offenders ) );
     }

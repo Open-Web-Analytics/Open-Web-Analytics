@@ -61,10 +61,10 @@ class Entity {
     public $name;
 
     /** @var array<string, \OWA\Module\Base\Classes\DbColumn> column name => column */
-    public $properties = array();
+    public $properties = [];
 
     /** @var TableProperties */
-    public $_tableProperties = array();
+    public $_tableProperties = [];
 
     /**
      * Whether the table encoding has been handed down to the columns yet.
@@ -101,7 +101,7 @@ class Entity {
      */
     public function _getProperties() {
         
-        $properties = array();
+        $properties = [];
         
         foreach ($this->properties as $k => $v) {
             
@@ -132,7 +132,7 @@ class Entity {
      */
     public function getPublicProperties() {
 
-	    return $this->getProperties( $this->private_properties );
+        return $this->getProperties( $this->private_properties );
     }
 
     /**
@@ -140,21 +140,21 @@ class Entity {
      * @return array<string, mixed> column => value
      */
     public function getProperties( $drop_keys = [] ) {
-	    
-	    $properties = $this->_getProperties();
-	    
-	    if ( $drop_keys ) {
-		    
-		    foreach ($drop_keys as $key) {
-			    
-			    if (array_key_exists($key, $properties)) {
-				    
-				    unset($properties[$key]);
-			    }
-		    }
-	    }
-	    
-	    return $properties;
+        
+        $properties = $this->_getProperties();
+        
+        if ( $drop_keys ) {
+            
+            foreach ($drop_keys as $key) {
+                
+                if (array_key_exists($key, $properties)) {
+                    
+                    unset($properties[$key]);
+                }
+            }
+        }
+        
+        return $properties;
     }
     
     /**
@@ -169,7 +169,7 @@ class Entity {
         
         $all_cols = array_flip(array_keys($this->properties));
         
-        $new_cols = array();
+        $new_cols = [];
         $ns = '';
         $as = '';
         
@@ -295,14 +295,14 @@ class Entity {
         $this->applyCharacterEncodingToColumns();
 
         if ( array_key_exists( $name, $this->properties ) ) {
-	        
-	        $existing_value = $this->get( $name );
+            
+            $existing_value = $this->get( $name );
             
             $method = $name.'SetFilter';
             
             if ( $filter && method_exists( $this, $method ) ) {
-	            
-	            $value = $this->$method( $value );
+                
+                $value = $this->$method( $value );
             }
             
             // A falsy value is stored when the COLUMN can legitimately hold one.
@@ -325,13 +325,13 @@ class Entity {
             // the old behaviour exactly.
             if ( $value || $this->columnAcceptsFalsy( $name, $value ) ) {
 
-	            $this->properties[$name]->setValue( $value );
-	            
-	            if ( $mark_dirty && $existing_value != $value ) {
-		            
-		            $this->markDirty( $name, $value );
-	            }
-	        }
+                $this->properties[$name]->setValue( $value );
+                
+                if ( $mark_dirty && $existing_value != $value ) {
+                    
+                    $this->markDirty( $name, $value );
+                }
+            }
         }
     }
     
@@ -437,9 +437,9 @@ class Entity {
      */
     protected function numericColumnTypes() {
 
-        $numeric = array();
+        $numeric = [];
 
-        foreach ( array(
+        foreach ( [
             'OWA_DTD_BIGINT',
             'OWA_DTD_INT',
             'OWA_DTD_SMALLINT',
@@ -452,7 +452,7 @@ class Entity {
             // anyway, because a dialect with a real boolean type spells it
             // differently and 0/false must stay storable in it.
             'OWA_DTD_BOOLEAN',
-        ) as $constant ) {
+        ] as $constant ) {
 
             if ( defined( $constant ) ) {
 
@@ -469,19 +469,19 @@ class Entity {
      * @return void
      */
     public function markDirty( $name, $value ) {
-	    
-	    $this->dirty[$name] = $value;
+        
+        $this->dirty[$name] = $value;
     }
     
     /**
      * @return true|null true when a column changed since the last write
      */
     public function isDirty() {
-	    
-	    if ( ! empty( $this->dirty ) ) {
-		    
-		    return true;
-	    }
+        
+        if ( ! empty( $this->dirty ) ) {
+            
+            return true;
+        }
 
         return null;
     }
@@ -533,7 +533,7 @@ class Entity {
      */
     public function getTableOptions() {
 
-        $options = array( 'table_type' => 'disk' );
+        $options = [ 'table_type' => 'disk' ];
 
         if ( ! $this->_tableProperties ) {
 
@@ -643,9 +643,9 @@ class Entity {
      */
     protected function textColumnTypes() {
 
-        $text = array();
+        $text = [];
 
-        foreach ( array(
+        foreach ( [
             'OWA_DTD_VARCHAR10',
             'OWA_DTD_VARCHAR16',
             'OWA_DTD_VARCHAR24',
@@ -663,7 +663,7 @@ class Entity {
             // A text type with validation on both MySQL and MariaDB, so an
             // unset value is written the same way as any other text column.
             'OWA_DTD_JSON',
-        ) as $constant ) {
+        ] as $constant ) {
 
             if ( defined( $constant ) ) {
 
@@ -813,7 +813,7 @@ class Entity {
         // Db::where() drops an empty value, which would read the whole table.
         if ( ! $this->isCachable() || \OWA\Core\Lib::isEmpty( $value ) ) {
 
-            return array();
+            return [];
         }
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -878,7 +878,7 @@ class Entity {
         if ( \OWA\Core\Lib::isEmpty( $value ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to delete from %s: no %s given, from %s.',
-                $this->getTableName(), $col, \OWA\Core\Lib::callSiteOutside( array( 'Entity.php' ) ) ) );
+                $this->getTableName(), $col, \OWA\Core\Lib::callSiteOutside( [ 'Entity.php' ] ) ) );
 
             return false;
         }
@@ -931,7 +931,7 @@ class Entity {
      * @param  ColumnConstraints $constraints
      * @return void
      */
-    public function load($value, $col = 'id', $constraints = array()) {
+    public function load($value, $col = 'id', $constraints = []) {
 
         $this->getByColumn($col, $value, $constraints);
         
@@ -943,7 +943,7 @@ class Entity {
      * @param  ColumnConstraints $constraints
      * @return void
      */
-    public function getByPk($col, $value, $constraints = array()) {
+    public function getByPk($col, $value, $constraints = []) {
         
         $this->getByColumn($col, $value, $constraints);
         
@@ -971,7 +971,7 @@ class Entity {
      * @return void
      * @throws \Exception when $col or $value is empty
      */
-    public function getByColumn($col, $value, $constraints = array()) {
+    public function getByColumn($col, $value, $constraints = []) {
                 
         if ( ! $col ) {
             throw new \Exception("No column name passed.");
@@ -1004,7 +1004,7 @@ class Entity {
             // under them says nothing about whether one exists.
             if (empty($properties) && $constraints) {
 
-                $properties = $this->fetchOneRow($col, $value, array());
+                $properties = $this->fetchOneRow($col, $value, []);
             }
 
             if (!empty($properties)) {
@@ -1025,7 +1025,7 @@ class Entity {
      * @param  ColumnConstraints $constraints
      * @return array<string, scalar|null> column => value; empty when no row
      */
-    protected function fetchOneRow($col, $value, $constraints = array()) {
+    protected function fetchOneRow($col, $value, $constraints = []) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom($this->getTableName());
@@ -1445,7 +1445,7 @@ class Entity {
 
         return isset( $this->_tableProperties['composite_primary_key'] )
             ? $this->_tableProperties['composite_primary_key']
-            : array();
+            : [];
     }
 
     /**
@@ -1457,7 +1457,7 @@ class Entity {
 
         return isset( $this->_tableProperties['unique_indexes'] )
             ? $this->_tableProperties['unique_indexes']
-            : array();
+            : [];
     }
 
     /**
@@ -1469,7 +1469,7 @@ class Entity {
         
         return isset( $this->_tableProperties['composite_indexes'] )
             ? $this->_tableProperties['composite_indexes']
-            : array();
+            : [];
     }
     
     /**
@@ -1640,5 +1640,3 @@ class Entity {
         return $this->wasPersisted;
     }
 }
-
-?>

@@ -127,7 +127,7 @@ class CustomReports extends \OWA\Core\ReportController {
             $reports[ $i ]['kind']    = self::kindOf( $report );
             $reports[ $i ]['invalid'] = $reports[ $i ]['kind'] === 'report'
                 ? \OWA\Module\Base\Classes\CustomReports::validate(
-                    (array) ( $report['definition'] ?? array() ),
+                    (array) ( $report['definition'] ?? [] ),
                     \OWA\Module\Base\Classes\CustomReports::propertyOf( $report ) )
                 : '';
         }
@@ -202,15 +202,15 @@ class CustomReports extends \OWA\Core\ReportController {
 
             $state = array_intersect_key( $this->params, array_flip( \OWA\Core\View::LINK_STATE_KEYS ) );
 
-            $this->set( 'title_actions', array(
-                array(
-                    'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
-                                   ->makeLink( array( 'do' => 'base.customReportEdit' ), true ),
+            $this->set( 'title_actions', [
+                [
+                    'url'   => ( new \OWA\Core\Template( null, [ 'link_state' => $state ] ) )
+                                   ->makeLink( [ 'do' => 'base.customReportEdit' ], true ),
                     'label' => \OWA\Core\CoreAPI::t( 'New' ),
                     'icon'  => 'fa-plus',
                     'class' => 'owa_newCustomReport is-primary',
-                ),
-            ) );
+                ],
+            ] );
 
             $this->set( 'new_kinds', self::newKinds() );
         }
@@ -240,23 +240,23 @@ class CustomReports extends \OWA\Core\ReportController {
      */
     public static function newKinds() {
 
-        $kinds = array(
-            'report' => array(
+        $kinds = [
+            'report' => [
                 'label'  => \OWA\Core\CoreAPI::t( 'Report' ),
                 'hint'   => \OWA\Core\CoreAPI::t( 'Tables, trends and totals laid out on a grid. You pick the metrics and dimensions for each widget.' ),
                 'icon'   => 'fas fa-th-large',
-                'params' => array( 'do' => 'base.customReportEdit' ),
-            ),
-        );
+                'params' => [ 'do' => 'base.customReportEdit' ],
+            ],
+        ];
 
         foreach ( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES as $key => $label ) {
 
-            $kinds[ $key ] = array(
+            $kinds[ $key ] = [
                 'label'  => \OWA\Core\Strings::translate( $label ),
                 'hint'   => \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ),
                 'icon'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $key ],
-                'params' => array( 'do' => 'base.visualizationEdit', 'visualizationType' => $key ),
-            );
+                'params' => [ 'do' => 'base.visualizationEdit', 'visualizationType' => $key ],
+            ];
         }
 
         return $kinds;

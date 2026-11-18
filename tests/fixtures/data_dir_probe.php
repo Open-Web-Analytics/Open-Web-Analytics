@@ -9,7 +9,7 @@
  *
  * With "log", it also writes one error to OWA's log.
  */
-$warnings = array();
+$warnings = [];
 
 set_error_handler( static function ( $no, $msg, $file, $line ) use ( &$warnings ) {
 
@@ -22,7 +22,7 @@ $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.3
 
 require dirname( __DIR__, 2 ) . '/owa.php';
 
-$owa = new owa( array( 'request_type' => 'tracking' ) );
+$owa = new owa( [ 'request_type' => 'tracking' ] );
 
 // OWA's debug mode installs a handler of its own; this probe's must see everything.
 set_error_handler( static function ( $no, $msg, $file, $line ) use ( &$warnings ) {
@@ -37,10 +37,10 @@ if ( in_array( 'log', $argv, true ) ) {
     \OWA\Core\CoreAPI::error( 'data dir probe' );
 }
 
-$queue    = new \OWA\Module\Base\Classes\FileEventQueue( array() );
+$queue    = new \OWA\Module\Base\Classes\FileEventQueue( [] );
 $fallback = \OWA\Module\Base\Classes\TrackerIngest::fallback();
 
-echo 'PROBE ' . json_encode( array(
+echo 'PROBE ' . json_encode( [
     'data_dir'       => \OWA\Core\Env::dataDir(),
     'error_log_file' => \OWA\Core\CoreAPI::getSetting( 'base', 'error_log_file' ),
     'async_log_dir'  => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
@@ -52,4 +52,4 @@ echo 'PROBE ' . json_encode( array(
     'ua_regexes'     => \OWA\Module\Base\Classes\Browscap::regexesFile(),
     'constant'       => \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'base', 'data_dir' ),
     'warnings'       => $warnings,
-) ) . "\n";
+] ) . "\n";

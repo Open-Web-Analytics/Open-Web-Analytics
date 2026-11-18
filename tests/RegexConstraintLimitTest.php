@@ -17,8 +17,8 @@ final class RegexConstraintLimitTest extends TestCase
 
     public function testTheShippedReportsPatternsAreAccepted(): void
     {
-        foreach (array('^[(](direct|organic|ai-agent|referral)[)]$', '^form_(start|submit)$',
-                       '^/blog/', '\\.pdf$', 'a{2,5}', '(foo|bar)+') as $p) {
+        foreach (['^[(](direct|organic|ai-agent|referral)[)]$', '^form_(start|submit)$',
+                       '^/blog/', '\\.pdf$', 'a{2,5}', '(foo|bar)+'] as $p) {
             $this->assertNull($this->problem($p), $p);
         }
     }
@@ -32,7 +32,7 @@ final class RegexConstraintLimitTest extends TestCase
                 if (!is_array($node)) {
                     return;
                 }
-                if (in_array($node['operator'] ?? null, array('=~', '!~'), true) && isset($node['value'])) {
+                if (in_array($node['operator'] ?? null, ['=~', '!~'], true) && isset($node['value'])) {
                     $seen++;
                     $this->assertNull($this->problem((string) $node['value']), basename($file) . ': ' . $node['value']);
                 }
@@ -46,14 +46,14 @@ final class RegexConstraintLimitTest extends TestCase
 
     public function testANestedQuantifierIsRefused(): void
     {
-        foreach (array('(a+)+$', '(a*)*b', '(x{2,3})+', '(.*)*', '((ab)+)+') as $p) {
+        foreach (['(a+)+$', '(a*)*b', '(x{2,3})+', '(.*)*', '((ab)+)+'] as $p) {
             $this->assertNotNull($this->problem($p), $p);
         }
     }
 
     public function testABackreferenceIsRefused(): void
     {
-        foreach (array('(a)\\1', '(a)\\g1', '(a)\\g{1}', '(?<n>a)\\k<n>', '(?<n>a)\\k{n}') as $p) {
+        foreach (['(a)\\1', '(a)\\g1', '(a)\\g{1}', '(?<n>a)\\k<n>', '(?<n>a)\\k{n}'] as $p) {
             $this->assertSame('it uses a backreference.', $this->problem($p), $p);
         }
     }
@@ -64,7 +64,7 @@ final class RegexConstraintLimitTest extends TestCase
      */
     public function testAConstructMysqlCannotRunIsRefused(): void
     {
-        foreach (array(
+        foreach ([
             '[[:<:]]word[[:>:]]'  => '[[:<:]]',
             '(?|(a)|(b))'         => 'branch reset',
             'foo\\Kbar'           => '\\K',
@@ -86,7 +86,7 @@ final class RegexConstraintLimitTest extends TestCase
             '(?^i)a'              => 'inline flags',
             '[a[b]'               => 'inside a character class',
             '[a-z&&[aeiou]]'      => 'inside a character class',
-        ) as $p => $named) {
+        ] as $p => $named) {
             $problem = $this->problem($p);
 
             $this->assertNotNull($problem, $p);
@@ -96,10 +96,10 @@ final class RegexConstraintLimitTest extends TestCase
 
     public function testConstructsBothEnginesRunAreAccepted(): void
     {
-        foreach (array('a++', 'a*+b', '(?>ab|a)c', '(?<=/)blog', '(?<!x)y', 'x(?=y)', '(?<n>a)b',
+        foreach (['a++', 'a*+b', '(?>ab|a)c', '(?<=/)blog', '(?<!x)y', 'x(?=y)', '(?<n>a)b',
                        '\\Qa(b\\E', '[[:digit:]]+', '[^[:space:]]', '(?i)abc', '(?i:abc)', '(?-i:a)',
                        '[]a]', '[^]a]', '[a\\[b]', 'a&&b', '(?#note)a', '\\bword\\b', '\\p{L}+',
-                       '[(]x[)]') as $p) {
+                       '[(]x[)]'] as $p) {
             $this->assertNull($this->problem($p), $p);
         }
     }
@@ -107,7 +107,7 @@ final class RegexConstraintLimitTest extends TestCase
     /** A ( or [ that is escaped, inside a class or inside \Q...\E starts nothing. */
     public function testLiteralBracketsAreNotMistakenForSyntax(): void
     {
-        foreach (array('\\(\\?\\|', '[(][?][|]', '\\Q(?|\\E', '\\Q[[:<:]]\\E', '[(*]') as $p) {
+        foreach (['\\(\\?\\|', '[(][?][|]', '\\Q(?|\\E', '\\Q[[:<:]]\\E', '[(*]'] as $p) {
             $this->assertNull($this->problem($p), $p);
         }
     }
@@ -128,7 +128,7 @@ final class RegexConstraintLimitTest extends TestCase
     public function testARefusedPatternIsARequestErrorNotAnUnfilteredQuery(): void
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
-        $rsm->setConstraints(array(array('name' => 'pagePath', 'operator' => '=~', 'value' => '(a+)+$')));
+        $rsm->setConstraints([['name' => 'pagePath', 'operator' => '=~', 'value' => '(a+)+$']]);
 
         $errors = new \ReflectionProperty($rsm, 'request_errors');
 

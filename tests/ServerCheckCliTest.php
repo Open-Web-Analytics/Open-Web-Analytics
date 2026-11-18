@@ -24,7 +24,7 @@ final class ServerCheckCliTest extends TestCase
     private MockHandler $mock;
 
     /** @var array<int, array{0:string,1:array}> */
-    private array $sent = array();
+    private array $sent = [];
 
     /** @var string|null the body of the test message sent */
     private ?string $body = null;
@@ -60,7 +60,7 @@ final class ServerCheckCliTest extends TestCase
     {
         foreach ($results as $r) {
             $this->mock->append(function (CommandInterface $cmd) use ($r) {
-                $this->sent[] = array($cmd->getName(), $cmd->toArray());
+                $this->sent[] = [$cmd->getName(), $cmd->toArray()];
 
                 if ($cmd->getName() === 'SendMessage') {
                     $this->body = (string) $cmd['MessageBody'];
@@ -77,7 +77,7 @@ final class ServerCheckCliTest extends TestCase
 
     private function queue(): SqsQueue
     {
-        $q = new SqsQueue(array('name' => 'owa-server-check-test'));
+        $q = new SqsQueue(['name' => 'owa-server-check-test']);
         (new ReflectionProperty($q, 'url'))->setValue($q, self::URL);
 
         return $q;
@@ -85,27 +85,27 @@ final class ServerCheckCliTest extends TestCase
 
     private function check(): ServerCheckCli
     {
-        return new ServerCheckCli(array());
+        return new ServerCheckCli([]);
     }
 
     public function testItSendsReceivesAndDeletesItsOwnMessageAndReleasesAnyOther(): void
     {
         $this->answers(
-            array('MessageId' => 'm-1'),
-            fn () => array('Messages' => array(
-                array('ReceiptHandle' => 'r-beacon', 'Body' => '{"v":1,"type":"page_view","properties":{},"queued_at":1}'),
-                array('ReceiptHandle' => 'r-check', 'Body' => $this->body),
-            )),
-            array(),   // ReceiveMessage again: nothing more
-            array(),   // ChangeMessageVisibility: the beacon goes back
-            array()    // DeleteMessage: the test message
+            ['MessageId' => 'm-1'],
+            fn () => ['Messages' => [
+                ['ReceiptHandle' => 'r-beacon', 'Body' => '{"v":1,"type":"page_view","properties":{},"queued_at":1}'],
+                ['ReceiptHandle' => 'r-check', 'Body' => $this->body],
+            ]],
+            [],   // ReceiveMessage again: nothing more
+            [],   // ChangeMessageVisibility: the beacon goes back
+            []    // DeleteMessage: the test message
         );
 
         $trip = $this->check()->roundTrip($this->queue());
 
         $this->assertTrue($trip['ok'], $trip['message']);
         $this->assertStringStartsWith('ok: sent, received and deleted a test message', $trip['message']);
-        $this->assertSame(array('SendMessage', 'ReceiveMessage', 'ReceiveMessage', 'ChangeMessageVisibility', 'DeleteMessage'),
+        $this->assertSame(['SendMessage', 'ReceiveMessage', 'ReceiveMessage', 'ChangeMessageVisibility', 'DeleteMessage'],
             array_column($this->sent, 0));
         $this->assertSame('r-beacon', $this->sent[3][1]['ReceiptHandle']);
         $this->assertSame(0, $this->sent[3][1]['VisibilityTimeout'], 'the beacon is visible to the drain again at once');
@@ -115,8 +115,8 @@ final class ServerCheckCliTest extends TestCase
     /** Not a tracker envelope: a drain that takes it first dead-letters it rather than ingesting it. */
     public function testTheTestMessageIsNotATrackerEnvelope(): void
     {
-        $this->answers(array('MessageId' => 'm-1'), fn () => array('Messages' => array(
-            array('ReceiptHandle' => 'r-check', 'Body' => $this->body))), array(), array());
+        $this->answers(['MessageId' => 'm-1'], fn () => ['Messages' => [
+            ['ReceiptHandle' => 'r-check', 'Body' => $this->body]]], [], []);
 
         $this->check()->roundTrip($this->queue());
 
@@ -129,7 +129,7 @@ final class ServerCheckCliTest extends TestCase
     public function testASendRefusalIsReported(): void
     {
         $this->answers(new SqsException('denied', new \Aws\Command('SendMessage'),
-            array('code' => 'InvalidClientTokenId', 'message' => 'The security token included in the request is invalid.')));
+            ['code' => 'InvalidClientTokenId', 'message' => 'The security token included in the request is invalid.']));
 
         $trip = $this->check()->roundTrip($this->queue());
 
@@ -139,8 +139,8 @@ final class ServerCheckCliTest extends TestCase
 
     public function testAReceiveRefusalIsReported(): void
     {
-        $this->answers(array('MessageId' => 'm-1'), new SqsException('denied', new \Aws\Command('ReceiveMessage'),
-            array('code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:ReceiveMessage')));
+        $this->answers(['MessageId' => 'm-1'], new SqsException('denied', new \Aws\Command('ReceiveMessage'),
+            ['code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:ReceiveMessage']));
 
         $trip = $this->check()->roundTrip($this->queue());
 
@@ -150,10 +150,10 @@ final class ServerCheckCliTest extends TestCase
 
     public function testADeleteRefusalIsReported(): void
     {
-        $this->answers(array('MessageId' => 'm-1'), fn () => array('Messages' => array(
-            array('ReceiptHandle' => 'r-check', 'Body' => $this->body))), array(),
+        $this->answers(['MessageId' => 'm-1'], fn () => ['Messages' => [
+            ['ReceiptHandle' => 'r-check', 'Body' => $this->body]]], [],
             new SqsException('denied', new \Aws\Command('DeleteMessage'),
-                array('code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:DeleteMessage')));
+                ['code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:DeleteMessage']));
 
         $trip = $this->check()->roundTrip($this->queue());
 
@@ -164,12 +164,12 @@ final class ServerCheckCliTest extends TestCase
     /** With OWA_TRACKING_URL, a collector requests its own log.php through it. */
     public function testTheTrackingUrlMustAnswerWithLogPhpsImage(): void
     {
-        $asked = array();
+        $asked = [];
 
         ServerCheckCli::$fetch = function ($url) use (&$asked) {
             $asked[] = $url;
 
-            return count($asked) === 1 ? array(200, 'image/gif') : array(403, 'text/html');
+            return count($asked) === 1 ? [200, 'image/gif'] : [403, 'text/html'];
         };
 
         try {
@@ -179,7 +179,7 @@ final class ServerCheckCliTest extends TestCase
             ServerCheckCli::$fetch = null;
         }
 
-        $this->assertSame(array('https://t.example.test/log.php', 'https://t.example.test/log.php'), $asked);
+        $this->assertSame(['https://t.example.test/log.php', 'https://t.example.test/log.php'], $asked);
         $this->assertTrue($ok['ok']);
         $this->assertSame('ok: https://t.example.test/log.php answers.', $ok['message']);
         $this->assertFalse($no['ok']);

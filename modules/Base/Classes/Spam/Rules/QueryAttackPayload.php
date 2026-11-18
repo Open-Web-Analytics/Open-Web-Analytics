@@ -28,9 +28,9 @@ class QueryAttackPayload extends \OWA\Module\Base\Classes\Spam\Rule {
     const POINTS = 5.0;
 
     /** family => regex => why it is there. Case-insensitive throughout. */
-    const PATTERNS = array(
+    const PATTERNS = [
 
-        'sql' => array(
+        'sql' => [
             // UNION-based extraction. Whitespace or `+` between the words, the
             // two ways a query string carries a space; ALL is optional.
             '/\bunion(?:\s|\+)+(?:all(?:\s|\+)+)?select\b/i' => 'UNION SELECT, appending a query of the attacker\'s',
@@ -45,34 +45,34 @@ class QueryAttackPayload extends \OWA\Module\Base\Classes\Spam\Rule {
             // is what keeps "it's or that=this" out.
             '/[\'"](?:\s|\+)*or(?:\s|\+)*[\'"]?(\w+)[\'"]?(?:\s|\+)*=(?:\s|\+)*[\'"]?\1(?!\w)/i'
                                                 => 'an always-true condition after a closing quote',
-        ),
+        ],
 
-        'script' => array(
+        'script' => [
             '/<script/i'          => 'a script element',
             '/javascript:/i'      => 'a javascript: URL',
             '/\bonerror\s*=/i'    => 'an onerror handler, the usual one on an injected image',
             '/\bonload\s*=/i'     => 'an onload handler',
             '/<svg/i'             => 'an svg element, which runs its onload without a script tag',
-        ),
+        ],
 
-        'traversal' => array(
+        'traversal' => [
             '#\.\./#'             => 'a parent directory. A browser resolves these out of the path of a page it loads',
             '/%2e%2e%2f/i'        => '../ percent-encoded',
             '#/etc/passwd#i'      => 'the file a Unix traversal probe asks for',
             '/win\.ini/i'         => 'the file a Windows traversal probe asks for',
-        ),
+        ],
 
-        'template' => array(
+        'template' => [
             '/\$\{jndi:/i'        => 'a Log4j JNDI lookup (Log4Shell)',
             '/\$\{/'              => 'an expression-language or shell substitution',
             '/\{\{[^{}]*\}\}/'    => 'a server-side template expression',
-        ),
-    );
+        ],
+    ];
 
     public function test( $event, array $headers ) {
 
-        foreach ( array( \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event ),
-                         \OWA\Module\Base\Classes\Spam\Received::referrer( $event ) ) as $url ) {
+        foreach ( [ \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event ),
+                         \OWA\Module\Base\Classes\Spam\Received::referrer( $event ) ] as $url ) {
 
             if ( $url !== '' && ( self::match( $url ) || self::match( urldecode( $url ) ) ) ) {
 
@@ -97,7 +97,7 @@ class QueryAttackPayload extends \OWA\Module\Base\Classes\Spam\Rule {
 
                 if ( preg_match( $regex, (string) $text ) ) {
 
-                    return array( $family, $regex );
+                    return [ $family, $regex ];
                 }
             }
         }
@@ -105,5 +105,3 @@ class QueryAttackPayload extends \OWA\Module\Base\Classes\Spam\Rule {
         return null;
     }
 }
-
-?>

@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Classes\Migration;
  */
 class V1Names {
 
-    const METRICS = array(
+    const METRICS = [
         'pageViews'               => 'pageViews',
         'visits'                  => 'sessions',
         'uniqueVisitors'          => 'totalUsers',
@@ -54,9 +54,9 @@ class V1Names {
         'lineItemRevenue'         => null,
         'uniqueLineItems'         => null,
         'domClicks'               => null,
-    );
+    ];
 
-    const DIMENSIONS = array(
+    const DIMENSIONS = [
         'date'                  => 'date',
         'day'                   => 'day',
         'month'                 => 'month',
@@ -152,26 +152,26 @@ class V1Names {
         'transactionsInVisit'   => null,
         'userEmail'             => null,
         'visitsToTransaction'   => null,
-    );
+    ];
 
     /** Kept or mapped, with a different meaning. */
-    const REDEFINED = array(
+    const REDEFINED = [
         'goalCompletionsAll'    => 'now goal events, which a definition counting once per event adds for every match',
         'goalConversionRateAll' => 'now goal events per session, a decimal rather than a share of sessions',
         'bounceRate'    => 'now the share of sessions that were not engaged',
         'bounces'       => 'now sessions that were not engaged',
         'visitDuration' => 'now average engagement time, in milliseconds',
         'pagePath'      => 'kept as pagePathPlusQuery, which includes the query string as v1 did',
-    );
+    ];
 
     /**
      * A constraint on a merged dimension, by value. isNewVisitor==1 is
      * newVsReturning==New.
      */
-    const VALUES = array(
-        'isNewVisitor'    => array( '1' => 'New', '0' => 'Returning', 'true' => 'New', 'false' => 'Returning' ),
-        'isRepeatVisitor' => array( '1' => 'Returning', '0' => 'New', 'true' => 'Returning', 'false' => 'New' ),
-    );
+    const VALUES = [
+        'isNewVisitor'    => [ '1' => 'New', '0' => 'Returning', 'true' => 'New', 'false' => 'Returning' ],
+        'isRepeatVisitor' => [ '1' => 'Returning', '0' => 'New', 'true' => 'Returning', 'false' => 'New' ],
+    ];
 
     /**
      * A v1 medium constraint whose meaning moved in v2, as [ dimension, value ].
@@ -182,12 +182,12 @@ class V1Names {
      * channel here rather than on a medium value nothing holds any more. A
      * tagged medium (email, cpc) means the same in both and is left alone.
      */
-    const MEDIUM_VALUES = array(
-        'organic-search' => array( 'sessionChannel', 'Organic Search' ),
-        'social-network' => array( 'sessionChannel', 'Organic Social' ),
-        'referral'       => array( 'sessionChannel', 'Referral' ),
-        'direct'         => array( 'sessionChannel', 'Direct' ),
-    );
+    const MEDIUM_VALUES = [
+        'organic-search' => [ 'sessionChannel', 'Organic Search' ],
+        'social-network' => [ 'sessionChannel', 'Organic Social' ],
+        'referral'       => [ 'sessionChannel', 'Referral' ],
+        'direct'         => [ 'sessionChannel', 'Direct' ],
+    ];
 
     /**
      * @param  string $name a 1.14 metric
@@ -199,16 +199,16 @@ class V1Names {
 
         if ( array_key_exists( $name, self::METRICS ) ) {
 
-            return array( 'known' => true, 'to' => self::METRICS[ $name ] );
+            return [ 'known' => true, 'to' => self::METRICS[ $name ] ];
         }
 
         // goal1Completions .. goal15Value: the numbered goal slots are gone.
         if ( preg_match( '/^goal\d+(Completions|Starts|Value)$/', $name ) ) {
 
-            return array( 'known' => true, 'to' => null );
+            return [ 'known' => true, 'to' => null ];
         }
 
-        return array( 'known' => false, 'to' => $name );
+        return [ 'known' => false, 'to' => $name ];
     }
 
     /**
@@ -221,17 +221,15 @@ class V1Names {
 
         if ( array_key_exists( $name, self::DIMENSIONS ) ) {
 
-            return array( 'known' => true, 'to' => self::DIMENSIONS[ $name ] );
+            return [ 'known' => true, 'to' => self::DIMENSIONS[ $name ] ];
         }
 
         // customVarName1 .. customVarValueN: the numbered slots.
         if ( preg_match( '/^customVar(Name|Value)\d+$/', $name ) ) {
 
-            return array( 'known' => true, 'to' => null );
+            return [ 'known' => true, 'to' => null ];
         }
 
-        return array( 'known' => false, 'to' => $name );
+        return [ 'known' => false, 'to' => $name ];
     }
 }
-
-?>

@@ -28,7 +28,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
      * holds -- that the name is genuinely still sent and still undeclared --
      * so an exception cannot outlive what justified it.
      */
-    private const NOT_TRACKING_PROPERTIES = array();
+    private const NOT_TRACKING_PROPERTIES = [];
 
     /** @return array every name the tracker emits, across all event types */
     /** The wire this branch's tracker emits; OWATracker.BEACON_FORMAT_VERSION. */
@@ -50,12 +50,12 @@ final class WireSurfaceEnumeratedTest extends TestCase
          * mixing them in is how a retired property looked like part of the
          * current vocabulary in the first place.
          */
-        $current = (array) ( $contracts[ self::CURRENT_BEACON_FORMAT_VERSION ] ?? array() );
+        $current = (array) ( $contracts[ self::CURRENT_BEACON_FORMAT_VERSION ] ?? [] );
 
         $this->assertNotEmpty( $current,
             'no contract for beacon format version ' . self::CURRENT_BEACON_FORMAT_VERSION );
 
-        $names = array();
+        $names = [];
 
         foreach ( $current as $event_type => $fields ) {
 
@@ -110,7 +110,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
     {
         $declared = $this->declared();
 
-        $undeclared = array();
+        $undeclared = [];
 
         /*
          * A BRIDGED NAME COUNTS AS DECLARED, and it has to.
@@ -142,7 +142,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
         }
 
         $this->assertSame(
-            array(), $undeclared,
+            [], $undeclared,
             "The tracker sends these and nothing declares them:\n  "
             . implode( "\n  ", $undeclared )
             . "\n\nDeclare them in modules/Base/config/tracking_properties.json, or add "
@@ -179,7 +179,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
          * row.
          */
         $this->assertSame(
-            array(), self::NOT_TRACKING_PROPERTIES,
+            [], self::NOT_TRACKING_PROPERTIES,
             'Every property the tracker sends is declared. Adding an exception '
             . 'needs a reason that survives the checks above.' );
     }
@@ -231,7 +231,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
         $helpers = new Helpers();
         $event   = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
-        $event->setProperties( array( 'cv1' => 'Color=Blue Widget' ) );
+        $event->setProperties( [ 'cv1' => 'Color=Blue Widget' ] );
 
         $helpers->translateCustomVariables( $event );
 
@@ -252,23 +252,23 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     public function testTheSplitHalvesCannotBeSetFromTheWire(): void
     {
-        $kept = Helpers::rejectServerOwnedParams( array(
+        $kept = Helpers::rejectServerOwnedParams( [
             'cv1'       => 'Color=Blue',
             'cv1_name'  => 'forged',
             'cv1_value' => 'forged',
             'cv5_name'  => 'forged',
-        ) );
+        ] );
 
         $this->assertSame(
-            array( 'cv1' => 'Color=Blue' ), $kept,
+            [ 'cv1' => 'Color=Blue' ], $kept,
             'A request set a custom variable half directly, bypassing the split.' );
     }
 
     public function testTheSlotItselfRemainsSettable(): void
     {
         /* The filter must not overreach: the slot IS what the tracker sends. */
-        $slots = array( 'cv1' => 'a=1', 'cv2' => 'b=2', 'cv3' => 'c=3',
-                        'cv4' => 'd=4', 'cv5' => 'e=5' );
+        $slots = [ 'cv1' => 'a=1', 'cv2' => 'b=2', 'cv3' => 'c=3',
+                        'cv4' => 'd=4', 'cv5' => 'e=5' ];
 
         $this->assertSame(
             $slots, Helpers::rejectServerOwnedParams( $slots ),

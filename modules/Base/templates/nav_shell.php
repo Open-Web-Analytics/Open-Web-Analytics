@@ -17,7 +17,7 @@
  * On a narrow screen all of it is inside the slide-out (owa_reportNavRail):
  * no flyouts, and the column always shows.
  */
-$owa_rail   = $owa_rail ?? array();
+$owa_rail   = $owa_rail ?? [];
 $owa_column = $owa_column ?? null;
 ?>
 <div class="owa_navShell<?php echo $owa_column ? ' has-column' : '';?>" id="owa_navShell">

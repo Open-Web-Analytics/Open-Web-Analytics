@@ -32,5 +32,3 @@ class ReportRealtime extends \OWA\Core\ReportController {
             'template' => 'report_realtime.php', 'vars' => [ 'realtime_property_id', 'realtime_timezone' ] ] );
     }
 }
-
-?>

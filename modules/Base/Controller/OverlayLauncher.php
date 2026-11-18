@@ -72,18 +72,18 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         if ( $url !== '' ) {
 
-	        if ( strpos( $url, '#' ) ) {
-	            $parts = explode( '#', $url );
-	            $url = $parts[0];
-	        }
-	
-	        $url = $url.'#owa_overlay.' . trim( (string) $this->getParam( 'overlay_params' ), '\u0000' );
-			
-			// The tracked site is another host, which a redirect refuses unless
-			// vouched for; urlForPath() opens only a host of a Profile's domain.
-			$this->redirectBrowserToUrl( $url, array( (string) parse_url( $url, PHP_URL_HOST ) ) );
-			$this->set('url', $url);
-		}
+            if ( strpos( $url, '#' ) ) {
+                $parts = explode( '#', $url );
+                $url = $parts[0];
+            }
+    
+            $url = $url.'#owa_overlay.' . trim( (string) $this->getParam( 'overlay_params' ), '\u0000' );
+            
+            // The tracked site is another host, which a redirect refuses unless
+            // vouched for; urlForPath() opens only a host of a Profile's domain.
+            $this->redirectBrowserToUrl( $url, [ (string) parse_url( $url, PHP_URL_HOST ) ] );
+            $this->set('url', $url);
+        }
     }
 
     /**
@@ -140,7 +140,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $template = new \OWA\Core\Template();
 
-        $api = $template->makeOverlayApiLink( array(
+        $api = $template->makeOverlayApiLink( [
             'do'             => 'reports',
             'module'         => 'base',
             'version'        => 'v1',
@@ -152,15 +152,15 @@ class OverlayLauncher extends \OWA\Core\Controller {
                 . ',eventName==click',
             'resultsPerPage' => 1000,
             'format'         => 'json',
-        ) + $period, 'constraints' );
+        ] + $period, 'constraints' );
 
         $overlay = base64_encode( $template->makeParamString(
-            array( 'action' => 'loadHeatmap', 'api_url' => $api ), false, 'json' ) );
+            [ 'action' => 'loadHeatmap', 'api_url' => $api ], false, 'json' ) );
 
         $url .= '#owa_overlay.' . rawurlencode( $overlay );
 
         // The tracked site is another host, vouched for: it is the Profile's own.
-        $this->redirectBrowserToUrl( $url, array( (string) parse_url( $url, PHP_URL_HOST ) ) );
+        $this->redirectBrowserToUrl( $url, [ (string) parse_url( $url, PHP_URL_HOST ) ] );
         $this->set( 'url', $url );
     }
 
@@ -173,10 +173,10 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         if ( $this->get('startDate') && $this->get('endDate') ) {
 
-            return array( 'startDate' => (string) $this->get('startDate'), 'endDate' => (string) $this->get('endDate') );
+            return [ 'startDate' => (string) $this->get('startDate'), 'endDate' => (string) $this->get('endDate') ];
         }
 
-        return array( 'period' => (string) ( $this->get('period') ?: 'last_thirty_days' ) );
+        return [ 'period' => (string) ( $this->get('period') ?: 'last_thirty_days' ) ];
     }
 
     /**
@@ -204,7 +204,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $tp = new \OWA\Module\Base\Classes\TimePeriod();
         $tp->set( isset( $period['period'] ) ? $period['period'] : 'date_range',
-            isset( $period['period'] ) ? array() : $period );
+            isset( $period['period'] ) ? [] : $period );
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $propertyId );
@@ -257,13 +257,13 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
             if ( $cube ) {
 
-                list( $sql, $params ) = $where( array( $site_id ) );
+                list( $sql, $params ) = $where( [ $site_id ] );
 
                 $rows = $db->get_results( sprintf(
                     'SELECT page_location FROM %s WHERE %s GROUP BY page_location ORDER BY COUNT(*) DESC LIMIT %d',
                     $table, $sql, self::CANDIDATES ), $params );
 
-                $domains = \OWA\Module\Base\Classes\ProfileDomains::of( array( $site_id ) );
+                $domains = \OWA\Module\Base\Classes\ProfileDomains::of( [ $site_id ] );
 
                 foreach ( (array) $rows as $row ) {
 
@@ -366,7 +366,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
         }
 
         $site_ids = $siteId !== ''
-            ? array( $siteId )
+            ? [ $siteId ]
             : \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $property_id );
 
         $domains = \OWA\Module\Base\Classes\ProfileDomains::of( $site_ids );
@@ -401,8 +401,3 @@ class OverlayLauncher extends \OWA\Core\Controller {
     /** How many of the most-clicked urls are tried for one on a Profile's domain. */
     const CANDIDATES = 25;
 }
-
-
-
-
-?>

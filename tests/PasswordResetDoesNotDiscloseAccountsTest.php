@@ -23,7 +23,7 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
     public function testTheRequestFormDoesNotCheckWhetherTheAccountExists(): void
     {
         $controller = new \OWA\Module\Base\Controller\PasswordResetRequest(
-            array( 'email_address' => 'nobody@example.com' ) );
+            [ 'email_address' => 'nobody@example.com' ] );
 
         $controller->validate();
 
@@ -41,7 +41,7 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
          * test checked the name and so passed with the existence check present,
          * which is the whole failure it exists to catch.
          */
-        $types = array();
+        $types = [];
 
         foreach ( (array) $property->getValue( $validator ) as $validation ) {
 
@@ -65,13 +65,13 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
      */
     public function testTheSuccessMessageIsConditionalAndSaysNothingAboutTheAccount(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PasswordResetRequest( array() );
+        $controller = new \OWA\Module\Base\Controller\PasswordResetRequest( [] );
 
-        $message = $controller->getMsg( 2000, array( 'message' => array( 'someone@example.com' ) ) );
+        $message = $controller->getMsg( 2000, [ 'message' => [ 'someone@example.com' ] ] );
 
         $this->assertStringContainsStringIgnoringCase( 'if an account exists', $message['message'] );
 
-        foreach ( array( 'was not found', 'does not exist', 'has been sent to someone@' ) as $tell ) {
+        foreach ( [ 'was not found', 'does not exist', 'has been sent to someone@' ] as $tell ) {
 
             $this->assertStringNotContainsStringIgnoringCase(
                 $tell, $message['message'],
@@ -81,11 +81,11 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
 
     public function testTheErrorMessageIsAboutFormatNotExistence(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PasswordResetRequest( array() );
+        $controller = new \OWA\Module\Base\Controller\PasswordResetRequest( [] );
 
         $message = $controller->getMsg( 2001 );
 
-        foreach ( array( 'not found', 'does not exist', 'database' ) as $tell ) {
+        foreach ( [ 'not found', 'does not exist', 'database' ] as $tell ) {
 
             $this->assertStringNotContainsStringIgnoringCase(
                 $tell, $message['message'],

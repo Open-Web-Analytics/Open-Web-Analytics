@@ -48,7 +48,7 @@ class ModuleActivate extends \OWA\Core\AdminController {
             $ret = \OWA\Core\CoreAPI::installModule($module);
         }
 
-        $data = array();
+        $data = [];
 
         $data['do'] = 'base.optionsModules';
         $data['view_method'] = 'redirect';
@@ -59,5 +59,3 @@ class ModuleActivate extends \OWA\Core\AdminController {
     }
 
 }
-
-?>

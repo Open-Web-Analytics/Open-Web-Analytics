@@ -51,16 +51,12 @@ class UsersProfile extends \OWA\Core\AdminController {
             $this->set('user_id', $this->getParam('user_id'));
         } else {
             $this->set('edit', false);
-            $this->set('profile', array());
+            $this->set('profile', []);
         }
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');
 
     }
 
 }
-
-
-
-?>

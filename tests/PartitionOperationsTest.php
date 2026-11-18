@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 final class PartitionOperationsTest extends TestCase
 {
     /** @var string[] */
-    private $tables = array();
+    private $tables = [];
 
     public static function setUpBeforeClass(): void
     {
@@ -40,7 +40,7 @@ final class PartitionOperationsTest extends TestCase
             $db->query(sprintf('DROP TABLE IF EXISTS %s', $t));
         }
 
-        $this->tables = array();
+        $this->tables = [];
     }
 
     /** A table with the composite key partitioning requires. */
@@ -59,7 +59,7 @@ final class PartitionOperationsTest extends TestCase
 
     private function partitionNames($table)
     {
-        $names = array();
+        $names = [];
 
         foreach (\OWA\Core\CoreAPI::dbSingleton()->listPartitions($table) as $p) {
             $names[] = $p['name'];
@@ -96,10 +96,10 @@ final class PartitionOperationsTest extends TestCase
         $this->tables[] = $name;
 
         $db->query(sprintf('CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id))', $name));
-        $this->assertSame(array('id'), $db->getPrimaryKeyColumns($name));
+        $this->assertSame(['id'], $db->getPrimaryKeyColumns($name));
 
         $this->assertTrue($db->partitionTable($name, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly')));
-        $this->assertSame(array('id', 'yyyymmdd'), $db->getPrimaryKeyColumns($name));
+        $this->assertSame(['id', 'yyyymmdd'], $db->getPrimaryKeyColumns($name));
     }
 
     /** Changing granularity rewrites one month at a time, and is a no-op when already correct. */
@@ -133,7 +133,7 @@ final class PartitionOperationsTest extends TestCase
         // Mid-January: December and earlier can go, January cannot.
         $plan = $db->getDroppablePartitions($t, 20260115);
 
-        $this->assertSame(array('p20251101', 'p20251201'), $plan['drop']);
+        $this->assertSame(['p20251101', 'p20251201'], $plan['drop']);
         $this->assertSame('20260101', $plan['effective'], 'the boundary reached, not the one asked for');
         $this->assertNotNull($plan['straddling'], 'the partition holding both sides should be reported');
         $this->assertSame('p20260101', $plan['straddling']['name']);
@@ -145,7 +145,7 @@ final class PartitionOperationsTest extends TestCase
 
         // Before all data, nothing is droppable.
         $none = $db->getDroppablePartitions($t, 20250101);
-        $this->assertSame(array(), $none['drop']);
+        $this->assertSame([], $none['drop']);
         $this->assertNull($none['effective']);
     }
 
@@ -261,10 +261,10 @@ final class PartitionOperationsTest extends TestCase
         $current = date('Ymd', strtotime('-10 days'));
         $ahead   = date('Ymd', strtotime('+10 days'));
 
-        $db->partitionTable($t, 'yyyymmdd', array(
+        $db->partitionTable($t, 'yyyymmdd', [
             'p' . $older   => $current,
             'p' . $current => $ahead,
-        ));
+        ]);
 
         $db->query(sprintf(
             'INSERT INTO %s VALUES (1,%s),(2,%s)',
@@ -640,7 +640,7 @@ final class PartitionOperationsTest extends TestCase
             foreach ($plan['drop'] as $p) {
                 $db->dropPartition($t, $p);
             }
-            return array(count($added['added']), count($plan['drop']));
+            return [count($added['added']), count($plan['drop'])];
         };
 
         list($added, $dropped) = $rotate();
@@ -984,34 +984,34 @@ final class PartitionOperationsTest extends TestCase
      */
     public function testPeriodsAreNamedAsOperatorsNameThem()
     {
-        $cases = array(
+        $cases = [
             // monthly
-            array('20260101', '20260201', 'monthly'),
-            array('20260201', '20260301', 'monthly'),   // short month
-            array('20241201', '20250101', 'monthly'),   // across a year end
+            ['20260101', '20260201', 'monthly'],
+            ['20260201', '20260301', 'monthly'],   // short month
+            ['20241201', '20250101', 'monthly'],   // across a year end
             // sub-month, by the cuts that produce them
-            array('20260101', '20260116', 'half-month'),
-            array('20260116', '20260201', 'half-month'),
-            array('20260216', '20260301', 'half-month'),
-            array('20260101', '20260108', 'quarter-month'),
-            array('20260108', '20260115', 'quarter-month'),
-            array('20260115', '20260122', 'quarter-month'),
-            array('20260122', '20260201', 'quarter-month'),
+            ['20260101', '20260116', 'half-month'],
+            ['20260116', '20260201', 'half-month'],
+            ['20260216', '20260301', 'half-month'],
+            ['20260101', '20260108', 'quarter-month'],
+            ['20260108', '20260115', 'quarter-month'],
+            ['20260115', '20260122', 'quarter-month'],
+            ['20260122', '20260201', 'quarter-month'],
             // merged blocks
-            array('20260101', '20270101', '1 year'),
-            array('20200101', '20250101', '5 years'),
-            array('20200101', '20300101', '10 years'),
-            array('20260101', '20260401', '3 months'),
-            array('20260101', '20261101', '10 months'),
+            ['20260101', '20270101', '1 year'],
+            ['20200101', '20250101', '5 years'],
+            ['20200101', '20300101', '10 years'],
+            ['20260101', '20260401', '3 months'],
+            ['20260101', '20261101', '10 months'],
             // a block that begins mid-month, which merging never produces but
             // a hand-altered table can
-            array('20260116', '20260316', '59 days'),
+            ['20260116', '20260316', '59 days'],
             // unreadable
-            array('20260101', '20260101', 'unknown'),   // empty
-            array('20260201', '20260101', 'unknown'),   // reversed
-            array('garbage',  '20260101', 'unknown'),
-            array('20260101', '',         'unknown'),
-        );
+            ['20260101', '20260101', 'unknown'],   // empty
+            ['20260201', '20260101', 'unknown'],   // reversed
+            ['garbage',  '20260101', 'unknown'],
+            ['20260101', '',         'unknown'],
+        ];
 
         foreach ($cases as list($start, $less_than, $expected)) {
             $this->assertSame(
@@ -1035,7 +1035,7 @@ final class PartitionOperationsTest extends TestCase
         $this->assertNull($layout['granularity']);
         $this->assertNull($layout['catch_all']);
         $this->assertNull($layout['ahead']);
-        $this->assertSame(array(), $layout['tiers']);
+        $this->assertSame([], $layout['tiers']);
     }
 
     /**
@@ -1079,7 +1079,7 @@ final class PartitionOperationsTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach (array('monthly', 'half-month', 'quarter-month') as $granularity) {
+        foreach (['monthly', 'half-month', 'quarter-month'] as $granularity) {
 
             $t      = $this->tieredTable(180, $granularity);
             $layout = $db->describePartitionLayout($t);
@@ -1127,7 +1127,7 @@ final class PartitionOperationsTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach (array(0, 1, 3, 12) as $ahead) {
+        foreach ([0, 1, 3, 12] as $ahead) {
 
             $t = $this->makeTable();
 
@@ -1208,10 +1208,10 @@ final class PartitionOperationsTest extends TestCase
         $this->assertNull($empty['max']);
 
         // Rows past the top boundary land in the catch-all.
-        $dates = array();
+        $dates = [];
         $id = 0;
 
-        foreach (array(3, 6, 9) as $months) {
+        foreach ([3, 6, 9] as $months) {
             $d = date('Ymd', strtotime(date('Ym') . "01 +$months months +5 days"));
             $dates[] = $d;
             $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id, $d));
@@ -1242,28 +1242,28 @@ final class PartitionOperationsTest extends TestCase
         $spy = new class extends \OWA\Core\Db\Mysql {
 
             /** @var string[] */
-            public $sql = array();
+            public $sql = [];
 
             public function __construct() {}
 
-            function get_row($sql, array $params = array())
+            function get_row($sql, array $params = [])
             {
                 $this->sql[] = $sql;
 
-                return array('n' => 0, 'lo' => null, 'hi' => null);
+                return ['n' => 0, 'lo' => null, 'hi' => null];
             }
         };
 
-        $bad = array(
-            array('owa_t',  'pmax; DROP TABLE x', 'yyyymmdd'),
-            array('owa_t',  'p max',              'yyyymmdd'),
-            array('owa_t',  "p'max",              'yyyymmdd'),
-            array('owa_t',  '',                   'yyyymmdd'),
-            array('owa t',  'pmax',               'yyyymmdd'),
-            array('x; DROP TABLE y', 'pmax',      'yyyymmdd'),
-            array('owa_t',  'pmax',               'yyyymmdd; DROP TABLE x'),
-            array('owa_t',  'pmax',               '1) OR (1'),
-        );
+        $bad = [
+            ['owa_t',  'pmax; DROP TABLE x', 'yyyymmdd'],
+            ['owa_t',  'p max',              'yyyymmdd'],
+            ['owa_t',  "p'max",              'yyyymmdd'],
+            ['owa_t',  '',                   'yyyymmdd'],
+            ['owa t',  'pmax',               'yyyymmdd'],
+            ['x; DROP TABLE y', 'pmax',      'yyyymmdd'],
+            ['owa_t',  'pmax',               'yyyymmdd; DROP TABLE x'],
+            ['owa_t',  'pmax',               '1) OR (1'],
+        ];
 
         foreach ($bad as list($table, $partition, $column)) {
             $this->assertNull(
@@ -1272,7 +1272,7 @@ final class PartitionOperationsTest extends TestCase
             );
         }
 
-        $this->assertSame(array(), $spy->sql,
+        $this->assertSame([], $spy->sql,
             'a refused identifier must not reach the database at all');
 
         // ...and a well-formed one does query, so the guard is not simply
@@ -1295,7 +1295,7 @@ final class PartitionOperationsTest extends TestCase
             'monthly'
         ));
 
-        foreach (array('pmax; DROP TABLE ' . $t, 'p max', "p'max", '') as $bad) {
+        foreach (['pmax; DROP TABLE ' . $t, 'p max', "p'max", ''] as $bad) {
             $this->assertNull($db->getPartitionContents($t, $bad), var_export($bad, true));
         }
 
@@ -1390,7 +1390,7 @@ final class PartitionOperationsTest extends TestCase
 
         // Longer than the data: nothing is old enough to drop.
         $this->assertSame(
-            array(),
+            [],
             $db->getDroppablePartitions($t, date('Ymd', strtotime('-600 months')))['drop'],
             'a keep longer than the history must drop nothing'
         );
@@ -1411,7 +1411,7 @@ final class PartitionOperationsTest extends TestCase
 
         // And re-running the same cutoff now drops nothing: retention settles.
         $this->assertSame(
-            array(),
+            [],
             $db->getDroppablePartitions($t, $cut)['drop'],
             'retention must be idempotent for a fixed cutoff'
         );
@@ -1426,7 +1426,7 @@ final class PartitionOperationsTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach (array( 'with keep' => date('Ymd', strtotime('-24 months')), 'without keep' => null ) as $label => $cutoff) {
+        foreach ([ 'with keep' => date('Ymd', strtotime('-24 months')), 'without keep' => null ] as $label => $cutoff) {
 
             $t = $this->historyTable(96);
 
@@ -1491,7 +1491,7 @@ final class PartitionOperationsTest extends TestCase
             if ($span['less_than'] <= $month_after) { $fine++; } else { $coarse++; }
         }
 
-        return array('coarse' => $coarse, 'fine' => $fine);
+        return ['coarse' => $coarse, 'fine' => $fine];
     }
 
     /**
@@ -1557,7 +1557,7 @@ final class PartitionOperationsTest extends TestCase
          */
         $front  = date('Ym01');
         $lead   = date('Ym01', strtotime('first day of +1 month'));
-        $ranges = array();
+        $ranges = [];
 
         for ($d = $front; $d < $lead; $d = date('Ymd', strtotime($d . ' +1 day'))) {
             $ranges['p' . $d] = date('Ymd', strtotime($d . ' +1 day'));
@@ -1612,10 +1612,10 @@ final class PartitionOperationsTest extends TestCase
 
             $this->assertGreaterThan(25, $before, "$granularity: fixture needs a daily front");
 
-            $skip = array(
+            $skip = [
                 'start'     => date('Ym01'),
                 'less_than' => date('Ym01', strtotime('first day of +1 month')),
-            );
+            ];
 
             $db->repartitionTable($t, $granularity, false, null, null, $skip);
 
@@ -1649,10 +1649,10 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->cubeShapedTable();
 
-        $skip = array(
+        $skip = [
             'start'     => date('Ym01'),
             'less_than' => date('Ym01', strtotime('first day of +1 month')),
-        );
+        ];
 
         $plan = $db->repartitionTable($t, 'quarter-month', true, null, null, $skip);
 
@@ -1805,10 +1805,10 @@ final class PartitionOperationsTest extends TestCase
         }
 
         // What cmd=partition-reorganize does for a table with a daily front.
-        $skip = array(
+        $skip = [
             'start'     => date('Ym01'),
             'less_than' => date('Ym01', strtotime('first day of +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' month')),
-        );
+        ];
 
         $db->repartitionTable($table, 'quarter-month', false, null, null, $skip);
 
@@ -1835,7 +1835,7 @@ final class PartitionOperationsTest extends TestCase
         $monthly = $merge->invoke($cli, $spans, 'monthly');
         $quarter = $merge->invoke($cli, $spans, 'quarter-month');
 
-        $this->assertSame(array(), $monthly,
+        $this->assertSame([], $monthly,
             'no whole MONTH of the front has left the window');
 
         /*
@@ -1846,12 +1846,12 @@ final class PartitionOperationsTest extends TestCase
          */
         if ((int) date('j') < 8 + (int) \OWA\Core\CoreAPI::getSetting('base', 'cube_rebuild_window_days')) {
 
-            $this->assertSame(array(), $quarter, 'no quarter of this month has left the window yet');
+            $this->assertSame([], $quarter, 'no quarter of this month has left the window yet');
 
             return;
         }
 
-        $this->assertNotSame(array(), $quarter,
+        $this->assertNotSame([], $quarter,
             'but a quarter has, and that is the unit the table is now on');
 
         $group = reset($quarter);
@@ -1866,7 +1866,7 @@ final class PartitionOperationsTest extends TestCase
         // the merge releases is what the next carve claims.
         $carve = new ReflectionMethod($cli, 'carvePlan');
 
-        $this->assertSame(array(), $carve->invoke($cli, $spans),
+        $this->assertSame([], $carve->invoke($cli, $spans),
             'two months of daily already, so nothing is carved until a merge frees room');
     }
 
@@ -2220,7 +2220,7 @@ final class PartitionOperationsTest extends TestCase
             $this->assertTrue($db->lastPartitionChangeWasBusy());
 
             $extended = $db->extendPartitions($t, 'monthly', \OWA\Core\Db::partitionLeadBoundary());
-            $this->assertSame(array(), $extended['added']);
+            $this->assertSame([], $extended['added']);
             $this->assertTrue($db->lastPartitionChangeWasBusy());
 
             $this->assertSame($before, $this->partitionNames($t), 'nothing was changed');

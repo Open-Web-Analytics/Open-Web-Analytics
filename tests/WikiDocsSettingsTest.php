@@ -38,7 +38,7 @@ final class WikiDocsSettingsTest extends TestCase
     /** @return array<string,string> module => that module's part of the full output */
     private static function byModule( string $out ): array
     {
-        $parts = array();
+        $parts = [];
 
         foreach ( preg_split( '/^### /m', $out ) as $chunk ) {
 
@@ -99,9 +99,9 @@ final class WikiDocsSettingsTest extends TestCase
      * about them. Each is a candidate for removal; a description added to one
      * fails the test below until it is taken off this list.
      */
-    private const UNREAD = array(
+    private const UNREAD = [
         'base|db_force_new_connections', 'base|modules',
-    );
+    ];
 
     public function testEveryListedSettingHasADescriptionUnlessNothingReadsIt(): void
     {
@@ -141,7 +141,7 @@ final class WikiDocsSettingsTest extends TestCase
     {
         $out = self::generate( 'settings' );
 
-        foreach ( array( 'install_complete', 'tracker_build', 'v1_tables_dropped', 'main_url', 'provisioned' ) as $key ) {
+        foreach ( [ 'install_complete', 'tracker_build', 'v1_tables_dropped', 'main_url', 'provisioned' ] as $key ) {
             $this->assertStringNotContainsString( '| `' . $key . '` |', $out, "$key is internal and should not be listed" );
         }
 
@@ -153,21 +153,21 @@ final class WikiDocsSettingsTest extends TestCase
         $base = self::byModule( self::generate( 'settings' ) )['base'];
 
         // One from each of the two forms applyConfigConstants() pairs them in.
-        foreach ( array(
+        foreach ( [
             'timezone'                => 'OWA_TIMEZONE',
             'db_host'                 => 'OWA_DB_HOST',
             'partition_detail_months' => 'OWA_PARTITION_DETAIL_MONTHS',
             'server_role'             => 'OWA_SERVER_ROLE',
             // The constant, not OWA_QUEUE_EVENTS, the 1.x alias read after it.
             'queue_tracking_events'   => 'OWA_QUEUE_TRACKING_EVENTS',
-        ) as $key => $constant ) {
+        ] as $key => $constant ) {
 
             $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),
                 "$key should name $constant" );
         }
 
         // An optional constant: the row names it although this boot does not define it.
-        foreach ( array( 'data_dir' => 'OWA_DATA_DIR' ) as $key => $constant ) {
+        foreach ( [ 'data_dir' => 'OWA_DATA_DIR' ] as $key => $constant ) {
             $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),
                 "$key should name $constant" );
         }
@@ -178,7 +178,7 @@ final class WikiDocsSettingsTest extends TestCase
         $out = self::generate( 'settings-tracking_tag' );
 
         // Base's, and Domstream's, which a configless boot does not load.
-        foreach ( array( 'tracker_page_views', 'tracker_cookie_domain', 'record', 'sample_rate' ) as $key ) {
+        foreach ( [ 'tracker_page_views', 'tracker_cookie_domain', 'record', 'sample_rate' ] as $key ) {
             $this->assertNotNull( self::rowFor( $out, $key ), "$key is missing from the tracking_tag group" );
         }
 
@@ -195,7 +195,7 @@ final class WikiDocsSettingsTest extends TestCase
     {
         $out = self::generate( 'settings-rest_api' );
 
-        foreach ( array( 'app_passwords_enabled', 'app_passwords_require_https' ) as $key ) {
+        foreach ( [ 'app_passwords_enabled', 'app_passwords_require_https' ] as $key ) {
             $this->assertNotNull( self::rowFor( $out, $key ), "$key is missing from the rest_api group" );
         }
 

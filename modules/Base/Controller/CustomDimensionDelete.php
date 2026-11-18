@@ -60,5 +60,3 @@ class CustomDimensionDelete extends \OWA\Core\AdminController {
         $this->setStatusCode( 3211 );
     }
 }
-
-?>

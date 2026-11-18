@@ -18,10 +18,10 @@
  * this goes on every page of every tracked site.
  */
 $owa_bundle_url = (string) $view->bundle_url;
-$owa_origins    = array();
+$owa_origins    = [];
 
 // The bundle's origin (the assets URL), and the beacons' (the tracking URL) when it is another.
-foreach ( array( $owa_bundle_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ) as $owa_url ) {
+foreach ( [ $owa_bundle_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ] as $owa_url ) {
 
     $owa_scheme = parse_url( $owa_url, PHP_URL_SCHEME );
     $owa_host   = parse_url( $owa_url, PHP_URL_HOST );

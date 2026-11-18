@@ -33,7 +33,7 @@ final class AbsenceIsNullTest extends TestCase
         $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
 
         return preg_replace( '/\s+/', ' ', trim( $m->invoke( $db, $type,
-            array( array( 'name' => $name, 'operator' => $operator, 'value' => $value ) ) ) ) );
+            [ [ 'name' => $name, 'operator' => $operator, 'value' => $value ] ] ) ) );
     }
 
     /** @dataProvider negatingOperators */
@@ -45,8 +45,8 @@ final class AbsenceIsNullTest extends TestCase
 
     public static function negatingOperators(): array
     {
-        return array( 'not equal' => array( '!=' ), 'not regexp' => array( '!~' ),
-                      'not contains' => array( '!@' ) );
+        return [ 'not equal' => [ '!=' ], 'not regexp' => [ '!~' ],
+                      'not contains' => [ '!@' ] ];
     }
 
     /** @dataProvider plainOperators */
@@ -59,7 +59,7 @@ final class AbsenceIsNullTest extends TestCase
 
     public static function plainOperators(): array
     {
-        return array( array( '==' ), array( '>' ), array( '<' ), array( '>=' ), array( '<=' ), array( '=~' ), array( '=@' ) );
+        return [ [ '==' ], [ '>' ], [ '<' ], [ '>=' ], [ '<=' ], [ '=~' ], [ '=@' ] ];
     }
 
     /**
@@ -92,10 +92,10 @@ final class AbsenceIsNullTest extends TestCase
             return array_column( (array) $rows, 'tag' );
         };
 
-        $this->assertSame( array( 's2' ), $tags( 'd.src != "google"' ),
+        $this->assertSame( [ 's2' ], $tags( 'd.src != "google"' ),
             'the behaviour being fixed: the absent row is dropped' );
 
-        $this->assertSame( array( 's2', 'absent' ), $tags( '( d.src != "google" OR d.src IS NULL )' ),
+        $this->assertSame( [ 's2', 'absent' ], $tags( '( d.src != "google" OR d.src IS NULL )' ),
             'the clause the constraint compiler now emits keeps it' );
     }
 
@@ -171,8 +171,8 @@ final class AbsenceIsNullTest extends TestCase
 
     public static function writers(): array
     {
-        return array(
-            array( 'modules/Base/Classes/Geolocation.php' ),
-        );
+        return [
+            [ 'modules/Base/Classes/Geolocation.php' ],
+        ];
     }
 }

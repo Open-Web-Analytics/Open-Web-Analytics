@@ -11,42 +11,42 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class TextContrastTest extends TestCase
 {
-    private const CSS = array( 'owa.css', 'owa.report.css', 'owa.grid.css', 'owa.admin.css', 'owa.shell.css' );
+    private const CSS = [ 'owa.css', 'owa.report.css', 'owa.grid.css', 'owa.admin.css', 'owa.shell.css' ];
 
     /** Selector => why its colour may be lighter than 4.5:1 on white. */
-    private const EXEMPT = array(
+    private const EXEMPT = [
         '.owa_periodDay:disabled'                                                     => 'a disabled control',
         '.owa .owa_editor .owa_button:disabled, .owa .owa_widgetPanel .owa_button:disabled' => 'a disabled control',
         '.owa_grid .owa_gridPopOption:disabled'                                       => 'a disabled control',
         '.owa_grid .owa_gridIconButton:disabled'                                      => 'a disabled control',
         '.owa_grid .owa_gridShowMore[aria-busy="true"]'                               => 'a disabled control (aria-disabled while its rows load)',
         '.owa_siteControlCaret'                                                       => 'an icon: 4.48:1 is past the 3:1 an icon needs',
-    );
+    ];
 
     /**
      * Glyphs that are graphical objects, not text, and the grounds each is
      * drawn on: 3:1 against every one of them (WCAG 1.4.11).
      */
-    private const GRAPHICS = array(
+    private const GRAPHICS = [
         // The favourite star: on the roster's segmented control and its active segment.
-        '.owa .owa_rosterFilter a i, .owa .owa_rosterStar.is-on'                      => array( '#ffffff', '#f3f5f8' ),
-        '.owa .owa_rosterStar:hover, .owa .owa_rosterStar:focus'                      => array( '#f3f5f8' ),
-        '.owa .owa_titleActionMark .fas.fa-star'                                      => array( '#ffffff', '#f3f5f8' ),
+        '.owa .owa_rosterFilter a i, .owa .owa_rosterStar.is-on'                      => [ '#ffffff', '#f3f5f8' ],
+        '.owa .owa_rosterStar:hover, .owa .owa_rosterStar:focus'                      => [ '#f3f5f8' ],
+        '.owa .owa_titleActionMark .fas.fa-star'                                      => [ '#ffffff', '#f3f5f8' ],
         // In the nav column, at rest, hovered and current.
-        '.owa_navShell .owa_navColumnIcon.fa-star'                                    => array( '#ffffff', '#f3f5f8', '#eef4fb' ),
-    );
+        '.owa_navShell .owa_navColumnIcon.fa-star'                                    => [ '#ffffff', '#f3f5f8', '#eef4fb' ],
+    ];
 
     /**
      * Text drawn on a tinted ground, and the grounds: 4.5:1 against each. The
      * check on white above does not see these.
      */
-    private const ON_GROUND = array(
+    private const ON_GROUND = [
         // A date field's label, on the field and on a read-only field's grey.
-        '.owa_periodField span'                                                       => array( '#ffffff', '#f3f4f6' ),
+        '.owa_periodField span'                                                       => [ '#ffffff', '#f3f4f6' ],
         // The current section and page in the menu, on their light blue.
-        '.owa_navShell .owa_railItem.is-current, .owa_navShell .owa_railItem.is-current:hover' => array( '#eef4fb' ),
-        '.owa_navShell .owa_navColumnItem.is-current, .owa_navShell .owa_navColumnItem.is-current:hover' => array( '#eef4fb' ),
-    );
+        '.owa_navShell .owa_railItem.is-current, .owa_navShell .owa_railItem.is-current:hover' => [ '#eef4fb' ],
+        '.owa_navShell .owa_navColumnItem.is-current, .owa_navShell .owa_navColumnItem.is-current:hover' => [ '#eef4fb' ],
+    ];
 
     private static function luminance( string $hex ): float
     {
@@ -59,7 +59,7 @@ final class TextContrastTest extends TestCase
         $c = array_map( function ( $i ) use ( $hex ) {
             $v = hexdec( substr( $hex, $i, 2 ) ) / 255;
             return $v <= 0.03928 ? $v / 12.92 : pow( ( $v + 0.055 ) / 1.055, 2.4 );
-        }, array( 0, 2, 4 ) );
+        }, [ 0, 2, 4 ] );
 
         return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2];
     }
@@ -75,7 +75,7 @@ final class TextContrastTest extends TestCase
     /** @return array<int, array{0: string, 1: string, 2: string}> file, selector, hex */
     private function textColours(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::CSS as $file ) {
 
@@ -89,7 +89,7 @@ final class TextContrastTest extends TestCase
                 if ( preg_match_all( '/(?<![-\w])color\s*:\s*(?:var\(--[\w-]+,\s*)?(#[0-9a-f]{3}(?:[0-9a-f]{3})?)\b/i', $rule[2], $m ) ) {
 
                     foreach ( $m[1] as $hex ) {
-                        $out[] = array( $file, trim( preg_replace( '/\s+/', ' ', $rule[1] ) ), strtolower( $hex ) );
+                        $out[] = [ $file, trim( preg_replace( '/\s+/', ' ', $rule[1] ) ), strtolower( $hex ) ];
                     }
                 }
             }
@@ -107,7 +107,7 @@ final class TextContrastTest extends TestCase
 
     public function testTextOnWhiteReadsAtFourAndAHalfToOne(): void
     {
-        $short = array();
+        $short = [];
 
         foreach ( $this->textColours() as list( $file, $selector, $hex ) ) {
 
@@ -124,7 +124,7 @@ final class TextContrastTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $short );
+        $this->assertSame( [], $short );
     }
 
     /** The exemptions and graphics name rules that exist, so a removed one does not linger here. */
@@ -139,11 +139,11 @@ final class TextContrastTest extends TestCase
 
     public function testAGraphicReadsAtThreeToOneOnEachGroundItIsDrawnOn(): void
     {
-        $short = array();
+        $short = [];
 
         foreach ( $this->textColours() as list( $file, $selector, $hex ) ) {
 
-            foreach ( self::GRAPHICS[ $selector ] ?? array() as $ground ) {
+            foreach ( self::GRAPHICS[ $selector ] ?? [] as $ground ) {
 
                 if ( self::ratio( $hex, $ground ) < 3.0 ) {
                     $short[] = sprintf( '%s: %s { color: %s } is %.2f:1 on %s', $file, $selector, $hex, self::ratio( $hex, $ground ), $ground );
@@ -151,17 +151,17 @@ final class TextContrastTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $short );
+        $this->assertSame( [], $short );
     }
 
     public function testTextOnATintedGroundReadsAtFourAndAHalfToOne(): void
     {
-        $short = array();
-        $seen  = array();
+        $short = [];
+        $seen  = [];
 
         foreach ( $this->textColours() as list( $file, $selector, $hex ) ) {
 
-            foreach ( self::ON_GROUND[ $selector ] ?? array() as $ground ) {
+            foreach ( self::ON_GROUND[ $selector ] ?? [] as $ground ) {
 
                 $seen[ $selector ] = true;
 
@@ -171,7 +171,7 @@ final class TextContrastTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $short );
+        $this->assertSame( [], $short );
         $this->assertSame( array_keys( self::ON_GROUND ), array_keys( array_intersect_key( self::ON_GROUND, $seen ) ),
             'every selector named here is a rule with a colour' );
     }
@@ -199,7 +199,7 @@ final class TextContrastTest extends TestCase
     /** A control that drops the browser's focus outline draws its own ring when focused from the keyboard. */
     public function testNoFocusStyleRemovesTheOutlineWithoutAReplacement(): void
     {
-        $bare = array();
+        $bare = [];
 
         foreach ( self::CSS as $file ) {
 
@@ -232,9 +232,9 @@ final class TextContrastTest extends TestCase
             }
         }
 
-        $this->assertSame( array(
+        $this->assertSame( [
             // The field draws the ring on its box (.owa_periodField:focus-within).
             'owa.report.css: .owa_periodField input:focus',
-        ), $bare );
+        ], $bare );
     }
 }

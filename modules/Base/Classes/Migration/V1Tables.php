@@ -22,7 +22,7 @@ namespace OWA\Module\Base\Classes\Migration;
 class V1Tables {
 
     /** One row per tracked interaction, and the other event-level facts. */
-    const FACTS = array(
+    const FACTS = [
         'request',
         'session',
         'click',
@@ -32,10 +32,10 @@ class V1Tables {
         'domstream',
         'commerce_transaction_fact',
         'commerce_line_item_fact',
-    );
+    ];
 
     /** What the facts point at by hashed id. */
-    const DIMENSIONS = array(
+    const DIMENSIONS = [
         'visitor',
         'document',
         'ua',
@@ -47,7 +47,7 @@ class V1Tables {
         'campaign_dim',
         'ad_dim',
         'search_term_dim',
-    );
+    ];
 
     /** @return string[] every v1 table, unprefixed */
     public static function all() {
@@ -85,5 +85,3 @@ class V1Tables {
         } ) );
     }
 }
-
-?>

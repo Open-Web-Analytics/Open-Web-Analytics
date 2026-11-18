@@ -2,7 +2,7 @@
 /**
  * ISO-3166-1 http://en.wikipedia.org/wiki/ISO_3166-1
  */
-return array (
+return  [
 
     // Not a country -- see the UTC group in country2Timezones.php.
     "UTC" => "UTC (Coordinated Universal Time)",
@@ -252,5 +252,4 @@ return array (
     'YE' => 'Yemen',
     'ZM' => 'Zambia',
     'ZW' => 'Zimbabwe'
-);
-?>
+];

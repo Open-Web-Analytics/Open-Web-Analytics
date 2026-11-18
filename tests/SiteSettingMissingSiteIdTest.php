@@ -76,4 +76,3 @@ final class SiteSettingMissingSiteIdTest extends TestCase
         );
     }
 }
-

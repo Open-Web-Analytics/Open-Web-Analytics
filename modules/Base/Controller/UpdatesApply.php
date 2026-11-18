@@ -144,5 +144,3 @@ class UpdatesApply extends \OWA\Core\Controller {
         }
     }
 }
-
-?>

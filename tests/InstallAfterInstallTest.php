@@ -17,14 +17,14 @@ final class InstallAfterInstallTest extends TestCase
     /** @return array<string, array{class-string}> */
     public static function installControllers(): array
     {
-        return array(
-            'installStart'         => array( \OWA\Module\Base\Controller\InstallStart::class ),
-            'installCheckEnv'      => array( \OWA\Module\Base\Controller\InstallCheckEnv::class ),
-            'installConfig'        => array( \OWA\Module\Base\Controller\InstallConfig::class ),
-            'installDefaultsEntry' => array( \OWA\Module\Base\Controller\InstallDefaultsEntry::class ),
-            'installBase'          => array( \OWA\Module\Base\Controller\InstallBase::class ),
-            'installFinish'        => array( \OWA\Module\Base\Controller\InstallFinish::class ),
-        );
+        return [
+            'installStart'         => [ \OWA\Module\Base\Controller\InstallStart::class ],
+            'installCheckEnv'      => [ \OWA\Module\Base\Controller\InstallCheckEnv::class ],
+            'installConfig'        => [ \OWA\Module\Base\Controller\InstallConfig::class ],
+            'installDefaultsEntry' => [ \OWA\Module\Base\Controller\InstallDefaultsEntry::class ],
+            'installBase'          => [ \OWA\Module\Base\Controller\InstallBase::class ],
+            'installFinish'        => [ \OWA\Module\Base\Controller\InstallFinish::class ],
+        ];
     }
 
     /**
@@ -34,8 +34,8 @@ final class InstallAfterInstallTest extends TestCase
     {
         $controller = $this->controller( $class, true );
 
-        $this->assertSame( array(), $controller->doAction() );
-        $this->assertSame( array( 'redirect' ), $controller->calls );
+        $this->assertSame( [], $controller->doAction() );
+        $this->assertSame( [ 'redirect' ], $controller->calls );
     }
 
     public function testBeforeInstallTheStepRuns(): void

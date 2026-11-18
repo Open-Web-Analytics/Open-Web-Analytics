@@ -49,7 +49,7 @@ if (!OWA_CLI)
 require_once(__DIR__ . '/owa.php');
 
 // Parse the command line. See Lib::parseCliArgs() for the accepted forms.
-$params = \OWA\Core\Lib::parseCliArgs($_SERVER['argv'] ?? array());
+$params = \OWA\Core\Lib::parseCliArgs($_SERVER['argv'] ?? []);
 
 // Exit codes: 0 done, 1 the command failed, 2 the command line is wrong.
 if (!is_array($params)) {
@@ -93,13 +93,13 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $map        = $cmd ? $s->getMapValue('actions', $cmd) : null;
     $undeclared = is_array($map) && !empty($map['class_name'])
         ? \OWA\Core\Controller\Cli::undeclaredArguments($map['class_name'], $params)
-        : array();
+        : [];
 
     if (!$cmd) {
         fwrite(STDERR, sprintf("No command named \"%s\".\n", $params['cmd']));
         $exit_code = 2;
     } elseif ($refused) {
-        \OWA\Core\ServerRole::refuse('cli', array('status' => 404, 'message' => $refused));
+        \OWA\Core\ServerRole::refuse('cli', ['status' => 404, 'message' => $refused]);
     } elseif ($undeclared) {
         fwrite(STDERR, sprintf("cmd=%s does not take %s. Nothing was done.\n",
             $params['cmd'], implode(', ', $undeclared)));
@@ -115,5 +115,3 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 if (!empty($exit_code)) {
     exit($exit_code);
 }
-
-?>

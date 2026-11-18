@@ -41,7 +41,7 @@ class Update085 extends \OWA\Core\Update {
     public $schema_version = 85;
 
     /** The base settings this deletes. */
-    const RETIRED = array( 'is_embedded_admin_user_password_reset', 'resolve_hosts', 'fetch_refering_page_info' );
+    const RETIRED = [ 'is_embedded_admin_user_password_reset', 'resolve_hosts', 'fetch_refering_page_info' ];
 
     /** What up() deleted: { rows: id => row }. */
     const BEFORE = 'retired_settings_before_085';
@@ -75,7 +75,7 @@ class Update085 extends \OWA\Core\Update {
         }
 
         $record = $this->record();
-        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : array();
+        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : [];
 
         foreach ( $rows as $row ) {
 
@@ -119,7 +119,7 @@ class Update085 extends \OWA\Core\Update {
             return true;
         }
 
-        foreach ( (array) ( $record['rows'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['rows'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -139,5 +139,3 @@ class Update085 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

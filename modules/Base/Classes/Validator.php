@@ -83,7 +83,7 @@ namespace OWA\Module\Base\Classes;
         
         // add name to validator
         $obj->setName($name);
-        $this->validations[] = array('name' => $name, 'obj' => $obj);
+        $this->validations[] = ['name' => $name, 'obj' => $obj];
 
         return null;
     }
@@ -95,7 +95,7 @@ namespace OWA\Module\Base\Classes;
      * @param  array<string, mixed> $conf
      * @return Object
      */
-    public function validationFactory($class_file, $conf = array()) {
+    public function validationFactory($class_file, $conf = []) {
         
         return \OWA\Core\CoreAPI::validationFactory($class_file, $conf);
     }
@@ -117,14 +117,14 @@ namespace OWA\Module\Base\Classes;
                 $this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
              
                 if ( isset( $k['obj']->conf['stopOnError'] ) && $k['obj']->conf['stopOnError'] === true ) {
-	                  
+                      
                     break;
                 }
                 
             } else {
-	            \OWA\Core\CoreAPI::debug('Validation succeeded.');
+                \OWA\Core\CoreAPI::debug('Validation succeeded.');
             }
-			//owa_coreAPI::debug( $this->getErrorMsgs() );
+            //owa_coreAPI::debug( $this->getErrorMsgs() );
         }
           
     }
@@ -155,5 +155,3 @@ namespace OWA\Module\Base\Classes;
      
     
  }
- 
-?>

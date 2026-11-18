@@ -33,7 +33,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 final class TrackingPropertyOrderTest extends TestCase
 {
     /** Scopes in the order the runtime applies them. */
-    private const SCOPES = array( 'environmental', 'regular', 'derived' );
+    private const SCOPES = [ 'environmental', 'regular', 'derived' ];
 
     /** @return array callback name => properties it reads off the event */
     private function callbackReads(): array
@@ -43,7 +43,7 @@ final class TrackingPropertyOrderTest extends TestCase
         preg_match_all( '/static function (\w+)\s*\([^)]*\)\s*\{(.*?)\n    \}/s', $source, $matches,
             PREG_SET_ORDER );
 
-        $reads = array();
+        $reads = [];
 
         foreach ( $matches as $function ) {
 
@@ -64,16 +64,16 @@ final class TrackingPropertyOrderTest extends TestCase
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $reads   = $this->callbackReads();
 
-        $order    = array();
-        $scope    = array();
-        $produced = array();
-        $deps     = array();
+        $order    = [];
+        $scope    = [];
+        $produced = [];
+        $deps     = [];
 
         foreach ( self::SCOPES as $name ) {
 
             foreach ( (array) $service->getMap( 'tracking_properties_' . $name ) as $property => $definition ) {
 
-                $callbacks = (array) ( $definition['callbacks'] ?? array() );
+                $callbacks = (array) ( $definition['callbacks'] ?? [] );
 
                 $order[ $property ] = count( $order );
                 $scope[ $property ] = $name;
@@ -91,21 +91,21 @@ final class TrackingPropertyOrderTest extends TestCase
                     if ( isset( $reads[ $short ] ) ) {
 
                         $deps[ $property ] = array_unique(
-                            array_merge( $deps[ $property ] ?? array(), $reads[ $short ] ) );
+                            array_merge( $deps[ $property ] ?? [], $reads[ $short ] ) );
                     }
                 }
             }
         }
 
-        return array( 'order' => $order, 'scope' => $scope,
-                      'produced' => $produced, 'deps' => $deps );
+        return [ 'order' => $order, 'scope' => $scope,
+                      'produced' => $produced, 'deps' => $deps ];
     }
 
     public function testNoPropertyIsReadBeforeItIsSet(): void
     {
         $r = $this->registration();
 
-        $violations = array();
+        $violations = [];
         $checked    = 0;
 
         foreach ( $r['deps'] as $property => $needs ) {
@@ -161,7 +161,7 @@ final class TrackingPropertyOrderTest extends TestCase
             . 'what it thinks it is -- most likely the callback parser stopped matching.' );
 
         $this->assertSame(
-            array(), $violations,
+            [], $violations,
             "A property is read before it is set:\n  " . implode( "\n  ", $violations ) );
     }
 }

@@ -122,5 +122,3 @@ class Setting extends \OWA\Core\Entity {
         return $this->generateId( $scope_type . '|' . $scope_id . '|' . $module . '|' . $name );
     }
 }
-
-?>

@@ -52,14 +52,14 @@ final class CatalogCharacterizationHarness
      * from, so a change of separator or of basis column is visible as itself
      * rather than only as a diff in generated SQL.
      */
-    private const DIMENSION_KEYS = array(
+    private const DIMENSION_KEYS = [
         'name', 'entity', 'column', 'family', 'label', 'description',
         'foreign_key_name', 'data_type', 'denormalized',
         'expression', 'parts', 'datePart',
-    );
+    ];
 
     /** Declarative keys of a metric implementation. */
-    private const METRIC_KEYS = array( 'name', 'class', 'label', 'group' );
+    private const METRIC_KEYS = [ 'name', 'class', 'label', 'group' ];
 
     /**
      * The whole catalog, in a shape that is stable across machines.
@@ -74,7 +74,7 @@ final class CatalogCharacterizationHarness
         $denormalized = self::readProperty( $service, 'denormalizedDimensions' );
         $metrics      = self::readProperty( $service, 'metrics' );
 
-        return array(
+        return [
             'counts'                  => self::counts( $normalized, $denormalized, $metrics ),
             'metrics'                 => self::normaliseMetrics( $metrics ),
             'dimensionsNormalized'    => self::normaliseFlatDimensions( $normalized ),
@@ -82,7 +82,7 @@ final class CatalogCharacterizationHarness
             'accessorGetAllDimensions'=> self::normaliseFlatDimensions(
                                             (array) \OWA\Core\CoreAPI::getAllDimensions() ),
             'relatedDimensions'       => self::relatedDimensions(),
-        );
+        ];
     }
 
     /**
@@ -110,7 +110,7 @@ final class CatalogCharacterizationHarness
             $implementations += count( (array) $list );
         }
 
-        return array(
+        return [
             'metricNames'                  => count( $metrics ),
             'metricImplementations'        => $implementations,
             'dimensionNamesNormalized'     => count( $normalized ),
@@ -128,7 +128,7 @@ final class CatalogCharacterizationHarness
              * because getAllDimensions() keeps one entry per name.
              */
             'accessorDimensionNames'       => count( (array) \OWA\Core\CoreAPI::getAllDimensions() ),
-        );
+        ];
     }
 
     /**
@@ -165,7 +165,7 @@ final class CatalogCharacterizationHarness
     /** @return array<string,mixed> */
     private static function normaliseFlatDimensions( array $registry ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( $registry as $name => $entry ) {
 
@@ -182,7 +182,7 @@ final class CatalogCharacterizationHarness
     /** @return array<string,mixed> */
     private static function normaliseNestedDimensions( array $registry ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( $registry as $name => $byEntity ) {
 
@@ -197,7 +197,7 @@ final class CatalogCharacterizationHarness
     /** @return array<string,mixed> */
     private static function normaliseNestedEntry( array $byEntity ): array
     {
-        $entities = array();
+        $entities = [];
 
         foreach ( $byEntity as $entity => $entry ) {
 
@@ -212,11 +212,11 @@ final class CatalogCharacterizationHarness
     /** @return array<string,array<int,array>> */
     private static function normaliseMetrics( array $metrics ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( $metrics as $name => $implementations ) {
 
-            $rows = array();
+            $rows = [];
 
             foreach ( (array) $implementations as $implementation ) {
 
@@ -229,7 +229,7 @@ final class CatalogCharacterizationHarness
                  * this change is most likely to disturb.
                  */
                 $row['params'] = self::normaliseParams(
-                    (array) ( $implementation['params'] ?? array() ) );
+                    (array) ( $implementation['params'] ?? [] ) );
 
                 $rows[] = $row;
             }
@@ -269,7 +269,7 @@ final class CatalogCharacterizationHarness
     /** @return array<string,mixed> */
     private static function pick( array $entry, array $keys ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( $keys as $key ) {
 
@@ -289,7 +289,7 @@ final class CatalogCharacterizationHarness
 
         if ( ! $reflection->hasProperty( $name ) ) {
 
-            return array();
+            return [];
         }
 
         $property = $reflection->getProperty( $name );
@@ -299,7 +299,7 @@ final class CatalogCharacterizationHarness
     }
 
     /** Entities a report is commonly built on. */
-    public const RELATED_ENTITIES = array( 'base.event' );
+    public const RELATED_ENTITIES = [ 'base.event' ];
 
     /**
      * Which dimensions each entity can actually reach.
@@ -319,17 +319,17 @@ final class CatalogCharacterizationHarness
     {
         $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'resultSetManager' );
 
-        $out = array();
+        $out = [];
 
         foreach ( self::RELATED_ENTITIES as $entityName ) {
 
             $families = (array) $manager->relatedDimensions();
 
-            $normalised = array();
+            $normalised = [];
 
             foreach ( $families as $family => $dimensions ) {
 
-                $names = array();
+                $names = [];
 
                 foreach ( (array) $dimensions as $dimension ) {
 

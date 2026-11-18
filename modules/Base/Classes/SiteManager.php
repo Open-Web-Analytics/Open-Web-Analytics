@@ -403,11 +403,11 @@ class SiteManager extends \OWA\Core\Base {
 
             if ( ! $taken->wasPersisted() ) {
 
-                return array( $site_id, $id );
+                return [ $site_id, $id ];
             }
         }
 
-        return array( '', '' );
+        return [ '', '' ];
     }
 
     /**
@@ -451,5 +451,3 @@ class SiteManager extends \OWA\Core\Base {
         return strtolower( self::domainOnly( $domain ) );
     }
 }
-
-?>

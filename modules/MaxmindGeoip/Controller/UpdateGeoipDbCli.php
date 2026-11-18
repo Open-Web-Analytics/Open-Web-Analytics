@@ -61,9 +61,9 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Downloads the MaxMind GeoLite2 database that IP lookups resolve against. Needs a MaxMind licence key.',
-            'arguments'   => array(
+            'arguments'   => [
                 'license-key=<key>' => 'The licence key. Defaults to the module\'s db_license_key, then ws_license_key, setting.',
                 'edition=<name>'    => 'The edition to download: ' . implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
                                     . '. Defaults to the one the module reads.',
@@ -72,8 +72,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
                 'scheduled=1'       => 'Set by the scheduler. Skips quietly without a licence key, counts an already current '
                                     . 'copy as success, never downloads when MaxMind\'s update check fails while a local copy exists, and '
                                     . 'waits a day after a download that did not install.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function __construct( $params ) {
@@ -543,7 +543,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             }
         }
 
-        return $from === null ? array() : array_slice( array_values( $headers ), $from );
+        return $from === null ? [] : array_slice( array_values( $headers ), $from );
     }
 
     /**

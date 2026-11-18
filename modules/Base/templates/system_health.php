@@ -19,12 +19,12 @@ $owa_s = (array) $view->sections;
         '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Attention' ) ) . '</b>' ); ?>
 </div>
 
-<?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ) as $owa_key ): ?>
-<?php $owa_sec = (array) ( $owa_s[ $owa_key ] ?? array() ); if ( ! $owa_sec ) { continue; } ?>
+<?php foreach ( [ 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ] as $owa_key ): ?>
+<?php $owa_sec = (array) ( $owa_s[ $owa_key ] ?? [] ); if ( ! $owa_sec ) { continue; } ?>
 <fieldset>
     <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); ?></legend>
 
-    <?php if ( in_array( $owa_key, array( 'data', 'install' ), true ) && ! empty( $owa_sec['facts'] ) ): ?>
+    <?php if ( in_array( $owa_key, [ 'data', 'install' ], true ) && ! empty( $owa_sec['facts'] ) ): ?>
     <table class="management owa_numericTable">
         <?php foreach ( $owa_sec['facts'] as $owa_label => $owa_value ): ?>
         <tr><td style="width:1%"><b><?php $view->out( $owa_label ); ?></b></td><td><?php if ( $owa_key === 'install' ): ?><code><?php $view->out( $owa_value ); ?></code><?php else: ?><?php $view->out( $owa_value ); ?><?php endif; ?></td></tr>

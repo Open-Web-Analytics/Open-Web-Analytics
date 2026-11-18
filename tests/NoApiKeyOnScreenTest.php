@@ -16,12 +16,12 @@ final class NoApiKeyOnScreenTest extends TestCase
     {
         $t = new \OWA\Core\Template('base');
 
-        foreach (array(
+        foreach ([
             'headline' => 'Edit user', 'action' => 'base.usersEdit', 'edit' => true, 'isAdmin' => false,
-            'roles' => array('admin', 'viewer'), 'app_passwords' => array(), 'app_password_scopes' => array(),
-            'user' => array('user_id' => 'someone', 'real_name' => 'Someone', 'role' => 'viewer',
-                'email_address' => 'someone@example.test', 'api_key' => self::KEY),
-        ) as $k => $v) {
+            'roles' => ['admin', 'viewer'], 'app_passwords' => [], 'app_password_scopes' => [],
+            'user' => ['user_id' => 'someone', 'real_name' => 'Someone', 'role' => 'viewer',
+                'email_address' => 'someone@example.test', 'api_key' => self::KEY],
+        ] as $k => $v) {
             $t->set($k, $v);
         }
 
@@ -36,7 +36,7 @@ final class NoApiKeyOnScreenTest extends TestCase
     /** No template reads the key. */
     public function testNoTemplateReadsTheKey(): void
     {
-        $found = array();
+        $found = [];
 
         foreach (glob(\OWA\Core\Env::root() . '/modules/*/templates/*.php') as $file) {
             if (preg_match('/api_key|getApiKey|apiKey/i', (string) file_get_contents($file))) {
@@ -44,6 +44,6 @@ final class NoApiKeyOnScreenTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $found);
+        $this->assertSame([], $found);
     }
 }

@@ -20,7 +20,7 @@ final class RepeatedConstraintTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
         $rsm->setConstraints( $rsm->constraintsStringToArray( $string ) );
 
-        return array( $rsm, array_values( (array) $rsm->getConstraints() ) );
+        return [ $rsm, array_values( (array) $rsm->getConstraints() ) ];
     }
 
     public function testBothFiltersOnOneDimensionAreKept(): void
@@ -28,8 +28,8 @@ final class RepeatedConstraintTest extends TestCase
         list( , $all ) = $this->constraints( 'pagePath=@/blog,pagePath!@/blog/tag' );
 
         $this->assertSame(
-            array( array( 'pagePath', '=@', '/blog' ), array( 'pagePath', '!@', '/blog/tag' ) ),
-            array_map( fn ( $c ) => array( $c['name'], $c['operator'], $c['value'] ), $all )
+            [ [ 'pagePath', '=@', '/blog' ], [ 'pagePath', '!@', '/blog/tag' ] ],
+            array_map( fn ( $c ) => [ $c['name'], $c['operator'], $c['value'] ], $all )
         );
     }
 
@@ -44,7 +44,7 @@ final class RepeatedConstraintTest extends TestCase
     {
         list( , $all ) = $this->constraints( 'pagePath=@/blog,sessionChannel==Direct,pagePath!@/blog/tag' );
 
-        $this->assertSame( array( 'pagePath', 'sessionChannel', 'pagePath' ), array_column( $all, 'name' ) );
+        $this->assertSame( [ 'pagePath', 'sessionChannel', 'pagePath' ], array_column( $all, 'name' ) );
     }
 
     /**

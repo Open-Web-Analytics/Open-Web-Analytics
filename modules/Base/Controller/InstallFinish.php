@@ -50,8 +50,3 @@ class InstallFinish extends \OWA\Core\Controller\Install {
         $this->setRedirectAction( 'base.installStart' );
     }
 }
-
-
-
-
-?>

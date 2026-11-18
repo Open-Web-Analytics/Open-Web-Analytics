@@ -13,17 +13,17 @@
  * is_active and schema_version are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, from mechanicalSettings().
  */
-return array(
+return [
 
     'module' => 'maxmind_geoip',
 
-    'settings' => array(
+    'settings' => [
 
         /*
          * Read on the lookup path -- Classes/Maxmind.php consults it for every
          * location resolution -- so boot fetches it.
          */
-        'db_edition' => array(
+        'db_edition' => [
             'default'     => 'GeoLite2-City',
             'storable'    => true,
             'autoload'    => true,
@@ -34,8 +34,8 @@ return array(
               . 'country and is a fraction of the size, which is the better trade if '
               . 'your reports never go below country level. Changing this changes '
               . 'which file is downloaded and which one is read, together.' ),
-            'options'     => array( 'GeoLite2-City', 'GeoLite2-Country' ),
-        ),
+            'options'     => [ 'GeoLite2-City', 'GeoLite2-Country' ],
+        ],
 
         /*
          * Which lookup path the module takes. Read in the module's own
@@ -47,35 +47,35 @@ return array(
          * directly, and a declaration that left it out would mean the stored
          * value was written and never read.
          */
-        'lookup_method' => array(
+        'lookup_method' => [
             'default'     => 'city_lite_db',
             'storable'    => true,
             'autoload'    => true,
             'description' => 'How locations are resolved: city_lite_db reads the local GeoLite2 database, '
                 . 'geoip_city_isp_org_web_service queries the MaxMind web service.',
-        ),
+        ],
 
         /*
          * Credentials for the web-service lookup path, read only when
          * lookup_method selects it. No default -- a blank key is not a
          * credential -- and no chrome, because no screen offers them.
          */
-        'ws_license_key' => array(
+        'ws_license_key' => [
             'storable'    => true,
             'description' => 'The licence key for the MaxMind web service lookup. Also used to download the '
                 . 'database when db_license_key is empty.',
-        ),
-        'ws_user_name'   => array(
+        ],
+        'ws_user_name'   => [
             'storable'    => true,
             'description' => 'The MaxMind account id for the web service lookup.',
-        ),
+        ],
 
         /*
          * No autoload: read by the options screen and by the db update job,
          * never on a request that tracks or reports. One query, the first time
          * something asks.
          */
-        'db_license_key' => array(
+        'db_license_key' => [
             'default'     => '',
             'storable'    => true,
             'type'        => 'text',
@@ -84,6 +84,6 @@ return array(
                 \OWA\Core\CoreAPI::t( 'The GeoLite2 databases are free, but MaxMind stopped allowing '
               . 'anonymous downloads at the end of 2019, so fetching one needs a key. '
               . 'Creating a MaxMind account and a key costs nothing.' ),
-        ),
-    ),
-);
+        ],
+    ],
+];

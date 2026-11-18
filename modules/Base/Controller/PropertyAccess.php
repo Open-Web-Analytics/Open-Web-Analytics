@@ -42,10 +42,8 @@ class PropertyAccess extends \OWA\Core\AdminController {
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $property_id );
         $this->set( 'grantedUserIds', $property_id !== ''
-            ? \OWA\Module\Base\Classes\PropertyGrants::userIds( $property_id ) : array() );
-        $this->settingsChrome( array( 'propertyId' => $property_id ), '', $property_id );
+            ? \OWA\Module\Base\Classes\PropertyGrants::userIds( $property_id ) : [] );
+        $this->settingsChrome( [ 'propertyId' => $property_id ], '', $property_id );
         $this->setSubview( 'base.propertyAccess' );
     }
 }
-
-?>

@@ -45,24 +45,24 @@ final class SettingsMapTypeTest extends TestCase
     {
         $args = $this->config()->registeredField('base', 'campaignKeys');
 
-        $this->assertSame(array('source' => 'src', 'medium' => 'channel'),
+        $this->assertSame(['source' => 'src', 'medium' => 'channel'],
             Settings::mapPairs($args, ' source=src,medium = channel , '));
-        $this->assertSame(array(), Settings::mapPairs($args, ''));
-        $this->assertSame(array('source' => 'second'), Settings::mapPairs($args, 'source=first, source=second'),
+        $this->assertSame([], Settings::mapPairs($args, ''));
+        $this->assertSame(['source' => 'second'], Settings::mapPairs($args, 'source=first, source=second'),
             'a later pair for a name replaces an earlier one');
     }
 
     /** @return array<string, array{string}> */
     public static function malformed(): array
     {
-        return array(
-            'an unknown role'      => array('sorce=src'),
-            'no value'             => array('source='),
-            'no name'              => array('=src'),
-            'no pair'              => array('source'),
-            'a space in the value' => array('source=a b'),
-            'two equals signs'     => array('source=a=b'),
-        );
+        return [
+            'an unknown role'      => ['sorce=src'],
+            'no value'             => ['source='],
+            'no name'              => ['=src'],
+            'no pair'              => ['source'],
+            'a space in the value' => ['source=a b'],
+            'two equals signs'     => ['source=a=b'],
+        ];
     }
 
     /** @dataProvider malformed */
@@ -76,20 +76,20 @@ final class SettingsMapTypeTest extends TestCase
     public function testEmptyTextIsNoPairs(): void
     {
         $this->assertNull($this->config()->valueProblem('base', 'campaignKeys', ''));
-        $this->assertSame(array(), $this->config()->normalizedValue('base', 'campaignKeys', ''));
+        $this->assertSame([], $this->config()->normalizedValue('base', 'campaignKeys', ''));
     }
 
     /** Stored, a map holds only its declared keys, in their order. */
     public function testAStoredMapKeepsOnlyItsDeclaredKeys(): void
     {
-        $this->assertNull($this->config()->valueProblem('base', 'campaignKeys', array('not_a_role' => 'x')),
+        $this->assertNull($this->config()->valueProblem('base', 'campaignKeys', ['not_a_role' => 'x']),
             'a list is not refused: it is what is already stored');
 
-        $this->assertSame(array('source' => 'src', 'medium' => 'channel'),
+        $this->assertSame(['source' => 'src', 'medium' => 'channel'],
             $this->config()->normalizedValue('base', 'campaignKeys',
-                array('medium' => 'channel', 'not_a_role' => 'x', 'source' => ' src ', 'ad' => '')));
+                ['medium' => 'channel', 'not_a_role' => 'x', 'source' => ' src ', 'ad' => '']));
 
-        $this->assertSame(array('source' => 'src', 'medium' => 'channel'),
+        $this->assertSame(['source' => 'src', 'medium' => 'channel'],
             $this->config()->normalizedValue('base', 'campaignKeys', 'medium=channel, source=src'));
     }
 
@@ -102,7 +102,7 @@ final class SettingsMapTypeTest extends TestCase
         $was = $this->config()->get('base', 'campaignKeys');
 
         try {
-            $this->config()->set('base', 'campaignKeys', array('medium' => 'channel', 'not_a_role' => 'x', 'source' => 'src'));
+            $this->config()->set('base', 'campaignKeys', ['medium' => 'channel', 'not_a_role' => 'x', 'source' => 'src']);
 
             $html = SettingsForm::scopedField('base', 'campaignKeys', 'profile', '', 'owa_');
 
@@ -124,7 +124,7 @@ final class SettingsMapTypeTest extends TestCase
         $was = $this->config()->get('base', 'campaignKeys');
 
         try {
-            $this->config()->set('base', 'campaignKeys', array('not_a_role' => 'x'));
+            $this->config()->set('base', 'campaignKeys', ['not_a_role' => 'x']);
 
             $html = SettingsForm::scopedField('base', 'campaignKeys', 'profile', '', 'owa_');
 
@@ -143,7 +143,7 @@ final class SettingsMapTypeTest extends TestCase
         $was = $this->config()->get('base', 'campaignKeys');
 
         try {
-            $this->config()->set('base', 'campaignKeys', array());
+            $this->config()->set('base', 'campaignKeys', []);
 
             $html = SettingsForm::scopedField('base', 'campaignKeys', 'profile', '', 'owa_');
 
@@ -166,7 +166,7 @@ final class SettingsMapTypeTest extends TestCase
         $this->assertNull(\OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, 'base', 'campaignKeys'));
 
         $this->assertTrue((bool) \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, 'base', 'campaignKeys', 'source=src'));
-        $this->assertSame(array('source' => 'src'),
+        $this->assertSame(['source' => 'src'],
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, 'base', 'campaignKeys'));
     }
 }

@@ -36,15 +36,15 @@ final class ReportGridTest extends TestCase
     public function testAWidgetWithNoSpanIsFullWidth(): void
     {
         $this->assertSame( \OWA\Core\ReportGrid::COLUMNS,
-            \OWA\Core\ReportGrid::colspan( array() ),
+            \OWA\Core\ReportGrid::colspan( [] ),
             'most report widgets are full width, so that is what saying nothing means' );
     }
 
     public function testADeclaredSpanIsKept(): void
     {
-        $this->assertSame( 6, \OWA\Core\ReportGrid::colspan( array( 'colspan' => 6 ) ) );
-        $this->assertSame( 1, \OWA\Core\ReportGrid::colspan( array( 'colspan' => 1 ) ) );
-        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( array( 'colspan' => 12 ) ) );
+        $this->assertSame( 6, \OWA\Core\ReportGrid::colspan( [ 'colspan' => 6 ] ) );
+        $this->assertSame( 1, \OWA\Core\ReportGrid::colspan( [ 'colspan' => 1 ] ) );
+        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( [ 'colspan' => 12 ] ) );
     }
 
     /**
@@ -53,7 +53,7 @@ final class ReportGridTest extends TestCase
      */
     public function testAnOverWideSpanIsClampedRatherThanWideningTheGrid(): void
     {
-        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( array( 'colspan' => 16 ) ),
+        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( [ 'colspan' => 16 ] ),
             'a span wider than the grid must become full width, not widen the grid' );
     }
 
@@ -65,12 +65,12 @@ final class ReportGridTest extends TestCase
      */
     public function testANonsensicalSpanFallsBackToFullWidth( $value ): void
     {
-        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( array( 'colspan' => $value ) ) );
+        $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( [ 'colspan' => $value ] ) );
     }
 
     public static function uselessSpanProvider(): array
     {
-        return array( 'zero' => array( 0 ), 'negative' => array( -3 ), 'empty' => array( '' ) );
+        return [ 'zero' => [ 0 ], 'negative' => [ -3 ], 'empty' => [ '' ] ];
     }
 
     /**
@@ -85,18 +85,18 @@ final class ReportGridTest extends TestCase
     public function testAGridCardIsAQuarterWideByDefault(): void
     {
         $this->assertSame( 3,
-            \OWA\Core\ReportGrid::colspan( array( 'type' => 'grid-card' ) ) );
+            \OWA\Core\ReportGrid::colspan( [ 'type' => 'grid-card' ] ) );
 
         $this->assertSame( 3,
-            \OWA\Core\ReportGrid::defaultColspan( array( 'type' => 'grid-card' ) ) );
+            \OWA\Core\ReportGrid::defaultColspan( [ 'type' => 'grid-card' ] ) );
     }
 
     public function testEveryOtherTypeStillDefaultsToFullWidth(): void
     {
-        foreach ( array( 'grid', 'pie', 'trend', 'metric-boxes', '', 'something-new' ) as $type ) {
+        foreach ( [ 'grid', 'pie', 'trend', 'metric-boxes', '', 'something-new' ] as $type ) {
 
             $this->assertSame( \OWA\Core\ReportGrid::COLUMNS,
-                \OWA\Core\ReportGrid::colspan( array( 'type' => $type ) ),
+                \OWA\Core\ReportGrid::colspan( [ 'type' => $type ] ),
                 "a $type widget that names no span should be full width" );
         }
     }
@@ -110,10 +110,10 @@ final class ReportGridTest extends TestCase
      */
     public function testANonsensicalSpanOnACardFallsBackToTheCardWidth(): void
     {
-        foreach ( array( 0, -3, '' ) as $value ) {
+        foreach ( [ 0, -3, '' ] as $value ) {
 
             $this->assertSame( 3, \OWA\Core\ReportGrid::colspan(
-                array( 'type' => 'grid-card', 'colspan' => $value ) ) );
+                [ 'type' => 'grid-card', 'colspan' => $value ] ) );
         }
     }
 
@@ -122,28 +122,28 @@ final class ReportGridTest extends TestCase
         // The default is what a type MEANS, not a cap. A definition that names
         // a width still gets it -- clamped like any other.
         $this->assertSame( 6, \OWA\Core\ReportGrid::colspan(
-            array( 'type' => 'grid-card', 'colspan' => 6 ) ) );
+            [ 'type' => 'grid-card', 'colspan' => 6 ] ) );
     }
 
     public function testRowspanDefaultsToOneAndIsBounded(): void
     {
-        $this->assertSame( 1, \OWA\Core\ReportGrid::rowspan( array() ) );
-        $this->assertSame( 1, \OWA\Core\ReportGrid::rowspan( array( 'rowspan' => 0 ) ) );
-        $this->assertSame( 3, \OWA\Core\ReportGrid::rowspan( array( 'rowspan' => 3 ) ) );
+        $this->assertSame( 1, \OWA\Core\ReportGrid::rowspan( [] ) );
+        $this->assertSame( 1, \OWA\Core\ReportGrid::rowspan( [ 'rowspan' => 0 ] ) );
+        $this->assertSame( 3, \OWA\Core\ReportGrid::rowspan( [ 'rowspan' => 3 ] ) );
         $this->assertSame( \OWA\Core\ReportGrid::MAX_ROWSPAN,
-            \OWA\Core\ReportGrid::rowspan( array( 'rowspan' => 99 ) ) );
+            \OWA\Core\ReportGrid::rowspan( [ 'rowspan' => 99 ] ) );
     }
 
     public function testTheClassAttributeCarriesTheSizes(): void
     {
         $this->assertSame( 'owa_reportGridItem owa_span-12',
-            \OWA\Core\ReportGrid::classesFor( array() ) );
+            \OWA\Core\ReportGrid::classesFor( [] ) );
 
         $this->assertSame( 'owa_reportGridItem owa_span-6',
-            \OWA\Core\ReportGrid::classesFor( array( 'colspan' => 6 ) ) );
+            \OWA\Core\ReportGrid::classesFor( [ 'colspan' => 6 ] ) );
 
         $this->assertSame( 'owa_reportGridItem owa_span-4 owa_rowspan-2',
-            \OWA\Core\ReportGrid::classesFor( array( 'colspan' => 4, 'rowspan' => 2 ) ) );
+            \OWA\Core\ReportGrid::classesFor( [ 'colspan' => 4, 'rowspan' => 2 ] ) );
     }
 
     /**
@@ -153,7 +153,7 @@ final class ReportGridTest extends TestCase
     public function testASingleRowAddsNoClass(): void
     {
         $this->assertStringNotContainsString( 'rowspan',
-            \OWA\Core\ReportGrid::classesFor( array( 'rowspan' => 1 ) ) );
+            \OWA\Core\ReportGrid::classesFor( [ 'rowspan' => 1 ] ) );
     }
 
     /**
@@ -166,7 +166,7 @@ final class ReportGridTest extends TestCase
     {
         $css = $this->declarations();
 
-        $missing = array();
+        $missing = [];
 
         foreach ( \OWA\Core\ReportGrid::spanClasses() as $class ) {
 
@@ -177,7 +177,7 @@ final class ReportGridTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $missing,
+        $this->assertSame( [], $missing,
             'these classes can be emitted but are not styled: ' . implode( ', ', $missing ) );
     }
 

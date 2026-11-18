@@ -45,11 +45,11 @@ final class MetricSqlHarness
      */
     public static function snapshot(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::getAllMetrics() as $name => $implementations ) {
 
-            $rows = array();
+            $rows = [];
 
             foreach ( (array) $implementations as $implementation ) {
 
@@ -78,7 +78,7 @@ final class MetricSqlHarness
     public static function describe( array $implementation ): array
     {
         $metric = \OWA\Core\CoreAPI::metricFactory(
-            $implementation['class'], $implementation['params'] ?? array() );
+            $implementation['class'], $implementation['params'] ?? [] );
 
         if ( $metric->isCalculated() ) {
 
@@ -96,31 +96,31 @@ final class MetricSqlHarness
              */
             if ( $metric->isDifference() ) {
 
-                return array(
+                return [
                     'kind'       => 'difference',
                     'minuend'    => (string) $metric->getMinuend(),
                     'subtrahend' => (string) $metric->getSubtrahend(),
                     'children'   => $children,
-                );
+                ];
             }
 
             if ( $metric->isRatio() ) {
 
-                return array(
+                return [
                     'kind'        => 'ratio',
                     'numerator'   => (string) $metric->getNumerator(),
                     'denominator' => (string) $metric->getDenominator(),
                     'precision'   => $metric->getPrecision(),
                     'children'    => $children,
-                );
+                ];
             }
 
             // Neither a difference nor a ratio: a declaration v2.0 refuses
             // (a formula), recorded so the test below can say so.
-            return array(
+            return [
                 'kind'     => 'calculated',
                 'children' => $children,
-            );
+            ];
         }
 
         /*
@@ -131,7 +131,7 @@ final class MetricSqlHarness
          */
         $select = (array) $metric->getSelect();
 
-        return array(
+        return [
             /*
              * No aggregation type recorded: the expression already states it
              * (COUNT, COUNT(DISTINCT ...), SUM), and there is no getter for it
@@ -143,7 +143,7 @@ final class MetricSqlHarness
             'entity'     => (string) $metric->getEntityName(),
             'expression' => isset( $select[0] ) ? (string) $select[0] : null,
             'alias'      => isset( $select[1] ) ? (string) $select[1] : null,
-        );
+        ];
     }
 
     public static function fixturePath(): string

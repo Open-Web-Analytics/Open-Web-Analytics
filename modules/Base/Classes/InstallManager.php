@@ -360,5 +360,3 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
 }
-
-?>

@@ -68,13 +68,13 @@
 
 require_once dirname( __DIR__, 2 ) . '/owa.php';
 
-$owa = new owa( array( 'request_type' => 'cli' ) );
+$owa = new owa( [ 'request_type' => 'cli' ] );
 
 $phase   = isset( $argv[1] ) && $argv[1][0] !== '-' ? $argv[1] : '';
 $force   = in_array( '--force', $argv, true );
 $verbose = in_array( '--verbose', $argv, true );
 
-if ( ! in_array( $phase, array( 'down', 'verify' ), true ) ) {
+if ( ! in_array( $phase, [ 'down', 'verify' ], true ) ) {
 
     fwrite( STDERR, "usage: upgrade_cycle.php down|verify [--force] [--verbose]\n"
         . "(or run tests/tools/upgrade_cycle_run.sh, which drives all three steps)\n" );
@@ -112,10 +112,10 @@ const OWA_UPGRADE_CYCLE_FLOOR = 33;
 /** The Property whose cube the cycle creates when the install has none. */
 const OWA_UPGRADE_CYCLE_PROPERTY = 7787000000000001;
 
-$fail = array();
+$fail = [];
 $note = static function ( $line ) { fwrite( STDOUT, $line . "\n" ); };
 
-$fail = array();
+$fail = [];
 
 /* ======================================================================
  * PHASE 1: down
@@ -144,13 +144,13 @@ if ( $phase === 'down' ) {
     if ( ! \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setProperties( array(
+        $property->setProperties( [
             'id'            => OWA_UPGRADE_CYCLE_PROPERTY,
             'name'          => 'Upgrade cycle',
             'domain'        => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
-        ) );
+        ] );
 
         if ( ! $property->create() || ! \OWA\Module\Base\Classes\Cube\Cubes::create( OWA_UPGRADE_CYCLE_PROPERTY ) ) {
 
@@ -166,7 +166,7 @@ if ( $phase === 'down' ) {
     $note( sprintf( 'fingerprint: %d columns, %d indexes over %d tables',
         count( $before['columns'] ), count( $before['indexes'] ), count( $before['tables'] ) ) );
 
-    $rolled = array();
+    $rolled = [];
 
     /*
      * What each down() actually CHANGED, per version.
@@ -182,8 +182,8 @@ if ( $phase === 'down' ) {
      * for each up(), and the pair is what gets asserted: an up() that changes
      * the schema must have a down() that changes it back.
      */
-    $down_changed = array();
-    $up_changed   = array();
+    $down_changed = [];
+    $up_changed   = [];
 
     for ( $v = $installed; $v >= 1; $v-- ) {
 
@@ -250,14 +250,14 @@ if ( $phase === 'down' ) {
     $note( sprintf( '--- rolled back %d update(s), down to schema %d ---',
         count( $rolled ), $floor ) );
 
-    file_put_contents( OWA_UPGRADE_CYCLE_STATE, json_encode( array(
+    file_put_contents( OWA_UPGRADE_CYCLE_STATE, json_encode( [
         'installed' => $installed,
         'floor'     => $floor,
         'rolled'    => $rolled,
         'before'    => $before,
         'down'      => $down_changed,
         'up'        => $up_changed,
-    ) ) );
+    ] ) );
 
     if ( ! $rolled ) {
 
@@ -363,7 +363,7 @@ foreach ( (array) $rolled as $v ) {
     }
 }
 
-foreach ( (array) ( $state['up'] ?? array() ) as $v => $up_changed ) {
+foreach ( (array) ( $state['up'] ?? [] ) as $v => $up_changed ) {
 
     if ( $up_changed === null ) {
 
@@ -459,7 +459,7 @@ foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
     $builder = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
     $spans   = $builder->partitions( (int) date( 'Ymd' ), (int) date( 'Ymd' ) );
-    $result  = $spans ? $builder->rebuild( $spans[0] ) : array( 'ok' => false, 'error' => 'no partition for today' );
+    $result  = $spans ? $builder->rebuild( $spans[0] ) : [ 'ok' => false, 'error' => 'no partition for today' ];
 
     if ( empty( $result['ok'] ) ) {
 
@@ -563,9 +563,9 @@ function owa_update_declares_schema_work( $v ) {
 
     $src = (string) file_get_contents( $file );
 
-    foreach ( array( 'addColumnIfMissing', 'dropColumnIfPresent', 'addColumn',
+    foreach ( [ 'addColumnIfMissing', 'dropColumnIfPresent', 'addColumn',
                      'dropColumn', 'createTable', 'dropTable', 'addIndex',
-                     'dropIndex' ) as $needle ) {
+                     'dropIndex' ] as $needle ) {
 
         if ( strpos( $src, $needle ) !== false ) {
 
@@ -578,8 +578,8 @@ function owa_update_declares_schema_work( $v ) {
 
 function owa_schema_fingerprint( $db, $dbName ) {
 
-    $columns = array();
-    $tables  = array();
+    $columns = [];
+    $tables  = [];
 
     $rows = (array) $db->get_results( sprintf(
         "SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
@@ -596,7 +596,7 @@ function owa_schema_fingerprint( $db, $dbName ) {
             $r['COLUMN_TYPE'], $r['IS_NULLABLE'] === 'YES' ? 'NULL' : 'NOT NULL' );
     }
 
-    $byIndex = array();
+    $byIndex = [];
 
     $rows = (array) $db->get_results( sprintf(
         "SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX, COLUMN_NAME
@@ -612,11 +612,11 @@ function owa_schema_fingerprint( $db, $dbName ) {
 
         if ( ! isset( $byIndex[ $key ] ) ) {
 
-            $byIndex[ $key ] = array(
+            $byIndex[ $key ] = [
                 'table'  => $r['TABLE_NAME'],
                 'unique' => ! (int) $r['NON_UNIQUE'],
-                'cols'   => array(),
-            );
+                'cols'   => [],
+            ];
         }
 
         $byIndex[ $key ]['cols'][] = $r['COLUMN_NAME'];
@@ -625,7 +625,7 @@ function owa_schema_fingerprint( $db, $dbName ) {
     // Named by their column set, so the same index found under two names is one
     // index -- and a DUPLICATE of an existing one collapses onto it rather than
     // reading as a difference.
-    $indexes = array();
+    $indexes = [];
 
     foreach ( $byIndex as $ix ) {
 
@@ -641,20 +641,20 @@ function owa_schema_fingerprint( $db, $dbName ) {
 
     ksort( $tables );
 
-    return array( 'columns' => $columns, 'indexes' => $indexes,
-                  'tables'  => array_keys( $tables ) );
+    return [ 'columns' => $columns, 'indexes' => $indexes,
+                  'tables'  => array_keys( $tables ) ];
 }
 
 /** @return array<string> human-readable differences, empty when identical */
 function owa_fingerprint_diff( $before, $after, $what = 'a down-and-up cycle' ) {
 
-    $out = array();
+    $out = [];
 
-    $pairs = array(
-        'table'  => array( $before['tables'],  $after['tables'] ),
-        'column' => array( $before['columns'], $after['columns'] ),
-        'index'  => array( $before['indexes'], $after['indexes'] ),
-    );
+    $pairs = [
+        'table'  => [ $before['tables'],  $after['tables'] ],
+        'column' => [ $before['columns'], $after['columns'] ],
+        'index'  => [ $before['indexes'], $after['indexes'] ],
+    ];
 
     foreach ( $pairs as $kind => $pair ) {
 

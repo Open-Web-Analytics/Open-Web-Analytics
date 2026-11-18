@@ -75,7 +75,7 @@ final class MaxmindUpdateCliTest extends TestCase {
         $job = $jobs['refresh-geoip-db'];
 
         $this->assertSame( 'update-geoip-db', $job['command'] );
-        $this->assertSame( array( 'scheduled' => 1 ), $job['params'] );
+        $this->assertSame( [ 'scheduled' => 1 ], $job['params'] );
         $this->assertSame( 'maxmind_geoip', $job['module'] );
         $this->assertMatchesRegularExpression( '/^\d+ \d+ \* \* [0-6]$/', $job['schedule'],
             'weekly, at a time this install derives' );

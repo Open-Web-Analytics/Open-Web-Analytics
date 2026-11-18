@@ -36,7 +36,7 @@ class Update089 extends \OWA\Core\Update {
      */
     private function columns() {
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SHOW COLUMNS FROM %s', $this->tableFor( 'base.user' ) ) ) as $row ) {
 
@@ -88,5 +88,3 @@ class Update089 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

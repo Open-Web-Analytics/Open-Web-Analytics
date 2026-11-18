@@ -20,36 +20,36 @@ final class SettingsFormScopedTest extends TestCase
     private const PROFILE = 'zz-scoped-profile';
 
     /** @var array<string,mixed> */
-    private array $snapshot = array();
+    private array $snapshot = [];
 
     protected function setUp(): void
     {
-        $this->snapshot = array();
+        $this->snapshot = [];
 
-        foreach (array('registry', 'fieldsets') as $property) {
+        foreach (['registry', 'fieldsets'] as $property) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
             $this->snapshot[$property] = $p->getValue($this->config());
         }
 
-        $this->config()->registerField(self::MODULE, 'words', array(
+        $this->config()->registerField(self::MODULE, 'words', [
             'default' => 'abc', 'storable' => true, 'type' => 'text', 'label' => 'Words',
-            'scopes'  => array('install', 'property', 'profile')));
+            'scopes'  => ['install', 'property', 'profile']]);
 
-        $this->config()->registerField(self::MODULE, 'flag', array(
+        $this->config()->registerField(self::MODULE, 'flag', [
             'default' => true, 'storable' => true, 'type' => 'boolean', 'label' => 'Flag',
-            'scopes'  => array('install', 'property', 'profile')));
+            'scopes'  => ['install', 'property', 'profile']]);
 
-        $this->config()->registerField(self::MODULE, 'property_only', array(
+        $this->config()->registerField(self::MODULE, 'property_only', [
             'default' => 'p', 'storable' => true, 'type' => 'text', 'label' => 'Property only',
-            'scopes'  => array('install', 'property')));
+            'scopes'  => ['install', 'property']]);
     }
 
     protected function tearDown(): void
     {
         if (owa_test_db_available()) {
 
-            foreach (array('words', 'flag', 'property_only') as $key) {
+            foreach (['words', 'flag', 'property_only'] as $key) {
                 \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, $key);
             }
         }
@@ -75,8 +75,8 @@ final class SettingsFormScopedTest extends TestCase
 
     private function set(): array
     {
-        return array('id' => self::MODULE . '.set', 'module' => self::MODULE,
-                     'settings' => array('words', 'flag', 'property_only'));
+        return ['id' => self::MODULE . '.set', 'module' => self::MODULE,
+                     'settings' => ['words', 'flag', 'property_only']];
     }
 
     private function field(string $key, $posted = null): string
@@ -114,7 +114,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
         $this->registerBlank();
 
-        foreach (array('words' => 'Words', 'blank' => 'Blank') as $key => $label) {
+        foreach (['words' => 'Words', 'blank' => 'Blank'] as $key => $label) {
 
             $id = 'owa-setting-zz_scoped_form_test-' . $key;
             $html = $this->field($key);
@@ -144,9 +144,9 @@ final class SettingsFormScopedTest extends TestCase
 
     private function registerBlank(): void
     {
-        $this->config()->registerField(self::MODULE, 'blank', array(
+        $this->config()->registerField(self::MODULE, 'blank', [
             'default' => '', 'storable' => true, 'type' => 'text', 'label' => 'Blank',
-            'scopes'  => array('install', 'profile')));
+            'scopes'  => ['install', 'profile']]);
     }
 
     /** With nothing set above there is nothing to override: a plain field. */
@@ -210,9 +210,9 @@ final class SettingsFormScopedTest extends TestCase
     {
         $this->requireDb();
 
-        $this->config()->registerField(self::MODULE, 'no_default', array(
+        $this->config()->registerField(self::MODULE, 'no_default', [
             'storable' => true, 'type' => 'text', 'label' => 'No default',
-            'scopes'   => array('install', 'profile')));
+            'scopes'   => ['install', 'profile']]);
 
         $html = $this->field('no_default');
 
@@ -226,17 +226,17 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
         $this->registerBlank();
 
-        $set = array('id' => self::MODULE . '.blankset', 'module' => self::MODULE, 'settings' => array('blank'));
+        $set = ['id' => self::MODULE . '.blankset', 'module' => self::MODULE, 'settings' => ['blank']];
         $row = fn () => \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'blank');
 
         try {
-            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(self::MODULE . '.blank' => 'mine'), array());
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, [self::MODULE . '.blank' => 'mine'], []);
             $this->assertSame('mine', $row(), 'no switch is needed to store it');
 
-            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(), array());
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, [], []);
             $this->assertSame('mine', $row(), 'a post without the field leaves it alone');
 
-            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(self::MODULE . '.blank' => '  '), array());
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, [self::MODULE . '.blank' => '  '], []);
             $this->assertNull($row(), 'saved empty, the level holds nothing');
 
         } finally {
@@ -274,7 +274,7 @@ final class SettingsFormScopedTest extends TestCase
             $id = (string) (is_array($row) ? $row['site_id'] : $row);
             $chain = \OWA\Core\CoreAPI::settingScopeChain('profile', $id);
             if (isset($chain[1]) && $chain[1]['type'] === 'property') {
-                $site = array($id, (string) $chain[1]['id']);
+                $site = [$id, (string) $chain[1]['id']];
                 break;
             }
         }
@@ -315,15 +315,15 @@ final class SettingsFormScopedTest extends TestCase
      */
     public static function shownValues(): array
     {
-        return array(
-            'a select, by its option\'s label' => array(
-                array('type' => 'select', 'options' => array('a' => 'Alpha', 'b' => 'Beta'), 'default' => 'b'), 'Beta'),
-            'a boolean false' => array(array('type' => 'boolean', 'default' => false), 'Off'),
-            'a list, comma-separated' => array(array('type' => 'text', 'default' => array('x', 'y')), 'x, y'),
-            'a timezone, by its option\'s label' => array(array('type' => 'timezone', 'default' => 'America/Los_Angeles'), 'America/Los Angeles'),
-            'a number' => array(array('type' => 'integer', 'default' => 0), '0'),
-            'text, escaped' => array(array('type' => 'text', 'default' => '<b>&'), '&lt;b&gt;&amp;'),
-        );
+        return [
+            'a select, by its option\'s label' => [
+                ['type' => 'select', 'options' => ['a' => 'Alpha', 'b' => 'Beta'], 'default' => 'b'], 'Beta'],
+            'a boolean false' => [['type' => 'boolean', 'default' => false], 'Off'],
+            'a list, comma-separated' => [['type' => 'text', 'default' => ['x', 'y']], 'x, y'],
+            'a timezone, by its option\'s label' => [['type' => 'timezone', 'default' => 'America/Los_Angeles'], 'America/Los Angeles'],
+            'a number' => [['type' => 'integer', 'default' => 0], '0'],
+            'text, escaped' => [['type' => 'text', 'default' => '<b>&'], '&lt;b&gt;&amp;'],
+        ];
     }
 
     /**
@@ -335,8 +335,8 @@ final class SettingsFormScopedTest extends TestCase
         // A key per data set: the configuration keeps the first value it read for a key.
         $key = 'shown_' . substr(md5(serialize($declaration)), 0, 8);
 
-        $this->config()->registerField(self::MODULE, $key, $declaration + array(
-            'storable' => true, 'label' => 'Shown', 'scopes' => array('install', 'property')));
+        $this->config()->registerField(self::MODULE, $key, $declaration + [
+            'storable' => true, 'label' => 'Shown', 'scopes' => ['install', 'property']]);
 
         $html = SettingsForm::scopedField(self::MODULE, $key, 'property', '', 'owa_');
 
@@ -350,9 +350,9 @@ final class SettingsFormScopedTest extends TestCase
     {
         $long = trim(str_repeat('word ', 20));
 
-        $this->config()->registerField(self::MODULE, 'long', array(
+        $this->config()->registerField(self::MODULE, 'long', [
             'type' => 'text', 'default' => $long, 'storable' => true, 'label' => 'Long',
-            'scopes' => array('install', 'property')));
+            'scopes' => ['install', 'property']]);
 
         $html = SettingsForm::scopedField(self::MODULE, 'long', 'property', '', 'owa_');
 
@@ -393,18 +393,18 @@ final class SettingsFormScopedTest extends TestCase
     {
         $this->requireDb();
 
-        $html = $this->field('words', array(
-            'config'   => array(self::MODULE . '.words' => 'typed'),
-            'override' => array(self::MODULE . '.words' => '1')));
+        $html = $this->field('words', [
+            'config'   => [self::MODULE . '.words' => 'typed'],
+            'override' => [self::MODULE . '.words' => '1']]);
 
         $this->assertStringContainsString('value="typed" id="owa-setting-zz_scoped_form_test-words" data-owa-inherited="abc">', $html,
             'the control shows, enabled');
         $this->assertStringContainsString('checked="checked"', $html);
         $this->assertMatchesRegularExpression('#data-ui="setting-inherited" hidden>#', $html);
 
-        $html = $this->field('words', array(
-            'config'   => array(),
-            'override' => array()));
+        $html = $this->field('words', [
+            'config'   => [],
+            'override' => []]);
 
         $this->assertStringContainsString('value="abc" disabled="disabled" id="owa-setting-zz_scoped_form_test-words" data-owa-inherited="abc" hidden>', $html,
             'switched off, the control is hidden and holds the inherited value');
@@ -416,7 +416,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
 
         $this->assertTrue(SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE,
-            array(self::MODULE . '.words' => 'abc'), array(self::MODULE . '.words' => '1')));
+            [self::MODULE . '.words' => 'abc'], [self::MODULE . '.words' => '1']));
 
         $this->assertSame('abc',
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'words'),
@@ -429,7 +429,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
 
         SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE,
-            array(), array(self::MODULE . '.flag' => '1'));
+            [], [self::MODULE . '.flag' => '1']);
 
         $this->assertTrue(
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'flag'));
@@ -441,7 +441,7 @@ final class SettingsFormScopedTest extends TestCase
 
         \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, self::MODULE, 'words', 'mine');
 
-        $this->assertTrue(SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE, array(), array()));
+        $this->assertTrue(SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE, [], []));
 
         $this->assertNull(
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'words'));
@@ -452,7 +452,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
 
         SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE,
-            array(self::MODULE . '.flag' => '0'), array(self::MODULE . '.flag' => '1'));
+            [self::MODULE . '.flag' => '0'], [self::MODULE . '.flag' => '1']);
 
         $this->assertFalse(
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'flag'));
@@ -464,8 +464,8 @@ final class SettingsFormScopedTest extends TestCase
         $this->requireDb();
 
         SettingsForm::saveScoped($this->set(), 'profile', self::PROFILE,
-            array(self::MODULE . '.property_only' => 'x', self::MODULE . '.other' => 'y'),
-            array(self::MODULE . '.property_only' => '1', self::MODULE . '.other' => '1'));
+            [self::MODULE . '.property_only' => 'x', self::MODULE . '.other' => 'y'],
+            [self::MODULE . '.property_only' => '1', self::MODULE . '.other' => '1']);
 
         $this->assertNull(
             \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'property_only'));
@@ -476,16 +476,16 @@ final class SettingsFormScopedTest extends TestCase
     /** The two screens build their fields from the registry. */
     public function testTheScopedScreensDoNotHandWriteControls(): void
     {
-        foreach (array(
+        foreach ([
             'modules/Base/templates/profile_settings.php' => 'base.profileObservation',
             'modules/Base/templates/property_profile.php' => 'base.propertyAttribution',
-        ) as $template => $set) {
+        ] as $template => $set) {
 
             $code = php_strip_whitespace(\OWA\Core\Env::root() . '/' . $template);
 
             $this->assertStringNotContainsString('config[', $code, $template);
             $this->assertStringContainsString('SettingsForm::scopedFieldSet', $code, $template);
-            $this->assertNotSame(array(), SettingsForm::registeredFieldSet($set), "$set is registered");
+            $this->assertNotSame([], SettingsForm::registeredFieldSet($set), "$set is registered");
         }
     }
 }

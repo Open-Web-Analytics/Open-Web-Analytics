@@ -23,14 +23,14 @@ class TrackingEventHelpers {
      * setDataType() treats that as a string. json is excluded: whitespace inside
      * a document is the encoder's business, and boolean/integer never carry any.
      */
-    const TRIMMED_TYPES = array( 'string', 'url', '' );
+    const TRIMMED_TYPES = [ 'string', 'url', '' ];
 
     /** OS families that only ship on a phone, and only on a desktop. */
-    const MOBILE_OS = array( 'android', 'ios', 'windows phone', 'blackberry os',
-                             'firefox os', 'kaios', 'harmonyos' );
+    const MOBILE_OS = [ 'android', 'ios', 'windows phone', 'blackberry os',
+                             'firefox os', 'kaios', 'harmonyos' ];
 
-    const DESKTOP_OS = array( 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
-                              'chrome os', 'fedora', 'debian', 'freebsd' );
+    const DESKTOP_OS = [ 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
+                              'chrome os', 'fedora', 'debian', 'freebsd' ];
 
     const ABSENT_VALUE_LABEL = '(not set)';
 
@@ -84,16 +84,16 @@ class TrackingEventHelpers {
      * once per copy, corrupting the fact row's FK columns on the 2nd+ event of
      * any process that logs more than one (queue/batch workers, CLI, tests).
      */
-    private $registeredCallbacks = array();
+    private $registeredCallbacks = [];
 
     /** @var array<string, Definition>|null the parsed config, read once per process */
     private static $property_config;
 
     /** @var array<string, string> property name => its `description`, kept aside from the definitions */
-    private static $property_descriptions = array();
+    private static $property_descriptions = [];
 
     /** @var string[] the properties declared `internal`, which the wiki leaves out */
-    private static $internal_properties = array();
+    private static $internal_properties = [];
 
     /**
      * Views of the registry, built once per process: it is read from a file
@@ -102,7 +102,7 @@ class TrackingEventHelpers {
      *
      * @var array<string, mixed>
      */
-    private static $memo = array();
+    private static $memo = [];
 
     /**
      * The derived first-class event names, built once per process.
@@ -133,7 +133,7 @@ class TrackingEventHelpers {
      * @return array
      */
     /** The three answers to "how does this property's value get set". */
-    const SET_BY = array( 'client', 'request', 'event' );
+    const SET_BY = [ 'client', 'request', 'event' ];
 
     /** What an `events` list holds when the property rides every beacon. */
     const EVERY_EVENT = '*';
@@ -215,7 +215,7 @@ class TrackingEventHelpers {
             return self::$memo['set_by'][ $set_by ];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::$property_config as $property => $definition ) {
 
@@ -240,7 +240,7 @@ class TrackingEventHelpers {
             return self::$memo['all'];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::SET_BY as $set_by ) {
 
@@ -362,7 +362,7 @@ class TrackingEventHelpers {
             return self::$memo['params'][ (string) $event_name ];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::propertiesForEvent( $event_name ) as $property ) {
 
@@ -394,11 +394,11 @@ class TrackingEventHelpers {
 
         $all = self::allProperties();
 
-        $definition = $all[ $property ] ?? array();
+        $definition = $all[ $property ] ?? [];
 
         return ( ( $definition['set_by'] ?? '' ) === 'client' )
-            ? (array) ( $definition['from'] ?? array() )
-            : array();
+            ? (array) ( $definition['from'] ?? [] )
+            : [];
     }
 
     /**
@@ -450,7 +450,7 @@ class TrackingEventHelpers {
             return self::$memo['events'][ $event_name ];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::SET_BY as $scope ) {
 
@@ -570,7 +570,7 @@ class TrackingEventHelpers {
             return self::$goal_trigger_names;
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::eventConfig() as $name => $declaration ) {
 
@@ -595,7 +595,7 @@ class TrackingEventHelpers {
      */
     public static function materializedEventNames() {
 
-        $out = array();
+        $out = [];
 
         foreach ( self::eventConfig() as $name => $attributes ) {
 
@@ -645,7 +645,7 @@ class TrackingEventHelpers {
                 . 'list would refuse every first-class event rather than fail here.' );
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( $declared as $name => $attributes ) {
 
@@ -743,7 +743,7 @@ class TrackingEventHelpers {
      */
     public static function eventNamesFromProperties() {
 
-        $out = array();
+        $out = [];
 
         foreach ( self::SET_BY as $scope ) {
 
@@ -859,7 +859,7 @@ class TrackingEventHelpers {
 
         $allowed = (array) $service->getMap( 'tracking_properties_regular' );
 
-        foreach ( array( 'tracking_properties_derived', 'tracking_properties_environmental' ) as $map ) {
+        foreach ( [ 'tracking_properties_derived', 'tracking_properties_environmental' ] as $map ) {
 
             foreach ( (array) $service->getMap( $map ) as $name => $property ) {
 
@@ -901,7 +901,7 @@ class TrackingEventHelpers {
      * can admit them without knowing a single one of a site's keys. That is
      * what makes an allowlist possible here at all.
      */
-    const CUSTOM_PREFIXES = array( 'eps_', 'epn_', 'vps_', 'vpn_' );
+    const CUSTOM_PREFIXES = [ 'eps_', 'epn_', 'vps_', 'vpn_' ];
 
     /** A custom name must survive becoming a JSON key; the tracker's rule. */
     const CUSTOM_NAME_PATTERN = '/^[A-Za-z][A-Za-z0-9_]{0,39}$/';
@@ -949,7 +949,7 @@ class TrackingEventHelpers {
             $allowed[ $bridged ] = true;
         }
 
-        $kept = array();
+        $kept = [];
 
         foreach ( $params as $name => $value ) {
 
@@ -988,10 +988,10 @@ class TrackingEventHelpers {
      * every value a second time (log.php). Request-set and stored by nothing
      * (tracking_properties.json).
      */
-    const ARRIVED = array(
+    const ARRIVED = [
         'page_location' => 'arrived_page_location',
         'HTTP_REFERER'  => 'arrived_referer',
-    );
+    ];
 
     /**
      * The page URL and referrer of a beacon's params as they are now, by
@@ -1003,13 +1003,13 @@ class TrackingEventHelpers {
      */
     public static function arrivedUrls( array $params ) {
 
-        $out     = array();
+        $out     = [];
         $renames = \OWA\Module\Base\Classes\Beacon\Compat::renames();
 
         foreach ( self::ARRIVED as $property => $arrived ) {
 
             // The wire key first, then an older tracker's spelling of it.
-            $keys = array_merge( self::wireKeysFor( $property ), array( $property ),
+            $keys = array_merge( self::wireKeysFor( $property ), [ $property ],
                 array_keys( $renames, $property, true ) );
 
             foreach ( $keys as $key ) {
@@ -1121,7 +1121,7 @@ class TrackingEventHelpers {
 
                 $callbacks = is_array( $item['callbacks'] )
                     ? $item['callbacks']
-                    : array( $item['callbacks'] );
+                    : [ $item['callbacks'] ];
 
                 foreach ( $callbacks as $callback ) {
 
@@ -1387,11 +1387,11 @@ class TrackingEventHelpers {
      * @return mixed
      */
     public static function userAgentDefault( $ua = '') {
-		
-		if (! $ua ) {
-			
-			$ua = \OWA\Core\CoreAPI::getServerParam('HTTP_USER_AGENT');
-		}
+        
+        if (! $ua ) {
+            
+            $ua = \OWA\Core\CoreAPI::getServerParam('HTTP_USER_AGENT');
+        }
         return $ua;
     }
 
@@ -1618,7 +1618,7 @@ class TrackingEventHelpers {
 
         // array of SERVER params that could possibly contain the IP address
         // ordered by probability of relevant match
-        $possible_ip_params = array(
+        $possible_ip_params = [
 
             'HTTP_CLIENT_IP',
             'HTTP_X_FORWARDED_FOR',
@@ -1626,7 +1626,7 @@ class TrackingEventHelpers {
             'HTTP_FORWARDED_FOR',
             'REMOTE_ADDR'
 
-        );
+        ];
 
         // check for IP address, break when found.
         foreach ( $possible_ip_params as $param ) {
@@ -1657,9 +1657,9 @@ class TrackingEventHelpers {
 
         if ( $chosen_ip && \OWA\Core\CoreAPI::getSetting(
                  'base', 'anonymize_ips', 'profile', $site_id ) ) {
-			
-			$chosen_ip = \OWA\Core\Lib::anonymizeIp( $chosen_ip );
-			\OWA\Core\CoreAPI::debug("IP address was anonymized.");
+            
+            $chosen_ip = \OWA\Core\Lib::anonymizeIp( $chosen_ip );
+            \OWA\Core\CoreAPI::debug("IP address was anonymized.");
         }
 
         return $chosen_ip;
@@ -1810,7 +1810,7 @@ class TrackingEventHelpers {
 
             $var  = html_entity_decode($var);
             $var  = explode('&', $var);
-            $arr  = array();
+            $arr  = [];
 
               foreach( $var as $val ) {
 
@@ -1840,9 +1840,9 @@ class TrackingEventHelpers {
      * @return true|void
      */
     public static function isSearchEngine( $host ) {
-		
+        
         if ( ! $host ) {
-	        
+            
             return;
         }
 
@@ -1868,8 +1868,8 @@ class TrackingEventHelpers {
      * @return mixed searchengines.php, through the tracking.search_engine_registry filter
      */
     public static function getSearchEngineList() {
-	    
-	    return \OWA\Core\CoreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
+        
+        return \OWA\Core\CoreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
     
     /**
@@ -1897,7 +1897,7 @@ class TrackingEventHelpers {
      * A rejected URL is recorded as absent rather than stored, which is the
      * honest record: we did not observe a page we can represent.
      */
-    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
+    const STORABLE_URL_SCHEMES = [ 'http', 'https' ];
 
     /**
      * @param  mixed $url
@@ -1951,8 +1951,8 @@ class TrackingEventHelpers {
         }
 
         return str_replace(
-            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
-            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
+            [ '<',   '>',   '"',   "'",   '`',   ' ' ],
+            [ '%3C', '%3E', '%22', '%27', '%60', '%20' ],
             $url );
     }
 
@@ -1962,7 +1962,7 @@ class TrackingEventHelpers {
      * @return string|null
      */
     public static function utfEncodeProperty( $string, $event ) {
-	if(is_null($string)){
+    if(is_null($string)){
             return $string;
         }
 
@@ -2171,7 +2171,7 @@ class TrackingEventHelpers {
      * @return string|null
      */
     public static function lowercaseString ( $string, $event ) {
-	if(is_null($string)){
+    if(is_null($string)){
             return($string);
         }
 
@@ -2268,7 +2268,7 @@ class TrackingEventHelpers {
      * properties (setUserName(), and a 1.x tracker's user_name and
      * email_address, which conf/beacon_compat.php renames onto these).
      */
-    const VISITOR_PII_PROPERTIES = array( 'user_id', 'vps_user_name', 'vps_user_email' );
+    const VISITOR_PII_PROPERTIES = [ 'user_id', 'vps_user_name', 'vps_user_email' ];
 
     /**
      * Remove VISITOR_PII_PROPERTIES from an event when log_visitor_pii is off.
@@ -2323,50 +2323,50 @@ class TrackingEventHelpers {
      * it is ignored, and droppedQueryParams() still takes owa_ad_type out of
      * page_query.
      */
-    const CAMPAIGN_KEYS = array(
+    const CAMPAIGN_KEYS = [
         'source'       => 'tagged_source',
         'medium'       => 'tagged_medium',
         'campaign'     => 'tagged_campaign',
         'search_terms' => 'tagged_terms',
         'ad'           => 'tagged_ad',
-    );
+    ];
 
     /**
      * Campaign roles 1.x read that v2 does not, by suffix: still removed from
      * page_query, so a link in the wild carrying one stays one page.
      */
-    const RETIRED_CAMPAIGN_KEYS = array( 'ad_type' );
+    const RETIRED_CAMPAIGN_KEYS = [ 'ad_type' ];
 
     /**
      * The utm_* parameters, read alongside OWA's own when the Property's
      * campaignUtmParams setting is on. utm_term is the search terms and
      * utm_content tells one ad or link from another, which is OWA's ad.
      */
-    const UTM_KEYS = array(
+    const UTM_KEYS = [
         'utm_source'   => 'tagged_source',
         'utm_medium'   => 'tagged_medium',
         'utm_campaign' => 'tagged_campaign',
         'utm_term'     => 'tagged_terms',
         'utm_content'  => 'tagged_ad',
-    );
+    ];
 
     /**
      * Click ids an ad network appends to the landing URL, and the source and
      * medium each one stands for. Read only when the URL carries no source,
      * medium or campaign of its own, so a tagged link keeps its tags.
      */
-    const CLICK_IDS = array(
-        'gclid'   => array( 'google', 'cpc' ),
-        'gbraid'  => array( 'google', 'cpc' ),
-        'wbraid'  => array( 'google', 'cpc' ),
-        'msclkid' => array( 'bing', 'cpc' ),
-    );
+    const CLICK_IDS = [
+        'gclid'   => [ 'google', 'cpc' ],
+        'gbraid'  => [ 'google', 'cpc' ],
+        'wbraid'  => [ 'google', 'cpc' ],
+        'msclkid' => [ 'bing', 'cpc' ],
+    ];
 
     /** @var array<string, array<string, mixed>> Parsed landing URLs, keyed by site and URL. */
-    private static $landingTags = array();
+    private static $landingTags = [];
 
     /** @var array<string, array<string, string>> Resolved campaign key maps, keyed by site. */
-    private static $campaignKeys = array();
+    private static $campaignKeys = [];
 
     /**
      * What the landing URL claimed for one campaign property.
@@ -2446,7 +2446,7 @@ class TrackingEventHelpers {
 
             // The cleaning page_location had (setDataType()), applied to the decoded values.
             self::$landingTags[ $memo ] = $arrived !== null
-                ? array_map( array( \OWA\Module\Base\Classes\Sanitize::class, 'cleanTrackingText' ), $tags )
+                ? array_map( [ \OWA\Module\Base\Classes\Sanitize::class, 'cleanTrackingText' ], $tags )
                 : $tags;
         }
 
@@ -2463,7 +2463,7 @@ class TrackingEventHelpers {
      * five values inside a helper of its own.
      */
     /** @var array<string, array<string, mixed>> Prior touches read this process, keyed by site, visitor and session. */
-    private static $priorTouches = array();
+    private static $priorTouches = [];
 
     /**
      * The visitor's last non-direct touch before this session, from the visitor
@@ -2490,7 +2490,7 @@ class TrackingEventHelpers {
              || (int) $event->get( 'num_prior_sessions' ) < 1
              || ! $event->get( 'visitor_id' ) ) {
 
-            return array();
+            return [];
         }
 
         $memo = $event->get( 'site_id' ) . '|' . $event->get( 'visitor_id' ) . '|' . $event->get( 'session_id' );
@@ -2500,7 +2500,7 @@ class TrackingEventHelpers {
             return self::$priorTouches[ $memo ];
         }
 
-        $touch = array();
+        $touch = [];
         $store = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
         $store->load( $event->get( 'visitor_id' ), 'visitor_id' );
 
@@ -2508,7 +2508,7 @@ class TrackingEventHelpers {
 
         if ( $store->wasPersisted() && $ts > 0 && $ts < (int) $event->get( 'ts' ) ) {
 
-            foreach ( array( 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ) as $part ) {
+            foreach ( [ 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ] as $part ) {
 
                 $value = $store->get( 'last_touch_' . $part );
                 $touch[ $part ] = ( $value === false || $value === '' ) ? null : $value;
@@ -2677,10 +2677,10 @@ class TrackingEventHelpers {
         $configured = \OWA\Core\CoreAPI::getSetting(
             'base', 'campaignKeys', 'profile', $site_id );
 
-        $configured = is_array( $configured ) ? $configured : array();
+        $configured = is_array( $configured ) ? $configured : [];
 
         $ns  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-        $map = array();
+        $map = [];
 
         /*
          * utm_* FIRST. A later key overwrites an earlier one in the parse, so
@@ -2717,14 +2717,14 @@ class TrackingEventHelpers {
 
         if ( empty( $uri['query'] ) ) {
 
-            return array();
+            return [];
         }
 
-        $params = array();
+        $params = [];
 
         parse_str( $uri['query'], $params );
 
-        $tags = array();
+        $tags = [];
 
         foreach ( $keys as $public => $property ) {
 
@@ -3360,11 +3360,11 @@ class TrackingEventHelpers {
 
         $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
 
-        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), array(
+        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), [
             $ns . 'overlay',
             $ns . 'state',
             $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
-        ) );
+        ] );
 
         foreach ( self::RETIRED_CAMPAIGN_KEYS as $suffix ) {
 
@@ -3383,12 +3383,12 @@ class TrackingEventHelpers {
      */
     public static function queryStringFilters( $site_id ) {
 
-        $names = array();
+        $names = [];
 
-        foreach ( array(
+        foreach ( [
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', (string) $site_id ),
-        ) as $configured ) {
+        ] as $configured ) {
 
             if ( ! $configured ) {
 
@@ -3437,7 +3437,7 @@ class TrackingEventHelpers {
             return;
         }
 
-        foreach ( array( 'page_location', 'HTTP_REFERER' ) as $name ) {
+        foreach ( [ 'page_location', 'HTTP_REFERER' ] as $name ) {
 
             $url = $event->get( $name );
 
@@ -3479,9 +3479,9 @@ class TrackingEventHelpers {
      * @return string|null
      */
     public static function makeUrlCanonical( $url, $event ) {
-	if(is_null($url)){
-	    return $url;
-	}
+    if(is_null($url)){
+        return $url;
+    }
 
         $site_id = $event->getSiteId();
 
@@ -3492,7 +3492,7 @@ class TrackingEventHelpers {
 
         $url = html_entity_decode( $url );
         // remove port, pass, user, and fragment
-        $url = \OWA\Core\Lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
+        $url = \OWA\Core\Lib::unparseUrl( parse_url( $url ), [ 'port', 'user', 'pass', 'fragment' ] );
 
         \OWA\Core\CoreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
         $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
@@ -3503,8 +3503,8 @@ class TrackingEventHelpers {
             explode( ',', (string) \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ) ),
             explode( ',', (string) $site->getSiteSetting( 'query_string_filters' ) ) );
 
-        foreach ( array( 'source', 'medium', 'campaign', 'ad', 'ad_type', 'overlay', 'state',
-                         \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ) ) as $param ) {
+        foreach ( [ 'source', 'medium', 'campaign', 'ad', 'ad_type', 'overlay', 'state',
+                         \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ) ] as $param ) {
 
             $filters[] = $ns . $param;
         }
@@ -3555,5 +3555,3 @@ class TrackingEventHelpers {
     }
 
 }
-
-?>

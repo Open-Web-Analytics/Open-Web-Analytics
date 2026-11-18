@@ -63,7 +63,7 @@ class Update084 extends \OWA\Core\Update {
         $table = $this->settingTable();
 
         $rows = (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE module = 'base' AND name = ?", $table ),
-            array( self::OLD ) );
+            [ self::OLD ] );
 
         if ( ! $rows ) {
 
@@ -71,7 +71,7 @@ class Update084 extends \OWA\Core\Update {
         }
 
         $record = $this->record();
-        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : array();
+        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : [];
 
         $on = false;
 
@@ -87,7 +87,7 @@ class Update084 extends \OWA\Core\Update {
 
             if ( $row['scope_type'] === 'install' && (string) $row['scope_id'] === self::INSTALL_SCOPE_ID ) {
 
-                $value = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                $value = @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
                 $on    = is_scalar( $value ) && filter_var( $value, FILTER_VALIDATE_BOOLEAN );
             }
         }
@@ -121,7 +121,7 @@ class Update084 extends \OWA\Core\Update {
         }
 
         if ( $db->query( sprintf( "DELETE FROM %s WHERE module = 'base' AND name = ?", $table ),
-                array( self::OLD ) ) === false ) {
+                [ self::OLD ] ) === false ) {
 
             $this->e->notice( sprintf( 'Removing the %s rows failed.', self::OLD ) );
 
@@ -145,7 +145,7 @@ class Update084 extends \OWA\Core\Update {
             return true;
         }
 
-        foreach ( (array) ( $record['rows'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['rows'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -158,7 +158,7 @@ class Update084 extends \OWA\Core\Update {
         if ( array_key_exists( 'threshold', $record ) ) {
 
             $restored = $record['threshold'] === null
-                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( $this->installId( self::NAME ) ) ) !== false
+                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ $this->installId( self::NAME ) ] ) !== false
                 : $this->restoreRow( (array) $record['threshold'] );
 
             if ( ! $restored ) {
@@ -169,7 +169,7 @@ class Update084 extends \OWA\Core\Update {
             }
 
             $this->hold( self::NAME, $record['threshold'] === null ? null
-                : @unserialize( (string) $record['threshold']['value'], array( 'allowed_classes' => false ) ) );
+                : @unserialize( (string) $record['threshold']['value'], [ 'allowed_classes' => false ] ) );
         }
 
         if ( ! $this->deleteRecord() ) {
@@ -182,5 +182,3 @@ class Update084 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

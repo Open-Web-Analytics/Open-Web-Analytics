@@ -67,7 +67,7 @@ class MyProfile extends \OWA\Core\AdminController {
          * deliberately not carried back: they are secrets, and re-rendering
          * them would put them in the page source of a refusal.
          */
-        foreach ( array( 'real_name', 'email_address' ) as $field ) {
+        foreach ( [ 'real_name', 'email_address' ] as $field ) {
 
             if ( $this->getParam( 'submitted_' . $field ) !== null ) {
 
@@ -89,7 +89,7 @@ class MyProfile extends \OWA\Core\AdminController {
 
         $this->set( 'siteId', $siteId );
 
-        $this->settingsChrome( array( 'siteId' => $siteId ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
+        $this->settingsChrome( [ 'siteId' => $siteId ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
         $this->setSubview( 'base.myProfile', [
             'template' => 'my_profile.php',
             'vars'     => [ 'user_id', 'real_name', 'email_address', 'role', 'may_edit_email',

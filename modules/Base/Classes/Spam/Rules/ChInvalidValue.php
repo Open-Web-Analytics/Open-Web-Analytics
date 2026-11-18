@@ -23,7 +23,7 @@ class ChInvalidValue extends \OWA\Module\Base\Classes\Spam\Rule {
     const POINTS = 3.0;
 
     /** The two values of Sec-CH-UA-Mobile, a structured-header boolean. */
-    const MOBILE = array( '?0', '?1' );
+    const MOBILE = [ '?0', '?1' ];
 
     public function test( $event, array $headers ) {
 
@@ -39,5 +39,3 @@ class ChInvalidValue extends \OWA\Module\Base\Classes\Spam\Rule {
         return $mobile !== '' && ! in_array( $mobile, self::MOBILE, true );
     }
 }
-
-?>

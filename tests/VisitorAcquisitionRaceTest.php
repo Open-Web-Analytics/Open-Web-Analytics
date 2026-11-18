@@ -53,7 +53,7 @@ final class VisitorAcquisitionRaceTest extends TestCase
         $event = new \OWA\Module\Base\Classes\Event();
         $event->set( 'num_prior_sessions', '0' );
 
-        $row = array(
+        $row = [
             'visitor_id'          => $this->vid,
             'site_id'             => 'acquisition-race-site',
             'ts'                  => 1794900000,
@@ -65,7 +65,7 @@ final class VisitorAcquisitionRaceTest extends TestCase
             'tagged_search_terms' => null,
             'referer_url'         => null,
             'referer_host'        => null,
-        );
+        ];
 
         $handlers = ( new ReflectionClass( \OWA\Module\Base\Handler\EventRawHandlers::class ) )->newInstanceWithoutConstructor();
         $write = new ReflectionMethod( $handlers, 'writeVisitorAcquisition' );

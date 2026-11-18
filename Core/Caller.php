@@ -66,10 +66,10 @@ class Caller extends \OWA\Core\Base {
      */
     public function __construct( $config = [] ) {
       
-		/* PHP ERROR LOGGING */
+        /* PHP ERROR LOGGING */
         if ( \OWA\Core\Lib::inDebug() ) {
-	        
-	        \OWA\Module\Base\Classes\Error::phpErrorSettings();
+            
+            \OWA\Module\Base\Classes\Error::phpErrorSettings();
         }
         
         // Start time
@@ -131,7 +131,7 @@ class Caller extends \OWA\Core\Base {
         // must come after user overides are applied
         // This will apply configuration overirdes that are specified by the calling application.
         // This is usually used by plugins to setup integration specific configuration values.
-	    $this->overloadConfig( $config );	
+        $this->overloadConfig( $config );	
         
         /* SET ERROR HANDLER */
 
@@ -308,29 +308,29 @@ class Caller extends \OWA\Core\Base {
     }
     
     /**
-	 * Used by owa_caller to override default config with values based to the caller.
-	 *
-	 * @param  array<mixed>|null $config module => overrides, or base's overrides alone
-	 * @return void
-	 */
+     * Used by owa_caller to override default config with values based to the caller.
+     *
+     * @param  array<mixed>|null $config module => overrides, or base's overrides alone
+     * @return void
+     */
     private function overloadConfig( $config ) {
-	    
-	    if ( ! empty( $config ) ) {
-	     
-		    if ( array_key_exists( 'base', $config ) ) {
-		     
-			     foreach ($config as $module => $values ) {
-				     
-				     $this->c->applyModuleOverrides( $module, $values );
-			     }
-			     
-			} else {
-				 
-				 $this->c->applyModuleOverrides('base', $config);
-			}
-			
-			\OWA\Core\CoreAPI::debug('Configuration overrides applied.');
-		}
+        
+        if ( ! empty( $config ) ) {
+         
+            if ( array_key_exists( 'base', $config ) ) {
+             
+                 foreach ($config as $module => $values ) {
+                     
+                     $this->c->applyModuleOverrides( $module, $values );
+                 }
+                 
+            } else {
+                 
+                 $this->c->applyModuleOverrides('base', $config);
+            }
+            
+            \OWA\Core\CoreAPI::debug('Configuration overrides applied.');
+        }
     }
 
     
@@ -343,5 +343,3 @@ class Caller extends \OWA\Core\Base {
     }
     
 }
-
-?>

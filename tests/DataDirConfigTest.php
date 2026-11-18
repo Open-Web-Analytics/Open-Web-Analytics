@@ -20,11 +20,11 @@ final class DataDirConfigTest extends TestCase
     private const PREPEND = __DIR__ . '/fixtures/role_constants_prepend.php';
     private const PROBE   = __DIR__ . '/fixtures/data_dir_probe.php';
 
-    private const SQS = array(
+    private const SQS = [
         'OWA_SQS_QUEUE_URL' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-data-dir-probe',
         'OWA_SQS_KEY'       => 'AKIAPROBEEXAMPLE',
         'OWA_SQS_SECRET'    => 'probe-secret',
-    );
+    ];
 
     private string $dir = '';
 
@@ -36,7 +36,7 @@ final class DataDirConfigTest extends TestCase
 
         $this->dir = sys_get_temp_dir() . '/owa-data-dir-' . getmypid() . '-' . bin2hex(random_bytes(4));
 
-        foreach (array('logs', 'ua-parser') as $sub) {
+        foreach (['logs', 'ua-parser'] as $sub) {
             mkdir($this->dir . '/' . $sub, 0777, true);
         }
 
@@ -54,10 +54,10 @@ final class DataDirConfigTest extends TestCase
     /** @return array<string, mixed> */
     private function probe(array $constants, string ...$args): array
     {
-        $cmd = array_merge(array(PHP_BINARY, '-d', 'auto_prepend_file=' . self::PREPEND, self::PROBE), $args);
-        $env = array_merge(getenv(), array('OWA_PROBE_CONSTANTS' => json_encode($constants)));
+        $cmd = array_merge([PHP_BINARY, '-d', 'auto_prepend_file=' . self::PREPEND, self::PROBE], $args);
+        $env = array_merge(getenv(), ['OWA_PROBE_CONSTANTS' => json_encode($constants)]);
 
-        $proc = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipes, dirname(__DIR__), $env);
+        $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__), $env);
         $out  = (string) stream_get_contents($pipes[1]);
         $err  = (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
@@ -93,7 +93,7 @@ final class DataDirConfigTest extends TestCase
         $d = $this->probe(self::SQS);
 
         // No trailing slash: the setting adds one.
-        $r    = $this->probe(array('OWA_DATA_DIR' => $this->dir) + self::SQS, 'log');
+        $r    = $this->probe(['OWA_DATA_DIR' => $this->dir] + self::SQS, 'log');
         $data = $this->dir . '/';
 
         $this->assertSame($data, $r['data_dir']);
@@ -101,7 +101,7 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
         $this->assertSame($data . 'ua-parser/regexes.php', $r['ua_regexes']);
 
-        foreach (array('error_log_file', 'async_log_dir', 'queue_dir', 'archive_dir', 'dead_letter', 'fallback_dir') as $key) {
+        foreach (['error_log_file', 'async_log_dir', 'queue_dir', 'archive_dir', 'dead_letter', 'fallback_dir'] as $key) {
             $this->assertSame(self::followed((string) $d[$key], $data), $r[$key], "$key follows the data directory unless the config pins it");
         }
 
@@ -111,9 +111,9 @@ final class DataDirConfigTest extends TestCase
 
     public function testDefiningItRaisesNoWarning(): void
     {
-        $r = $this->probe(array('OWA_DATA_DIR' => $this->dir));
+        $r = $this->probe(['OWA_DATA_DIR' => $this->dir]);
 
-        $this->assertSame(array(), $r['warnings']);
+        $this->assertSame([], $r['warnings']);
     }
 
     public function testWithNothingSetEverythingStaysInOwaData(): void
@@ -125,11 +125,11 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame('', $r['constant']);
         // The logs and the file queue sit under owa-data/: logs/ by default,
         // or wherever under it the runner's config pins them.
-        foreach (array('error_log_file', 'queue_dir', 'fallback_dir') as $key) {
+        foreach (['error_log_file', 'queue_dir', 'fallback_dir'] as $key) {
             $this->assertStringStartsWith($data, (string) $r[$key], $key);
         }
         $this->assertSame($r['queue_dir'], $r['fallback_dir'], 'the fallback queue sits with the file queue');
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
-        $this->assertSame(array(), $r['warnings']);
+        $this->assertSame([], $r['warnings']);
     }
 }

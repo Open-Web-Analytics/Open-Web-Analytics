@@ -93,14 +93,14 @@ final class Update056Test extends TestCase
 
         $this->assertTrue( $this->update->up() );
 
-        $this->assertSame( array( $this->conditionIds['match'] ),
+        $this->assertSame( [ $this->conditionIds['match'] ],
             array_column( $this->conditionRows(), 'id' ),
             'the start condition must be deleted, not turned into a match condition' );
 
         $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
         $this->assertFalse( $this->hasColumn( $this->goalEventTable(), 'goal_group' ) );
 
-        $this->assertSame( array(), (array) $db->get_results( sprintf(
+        $this->assertSame( [], (array) $db->get_results( sprintf(
             "SELECT id FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
             $this->settingTable() ) ) );
     }
@@ -159,7 +159,7 @@ final class Update056Test extends TestCase
              VALUES ('%s', 9056, 'Probe', '2', 1, 'page_view')",
             $this->goalEventTable(), $this->goalEventId ) );
 
-        foreach ( array( 'match' => '', 'start' => 'start' ) as $key => $role ) {
+        foreach ( [ 'match' => '', 'start' => 'start' ] as $key => $role ) {
 
             $id = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )
                 ->generateId( 'goal_event_condition:' . $this->goalEventId . ':' . $key );
@@ -178,7 +178,7 @@ final class Update056Test extends TestCase
              VALUES ('%s', 'profile', 'owa-update056-probe', 'base', 'goal_groups', '%s', 0, 1)",
             $settings->getTableName(),
             $settings->generateId( 'setting:update056-probe:' . uniqid( '', true ) ),
-            $db->prepare( serialize( array( 1 => 'Sale' ) ) ) ) );
+            $db->prepare( serialize( [ 1 => 'Sale' ] ) ) ) );
     }
 
     /** @return array<string,array> every row this test wrote, every column, keyed by table and id */

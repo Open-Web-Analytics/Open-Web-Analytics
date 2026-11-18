@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
+    const KNOWN_KEYS = [ 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' ];
 
     /**
      * Top-level keys with a type, checked in this order: key => [ type test,
@@ -89,7 +89,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * is refused, so a typo reads as an error rather than as an unformatted
      * column.
      */
-    const KNOWN_FORMATTERS = array( 'attributionList' );
+    const KNOWN_FORMATTERS = [ 'attributionList' ];
 
     /**
      * The renderer every configured report uses.
@@ -110,7 +110,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     protected $reads_reporting_data = true;
 
     /** @var array<string, mixed> the decoded definition */
-    private $definition = array();
+    private $definition = [];
 
     /**
      * @param array<string, mixed> $definition a decoded report definition
@@ -138,7 +138,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             return 'a report definition must be an object';
         }
 
-        foreach ( array( 'title' ) as $required ) {
+        foreach ( [ 'title' ] as $required ) {
 
             if ( ! isset( $definition[ $required ] ) || $definition[ $required ] === '' ) {
 
@@ -162,7 +162,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
         }
 
-        foreach ( (array) ( $definition['widgets'] ?? array() ) as $i => $widget ) {
+        foreach ( (array) ( $definition['widgets'] ?? [] ) as $i => $widget ) {
 
             if ( ! is_array( $widget ) || empty( $widget['type'] ) ) {
 
@@ -286,7 +286,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
              */
             $error = self::constraintsError(
                 isset( $widget['constraints'] ) ? $widget['constraints'] : null,
-                (array) ( $definition['params'] ?? array() ),
+                (array) ( $definition['params'] ?? [] ),
                 sprintf( 'widget %s: ', $i ) );
 
             if ( $error !== '' ) {
@@ -304,9 +304,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
              * dispatcher with no id, which answers "no reportId was given" --
              * a 400 where the author expected a report.
              */
-            foreach ( (array) ( $widget['links'] ?? array() ) as $j => $link ) {
+            foreach ( (array) ( $widget['links'] ?? [] ) as $j => $link ) {
 
-                foreach ( array( 'reportId', 'label' ) as $required ) {
+                foreach ( [ 'reportId', 'label' ] as $required ) {
 
                     if ( empty( $link[ $required ] ) ) {
 
@@ -457,7 +457,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          */
         return self::constraintsError(
             isset( $definition['settings']['constraints'] ) ? $definition['settings']['constraints'] : null,
-            (array) ( $definition['params'] ?? array() ),
+            (array) ( $definition['params'] ?? [] ),
             '' );
     }
 
@@ -581,36 +581,36 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * shown translated (OWA.translate()), catalogued from here
      * (Strings::LABEL_TABLES).
      */
-    const ROW_ACTIONS = array(
-        'heatmap' => array(
+    const ROW_ACTIONS = [
+        'heatmap' => [
             'label'     => 'Heatmap',
             'description' => 'The page itself, in a new window, with its clicks drawn over it.',
             'action'    => 'base.overlayLauncher',
-            'params'    => array( 'pagePathPlusQuery' => 'pagePathPlusQuery' ),
+            'params'    => [ 'pagePathPlusQuery' => 'pagePathPlusQuery' ],
             'first'     => 'pagePathPlusQuery',
             'newWindow' => true,
-        ),
-        'pathHeatmap' => array(
+        ],
+        'pathHeatmap' => [
             'label'     => 'Heatmap',
             'description' => 'The page at the path, in a new window, with the clicks of every query string of it drawn over it.',
             'action'    => 'base.overlayLauncher',
-            'params'    => array( 'pagePath' => 'pagePath' ),
+            'params'    => [ 'pagePath' => 'pagePath' ],
             'first'     => 'pagePath',
             'newWindow' => true,
-        ),
-        'clicks' => array(
+        ],
+        'clicks' => [
             'label'    => 'Element clicks',
             'description' => "Dom Clicks for the page's path: clicks by element id and tag.",
             'reportId' => 'dom-clicks',
-            'params'   => array( 'pagePath' => 'pagePath' ),
-        ),
-        'paths' => array(
+            'params'   => [ 'pagePath' => 'pagePath' ],
+        ],
+        'paths' => [
             'label'    => 'Previous and next pages',
             'description' => "Page Detail for the page's path: its page views and sessions, and the pages viewed before and after it.",
             'reportId' => 'document',
-            'params'   => array( 'pagePath' => 'pagePath' ),
-        ),
-    );
+            'params'   => [ 'pagePath' => 'pagePath' ],
+        ],
+    ];
 
     /**
      * The row actions a report offers, through the report_row_actions filter.
@@ -633,13 +633,13 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     public static function resolveRowActions( array $widget ) {
 
         $known = self::rowActions();
-        $out   = array();
+        $out   = [];
 
-        foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+        foreach ( (array) ( $widget['rowActions'] ?? [] ) as $name ) {
 
             if ( is_string( $name ) && isset( $known[ $name ] ) ) {
 
-                $out[] = array( 'id' => $name ) + $known[ $name ];
+                $out[] = [ 'id' => $name ] + $known[ $name ];
             }
         }
 
@@ -661,7 +661,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     public static function filterReportLinks( array $widgets, $reportId ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $widgets as $widget ) {
 
@@ -669,7 +669,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
                 $widget['links'] = array_values( array_filter(
                     (array) \OWA\Core\CoreAPI::filter( 'report_links',
-                        (array) ( $widget['links'] ?? array() ),
+                        (array) ( $widget['links'] ?? [] ),
                         (string) $reportId, (string) ( $widget['id'] ?? '' ) ),
                     'is_array' ) );
 
@@ -788,7 +788,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             self::interpolate( $d['title'], $values ),
             self::interpolate( isset( $d['titleSuffix'] ) ? $d['titleSuffix'] : '', $values ) );
 
-        foreach ( (array) ( isset( $d['settings'] ) ? $d['settings'] : array() ) as $key => $value ) {
+        foreach ( (array) ( isset( $d['settings'] ) ? $d['settings'] : [] ) as $key => $value ) {
 
             if ( $key === 'constraints' ) {
 
@@ -832,7 +832,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     public static function constraintParams( array $definition ) {
 
-        $names = array();
+        $names = [];
 
         $collect = static function ( $constraints ) use ( &$names ) {
 
@@ -855,7 +855,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         $collect( $definition['settings']['constraints'] ?? null );
 
-        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+        foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
             $collect( ( (array) $widget )['constraints'] ?? null );
         }
@@ -863,7 +863,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         // Declared params only: a constraint naming something the definition
         // never declared is an authoring error, and getDefinitionError is
         // where that belongs -- not a 400 blamed on the request.
-        $declared = array_keys( (array) ( $definition['params'] ?? array() ) );
+        $declared = array_keys( (array) ( $definition['params'] ?? [] ) );
 
         return array_values( array_unique( array_intersect( $names, $declared ) ) );
     }
@@ -880,9 +880,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     private function resolveParams() {
 
-        $values = array();
+        $values = [];
 
-        foreach ( (array) ( isset( $this->definition['params'] ) ? $this->definition['params'] : array() ) as $name => $spec ) {
+        foreach ( (array) ( isset( $this->definition['params'] ) ? $this->definition['params'] : [] ) as $name => $spec ) {
 
             // A definition decoded with json_decode($s, true) hands this an
             // array, which is how the dispatcher reads one. Cast anyway: decoded
@@ -1048,7 +1048,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             return $declared;
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( $declared as $name ) {
 
@@ -1071,7 +1071,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     private static function resolveWidgetConstraints( array $widgets, $reportConstraints, array $values ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $widgets as $widget ) {
 
@@ -1083,7 +1083,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                     ? self::buildConstraints( $widget['constraints'], $values )
                     : self::interpolate( (string) $widget['constraints'], $values );
 
-                $query = (array) ( isset( $widget['query'] ) ? $widget['query'] : array() );
+                $query = (array) ( isset( $widget['query'] ) ? $widget['query'] : [] );
 
                 /*
                  * Empty parts are dropped rather than joined, so a report with
@@ -1092,7 +1092,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                  * the template this replaces emitted for one of these three.
                  */
                 $query['constraints'] = implode( ',',
-                    array_filter( array( $reportConstraints, $own ), static fn ( $part ) => (string) $part !== '' ) );
+                    array_filter( [ $reportConstraints, $own ], static fn ( $part ) => (string) $part !== '' ) );
 
                 $widget['query'] = $query;
 
@@ -1115,10 +1115,10 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * as the empty test; "(not set)" is the label for NULL and '', never a
      * stored value.
      */
-    const EMPTY_TESTS = array(
+    const EMPTY_TESTS = [
         'empty'    => '==(not set)',
         'notEmpty' => '!=(not set)',
-    );
+    ];
 
     /**
      * Build a constraint string from its parts.
@@ -1139,7 +1139,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     private static function buildConstraints( array $parts, array $values ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $parts as $part ) {
 

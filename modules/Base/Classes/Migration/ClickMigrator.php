@@ -23,7 +23,7 @@ class ClickMigrator extends FactMigrator {
 
     protected function events( array $r, array $refs ) {
 
-        $event = $this->baseEvent( $r, $refs, 'click', array(
+        $event = $this->baseEvent( $r, $refs, 'click', [
             'click_x'         => $r['click_x'] ?? null,
             'click_y'         => $r['click_y'] ?? null,
             'page_width'      => $r['page_width'] ?? null,
@@ -31,7 +31,7 @@ class ClickMigrator extends FactMigrator {
             'dom_element_id'  => $r['dom_element_id'] ?? null,
             'dom_element_tag' => $r['dom_element_tag'] ?? null,
             'target_url'      => $r['target_url'] ?? null,
-        ) );
+        ] );
 
         $target = \OWA\Module\Base\Classes\TrackingEventHelpers::deriveTargetHost( null, $event );
         $host   = (string) $event->get( 'host' );
@@ -40,11 +40,11 @@ class ClickMigrator extends FactMigrator {
         $event->set( 'is_outbound', \OWA\Module\Base\Classes\TrackingEventHelpers::isOutboundHost(
             $target, $host, $this->cookieDomain( (string) $event->getSiteId() ) ) ? 1 : 0 );
 
-        return array( $event );
+        return [ $event ];
     }
 
     /** @var array<string, string> site id => its tracker_cookie_domain, read once per site */
-    private $cookie_domains = array();
+    private $cookie_domains = [];
 
     /**
      * The cookie domain the site's tracker is given -- tracker_cookie_domain as
@@ -64,5 +64,3 @@ class ClickMigrator extends FactMigrator {
         return $this->cookie_domains[ $site_id ];
     }
 }
-
-?>

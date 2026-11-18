@@ -373,5 +373,3 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * IP ranges move between countries and cities continuously, and a stale file
  * does not fail -- it answers, wrongly, and the reports look normal.
  */
-
-?>

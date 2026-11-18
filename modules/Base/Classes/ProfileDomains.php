@@ -29,7 +29,7 @@ class ProfileDomains {
      */
     public static function of( array $site_ids ) {
 
-        $domains = array();
+        $domains = [];
 
         foreach ( $site_ids as $site_id ) {
 
@@ -74,7 +74,7 @@ class ProfileDomains {
         $scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
         $host   = strtolower( (string) ( $parts['host'] ?? '' ) );
 
-        if ( ! in_array( $scheme, array( 'http', 'https' ), true )
+        if ( ! in_array( $scheme, [ 'http', 'https' ], true )
              || $host === '' || ! self::isOnDomain( $host, $domains ) ) {
 
             return '';

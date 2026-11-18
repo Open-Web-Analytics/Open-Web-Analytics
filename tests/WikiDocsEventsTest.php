@@ -93,7 +93,7 @@ final class WikiDocsEventsTest extends TestCase
 
         foreach ( self::published() as $name => $p ) {
 
-            $from = array_values( array_diff( (array) ( $p['from'] ?? array() ), $internal ) );
+            $from = array_values( array_diff( (array) ( $p['from'] ?? [] ), $internal ) );
             self::assertNotEmpty( $from, "$name declares no `from`" );
 
             // For a tracker property `from` is the wire key; for the others it is
@@ -166,7 +166,7 @@ final class WikiDocsEventsTest extends TestCase
         // The table's wire keys must be what the server actually renames, or the
         // page would document keys a beacon cannot use.
         $compat = (array) \OWA\Core\CoreAPI::loadConf( 'beacon_compat.php', 'beacon.compat' );
-        $wire   = array();
+        $wire   = [];
 
         foreach ( (array) $compat['renames'] as $r ) {
             if ( $r['role'] === 'wire' ) {

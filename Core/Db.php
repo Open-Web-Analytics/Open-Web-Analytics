@@ -127,7 +127,7 @@ class Db extends \OWA\Core\Base {
      *
      * @var array<string, mixed>
      */
-    public $params = array();
+    public $params = [];
 
     /**
      * Status of connection
@@ -149,7 +149,7 @@ class Db extends \OWA\Core\Base {
      *
      * @var array<string, mixed>
      */
-    public $_sqlParams = array();
+    public $_sqlParams = [];
 
     /**
      * Sql Statement
@@ -179,7 +179,7 @@ class Db extends \OWA\Core\Base {
      *
      * @var list<mixed> whatever bindValue() was given
      */
-    public $_bindings = array();
+    public $_bindings = [];
 
     /**
      * How many query errors one process will spell out before going quiet.
@@ -343,13 +343,13 @@ class Db extends \OWA\Core\Base {
      */
     public function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
 
-        $this->connectionParams = array('host' => $db_host,
+        $this->connectionParams = ['host' => $db_host,
                                         'port' => $db_port,
                                          'user' => $db_user,
                                          'password' => $db_password,
                                          'name' => $db_name,
                                          'open_new_connection' => $open_new_connection,
-                                         'persistant' => $persistant);
+                                         'persistant' => $persistant];
                                                                           
         parent::__construct();
     }
@@ -501,7 +501,7 @@ class Db extends \OWA\Core\Base {
      */
     public function resetBindings() {
 
-        $this->_bindings = array();
+        $this->_bindings = [];
     }
 
     /**
@@ -543,7 +543,7 @@ class Db extends \OWA\Core\Base {
             $name = $name[0];
         }
 
-        $this->_sqlParams['select_values'][] = array('name' => $name, 'as' => $as);
+        $this->_sqlParams['select_values'][] = ['name' => $name, 'as' => $as];
 
         return;
     }
@@ -580,7 +580,7 @@ class Db extends \OWA\Core\Base {
                 $value = '';
             }
 
-            $this->_sqlParams['where'][ $key ?? $name ] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+            $this->_sqlParams['where'][ $key ?? $name ] = ['name' => $name, 'value' => $value, 'operator' => $operator];
         }
     }
 
@@ -594,9 +594,9 @@ class Db extends \OWA\Core\Base {
      * @param Bindings $bindings
      * @return void
      */
-    public function whereSql( $key, $sql, array $bindings = array() ) {
+    public function whereSql( $key, $sql, array $bindings = [] ) {
 
-        $this->_sqlParams['where'][ $key ] = array( 'name' => $sql, 'value' => $bindings, 'operator' => 'sql', 'sql' => true );
+        $this->_sqlParams['where'][ $key ] = [ 'name' => $sql, 'value' => $bindings, 'operator' => 'sql', 'sql' => true ];
     }
 
     /**
@@ -617,7 +617,7 @@ class Db extends \OWA\Core\Base {
                 $value = '';
             }
 
-            $this->_sqlParams['having'][ $key ?? $name ] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+            $this->_sqlParams['having'][ $key ?? $name ] = ['name' => $name, 'value' => $value, 'operator' => $operator];
         }
     }
 
@@ -638,7 +638,7 @@ class Db extends \OWA\Core\Base {
      */
     public function orderBy($col, $flag = '') {
 
-        $this->_sqlParams['orderby'][] = array($col, $flag);
+        $this->_sqlParams['orderby'][] = [$col, $flag];
         return;
     }
 
@@ -681,7 +681,7 @@ class Db extends \OWA\Core\Base {
      */
     public function set($name, $value) {
 
-        $this->_sqlParams['set_values'][] = array('name' => $name, 'value' => $value);
+        $this->_sqlParams['set_values'][] = ['name' => $name, 'value' => $value];
         return;
     }
 
@@ -756,7 +756,7 @@ class Db extends \OWA\Core\Base {
         }
 
         $this->_sqlParams['query_type'] = 'select';
-        $this->_sqlParams['from'][$name] = array('name' => $name, 'as' => $as);
+        $this->_sqlParams['from'][$name] = ['name' => $name, 'as' => $as];
     }
 
     /**
@@ -974,10 +974,10 @@ class Db extends \OWA\Core\Base {
 
         \OWA\Core\CoreAPI::notice( sprintf( 'Refusing %s on %s with no WHERE clause, from %s.',
             $verb, $this->_sqlParams['table'] ?? '(no table)',
-            \OWA\Core\Lib::callSiteOutside( array( 'Db.php', 'Entity.php' ) ) ) );
+            \OWA\Core\Lib::callSiteOutside( [ 'Db.php', 'Entity.php' ] ) ) );
 
         $this->_sql_statement = '';
-        $this->_sqlParams = array();
+        $this->_sqlParams = [];
         $this->resetBindings();
 
         return true;
@@ -1033,7 +1033,7 @@ class Db extends \OWA\Core\Base {
      * already: a row with no value genuinely does not equal, exceed or precede
      * anything.
      */
-    const NULL_TOLERANT_OPERATORS = array( '!=', '!~', '!@' );
+    const NULL_TOLERANT_OPERATORS = [ '!=', '!~', '!@' ];
 
     /**
      * Widen a comparison so a row holding no value satisfies it.
@@ -1162,7 +1162,7 @@ class Db extends \OWA\Core\Base {
                     case 'in':
                         $values = array_values( (array) $v['value'] );
                         $constraint .= $values
-                            ? sprintf( '%s IN (%s)', $v['name'], implode( ', ', array_map( array( $this, 'bindValue' ), $values ) ) )
+                            ? sprintf( '%s IN (%s)', $v['name'], implode( ', ', array_map( [ $this, 'bindValue' ], $values ) ) )
                             : '1 = 0';
                         break;
 
@@ -1463,7 +1463,7 @@ class Db extends \OWA\Core\Base {
 
         $this->_last_sql_statement = $this->_sql_statement;
         $this->_sql_statement = '';
-        $this->_sqlParams = array();
+        $this->_sqlParams = [];
         $this->resetBindings();
         return $ret;
 
@@ -1562,7 +1562,7 @@ class Db extends \OWA\Core\Base {
      */
     protected function normalizeIndexColumns( $column_name ) {
 
-        $cols = array();
+        $cols = [];
 
         foreach ( explode( ',', (string) $column_name ) as $col ) {
 
@@ -1570,7 +1570,7 @@ class Db extends \OWA\Core\Base {
 
             if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $col ) ) {
 
-                return array();
+                return [];
             }
 
             $cols[] = $col;
@@ -1613,7 +1613,7 @@ class Db extends \OWA\Core\Base {
      */
     public function listPartitions( $table_name ) {
 
-        return array();
+        return [];
     }
 
     /**
@@ -1668,7 +1668,7 @@ class Db extends \OWA\Core\Base {
      */
     public function getPrimaryKeyColumns( $table_name ) {
 
-        return array();
+        return [];
     }
 
 
@@ -1891,17 +1891,17 @@ class Db extends \OWA\Core\Base {
      * is for a short lead over a short detail window (a rebuild horizon), not
      * for a table kept daily the way the other three are kept.
      */
-    const PARTITION_CUTS = array(
-        'monthly'       => array( 1 ),
-        'half-month'    => array( 1, 16 ),
-        'quarter-month' => array( 1, 8, 15, 22 ),
-        'daily'         => array(
+    const PARTITION_CUTS = [
+        'monthly'       => [ 1 ],
+        'half-month'    => [ 1, 16 ],
+        'quarter-month' => [ 1, 8, 15, 22 ],
+        'daily'         => [
              1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
             11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
             21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
             31,
-        ),
-    );
+        ],
+    ];
 
     /**
      * The upper boundary a table needs for a given lead of whole future months.
@@ -1988,11 +1988,11 @@ class Db extends \OWA\Core\Base {
 
         if ( ! isset( self::PARTITION_CUTS[ $granularity ] ) ) {
 
-            return array();
+            return [];
         }
 
         $days = (int) $month->format( 't' );
-        $cuts = array();
+        $cuts = [];
 
         foreach ( self::PARTITION_CUTS[ $granularity ] as $day ) {
 
@@ -2054,7 +2054,7 @@ class Db extends \OWA\Core\Base {
 
         if ( ! self::isPartitionGranularity( $granularity ) ) {
 
-            return array();
+            return [];
         }
 
         $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
@@ -2062,15 +2062,15 @@ class Db extends \OWA\Core\Base {
 
         if ( ! $start || ! $end ) {
 
-            return array();
+            return [];
         }
 
         if ( $exact ? ( $end <= $start ) : ( $end < $start ) ) {
 
-            return array();
+            return [];
         }
 
-        $ranges = array();
+        $ranges = [];
         $month  = $start->modify( 'first day of this month' )->setTime( 0, 0 );
         $limit  = $end->modify( 'first day of next month' )->setTime( 0, 0 );
 
@@ -2131,7 +2131,7 @@ class Db extends \OWA\Core\Base {
             return '';
         }
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $ranges as $name => $less_than ) {
 
@@ -2185,7 +2185,7 @@ class Db extends \OWA\Core\Base {
 
         if ( $pk && ! in_array( $column, $pk, true ) ) {
 
-            $widened = array_merge( $pk, array( $column ) );
+            $widened = array_merge( $pk, [ $column ] );
 
             $ret = $this->query( sprintf(
                 'ALTER TABLE %s DROP PRIMARY KEY, ADD PRIMARY KEY (%s)',
@@ -2388,7 +2388,7 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $ranges as $name => $less_than ) {
 
@@ -2463,7 +2463,7 @@ class Db extends \OWA\Core\Base {
          * the keys and the table options exactly as they are -- which is what
          * the swap compares.
          */
-        foreach ( array( '/*!50100 PARTITION BY', "\nPARTITION BY", ' PARTITION BY' ) as $marker ) {
+        foreach ( [ '/*!50100 PARTITION BY', "\nPARTITION BY", ' PARTITION BY' ] as $marker ) {
 
             $at = strpos( $ddl, $marker );
 
@@ -2536,9 +2536,9 @@ class Db extends \OWA\Core\Base {
      * @param list<string> $drop  column names
      * @return bool
      */
-    public function alterColumnsRebuilding( $table_name, array $add = array(), array $drop = array() ) {
+    public function alterColumnsRebuilding( $table_name, array $add = [], array $drop = [] ) {
 
-        $clauses = array();
+        $clauses = [];
 
         foreach ( $add as $column => $definition ) {
 
@@ -2582,7 +2582,7 @@ class Db extends \OWA\Core\Base {
      */
     public function listColumns( $table_name, $prefix = '' ) {
 
-        return array();
+        return [];
     }
 
     /**
@@ -2643,7 +2643,7 @@ class Db extends \OWA\Core\Base {
             return false;
         }
 
-        foreach ( array( $table_name, $partition, $with_table ) as $identifier ) {
+        foreach ( [ $table_name, $partition, $with_table ] as $identifier ) {
 
             if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $identifier ) ) {
 
@@ -2668,7 +2668,7 @@ class Db extends \OWA\Core\Base {
      */
     public function getPartitionSpans( $table_name ) {
 
-        $spans = array();
+        $spans = [];
         $prev  = null;
 
         foreach ( $this->listPartitions( $table_name ) as $p ) {
@@ -2686,11 +2686,11 @@ class Db extends \OWA\Core\Base {
                 $start = preg_match( '/^p(\d{8})$/', $p['name'], $m ) ? $m[1] : $p['less_than'];
             }
 
-            $spans[] = array(
+            $spans[] = [
                 'name'      => $p['name'],
                 'start'     => (string) $start,
                 'less_than' => (string) $p['less_than'],
-            );
+            ];
 
             $prev = $p['less_than'];
         }
@@ -2774,7 +2774,7 @@ class Db extends \OWA\Core\Base {
             return null;
         }
 
-        return array( 'start' => $start, 'end' => $end );
+        return [ 'start' => $start, 'end' => $end ];
     }
 
     /**
@@ -2792,10 +2792,10 @@ class Db extends \OWA\Core\Base {
 
         if ( ! $range ) {
 
-            return array();
+            return [];
         }
 
-        return array( 'yyyymmdd' => array( 'value' => $range, 'operator' => 'between' ) );
+        return [ 'yyyymmdd' => [ 'value' => $range, 'operator' => 'between' ] ];
     }
 
     /**
@@ -2828,7 +2828,7 @@ class Db extends \OWA\Core\Base {
         }
 
         $month = substr( $spans[ count( $spans ) - 1 ]['start'], 0, 6 );
-        $days  = array();
+        $days  = [];
 
         foreach ( $spans as $span ) {
 
@@ -2954,18 +2954,18 @@ class Db extends \OWA\Core\Base {
      */
     public function describePartitionLayout( $table_name ) {
 
-        $out = array(
+        $out = [
             'partitioned' => false,
             'spans'       => 0,
             'total'       => 0,
             'covers'      => null,
             'granularity' => null,
-            'tiers'       => array(),
+            'tiers'       => [],
             'catch_all'   => null,
             'through'     => null,
             'ahead'       => null,
             'lead'        => 0,
-        );
+        ];
 
         $all = $this->listPartitions( $table_name );
 
@@ -2988,7 +2988,7 @@ class Db extends \OWA\Core\Base {
             return $out;
         }
 
-        $out['covers']  = array( 'start' => $spans[0]['start'], 'end' => end( $spans )['less_than'] );
+        $out['covers']  = [ 'start' => $spans[0]['start'], 'end' => end( $spans )['less_than'] ];
         $out['through'] = end( $spans )['less_than'];
 
         $today = date( 'Ymd' );
@@ -3005,12 +3005,12 @@ class Db extends \OWA\Core\Base {
 
             } else {
 
-                $out['tiers'][] = array(
+                $out['tiers'][] = [
                     'period' => $period,
                     'count'  => 1,
                     'start'  => $span['start'],
                     'end'    => $span['less_than'],
-                );
+                ];
             }
 
             // Lead is the partitions that begin after today: periods bought in
@@ -3162,7 +3162,7 @@ class Db extends \OWA\Core\Base {
             );
         }
 
-        $ranges = array();
+        $ranges = [];
 
         // Old tier: whole calendar years, except the last, which closes on the
         // month the detail window opens rather than on a January.
@@ -3214,7 +3214,7 @@ class Db extends \OWA\Core\Base {
      */
     public static function yearBlocks( $first_year, $tail_limit, $block ) {
 
-        $ranges = array();
+        $ranges = [];
         $block  = max( 1, (int) $block );
 
         for ( $y = (int) $first_year; ; $y += $block ) {
@@ -3304,7 +3304,7 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $parts = array();
+        $parts = [];
 
         foreach ( $ranges as $name => $less_than ) {
 
@@ -3367,14 +3367,14 @@ class Db extends \OWA\Core\Base {
     public function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS, $cutoff = null ) {
 
         $spans  = $this->getPartitionSpans( $table_name );
-        $result = array(
-            'operations'  => array(),
-            'merges'      => array(),
+        $result = [
+            'operations'  => [],
+            'merges'      => [],
             'projected'   => count( $spans ),
             'fits'        => true,
             'floor'       => count( $spans ),
             'block_years' => 1,
-        );
+        ];
 
         if ( ! $spans ) {
 
@@ -3383,7 +3383,7 @@ class Db extends \OWA\Core\Base {
 
         $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
 
-        $old = array();
+        $old = [];
 
         foreach ( $spans as $span ) {
 
@@ -3393,7 +3393,7 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $before_cutoff = array();
+        $before_cutoff = [];
 
         if ( $cutoff !== null && $old ) {
 
@@ -3441,7 +3441,7 @@ class Db extends \OWA\Core\Base {
 
         // Already in that shape? Then there is nothing to do, however many times
         // this runs.
-        $current = array();
+        $current = [];
 
         foreach ( $old as $span ) {
 
@@ -3456,18 +3456,18 @@ class Db extends \OWA\Core\Base {
         // One reorganisation per target block, over whichever partitions it
         // covers. That merges where the tail is too fine and splits where it is
         // too coarse, in the same operation.
-        $names_by_block = array();
+        $names_by_block = [];
 
         foreach ( $target as $name => $less_than ) {
 
             $from = substr( $name, 1 );
 
-            $names_by_block[ $name ] = array(
-                'names'     => array(),
+            $names_by_block[ $name ] = [
+                'names'     => [],
                 'start'     => $from,
                 'less_than' => $less_than,
-                'ranges'    => array( $name => $less_than ),
-            );
+                'ranges'    => [ $name => $less_than ],
+            ];
         }
 
         foreach ( $old as $span ) {
@@ -3504,7 +3504,7 @@ class Db extends \OWA\Core\Base {
             }
 
             // Ranges covering exactly what the named partitions span.
-            $ranges = array();
+            $ranges = [];
 
             for ( $y = (int) substr( $block_def['start'], 0, 4 ); ; $y += $block ) {
 
@@ -3548,12 +3548,12 @@ class Db extends \OWA\Core\Base {
                 continue;
             }
 
-            $result['operations'][] = array(
+            $result['operations'][] = [
                 'names'  => $block_def['names'],
                 'ranges' => $ranges,
                 'start'  => $block_def['start'],
                 'less_than' => $block_def['less_than'],
-            );
+            ];
         }
 
         $result['operations'] = array_merge( $before_cutoff, $result['operations'] );
@@ -3587,7 +3587,7 @@ class Db extends \OWA\Core\Base {
 
         $cutoff = (string) $cutoff;
         $next   = substr( $cutoff, 4 ) === '0101' ? $cutoff : ( (int) substr( $cutoff, 0, 4 ) + 1 ) . '0101';
-        $out    = array( 'tail' => array(), 'operations' => array(), 'doomed' => 0, 'added' => 0 );
+        $out    = [ 'tail' => [], 'operations' => [], 'doomed' => 0, 'added' => 0 ];
         $names  = array_column( $old, 'name' );
 
         foreach ( $old as $span ) {
@@ -3617,7 +3617,7 @@ class Db extends \OWA\Core\Base {
             }
 
             // Straddling the cutoff, and longer than a month.
-            $ranges = array( 'p' . $start => $cutoff );
+            $ranges = [ 'p' . $start => $cutoff ];
             $day    = $cutoff;
 
             while ( $day < $less_than && $day < $next ) {
@@ -3635,19 +3635,19 @@ class Db extends \OWA\Core\Base {
             }
 
             // A name another partition already has would make the statement fail.
-            $clash = array_intersect( array_keys( $ranges ), array_diff( $names, array( $span['name'] ) ) );
+            $clash = array_intersect( array_keys( $ranges ), array_diff( $names, [ $span['name'] ] ) );
 
             if ( $clash ) {
 
                 continue;
             }
 
-            $out['operations'][] = array(
-                'names'     => array( $span['name'] ),
+            $out['operations'][] = [
+                'names'     => [ $span['name'] ],
                 'ranges'    => $ranges,
                 'start'     => $start,
                 'less_than' => $less_than,
-            );
+            ];
 
             // The part before the cutoff is the drop's.
             $out['doomed']++;
@@ -3678,7 +3678,7 @@ class Db extends \OWA\Core\Base {
      */
     public function extendPartitions( $table_name, $granularity, $through, $dry_run = false ) {
 
-        $result = array( 'added' => array(), 'planned' => 0, 'top' => null, 'covered' => false );
+        $result = [ 'added' => [], 'planned' => 0, 'top' => null, 'covered' => false ];
 
         $spans     = $this->getPartitionSpans( $table_name );
         $catch_all = $this->getCatchAllPartition( $table_name );
@@ -3717,7 +3717,7 @@ class Db extends \OWA\Core\Base {
 
         // The replacements must tile exactly what they replace, and the
         // catch-all reaches to MAXVALUE, so one has to go back on the end.
-        $parts = array();
+        $parts = [];
 
         foreach ( $ranges as $name => $less_than ) {
 
@@ -3765,7 +3765,7 @@ class Db extends \OWA\Core\Base {
     public function extendPartitionsBack( $table_name, $from, $detail_months = self::PARTITION_DETAIL_MONTHS,
             $limit = self::PARTITION_COUNT_LIMIT, $dry_run = false ) {
 
-        $result = array( 'added' => array(), 'start' => null, 'covered' => false );
+        $result = [ 'added' => [], 'start' => null, 'covered' => false ];
 
         $spans = $this->getPartitionSpans( $table_name );
 
@@ -3793,9 +3793,9 @@ class Db extends \OWA\Core\Base {
             return $result;
         }
 
-        if ( $dry_run || $this->reorganizePartitions( $table_name, array( $first['name'] ), $ranges ) ) {
+        if ( $dry_run || $this->reorganizePartitions( $table_name, [ $first['name'] ], $ranges ) ) {
 
-            $result['added'] = array_values( array_diff( array_keys( $ranges ), array( $first['name'] ) ) );
+            $result['added'] = array_values( array_diff( array_keys( $ranges ), [ $first['name'] ] ) );
         }
 
         return $result;
@@ -3829,7 +3829,7 @@ class Db extends \OWA\Core\Base {
         $tail_limit = min( $boundary, (string) $less_than );
         $fine       = $less_than > $boundary
             ? self::makePartitionRangesForSpan( $boundary, $less_than, 'monthly' )
-            : array();
+            : [];
 
         $first_year = (int) substr( $from, 0, 4 );
         $block      = self::oldTierBlockYears( $first_year, $tail_limit, $others + count( $fine ), $limit );
@@ -3865,7 +3865,7 @@ class Db extends \OWA\Core\Base {
      */
     public function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
 
-        $drop       = array();
+        $drop       = [];
         $effective  = null;
         $straddling = null;
         $cutoff     = (string) $older_than_yyyymmdd;
@@ -3897,12 +3897,12 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        return array(
+        return [
             'drop'       => $drop,
             'effective'  => $effective,
             'straddling' => $straddling,
             'requested'  => $requested,
-        );
+        ];
     }
 
     /**
@@ -3938,7 +3938,7 @@ class Db extends \OWA\Core\Base {
      */
     public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
 
-        $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array(), 'planned' => 0 );
+        $result = [ 'changed' => [], 'skipped' => 0, 'failed' => [], 'planned' => 0 ];
 
         $spans = $this->getPartitionSpans( $table_name );
 
@@ -3957,7 +3957,7 @@ class Db extends \OWA\Core\Base {
         // month is a normal period and is fair game; anything wider is a block.
         if ( $from === null && $to === null ) {
 
-            $fine = array();
+            $fine = [];
 
             foreach ( $spans as $span ) {
 
@@ -3982,7 +3982,7 @@ class Db extends \OWA\Core\Base {
         // included and the range effectively widens to its boundaries.
         if ( $from !== null || $to !== null ) {
 
-            $wanted = array();
+            $wanted = [];
 
             foreach ( $spans as $span ) {
 
@@ -4010,7 +4010,7 @@ class Db extends \OWA\Core\Base {
         // Leave the skip range exactly as it is.
         if ( $skip ) {
 
-            $kept = array();
+            $kept = [];
 
             foreach ( $spans as $span ) {
 
@@ -4033,15 +4033,15 @@ class Db extends \OWA\Core\Base {
 
         // One run per contiguous stretch. A skip range leaves a hole, and a
         // target planned across it would merge partitions from either side.
-        $runs = array();
-        $run  = array();
+        $runs = [];
+        $run  = [];
 
         foreach ( $spans as $span ) {
 
             if ( $run && (string) $run[ count( $run ) - 1 ]['less_than'] !== (string) $span['start'] ) {
 
                 $runs[] = $run;
-                $run    = array();
+                $run    = [];
             }
 
             $run[] = $span;
@@ -4051,7 +4051,7 @@ class Db extends \OWA\Core\Base {
 
         $total    = count( $this->getPartitionSpans( $table_name ) );
         $selected = count( $spans );
-        $targets  = array();
+        $targets  = [];
 
         foreach ( $runs as $i => $one ) {
 
@@ -4105,14 +4105,14 @@ class Db extends \OWA\Core\Base {
         // Cut only where both sequences agree on a boundary. Every such cut
         // consumes at least one partition from each side, and the span end is
         // always shared, so this terminates.
-        $existing_bounds = array();
+        $existing_bounds = [];
 
         foreach ( $spans as $s ) {
 
             $existing_bounds[ (string) $s['less_than'] ] = true;
         }
 
-        $cuts = array();
+        $cuts = [];
 
         foreach ( $target as $less_than ) {
 
@@ -4128,8 +4128,8 @@ class Db extends \OWA\Core\Base {
 
         foreach ( $cuts as $cut ) {
 
-            $from = array();
-            $into = array();
+            $from = [];
+            $into = [];
 
             while ( $i < count( $spans ) && (string) $spans[ $i ]['less_than'] <= $cut ) {
 
@@ -4257,7 +4257,7 @@ class Db extends \OWA\Core\Base {
         // to arrive glued onto the end of a column's definition, which is
         // legal only here -- and made addColumn() emit a syntax error for
         // every indexed column. See DbColumn::getDefinition().
-        $indexes = array();
+        $indexes = [];
 
         foreach ($all_cols as $k => $v){
 
@@ -4391,7 +4391,7 @@ class Db extends \OWA\Core\Base {
      * @param array{table_type?: string, character_encoding?: string, collation?: string, row_format?: string} $options
      * @return string
      */
-    public function tableOptions( array $options = array() ) {
+    public function tableOptions( array $options = [] ) {
 
         $table_options = '';
 
@@ -4571,5 +4571,3 @@ class Db extends \OWA\Core\Base {
         return OWA_SQL_DESCENDING;
     }
 }
-
-?>

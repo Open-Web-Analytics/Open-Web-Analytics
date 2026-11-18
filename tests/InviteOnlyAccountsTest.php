@@ -34,7 +34,7 @@ final class InviteOnlyAccountsTest extends TestCase
         $b = $this->unsavedUser();
         $b->createNewUser( 'owa-test-invited-b', 'viewer' );
 
-        foreach ( array( '$2y$10', '$2y$12', '' ) as $guess ) {
+        foreach ( [ '$2y$10', '$2y$12', '' ] as $guess ) {
             $this->assertFalse( password_verify( $guess, $a->get( 'password' ) ), "'$guess' opens it" );
         }
 
@@ -68,16 +68,16 @@ final class InviteOnlyAccountsTest extends TestCase
     {
         $hex = str_repeat( 'ab', 16 );
 
-        return array(
-            'current'                        => array( $hex . '.' . ( time() + 3600 ), true, true ),
-            'expired'                        => array( $hex . '.' . ( time() - 1 ), true, false ),
-            'spent'                          => array( $hex . '.0', true, false ),
-            'minted before keys expired'     => array( $hex, false, false ),
-            'upper-case hex'                 => array( strtoupper( $hex ) . '.' . ( time() + 3600 ), false, false ),
-            'short'                          => array( 'abc.' . ( time() + 3600 ), false, false ),
-            'empty'                          => array( '', false, false ),
-            'not a string'                   => array( array( $hex ), false, false ),
-        );
+        return [
+            'current'                        => [ $hex . '.' . ( time() + 3600 ), true, true ],
+            'expired'                        => [ $hex . '.' . ( time() - 1 ), true, false ],
+            'spent'                          => [ $hex . '.0', true, false ],
+            'minted before keys expired'     => [ $hex, false, false ],
+            'upper-case hex'                 => [ strtoupper( $hex ) . '.' . ( time() + 3600 ), false, false ],
+            'short'                          => [ 'abc.' . ( time() + 3600 ), false, false ],
+            'empty'                          => [ '', false, false ],
+            'not a string'                   => [ [ $hex ], false, false ],
+        ];
     }
 
     /**
@@ -137,14 +137,14 @@ final class InviteOnlyAccountsTest extends TestCase
     /** @return array<string, array{string, bool}> */
     public static function passwords(): array
     {
-        return array(
-            'bcrypt, cost 10'      => array( '$2y$10', true ),
-            'bcrypt, cost 12'      => array( '$2y$12', true ),
-            'older bcrypt prefix'  => array( '$2a$10', true ),
-            'argon2'               => array( '$argon', true ),
-            'longer than a prefix' => array( '$2y$10abc', false ),
-            'a chosen password'    => array( 'correct horse', false ),
-        );
+        return [
+            'bcrypt, cost 10'      => [ '$2y$10', true ],
+            'bcrypt, cost 12'      => [ '$2y$12', true ],
+            'older bcrypt prefix'  => [ '$2a$10', true ],
+            'argon2'               => [ '$argon', true ],
+            'longer than a prefix' => [ '$2y$10abc', false ],
+            'a chosen password'    => [ 'correct horse', false ],
+        ];
     }
 
     /**

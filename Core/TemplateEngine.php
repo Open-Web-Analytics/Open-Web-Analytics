@@ -49,7 +49,7 @@ class TemplateEngine {
      *
      * @var array<string, mixed> name => the value a template reads as $view->name, any type
      */
-    public $vars = array();
+    public $vars = [];
 
     /**
      * Template file, null until one is set

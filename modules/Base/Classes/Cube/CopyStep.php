@@ -50,7 +50,7 @@ class CopyStep extends Step {
 
     public function requires() {
 
-        return array( $this->join );
+        return [ $this->join ];
     }
 
     public function execute( Context $context ) {
@@ -70,5 +70,3 @@ class CopyStep extends Step {
             $value );
     }
 }
-
-?>

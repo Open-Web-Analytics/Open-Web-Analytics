@@ -16,10 +16,10 @@ final class ReducedMotionTest extends TestCase
     /** @return array<string, array{0: string}> */
     public static function stylesheets(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/css/*.css' ) as $file ) {
-            $out[ basename( $file ) ] = array( $file );
+            $out[ basename( $file ) ] = [ $file ];
         }
 
         return $out;
@@ -34,7 +34,7 @@ final class ReducedMotionTest extends TestCase
     private static function rules( string $css ): array
     {
         $css    = preg_replace_callback( '#/\*.*?\*/#s', function ( $m ) { return str_repeat( ' ', strlen( $m[0] ) ); }, $css );
-        $blocks = array();
+        $blocks = [];
         $from   = 0;
 
         while ( ( $at = strpos( $css, self::QUERY, $from ) ) !== false ) {
@@ -51,13 +51,13 @@ final class ReducedMotionTest extends TestCase
                 }
             }
 
-            $blocks[] = array( $open, $i );
+            $blocks[] = [ $open, $i ];
             $from     = $i;
         }
 
         preg_match_all( '/([^{}]+)\{([^{}]*)\}/', $css, $m, PREG_SET_ORDER | PREG_OFFSET_CAPTURE );
 
-        $out = array();
+        $out = [];
 
         foreach ( $m as $rule ) {
 
@@ -68,12 +68,12 @@ final class ReducedMotionTest extends TestCase
                 $reduced = $reduced || ( $at > $open && $at < $close );
             }
 
-            $out[] = array(
+            $out[] = [
                 'at'        => $at,
                 'selectors' => array_map( function ( $s ) { return trim( preg_replace( '/\s+/', ' ', $s ) ); }, explode( ',', $rule[1][0] ) ),
                 'body'      => $rule[2][0],
                 'reduced'   => $reduced,
-            );
+            ];
         }
 
         return $out;
@@ -83,7 +83,7 @@ final class ReducedMotionTest extends TestCase
     public function testEveryTransitionAndAnimationStopsUnderReducedMotion( string $file ): void
     {
         $rules  = self::rules( (string) file_get_contents( $file ) );
-        $moving = array();
+        $moving = [];
 
         foreach ( $rules as $rule ) {
 
@@ -91,7 +91,7 @@ final class ReducedMotionTest extends TestCase
                 continue;
             }
 
-            foreach ( array( 'transition', 'animation' ) as $property ) {
+            foreach ( [ 'transition', 'animation' ] as $property ) {
 
                 if ( ! preg_match( '/(?<![-\w])' . $property . '\s*:\s*(?!none\b)/', $rule['body'] ) ) {
                     continue;
@@ -115,7 +115,7 @@ final class ReducedMotionTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $moving, basename( $file ) . ': moves under prefers-reduced-motion' );
+        $this->assertSame( [], $moving, basename( $file ) . ': moves under prefers-reduced-motion' );
     }
 
     /** The reader finds a transition, and a reduced-motion rule that stops it. */
@@ -127,6 +127,6 @@ final class ReducedMotionTest extends TestCase
         $this->assertFalse( $rules[0]['reduced'] );
         $this->assertTrue( $rules[1]['reduced'] );
         $this->assertFalse( $rules[2]['reduced'] );
-        $this->assertSame( array( '.a' ), $rules[1]['selectors'] );
+        $this->assertSame( [ '.a' ], $rules[1]['selectors'] );
     }
 }

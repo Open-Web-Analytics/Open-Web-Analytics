@@ -38,7 +38,7 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
         $method = new ReflectionMethod(\OWA\Core\CoreAPI::class, 'namespacedEntityClass');
 
         $service  = \OWA\Core\CoreAPI::serviceSingleton();
-        $stragglers = array();
+        $stragglers = [];
 
         foreach ($service->modules['base']->getEntities() as $name) {
 
@@ -48,7 +48,7 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
             }
         }
 
-        $this->assertSame(array(), $stragglers,
+        $this->assertSame([], $stragglers,
             'these entities do not follow the convention, so nothing can construct them: '
             . implode(', ', $stragglers));
     }
@@ -92,18 +92,18 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
 
     public static function entityNames(): array
     {
-        return array(
-            'single word'      => array('base.user', 'OWA\\Module\\Base\\Entity\\User'),
-            'two words'        => array('base.custom_report', 'OWA\\Module\\Base\\Entity\\CustomReport'),
-            'three words'      => array('base.goal_event_definition_condition', 'OWA\\Module\\Base\\Entity\\GoalEventDefinitionCondition'),
+        return [
+            'single word'      => ['base.user', 'OWA\\Module\\Base\\Entity\\User'],
+            'two words'        => ['base.custom_report', 'OWA\\Module\\Base\\Entity\\CustomReport'],
+            'three words'      => ['base.goal_event_definition_condition', 'OWA\\Module\\Base\\Entity\\GoalEventDefinitionCondition'],
             // Resolves only when the class is really there, so an unknown name
             // falls back instead of naming a class nobody wrote.
-            'unknown entity'   => array('base.no_such_entity', null),
-            'unknown module'   => array('nosuchmodule.user', null),
+            'unknown entity'   => ['base.no_such_entity', null],
+            'unknown module'   => ['nosuchmodule.user', null],
             // Not a module.entity name at all.
-            'no dot'           => array('user', null),
-            'empty entity'     => array('base.', null),
-        );
+            'no dot'           => ['user', null],
+            'empty entity'     => ['base.', null],
+        ];
     }
 
     /** A name nothing defines still falls through rather than resolving. */

@@ -90,5 +90,3 @@ class Update041 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

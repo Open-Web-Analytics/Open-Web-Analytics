@@ -49,27 +49,27 @@ class Service extends \OWA\Core\Base {
     /** @var mixed nothing sets it */
     public $settings;
     /** @var array<string, mixed> map name => its values, name => value */
-    public $maps = array();
+    public $maps = [];
     /** @var bool */
     public $update_required = false;
     /** @var bool */
     public $install_required = false;
     /** @var list<string> */
-    public $modules_needing_updates = array();
+    public $modules_needing_updates = [];
     /** @var array<string, \OWA\Core\Module> name => module */
-    public $modules = array();
+    public $modules = [];
     /** @var array<string, string> entity name => module.entity */
-    public $entities = array();
+    public $entities = [];
     /** @var array<string, list<MetricDefinition>> metric name => its implementations */
-    public $metrics = array();
+    public $metrics = [];
     /** @var array<string, array<string, array<string, mixed>>> name => entity => registration */
-    public $denormalizedDimensions = array();
+    public $denormalizedDimensions = [];
     /** @var object|null an injected user-agent parser */
     public $browscap;
     /** @var \OWA\Module\Base\Classes\Geolocation|null */
     public $geolocation;
     /** @var array<string, array<string, array<string, array<string, RestRoute>>>> module => version => route => request method => route */
-    public $restApiRoutes = array();
+    public $restApiRoutes = [];
 
     public function __construct() {
     }
@@ -115,7 +115,7 @@ class Service extends \OWA\Core\Base {
         if ( $b === null ) {
 
             $this->browscap        = null;
-            $this->browscap_by_ua  = array();
+            $this->browscap_by_ua  = [];
 
             return;
         }
@@ -124,7 +124,7 @@ class Service extends \OWA\Core\Base {
     }
 
     /** @var array<string,object> user agent => its parse */
-    private $browscap_by_ua = array();
+    private $browscap_by_ua = [];
 
     /**
      * The user-agent parse, memoised PER AGENT.
@@ -183,20 +183,20 @@ class Service extends \OWA\Core\Base {
         $check_updates = ! \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_mode' );
 
         foreach ($am as $k => $v) {
-			
-			// active-module names are lowercase runtime names; getPresentModules()
-			// returns on-disk dir names, which are PascalCase (PSR-4). Translate the
-			// runtime name to its dir name for the presence check.
-			if ( in_array( \OWA\Core\Lib::moduleDirName( $v ), $present_modules ) ) {
-	            $m = \OWA\Core\CoreAPI::moduleClassFactory($v);
-	
-	            $this->addModule($m);
-	
-	            if ( $check_updates && ! $m->isUpToDate() ) {
+            
+            // active-module names are lowercase runtime names; getPresentModules()
+            // returns on-disk dir names, which are PascalCase (PSR-4). Translate the
+            // runtime name to its dir name for the presence check.
+            if ( in_array( \OWA\Core\Lib::moduleDirName( $v ), $present_modules ) ) {
+                $m = \OWA\Core\CoreAPI::moduleClassFactory($v);
+    
+                $this->addModule($m);
+    
+                if ( $check_updates && ! $m->isUpToDate() ) {
 
-	                $this->markModuleAsNeedingUpdate($m->name);
-	            }
-			}
+                    $this->markModuleAsNeedingUpdate($m->name);
+                }
+            }
         }
 
         // set schema update flag
@@ -261,7 +261,7 @@ class Service extends \OWA\Core\Base {
      */
     public function loadCliCommands() {
 
-        $command_map = array();
+        $command_map = [];
 
         foreach ($this->modules as $k => $module) {
 
@@ -279,22 +279,22 @@ class Service extends \OWA\Core\Base {
      * Checked against the COMMAND rather than the job name, so a friendly label
      * cannot smuggle one past.
      */
-    const NEVER_SCHEDULE = array(
+    const NEVER_SCHEDULE = [
         'install'       => 'Re-runs schema installation.',
         'update'        => 'Changes the schema underneath the running process.',
         'reset-secrets' => 'Rewrites owa-config.php.',
-    );
+    ];
 
     /**
      * The keys an OWA_SCHEDULED_JOBS entry may give, and what each means.
      * applyConfiguredJobs() copies exactly these onto the job.
      */
-    const SCHEDULED_JOB_KEYS = array(
+    const SCHEDULED_JOB_KEYS = [
         'command'     => 'The CLI command to run. Required for a job OWA does not register itself.',
         'schedule'    => 'A cron expression, an `@` alias, or `off`. Required for a job OWA does not register itself.',
         'params'      => 'Arguments passed to the command, as `name => value` pairs: `array( \'days\' => 3 )` runs the command with `days=3`.',
         'description' => 'A sentence for the System Health screen and `schedule-status`.',
-    );
+    ];
 
     /**
      * Build the job registry: what modules registered, overlaid with what
@@ -315,7 +315,7 @@ class Service extends \OWA\Core\Base {
         // Both are idempotent.
         $this->loadCliCommands();
 
-        $jobs = array();
+        $jobs = [];
 
         foreach ($this->modules as $k => $module) {
 
@@ -388,7 +388,7 @@ class Service extends \OWA\Core\Base {
             // separating name from command removes.
             if ( ! $known ) {
 
-                foreach ( array( 'command', 'schedule' ) as $required ) {
+                foreach ( [ 'command', 'schedule' ] as $required ) {
 
                     if ( empty( $spec[ $required ] ) ) {
 
@@ -402,12 +402,12 @@ class Service extends \OWA\Core\Base {
                 }
             }
 
-            $job = $known ? $jobs[ $name ] : array(
+            $job = $known ? $jobs[ $name ] : [
                 'name'        => $name,
                 'module'      => 'config',
-                'params'      => array(),
+                'params'      => [],
                 'description' => '',
-            );
+            ];
 
             $job['source'] = $known ? 'config-override' : 'config';
 
@@ -454,7 +454,7 @@ class Service extends \OWA\Core\Base {
 
         $jobs = $this->getMap('scheduled_jobs');
 
-        return is_array( $jobs ) ? $jobs : array();
+        return is_array( $jobs ) ? $jobs : [];
     }
 
     /**
@@ -477,7 +477,7 @@ class Service extends \OWA\Core\Base {
      */
     public function _loadEventProcessors() {
 
-        $processors = array();
+        $processors = [];
 
         foreach ($this->modules as $k => $module) {
 
@@ -514,20 +514,20 @@ class Service extends \OWA\Core\Base {
      * @return RestRoute|void nothing when no route is registered
      */
     public function getRestApiRoute( $module, $version, $route_name, $request_method ) {
-	    
-	    if ( array_key_exists( $module, $this->restApiRoutes ) ) {
+        
+        if ( array_key_exists( $module, $this->restApiRoutes ) ) {
 
-	    	if ( array_key_exists( $version, $this->restApiRoutes[$module] ) ) {
-		    
-			    if ( array_key_exists( $route_name, $this->restApiRoutes[$module][ $version ] ) ) {
-			    
-			    	if ( array_key_exists( $request_method, $this->restApiRoutes[$module][ $version ][ $route_name ] ) ) {
-		    
-		    			return $this->restApiRoutes[$module][ $version ][ $route_name ][ $request_method ] ;
-		    		}
-		    	}	
-			}
-		}
+            if ( array_key_exists( $version, $this->restApiRoutes[$module] ) ) {
+            
+                if ( array_key_exists( $route_name, $this->restApiRoutes[$module][ $version ] ) ) {
+                
+                    if ( array_key_exists( $request_method, $this->restApiRoutes[$module][ $version ][ $route_name ] ) ) {
+            
+                        return $this->restApiRoutes[$module][ $version ][ $route_name ][ $request_method ] ;
+                    }
+                }	
+            }
+        }
     }
     
     /**
@@ -539,16 +539,16 @@ class Service extends \OWA\Core\Base {
      * @return void
      */
     public function setRestApiRoute( $module, $version, $route_name, $request_method, $value ) {
-	    
-	    $this->restApiRoutes[$module][$version][ $route_name ][ $request_method ] = $value;
+        
+        $this->restApiRoutes[$module][$version][ $route_name ][ $request_method ] = $value;
     }
     
     /**
      * @return array<string, array<string, array<string, array<string, RestRoute>>>>
      */
     public function getAllRestApiRoutes() {
-	    
-	    return $this->restApiRoutes;
+        
+        return $this->restApiRoutes;
     }
 
     /**
@@ -767,6 +767,3 @@ class Service extends \OWA\Core\Base {
     }
 
 }
-
-
-?>

@@ -21,19 +21,19 @@ require_once __DIR__ . '/modules.php';
  */
 function owa_wiki_jobs() {
 
-    $jobs = array();
+    $jobs = [];
 
     foreach ( owa_wiki_all_modules() as $module ) {
 
         $registered = (array) $module->scheduled_jobs;
-        $seeded     = array();
+        $seeded     = [];
 
         $url = \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
 
-        foreach ( array( 'https://a.example.org/', 'https://b.example.org/' ) as $i => $seed ) {
+        foreach ( [ 'https://a.example.org/', 'https://b.example.org/' ] as $i => $seed ) {
 
             \OWA\Core\CoreAPI::setSetting( 'base', 'public_url', $seed );
-            $module->scheduled_jobs = array();
+            $module->scheduled_jobs = [];
             $module->registerJobs();
             $seeded[ $i ] = (array) $module->scheduled_jobs;
         }

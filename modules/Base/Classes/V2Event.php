@@ -139,7 +139,7 @@ class V2Event {
      */
     public static function parseUrl( $url ) {
 
-        $empty = array( 'host' => null, 'path' => null, 'query' => null );
+        $empty = [ 'host' => null, 'path' => null, 'query' => null ];
 
         $url = trim( (string) $url );
 
@@ -166,7 +166,7 @@ class V2Event {
             $host = null;
         }
 
-        return array(
+        return [
             'host'  => $host,
             // A URL with no path is the site root, which IS a path -- '/' --
             // and grouping it under NULL would hide the home page from the
@@ -175,7 +175,7 @@ class V2Event {
                 ? $parts['path'] : '/',
             'query' => isset( $parts['query'] ) && $parts['query'] !== ''
                 ? $parts['query'] : null,
-        );
+        ];
     }
 
     /**
@@ -183,8 +183,8 @@ class V2Event {
      * base.directory_index_pages. A path ending in one of them is the
      * directory's own page: /store/index.html is /store.
      */
-    const DIRECTORY_INDEX_PAGES = array(
-        'index.html', 'index.htm', 'index.php', 'default.htm', 'default.html', 'default.aspx', 'default.asp' );
+    const DIRECTORY_INDEX_PAGES = [
+        'index.html', 'index.htm', 'index.php', 'default.htm', 'default.html', 'default.aspx', 'default.asp' ];
 
     /**
      * A page path, canonicalised.
@@ -212,7 +212,7 @@ class V2Event {
      *                                   none folds only the trailing slash
      * @return string|null
      */
-    public static function canonicalPath( $path, $index_pages = array() ) {
+    public static function canonicalPath( $path, $index_pages = [] ) {
 
         if ( $path === null || $path === '' ) {
 
@@ -282,7 +282,7 @@ class V2Event {
             $value = explode( ',', $value );
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $value as $name ) {
 
@@ -315,10 +315,10 @@ class V2Event {
 
         $keep = static function ( $text ) {
 
-            return str_replace( array( '&', '#' ), array( '%26', '%23' ), rawurldecode( $text ) );
+            return str_replace( [ '&', '#' ], [ '%26', '%23' ], rawurldecode( $text ) );
         };
 
-        $out = array();
+        $out = [];
 
         foreach ( explode( '&', (string) $query ) as $pair ) {
 
@@ -357,7 +357,7 @@ class V2Event {
             return $query === '' ? null : $query;
         }
 
-        $unwanted = array();
+        $unwanted = [];
 
         foreach ( $drop as $name ) {
 
@@ -374,7 +374,7 @@ class V2Event {
             return $query;
         }
 
-        $kept = array();
+        $kept = [];
 
         foreach ( explode( '&', (string) $query ) as $pair ) {
 
@@ -465,5 +465,3 @@ class V2Event {
     }
 
 }
-
-?>

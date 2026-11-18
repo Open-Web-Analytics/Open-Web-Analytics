@@ -50,8 +50,6 @@ class SpamBlock extends \OWA\Core\Entity {
         $blocked->setDefaultValue( 0 );
         $this->setProperty( $blocked );
 
-        $this->setCompositePrimaryKey( array( 'yyyymmdd', 'site_id', 'rule' ) );
+        $this->setCompositePrimaryKey( [ 'yyyymmdd', 'site_id', 'rule' ] );
     }
 }
-
-?>

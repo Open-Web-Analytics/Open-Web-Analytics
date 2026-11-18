@@ -25,7 +25,7 @@ final class SqsLiveTest extends TestCase
     private static ?SqsQueue $queue = null;
 
     /** @var array<string,mixed> */
-    private static array $saved = array();
+    private static array $saved = [];
 
     public static function setUpBeforeClass(): void
     {
@@ -33,16 +33,16 @@ final class SqsLiveTest extends TestCase
             return;
         }
 
-        foreach (array(array('sqs', 'region')) as [$m, $k]) {
+        foreach ([['sqs', 'region']] as [$m, $k]) {
             self::$saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
 
         \OWA\Core\CoreAPI::setSetting('sqs', 'region', getenv('OWA_TEST_SQS_REGION') ?: 'us-east-1');
 
-        self::$queue = new SqsQueue(array(
+        self::$queue = new SqsQueue([
             'name'         => Sqs::PREFIX . 'phpunit-' . bin2hex(random_bytes(4)),
             'max_receives' => 2,
-        ));
+        ]);
     }
 
     public static function tearDownAfterClass(): void
@@ -51,10 +51,10 @@ final class SqsLiveTest extends TestCase
             return;
         }
 
-        foreach (array(self::$queue, self::$queue->deadLetterQueue()) as $q) {
+        foreach ([self::$queue, self::$queue->deadLetterQueue()] as $q) {
             $url = $q->url(false);
             if ($url) {
-                Sqs::client()->deleteQueue(array('QueueUrl' => $url));
+                Sqs::client()->deleteQueue(['QueueUrl' => $url]);
             }
         }
 
@@ -75,13 +75,13 @@ final class SqsLiveTest extends TestCase
 
     private static function envelope(string $n): array
     {
-        return array('v' => 1, 'type' => 'page_view', 'properties' => array('n' => $n), 'queued_at' => time());
+        return ['v' => 1, 'type' => 'page_view', 'properties' => ['n' => $n], 'queued_at' => time()];
     }
 
     /** Poll: SQS is eventually consistent, so an empty answer is not yet proof. */
     private static function receiveSoon(\OWA\Core\IntakeQueue $q, int $want, int $visibility = 30): array
     {
-        $got = array();
+        $got = [];
 
         for ($i = 0; $i < 20 && count($got) < $want; $i++) {
             $got = array_merge($got, $q->receive($want - count($got), $visibility));
@@ -98,9 +98,9 @@ final class SqsLiveTest extends TestCase
         $this->assertTrue(self::$queue->provision(), (string) self::$queue->lastError());
         $this->assertTrue(self::$queue->provision(), 'idempotent');
 
-        $attributes = Sqs::client()->getQueueAttributes(array(
-            'QueueUrl' => self::$queue->url(false), 'AttributeNames' => array('All'),
-        ))['Attributes'];
+        $attributes = Sqs::client()->getQueueAttributes([
+            'QueueUrl' => self::$queue->url(false), 'AttributeNames' => ['All'],
+        ])['Attributes'];
 
         $this->assertSame('1209600', $attributes['MessageRetentionPeriod']);
         $this->assertSame(2, json_decode($attributes['RedrivePolicy'], true)['maxReceiveCount']);
@@ -141,7 +141,7 @@ final class SqsLiveTest extends TestCase
         }
 
         // The third receive finds it gone from the main queue: SQS moved it.
-        $this->assertSame(array(), $q->receive(10, 1));
+        $this->assertSame([], $q->receive(10, 1));
 
         $dead = self::receiveSoon($q->deadLetterQueue(), 1);
         $this->assertSame('poison', $dead[0]->envelope['properties']['n']);
@@ -158,7 +158,7 @@ final class SqsLiveTest extends TestCase
         $this->assertTrue($q->deadLetter($got[0], 'gave up'));
 
         TrackerIngest::$queue = $q;
-        $counts = array('replayed' => 0);
+        $counts = ['replayed' => 0];
         for ($i = 0; $i < 20 && !$counts['replayed']; $i++) {
             $counts = TrackerIngest::replay(true, time() + 20);
             if (!$counts['replayed']) {

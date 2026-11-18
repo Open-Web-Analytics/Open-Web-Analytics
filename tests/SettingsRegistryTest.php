@@ -23,7 +23,7 @@ final class SettingsRegistryTest extends TestCase
     private const MODULE = 'zz_registry_test';
 
     /** @var array<string,mixed> the singleton's registry state before this test */
-    private array $snapshot = array();
+    private array $snapshot = [];
 
     /**
      * These tests register probe fields and fieldsets into the SINGLETON,
@@ -37,9 +37,9 @@ final class SettingsRegistryTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->snapshot = array();
+        $this->snapshot = [];
 
-        foreach ( array( 'registry', 'fieldsets' ) as $property ) {
+        foreach ( [ 'registry', 'fieldsets' ] as $property ) {
 
             $p = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, $property );
 
@@ -83,7 +83,7 @@ final class SettingsRegistryTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         for ( $i = 0; $i < 50; $i++ ) {
-            $c->registerField( self::MODULE, 'static_' . $i, array( 'default' => $i ) );
+            $c->registerField( self::MODULE, 'static_' . $i, [ 'default' => $i ] );
         }
 
         $before = (int) $db->num_queries;
@@ -110,9 +110,9 @@ final class SettingsRegistryTest extends TestCase
         $c  = $this->settings();
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ( array( 'a', 'b', 'c', 'd' ) as $key ) {
+        foreach ( [ 'a', 'b', 'c', 'd' ] as $key ) {
             $c->registerField( self::MODULE, 'stored_' . $key,
-                array( 'default' => 'default-' . $key, 'storable' => true ) );
+                [ 'default' => 'default-' . $key, 'storable' => true ] );
         }
 
         $before = (int) $db->num_queries;
@@ -120,7 +120,7 @@ final class SettingsRegistryTest extends TestCase
         $first = (int) $db->num_queries - $before;
 
         $before = (int) $db->num_queries;
-        foreach ( array( 'b', 'c', 'd' ) as $key ) {
+        foreach ( [ 'b', 'c', 'd' ] as $key ) {
             \OWA\Core\CoreAPI::getSetting( self::MODULE, 'stored_' . $key );
         }
         $rest = (int) $db->num_queries - $before;
@@ -138,7 +138,7 @@ final class SettingsRegistryTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $c->registerField( self::MODULE, 'never_stored',
-            array( 'default' => 'the-default', 'storable' => true ) );
+            [ 'default' => 'the-default', 'storable' => true ] );
 
         $this->assertSame( 'the-default',
             \OWA\Core\CoreAPI::getSetting( self::MODULE, 'never_stored' ) );
@@ -155,11 +155,11 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'eager_only', array( 'autoload' => true ) );
+        $c->registerField( self::MODULE, 'eager_only', [ 'autoload' => true ] );
 
         $eager = $c->eagerSettings();
 
-        $this->assertContains( 'eager_only', $eager[ self::MODULE ] ?? array(),
+        $this->assertContains( 'eager_only', $eager[ self::MODULE ] ?? [],
             'a setting boot must fetch is by definition one that can have a value' );
     }
 
@@ -168,14 +168,14 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'has_false', array( 'default' => false ) );
-        $c->registerField( self::MODULE, 'has_none',  array( 'autoload' => true ) );
+        $c->registerField( self::MODULE, 'has_false', [ 'default' => false ] );
+        $c->registerField( self::MODULE, 'has_none',  [ 'autoload' => true ] );
 
         $this->assertArrayHasKey( 'has_false', $c->default_config[ self::MODULE ],
             'false is a legitimate default and must survive registration' );
         $this->assertFalse( $c->default_config[ self::MODULE ]['has_false'] );
 
-        $this->assertArrayNotHasKey( 'has_none', $c->default_config[ self::MODULE ] ?? array(),
+        $this->assertArrayNotHasKey( 'has_none', $c->default_config[ self::MODULE ] ?? [],
             'omitting the key is how a setting says it has no default -- which is how '
           . 'is_active and schema_version stay out of reach of the prune' );
     }
@@ -192,15 +192,15 @@ final class SettingsRegistryTest extends TestCase
         $c = $this->settings();
 
         $c->registerField( self::MODULE, 'ok_field',
-            array( 'default' => '', 'storable' => true, 'type' => 'text', 'label' => 'OK' ) );
-        $c->registerField( self::MODULE, 'static_field', array( 'default' => 'x' ) );
+            [ 'default' => '', 'storable' => true, 'type' => 'text', 'label' => 'OK' ] );
+        $c->registerField( self::MODULE, 'static_field', [ 'default' => 'x' ] );
 
-        $c->registerFieldSet( array(
+        $c->registerFieldSet( [
             'id'       => self::MODULE . '.set',
             'module'   => self::MODULE,
             'legend'   => 'A Set',
-            'settings' => array( 'ok_field', 'static_field', 'no_such_field' ),
-        ) );
+            'settings' => [ 'ok_field', 'static_field', 'no_such_field' ],
+        ] );
 
         $problems = implode( "\n", $c->fieldSetProblems() );
 
@@ -216,13 +216,13 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerFieldSet( array(
+        $c->registerFieldSet( [
             'id'       => self::MODULE . '.ordered',
             'module'   => self::MODULE,
-            'settings' => array( 'third', 'first', 'second' ),
-        ) );
+            'settings' => [ 'third', 'first', 'second' ],
+        ] );
 
-        $this->assertSame( array( 'third', 'first', 'second' ),
+        $this->assertSame( [ 'third', 'first', 'second' ],
             $c->registeredFieldSets()[ self::MODULE . '.ordered' ]['settings'],
             'order is array order; there are no order numbers to reconcile' );
     }
@@ -236,18 +236,18 @@ final class SettingsRegistryTest extends TestCase
      */
     public function testRegisteredPagesAreBucketedOrderedAndCapabilityChecked(): void
     {
-        $sections = \OWA\Core\Controller::settingsNavSections( array(
-            'General' => array(
-                array( 'do' => 'x.second', 'anchortext' => 'Second', 'group' => 'General', 'order' => 2 ),
-                array( 'do' => 'x.first',  'anchortext' => 'First',  'group' => 'General', 'order' => 1,
-                       'capability' => 'edit_users' ),
-            ),
-            'Property' => array(
-                array( 'do' => 'x.prop', 'anchortext' => 'Per Property', 'section' => 'Property' ),
-            ),
-        ) );
+        $sections = \OWA\Core\Controller::settingsNavSections( [
+            'General' => [
+                [ 'do' => 'x.second', 'anchortext' => 'Second', 'group' => 'General', 'order' => 2 ],
+                [ 'do' => 'x.first',  'anchortext' => 'First',  'group' => 'General', 'order' => 1,
+                       'capability' => 'edit_users' ],
+            ],
+            'Property' => [
+                [ 'do' => 'x.prop', 'anchortext' => 'Per Property', 'section' => 'Property' ],
+            ],
+        ] );
 
-        $this->assertSame( array( 'First', 'Second' ),
+        $this->assertSame( [ 'First', 'Second' ],
             array_column( $sections['Instance'], 'label' ),
             'order decides position, not the order modules happened to register' );
 
@@ -273,9 +273,9 @@ final class SettingsRegistryTest extends TestCase
         $c = $this->settings();
 
         $c->registerField( self::MODULE, 'install_only',
-            array( 'default' => 'd', 'storable' => true ) );
+            [ 'default' => 'd', 'storable' => true ] );
 
-        $this->assertSame( array( 'install' ), $c->scopesFor( self::MODULE, 'install_only' ),
+        $this->assertSame( [ 'install' ], $c->scopesFor( self::MODULE, 'install_only' ),
             'install-only unless a declaration says otherwise -- a setting that has not '
           . 'thought about the hierarchy must not silently acquire overrides' );
 
@@ -296,11 +296,11 @@ final class SettingsRegistryTest extends TestCase
 
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'overridable', array(
+        $c->registerField( self::MODULE, 'overridable', [
             'default'  => 'd',
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
-        ) );
+            'scopes'   => [ 'install', 'property', 'profile' ],
+        ] );
 
         $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting(
             'profile', 'zz-site', self::MODULE, 'overridable', 'yes' ) );
@@ -396,13 +396,13 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'static_one', array( 'default' => 'the-default' ) );
+        $c->registerField( self::MODULE, 'static_one', [ 'default' => 'the-default' ] );
 
         $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'static_one' ) );
 
         $c->persistSetting( self::MODULE, 'static_one', 'i-was-saved' );
 
-        $this->assertArrayNotHasKey( 'static_one', $c->db_settings[ self::MODULE ] ?? array(),
+        $this->assertArrayNotHasKey( 'static_one', $c->db_settings[ self::MODULE ] ?? [],
             'nothing is queued for the next save' );
         $this->assertSame( 'the-default',
             \OWA\Core\CoreAPI::getSetting( self::MODULE, 'static_one' ),
@@ -414,18 +414,18 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'profile_only', array(
+        $c->registerField( self::MODULE, 'profile_only', [
             'default'  => 'd',
             'storable' => true,
-            'scopes'   => array( 'profile' ),
-        ) );
+            'scopes'   => [ 'profile' ],
+        ] );
 
         $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'profile_only' ),
             'storing it install-wide would put it at a level nothing resolves from' );
 
         $c->persistSetting( self::MODULE, 'profile_only', 'nope' );
 
-        $this->assertArrayNotHasKey( 'profile_only', $c->db_settings[ self::MODULE ] ?? array() );
+        $this->assertArrayNotHasKey( 'profile_only', $c->db_settings[ self::MODULE ] ?? [] );
     }
 
     /** Storable, install-scoped and unregistered settings all still persist. */
@@ -433,7 +433,7 @@ final class SettingsRegistryTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->registerField( self::MODULE, 'normal', array( 'default' => 'd', 'storable' => true ) );
+        $c->registerField( self::MODULE, 'normal', [ 'default' => 'd', 'storable' => true ] );
 
         $c->persistSetting( self::MODULE, 'normal', 'stored' );
         $this->assertSame( 'stored', $c->db_settings[ self::MODULE ]['normal'] ?? null );
@@ -442,7 +442,7 @@ final class SettingsRegistryTest extends TestCase
         // browser made up. persistSetting() stores nothing for it.
         $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'nobody_declared_me' ) );
         $c->persistSetting( self::MODULE, 'nobody_declared_me', 'made up' );
-        $this->assertArrayNotHasKey( 'nobody_declared_me', (array) ( $c->db_settings[ self::MODULE ] ?? array() ) );
+        $this->assertArrayNotHasKey( 'nobody_declared_me', (array) ( $c->db_settings[ self::MODULE ] ?? [] ) );
 
         // Mechanical settings are storable via autoload, so module activation
         // and the schema-version stamp keep working.
@@ -471,7 +471,7 @@ final class SettingsRegistryTest extends TestCase
 
         // Storable and not eager, so it starts out pending and unresolved.
         $c->registerField( self::MODULE, 'pending_key',
-            array( 'default' => 'the-default', 'storable' => true ) );
+            [ 'default' => 'the-default', 'storable' => true ] );
 
         $before = (int) $db->num_queries;
 
@@ -493,7 +493,7 @@ final class SettingsRegistryTest extends TestCase
         $c = $this->settings();
 
         $c->registerField( self::MODULE, 'persist_key',
-            array( 'default' => 'the-default', 'storable' => true ) );
+            [ 'default' => 'the-default', 'storable' => true ] );
 
         $c->persistSetting( self::MODULE, 'persist_key', 'written' );
 
@@ -535,7 +535,7 @@ final class SettingsRegistryTest extends TestCase
         $module = 'third_party_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         $this->assertArrayNotHasKey( $module,
-            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? [] ) );
 
         $db->query( sprintf(
             "INSERT INTO %s ( id, scope_type, scope_id, module, name, value )"
@@ -615,7 +615,7 @@ final class SettingsRegistryTest extends TestCase
         $this->requireDb();
 
         $declared = array_keys(
-            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? [] ) );
 
         if ( ! $declared ) {
             $this->markTestSkipped( 'no module ships a declaration on this installation' );
@@ -653,7 +653,7 @@ final class SettingsRegistryTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $declared = array_keys(
-            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? [] ) );
 
         if ( ! $declared ) {
             $this->markTestSkipped( 'no module ships a declaration on this installation' );
@@ -672,9 +672,9 @@ final class SettingsRegistryTest extends TestCase
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {
-        $sections = \OWA\Core\Controller::settingsNavSections( array(
-            'General' => array( array( 'do' => 'x.a', 'anchortext' => 'A', 'group' => 'General' ) ),
-        ) );
+        $sections = \OWA\Core\Controller::settingsNavSections( [
+            'General' => [ [ 'do' => 'x.a', 'anchortext' => 'A', 'group' => 'General' ] ],
+        ] );
 
         $this->assertArrayHasKey( 'Instance', $sections );
         $this->assertArrayNotHasKey( 'General', $sections,
@@ -691,18 +691,18 @@ final class SettingsRegistryTest extends TestCase
      */
     public function testTheModuleSettingsPagesAreInTheInstanceSection(): void
     {
-        foreach ( array(
+        foreach ( [
             'maxmind_geoip.optionsGeoip' => \OWA\Module\MaxmindGeoip\Module::class,
             'sqs.optionsSqs'             => \OWA\Module\Sqs\Module::class,
-        ) as $do => $class ) {
+        ] as $do => $class ) {
 
             $module = new $class();
             $module->registerAdminPanels();
 
             $sections = \OWA\Core\Controller::settingsNavSections(
-                array( (array) $module->getAdminPanels() ) );
+                [ (array) $module->getAdminPanels() ] );
 
-            $this->assertSame( array( 'Instance' ), array_keys( $sections ), $do );
+            $this->assertSame( [ 'Instance' ], array_keys( $sections ), $do );
             $this->assertContains( $do, array_column( $sections['Instance'], 'do' ) );
         }
     }
@@ -718,7 +718,7 @@ final class SettingsRegistryTest extends TestCase
         $first = \OWA\Core\CoreAPI::getAdminPanels();
         $again = \OWA\Core\CoreAPI::getAdminPanels();
 
-        $actions = array();
+        $actions = [];
 
         foreach ( $again as $items ) {
             foreach ( (array) $items as $item ) {
@@ -751,7 +751,7 @@ final class SettingsRegistryTest extends TestCase
 
         try {
 
-            $p->setValue( $config, array() );
+            $p->setValue( $config, [] );
             \OWA\Core\CoreAPI::getAdminPanels();
 
             $this->assertArrayHasKey( 'base.tracking', (array) $config->registeredFieldSets() );

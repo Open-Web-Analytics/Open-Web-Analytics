@@ -43,7 +43,7 @@ final class WikiDocsTrackingTest extends TestCase
     /** @return array<string,array<string,string>> module class => its FEATURE_SETTINGS */
     private static function moduleFeatureSettings(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( glob( \OWA\Core\Env::modulesDir() . '*/Module.php' ) as $path ) {
 
@@ -77,7 +77,7 @@ final class WikiDocsTrackingTest extends TestCase
         foreach ( $modules as $class => $settings ) {
 
             // The label the module's tracker_feature_labels filter adds.
-            $labels = ( new ReflectionClass( $class ) )->newInstanceWithoutConstructor()->labelFeatures( array() );
+            $labels = ( new ReflectionClass( $class ) )->newInstanceWithoutConstructor()->labelFeatures( [] );
 
             foreach ( $settings as $setting => $command ) {
                 self::row( $md, "(`$setting`,", "`$command`", (string) ( $labels[ $command ] ?? $command ) );
@@ -148,9 +148,9 @@ final class WikiDocsTrackingTest extends TestCase
             }
 
             $manifest = json_decode( (string) @file_get_contents( \OWA\Core\Env::modulesDir() . $module . '/build.manifest.json' ), true );
-            $entries  = array();
+            $entries  = [];
 
-            foreach ( (array) ( $manifest['contributes_lazy'] ?? array() ) as $plugins ) {
+            foreach ( (array) ( $manifest['contributes_lazy'] ?? [] ) as $plugins ) {
                 foreach ( (array) $plugins as $plugin ) {
                     if ( ! empty( $plugin['reservedEventNames'] ) ) {
                         $entries[] = (string) ( $plugin['entry'] ?? '' );

@@ -69,9 +69,9 @@ class Module extends \OWA\Core\Module {
         }
 
         $this->method = $method;
-		
-		// turn on geo-location
-		\OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', true );
+        
+        // turn on geo-location
+        \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', true );
         // needed so default filters will not fun
         \OWA\Core\CoreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
@@ -115,7 +115,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerJob(
             'refresh-geoip-db', 'update-geoip-db',
-            \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), array( 'scheduled' => 1 ),
+            \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), [ 'scheduled' => 1 ],
             'Checks whether MaxMind have published a newer GeoLite2 database than the local copy, and downloads '
           . 'it if they have, or if there is no local copy. The check does not count against the MaxMind '
           . 'account\'s download limit. Does nothing until a MaxMind licence key is set.' );
@@ -147,13 +147,13 @@ class Module extends \OWA\Core\Module {
      */
     public function registerAdminPanels() {
 
-        $this->registerSettingsPage( array(
+        $this->registerSettingsPage( [
             'do'        => 'maxmind_geoip.optionsGeoip',
             'title'     => \OWA\Core\CoreAPI::t( 'GeoIP' ),
             'section'   => 'Instance',
             'order'     => 10,
-            'fieldsets' => array( 'maxmind_geoip.account' ),
-        ) );
+            'fieldsets' => [ 'maxmind_geoip.account' ],
+        ] );
 
         /*
          * The two editable settings. What they are called and what they offer
@@ -164,11 +164,11 @@ class Module extends \OWA\Core\Module {
          * reports whether the database is present and how to refresh it, which
          * is not a setting anyone edits.
          */
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'maxmind_geoip.account',
             'legend'   => \OWA\Core\CoreAPI::t( 'MaxMind Account' ),
-            'settings' => array( 'db_license_key', 'db_edition' ),
-        ) );
+            'settings' => [ 'db_license_key', 'db_edition' ],
+        ] );
     }
 
     public function registerFilters() {

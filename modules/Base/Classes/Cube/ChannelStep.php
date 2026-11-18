@@ -48,8 +48,8 @@ class ChannelStep extends Step {
 
         parent::__construct( $column );
 
-        $this->from = array( 'source' => (string) $source, 'medium' => (string) $medium,
-            'campaign' => (string) $campaign );
+        $this->from = [ 'source' => (string) $source, 'medium' => (string) $medium,
+            'campaign' => (string) $campaign ];
     }
 
     /**
@@ -78,11 +78,11 @@ class ChannelStep extends Step {
      */
     public function rules( Context $context, ?array $definitions = null ) {
 
-        $fields = array(
+        $fields = [
             'source'   => sprintf( 'LOWER(%s)', $this->from['source'] ),
             'medium'   => sprintf( 'LOWER(%s)', $this->from['medium'] ),
             'campaign' => sprintf( "LOWER(COALESCE(%s, ''))", $this->from['campaign'] ),
-        );
+        ];
 
         $sentinel = $context->literal( \OWA\Module\Base\Classes\V2Event::UNRESOLVED );
         $case     = sprintf( 'CASE WHEN %s = %s THEN %s', $this->from['source'], $sentinel, $sentinel );
@@ -157,14 +157,14 @@ class ChannelStep extends Step {
      */
     public static function channels( ?array $definitions = null ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( self::validate( $definitions ?? self::definitions() ) as $rule ) {
 
             $out[ $rule['channel'] ] = true;
         }
 
-        return array_merge( array_keys( $out ), array( 'Unassigned' ) );
+        return array_merge( array_keys( $out ), [ 'Unassigned' ] );
     }
 
     /**
@@ -186,7 +186,7 @@ class ChannelStep extends Step {
             throw new \RuntimeException( sprintf( '%s has an empty condition list', $where ) );
         }
 
-        $tests = array();
+        $tests = [];
 
         foreach ( $items as $item ) {
 
@@ -257,5 +257,3 @@ class ChannelStep extends Step {
           . 'contains, starts_with, ends_with, regex and in_list', $where, $operator ) );
     }
 }
-
-?>

@@ -57,11 +57,11 @@ final class ProfileChainQueryCountTest extends TestCase
             return;
         }
 
-        foreach ( array(
-            array( 'profile', $this->siteId ),
-            array( 'property', $this->propertyId ),
-            array( 'organization', $this->organizationId ),
-        ) as $scope ) {
+        foreach ( [
+            [ 'profile', $this->siteId ],
+            [ 'property', $this->propertyId ],
+            [ 'organization', $this->organizationId ],
+        ] as $scope ) {
 
             \OWA\Core\CoreAPI::clearScopedSetting( $scope[0], $scope[1], 'base', $this->key );
         }
@@ -126,11 +126,11 @@ final class ProfileChainQueryCountTest extends TestCase
 
         $joined = \OWA\Core\CoreAPI::settingScopeChain( 'profile', $this->siteId );
 
-        $this->assertSame( array(
-            array( 'type' => 'profile',      'id' => $this->siteId ),
-            array( 'type' => 'property',     'id' => $this->propertyId ),
-            array( 'type' => 'organization', 'id' => $this->organizationId ),
-        ), $joined,
+        $this->assertSame( [
+            [ 'type' => 'profile',      'id' => $this->siteId ],
+            [ 'type' => 'property',     'id' => $this->propertyId ],
+            [ 'type' => 'organization', 'id' => $this->organizationId ],
+        ], $joined,
             'The joined query built a different chain than walking the rows does.' );
     }
 
@@ -201,7 +201,7 @@ final class ProfileChainQueryCountTest extends TestCase
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', 'OWA-no-such-profile' ) );
 
         $this->assertSame(
-            array( array( 'type' => 'profile', 'id' => 'OWA-no-such-profile' ) ),
+            [ [ 'type' => 'profile', 'id' => 'OWA-no-such-profile' ] ],
             \OWA\Core\CoreAPI::settingScopeChain( 'profile', 'OWA-no-such-profile' ),
             'An unknown Profile must not produce a chain naming ancestors.' );
     }

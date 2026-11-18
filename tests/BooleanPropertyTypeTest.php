@@ -43,14 +43,14 @@ final class BooleanPropertyTypeTest extends TestCase
      * better subjects anyway: they arrive FROM the wire, where a boolean's
      * three states actually bite.
      */
-    private const FLAGS = array( 'is_new_session_start', 'is_new_visitor_created' );
+    private const FLAGS = [ 'is_new_session_start', 'is_new_visitor_created' ];
 
     private function runPipeline( array $definition )
     {
         $helpers = new Helpers();
         $event   = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
-        $helpers->setTrackerProperties( $event, array( 'probe' => $definition ) );
+        $helpers->setTrackerProperties( $event, [ 'probe' => $definition ] );
 
         return $event->get( 'probe' );
     }
@@ -125,12 +125,12 @@ final class BooleanPropertyTypeTest extends TestCase
 
     public function testANullDerivationBecomesFalseNotNull(): void
     {
-        $value = $this->runPipeline( array(
+        $value = $this->runPipeline( [
             'required'      => true,
             'data_type'     => 'boolean',
             'default_value' => false,
-            'callbacks'     => array( array( self::class, 'fallsOffTheEnd' ) ),
-        ) );
+            'callbacks'     => [ [ self::class, 'fallsOffTheEnd' ] ],
+        ] );
 
         $this->assertFalse( $value );
         $this->assertNotNull(
@@ -144,11 +144,11 @@ final class BooleanPropertyTypeTest extends TestCase
      */
     public function testTheDefaultAloneAlreadyHandlesTheNull(): void
     {
-        $value = $this->runPipeline( array(
+        $value = $this->runPipeline( [
             'required'      => true,
             'default_value' => false,
-            'callbacks'     => array( array( self::class, 'fallsOffTheEnd' ) ),
-        ) );
+            'callbacks'     => [ [ self::class, 'fallsOffTheEnd' ] ],
+        ] );
 
         $this->assertFalse( $value );
     }
@@ -159,16 +159,16 @@ final class BooleanPropertyTypeTest extends TestCase
      */
     public function testWithNoDefaultTheDeclaredTypeIsWhatStopsTheNull(): void
     {
-        $typed = $this->runPipeline( array(
+        $typed = $this->runPipeline( [
             'required'  => true,
             'data_type' => 'boolean',
-            'callbacks' => array( array( self::class, 'fallsOffTheEnd' ) ),
-        ) );
+            'callbacks' => [ [ self::class, 'fallsOffTheEnd' ] ],
+        ] );
 
-        $untyped = $this->runPipeline( array(
+        $untyped = $this->runPipeline( [
             'required'  => true,
-            'callbacks' => array( array( self::class, 'fallsOffTheEnd' ) ),
-        ) );
+            'callbacks' => [ [ self::class, 'fallsOffTheEnd' ] ],
+        ] );
 
         $this->assertFalse( $typed, 'the declared type should have resolved the null' );
         $this->assertNull( $untyped, 'without either guard a null reaches the column' );

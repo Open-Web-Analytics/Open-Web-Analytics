@@ -4,7 +4,7 @@
 <fieldset>
 
     <legend>
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?> <span class="legend_link">(<a href="<?php echo $view->makeLink(array('do' => 'base.usersProfile'));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New User' ) );?></a>)</span>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?> <span class="legend_link">(<a href="<?php echo $view->makeLink(['do' => 'base.usersProfile']);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New User' ) );?></a>)</span>
     </legend>
 
     <?php if($view->users):?>
@@ -24,10 +24,10 @@
                 <TD data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'User ID' ) );?>"><?php $view->out( $value['user_id'] );?></TD>
                 <TD data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Real Name' ) );?>"><?php $view->out( $value['real_name'] );?></TD>
                 <TD data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Role' ) );?>"><?php $view->out( $value['role'] );?></TD>
-                <TD class="owa_rowActions"><a href="<?php echo $view->makeLink(array('do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) );?></a>
+                <TD class="owa_rowActions"><a href="<?php echo $view->makeLink(['do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']]);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) );?></a>
                 <?php if ($value['id'] != 1):?>
                 <span class="owa_rowActionSep" aria-hidden="true">|</span>
-                <a href="<?php echo $view->makeLink( array( 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ), false, false, false, true );?>"
+                <a href="<?php echo $view->makeLink( [ 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ], false, false, false, true );?>"
                      data-owa-confirm
                      data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this user?' ) );?>"
                      data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” loses access immediately. This cannot be undone.' ), $value['user_id'] ) );?>"

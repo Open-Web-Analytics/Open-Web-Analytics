@@ -18,11 +18,11 @@ final class CliOutputTest extends CliControllerTestCase
             $cmd .= ' ' . escapeshellarg($arg);
         }
 
-        $proc = proc_open($cmd . ' 2>&1', array(1 => array('pipe', 'w')), $pipes, dirname(__DIR__));
+        $proc = proc_open($cmd . ' 2>&1', [1 => ['pipe', 'w']], $pipes, dirname(__DIR__));
         $out  = (string) stream_get_contents($pipes[1]);
         fclose($pipes[1]);
 
-        return array('code' => proc_close($proc), 'out' => $out);
+        return ['code' => proc_close($proc), 'out' => $out];
     }
 
     public function testChangePasswordWithoutAUserSaysWhyAndExits2(): void

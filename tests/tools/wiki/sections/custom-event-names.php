@@ -60,7 +60,7 @@ return function () {
     sort( $reserved );
 
     // What each module's lazy plugin sends.
-    $modules = array();
+    $modules = [];
 
     foreach ( glob( \OWA\Core\Env::modulesDir() . '*/build.manifest.json' ) as $path ) {
 
@@ -68,9 +68,9 @@ return function () {
 
         $manifest = json_decode( (string) file_get_contents( $path ), true );
 
-        foreach ( (array) ( $manifest['contributes_lazy'] ?? array() ) as $plugins ) {
+        foreach ( (array) ( $manifest['contributes_lazy'] ?? [] ) as $plugins ) {
             foreach ( (array) $plugins as $plugin ) {
-                foreach ( (array) ( $plugin['reservedEventNames'] ?? array() ) as $name ) {
+                foreach ( (array) ( $plugin['reservedEventNames'] ?? [] ) as $name ) {
                     $modules[ (string) $name ] = $dir;
                 }
             }
@@ -85,7 +85,7 @@ return function () {
 
     $code = fn ( array $names ) => '`' . implode( '`, `', $names ) . '`';
 
-    $moduleCells = array();
+    $moduleCells = [];
 
     foreach ( $modules as $name => $dir ) {
         $moduleCells[] = "`$name` ($dir module)";

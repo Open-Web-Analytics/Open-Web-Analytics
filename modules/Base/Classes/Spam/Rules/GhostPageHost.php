@@ -54,5 +54,3 @@ class GhostPageHost extends \OWA\Module\Base\Classes\Spam\Rule {
         return \OWA\Module\Base\Classes\Spam\Hosts::forSite( $site_id );
     }
 }
-
-?>

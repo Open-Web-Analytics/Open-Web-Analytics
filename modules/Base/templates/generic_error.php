@@ -19,7 +19,7 @@
                 </div>
                 <?php
                     $owa_rail   = $view->navRail( $view->report_nav, (string) $view->nav_property_id,
-                        array(), (string) $view->nav_access_site );
+                        [], (string) $view->nav_access_site );
                     $owa_column = null;
                     include( 'nav_shell.php' );
                 ?>

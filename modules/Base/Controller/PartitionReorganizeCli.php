@@ -31,17 +31,17 @@ class PartitionReorganizeCli extends PartitionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Changes the partition granularity of the event tables, one month at a time. On a reporting cube the daily front is left to partition-rotate.',
-            'arguments'   => array(
+            'arguments'   => [
                 'granularity=<monthly|half-month|quarter-month>' => 'Required. The new partition size. daily is refused for a cube.',
                 'from=<yyyymmdd>'                                => 'Reorganize from this date.',
                 'to=<yyyymmdd>'                                  => 'Reorganize up to this date.',
                 'table=<name>'                                   => 'Reorganize only this table.',
                 '--force'                                        => 'Proceed when the result needs more partitions than the ceiling allows.',
                 '--dry-run'                                      => 'Report the plan, and change nothing.',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -71,7 +71,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         $from        = $this->getParam( 'from' ) ?: null;
         $to          = $this->getParam( 'to' ) ?: null;
 
-        foreach ( array( 'from' => $from, 'to' => $to ) as $name => $value ) {
+        foreach ( [ 'from' => $from, 'to' => $to ] as $name => $value ) {
 
             if ( $value !== null && ! self::isDate( $value ) ) {
 
@@ -149,7 +149,7 @@ class PartitionReorganizeCli extends PartitionsCli {
 
             if ( $protect ) {
 
-                $protect = array( 'start' => $protect['start'], 'less_than' => $protect['end'] );
+                $protect = [ 'start' => $protect['start'], 'less_than' => $protect['end'] ];
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: leaving %s to %s daily -- that is the front of its lead, which '
@@ -179,12 +179,12 @@ class PartitionReorganizeCli extends PartitionsCli {
 
                 $this->compactTable(
                     $table,
-                    array(
+                    [
                         'limit'  => max( 1, $budget['limit'] - max( 0, $extra ) ),
                         'reason' => sprintf(
                             '%s, less %d reserved for the finer granularity', $budget['reason'], max( 0, $extra )
                         ),
-                    ),
+                    ],
                     $dry_run
                 );
 

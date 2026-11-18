@@ -108,11 +108,11 @@ if ( function_exists( 'fastcgi_finish_request' ) ) {
 
 // Create instance of OWA
 require_once(__DIR__ . '/owa.php');
-$config = array(
+$config = [
 
     'tracking_mode' => true,
     'request_type' => 'tracking'
-);
+];
 
 $owa = new owa( $config );
 
@@ -161,5 +161,3 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     \OWA\Core\CoreAPI::logEvent($event->getEventType(), $event);
 
 }
-
-?>

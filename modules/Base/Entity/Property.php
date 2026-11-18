@@ -100,10 +100,10 @@ class Property extends \OWA\Core\Entity {
      */
     public static function types() {
 
-        return array(
+        return [
             self::TYPE_WEB => 'A website',
             self::TYPE_APP => 'An app',
-        );
+        ];
     }
 
     /**
@@ -146,5 +146,3 @@ class Property extends \OWA\Core\Entity {
         return (bool) $this->get('archived_date');
     }
 }
-
-?>

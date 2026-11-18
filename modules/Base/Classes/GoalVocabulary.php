@@ -40,7 +40,7 @@ class GoalVocabulary {
      * Only the differences: a column with no entry here is named after its own
      * property, which is most of them.
      */
-    const SOURCE = array(
+    const SOURCE = [
 
         // Cut from the location, which every event carries.
         'page_path'  => 'page_location',
@@ -79,7 +79,7 @@ class GoalVocabulary {
         'prior_sessions'         => 'num_prior_sessions',
         'session_start_ts'       => 'sts',
         'prior_session_start_ts' => 'psts',
-    );
+    ];
 
     /**
      * Columns a condition may NOT name, and the reason for each.
@@ -88,7 +88,7 @@ class GoalVocabulary {
      * where the judgement about what a goal IS gets recorded, and the test that
      * every column is accounted for reads the same set.
      */
-    const EXCLUDED = array(
+    const EXCLUDED = [
 
         'id'     => 'the row identity, derived from the other columns -- a '
                     . 'condition on it is a condition on a hash',
@@ -139,13 +139,13 @@ class GoalVocabulary {
         'spam_score' => 'how much the request looked like spam, stamped on every row '
                         . 'of the beacon. Not something a visitor did',
         'spam_rules' => 'the spam rules the request met. Not something a visitor did',
-    );
+    ];
 
     /**
      * What a column holds, for the builder's picker, where the report dimension
      * reading the same column has no description to lend (description()).
      */
-    const DESCRIPTIONS = array(
+    const DESCRIPTIONS = [
         'raw_ua'               => 'The browser\'s full user agent string, as it arrived. '
                                   . 'Browser, operating system and device are its readings.',
         'engagement_msec'      => 'How long the page was in the foreground before this event, '
@@ -167,7 +167,7 @@ class GoalVocabulary {
                                   . '(cents for USD).',
         'tax'                  => 'The tax on the purchase, in minor units of its currency.',
         'shipping'             => 'The shipping on the purchase, in minor units of its currency.',
-    );
+    ];
 
     /**
      * v1 property names that no longer exist, and the v2 column that means what
@@ -188,7 +188,7 @@ class GoalVocabulary {
      * there was, including ones with no column at all (page_type, is_robot, the
      * date parts). Those are reported by the migration rather than guessed at.
      */
-    const LEGACY = array(
+    const LEGACY = [
         'page_uri'     => 'page_path',
         'page_url'     => 'page_location',
         'medium'       => 'tagged_medium',
@@ -200,10 +200,10 @@ class GoalVocabulary {
         // 1.x's browser was the user agent's version (resolveBrowserVersion);
         // the family was browser_type, which is still a column.
         'browser'      => 'browser_version',
-    );
+    ];
 
     /** Labels that do not survive being prettified from the column name. */
-    const LABELS = array(
+    const LABELS = [
         'raw_ua'              => 'User agent',
         'page_path'           => 'Page path',
         'page_location'       => 'Page URL',
@@ -225,7 +225,7 @@ class GoalVocabulary {
         'is_outbound'         => 'Outbound click',
         'engagement_msec'     => 'Engagement time (ms)',
         'target_url'          => 'Target URL',
-    );
+    ];
 
     /**
      * Every column a condition may name, whatever the event type.
@@ -236,7 +236,7 @@ class GoalVocabulary {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
-        $out = array();
+        $out = [];
 
         foreach ( array_keys( (array) $entity->getProperties() ) as $column ) {
 
@@ -272,7 +272,7 @@ class GoalVocabulary {
 
         $properties = TrackingEventHelpers::propertiesForEvent( $event_name );
 
-        $out = array();
+        $out = [];
 
         foreach ( self::columns() as $column ) {
 
@@ -307,7 +307,7 @@ class GoalVocabulary {
 
         if ( self::$registryDescriptions === null ) {
 
-            self::$registryDescriptions = array();
+            self::$registryDescriptions = [];
 
             // The modules' dimensions alone: these describe raw row columns,
             // and a custom dimension is a column of one Property's cube.
@@ -380,5 +380,3 @@ class GoalVocabulary {
         return $column === false ? null : $column;
     }
 }
-
-?>

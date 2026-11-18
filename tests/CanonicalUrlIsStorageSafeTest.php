@@ -51,7 +51,7 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
     {
         $stored = $this->stored( $wire );
 
-        foreach ( array( '<', '>', '"', "'" ) as $raw ) {
+        foreach ( [ '<', '>', '"', "'" ] as $raw ) {
             $this->assertStringNotContainsString( $raw, $stored,
                 "a raw $raw reached the column" );
         }
@@ -59,14 +59,14 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
 
     public static function mustNotSurviveRaw(): array
     {
-        return array(
+        return [
             // Arrives entity-encoded, so tag-stripping sees no tag to strip,
             // and the canonicaliser's decode is what would have made it one.
-            'encoded on the wire' => array( 'https://x.test/&lt;img src=x onerror=alert(1)&gt;' ),
-            'raw angle brackets'  => array( 'https://x.test/a < b > c' ),
-            'attribute breakout'  => array( 'https://x.test/" onmouseover="alert(1)' ),
-            'single quoted'       => array( "https://x.test/' onmouseover='alert(1)" ),
-        );
+            'encoded on the wire' => [ 'https://x.test/&lt;img src=x onerror=alert(1)&gt;' ],
+            'raw angle brackets'  => [ 'https://x.test/a < b > c' ],
+            'attribute breakout'  => [ 'https://x.test/" onmouseover="alert(1)' ],
+            'single quoted'       => [ "https://x.test/' onmouseover='alert(1)" ],
+        ];
     }
 
     /** @dataProvider rejectedSchemes */
@@ -78,18 +78,18 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
 
     public static function rejectedSchemes(): array
     {
-        return array(
-            'javascript'      => array( 'javascript:alert(1)' ),
-            'mixed case'      => array( 'JaVaScRiPt:alert(1)' ),
-            'data'            => array( 'data:text/html,x' ),
-            'vbscript'        => array( 'vbscript:x' ),
+        return [
+            'javascript'      => [ 'javascript:alert(1)' ],
+            'mixed case'      => [ 'JaVaScRiPt:alert(1)' ],
+            'data'            => [ 'data:text/html,x' ],
+            'vbscript'        => [ 'vbscript:x' ],
             // A browser strips tab, newline and CR from inside a scheme, so this
             // IS javascript: to the thing that would run it. Reading the scheme
             // off the string rather than via parse_url() is what catches it:
             // upstream sanitising rewrites the tab, and parse_url() then reports
             // no scheme at all, skipping a check that only fires when one parses.
-            'tab in scheme'   => array( "java\tscript:alert(1)" ),
-        );
+            'tab in scheme'   => [ "java\tscript:alert(1)" ],
+        ];
     }
 
     /** @dataProvider keptIntact */
@@ -100,14 +100,14 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
 
     public static function keptIntact(): array
     {
-        return array(
-            'plain'            => array( 'https://x.test/ok', 'https://x.test/ok' ),
-            'query string'     => array( 'https://x.test/ok?a=1&b=2', 'https://x.test/ok?a=1&b=2' ),
-            'uppercase scheme' => array( 'HTTPS://x.test/Case', 'HTTPS://x.test/Case' ),
-            'relative path'    => array( '/relative/path', '/relative/path' ),
+        return [
+            'plain'            => [ 'https://x.test/ok', 'https://x.test/ok' ],
+            'query string'     => [ 'https://x.test/ok?a=1&b=2', 'https://x.test/ok?a=1&b=2' ],
+            'uppercase scheme' => [ 'HTTPS://x.test/Case', 'HTTPS://x.test/Case' ],
+            'relative path'    => [ '/relative/path', '/relative/path' ],
             // A colon AFTER a slash is part of the path, not a scheme.
-            'colon in path'    => array( 'https://x.test/p:with:colons', 'https://x.test/p:with:colons' ),
-        );
+            'colon in path'    => [ 'https://x.test/p:with:colons', 'https://x.test/p:with:colons' ],
+        ];
     }
 
     /**

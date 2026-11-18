@@ -66,5 +66,3 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     echo $owa->handleRequest( $params );
     
 }
-
-?>

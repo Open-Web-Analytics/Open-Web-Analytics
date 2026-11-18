@@ -25,13 +25,13 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Publishes the Profiles\' tracking bundles that are not current. Saves and cmd=update publish on their own; run it after a change neither sees, such as a config-file constant.',
-            'arguments'   => array(
+            'arguments'   => [
                 'force=1'   => 'Publish every bundle, current or not.',
                 'site=<id>' => 'Publish only this Profile\'s bundle.',
-            ),
-        );
+            ],
+        ];
     }
 
     /** How old the cache header check may get before a quiet run repeats it. */
@@ -43,7 +43,7 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
         $site = (string) $this->getParam( 'site' );
 
-        $results = $B::publishStale( (bool) $this->getParam( 'force' ), $site !== '' ? array( $site ) : null );
+        $results = $B::publishStale( (bool) $this->getParam( 'force' ), $site !== '' ? [ $site ] : null );
 
         $counts = array_count_values( $results );
 
@@ -78,5 +78,3 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
         }
     }
 }
-
-?>

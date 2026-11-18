@@ -52,7 +52,7 @@ class Site extends \OWA\Core\Entity {
     protected $private_properties = [ 'archived_date', 'stream_type', 'app_id' ];
 
     /** @var array<int|string, list<User>> site id => its users */
-    private static $cachedAssignedUsers = array();
+    private static $cachedAssignedUsers = [];
 
     /**
      * Forget which users are assigned to which sites.
@@ -66,7 +66,7 @@ class Site extends \OWA\Core\Entity {
      */
     public static function forgetAssignedUsers() {
 
-        self::$cachedAssignedUsers = array();
+        self::$cachedAssignedUsers = [];
     }
 
     public function __construct() {
@@ -347,10 +347,10 @@ class Site extends \OWA\Core\Entity {
         // so it is either stale or forged. Ignore it.
         $checked = array_intersect( $toInt( $checked ), $rendered );
 
-        return array(
+        return [
             'grant'  => array_values( array_diff( $checked, $current ) ),
             'revoke' => array_values( array_intersect( array_diff( $rendered, $checked ), $current ) ),
-        );
+        ];
     }
 
     /**
@@ -372,7 +372,7 @@ class Site extends \OWA\Core\Entity {
             throw new \Exception('no site data loaded!');
         }
 
-        $current = array();
+        $current = [];
 
         foreach ( $this->getAssignedUsers() as $user ) {
 
@@ -448,7 +448,7 @@ class Site extends \OWA\Core\Entity {
             $db->selectColumn( '*' );
             $db->where( 'site_id', $this->get('id') );
             $relations = $db->getAllRows();
-            $result = array();
+            $result = [];
             if (is_array($relations)) {
                 foreach ($relations as $row) {
                     $userEntity = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -463,5 +463,3 @@ class Site extends \OWA\Core\Entity {
     }
 
 }
-
-?>

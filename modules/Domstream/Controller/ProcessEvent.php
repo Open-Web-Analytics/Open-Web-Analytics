@@ -103,5 +103,3 @@ class ProcessEvent extends \OWA\Core\Controller {
         return true;
     }
 }
-
-?>

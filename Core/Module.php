@@ -123,7 +123,7 @@ abstract class Module {
      *
      * @var list<ViewNavLink>
      */
-    public $view_nav_links = array();
+    public $view_nav_links = [];
 
     /**
      * Whether registerReports() has run for this module this request.
@@ -158,7 +158,7 @@ abstract class Module {
      *
      * @var list<string>
      */
-    public $entities = array();
+    public $entities = [];
 
     /**
      * Required Schema Version
@@ -172,7 +172,7 @@ abstract class Module {
      *
      * @var array<int, \OWA\Core\Update>
      */
-    public $updates = array();
+    public $updates = [];
 
     /**
      * What the last update() stopped for, when an update stopped for the
@@ -187,28 +187,28 @@ abstract class Module {
      *
      * @var array<string, string>
      */
-    public $event_processors = array();
+    public $event_processors = [];
 
     /**
      * Dimensions, name => entity => registration
      *
      * @var array<string, array<string, array<string, mixed>>>
      */
-    public $denormalizedDimensions = array();
+    public $denormalizedDimensions = [];
 
     /**
      * cli_commands, command => action
      *
      * @var array<string, string>
      */
-    public $cli_commands = array();
+    public $cli_commands = [];
 
     /**
      * Scheduled jobs this module contributes, keyed by job name.
      *
      * @var array<string, JobRegistration>
      */
-    public $scheduled_jobs = array();
+    public $scheduled_jobs = [];
 
     /**
      * Update from CLI Required flag
@@ -222,10 +222,10 @@ abstract class Module {
     public $update_from_cli_required;
     
     /**
-	 * Filesystem path of the module's directory
-	 *
-	 * @var string
-	 */
+     * Filesystem path of the module's directory
+     *
+     * @var string
+     */
     public $path;
 
     /**
@@ -233,7 +233,7 @@ abstract class Module {
      *
      * @var bool|null
      */
-	public $config_required;
+    public $config_required;
 
     /**
      * Constructor
@@ -241,17 +241,17 @@ abstract class Module {
      *
      */
     public function __construct() {
-		
-		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
-		$this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
-		
+        
+        // runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
+        $this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
+        
         //parent::__construct();
-		
-		/**
-		 * Initial registration calls
-		 */
-		$this->init();
-		
+        
+        /**
+         * Initial registration calls
+         */
+        $this->init();
+        
         /**
          * Register Filters
          */
@@ -296,8 +296,8 @@ abstract class Module {
      * @return mixed unread: the constructor ignores it
      */
     public function init() {
-	    
-	    return false;
+        
+        return false;
     }
 
     /**
@@ -403,7 +403,7 @@ abstract class Module {
         }
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
-        $eq->attach($event_name, array($handler_name, $method), $key);
+        $eq->attach($event_name, [$handler_name, $method], $key);
 
         return true;
     }
@@ -423,7 +423,7 @@ abstract class Module {
         // if it's an object
         if ( is_object( $handler_name ) ) {
 
-            \OWA\Core\CoreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
+            \OWA\Core\CoreAPI::registerFilter($filter_name, [$handler_name, $method], $priority);
 
         // if it's a static method name
         } elseif ( strpos( $handler_name, '::') ) {
@@ -443,7 +443,7 @@ abstract class Module {
             }
 
             // register
-            \OWA\Core\CoreAPI::registerFilter($filter_name, array($class, $method), $priority);
+            \OWA\Core\CoreAPI::registerFilter($filter_name, [$class, $method], $priority);
         }
     }
 
@@ -465,7 +465,7 @@ abstract class Module {
      *                                   the setting's own
      * @return void
      */
-    public function registerSettingsField( $key, array $args = array() ) {
+    public function registerSettingsField( $key, array $args = [] ) {
 
         \OWA\Core\CoreAPI::configSingleton()->registerField( $this->name, $key, $args );
     }
@@ -542,10 +542,10 @@ abstract class Module {
          * updates. These two keys carry database STATE, not configuration, and
          * nothing may treat them as restating a default.
          */
-        return array(
-            'is_active'      => array( 'autoload' => true ),
-            'schema_version' => array( 'autoload' => true ),
-        );
+        return [
+            'is_active'      => [ 'autoload' => true ],
+            'schema_version' => [ 'autoload' => true ],
+        ];
     }
 
     /**
@@ -599,9 +599,9 @@ abstract class Module {
             return $registry;
         }
 
-        $fields     = array();
-        $declared   = array();
-        $activation = array();
+        $fields     = [];
+        $declared   = [];
+        $activation = [];
 
         $mechanical = self::mechanicalSettings();
 
@@ -644,7 +644,7 @@ abstract class Module {
 
                 // Chrome from the module if it offered any, eagerness from core.
                 $declared_settings[ $key ] = array_merge(
-                    (array) ( $declared_settings[ $key ] ?? array() ), $args );
+                    (array) ( $declared_settings[ $key ] ?? [] ), $args );
             }
 
             foreach ( $declared_settings as $key => $args ) {
@@ -657,14 +657,14 @@ abstract class Module {
             // The constants that switch the module on (ModuleActivation).
             if ( ! empty( $decl['activated_by'] ) ) {
 
-                $activation[ $module ] = array(
+                $activation[ $module ] = [
                     'activated_by'      => array_values( (array) $decl['activated_by'] ),
                     'intake_queue_type' => (string) ( $decl['intake_queue_type'] ?? '' ),
-                );
+                ];
             }
         }
 
-        return $registry = array( 'fields' => $fields, 'declared' => $declared, 'activation' => $activation );
+        return $registry = [ 'fields' => $fields, 'declared' => $declared, 'activation' => $activation ];
     }
 
     /**
@@ -741,7 +741,7 @@ abstract class Module {
          * than each fieldset naming its page, so layout is declared where the
          * layout decision is made and the order is just the order of the array.
          */
-        $page['fieldsets'] = (array) ( $page['fieldsets'] ?? array() );
+        $page['fieldsets'] = (array) ( $page['fieldsets'] ?? [] );
 
         // What marks this panel as carrying an authoritative title.
         $page['owa_titled'] = true;
@@ -884,7 +884,7 @@ abstract class Module {
      */
     protected function reportRef( $id ) {
 
-        return array( 'do' => 'base.report', 'reportId' => $id );
+        return [ 'do' => 'base.report', 'reportId' => $id ];
     }
 
     /**
@@ -924,7 +924,7 @@ abstract class Module {
     protected function registerReport( $id, $definition ) {
 
         if ( is_string( $definition ) ) {
-            $definition = array( 'json' => $this->path . $definition );
+            $definition = [ 'json' => $this->path . $definition ];
         }
 
         $definition['module'] = $this->name;
@@ -1037,11 +1037,11 @@ abstract class Module {
             $ret = $this->postInstall();
 
             if ($ret == true) {
-	            
+                
                 \OWA\Core\CoreAPI::notice("Post install procedure was a success.");
                 
             } else {
-	            
+                
                 \OWA\Core\CoreAPI::notice("Post install procedure failed.");
             }
 
@@ -1217,8 +1217,8 @@ abstract class Module {
      * @return null CoreAPI::persistSetting() answers nothing
      */
     public function activate() {
-	
-		$ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
+    
+        $ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
         \OWA\Core\CoreAPI::notice("Module $this->name activated");
         
         return $ret;
@@ -1245,7 +1245,7 @@ abstract class Module {
         if ($this->name != 'base') {
 
             \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
-    	}
+        }
 
         return true;
     }
@@ -1334,7 +1334,7 @@ abstract class Module {
      */
     public function addTrackingEventProcessor( $event_types, $processor ) {
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $event_types as $type ) {
 
@@ -1360,7 +1360,7 @@ abstract class Module {
         }
         
         foreach( $event_types as $event_type) {
-	    
+        
             $this->event_processors[$event_type] = $processor;
         }
     }
@@ -1390,7 +1390,7 @@ abstract class Module {
      */
     public function registerMetricDefinition( $params ) {
 
-        $map = array(
+        $map = [
             'name'            => '',
             'label'            => '',
             'description'    => '',
@@ -1413,7 +1413,7 @@ abstract class Module {
              * dropped in silence -- and a metric that lost its condition would
              * count every row while claiming to count some of them.
              */
-            'condition'         => array(),
+            'condition'         => [],
             /*
              * A ratio's declaration. Same reason as subtrahend_column and
              * condition: array_intersect_key() below filters params down to
@@ -1425,7 +1425,7 @@ abstract class Module {
             'minuend'          => '',
             'subtrahend'       => '',
             'precision'        => ''
-        );
+        ];
 
         $map = array_intersect_key( array_merge( $map, $params ), $map );
 
@@ -1467,14 +1467,14 @@ abstract class Module {
             return;
         }
 
-        $definition = array(
+        $definition = [
             'name'             => $map['name'],
             'class'         => 'base.configurableMetric',
             'params'         => $map,
             'label'         => $map['label'],
             'description'     => $map['description'],
             'group'         => $map['group']
-        );
+        ];
         //print_r($definition);
         $this->metrics[ $map['name'] ][] = $definition;
 
@@ -1501,10 +1501,10 @@ abstract class Module {
             $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
             $denormalized = false, $data_type = 'string',
-            array $options = array()) {
+            array $options = []) {
 
         if ( ! is_array( $entity_names ) ) {
-            $entity_names = array($entity_names);
+            $entity_names = [$entity_names];
         }
 
         foreach ($entity_names as $entity) {
@@ -1519,7 +1519,7 @@ abstract class Module {
                 continue;
             }
 
-            $this->denormalizedDimensions[$dim_name][$entity] = array_merge( $options, array(
+            $this->denormalizedDimensions[$dim_name][$entity] = array_merge( $options, [
                 'family'             => $family,
                 'name'                 => $dim_name,
                 'entity'             => $entity,
@@ -1529,7 +1529,7 @@ abstract class Module {
                 'foreign_key_name'     => $foreign_key_name,
                 'data_type'         => $data_type,
                 'denormalized'         => $denormalized
-            ) );
+            ] );
         }
     }
 
@@ -1567,7 +1567,7 @@ abstract class Module {
              * instead of writing the alias in front. `expression` says that
              * once, rather than the seam learning each kind's key.
              */
-            $options = array();
+            $options = [];
 
             if ( isset( $d['parts'] ) ) {
 
@@ -1634,10 +1634,10 @@ abstract class Module {
         foreach ( (array) $declaration['metrics'] as $name => $m ) {
 
             $this->registerMetricDefinition( array_merge(
-                array(
+                [
                     'name'   => $name,
                     'entity' => $declaration['entity'],
-                ),
+                ],
                 $m ) );
         }
     }
@@ -1726,7 +1726,7 @@ abstract class Module {
      */
     protected function registerAction( $action_name, $class_name, $file = '' ) {
 
-        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( 'actions', $action_name, array( 'class_name' => $class_name ) );
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( 'actions', $action_name, [ 'class_name' => $class_name ] );
     }
     
     /**
@@ -1752,7 +1752,7 @@ abstract class Module {
         }
 
         \OWA\Core\CoreAPI::serviceSingleton()->setRestApiRoute( $this->name, $version, $route_name, $request_method,
-            array( 'class_name' => $class_name, 'conf' => $params ) );
+            [ 'class_name' => $class_name, 'conf' => $params ] );
     }
 
     /**
@@ -1802,7 +1802,7 @@ abstract class Module {
      */
     public function registerJob( $name, $command, $schedule, $params, $description = '' ) {
 
-        $this->scheduled_jobs[ $name ] = array(
+        $this->scheduled_jobs[ $name ] = [
             'name'        => $name,
             'command'     => $command,
             'schedule'    => $schedule,
@@ -1810,7 +1810,7 @@ abstract class Module {
             'description' => (string) $description,
             'module'      => $this->name,
             'source'      => 'code',
-        );
+        ];
     }
 
     /**
@@ -1867,7 +1867,7 @@ abstract class Module {
         }
 
         // The second element was the class file; it is kept, empty, so the shape does not change.
-        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $type, $key, array( $class_name, '', $params ) );
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $type, $key, [ $class_name, '', $params ] );
     }
 
     /**
@@ -1899,7 +1899,7 @@ abstract class Module {
      *
      * @return void
      */
-    public function registerTrackingProperties( $type, $properties = array() ) {
+    public function registerTrackingProperties( $type, $properties = [] ) {
 
         switch( strtolower( $type ) ) {
 
@@ -2005,11 +2005,11 @@ abstract class Module {
      * @return NavLink
      */
     private function getLinkStruct($ref,$anchortext,$order,$priviledge, $icon_class = '') {
-        return array('ref' => $ref,
+        return ['ref' => $ref,
                     'anchortext' => $anchortext,
                     'order' => $order,
                     'priviledge' => $priviledge,
-                    'icon_class' => $icon_class);
+                    'icon_class' => $icon_class];
     }
 
     /**
@@ -2025,5 +2025,3 @@ abstract class Module {
     }
 
 }
-
-?>

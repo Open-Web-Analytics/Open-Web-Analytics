@@ -41,7 +41,7 @@ class OptionsModules extends \OWA\Core\AdminController {
 
     public function action() {
 
-        $dirs = array();
+        $dirs = [];
 
         // Only directories that hold a module (CoreAPI::getPresentModules()).
         foreach ( (array) \OWA\Core\CoreAPI::getPresentModules() as $file ) {
@@ -81,7 +81,7 @@ class OptionsModules extends \OWA\Core\AdminController {
 
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId();
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'base.optionsModules', [ 'template' => 'options_modules.php', 'vars' => [ 'modules' ] ] );
         $this->set('modules', $dirs);
 
@@ -90,7 +90,3 @@ class OptionsModules extends \OWA\Core\AdminController {
     }
 
 }
-
-
-
-?>

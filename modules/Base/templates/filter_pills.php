@@ -8,7 +8,7 @@
  *   $owa_fp  the element ids -- pills, add, form, dimension, operator, value,
  *            addFilter, cancel -- and label, the id of the field's label
  */
-$owa_fp = $owa_fp ?? array();
+$owa_fp = $owa_fp ?? [];
 ?>
 <div class="owa_filterPills" id="<?php $view->out( $owa_fp['pills'] ); ?>" role="group" data-ui="filter:pills"
      aria-labelledby="<?php $view->out( $owa_fp['label'] ); ?>">

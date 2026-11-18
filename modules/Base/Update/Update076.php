@@ -42,10 +42,10 @@ class Update076 extends \OWA\Core\Update {
     public $schema_version = 76;
 
     /** old name => new name, without the table prefix. */
-    const TABLES = array(
+    const TABLES = [
         'goal_event'           => 'goal_event_definition',
         'goal_event_condition' => 'goal_event_definition_condition',
-    );
+    ];
 
     /** The condition table's column naming its definition, and a funnel step's key. */
     const OLD_KEY = 'goal_event_id';
@@ -223,7 +223,7 @@ class Update076 extends \OWA\Core\Update {
         $table = $this->tableFor( 'custom_report' );
 
         $rows = (array) $db->get_results( sprintf( 'SELECT id, definition FROM %s WHERE definition LIKE ?', $table ),
-            array( '%' . $from . '%' ) );
+            [ '%' . $from . '%' ] );
 
         $renamed = 0;
 
@@ -239,7 +239,7 @@ class Update076 extends \OWA\Core\Update {
             }
 
             if ( $db->query( sprintf( 'UPDATE %s SET definition = ? WHERE id = ?', $table ),
-                    array( $rewritten, $row['id'] ) ) === false ) {
+                    [ $rewritten, $row['id'] ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Renaming the funnel steps\' %s in report %s failed', $from, $row['id'] ) );
 
@@ -273,5 +273,3 @@ class Update076 extends \OWA\Core\Update {
             (string) $definition );
     }
 }
-
-?>

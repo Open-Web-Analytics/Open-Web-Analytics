@@ -38,7 +38,7 @@ namespace OWA\Module\Base\Classes;
 class TouchBackfill {
 
     /** The evidence columns, in raw's names. */
-    const EVIDENCE = array( 'source', 'medium', 'campaign', 'ad' );
+    const EVIDENCE = [ 'source', 'medium', 'campaign', 'ad' ];
 
     /** Visitors per statement. */
     const VISITORS_PER_BATCH = 2000;
@@ -70,7 +70,7 @@ class TouchBackfill {
     /** @return string[] the sites raw holds landings for */
     public function sites() {
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $this->db->get_results( sprintf(
                 "SELECT DISTINCT site_id FROM %s WHERE event_type = 'session_start'", $this->raw ) ) as $row ) {
@@ -109,20 +109,20 @@ class TouchBackfill {
      */
     public function ranges( $site_id, $per = self::VISITORS_PER_BATCH ) {
 
-        $ids = array();
+        $ids = [];
 
         foreach ( (array) $this->db->get_results( sprintf(
                 "SELECT DISTINCT visitor_id FROM %s WHERE site_id = ? AND event_type = 'session_start'"
-              . ' ORDER BY visitor_id', $this->raw ), array( (string) $site_id ) ) as $row ) {
+              . ' ORDER BY visitor_id', $this->raw ), [ (string) $site_id ] ) as $row ) {
 
             $ids[] = (int) $row['visitor_id'];
         }
 
-        $ranges = array();
+        $ranges = [];
 
         foreach ( array_chunk( $ids, max( 1, (int) $per ) ) as $chunk ) {
 
-            $ranges[] = array( $chunk[0], end( $chunk ) );
+            $ranges[] = [ $chunk[0], end( $chunk ) ];
         }
 
         return $ranges;
@@ -136,9 +136,9 @@ class TouchBackfill {
      */
     private static function nonDirect( $a ) {
 
-        $tests = array();
+        $tests = [];
 
-        foreach ( array( 'tagged_source', 'tagged_medium', 'tagged_campaign', 'tagged_ad', 'referer_host' ) as $c ) {
+        foreach ( [ 'tagged_source', 'tagged_medium', 'tagged_campaign', 'tagged_ad', 'referer_host' ] as $c ) {
 
             $tests[] = sprintf( "NULLIF(TRIM(%s.%s), '') IS NOT NULL", $a, $c );
         }
@@ -156,7 +156,7 @@ class TouchBackfill {
      */
     private function stamp( $site_id, $low, $high ) {
 
-        $set = array();
+        $set = [];
 
         foreach ( self::EVIDENCE as $part ) {
 
@@ -195,7 +195,7 @@ class TouchBackfill {
           . ' SET %2$s WHERE r.visitor_id BETWEEN %4$d AND %5$d',
             $this->raw, implode( ', ', $set ), self::nonDirect( 'l' ), (int) $low, (int) $high );
 
-        return $this->db->query( $sql, array( (string) $site_id, (string) $site_id, (string) $site_id ) ) !== false;
+        return $this->db->query( $sql, [ (string) $site_id, (string) $site_id, (string) $site_id ] ) !== false;
     }
 
     /**
@@ -216,7 +216,7 @@ class TouchBackfill {
           . "  ) m ON l.visitor_id = m.visitor_id AND l.ts = m.ts AND l.event_type = 'session_start' AND l.site_id = ?",
             $this->raw, self::nonDirect( 'n' ), (int) $low, (int) $high );
 
-        $set = array();
+        $set = [];
 
         foreach ( self::EVIDENCE as $part ) {
 
@@ -227,7 +227,7 @@ class TouchBackfill {
             'UPDATE %s v JOIN (%s) t ON v.visitor_id = t.visitor_id SET %s, v.last_touch_referer_host = t.referer_host,'
           . ' v.last_touch_ts = t.ts WHERE v.last_touch_ts IS NULL OR v.last_touch_ts < t.ts',
             $this->store, $latest, implode( ', ', $set ) ),
-            array( (string) $site_id, (string) $site_id ) );
+            [ (string) $site_id, (string) $site_id ] );
 
         if ( $updated === false ) {
 
@@ -242,8 +242,6 @@ class TouchBackfill {
           . ' t.referer_host, t.ts, FLOOR(t.yyyymmdd / 100) FROM (%s) t'
           . ' WHERE NOT EXISTS (SELECT 1 FROM %s v WHERE v.visitor_id = t.visitor_id)',
             $this->store, $latest, $this->store ),
-            array( (string) $site_id, (string) $site_id ) ) !== false;
+            [ (string) $site_id, (string) $site_id ] ) !== false;
     }
 }
-
-?>
