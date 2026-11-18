@@ -10,7 +10,7 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
  * A resultSet query, which REQUIRES `metrics`. The named reports
  * (/reports/{report_name}) are refused.
  *
- * success() -> 201 (base.reportsRest); errorAction()/validation -> 422 (base.restApi).
+ * success() -> 200 (base.restApi); errorAction()/validation -> 422 (base.restApi).
  */
 final class ReportsRestControllerTest extends RestControllerTestCase
 {
@@ -93,9 +93,9 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(true)]
         );
 
-        $this->assertSame(201, $resp['status'],
-            'A valid metrics query should return 201.');
-        $this->assertEnvelope($resp, 201);
+        $this->assertSame(200, $resp['status'],
+            'A valid metrics query should return 200.');
+        $this->assertEnvelope($resp, 200);
         $this->assertIsArray($resp['data'],
             'A resultSet response payload should be an array (the serialized result set).');
     }
@@ -129,7 +129,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         };
 
         try {
-            $this->assertSame(201, $ask([])['status'], 'the link itself');
+            $this->assertSame(200, $ask([])['status'], 'the link itself');
 
             foreach ([
                 'segment'   => ['segment' => 'pagePath==/b'],
@@ -151,7 +151,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
     /**
      * A Profile whose Property has no cube yet is answered 409 with the
-     * reason, not 201 with no rows -- which is how a real zero looks.
+     * reason, not 200 with no rows -- which is how a real zero looks.
      */
     public function testAQueryBeforeTheFirstBuildIsNotReady(): void
     {
@@ -309,7 +309,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
              'compare' => 'previous_period_dow', 'siteId' => $site]
         );
 
-        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame(200, $resp['status'], $resp['raw']);
 
         $data = $resp['data'];
 
@@ -349,7 +349,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
              'compare' => 'previous_period', 'siteId' => $site]
         );
 
-        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame(200, $resp['status'], $resp['raw']);
 
         $this->assertSame([[2, 1], [6, 3]], array_map(
             fn ($r) => [(int) $r['pageViews']['value'], (int) $r['pageViews']['compare_value']],
@@ -382,7 +382,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
              'compare' => 'date_range', 'compareStartDate' => $d(7), 'compareEndDate' => $d(1), 'siteId' => $site]
         );
 
-        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame(200, $resp['status'], $resp['raw']);
         $this->assertSame([], $resp['data']['resultsRows'] ?? []);
 
         // Moved onto the period's days: the comparison's 1st and 3rd.
@@ -402,7 +402,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(true)]
         );
 
-        $this->assertSame(201, $resp['status']);
+        $this->assertSame(200, $resp['status']);
         $this->assertNull($resp['data']['compare']);
         $this->assertArrayNotHasKey('compare_value', $resp['data']['aggregates']['pageViews'] ?? []);
     }
@@ -447,7 +447,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
              'rowValues' => json_encode(['pagePath' => ['/a', '/b,c']])]
         );
 
-        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame(200, $resp['status'], $resp['raw']);
 
         $paths = array_map(fn ($r) => $r['pagePath']['value'], $resp['data']['resultsRows']);
         sort($paths);
@@ -485,7 +485,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
              'compare' => 'previous_period_dow', 'siteId' => $site]
         );
 
-        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame(200, $resp['status'], $resp['raw']);
 
         return $resp['data'];
     }

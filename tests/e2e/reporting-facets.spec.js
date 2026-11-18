@@ -79,7 +79,7 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
          * with numbers computed without the filter. The tests below assert on
          * which of the two came back.
          */
-        expect([201, 422], `report request failed: ${body.slice(0, 200)}`)
+        expect([200, 422], `report request failed: ${body.slice(0, 200)}`)
             .toContain(res.status());
 
         const json = JSON.parse(body);

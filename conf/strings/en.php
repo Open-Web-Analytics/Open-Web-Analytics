@@ -1764,6 +1764,7 @@ return [
     'or' => 'or',
     'present' => 'present',
     'present, not readable' => 'present, not readable',
+    'report_name is not supported. Ask for metrics and dimensions instead.' => 'report_name is not supported. Ask for metrics and dimensions instead.',
     'rotate-partitions is not running, so new periods get no partitions of their own and retention is not applied.' => 'rotate-partitions is not running, so new periods get no partitions of their own and retention is not applied.',
     'rotate-partitions is running.' => 'rotate-partitions is running.',
     'roughly %1$d to %2$d minutes' => 'roughly %1$d to %2$d minutes',

@@ -9,7 +9,7 @@ require_once(__DIR__ . '/DomstreamFixtures.php');
  * Reached through callEndpoint(), which loads the controller from its file, so
  * these run whether or not the Domstream module is active.
  *
- * success() -> 201 (domstream.domstreamsRest); validation failure -> 422.
+ * success() -> 200 (base.restApi); validation failure -> 422.
  */
 final class DomstreamsRestControllerTest extends RestControllerTestCase
 {
@@ -81,7 +81,7 @@ final class DomstreamsRestControllerTest extends RestControllerTestCase
 
         $resp = $this->call(['siteId' => $site['site_id'], 'recording_id' => self::RECORDING]);
 
-        $this->assertEnvelope($resp, 201);
+        $this->assertEnvelope($resp, 200);
 
         $recording = \OWA\Module\Domstream\Controller\DomstreamsRestController::recording(
             $site['site_id'], self::RECORDING);
@@ -106,7 +106,7 @@ final class DomstreamsRestControllerTest extends RestControllerTestCase
 
         $resp = $this->call(['siteId' => $siteB['site_id'], 'recording_id' => self::RECORDING]);
 
-        $this->assertSame(201, $resp['status']);
+        $this->assertSame(200, $resp['status']);
         $this->assertStringNotContainsString('"buy"', $resp['raw']);
         $this->assertSame([], \OWA\Module\Domstream\Controller\DomstreamsRestController::recording(
             $siteB['site_id'], self::RECORDING)['samples']);
