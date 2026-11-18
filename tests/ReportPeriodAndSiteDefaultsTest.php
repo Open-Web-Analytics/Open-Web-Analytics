@@ -300,10 +300,12 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $html = (string) \OWA\Core\CoreAPI::displayView( (array) ( new \OWA\Module\Base\Controller\Report(
             array( 'reportId' => 'pages', 'period' => 'last_28_days', 'compare' => 'previous_year' ) ) )->doAction() );
 
-        $this->assertSame( 1, preg_match( "/displayTimePeriodPicker\\('#owa_timePeriodControl', (\\{.*?\\})\\);/s", $html, $m ),
-            'the report does not start the picker' );
+        $this->assertSame( 1, preg_match( '~<script type="application/json" data-ui="report:controls">(.*?)</script>~s', $html, $m ),
+            'the report hands over no controls' );
 
-        $config = json_decode( $m[1], true );
+        $config = json_decode( $m[1], true )['periodPicker'] ?? null;
+
+        $this->assertIsArray( $config, 'the report does not start the picker' );
 
         $this->assertSame( 'last_28_days', $config['period'] ?? null, 'the picker was handed no config' );
         $this->assertSame( 'previous_year', $config['compare'] ?? null );

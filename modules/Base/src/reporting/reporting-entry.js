@@ -104,6 +104,8 @@ import './owa.customReportEdit.js';
 import './owa.visualizationEdit.js';
 // The header's notification bell and its account and help menus (header.php).
 import './owa.header.js';
+// A report's widgets and its controls (report_widgets.php, report.php), started from the data the templates hand over.
+import './owa.reportWidgets.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.format.js itself.
