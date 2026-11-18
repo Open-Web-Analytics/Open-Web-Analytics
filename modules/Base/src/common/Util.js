@@ -340,29 +340,9 @@ class Util {
         // must be string
         return Util.dechex(Util.crc32(domain));
     }
-    
 
-      
-    // Returns input string padded on the left or right to specified length with pad_string  
-    // 
-    // version: 1109.2015
-    // discuss at: http://phpjs.org/functions/str_pad
-    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-    // + namespaced by: Michael White (http://getsprink.com)
-    // +      input by: Marco van Oort
-    // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
-    // *     example 1: str_pad('Kevin van Zonneveld', 30, '-=', 'STR_PAD_LEFT');
-    // *     returns 1: '-=-=-=-=-=-Kevin van Zonneveld'
-    // *     example 2: str_pad('Kevin van Zonneveld', 30, '-', 'STR_PAD_BOTH');
-    // *     returns 2: '------Kevin van Zonneveld-----'
-    
     /**
      * Left-pad a number with zeros to a fixed width.
-     *
-     * Was a wrapper over a 38-line str_pad() port of PHP's, called with
-     * STR_PAD_LEFT and '0' and nothing else -- the port's other three pad
-     * types, its custom pad strings and its multi-character padding were all
-     * unreachable. padStart is the same operation, and it is in the language.
      */
     static zeroFill ( number, length ) {
 
