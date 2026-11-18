@@ -2,11 +2,7 @@
 
 namespace OWA\Module\Base\Entity;
 
-/**
- * User to Site Relation Entity
- * 
- * @author      Daniel Pötzinger <poetzinger@aoemedia.de>
- */
+/** User to Site Relation Entity */
 
 class SiteUser extends \OWA\Core\Entity {
 
