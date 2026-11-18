@@ -309,7 +309,10 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame('Purchase', json_decode($row['params'], true)['action_name']);
     }
 
-    /** v1 stored the amount times 100 whatever the currency; v2 stores minor units. */
+    /**
+     * v1 stored the amount times 100 whatever the currency; v2 stores minor
+     * units. Revenue is the total less tax and shipping, as live ingest has it.
+     */
     public function testAPurchaseIsInMinorUnitsOfTheProfilesCurrency(): void
     {
         $this->fact('commerce_transaction_fact', '1790000000000000701', ['order_id' => 'A-1', 'total_revenue' => 1250,
@@ -319,8 +322,9 @@ final class MigrateMoreSourcesTest extends TestCase
 
         $usd = $this->rows('purchase')[0];
         $this->assertSame('A-1', $usd['transaction_id']);
-        $this->assertSame(1250, (int) $usd['revenue'], '12.50 USD is 1250 cents');
+        $this->assertSame(1100, (int) $usd['revenue'], '12.50 USD less 1.00 tax and 0.50 shipping is 1100 cents');
         $this->assertSame(100, (int) $usd['tax']);
+        $this->assertSame(50, (int) $usd['shipping']);
         $this->assertSame('USD', $usd['currency']);
         $this->assertSame('stripe', json_decode($usd['params'], true)['gateway']);
 
@@ -331,13 +335,14 @@ final class MigrateMoreSourcesTest extends TestCase
         }
         // Per Property, not per Profile: a Property's revenue sums in one cube.
         $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base', 'currencyISO3', 'JPY'));
-        \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_v1fx_commerce_transaction_fact SET total_revenue = 120000');
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            'UPDATE owa_v1fx_commerce_transaction_fact SET total_revenue = 120000, tax_revenue = 10000, shipping_revenue = 5000');
 
         (new PurchaseMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
         $jpy = $this->rows('purchase')[0];
         $this->assertSame('JPY', $jpy['currency']);
-        $this->assertSame(1200, (int) $jpy['revenue']);
+        $this->assertSame(1050, (int) $jpy['revenue'], '1200 yen less 100 tax and 50 shipping');
     }
 
     private function lineItem(string $id, array $row): void

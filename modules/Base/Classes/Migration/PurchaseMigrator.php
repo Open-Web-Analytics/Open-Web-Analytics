@@ -20,6 +20,9 @@ namespace OWA\Module\Base\Classes\Migration;
  * item_revenue is not carried. v2's item is price times quantity, which is
  * what v1 wrote it as.
  *
+ * REVENUE EXCLUDES TAX AND SHIPPING, as live ingest's does: v1's
+ * total_revenue less tax_revenue and shipping_revenue.
+ *
  * @phpstan-import-type Row from \OWA\Core\Db
  */
 class PurchaseMigrator extends FactMigrator {
@@ -40,14 +43,24 @@ class PurchaseMigrator extends FactMigrator {
 
         $event->set( 'currency', $currency );
 
-        foreach ( [ 'revenue' => 'total_revenue', 'ct_tax' => 'tax_revenue', 'ct_shipping' => 'shipping_revenue' ] as $to => $from ) {
+        $amounts = [];
+
+        foreach ( [ 'total' => 'total_revenue', 'ct_tax' => 'tax_revenue', 'ct_shipping' => 'shipping_revenue' ] as $to => $from ) {
 
             $v1 = $r[ $from ] ?? null;
 
-            $event->set( $to, is_numeric( $v1 )
+            $amounts[ $to ] = is_numeric( $v1 )
                 ? \OWA\Module\Base\Classes\Currency::toMinorUnits( $v1 / 100, $currency )
-                : null );
+                : null;
         }
+
+        $event->set( 'ct_tax', $amounts['ct_tax'] );
+        $event->set( 'ct_shipping', $amounts['ct_shipping'] );
+
+        // Revenue as live ingest has it for addTransaction(): the total less
+        // tax and shipping (TrackingEventHelpers::deriveRevenue()).
+        $event->set( 'revenue', $amounts['total'] === null ? null
+            : $amounts['total'] - (int) $amounts['ct_tax'] - (int) $amounts['ct_shipping'] );
 
         $order = (string) ( $r['order_id'] ?? '' );
         $items = $order !== '' ? ( $refs['line_items'][ $order ] ?? [] ) : [];

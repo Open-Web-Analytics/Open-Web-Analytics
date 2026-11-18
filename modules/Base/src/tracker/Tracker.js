@@ -3147,16 +3147,17 @@ class OWATracker  {
      * The city, state and country arguments are accepted and discarded, so
      * existing calls keep their positions.
      *
-     *   owa_cmds.push(['addTransaction', 'T-1001', 'Web store', 59.98, 4.90, 5.99, 'card']);
+     *   owa_cmds.push(['addTransaction', 'T-1001', 'Web store', 49.17, 3.20, 5.99, 'card']);
      *   owa_cmds.push(['addTransactionLineItem', 'T-1001', 'SKU-1', 'Blue mug', 'Kitchen', 19.99, 2]);
      *   owa_cmds.push(['trackTransaction']);
      *
+     * The purchase's revenue is the total less tax and shipping.
      * trackPurchase() does the same in one call.
      *
      * @command
      * @param {string} order_id
      * @param {string} order_source  e.g. the store's name
-     * @param {number} total
+     * @param {number} total         the order total, tax and shipping included
      * @param {number} tax
      * @param {number} shipping
      * @param {string} gateway       the payment method
@@ -3239,7 +3240,7 @@ class OWATracker  {
      *
      *   owa_cmds.push( [ 'trackPurchase', {
      *       transaction_id: 'T-1001',
-     *       value:    59.98,         // the items: tax and shipping NOT included
+     *       value:    39.98,         // the items: tax and shipping NOT included
      *       currency: 'USD',
      *       tax:      4.90,
      *       shipping: 5.99,

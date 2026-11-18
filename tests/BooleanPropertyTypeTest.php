@@ -156,4 +156,26 @@ final class BooleanPropertyTypeTest extends TestCase
         $this->assertFalse( $typed, 'the declared type should have resolved the null' );
         $this->assertNull( $untyped, 'without either guard a null reaches the column' );
     }
+
+    /**
+     * A beacon's values arrive as strings: "false", "no", "off", "0" and ""
+     * are false, in any case; any other string is true.
+     */
+    public function testABooleanReadsFalseSpellingsAsFalse(): void
+    {
+        foreach ( [ '0', 'false', 'FALSE', 'False', 'off', 'Off', 'no', 'NO', '', ' false ' ] as $string ) {
+
+            $this->assertFalse( Helpers::setDataType( $string, 'boolean' ), var_export( $string, true ) . ' read as true' );
+        }
+
+        foreach ( [ '1', 'true', 'TRUE', 'yes', 'on', 'anything' ] as $string ) {
+
+            $this->assertTrue( Helpers::setDataType( $string, 'boolean' ), var_export( $string, true ) . ' read as false' );
+        }
+
+        $this->assertFalse( Helpers::setDataType( null, 'boolean' ) );
+        $this->assertFalse( Helpers::setDataType( 0, 'boolean' ) );
+        $this->assertTrue( Helpers::setDataType( 1, 'boolean' ) );
+        $this->assertTrue( Helpers::setDataType( true, 'boolean' ) );
+    }
 }

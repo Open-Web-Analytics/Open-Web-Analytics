@@ -1205,7 +1205,17 @@ class TrackingEventHelpers {
                 $var = \OWA\Module\Base\Classes\Sanitize::cleanJson( $var );
                 break;
             case "boolean":
-                $var = boolval( $var );
+
+                // A beacon's values are strings, and boolval() reads "false" as true.
+                if ( is_string( $var ) ) {
+
+                    $var = ! in_array( strtolower( trim( $var ) ), [ '', '0', 'false', 'off', 'no' ], true );
+
+                } else {
+
+                    $var = boolval( $var );
+                }
+
                 break;
             default:
 
