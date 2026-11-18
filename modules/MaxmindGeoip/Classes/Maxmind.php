@@ -19,7 +19,7 @@ class Maxmind extends \OWA\Core\Location {
     public $db_file_present = false;
 
     /** @var string the web service client; a subclass may name another (tests) */
-    protected $ws_client_class = '\GeoIp2\WebService\Client';
+    protected $ws_client_class = WebServiceClient::class;
 
     /**
      * The GeoLite2 editions this module can read, and what each costs.
@@ -125,21 +125,10 @@ class Maxmind extends \OWA\Core\Location {
      * Look the IP up through MaxMind's web service rather than the local file.
      *
      * Reached by setting the module's lookup_method to
-     * 'geoip_city_isp_org_web_service'. That setting has no UI, which is the
-     * only reason this has not been noticed: the code below asked for
-     * `new \Client(...)` with the `use GeoIp2\WebService\Client` line commented
-     * out, so it named a class in the ROOT namespace that has never existed. Any
-     * installation that set it got an uncaught Error on every tracked request
-     * that reached a geo lookup.
-     *
-     * The client lives in geoip2/geoip2, which this module does not require --
-     * only maxmind-db/reader, for the local file. So the honest behaviour is to
-     * say the service is unavailable and hand the location map back untouched,
-     * exactly as the local path does when its database is missing. A lookup that
-     * cannot happen must not take the page view down with it.
-     *
-     * Adding the dependency, and a UI for the setting, is a larger decision than
-     * a bug fix should make on its own.
+     * 'geoip_city_isp_org_web_service', with ws_user_name (the MaxMind account
+     * id) and ws_license_key. WebServiceClient calls MaxMind's City web service
+     * over HTTPS. A lookup that fails hands the location map back untouched, as
+     * the local path does when its database is missing.
      *
      * @param  array<string, string|null> $location_map
      * @return array<string, string|null>
@@ -155,9 +144,7 @@ class Maxmind extends \OWA\Core\Location {
         if ( ! class_exists( $client_class ) ) {
 
             \OWA\Core\CoreAPI::notice(
-                'The Maxmind web service lookup needs the geoip2/geoip2 package, which is not '
-              . 'installed. Set the maxmind_geoip lookup_method to city_lite_db to use the local '
-              . 'database instead. Returning no location.' );
+                sprintf( 'The Maxmind web service client %s is not available. Returning no location.', $client_class ) );
 
             return $location_map;
         }
