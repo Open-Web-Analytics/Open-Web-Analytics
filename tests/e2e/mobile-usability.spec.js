@@ -170,7 +170,7 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
 
             for (const control of [
                 page.getByRole('button', { name: 'Help' }),
-                page.locator('#owa_notificationToggle'),
+                page.getByRole('button', { name: 'Notifications', exact: true }),
                 page.getByRole('button', { name: /^Account/ }),
             ]) {
                 const s = await size(control);
@@ -259,7 +259,7 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
 
         test('a notification\'s Dismiss is shown, a 44px target', async ({ page }) => {
             await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
-            await page.locator('#owa_notificationToggle').click();
+            await page.getByRole('button', { name: 'Notifications', exact: true }).click();
 
             const dismiss = page.getByRole('button', { name: 'Dismiss notification' }).first();
             await expect(dismiss).toBeVisible();
@@ -302,9 +302,9 @@ test.describe('on a phone', () => {
         await adminLogin(page);
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
         await page.getByRole('button', { name: 'Show the menu' }).click();
-        await page.locator('#owa_siteControlSummary').click();
+        await ui(page, 'site-control:summary').click();
 
-        const edit = page.locator('#owa_siteControl').getByRole('link', { name: 'edit', exact: true }).first();
+        const edit = ui(page, 'site-control').getByRole('link', { name: 'edit', exact: true }).first();
         await expect(edit).toBeVisible();
         expect(await edit.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
         expect((await size(edit)).h).toBeGreaterThanOrEqual(44);

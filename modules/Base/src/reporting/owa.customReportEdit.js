@@ -736,7 +736,7 @@ export function start( config ) {
             var rowspan = Number( widget.rowspan ) || 1;
             var title   = widget.title || say( OWA.l( 'Widget %s' ), i + 1 );
 
-            var $block = jQuery( '<div class="owa_builderBlock" draggable="true">' )
+            var $block = jQuery( '<div class="owa_builderBlock" data-ui="builder:block" draggable="true">' )
                 .attr( 'data-index', i )
                 // As wide as the span it claims, so the canvas reads as the
                 // layout rather than as a list.
