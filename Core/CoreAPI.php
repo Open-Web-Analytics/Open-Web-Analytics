@@ -1122,6 +1122,17 @@ class CoreAPI {
     }
 
     /**
+     * The roles a user account may have: every role but 'everyone', which is
+     * the role of a visitor who is not signed in (ServiceUser).
+     *
+     * @return list<int|string>
+     */
+    public static function getAssignableRoles() {
+
+        return array_values( array_diff( \OWA\Core\CoreAPI::getAllRoles(), [ 'everyone' ] ) );
+    }
+
+    /**
      * @param  mixed $role
      * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
      */
