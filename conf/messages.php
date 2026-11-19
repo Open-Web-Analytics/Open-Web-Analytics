@@ -81,6 +81,18 @@ $_owa_messages = [
     3011 => ['headline' => 'Error', 'message' => 'Could not update user profile.'],
     3012 => ['headline' => 'Error', 'message' => 'Could not connect the database. Check your settings and try again.'],
 
+    // base.myProfileSave refusals, shown on base.myProfile (MyProfileSave::REFUSALS).
+    3020 => ['headline' => 'Error', 'message' => 'That account no longer exists.'],
+    3021 => ['headline' => 'Error', 'message' => 'Changing the email address on your account is not something your role can do. Ask an administrator.'],
+    3022 => ['headline' => 'Error', 'message' => 'That is not your current password.'],
+    3023 => ['headline' => 'Error', 'message' => 'The password could not be changed.'],
+    3024 => ['headline' => 'Error', 'message' => 'That does not look like an email address.'],
+    3025 => ['headline' => 'Error', 'message' => 'Enter your current password to change it.'],
+    3026 => ['headline' => 'Error', 'message' => 'Enter the new password.'],
+    3027 => ['headline' => 'Error', 'message' => 'The new passwords do not match.'],
+    3028 => ['headline' => 'Error', 'message' => 'The new password must be at least %d characters.'],
+    3029 => ['headline' => 'Error', 'message' => 'Those details could not be saved.'],
+
     //sites management
     3200 => ['headline' => 'Error', 'message' => 'Please fill in all required fields.'],
     3201 => ['headline' => 'Success', 'message' => 'Site Profile Updated.'],
