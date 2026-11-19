@@ -331,17 +331,17 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * MAXMIND GEOIP LICENCE KEY
  *
  * Only relevant if the Maxmind GeoIP module is active. The key can also be set
- * on Settings -> Server configuration -> GeoIP.
+ * on Settings -> Server configuration -> GeoIP; set here, the screen shows it
+ * and cannot change it.
  *
  * The GeoLite2 City database OWA looks IP addresses up in is free, but MaxMind
  * closed anonymous downloads at the end of 2019, so fetching it is
  * authenticated. Create a key at maxmind.com -- the account and the key cost
  * nothing -- and set it here:
  *
- *      $this->set('maxmind_geoip', 'db_license_key', 'your-key-here');
+ *      define('OWA_MAXMIND_LICENSE_KEY', 'your-key-here');
  *
- * That works because this file is included from inside a settings object, so
- * $this is that object. It is not a define() like the settings above.
+ * OWA_MAXMIND_EDITION (GeoLite2-City or GeoLite2-Country) picks the database.
  *
  * With a key set, the refresh-geoip-db job (see SCHEDULED JOBS) checks MaxMind
  * once a week and downloads a newer database when there is one. To download it
@@ -351,4 +351,60 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *
  * IP ranges move between countries and cities continuously, and a stale file
  * does not fail -- it answers, wrongly, and the reports look normal.
+ */
+
+//define('OWA_MAXMIND_LICENSE_KEY', 'your-key-here');
+
+
+/**
+ * OUTGOING MAIL
+ *
+ * OWA sends mail (invitations, password resets, notices) with PHP's mail()
+ * unless these send it through an SMTP server:
+ */
+
+//define('OWA_MAILER_USE_SMTP', true);
+//define('OWA_MAILER_HOST', 'smtp.example.com');
+//define('OWA_MAILER_PORT', 587);
+//define('OWA_MAILER_SMTP_AUTH', true);
+//define('OWA_MAILER_USERNAME', 'owa@example.com');
+//define('OWA_MAILER_PASSWORD', 'yourpasswordgoeshere');
+//define('OWA_MAILER_FROM', 'owa@example.com');
+//define('OWA_MAILER_FROM_NAME', 'OWA Server');
+
+
+/**
+ * ERROR LOG
+ *
+ * The path of OWA's error log. Unset, it is a file in owa-data/logs/.
+ */
+
+//define('OWA_ERROR_LOG_FILE', '/var/log/owa/owa.log');
+
+
+/**
+ * ROLES
+ *
+ * Capabilities added to the roles OWA ships (admin, analyst, viewer and
+ * everyone), as role => capabilities. Nothing is taken away, and a role that
+ * does not exist is refused: OWA will not run until it is fixed. For a signed-in
+ * role, a capability that needs access to a Property (view_reports, edit_sites)
+ * still needs it. A capability given to everyone is held without signing in,
+ * on every Property, so this makes every Property's reports public:
+ */
+
+//define('OWA_ROLE_CAPABILITIES', [ 'everyone' => [ 'view_site_list', 'view_reports' ] ]);
+
+
+/**
+ * EVERY OTHER SETTING
+ *
+ * Each setting that only this file sets has a constant, mostly OWA_ and its
+ * name in capitals, such as OWA_ARCHIVE_OLD_EVENTS for archive_old_events.
+ * The settings reference in the wiki names each one. A constant set here wins
+ * over any stored value, and a screen that shows the setting cannot change it.
+ *
+ * This file only defines constants. It is not run inside an object, and a line
+ * that calls a settings method stops OWA: the error log and the command line
+ * name the constant to use instead.
  */

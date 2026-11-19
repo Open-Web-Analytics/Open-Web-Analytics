@@ -24,6 +24,7 @@ return [
          * location resolution -- so boot fetches it.
          */
         'db_edition' => [
+            'config_constant' => 'OWA_MAXMIND_EDITION',
             'default'     => 'GeoLite2-City',
             'storable'    => true,
             'autoload'    => true,
@@ -41,11 +42,11 @@ return [
          * Which lookup path the module takes. Read in the module's own
          * constructor, so boot needs it.
          *
-         * No UI offers it. It is storable: an operator sets it from the config file or
-         * directly, and a declaration that left it out would mean the stored
-         * value was written and never read.
+         * No UI offers it: OWA_MAXMIND_LOOKUP_METHOD sets it. It stays storable,
+         * so a value an install already stores is still read.
          */
         'lookup_method' => [
+            'config_constant' => 'OWA_MAXMIND_LOOKUP_METHOD',
             'default'     => 'city_lite_db',
             'storable'    => true,
             'autoload'    => true,
@@ -56,14 +57,17 @@ return [
         /*
          * Credentials for the web-service lookup path, read only when
          * lookup_method selects it. No default -- a blank key is not a
-         * credential -- and no chrome, because no screen offers them.
+         * credential -- and no chrome, because no screen offers them:
+         * OWA_MAXMIND_WS_LICENSE_KEY and OWA_MAXMIND_WS_USER_NAME set them.
          */
         'ws_license_key' => [
+            'config_constant' => 'OWA_MAXMIND_WS_LICENSE_KEY',
             'storable'    => true,
             'description' => 'The licence key for the MaxMind web service lookup. Also used to download the '
                 . 'database when db_license_key is empty.',
         ],
         'ws_user_name'   => [
+            'config_constant' => 'OWA_MAXMIND_WS_USER_NAME',
             'storable'    => true,
             'description' => 'The MaxMind account id for the web service lookup.',
         ],
@@ -74,6 +78,7 @@ return [
          * something asks.
          */
         'db_license_key' => [
+            'config_constant' => 'OWA_MAXMIND_LICENSE_KEY',
             'default'     => '',
             'storable'    => true,
             'type'        => 'text',

@@ -43,6 +43,53 @@ namespace OWA\Module\Base\Classes;
      /** @var bool|null */
      public $config_file_loaded;
 
+     /**
+      * Capabilities OWA_ROLE_CAPABILITIES may name that grant nothing: names
+      * OWA no longer has. Dropped with one notice rather than refused, so a
+      * config written for an older release still boots.
+      */
+     const RETIRED_CAPABILITIES = [ 'view_reports_ecommerce' ];
+
+     /**
+      * The constants applyConfigConstants() applies by hand, by the setting
+      * each governs. Every other setting with a constant declares it in its
+      * settings.php as `config_constant` (applyDeclaredConstants()).
+      */
+     const HAND_APPLIED_CONSTANTS = [
+         'base|data_dir'              => 'OWA_DATA_DIR',
+         'base|scheduled_jobs'        => 'OWA_SCHEDULED_JOBS',
+         'base|timezone'              => 'OWA_TIMEZONE',
+         'base|configuration_id'      => 'OWA_CONFIGURATION_ID',
+         'base|server_role'           => 'OWA_SERVER_ROLE',
+         'base|db_type'               => 'OWA_DB_TYPE',
+         'base|db_name'               => 'OWA_DB_NAME',
+         'base|db_host'               => 'OWA_DB_HOST',
+         'base|db_port'               => 'OWA_DB_PORT',
+         'base|db_user'               => 'OWA_DB_USER',
+         'base|db_password'           => 'OWA_DB_PASSWORD',
+         'base|public_url'            => 'OWA_PUBLIC_URL',
+         'base|public_path'           => 'OWA_PUBLIC_PATH',
+         'base|tracking_url'          => 'OWA_TRACKING_URL',
+         'base|assets_url'            => 'OWA_ASSETS_URL',
+         'base|queue_tracking_events' => 'OWA_QUEUE_TRACKING_EVENTS',
+         'base|capabilities'          => 'OWA_ROLE_CAPABILITIES',
+     ];
+
+     /**
+      * What owa-config.php does that stops OWA: its uses of `$this`
+      * (Core\ConfigFile::problems()). The file is not included while there
+      * are any.
+      *
+      * @var list<array{line: int, call: string, replacement: string, screen?: bool}>
+      */
+     private $config_file_problems = [];
+
+     /** @var string the file config_file_problems are about */
+     private $config_file_checked = '';
+
+     /** @var list<string> what is wrong with OWA_ROLE_CAPABILITIES, such as a role it names that does not exist */
+     private $role_capability_problems = [];
+
      /** @var bool|null  whether owa_configuration still exists; see legacyBlobIsAuthoritative(). */
      private $legacy_blob_present = null;
 
@@ -104,8 +151,7 @@ namespace OWA\Module\Base\Classes;
       public function __construct() {
      
         /*
-         * Base's declared defaults, before the config file runs: the file may
-         * read and extend them, as addCapabilityToRole() does. Every other
+         * Base's declared defaults, before the config file runs. Every other
          * module's defaults arrive with the registry, below.
          */
         $this->default_config = self::baseDefaults();
@@ -187,10 +233,71 @@ namespace OWA\Module\Base\Classes;
         $file = $this->get('base', 'config_file');
         
         if ( $this->isConfigFilePresent() ) {
-            
-            include_once($file);
+
+            /*
+             * Read before it runs: a file that uses $this is not run at all,
+             * and configProblems() says which lines to change.
+             */
+            $this->config_file_checked  = (string) $file;
+            $this->config_file_problems = \OWA\Core\ConfigFile::problems( $file );
+
+            if ( $this->config_file_problems ) {
+
+                return;
+            }
+
+            \OWA\Core\ConfigFile::includeFile( $file );
             $this->config_file_loaded = true;
         }
+     }
+
+     /**
+      * Why OWA cannot run on this configuration, one sentence each; empty
+      * when it can. Every request is refused while there is one
+      * (\OWA\Core\ServerRole::bootProblem()).
+      *
+      * @return list<string>
+      */
+     public function configProblems() {
+
+         return array_merge(
+             \OWA\Core\ConfigFile::messages( $this->config_file_problems, $this->config_file_checked ),
+             $this->role_capability_problems );
+     }
+
+     /**
+      * The constant that sets a setting from owa-config.php, or ''. Read from
+      * the declarations on disk, so it answers before the registry is built.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return string
+      */
+     public static function constantForSetting( $module, $key ) {
+
+         $id = $module . '|' . $key;
+
+         if ( isset( self::HAND_APPLIED_CONSTANTS[ $id ] ) ) {
+
+             return self::HAND_APPLIED_CONSTANTS[ $id ];
+         }
+
+         return (string) ( \OWA\Core\Module::settingsRegistry()['fields'][ $id ]['config_constant'] ?? '' );
+     }
+
+     /**
+      * Whether a settings screen sets this setting: it is declared storable
+      * and is not OWA's own record.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return bool
+      */
+     public static function isScreenSetting( $module, $key ) {
+
+         $args = (array) ( \OWA\Core\Module::settingsRegistry()['fields'][ $module . '|' . $key ] ?? [] );
+
+         return ! empty( $args['storable'] ) && empty( $args['internal'] );
      }
 
      /**
@@ -354,24 +461,16 @@ namespace OWA\Module\Base\Classes;
             $this->set( 'base', 'data_dir', \OWA\Core\Env::defaultDataDir() );
         }
 
-        /* FACT-TABLE PARTITIONING */
+        /*
+         * Every setting whose declaration names a `config_constant`, such as
+         * OWA_PARTITION_DETAIL_MONTHS and the OWA_MAILER_ ones.
+         */
+        $this->applyDeclaredConstants( \OWA\Core\ServerRole::definedConstants() );
 
-        // These describe the shape of an installation -- how much history stays
-        // finely partitioned, and how much of the server's open-file budget this
-        // may claim -- rather than the behaviour of a single command, so they are
-        // set once in owa-config.php:
-        //
-        //   define('OWA_PARTITION_DETAIL_MONTHS', 24);
-        //
-        // See the Partitioning Fact Tables page in the wiki.
-        foreach ([
-            'OWA_PARTITION_DETAIL_MONTHS'       => 'partition_detail_months',
-            'OWA_PARTITION_MAX_PARTITIONS'      => 'partition_max_partitions',
-        ] as $constant => $key) {
+        /* ROLES: capabilities added to the shipped roles. */
+        if ( defined( 'OWA_ROLE_CAPABILITIES' ) ) {
 
-            if (defined($constant)) {
-                $this->set('base', $key, constant($constant));
-            }
+            $this->applyRoleCapabilities( OWA_ROLE_CAPABILITIES );
         }
 
         /* SCHEDULED JOBS */
@@ -527,6 +626,99 @@ namespace OWA\Module\Base\Classes;
 
      }
       
+     /**
+      * Apply each declared `config_constant` that is defined: the setting
+      * takes the constant's value, and the constant governs it as any
+      * constant does (static, shown fixed on its screen).
+      *
+      * @param  array<string, mixed> $defined the OWA_ constants, name => value
+      * @return void
+      */
+     public function applyDeclaredConstants( array $defined ) {
+
+         foreach ( (array) \OWA\Core\Module::settingsRegistry()['fields'] as $id => $args ) {
+
+             $constant = (string) ( $args['config_constant'] ?? '' );
+
+             if ( $constant === '' || ! array_key_exists( $constant, $defined ) ) {
+
+                 continue;
+             }
+
+             list( $module, $key ) = explode( '|', $id, 2 );
+
+             $this->setFromConfigConstant( $module, $key, $defined[ $constant ], $constant );
+         }
+     }
+
+     /**
+      * OWA_ROLE_CAPABILITIES: role => capabilities, ADDED to the roles that
+      * exist. Nothing is taken away. A role that does not exist is refused --
+      * nothing from the constant is applied, and configProblems() says why --
+      * so a misspelt role cannot leave a grant silently missing. Whether a
+      * capability needs site access follows capabilitiesThatRequireSiteAccess,
+      * which the constant does not change. A retired capability is dropped
+      * with one notice.
+      *
+      * @param  mixed $grants
+      * @return void
+      */
+     public function applyRoleCapabilities( $grants ) {
+
+         $caps = (array) $this->get( 'base', 'capabilities' );
+
+         $this->role_capability_problems = [];
+
+         if ( ! is_array( $grants ) ) {
+
+             $this->role_capability_problems[] = \OWA\Core\CoreAPI::t( 'OWA_ROLE_CAPABILITIES must be an array of role => list of capabilities.' );
+
+             return;
+         }
+
+         $retired = [];
+
+         foreach ( $grants as $role => $list ) {
+
+             if ( ! isset( $caps[ $role ] ) ) {
+
+                 $this->role_capability_problems[] = sprintf(
+                     \OWA\Core\CoreAPI::t( 'OWA_ROLE_CAPABILITIES names the role %1$s, which does not exist. The roles are %2$s.' ),
+                     (string) $role, implode( ', ', array_keys( $caps ) ) );
+
+                 continue;
+             }
+
+             if ( ! is_array( $list ) || array_filter( $list, static fn ( $c ) => ! is_string( $c ) ) ) {
+
+                 $this->role_capability_problems[] = sprintf(
+                     \OWA\Core\CoreAPI::t( 'OWA_ROLE_CAPABILITIES gives the role %s something other than a list of capability names.' ),
+                     (string) $role );
+
+                 continue;
+             }
+
+             $retired = array_merge( $retired, array_intersect( $list, self::RETIRED_CAPABILITIES ) );
+
+             $caps[ $role ] = array_values( array_unique( array_merge(
+                 (array) $caps[ $role ], array_diff( $list, self::RETIRED_CAPABILITIES ) ) ) );
+         }
+
+         if ( $retired ) {
+
+             \OWA\Core\CoreAPI::notice( sprintf(
+                 'OWA_ROLE_CAPABILITIES names %s, which OWA no longer has; ignored. Remove it from owa-config.php.',
+                 implode( ', ', array_unique( $retired ) ) ) );
+         }
+
+         if ( $this->role_capability_problems ) {
+
+             return;
+         }
+
+         $this->setFromConfigConstant( 'base', 'capabilities', $caps, 'OWA_ROLE_CAPABILITIES' );
+     }
+
      /**
       * Sets a module's values in memory over whatever is in place, a
       * config-file constant's value included. Caller applies the calling
@@ -1138,9 +1330,9 @@ namespace OWA\Module\Base\Classes;
             $values = $this->config->get('settings');          
         
         } else {
-            // setting on the default values array can only happen if a get/set 
-            // is called from within the config file. 
-            $values = $this->default_config;    
+            // Before the configuration entity exists: the constructor's own
+            // reads, such as config_file.
+            $values = $this->default_config;
         }
 
          if ( isset( $values[$module] ) && array_key_exists($key, $values[$module])) {
@@ -1235,9 +1427,9 @@ namespace OWA\Module\Base\Classes;
             $values = $this->config->get('settings');
         
         } else {
-            // setting on the default values array can only happen if a get/set 
-            // is called from within the config file. 
-            $values = $this->default_config; 
+            // Before the configuration entity exists: the constructor's own
+            // writes.
+            $values = $this->default_config;
         }
          $values[$module][$key] = $value;
         
@@ -3141,6 +3333,9 @@ namespace OWA\Module\Base\Classes;
      * Adds a capability ot a role, creating the role if it does
      * not already exist. Also adds the capability to the
      * siteAccessRequired list if role is not 'everyone'.
+     *
+     * For a module's code. owa-config.php uses OWA_ROLE_CAPABILITIES
+     * (applyRoleCapabilities()).
      *
      * @param string               $role                 role name.
      * @param string|array<string> $capability           capability name, or several.

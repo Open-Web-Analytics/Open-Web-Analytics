@@ -19,10 +19,11 @@
  *     called here for every present module. A module that is not loaded is
  *     instantiated without its constructor, which keeps its metrics, handlers and
  *     tracking properties out of the registries the other sections read.
- *   - the constants: Settings::applyConfigConstants(), whose source is the only
- *     place a constant is paired with a setting. A constant is recorded on the
- *     registry only when it is defined, so the pairs are read from the method's
- *     source instead.
+ *   - the constants: a setting's declared `config_constant`
+ *     (Settings::applyDeclaredConstants()), and the ones
+ *     Settings::applyConfigConstants() applies by hand, read from its source.
+ *     A constant is recorded on the registry only when it is defined, so the
+ *     pairs are read from the declarations and the source instead.
  *
  * Labels and descriptions are the declaration's; a setting without one gets an
  * empty cell, never text written here. Left out of the tables: settings
@@ -96,6 +97,13 @@ return function ( $arg = null ) {
 
     foreach ( $m as $hit ) {
         $constants[ 'base|' . $hit[2] ] = $hit[1];
+    }
+
+    // Declared on the setting.
+    foreach ( $registry['fields'] as $id => $args ) {
+        if ( ! empty( $args['config_constant'] ) ) {
+            $constants[ $id ] ??= (string) $args['config_constant'];
+        }
     }
 
     // ---- the rows ------------------------------------------------------------

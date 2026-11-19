@@ -41,6 +41,23 @@ class Module extends \OWA\Core\Module {
     public function update() {
 
         /*
+         * Before any update: owa-config.php must be one 2.0 reads. Boot refuses
+         * every request while it is not (ServerRole::bootProblem()); this says
+         * the same where update() is reached without that boot.
+         */
+        $config_problems = \OWA\Core\CoreAPI::configSingleton()->configProblems();
+
+        if ( $config_problems ) {
+
+            foreach ( $config_problems as $problem ) {
+
+                \OWA\Core\CoreAPI::notice( $problem );
+            }
+
+            return false;
+        }
+
+        /*
          * Before any update: an installation on a server 2.0 cannot run on
          * must not start the migration and fail partway through it.
          */
