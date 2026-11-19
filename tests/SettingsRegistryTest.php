@@ -314,40 +314,33 @@ final class SettingsRegistryTest extends TestCase
     }
 
     /**
-     * An unregistered setting is unconstrained, and that is load-bearing.
-     *
-     * Base has not declared yet, and eight of its settings live at profile
-     * scope right now -- default_page (since removed, Update080), domain_aliases (since removed, Update090), query_string_filters,
-     * p3p_policy (since removed), enableEcommerceReporting, goals, goal_groups and
-     * v2_raw_collection (goal_groups since removed, Update056). Reading "nothing declared it" as "install only" would
-     * refuse every write the Observation Settings screen makes.
+     * A setting no module declares is refused at every scope, as
+     * persistSetting() refuses it install-wide. Refused before anything is
+     * read or written, so no database is needed.
      */
-    public function testAnUndeclaredSettingIsUnconstrained(): void
+    public function testAnUndeclaredSettingIsRefusedAtEveryScope(): void
     {
-        $this->requireDb();
-
         $c = $this->settings();
 
         $this->assertNull( $c->scopesFor( self::MODULE, 'never_declared' ),
-            'null means UNKNOWN, not "no scopes"' );
+            'nothing declared it, so nothing knows its scopes' );
 
-        $this->assertTrue( $c->mayWriteAtScope( self::MODULE, 'never_declared', 'profile' ) );
+        foreach ( [ 'install', 'organization', 'property', 'profile' ] as $scope ) {
 
-        $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting(
-            'profile', 'zz-site', self::MODULE, 'never_declared', 'still works' ) );
+            $this->assertFalse( $c->mayWriteAtScope( self::MODULE, 'never_declared', $scope ), $scope );
+        }
 
-        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', 'zz-site', self::MODULE, 'never_declared' );
+        $this->assertFalse( \OWA\Core\CoreAPI::setScopedSetting(
+            'profile', 'zz-site', self::MODULE, 'never_declared', 'made up' ) );
     }
 
     /**
      * Nothing already stored at a scope may become unwritable there.
      *
-     * The trap this guards is base's adoption. Seven base settings live at
-     * profile scope right now and none of them is declared, so they pass the
-     * check by being unknown. The day base ships a declaration file,
-     * `query_string_filters` without a `scopes` key becomes install-only and the
-     * Observation Settings screen silently stops saving -- the form posts, the
-     * write is refused, the page redirects, and the value is simply not there.
+     * A declaration that leaves out a scope rows are stored at -- or a setting
+     * whose declaration is removed while rows remain -- makes the screen that
+     * writes them stop saving silently: the form posts, the write is refused,
+     * the page redirects, and the value is not there.
      *
      * Derived from what is actually stored rather than a list written here, so
      * it keeps covering whatever an installation has, including settings added

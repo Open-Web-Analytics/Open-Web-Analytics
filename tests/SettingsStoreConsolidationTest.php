@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * One store for settings, and one query to resolve a scope chain.
@@ -21,6 +22,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class SettingsStoreConsolidationTest extends TestCase
 {
+    use DeclaresProbeSettings;
+
     /** Distinctive so a leaked row is obvious in the table. */
     private const MODULE = 'zz_consolidation_test';
 
@@ -36,6 +39,8 @@ final class SettingsStoreConsolidationTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->forgetProbes();
+
         if ( ! owa_test_db_available() ) {
             return;
         }
@@ -53,6 +58,10 @@ final class SettingsStoreConsolidationTest extends TestCase
 
     private function write( $type, $id, $name, $value ): void
     {
+        // Declared, as only a declared setting may be stored at a scope.
+        $this->declareProbe( self::MODULE, $name,
+            [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
+
         \OWA\Core\CoreAPI::setScopedSetting( $type, $id, self::MODULE, $name, $value );
 
         $this->written[] = [ 'type' => $type, 'id' => $id, 'name' => $name ];
