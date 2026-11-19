@@ -1224,7 +1224,8 @@ final class CustomReportsTest extends TestCase
      */
     public function testTheBuilderForwardsEverythingItsControllerSets(): void
     {
-        $paths = [ [ 'customReportError' => 'Refused.', 'customReportName' => 'Typed' ] ];
+        // A refused save hands its reason over in-process (refusedWith()).
+        $paths = [ [ 'refusedWith' => 'Refused.', 'customReportName' => 'Typed' ] ];
 
         if ( owa_test_db_available() ) {
 
@@ -1245,8 +1246,17 @@ final class CustomReportsTest extends TestCase
 
         foreach ( $paths as $params ) {
 
+            $refusal = $params['refusedWith'] ?? null;
+            unset( $params['refusedWith'] );
+
             $controller = new \OWA\Module\Base\Controller\CustomReportEdit( $params );
-            $before     = array_keys( (array) $controller->data );
+
+            if ( $refusal !== null ) {
+
+                $controller->refusedWith( $refusal );
+            }
+
+            $before = array_keys( (array) $controller->data );
 
             $controller->action();
 
