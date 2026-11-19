@@ -253,6 +253,25 @@ class InstallManager extends \OWA\Core\Base {
         return $site_id;
     }
 
+    /**
+     * Raises install_complete, for a module to hear: once the install's last
+     * step is saved, by the install wizard and by cmd=install alike. Base
+     * listens for nothing.
+     *
+     * @param  string $user_id the admin account's user name
+     * @param  string $site_id the first site
+     * @return void
+     */
+    public function announceInstallComplete( $user_id, $site_id ) {
+
+        $ed    = \OWA\Core\CoreAPI::getEventDispatch();
+        $event = $ed->eventFactory();
+        $event->set( 'u', $user_id );
+        $event->set( 'site_id', $site_id );
+        $event->setEventType( 'install_complete' );
+        $ed->notify( $event );
+    }
+
     /** @return bool */
     public function checkDbConnection() {
 
