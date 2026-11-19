@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * The partition commands' own decisions: what they accept, what they refuse,

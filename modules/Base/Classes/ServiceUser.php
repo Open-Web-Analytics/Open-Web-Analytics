@@ -282,11 +282,10 @@ class ServiceUser extends \OWA\Core\Base {
 
                 /*
                  * Archived Profiles drop out here, which also settles
-                 * AUTHORISATION and not just listing: isSiteAllowed() reads
+                 * AUTHORISATION and not just listing: isSiteAccessible() reads
                  * this map, so an archived Profile cannot be reported on by
-                 * URL either. The grant row is deliberately left in place --
-                 * archiving keeps what hangs off a Profile so a restore brings
-                 * its access back with it.
+                 * URL either. The grant row is left in place: archiving keeps
+                 * what hangs off a Profile.
                  */
                 if ( $siteEntity->isArchived() ) {
 

@@ -110,11 +110,17 @@ class Mailer {
                 $this->mailer->Password = \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-password');
             }   
             
-            // set mailer SMTP options if they exist
-            if ( \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-options' ) ) {                
-            
-                $this->mailer->SMTPOptions = \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-options' );
-            }     
+            // OWA_MAILER_OPTIONS: PHPMailer's SMTPOptions, an array.
+            $options = \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-options' );
+
+            if ( is_array( $options ) && $options ) {
+
+                $this->mailer->SMTPOptions = $options;
+
+            } elseif ( $options ) {
+
+                \OWA\Core\CoreAPI::debug( 'OWA_MAILER_OPTIONS is not an array, so it is not used.' );
+            }
         }
     }
     

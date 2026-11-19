@@ -34,8 +34,8 @@ class Login extends \OWA\Core\Controller {
             } else {
                 //else redirect to home page
 
-                // these need to be unset as they were set previously by the doAction method.
-                // need to refactor this out.
+                // Cleared: doAction() sets params and site_id, and a redirect
+                // carries none of these.
                 $this->set('auth_status', '');
                 $this->set('params', '');
                 $this->set('site_id', '');

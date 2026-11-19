@@ -2402,7 +2402,8 @@ class ResultSetManager extends \OWA\Core\Base {
         // generates from clause or a subselect if segment is specified
         if ( $this->segment ) {
             
-            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $this->db->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
         
         } else {
         
@@ -2588,7 +2589,8 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( $this->segment ) {
 
-            $inner->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $inner->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
 
         } else {
 
@@ -2738,10 +2740,10 @@ class ResultSetManager extends \OWA\Core\Base {
 
         /*
          * A query by anything but a trend's axis that names no page size gets
-         * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
-         * which limits by the period -- one row a day, a sound bound only for a
-         * query BY day -- so a breakdown over the last seven days stopped at
-         * six rows, and said there were no more.
+         * DEFAULT_RESULTS_PER_PAGE, and pages. Without it the date range below
+         * would limit by the period -- one row a day, a sound bound only for a
+         * query BY day -- and a breakdown over the last seven days would stop
+         * at six rows and say there were no more.
          */
         if ( ! $this->getLimit() && ! $this->isByDate() ) {
 
@@ -2760,7 +2762,8 @@ class ResultSetManager extends \OWA\Core\Base {
         // set from table
         if ( $this->segment ) {
             
-            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $this->db->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
             
         } else {
             
@@ -2992,10 +2995,24 @@ class ResultSetManager extends \OWA\Core\Base {
     }
     
     /**
+     * The segment's subselect without its bound values: segmentQuery() returns
+     * both, and a statement that embeds this text has to bind them.
+     *
      * @param  \OWA\Core\Entity $base_entity
-     * @return string|void the segment's subselect, in parentheses; nothing without a segment
+     * @return string|null the segment's subselect, in parentheses; null without a segment
      */
     public function generateSegmentQuery( $base_entity ) {
+
+        return $this->segmentQuery( $base_entity )[0];
+    }
+
+    /**
+     * @param  \OWA\Core\Entity $base_entity
+     * @return array{0: string|null, 1: list<scalar|null>} the segment's subselect, in
+     *         parentheses, and the values of its placeholders in order; [null, []]
+     *         without a segment
+     */
+    public function segmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
         $segment_entity = $this->entityFor($base_entity->getName());
@@ -3027,9 +3044,12 @@ class ResultSetManager extends \OWA\Core\Base {
                 }
             }
 
-            return sprintf('(%s)', $db->generateSelectQuerySql() );
+            $sql = $db->generateSelectQuerySql();
+
+            return [ sprintf('(%s)', $sql ), $db->getBindings() ];
         }
 
+        return [ null, [] ];
     }
 
     /**

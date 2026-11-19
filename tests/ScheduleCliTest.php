@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * The scheduler's own decisions: what it runs, what it refuses, what it records,
