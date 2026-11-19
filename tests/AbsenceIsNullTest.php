@@ -150,28 +150,32 @@ final class AbsenceIsNullTest extends TestCase
         $this->assertEquals( 0, $rsm->formatValue( 'integer', 0 ) );
     }
 
-    /** @dataProvider writers */
-    public function testTheWritePathNoLongerStoresTheLiteral( string $file ): void
+    /**
+     * A location the lookup could not fill is stored empty, not as the label:
+     * with a lookup that fills nothing, and with none, every field but the
+     * address is ''.
+     */
+    public function testTheWritePathNoLongerStoresTheLiteral(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
+        $was = \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' );
 
-        $this->assertStringNotContainsString( "set('page_title', '(not set)')", $src,
-            "$file still stores the label instead of leaving the column unset" );
+        try {
+            foreach ( [ true, false ] as $lookup ) {
 
-        /*
-         * Deliberately narrow: an ARRAY-ELEMENT assignment, which is the shape
-         * the geolocation filter used ($geo[$k] = '(not set)'). A bare
-         * "= '(not set)'" could also match a constant that never reaches a
-         * column.
-         */
-        $this->assertStringNotContainsString( "] = '(not set)'", $src,
-            "$file still assigns the label into a value it is about to store" );
-    }
+                \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', $lookup );
 
-    public static function writers(): array
-    {
-        return [
-            [ 'modules/Base/Classes/Geolocation.php' ],
-        ];
+                $geo = new Geolocation();
+                $geo->getGeolocationFromIp( '192.0.2.1' );
+
+                $fields = $geo->properties;
+                unset( $fields['ip_address'] );
+
+                $this->assertNotSame( [], $fields );
+                $this->assertSame( array_fill_keys( array_keys( $fields ), '' ), $fields,
+                    'a field the lookup could not fill is stored as a value' );
+            }
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', $was );
+        }
     }
 }
