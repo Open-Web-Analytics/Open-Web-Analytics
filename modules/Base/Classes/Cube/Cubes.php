@@ -339,13 +339,14 @@ class Cubes {
     }
 
     /**
-     * Test seam: forget what exists() has answered.
+     * Test seam: forget what exists() and propertyIdForSite() have answered.
      *
      * @return void
      */
     public static function forgetExistence() {
 
-        self::$exists = [];
+        self::$exists           = [];
+        self::$property_of_site = [];
     }
 
     /**

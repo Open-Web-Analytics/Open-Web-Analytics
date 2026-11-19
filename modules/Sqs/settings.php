@@ -28,12 +28,13 @@ return [
 
         /*
          * Read on log.php's path when the intake is sqs, so eager. No
-         * default. OWA_SQS_REGION, then the region in OWA_SQS_QUEUE_URL, win
-         * over it; unset, AWS_REGION or AWS_DEFAULT_REGION in the environment
-         * is used (Classes\Sqs::region()). The region in an AWS profile is not
-         * read.
+         * default. OWA_SQS_REGION sets it. The region in OWA_SQS_QUEUE_URL
+         * wins over a stored one; with neither, AWS_REGION or
+         * AWS_DEFAULT_REGION in the environment is used
+         * (Classes\Sqs::region()). The region in an AWS profile is not read.
          */
         'region' => [
+            'config_constant' => 'OWA_SQS_REGION',
             'storable'    => true,
             'autoload'    => true,
             'type'        => 'text',

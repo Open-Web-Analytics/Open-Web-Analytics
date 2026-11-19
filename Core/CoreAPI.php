@@ -744,7 +744,8 @@ class CoreAPI {
     }
 
     /**
-     * Drop the scoped-setting caches.
+     * Drop the scoped-setting caches, and the tracking memos built from them
+     * (TrackingEventHelpers::forget()).
      *
      * Called on every scoped write. Blunt on purpose: a write is rare and a
      * stale read is a wrong answer, so the whole map goes rather than trying
@@ -757,6 +758,8 @@ class CoreAPI {
         self::$setting_row_cache   = [];
         self::$setting_scope_cache = [];
         self::$setting_chain_cache = [];
+
+        \OWA\Module\Base\Classes\TrackingEventHelpers::forget();
     }
 
     /**

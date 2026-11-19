@@ -2249,6 +2249,21 @@ class TrackingEventHelpers {
     private static $priorTouches = [];
 
     /**
+     * Drop the memos of stored state: the campaign key maps (scoped settings),
+     * the landing tags parsed with them, and the prior touches. The others are
+     * of config files, read once per process. CoreAPI::settingCacheFlush()
+     * calls this.
+     *
+     * @return void
+     */
+    public static function forget() {
+
+        self::$campaignKeys = [];
+        self::$landingTags  = [];
+        self::$priorTouches = [];
+    }
+
+    /**
      * The visitor's last non-direct touch before this session, from the visitor
      * store, as the evidence it was recorded as (PLAN 2.29).
      *
@@ -2776,7 +2791,7 @@ class TrackingEventHelpers {
      * THE COOKIE DOMAIN IS THE SITE. The page's own host is never outbound, and
      * neither is the cookie domain or any subdomain of it. The cookie domain is
      * the tracker_cookie_domain setting when one is set, else the page's host
-     * without www. -- as setCookieDomain() resolves it with nothing passed -- so
+     * without www. -- as the tracker's setCookieDomain() resolves it with nothing passed -- so
      * from www.example.com a link to example.com or shop.example.com stays.
      *
      * @param  string|null $target_host
@@ -2831,7 +2846,7 @@ class TrackingEventHelpers {
 
     /**
      * The domain that is the site: tracker_cookie_domain when set, else the
-     * page's host without www. -- as setCookieDomain() resolves it with nothing
+     * page's host without www. -- as the tracker's setCookieDomain() resolves it with nothing
      * passed.
      *
      * @param  string|null $page_host
