@@ -111,6 +111,7 @@ test.describe('the signed-out pages', () => {
      * Every hidden field a controller reads is still posted.
      *
      * `action` routes the post, `go` is where a login from a deep link lands,
+     * `nonce` is what base.login checks the form came from this browser by,
      * and `k` is the passkey that identifies the account on the set-password
      * page -- there is no session there, so it is the only thing that does.
      */
@@ -119,6 +120,7 @@ test.describe('the signed-out pages', () => {
 
         await expect(page.locator('input[name$="action"]')).toHaveValue('base.login');
         await expect(page.locator('input[name$="go"]')).toHaveCount(1);
+        await expect(page.locator('input[name="nonce"]')).toHaveCount(1);
     });
 
     test('the reset form still carries its action', async ({ page }) => {

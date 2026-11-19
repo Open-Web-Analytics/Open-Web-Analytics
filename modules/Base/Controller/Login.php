@@ -3,6 +3,12 @@ namespace OWA\Module\Base\Controller;
 
 class Login extends \OWA\Core\Controller {
 
+    /**
+     * The cookie, namespaced and HttpOnly, holding the random value the login
+     * form's nonce is made of (formNonce()).
+     */
+    const FORM_COOKIE = 'lf';
+
     public function __construct( $params ) {
 
         parent::__construct( $params );
@@ -18,6 +24,18 @@ class Login extends \OWA\Core\Controller {
     }
 
     public function action() {
+
+        // A form from another page, or one older than the nonce windows: the
+        // form again, with a nonce that verifies.
+        if ( ! self::formNonceIsValid( $this->getParam( 'nonce' ) ) ) {
+
+            $this->setView( 'base.loginForm' );
+            $this->set( 'go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam( 'go' ) ) );
+            $this->set( 'error_code', 2006 );
+            $this->set( 'user_id', $this->getParam( 'user_id' ) );
+
+            return;
+        }
 
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUser( $this->acceptedAuthMethods() );
@@ -61,5 +79,92 @@ class Login extends \OWA\Core\Controller {
         // it was headed.
         $this->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') ));
         $this->set('user_id', $this->getParam('user_id'));
+    }
+
+    /**
+     * The login form's nonce: of base.login and a random value kept in this
+     * browser's FORM_COOKIE, which is set when it has none. A nonce of the
+     * action alone (CoreAPI::createNonce()) is the same for everyone not
+     * signed in, so a page elsewhere could fetch one and post it.
+     *
+     * @param  int|float|null $tick the nonce window; the current one when null
+     * @return string
+     */
+    public static function formNonce( $tick = null ) {
+
+        return self::nonceOf( self::browserValue( true ), $tick ?? \OWA\Core\CoreAPI::getNonceTimeInterval() );
+    }
+
+    /**
+     * Whether a posted nonce is this browser's login form nonce, of the current
+     * window or the one before it, as Controller::verifyNonce() accepts.
+     *
+     * @param  mixed $nonce
+     * @return bool
+     */
+    public static function formNonceIsValid( $nonce ) {
+
+        $value = self::browserValue( false );
+
+        if ( $value === '' || ! is_string( $nonce ) ) {
+
+            return false;
+        }
+
+        $tick = \OWA\Core\CoreAPI::getNonceTimeInterval();
+
+        foreach ( [ $tick, $tick - 1 ] as $t ) {
+
+            if ( hash_equals( self::nonceOf( $value, $t ), $nonce ) ) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  string    $value FORM_COOKIE's
+     * @param  int|float $tick
+     * @return string
+     */
+    private static function nonceOf( $value, $tick ) {
+
+        return substr( \OWA\Core\CoreAPI::saltedHash( $tick . 'base.login' . $value . 'owa_login_nonce', 'nonce' ), -12, 10 );
+    }
+
+    /**
+     * FORM_COOKIE's value: 32 hex characters, or '' when the browser sent none.
+     * With $create, one is made and set when there is none.
+     *
+     * @param  bool $create
+     * @return string
+     */
+    private static function browserValue( $create ) {
+
+        $name  = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::FORM_COOKIE;
+        $value = $_COOKIE[ $name ] ?? '';
+
+        if ( is_string( $value ) && preg_match( '/^[0-9a-f]{32}$/', $value ) ) {
+
+            return $value;
+        }
+
+        if ( ! $create ) {
+
+            return '';
+        }
+
+        $value = bin2hex( random_bytes( 16 ) );
+
+        if ( ! headers_sent() ) {
+
+            \OWA\Core\CoreAPI::createCookie( self::FORM_COOKIE, $value, 0, '/', '', (bool) \OWA\Core\Lib::isHttps(), true );
+        }
+
+        $_COOKIE[ $name ] = $value;
+
+        return $value;
     }
 }

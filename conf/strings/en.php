@@ -1364,6 +1364,7 @@ return [
     'The language the browser declared.' => 'The language the browser declared.',
     'The last 30 minutes, as events arrive. Refreshes every 15 seconds while this tab is open. Sources are shown as collected; channels are classified when reports are built.' => 'The last 30 minutes, as events arrive. Refreshes every 15 seconds while this tab is open. Sources are shown as collected; channels are classified when reports are built.',
     'The link works for %d hour.' => [ 'The link works for %d hour.', 'The link works for %d hours.' ],
+    'The login form expired. Sign in again.' => 'The login form expired. Sign in again.',
     'The maker of the device.' => 'The maker of the device.',
     'The medium named by the landing URL, as collected.' => 'The medium named by the landing URL, as collected.',
     'The medium of the attributed source.' => 'The medium of the attributed source.',
