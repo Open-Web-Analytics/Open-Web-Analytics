@@ -533,14 +533,12 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      */
     public static function propertyFor( $site_id ) {
 
-        static $cache = [];
-
         if ( ! $site_id ) {
 
             return null;
         }
 
-        if ( ! array_key_exists( $site_id, $cache ) ) {
+        if ( ! array_key_exists( $site_id, self::$property_of_site ) ) {
 
             /*
              * Read the column, not the entity.
@@ -562,10 +560,24 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
             $row = $db->getOneRow();
 
-            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
+            self::$property_of_site[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
         }
 
-        return $cache[ $site_id ];
+        return self::$property_of_site[ $site_id ];
+    }
+
+    /** @var array<string, string|null> site id => its Property, as propertyFor() read it */
+    private static $property_of_site = [];
+
+    /**
+     * Forget what propertyFor() has read. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetProperties() {
+
+        self::$property_of_site = [];
     }
 
     /** Once per session (1.x's only behaviour) or once per event. */

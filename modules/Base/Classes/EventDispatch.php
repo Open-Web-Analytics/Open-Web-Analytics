@@ -43,13 +43,26 @@ class EventDispatch {
      */
     public static function &get_instance() {
 
-        static $ed;
-
-        if ( ! $ed ) {
-            $ed = new \OWA\Module\Base\Classes\EventDispatch();
+        if ( ! self::$instance ) {
+            self::$instance = new \OWA\Module\Base\Classes\EventDispatch();
         }
 
-        return $ed;
+        return self::$instance;
+    }
+
+    /** @var \OWA\Module\Base\Classes\EventDispatch|null get_instance() */
+    private static $instance = null;
+
+    /**
+     * Drop the instance get_instance() answers, and with it every attached
+     * listener. CoreAPI::forgetSingletons() calls this, with the service whose
+     * modules attach them.
+     *
+     * @return void
+     */
+    public static function forgetInstance() {
+
+        self::$instance = null;
     }
 
     /**

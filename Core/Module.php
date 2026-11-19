@@ -550,11 +550,9 @@ abstract class Module {
      */
     public static function settingsRegistry() {
 
-        static $registry = null;
+        if ( self::$settings_registry !== null ) {
 
-        if ( $registry !== null ) {
-
-            return $registry;
+            return self::$settings_registry;
         }
 
         $fields     = [];
@@ -616,7 +614,22 @@ abstract class Module {
             }
         }
 
-        return $registry = [ 'fields' => $fields, 'declared' => $declared, 'activation' => $activation ];
+        return self::$settings_registry = [ 'fields' => $fields, 'declared' => $declared, 'activation' => $activation ];
+    }
+
+    /** @var array{fields: array<string, array<mixed>>, declared: array<string, true>, activation: array<string, ActivationDeclaration>}|null settingsRegistry(), read once per process */
+    private static $settings_registry = null;
+
+    /**
+     * Forget the settings registry, so the next settingsRegistry() reads the
+     * modules' settings.php files again. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetSettingsRegistry() {
+
+        self::$settings_registry = null;
     }
 
     /**

@@ -322,6 +322,17 @@ class GoalVocabulary {
     private static $registryDescriptions = null;
 
     /**
+     * Forget the descriptions description() read from the dimension registry.
+     * CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forgetDescriptions() {
+
+        self::$registryDescriptions = null;
+    }
+
+    /**
      * What a column holds, in a sentence, for the builder's picker.
      *
      * The report dimension that reads the same column says it already: a goal
