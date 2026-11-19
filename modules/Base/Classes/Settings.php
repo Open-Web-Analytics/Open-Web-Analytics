@@ -116,6 +116,45 @@ namespace OWA\Module\Base\Classes;
          return $this->config_file_loaded;
      }
 
+     /** The keys and salts owa-config.php must set. */
+     const SECRET_CONSTANTS = [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ];
+
+     /** The shortest key or salt accepted. The installer writes 64 characters. */
+     const SECRET_MIN_LENGTH = 32;
+
+     /**
+      * The keys and salts that are not defined, shorter than SECRET_MIN_LENGTH,
+      * or still the owa-config-dist.php placeholder ("your...goeshere").
+      *
+      * @param array<string, mixed>|null $values constant => value; this process's constants when null
+      * @return string[] constant names
+      */
+     public static function unusableSecretConstants( $values = null ) {
+
+         $unusable = [];
+
+         foreach ( self::SECRET_CONSTANTS as $name ) {
+
+             if ( $values === null ) {
+
+                 $value = defined( $name ) ? constant( $name ) : null;
+
+             } else {
+
+                 $value = $values[ $name ] ?? null;
+             }
+
+             $value = is_string( $value ) ? trim( $value ) : '';
+
+             if ( strlen( $value ) < self::SECRET_MIN_LENGTH || preg_match( '/^your\w*goeshere$/i', $value ) ) {
+
+                 $unusable[] = $name;
+             }
+         }
+
+         return $unusable;
+     }
+
      private function loadConfigFile() {
  
         /*
