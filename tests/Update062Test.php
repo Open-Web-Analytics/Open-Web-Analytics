@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PartitionFixtures.php';
 require_once __DIR__ . '/V1Schema.php';
 
 /**

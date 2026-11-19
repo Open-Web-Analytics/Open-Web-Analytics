@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/PartitionFixtures.php';
+
 use PHPUnit\Framework\TestCase;
 
 /**
