@@ -373,8 +373,7 @@ class PartitionStatusCli extends PartitionsCli {
 
             $lines[] = sprintf(
                 'The shortest lead runs out on %s, %d day%s from now -- that is the deadline for '
-              . 'the next cmd=partition-rotate. Running it monthly from cron keeps the lead topped '
-              . 'up and the catch-all empty.',
+              . 'the next cmd=partition-rotate. The scheduler\'s rotate-partitions job runs it daily.',
                 $this->readable( date( 'Ymd', strtotime( '+' . $soonest . ' days' ) ) ),
                 $soonest,
                 $soonest === 1 ? '' : 's'
