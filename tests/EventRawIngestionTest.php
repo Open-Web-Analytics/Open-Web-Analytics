@@ -1614,6 +1614,32 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A later page view of the first session refers from the site's own landing
+     * page. That referrer is not evidence of how the visitor arrived: a row
+     * written from it read as direct, and the tagged landing, arriving after it
+     * out of order, was ignored.
+     */
+    public function testANonLandingEventWithAnInternalReferrerWritesNoRow(): void
+    {
+        $rows = $this->firePageView([
+            'page_url'               => 'https://owa-test-site/v2/second-page',
+            'page_location'          => 'https://owa-test-site/v2/second-page',
+            'HTTP_REFERER'           => 'https://owa-test-site/v2/landing',
+            'is_new_session_start'   => false,
+            'is_new_visitor_created' => false,
+        ]);
+
+        $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
+        $this->assertNull($rows['page_view']['referer_host'], 'the site is not its own referrer');
+
+        $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame(0, (int) $count['n']);
+    }
+
+    /**
      * An `eps_` property lands in params, by name, with the prefix stripped.
      *
      * The prefix is how the beacon says which scope a value belongs to, so this

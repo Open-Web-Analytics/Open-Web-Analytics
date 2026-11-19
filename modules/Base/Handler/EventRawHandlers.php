@@ -1058,7 +1058,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * DIRECT IS KNOWN, AND ONLY THE LANDING CAN SAY IT. The tags ride the
      * landing beacon alone, so a later event of the first session with no tags
-     * and no referrer says nothing about how the visitor arrived -- the landing
+     * and no external referrer says nothing about how the visitor arrived -- the landing
      * it followed may have been a tagged campaign, still in a queue. The landing
      * itself arriving with neither is a direct visit, and it is written as one:
      * an acquisition with nothing in it and acq_ts set, which the build reads as
@@ -1093,9 +1093,17 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_referer_host' => $row['referer_host'],
         ];
 
-        // Nothing to stamp and not the landing: no row. See above.
+        /*
+         * Nothing to stamp and not the landing: no row. See above. The evidence
+         * is the tags and the referring host, not the referrer URL: a later
+         * page view's referrer is the site's own previous page, whose host
+         * deriveRefererHost() empties, and a row written from it would read as
+         * direct and block the tagged landing still on its way.
+         */
+        $evidence = array_diff_key( $acquisition, [ 'acq_referer_url' => true ] );
+
         if ( ! $landing
-             && ! array_filter( $acquisition, function ( $v ) { return $v !== null && $v !== ''; } ) ) {
+             && ! array_filter( $evidence, function ( $v ) { return $v !== null && $v !== ''; } ) ) {
 
             return true;
         }
