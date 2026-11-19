@@ -732,13 +732,42 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame(3, (int) $unbounded['n']);
         $this->assertSame((int) $unbounded['n'], (int) $bounded['n'], 'the bound must not change the count');
 
-        // And it really does prune.
-        $plan = $db->get_results("EXPLAIN SELECT COUNT(DISTINCT id) FROM $t WHERE session_id = 77
-                                  AND yyyymmdd BETWEEN {$range['start']} AND {$range['end']}");
-        $scanned = count(explode(',', $plan[0]['partitions']));
-        $all     = count($db->getPartitionSpans($t));
+        // And it really does prune. The JSON plan names the partitions on MySQL
+        // and MariaDB alike; MariaDB's tabular EXPLAIN has no partitions column.
+        $plan = $db->get_row("EXPLAIN FORMAT=JSON SELECT COUNT(DISTINCT id) FROM $t WHERE session_id = 77
+                              AND yyyymmdd BETWEEN {$range['start']} AND {$range['end']}");
+        $partitions = self::planPartitions(json_decode((string) reset($plan), true));
+        $all        = count($db->getPartitionSpans($t));
 
-        $this->assertLessThan($all, $scanned, 'the bound should reduce the partitions scanned');
+        $this->assertNotNull($partitions, 'the plan names the partitions it reads');
+        $this->assertLessThan($all, count($partitions), 'the bound should reduce the partitions scanned');
+    }
+
+    /**
+     * The first `partitions` list in an EXPLAIN FORMAT=JSON plan.
+     *
+     * @param mixed $node
+     * @return list<string>|null
+     */
+    private static function planPartitions($node): ?array
+    {
+        if (!is_array($node)) {
+            return null;
+        }
+
+        if (isset($node['partitions']) && is_array($node['partitions'])) {
+            return $node['partitions'];
+        }
+
+        foreach ($node as $child) {
+            $found = self::planPartitions($child);
+
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
     }
 
     /**
