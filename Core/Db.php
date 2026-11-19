@@ -2580,14 +2580,22 @@ class Db extends \OWA\Core\Base {
         return [ 'start' => $start, 'end' => $end ];
     }
 
+    /** The most days factDateConstraint() lists one by one. */
+    const FACT_DATE_IN_LIMIT = 64;
+
     /**
      * factDateRange() as a constraint array, ready to hand to a lookup.
+     *
+     * THE DAYS RATHER THAN THE RANGE, up to FACT_DATE_IN_LIMIT of them. The
+     * tables it bounds are keyed (yyyymmdd, id), where `id = ? AND yyyymmdd
+     * BETWEEN` reads every row of the range and `yyyymmdd IN (...)` is one
+     * seek per day. A longer range, from a date far in the past, is a BETWEEN.
      *
      * Empty where no usable range exists, so a caller can pass it
      * unconditionally and simply get an unconstrained query.
      *
      * @param mixed $yyyymmdd  a stored date, any type
-     * @return array{}|array{yyyymmdd: array{value: array{start: string, end: string}, operator: string}}
+     * @return array{}|array{yyyymmdd: array{value: list<int>|array{start: string, end: string}, operator: string}}
      */
     public static function factDateConstraint( $yyyymmdd ) {
 
@@ -2596,6 +2604,20 @@ class Db extends \OWA\Core\Base {
         if ( ! $range ) {
 
             return [];
+        }
+
+        $days = [];
+        $day  = \DateTimeImmutable::createFromFormat( 'Ymd|', $range['start'] );
+
+        while ( $day && $day->format( 'Ymd' ) <= $range['end'] && count( $days ) <= self::FACT_DATE_IN_LIMIT ) {
+
+            $days[] = (int) $day->format( 'Ymd' );
+            $day    = $day->modify( '+1 day' );
+        }
+
+        if ( $days && count( $days ) <= self::FACT_DATE_IN_LIMIT ) {
+
+            return [ 'yyyymmdd' => [ 'value' => $days, 'operator' => 'in' ] ];
         }
 
         return [ 'yyyymmdd' => [ 'value' => $range, 'operator' => 'between' ] ];
