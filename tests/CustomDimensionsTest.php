@@ -320,7 +320,8 @@ final class CustomDimensionsTest extends TestCase
             $this->assertNotNull($entity->getColumn($column), $column);
         }
 
-        $this->assertSame(['pending', 'applied', 'failed'], CustomDimension::states());
+        $this->assertSame(['pending', 'applied', 'failed'],
+            [CustomDimension::STATE_PENDING, CustomDimension::STATE_APPLIED, CustomDimension::STATE_FAILED]);
     }
 
     /**
