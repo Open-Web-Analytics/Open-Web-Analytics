@@ -45,7 +45,7 @@ final class NavShellTest extends TestCase
             ],
             'Custom Reports' => [
                 'ref' => [ 'do' => 'base.customReports' ],
-                'anchortext' => 'Custom Reports', 'priviledge' => 'view_site_list', 'icon_class' => 'fa fa-th-list',
+                'anchortext' => 'Custom Reports', 'priviledge' => 'view_reports', 'icon_class' => 'fa fa-th-list',
                 'overview_label' => 'All reports',
                 'keeps_column' => true,
                 'current_for' => [
@@ -57,7 +57,7 @@ final class NavShellTest extends TestCase
                            'anchortext' => 'Blog launch week', 'priviledge' => 'view_reports',
                            'icon_class' => 'fas fa-star', 'heading' => 'Favorites' ],
                     [ 'ref' => [ 'do' => 'base.customReports' ],
-                           'anchortext' => 'All reports again', 'priviledge' => 'view_site_list' ],
+                           'anchortext' => 'All reports again', 'priviledge' => 'view_reports' ],
                 ],
             ],
         ];

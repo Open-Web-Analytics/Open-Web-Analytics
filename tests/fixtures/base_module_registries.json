@@ -883,7 +883,7 @@
                 },
                 "anchortext": "Custom Reports",
                 "order": 9,
-                "priviledge": "view_site_list",
+                "priviledge": "view_reports",
                 "icon_class": "fa fa-sliders-h"
             },
             "Ecommerce": {
