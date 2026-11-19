@@ -75,9 +75,17 @@ final class UserRoleAndCreateTest extends TestCase
 
     public function testTheProfileFormDoesNotOfferEveryone(): void
     {
-        $src = (string) file_get_contents( __DIR__ . '/../modules/Base/View/UsersProfile.php' );
+        // The add form: edit would load a user row.
+        $data = [ 'profile' => [], 'edit' => false ];
+        $view = \OWA\Core\CoreAPI::viewFactory( 'base.usersProfile' );
+        $view->setData( $data );
+        $view->render( $data );
 
-        $this->assertStringContainsString( "set('roles', \\OWA\\Core\\CoreAPI::getAssignableRoles())", $src );
+        $roles = (array) $view->body->get( 'roles' );
+
+        $this->assertNotContains( 'everyone', $roles );
+        $this->assertSame( \OWA\Core\CoreAPI::getAssignableRoles(), $roles );
+        $this->assertContains( 'viewer', $roles );
     }
 
     /** No real_name posted is no real name, and a user not created is an error, not an invitation. */
