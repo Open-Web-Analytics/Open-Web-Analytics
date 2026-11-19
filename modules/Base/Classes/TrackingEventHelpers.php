@@ -1387,9 +1387,10 @@ class TrackingEventHelpers {
 
     /*
      * The page URL and its referrer AS THE BEACON CARRIED THEM, for the
-     * query_string spam rules. Copied here, in the edge stamp, because the
-     * property stage cleans both (data_type url: tags stripped, quotes and
-     * dollar signs escaped), which removes exactly what those rules look for.
+     * query_string spam rules, copied in the edge stamp before the property
+     * stage. Read with carried(): the property stage rewrites a current
+     * beacon's page_location and HTTP_REFERER later (readableUrl()), so for
+     * one of those the copy comes from the key the beacon sent.
      */
 
     /**
@@ -1399,7 +1400,7 @@ class TrackingEventHelpers {
      */
     public static function receivedPageLocation( $value, $event ) {
 
-        return self::received( $value, $event->get( 'page_location' ) );
+        return self::received( $value, self::carried( $event, 'page_location' ) );
     }
 
     /**
@@ -1409,7 +1410,39 @@ class TrackingEventHelpers {
      */
     public static function receivedReferer( $value, $event ) {
 
-        return self::received( $value, $event->get( 'HTTP_REFERER' ) );
+        return self::received( $value, self::carried( $event, 'HTTP_REFERER' ) );
+    }
+
+    /**
+     * A client property's value under the key the beacon sent it by: its wire
+     * key, else an older tracker's name for it (Beacon\Compat::renames()).
+     * The property itself only for an event that is not a current beacon,
+     * whose URL readableUrl() leaves as it is. Null when there is none.
+     *
+     * @param  Event  $event
+     * @param  string $property
+     * @return mixed
+     */
+    private static function carried( $event, $property ) {
+
+        $properties = (array) $event->getProperties();
+        $keys       = array_merge( self::wireKeysFor( $property ),
+            array_keys( \OWA\Module\Base\Classes\Beacon\Compat::renames(), $property, true ) );
+
+        if ( ! \OWA\Module\Base\Classes\Beacon\Compat::decodesOnce( $properties['beacon_version'] ?? null ) ) {
+
+            $keys[] = $property;
+        }
+
+        foreach ( $keys as $key ) {
+
+            if ( array_key_exists( $key, $properties ) ) {
+
+                return $properties[ $key ];
+            }
+        }
+
+        return null;
     }
 
     /**

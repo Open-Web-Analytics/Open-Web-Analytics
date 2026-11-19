@@ -86,4 +86,34 @@ final class ReadableUrlTest extends TestCase
 
         $this->assertGreaterThanOrEqual(4, $urls);
     }
+
+    /**
+     * The spam rules' copies of a current beacon's URLs come from the keys the
+     * beacon sent, not from page_location and HTTP_REFERER, which readableUrl()
+     * rewrites later in the pass (TrackingPropertyOrderTest).
+     */
+    public function testTheSpamCopiesAreTheUrlsAsCarried(): void
+    {
+        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+        $event->set('beacon_version', '2');
+        $event->set('p_l', 'https://x.test/a%20b?q=%3Cx%3E');
+        $event->set('page_location', 'https://x.test/a b?q=%3Cx%3E');
+        $event->set('p_r', 'https://r.test/c%20d');
+        $event->set('HTTP_REFERER', 'https://r.test/c d');
+
+        $this->assertSame('https://x.test/a%20b?q=%3Cx%3E', TrackingEventHelpers::receivedPageLocation('', $event));
+        $this->assertSame('https://r.test/c%20d', TrackingEventHelpers::receivedReferer('', $event));
+
+        $older = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+        $older->set('page_url', 'https://x.test/old');
+        $older->set('page_location', 'https://x.test/old-renamed');
+
+        $this->assertSame('https://x.test/old', TrackingEventHelpers::receivedPageLocation('', $older), "an older tracker's key");
+
+        $built = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+        $built->set('page_location', 'https://x.test/p');
+
+        $this->assertSame('https://x.test/p', TrackingEventHelpers::receivedPageLocation('', $built),
+            'no format version: page_location is not rewritten, so it is the copy');
+    }
 }
