@@ -134,4 +134,17 @@ final class RestRefusalStatusTest extends TestCase
             ['report_name is not supported. Ask for metrics and dimensions instead.'],
             array_values((array) $c->getValidationErrorMsgs()));
     }
+
+    /**
+     * A request whose server variables were never read answers false for any of
+     * them. The REST view asks for HTTP_ORIGIN, and a null array threw there in
+     * a full suite run.
+     */
+    public function testARequestWithoutServerVariablesAnswersFalse(): void
+    {
+        $r = new \OWA\Core\RequestContainer();
+        $r->server = null;
+
+        $this->assertFalse($r->getServerParam('HTTP_ORIGIN'));
+    }
 }
