@@ -393,4 +393,49 @@ final class ReportRegistryTest extends TestCase
         $this->assertSame( $before, $service->getMapValue( 'reports', 'pages' ),
             'the original definition must survive the attempt' );
     }
+
+    /**
+     * A report link in the nav and the report it opens require the same
+     * capability. A link gated more tightly than its report hides the report
+     * from the menu while its URL still opens it: the e-commerce reports
+     * opened with view_reports alone.
+     */
+    public function testANavLinkRequiresWhatItsReportRequires(): void
+    {
+        $checked = 0;
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
+
+            // Registered once: registerNavigation() adds to what is there.
+            if ( empty( $module->nav_links ) && empty( $module->view_nav_links ) ) {
+
+                $module->registerNavigation();
+            }
+
+            foreach ( (array) ( $module->getNavigationLinks()['Reports'] ?? [] ) as $group ) {
+
+                foreach ( array_merge( [ $group ], array_values( (array) ( $group['subgroup'] ?? [] ) ) ) as $link ) {
+
+                    $id         = is_array( $link['ref'] ?? null ) ? (string) ( $link['ref']['reportId'] ?? '' ) : '';
+                    $definition = $id !== '' ? \OWA\Core\CoreAPI::getReportDefinition( $id ) : null;
+
+                    if ( empty( $definition['json'] ) ) {
+
+                        continue;
+                    }
+
+                    $controller = new \OWA\Core\ConfiguredReport( [] );
+                    $controller->setDefinition( (array) json_decode(
+                        (string) file_get_contents( $definition['json'] ), true ) );
+
+                    $this->assertSame( (string) $link['priviledge'], $controller->getRequiredCapability(),
+                        "the nav link to '$id' and the report require different capabilities" );
+
+                    $checked++;
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 0, $checked, 'no nav link to a configured report was found' );
+    }
 }

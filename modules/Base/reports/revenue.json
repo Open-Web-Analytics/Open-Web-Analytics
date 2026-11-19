@@ -1,6 +1,7 @@
 {
     "title": "Total Revenue",
     "description": "Transaction revenue by day, and by attributed channel.",
+    "capability": "view_reports_ecommerce",
     "metrics": "transactionRevenue",
     "widgets": [
         {

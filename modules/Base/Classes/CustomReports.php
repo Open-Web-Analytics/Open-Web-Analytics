@@ -462,6 +462,12 @@ class CustomReports {
             return $error;
         }
 
+        // Who may open a saved report is decided by mayView(), not by its definition.
+        if ( isset( $definition['capability'] ) ) {
+
+            return \OWA\Core\CoreAPI::t( 'A saved report cannot declare a capability.' );
+        }
+
         $widgets = isset( $definition['widgets'] ) ? (array) $definition['widgets'] : [];
 
         if ( ! $widgets ) {

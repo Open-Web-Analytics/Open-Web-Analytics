@@ -290,7 +290,31 @@ final class ReportDefinitionFormatTest extends TestCase
             'deprecated with an empty message' => [
                 $base + [ 'deprecated' => [ 'message' => '' ] ],
                 'needs a "message"' ],
+
+            'capability is not a name' => [
+                $base + [ 'capability' => [ 'view_reports_ecommerce' ] ],
+                '"capability" must be a capability name' ],
         ];
+    }
+
+    /**
+     * A definition's `capability` is the one the reader needs; without one, a
+     * report needs view_reports.
+     */
+    public function testADeclaredCapabilityIsTheOneRequired(): void
+    {
+        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError(
+            $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) ) );
+
+        $declared = new \OWA\Core\ConfiguredReport( [] );
+        $declared->setDefinition( $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) );
+
+        $this->assertSame( 'view_reports_ecommerce', $declared->getRequiredCapability() );
+
+        $plain = new \OWA\Core\ConfiguredReport( [] );
+        $plain->setDefinition( $this->base() );
+
+        $this->assertSame( 'view_reports', $plain->getRequiredCapability() );
     }
 
     /** A well-formed parameterised definition is not caught by any of that. */
