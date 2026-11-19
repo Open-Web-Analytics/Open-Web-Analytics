@@ -275,8 +275,13 @@ class Entity {
             if ( $value || $this->columnAcceptsFalsy( $name, $value ) ) {
 
                 $this->properties[$name]->setValue( $value );
-                
-                if ( $mark_dirty && $existing_value != $value ) {
+
+                // Loose, so '1' over 1 is not a change. Except across NULL: 0
+                // over NULL compares equal and is a change all the same.
+                $changed = ( $existing_value === null ) !== ( $value === null )
+                    || $existing_value != $value;
+
+                if ( $mark_dirty && $changed ) {
                     
                     $this->markDirty( $name, $value );
                 }
@@ -295,6 +300,10 @@ class Entity {
      * is the half set() cannot reach: its falsy guard wraps the markDirty call
      * as well as the assignment.
      *
+     * The column then holds what create() writes for a column nobody set
+     * (writeValue()): NULL where the column is nullable, 0 on a numeric
+     * column, '' on a text one.
+     *
      * @param  string $name
      * @return void
      */
@@ -305,8 +314,12 @@ class Entity {
             return;
         }
 
-        $this->properties[ $name ]->setValue( '' );
-        $this->markDirty( $name, '' );
+        $this->properties[ $name ]->setValue( null );
+
+        $empty = $this->writeValue( $name );
+
+        $this->properties[ $name ]->setValue( $empty );
+        $this->markDirty( $name, $empty );
     }
 
     /**
@@ -1060,9 +1073,7 @@ class Entity {
     }
     
     /**
-     * DROP Table
-     *
-     * Drops a table. will throw error is table does not exist
+     * DROP TABLE IF EXISTS: a table that is not there is not an error.
      *
      * @return bool
      */

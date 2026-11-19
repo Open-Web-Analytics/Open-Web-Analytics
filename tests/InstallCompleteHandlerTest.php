@@ -5,11 +5,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * Base registers nothing for install_complete. InstallBase still raises the
+ * Base registers nothing for install_complete. Both installers raise the
  * event, for a module of its own to hear.
  */
 final class InstallCompleteHandlerTest extends TestCase
 {
+    /** @var list<array{u: mixed, site_id: mixed}> */
+    public static $heard = [];
+
     /** @return list<mixed> the listeners install_complete reaches */
     private function listeners(): array
     {
@@ -37,6 +40,33 @@ final class InstallCompleteHandlerTest extends TestCase
         } );
 
         $this->assertSame( [], $base, 'Base still listens for install_complete' );
+    }
+
+    public function testTheAnnouncementCarriesTheAdminAndTheFirstSite(): void
+    {
+        \OWA\Core\CoreAPI::getEventDispatch()->attach( 'install_complete', static function ( $event ) {
+
+            InstallCompleteHandlerTest::$heard[] = [ 'u' => $event->get( 'u' ), 'site_id' => $event->get( 'site_id' ) ];
+        }, 'InstallCompleteHandlerTest' );
+
+        self::$heard = [];
+
+        ( new \OWA\Module\Base\Classes\InstallManager() )->announceInstallComplete( 'owatest-admin', 'owatest-site' );
+
+        $this->assertSame( [ [ 'u' => 'owatest-admin', 'site_id' => 'owatest-site' ] ], self::$heard );
+    }
+
+    /** The wizard and cmd=install both announce it once the last step is saved. */
+    public function testBothInstallersAnnounceIt(): void
+    {
+        foreach ( [ 'InstallBase', 'InstallCli' ] as $controller ) {
+
+            $src = (string) file_get_contents( __DIR__ . "/../modules/Base/Controller/$controller.php" );
+
+            $this->assertStringContainsString( '->announceInstallComplete(', $src, $controller );
+            $this->assertGreaterThan( strpos( $src, '->finishInstall(' ), strpos( $src, '->announceInstallComplete(' ),
+                "$controller announces after the last step" );
+        }
     }
 
     public function testBaseHasNoInstallCompleteHandler(): void

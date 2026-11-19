@@ -102,10 +102,11 @@ class Caller extends \OWA\Core\Base {
 
         /* APPLY CALLER CONFIGURATION OVERRIDES */
         
-        // overrides all default and user config values except defined in the config file
-        // must come after user overides are applied
-        // This will apply configuration overirdes that are specified by the calling application.
-        // This is usually used by plugins to setup integration specific configuration values.
+        // The calling application's values, usually an integration's own. They
+        // win over everything already in place: the defaults, the stored
+        // settings and the config-file constants (Settings::applyModuleOverrides()
+        // merges them over all three). So this comes after the stored settings
+        // are loaded.
         $this->overloadConfig( $config );
 
         /* SET ERROR HANDLER */

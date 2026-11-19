@@ -66,6 +66,34 @@ final class EntityFalsyWriteTest extends TestCase
     }
 
     /**
+     * 0 over NULL is a change, though PHP's == calls the two equal: a column
+     * never set, then set to 0, has to reach update().
+     */
+    public function testZeroOverNullIsMarkedDirty(): void
+    {
+        $s = $this->row();
+        $this->assertNull($s->get('event_seq'));
+
+        $s->set('event_seq', 0);
+
+        $this->assertArrayHasKey('event_seq', $s->dirty,
+            '0 written over NULL was not marked dirty, so update() would not write it');
+        $this->assertSame(0, $s->dirty['event_seq']);
+    }
+
+    /** The same number in another type is not a change. */
+    public function testTheSameNumberAsAStringIsNotMarkedDirty(): void
+    {
+        $s = $this->row();
+        $s->set('event_seq', 1);
+        $s->dirty = [];
+
+        $s->set('event_seq', '1');
+
+        $this->assertArrayNotHasKey('event_seq', $s->dirty);
+    }
+
+    /**
      * The half that must NOT change: an empty string on a text column is still
      * ignored, because callers pass one when they have nothing and rely on the
      * existing value surviving.
@@ -110,7 +138,7 @@ final class EntityFalsyWriteTest extends TestCase
 
         $s->clear('tagged_medium');
 
-        $this->assertSame('', $s->get('tagged_medium'),
+        $this->assertNull($s->get('tagged_medium'),
             'clear() did not empty the column');
     }
 
@@ -127,7 +155,32 @@ final class EntityFalsyWriteTest extends TestCase
 
         $this->assertArrayHasKey('tagged_medium', $s->dirty,
             'a cleared column is not dirty, so update() would not write the blank');
-        $this->assertSame('', $s->dirty['tagged_medium']);
+        $this->assertNull($s->dirty['tagged_medium']);
+    }
+
+    /**
+     * clear() writes what create() writes for a column nobody set: NULL on a
+     * nullable column, '' on a text column that is not, 0 on a numeric one.
+     * '' on a numeric column is refused under strict mode.
+     */
+    public function testClearWritesTheColumnsOwnEmptyValue(): void
+    {
+        $raw = $this->row();
+        $raw->set('tagged_medium', 'organic');
+        $raw->set('ts', 1700000000000000);
+        $raw->clear('tagged_medium');
+        $raw->clear('ts');
+
+        $this->assertNull($raw->dirty['tagged_medium'], 'a nullable column is cleared to NULL');
+        $this->assertSame(0, $raw->dirty['ts'], 'a numeric column that cannot hold NULL is cleared to 0');
+        $this->assertSame(0, $raw->get('ts'));
+
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
+        $site->set('description', 'A site');
+        $site->clear('description');
+
+        $this->assertSame('', $site->dirty['description'], 'a text column that cannot hold NULL is cleared to an empty string');
+        $this->assertSame('', $site->get('description'));
     }
 
     /** clear() on a column the entity does not have is a no-op, not a fatal. */

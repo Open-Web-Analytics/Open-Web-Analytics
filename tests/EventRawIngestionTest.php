@@ -908,6 +908,47 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Line items as the tracker sends them: bracketed keys, which PHP parses
+     * into an array of strings. They were handed to json_decode() as they were,
+     * which threw, and the purchase was not stored.
+     */
+    public function testLineItemsSentAsBracketedKeysAreStored(): void
+    {
+        $order   = 'bracket-' . $this->uniqueGuid();
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'guid'          => $this->uniqueGuid(),
+            'page_url'      => 'https://owa-test-site/checkout',
+            'page_location' => 'https://owa-test-site/checkout',
+            'page_title'    => 'Checkout',
+            'ct_order_id'   => $order,
+            'ct_total'      => '25.90',
+            'currency'      => 'USD',
+            'ct_line_items' => [
+                [ 'item_id' => 'SKU-A', 'price' => '10.20', 'quantity' => '2' ],
+                [ 'item_id' => 'SKU-B', 'price' => '5.50',  'quantity' => '1' ],
+            ],
+        ]);
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $row = (array) $db->get_row(sprintf(
+            "SELECT id, params FROM owa_event_raw WHERE site_id = '%s' AND session_id = %d "
+            . "AND event_type = 'purchase'", $this->site, (int) $session));
+
+        $this->assertNotEmpty($row, 'the purchase was not stored');
+        $this->trackForCleanup('base.event_raw', (string) $row['id'], 'id');
+
+        $params = json_decode((string) $row['params'], true);
+
+        $this->assertSame(['SKU-A', 'SKU-B'], array_column($params['items'] ?? [], 'item_id'));
+    }
+
+    /**
      * The referrer is read for its host and its query, and edited no further.
      *
      * The host is what the cube pass classifies source and medium from, so it is

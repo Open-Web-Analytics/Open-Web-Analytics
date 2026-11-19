@@ -72,6 +72,15 @@ final class TrackingPropertyFormatTest extends TestCase
         }
     }
 
+    /** No entry carries `filter`: nothing reads it. A value is filtered by its callbacks. */
+    public function testNoEntryCarriesAFilterKey(): void
+    {
+        foreach ( $this->registry() as $name => $definition ) {
+
+            $this->assertArrayNotHasKey( 'filter', $definition, "$name carries 'filter', which nothing reads" );
+        }
+    }
+
     /* ---------------- from ---------------- */
 
     public function testEveryEntryDeclaresWhatItComesFrom(): void

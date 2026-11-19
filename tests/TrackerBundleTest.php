@@ -778,4 +778,51 @@ final class TrackerBundleTest extends TestCase
             $this->dropScratchJobQueue($table);
         }
     }
+
+    /**
+     * A settings save publishes as the web server, publish-trackers as the CLI
+     * account: the directory either creates is one the other can write.
+     */
+    public function testTheBundleDirectoryIsGroupWritable(): void
+    {
+        TrackerBundle::$outDir = $this->out . 'nested/tracker/';
+
+        $umask = umask(022);
+
+        try {
+            $this->assertTrue(TrackerBundle::publish(self::SITE));
+        } finally {
+            umask($umask);
+        }
+
+        foreach ([$this->out, $this->out . 'nested/', $this->out . 'nested/tracker/'] as $dir) {
+            clearstatcache();
+            $this->assertSame('0775', sprintf('%04o', fileperms($dir) & 0777), $dir);
+        }
+    }
+
+    /**
+     * Bundles are written to tracker/ in the public directory the install
+     * names (public_path, OWA_PUBLIC_PATH), the directory assetsUrl() serves,
+     * so the file and its URL are the same tracker/<id>.js.
+     */
+    public function testBundlesAreWrittenUnderThePublicPath(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('base', 'public_path');
+
+        TrackerBundle::$outDir = null;
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'public_path', $this->root . '/served');
+
+            $this->assertSame($this->root . '/served/tracker/' . self::SITE . '.js', TrackerBundle::path(self::SITE));
+            $this->assertSame(TrackerBundle::assetsUrl() . 'tracker/' . self::SITE . '.js', TrackerBundle::url(self::SITE));
+
+            $this->assertTrue(TrackerBundle::publish(self::SITE));
+            $this->assertFileExists($this->root . '/served/tracker/' . self::SITE . '.js');
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'public_path', $was);
+        }
+    }
 }

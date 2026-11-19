@@ -12,7 +12,8 @@ namespace OWA\Module\Base\Controller;
  *
  * Nothing is destroyed. Both tiers take an archived_date, and everything
  * hanging off them -- grants, scoped settings, collected data -- is left where
- * it is.
+ * it is. Each archived Profile's tracking bundle is removed, as SitesDelete
+ * removes one.
  */
 class PropertyDelete extends \OWA\Core\AdminController {
 
@@ -74,6 +75,9 @@ class PropertyDelete extends \OWA\Core\AdminController {
 
                 $profile->set( 'archived_date', $archivedAt );
                 $profile->update();
+
+                // An archived Profile stops collecting, so its tracking bundle is taken down now.
+                \OWA\Module\Base\Classes\TrackerBundle::remove( (string) $profile->get( 'site_id' ) );
             }
         }
 

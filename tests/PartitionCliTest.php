@@ -875,4 +875,30 @@ final class PartitionCliTest extends CliControllerTestCase
             'partitioning applies to the fact tables only'
         );
     }
+
+    /**
+     * A module's partitioned entity is maintained in the shape it is created
+     * in: the daily lead it declares is found by its table name, as Base's are.
+     */
+    public function testAModuleEntitysDailyLeadIsFoundByItsTableName()
+    {
+        require_once __DIR__ . '/fixtures/TestFixtureModule.php';
+        require_once __DIR__ . '/fixtures/TestFixtureLeadProbe.php';
+
+        $module = (new ReflectionClass(\OWA\Module\TestFixture\Module::class))->newInstanceWithoutConstructor();
+        $module->name = \OWA\Module\TestFixture\Module::NAME;
+        $module->registerEntity('lead_probe');
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->modules[$module->name] = $module;
+
+        try {
+            $table = \OWA\Core\CoreAPI::entityFactory('test_fixture.lead_probe')->getTableName();
+
+            $this->assertSame(\OWA\Module\TestFixture\Entity\LeadProbe::MONTHS,
+                $this->callProtected($this->rotate(), 'dailyLeadMonths', [$table]));
+        } finally {
+            unset($s->modules[$module->name]);
+        }
+    }
 }

@@ -381,12 +381,12 @@ namespace OWA\Module\Base\Classes;
         // same command twice under different names -- without a code change and
         // without a new constant each time:
         //
-        //   define('OWA_SCHEDULED_JOBS', array(
-        //       'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
-        //       'drain-tracker-ingest' => array( 'schedule' => '*/5 * * * *' ),
-        //   ));
+        //   define('OWA_SCHEDULED_JOBS', [
+        //       'rotate-partitions' => [ 'params' => [ 'months-ahead' => 6 ] ],
+        //       'drain-tracker-ingest' => [ 'schedule' => '*/5 * * * *' ],
+        //   ]);
         //
-        // Keyed by job name; see owa_service::applyConfiguredJobs() for how an
+        // Keyed by job name; see Service::applyConfiguredJobs() for how an
         // entry is merged and why a bad one disables only itself.
         if (defined('OWA_SCHEDULED_JOBS') && is_array(OWA_SCHEDULED_JOBS)) {
             $this->setFromConfigConstant( 'base', 'scheduled_jobs', OWA_SCHEDULED_JOBS, 'OWA_SCHEDULED_JOBS');
@@ -528,7 +528,10 @@ namespace OWA\Module\Base\Classes;
      }
       
      /**
-      * Ovverrides settings - used in some controllers (@see \OWA\Core\Caller )
+      * Sets a module's values in memory over whatever is in place, a
+      * config-file constant's value included. Caller applies the calling
+      * application's configuration with it.
+      *
       * @param string $module
       * @param array<string, mixed> $config
       * @return void

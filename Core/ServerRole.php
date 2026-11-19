@@ -69,8 +69,8 @@ final class ServerRole {
     const URL_CONSTANTS = [ 'OWA_PUBLIC_URL' ];
 
     /**
-     * Retired constants, and what replaces them. The 1.x names still have an
-     * effect (Settings::applyConfigConstants()).
+     * Retired constants, and what replaces them. Each notice says whether
+     * the 1.x name is still read (Settings::applyConfigConstants()).
      */
     const RETIRED_CONSTANTS = [
         'OWA_QUEUE_EVENTS'              => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',
@@ -80,6 +80,8 @@ final class ServerRole {
         'OWA_TRACKER_INGEST_DRAIN'      => 'No longer read. The servers whose role runs the scheduler drain the queue.',
         'OWA_SCHEDULER_ENABLED'         => 'No longer read. The role decides: full and worker run the scheduler.',
         'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
+        'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
+        'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
     ];
 
     /** @var string[] */

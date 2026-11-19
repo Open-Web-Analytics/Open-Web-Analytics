@@ -497,4 +497,26 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/^use\s+Monolog/m', $source);
         $this->assertStringNotContainsString('exec(', $source);
     }
+
+    /**
+     * The web server writes beacons and the CLI drains them, so what the queue
+     * creates is group-writable whatever the umask of the process creating it.
+     */
+    public function testTheQueueIsGroupWritable(): void
+    {
+        $umask = umask(022);
+
+        try {
+            $this->assertTrue($this->queue()->send(self::envelope('a')));
+        } finally {
+            umask($umask);
+        }
+
+        foreach (['', 'unprocessed/', 'processing/', 'delayed/', 'archive/'] as $sub) {
+            clearstatcache();
+            $this->assertSame('0775', sprintf('%04o', fileperms($this->dir . $sub) & 0777), "directory '$sub'");
+        }
+
+        $this->assertSame('0664', sprintf('%04o', fileperms($this->dir . 'events.txt') & 0777), 'events.txt');
+    }
 }
