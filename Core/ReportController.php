@@ -239,7 +239,7 @@ class ReportController extends \OWA\Core\AdminController {
                     'stopOnError'     => true,
                     'errorMsg'        => sprintf(
                         \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ),
-                        htmlspecialchars( (string) $period, ENT_QUOTES ) ),
+                        (string) $period ),
                 ]
             );
         }
