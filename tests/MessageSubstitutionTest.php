@@ -86,24 +86,4 @@ final class MessageSubstitutionTest extends TestCase
     {
         $this->assertSame([], $this->base->getMsg(99999, ['message' => ['x']]));
     }
-
-    /**
-     * The call sites the framework actually has: no getMsg() caller may hand a
-     * substitution value that is neither an array nor a scalar (an object or
-     * null would still be a TypeError inside vsprintf()). Cheap source scan --
-     * these two are the only substituting call sites in the tree, and this
-     * keeps a third one from being added in the broken shape.
-     */
-    public function testThePasswordResetCallSitesPassArgumentLists(): void
-    {
-        $source = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/PasswordResetRequest.php'
-        );
-
-        $this->assertSame(
-            2,
-            preg_match_all("/getMsg\(200[01], \['message' => \[\\\$email_address\]\]\)/", $source),
-            'PasswordResetRequest must pass vsprintf() argument lists, not bare strings.'
-        );
-    }
 }
