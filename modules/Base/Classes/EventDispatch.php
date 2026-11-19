@@ -220,7 +220,12 @@ class EventDispatch {
 
         if ( ! is_array( $listener ) ) {
 
-            return is_string( $listener ) ? $listener : '(closure)';
+            if ( is_string( $listener ) ) {
+
+                return $listener;
+            }
+
+            return is_object( $listener ) && ! $listener instanceof \Closure ? get_class( $listener ) : '(closure)';
         }
 
         $target = $listener[0] ?? '';
@@ -363,7 +368,7 @@ class EventDispatch {
                         $method = $this->listeners[$observer_id][1];
                         $filter_method = $class . '::' . $method;
                     } else {
-                        $filter_method = $this->listeners[$observer_id];
+                        $filter_method = self::listenerName( $this->listeners[$observer_id] );
                     }
 
 
