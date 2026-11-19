@@ -126,6 +126,54 @@ final class HtaccessAllowlistTest extends TestCase
         $this->assertSame($granted, $this->legacyGrant($uri, $filename));
     }
 
+    /**
+     * Whether a request mapped to $filename is granted by the entry-point rules:
+     * the <FilesMatch> grant, the <If> that denies those names outside the
+     * install root, then the api/ and public/ grant, which comes after it.
+     */
+    private function entryPointAccess(string $filename): bool
+    {
+        $htaccess = self::htaccess();
+
+        $this->assertSame(1, preg_match('/<FilesMatch "([^"]+)">\s*Require all granted\s*<\/FilesMatch>/', $htaccess, $files));
+        $this->assertSame(1, preg_match(
+            "/<If \"%\\{REQUEST_FILENAME\\} =~ m#([^#]+)# && ! -f '\\$1\\/owa_env\\.php'\">\\s*Require all denied\\s*<\\/If>/",
+            $htaccess, $deny, PREG_OFFSET_CAPTURE), 'one denial of the entry-point names outside the root');
+        $this->assertLessThan(strpos($htaccess, 'api|public'), $deny[0][1], 'the denial comes before the api/ grant');
+
+        $granted = (bool) preg_match('#' . $files[1] . '#', basename($filename));
+
+        if (preg_match('#' . $deny[1][0] . '#', $filename, $g) && !self::exists($g[1] . '/owa_env.php')) {
+            $granted = false;
+        }
+
+        return $this->rootDirectoriesGrant($filename) || $granted;
+    }
+
+    /** @return array<string, array{string, bool}> */
+    public static function entryPoints(): array
+    {
+        return [
+            'index.php'                       => [self::ROOT . '/index.php', true],
+            'log.php'                         => [self::ROOT . '/log.php', true],
+            'install.php'                     => [self::ROOT . '/install.php', true],
+            'blank.php'                       => [self::ROOT . '/blank.php', true],
+            'api/index.php'                   => [self::ROOT . '/api/index.php', true],
+            'a root with public/ in its path' => ['/home/site/public/owa/index.php', true],
+            'the install template'            => [self::ROOT . '/modules/Base/templates/install.php', false],
+            'modules/index.php'               => [self::ROOT . '/modules/index.php', false],
+            'a vendor index.php'              => [self::ROOT . '/vendor/acme/lib/public/index.php', false],
+            'a nested api/index.php'          => [self::ROOT . '/vendor/acme/lib/api/index.php', false],
+            'another root file'               => [self::ROOT . '/cli.php', false],
+        ];
+    }
+
+    /** @dataProvider entryPoints */
+    public function testTheEntryPointsAreGrantedOnlyInTheInstallRoot(string $filename, bool $granted): void
+    {
+        $this->assertSame($granted, $this->entryPointAccess($filename));
+    }
+
     /** No grant tests REQUEST_URI for api/ or public/, which matches them anywhere in a path. */
     public function testNoGrantMatchesApiOrPublicInTheUri(): void
     {

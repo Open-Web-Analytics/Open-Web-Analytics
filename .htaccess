@@ -15,6 +15,16 @@
         Require all granted
     </FilesMatch>
 
+    # Those names anywhere but the install root (templates/install.php, modules/index.php,
+    # vendor/.../index.php) are denied again: the file's own directory must hold
+    # owa_env.php. An <If> is merged after <FilesMatch>, so this replaces the grant above;
+    # api/index.php is granted again by the api/ rule below, which comes later. The grant
+    # stays a <FilesMatch> for a server that reads `Require` but not `<If>` (see public/
+    # below): there the entry points are served as before.
+    <If "%{REQUEST_FILENAME} =~ m#^(.*)/(?:index|log|install|blank)\.php$# && ! -f '$1/owa_env.php'">
+        Require all denied
+    </If>
+
     # The install root's api/ and public/ directories. Authorization runs in the auth
     # phase, BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be
     # allowed here (not just the rewritten api/index.php target) or the REST pretty-URLs
