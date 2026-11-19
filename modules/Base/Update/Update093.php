@@ -13,13 +13,23 @@ namespace OWA\Module\Base\Update;
  * AUTOLOAD. No query filters on the column (Entity\Setting), so the index was
  * written on every settings save and read by nothing. An install upgraded
  * through Update043 has it as idx_autoload, a fresh one as autoload; every
- * index on that column alone is dropped. down() adds idx_autoload.
+ * index on that column alone is dropped. Their names are kept in the
+ * autoload_indexes_before_093 setting first, and down() adds each back under
+ * its name and removes the record. A run that finds none changes nothing.
  *
  * NOT CLI-ONLY: two small tables.
  */
 class Update093 extends \OWA\Core\Update {
 
+    use SettingRows;
+
     public $schema_version = 93;
+
+    /** What up() dropped: { indexes: list of index names }. */
+    const BEFORE = 'autoload_indexes_before_093';
+
+    /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
+    const INSTALL_SCOPE_ID = '1';
 
     /**
      * @param  bool $force
@@ -50,9 +60,28 @@ class Update093 extends \OWA\Core\Update {
             }
         }
 
-        $setting = $this->tableFor( 'base.setting' );
+        $setting = $this->settingTable();
+        $names   = $this->indexesOn( $setting, 'autoload' );
 
-        foreach ( $this->indexesOn( $setting, 'autoload' ) as $name ) {
+        if ( ! $names ) {
+
+            return true;
+        }
+
+        // Kept before anything is dropped, so a run that stops part way can still be undone.
+        $record = $this->record();
+        $kept   = isset( $record['indexes'] ) && is_array( $record['indexes'] ) ? $record['indexes'] : [];
+
+        $record['indexes'] = array_values( array_unique( array_merge( $kept, $names ) ) );
+
+        if ( ! $this->writeRecord( serialize( $record ) ) ) {
+
+            $this->e->notice( sprintf( 'Keeping the autoload index names in %s failed.', self::BEFORE ) );
+
+            return false;
+        }
+
+        foreach ( $names as $name ) {
 
             if ( $db->query( sprintf( 'DROP INDEX %s ON %s', $name, $setting ) ) === false ) {
 
@@ -68,13 +97,28 @@ class Update093 extends \OWA\Core\Update {
     public function down() {
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $setting = $this->tableFor( 'base.setting' );
+        $setting = $this->settingTable();
+        $record  = $this->record();
 
-        // The column goes with Update043's down(); while it is here, it is indexed.
-        if ( $db->get_results( sprintf( "SHOW COLUMNS FROM %s LIKE 'autoload'", $setting ) )
-             && $db->addIndex( $setting, 'autoload' ) === false ) {
+        foreach ( (array) ( $record['indexes'] ?? [] ) as $name ) {
 
-            $this->e->notice( sprintf( 'Adding the autoload index to %s failed.', $setting ) );
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $name ) ) {
+
+                continue;
+            }
+
+            if ( ! $this->indexNamed( $setting, (string) $name )
+                 && $db->query( sprintf( 'ALTER TABLE %s ADD INDEX %s (autoload)', $setting, $name ) ) === false ) {
+
+                $this->e->notice( sprintf( 'Adding index %s to %s failed.', $name, $setting ) );
+
+                return false;
+            }
+        }
+
+        if ( $record && ! $this->deleteRecord() ) {
+
+            $this->e->notice( sprintf( 'Removing %s failed.', self::BEFORE ) );
 
             return false;
         }

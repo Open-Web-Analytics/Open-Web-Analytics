@@ -7,9 +7,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Update093: owa_site is indexed on site_id, unique where the rows allow it,
- * and owa_setting loses its index on autoload; down() puts both back.
+ * and owa_setting loses its indexes on autoload; down() puts each back under
+ * its own name.
  *
- * Against scratch copies of the two tables.
+ * Against scratch copies of the two tables, with no autoload index until a
+ * test adds the shape it is about.
  */
 final class Update093Test extends TestCase
 {
@@ -37,6 +39,10 @@ final class Update093Test extends TestCase
         // The shape before the update, whatever the install's tables have.
         $this->update->tables = ['base.site' => self::SITE, 'base.setting' => self::SETTING];
         $this->update->down();
+
+        foreach (array_keys(array_filter($this->indexes(self::SETTING), fn ($ix) => $ix['columns'] === 'autoload')) as $name) {
+            $db->query(sprintf('DROP INDEX %s ON %s', $name, self::SETTING));
+        }
     }
 
     protected function tearDown(): void
@@ -77,12 +83,42 @@ final class Update093Test extends TestCase
             \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
-    public function testUpIndexesSiteIdAndDropsTheAutoloadIndex(): void
+    /** @return array<string, array{list<string>}> */
+    public static function autoloadIndexShapes(): array
+    {
+        return [
+            'upgraded through Update043' => [['idx_autoload']],
+            'installed fresh'            => [['autoload']],
+            'both'                       => [['autoload', 'idx_autoload']],
+            'none'                       => [[]],
+        ];
+    }
+
+    private function record(): ?array
+    {
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            sprintf("SELECT value FROM %s WHERE scope_type = 'install' AND module = 'base' AND name = ?", self::SETTING),
+            [Update093::BEFORE]);
+
+        return $row ? unserialize((string) $row['value'], ['allowed_classes' => false]) : null;
+    }
+
+    /**
+     * @dataProvider autoloadIndexShapes
+     * @param list<string> $names
+     */
+    public function testUpIndexesSiteIdAndDropsTheAutoloadIndex(array $names): void
     {
         $this->requireDb();
 
+        foreach ($names as $name) {
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('ALTER TABLE %s ADD INDEX %s (autoload)', self::SETTING, $name));
+        }
+
         $site    = $this->indexes(self::SITE);
         $setting = $this->indexes(self::SETTING);
+
+        $this->assertCount(count($names), array_filter($setting, fn ($ix) => $ix['columns'] === 'autoload'));
 
         $this->assertTrue($this->update->up());
         $this->assertTrue($this->update->up(), 'a second run changes nothing');
@@ -90,12 +126,14 @@ final class Update093Test extends TestCase
         $this->assertSame(['columns' => 'site_id', 'unique' => true],
             $this->indexes(self::SITE)[\OWA\Module\Base\Entity\Site::SITE_ID_INDEX] ?? null);
         $this->assertSame([], array_filter($this->indexes(self::SETTING), fn ($ix) => $ix['columns'] === 'autoload'));
+        $this->assertSame($names ? ['indexes' => $names] : null, $this->record(), 'the names down() puts back');
 
         $this->assertTrue($this->update->down());
         $this->assertTrue($this->update->down(), 'a second run changes nothing');
 
         $this->assertSame($site, $this->indexes(self::SITE));
-        $this->assertSame($setting, $this->indexes(self::SETTING));
+        $this->assertSame($setting, $this->indexes(self::SETTING), 'each autoload index back under its own name');
+        $this->assertNull($this->record(), 'and the record removed');
     }
 
     public function testASiteIdOnTwoRowsGetsAPlainIndex(): void
