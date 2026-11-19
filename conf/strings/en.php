@@ -829,6 +829,8 @@ return [
     'Next' => 'Next',
     'Next Page Path' => 'Next Page Path',
     'Next Pages' => 'Next Pages',
+    'Next build at the next scheduled run' => 'Next build at the next scheduled run',
+    'Next build due %s' => 'Next build due %s',
     'Next month' => 'Next month',
     'Next page' => 'Next page',
     'No' => 'No',

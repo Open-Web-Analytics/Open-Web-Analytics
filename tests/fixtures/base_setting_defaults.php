@@ -28,6 +28,7 @@ return [
     'configuration_id' => '1',
     'cookie_domain' => false,
     'cookie_persistence' => true,
+    'cube_last_build' => [],
     'cube_rebuild_window_days' => 7,
     'cube_retention_months' => null,
     'currencyISO3' => 'USD',
