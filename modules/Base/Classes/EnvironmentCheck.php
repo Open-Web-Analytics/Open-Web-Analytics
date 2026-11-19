@@ -149,6 +149,8 @@ class EnvironmentCheck {
                            $relative ? \OWA\Core\CoreAPI::t( 'the directory owa-config.php goes in' ) : $config_dir ),
             '`owa-config.php` exists and is readable, or its directory is writable so the installer can create it.' );
 
+        $checks[] = self::configFileCode( $config_file );
+
         // The two directories a source checkout does not come with.
         $checks[] = self::check(
             \OWA\Core\CoreAPI::t( 'Dependencies' ),
@@ -167,6 +169,28 @@ class EnvironmentCheck {
             'The JavaScript and CSS have been built.' );
 
         return $checks;
+    }
+
+    /**
+     * Whether owa-config.php uses `$this` (Core\ConfigFile): such a file is
+     * not read, and every request is refused until it is changed. Passes when
+     * there is no file yet.
+     *
+     * @param  string $config_file
+     * @return array{name: string, value: string, passed: bool, msg: string, requires: string}
+     */
+    public static function configFileCode( $config_file ) {
+
+        $problems = file_exists( (string) $config_file ) ? \OWA\Core\ConfigFile::problems( $config_file ) : [];
+
+        return self::check(
+            \OWA\Core\CoreAPI::t( 'Configuration file code' ),
+            $problems
+                ? sprintf( \OWA\Core\CoreAPI::tn( 'uses $this on %d line', 'uses $this on %d lines', count( $problems ) ), count( $problems ) )
+                : \OWA\Core\CoreAPI::t( 'constants only' ),
+            ! $problems,
+            implode( ' ', \OWA\Core\ConfigFile::messages( $problems, (string) $config_file ) ),
+            '`owa-config.php` does not use `$this`: each setting it sets is a constant.' );
     }
 
     /**

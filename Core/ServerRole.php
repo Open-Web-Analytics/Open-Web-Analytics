@@ -25,7 +25,7 @@ namespace OWA\Core;
  * A CLI command names the roles it runs under (Controller\Cli::serverRoles(),
  * by default full and worker); cli.php refuses one this role is not among.
  *
- * @phpstan-type BootProblem array{status: int, message: string}
+ * @phpstan-type BootProblem array{status: int, message: string, php_log?: bool}
  */
 final class ServerRole {
 
@@ -311,9 +311,25 @@ final class ServerRole {
      * @param array<string, mixed>|null $defined  the OWA_ constants; this process's when null
      * @param bool|null  $configured whether owa-config.php exists; this install's when null
      * @param bool|null  $installing whether the installer is running (OWA_INSTALLING); this process's when null
+     * @param list<string>|null $config_problems what stops OWA in owa-config.php (Settings::configProblems()); this install's when null
      * @return BootProblem|null status (HTTP), message (for the log and the CLI)
      */
-    public static function bootProblem( $request_type, $defined = null, $configured = null, $installing = null ) {
+    public static function bootProblem( $request_type, $defined = null, $configured = null, $installing = null, $config_problems = null ) {
+
+        /*
+         * First, and for every request type and the installer too: a config
+         * file that uses $this was not read, so nothing after this has its
+         * constants. log.php has already answered its beacon; the beacon is
+         * dropped, as the queue it would go to is named in the file that was
+         * not read.
+         */
+        $config_problems = $config_problems ?? CoreAPI::configSingleton()->configProblems();
+
+        if ( $config_problems ) {
+
+            // php_log: OWA's own log is named from constants the file did not define.
+            return [ 'status' => 503, 'message' => implode( ' ', $config_problems ), 'php_log' => true ];
+        }
 
         $role = self::current();
 
@@ -360,6 +376,11 @@ final class ServerRole {
     public static function refuse( $request_type, array $problem ) {
 
         CoreAPI::error( sprintf( 'Refused a request of type %s: %s', $request_type, $problem['message'] ) );
+
+        if ( ! empty( $problem['php_log'] ) && $request_type !== RequestType::CLI ) {
+
+            error_log( 'OWA: ' . $problem['message'] );
+        }
 
         if ( $request_type === RequestType::CLI ) {
 

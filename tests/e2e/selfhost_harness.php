@@ -425,12 +425,11 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
     }
     // Point the file queue and error log at this run's own directory.
     //
-    // Set through the config file because both are config-file-only settings
-    // (declared static in modules/Base/settings.php) -- a stored value is never
-    // fetched at boot,
-    // deliberately, so a path from a previous server cannot follow a database
-    // around. setupPaths() fills them only when unset, which is what lets this
-    // land.
+    // By their constants, as both are config-file-only settings (declared
+    // static in modules/Base/settings.php): a stored value is never fetched at
+    // boot, deliberately, so a path from a previous server cannot follow a
+    // database around. setupPaths() fills them only when unset, which is what
+    // lets this land. The file only defines constants (Core\ConfigFile).
     //
     // Spliced in BEFORE the template's closing tag, not appended: the template
     // ends by closing PHP mode, so anything after that point is not code -- it
@@ -446,8 +445,8 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
         . SELFHOST_CONFIG_MARKER . "\n"
         . "// Added by tests/e2e/selfhost_harness.php -- keeps this run's queue and\n"
         . "// error log out of the live install's owa-data/logs/.\n"
-        . "\$this->set('base', 'async_log_dir', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
-        . "\$this->set('base', 'error_log_file', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
+        . "define('OWA_ASYNC_LOG_DIR', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
+        . "define('OWA_ERROR_LOG_FILE', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
 
     $close = strrpos($out, '?>');
     $out = $close === false ? $out . $override : substr($out, 0, $close) . $override . substr($out, $close);
