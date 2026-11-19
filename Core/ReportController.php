@@ -34,6 +34,22 @@ class ReportController extends \OWA\Core\AdminController {
      * @var bool
      */
     protected $filters_by_site = false;
+
+    /**
+     * Whether a REST request to this route is of a Property.
+     *
+     * One that names neither propertyId nor siteId is answered for the
+     * reader's only Property, or refused with a 422 when the reader may see
+     * more than one, or none. False for a route that is not about a Property
+     * (v1/sites). The REST API never reads or writes the last-Property cookie;
+     * the report screens do (resolvePropertyId()).
+     *
+     * @var bool
+     */
+    protected $rest_needs_property = true;
+
+    /** @var bool a REST request named no Property and the reader has no only one */
+    private $names_no_property = false;
     
     /**
      * Constructor
@@ -58,7 +74,93 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     // Access to a report is access to its Property, the one the request names else its siteId's.
-    use \OWA\Core\PropertyScopedAccess;
+    use \OWA\Core\PropertyScopedAccess { isCurrentUserCapable as isCapableOnProperty; }
+
+    /**
+     * A REST request that names no Property is of the reader's only one, and
+     * is checked against it; with more than one, or none, it is refused
+     * (authenticatedButNotCapableAction()). Decided here, the first point at
+     * which the reader is known and before anything reads the Property.
+     *
+     * @param  \OWA\Module\Base\Classes\ServiceUser $currentUser
+     * @return bool
+     */
+    protected function isCurrentUserCapable( $currentUser ) {
+
+        if ( $this->rest_needs_property && \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )
+                && (string) $this->getParam( 'propertyId' ) === '' && ! $this->getCurrentSiteId() ) {
+
+            $only = self::onlyPropertyOf( $this->getSitesAllowedForCurrentUser() );
+
+            if ( $only === '' ) {
+
+                $this->names_no_property = true;
+
+                return false;
+            }
+
+            $this->setParam( 'propertyId', $only );
+        }
+
+        return $this->isCapableOnProperty( $currentUser );
+    }
+
+    /**
+     * A 422 for a REST request that names no Property when one is needed
+     * (isCurrentUserCapable()); otherwise the refusal every controller gives.
+     *
+     * @param  string $additionalMessage
+     * @return mixed
+     */
+    public function authenticatedButNotCapableAction( $additionalMessage = '' ) {
+
+        if ( $this->names_no_property ) {
+
+            $this->set( 'error_msg', \OWA\Core\CoreAPI::t( 'Name the Property with propertyId, or a Profile with siteId.' ) );
+            $this->restResponse( 422 );
+
+            return;
+        }
+
+        return parent::authenticatedButNotCapableAction( $additionalMessage );
+    }
+
+    /**
+     * The one Property these sites belong to, or '' when they belong to more
+     * than one or to none.
+     *
+     * @param  iterable<mixed> $sites site entities, as getSitesAllowedForCurrentUser() returns them
+     * @return string
+     */
+    public static function onlyPropertyOf( $sites ) {
+
+        $properties = [];
+
+        foreach ( (array) $sites as $site ) {
+
+            $propertyId = (string) $site->get( 'property_id' );
+
+            if ( $propertyId !== '' && $propertyId !== '0' ) {
+
+                $properties[ $propertyId ] = true;
+            }
+        }
+
+        return count( $properties ) === 1 ? (string) key( $properties ) : '';
+    }
+
+    /**
+     * Whether this request reads and writes the last-Property cookie, and
+     * falls back to a Property it does not name: a report screen does, the
+     * REST API does not. A REST answer depends on the request, not on the
+     * browser it came from.
+     *
+     * @return bool
+     */
+    protected function remembersLastProperty() {
+
+        return ! \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST );
+    }
 
     /**
      * What the period picker starts from: the presets with today's dates for
@@ -239,9 +341,10 @@ class ReportController extends \OWA\Core\AdminController {
          *
          * A cookie, not a user column: it is a per-browser convenience, and
          * making it account state would mean a write to the user table on every
-         * report view and two machines fighting over one value.
+         * report view and two machines fighting over one value. Not for the
+         * REST API (remembersLastProperty()).
          */
-        if ( $propertyId !== '' ) {
+        if ( $propertyId !== '' && $this->remembersLastProperty() ) {
 
             \OWA\Core\CoreAPI::createCookie(
                 \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE,
@@ -413,11 +516,15 @@ class ReportController extends \OWA\Core\AdminController {
     /**
      * The Property this report is of.
      *
-     * In order: the one the request names; the one its siteId belongs to; the
-     * one this browser last reported on, if the reader may still see it; the
-     * first the reader may see. A REPORT IS ALWAYS OF A PROPERTY: a report page
-     * with none has no nav (report.php draws none without one) and no way off
-     * it but the back button.
+     * In order: the one the request names; the one its siteId belongs to; on
+     * a report screen, the one this browser last reported on, if the reader
+     * may still see it, else the first the reader may see. A REPORT IS ALWAYS
+     * OF A PROPERTY: a report page with none has no nav (report.php draws none
+     * without one) and no way off it but the back button.
+     *
+     * A REST request goes no further than the siteId: one that needs a
+     * Property and names none was given the reader's only Property, or
+     * refused, before this runs (isCurrentUserCapable()).
      *
      * A named Property is not checked against $sites here. Access was checked
      * against it before pre() ran (isCurrentUserCapable()), and an
@@ -425,7 +532,7 @@ class ReportController extends \OWA\Core\AdminController {
      * in $sites to be found through.
      *
      * @param  array<\OWA\Module\Base\Entity\Site> $sites site_id => site entity, the ones the reader may see
-     * @return string        '' only when the reader may see nothing
+     * @return string        '' when the reader may see nothing, or for a REST request naming neither
      */
     protected function resolvePropertyId( $sites ) {
 
@@ -441,6 +548,11 @@ class ReportController extends \OWA\Core\AdminController {
         if ( $siteId !== '' ) {
 
             return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+        }
+
+        if ( ! $this->remembersLastProperty() ) {
+
+            return '';
         }
 
         $allowed = [];

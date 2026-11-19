@@ -10,7 +10,9 @@ namespace OWA\Module\Base\Controller;
  *
  *   propertyId   string     the Property the report is of
  *   siteId       string     one of its Profiles, to filter to; names the
- *                           Property when propertyId is absent
+ *                           Property when propertyId is absent. With
+ *                           neither, the reader's only Property; a reader
+ *                           who may see more than one is refused (422)
  *   metrics      string     'foo,bar'
  *   dimensions   string     'dim1,dim2,dim3'
  *   period       string     'today'

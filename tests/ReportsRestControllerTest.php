@@ -32,7 +32,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
-            ['period' => 'today'] // no metrics, no report_name
+            ['period' => 'today', 'siteId' => $this->profile(false)] // no metrics, no report_name
         );
 
         $this->assertSame(422, $resp['status'],
@@ -44,11 +44,11 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     /**
      * A Profile of its own, and optionally a cube for its Property.
      *
-     * A query always reaches SOME Profile -- ReportController::pre() fills in
-     * the first allowed one when none is named -- and whether it can be
-     * answered depends on that Profile's Property having a cube. So each test
-     * names the Profile it means and says whether its cube exists, rather than
-     * relying on whatever an earlier test left behind.
+     * A query names its Profile -- one naming neither propertyId nor siteId
+     * is refused when the reader may see more than one Property -- and whether
+     * it can be answered depends on that Profile's Property having a cube. So
+     * each test names the Profile it means and says whether its cube exists,
+     * rather than relying on whatever an earlier test left behind.
      */
     private function profile(bool $with_cube): string
     {
@@ -168,6 +168,29 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'the response says why there is nothing to answer');
     }
 
+    /**
+     * A request naming neither propertyId nor siteId is refused when the reader
+     * may see more than one Property, whatever Property the browser last
+     * reported on: the REST API does not read the lpr cookie.
+     */
+    public function testAQueryNamingNoPropertyIsRefused(): void
+    {
+        // Two Properties, so the reader has no only one.
+        $this->makeSite('one');
+        $this->makeSite('two');
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today']
+        );
+
+        $this->assertSame('base.restApi', $resp['view']);
+        $this->assertSame(422, $resp['status'], $resp['raw']);
+        $this->assertStringContainsString('Name the Property with propertyId', $resp['raw']);
+    }
+
     public function testInvalidPeriodIsRejected(): void
     {
         $this->authenticateAs('admin');
@@ -175,7 +198,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
-            ['metrics' => 'pageViews', 'period' => 'not-a-real-period-' . $this->tok]
+            ['metrics' => 'pageViews', 'period' => 'not-a-real-period-' . $this->tok, 'siteId' => $this->profile(false)]
         );
 
         $this->assertSame(422, $resp['status'],
@@ -195,7 +218,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
-            array_merge( ['metrics' => 'pageViews'], $params )
+            array_merge( ['metrics' => 'pageViews', 'siteId' => $this->profile(false)], $params )
         );
 
         $this->assertSame(422, $resp['status'],
@@ -223,7 +246,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
-            ['metrics' => 'pageViews', 'startDate' => '20260801', 'endDate' => '20260810']
+            ['metrics' => 'pageViews', 'startDate' => '20260801', 'endDate' => '20260810', 'siteId' => $this->profile(true)]
         );
 
         $this->assertNotSame(422, $resp['status'],
@@ -237,12 +260,13 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     public function testANamedReportIsRefused(): void
     {
         $this->authenticateAs('admin');
+        $site = $this->profile(false);
 
         foreach (['visit', 'clickstream', 'latest_visits', 'transactions'] as $name) {
             $resp = $this->callEndpoint(
                 \OWA\Module\Base\Controller\ReportsRest::class,
                 'reportsRestController.php',
-                ['report_name' => $name, 'metrics' => 'pageViews', 'sessionId' => '1700000000000000001']
+                ['report_name' => $name, 'metrics' => 'pageViews', 'sessionId' => '1700000000000000001', 'siteId' => $site]
             );
 
             $this->assertSame(422, $resp['status'], "GET /reports/$name");
