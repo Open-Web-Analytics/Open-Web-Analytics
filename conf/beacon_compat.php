@@ -211,6 +211,24 @@ return [
     ],
 
     /*
+     * ---- APPLIED FROM HERE ------------------------------------------------
+     *
+     * The second decode. A beacon whose format version (`_v`, beacon_version)
+     * is below this one has every value URL-decoded again after PHP has
+     * decoded the request (RequestContainer::decodeRequestParams()), as 1.x
+     * did: a cached 1.x tag, and the PHP SDK, send no version. A beacon at
+     * this version or later is decoded once, by PHP, so each value is what the
+     * page had.
+     *
+     * Applied by Beacon\Compat::decodeOlderBeacon(), which log.php calls in
+     * place of the decode. For an older beacon it also keeps the page URL and
+     * referrer as they were before the second decode
+     * (TrackingEventHelpers::arrivedUrls()), which the readings that decode
+     * cuts are taken from (arrivedUrlIfCut()). A current beacon needs neither.
+     */
+    'decoded_once_from_version' => 2,
+
+    /*
      * ---- APPLIED ELSEWHERE, INDEXED HERE ----------------------------------
      */
     'indexed' => [

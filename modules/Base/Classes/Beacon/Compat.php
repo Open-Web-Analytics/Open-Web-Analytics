@@ -246,6 +246,78 @@ class Compat {
     }
 
     /**
+     * The first beacon format version whose values are decoded once
+     * (conf/beacon_compat.php, decoded_once_from_version).
+     *
+     * @return int
+     */
+    public static function decodedOnceFromVersion() {
+
+        $conf = (array) \OWA\Core\CoreAPI::loadConf( 'beacon_compat.php', 'beacon.compat' );
+
+        return (int) ( $conf['decoded_once_from_version'] ?? 0 );
+    }
+
+    /**
+     * Whether a beacon of this format version is decoded once: a number at or
+     * above decodedOnceFromVersion(). No version is an older beacon.
+     *
+     * @param  mixed $beacon_version
+     * @return bool
+     */
+    public static function decodesOnce( $beacon_version ) {
+
+        $from = self::decodedOnceFromVersion();
+
+        return $from > 0 && is_numeric( $beacon_version ) && (int) $beacon_version >= $from;
+    }
+
+    /**
+     * The format version a request's params name, under the current wire key
+     * or the full name; null when they name none.
+     *
+     * @param  array<mixed> $params as PHP decoded them
+     * @return mixed
+     */
+    public static function beaconVersionOf( array $params ) {
+
+        $keys = array_merge( array_keys( self::renames(), 'beacon_version', true ), [ 'beacon_version' ] );
+
+        foreach ( $keys as $key ) {
+
+            if ( isset( $params[ $key ] ) && $params[ $key ] !== '' ) {
+
+                return $params[ $key ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * log.php's decode of a beacon: the second decode for an older beacon, none
+     * for a current one (decodesOnce()).
+     *
+     * @param  \OWA\Core\RequestContainer $request
+     * @return array<string, string> for an older beacon, the page URL and referrer as PHP decoded them (TrackingEventHelpers::arrivedUrls()); [] for a current one
+     */
+    public static function decodeOlderBeacon( $request ) {
+
+        $params = (array) $request->getAllOwaParams();
+
+        if ( self::decodesOnce( self::beaconVersionOf( $params ) ) ) {
+
+            return [];
+        }
+
+        $arrived = \OWA\Module\Base\Classes\TrackingEventHelpers::arrivedUrls( $params );
+
+        $request->decodeRequestParams();
+
+        return $arrived;
+    }
+
+    /**
      * apply(), for an event read back off a queue.
      *
      * A tracking event queued by an older tracker, or before an upgrade,

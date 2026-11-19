@@ -91,19 +91,17 @@ final class WikiDocsSettingsTest extends TestCase
         }
 
         // A registry that came back empty would pass the loop vacuously.
-        $this->assertGreaterThan( 100, $checked );
+        $this->assertGreaterThan( 90, $checked );
     }
 
     /**
-     * Declared settings that nothing reads, so there is nothing true to say
-     * about them. Each is a candidate for removal; a description added to one
-     * fails the test below until it is taken off this list.
+     * Every setting an operator can configure has a description. There is no
+     * exemption: a declared setting that nothing reads has nothing true to say
+     * about it, and is retired by an update rather than kept (Update092 retired
+     * db_force_new_connections and modules, which an exemption list here had
+     * carried for six weeks).
      */
-    private const UNREAD = [
-        'base|db_force_new_connections', 'base|modules',
-    ];
-
-    public function testEveryListedSettingHasADescriptionUnlessNothingReadsIt(): void
+    public function testEveryListedSettingHasADescription(): void
     {
         $mechanical = Module::mechanicalSettings();
         $fields     = Module::settingsRegistry()['fields'];
@@ -117,21 +115,9 @@ final class WikiDocsSettingsTest extends TestCase
                 continue;
             }
 
-            $described = trim( (string) ( $args['description'] ?? '' ) ) !== '';
-
-            if ( in_array( $id, self::UNREAD, true ) ) {
-
-                $this->assertFalse( $described, "$id has a description now; take it off UNREAD" );
-
-            } else {
-
-                $this->assertTrue( $described, "$id has no description; the settings reference would show it blank" );
-                $checked++;
-            }
-        }
-
-        foreach ( self::UNREAD as $id ) {
-            $this->assertArrayHasKey( $id, $fields, "$id is no longer declared; take it off UNREAD" );
+            $this->assertNotSame( '', trim( (string) ( $args['description'] ?? '' ) ),
+                "$id has no description. Describe it, or retire it with an update if nothing reads it" );
+            $checked++;
         }
 
         $this->assertGreaterThan( 90, $checked );

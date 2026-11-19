@@ -192,7 +192,6 @@ return [
                 . 'as event data is kept. Leave blank to keep as much as event data.' ),
         ],
         'currencyLocal' => [ 'config_constant' => 'OWA_CURRENCY_LOCAL', 'default' => 'en_US', 'description' => 'The locale revenue is formatted with in reports, such as en_US.' ],
-        'db_force_new_connections' => [ 'default' => true ],
         'db_host' => [ 'default' => '', 'description' => 'The host name of the database server.' ],
         'db_make_persistant_connections' => [ 'config_constant' => 'OWA_DB_PERSISTENT_CONNECTIONS', 'default' => false, 'description' => 'Whether OWA opens persistent database connections that PHP reuses across requests. Off by default.' ],
         'db_name' => [ 'default' => '', 'description' => 'The name of the database OWA uses.' ],
@@ -271,14 +270,6 @@ return [
         // Set by Update079 when it made saved funnel steps event steps, so its down()
         // can give each funnel back the definition it had.
         'funnel_steps_before_079' => [ 'default' => [], 'storable' => true, 'internal' => true ],
-        /*
-         * 1.x's goals, one map per Profile. Nothing in v2 reads or writes it:
-         * Update025 made the goals goal event definitions, and Update061 reads the Profile
-         * rows by SQL, in up() and in down(), for the funnels inside them. The
-         * Profile scope stays because those rows do (see
-         * SettingsRegistryTest::testNothingStoredAtAScopeBecomesUnwritableThere).
-         */
-        'goals' => [ 'storable' => true, 'scopes' => [ 'install', 'profile' ], 'internal' => true ],
         'install_complete' => [ 'storable' => true, 'autoload' => true, 'internal' => true ],
         'link_template' => [ 'config_constant' => 'OWA_LINK_TEMPLATE', 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ],
         'log_named_users' => [
@@ -311,7 +302,6 @@ return [
         'mailer-use-smtp' => [ 'config_constant' => 'OWA_MAILER_USE_SMTP', 'default' => false, 'description' => 'Whether OWA sends e-mail through an SMTP server instead of PHP\'s mail(). Off by default.' ],
         'mailer-username' => [ 'config_constant' => 'OWA_MAILER_USERNAME', 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'config_constant' => 'OWA_MAX_CUSTOM_VARS', 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
-        'modules' => [ 'default' => [ 'base' ] ],
         'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
         'notice_email' => [
             'default'  => '',
@@ -438,6 +428,8 @@ return [
         'report_wrapper' => [ 'config_constant' => 'OWA_REPORT_WRAPPER', 'default' => 'wrapper_default.php', 'description' => 'The template that wraps OWA\'s admin and report pages. Default wrapper_default.php.' ],
         // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
         'retired_settings_before_085' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update092: the 1.x goal rows it deleted, for its down().
+        'retired_goals_before_092' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'cache_settings_before_086' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],

@@ -3,17 +3,14 @@
 require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
- * A beacon's values are decoded twice -- PHP's decode, then
- * RequestContainer::decodeRequestParams() -- and stored in that form. The
- * second decode cuts a URL that holds an encoded ? or # in its path, or & or #
- * in its query, so those are read from the copy taken before it
- * (TrackingEventHelpers::arrivedUrls(), arrivedUrlIfCut()): the campaign
- * tags, page_path, page_query and referer_query.
+ * A beacon from the 2.0 tracker is decoded once, by PHP, and its URLs are
+ * stored with the path decoded and the query string as the page had it. A
+ * beacon with no format version (a cached 1.x tag, the PHP SDK) is decoded a
+ * second time, as 1.x did (conf/beacon_compat.php, decoded_once_from_version).
  *
- * Each case is stored twice through real ingest: with no copies (as an event
- * built in process, or queued by an older log.php, arrives), and with the
- * copies log.php takes. Every stored column is identical except, where the
- * copy-less row was cut, the ones the cut broke.
+ * Each beacon goes through log.php's own steps -- the request container,
+ * Beacon\Compat::decodeOlderBeacon(), admission -- and is stored through real
+ * ingest, in the request and through the queue.
  */
 final class BeaconDecodeOnceTest extends IngestionTestCase
 {
@@ -38,66 +35,190 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
     }
 
     /**
-     * Path and query of the page as the browser has it (the tracker sends
-     * encodeURIComponent() of it and PHP decodes that), its title, and the
-     * columns that are complete now where they were cut.
+     * A page's location.href (path and query), and what a 2.0 beacon stores
+     * for it: page_location's path and query, page_path, page_query.
      *
-     * @return array<string,array{0:string,1:string,2:array}>
+     * @return array<string, array{0: string, 1: string, 2: string, 3: string|null}>
      */
-    public static function cases(): array
+    public static function urls(): array
     {
         return [
-            'plain'             => ['/plain?{c}=spring&x=1', 'Plain', []],
-            'an encoded space'  => ['/a%20b?{c}=spring%20sale&q=a%20b', 'A %20 title', []],
-            'encoded UTF-8'     => ['/caf%C3%A9?{c}=caf%C3%A9&q=caf%C3%A9', 'Caf%C3%A9', []],
-            'a decoded é'       => ['/café?{c}=café&q=café', 'Café', []],
-            'an encoded comma'  => ['/c%2Cd?{c}=a%2Cb&q=a%2Cb', 'C%2CD', []],
-            'a literal %'       => ['/50%25off?{c}=50%25&q=50%25', '50%25 off', []],
-            'a plus sign'       => ['/a+b?{c}=a+b&q=a+b', 'A+B', []],
-            'invalid UTF-8'     => ['/caf%E9?{c}=caf%E9&q=%E9', 'Caf%E9', []],
-            'valid and invalid UTF-8' => ['/caf%C3%A9?{c}=caf%E9&q=caf%C3%A9', 'Caf%C3%A9 %E9', []],
-            'an encoded & in a query value' => ['/amp?{c}=spring%26summer&q=a%26b', 'Amp', [
-                'tagged_campaign' => 'spring&summer',
-                'page_query'      => 'q=a%26b',
-                'referer_query'   => '{c}=spring%26summer&q=a%26b',
-            ]],
-            'an encoded # in a query value' => ['/hash?{c}=a%23b&q=1', 'Hash', [
-                'tagged_campaign' => 'a#b',
-                'page_query'      => 'q=1',
-                'referer_query'   => '{c}=a%23b&q=1',
-            ]],
-            'an encoded ? in the path' => ['/what%3Fnot', 'What', [
-                'page_path'     => '/what?not',
-                'page_query'    => null,
-                'referer_query' => null,
-            ]],
-            'an encoded # in the path' => ['/a%23b?q=1', 'Hash path', [
-                'page_path'     => '/a#b',
-                'page_query'    => 'q=1',
-                'referer_query' => 'q=1',
-            ]],
+            'encoded UTF-8 and a space' => ['/caf%C3%A9/a%20b?q=a%20b&t=50%25', '/café/a b?q=a%20b&t=50%25', '/café/a b', 'q=a%20b&t=50%25'],
+            'UTF-8 in the query'        => ['/caf%C3%A9/x?q=caf%C3%A9', '/café/x?q=caf%C3%A9', '/café/x', 'q=caf%C3%A9'],
+            'a literal % and &'         => ['/50%25off/a%26b?x=1%262&y=%2541', '/50%off/a&b?x=1%262&y=%2541', '/50%off/a&b', 'x=1%262&y=%2541'],
+            'a plus sign'               => ['/a+b?q=a+b', '/a+b?q=a+b', '/a+b', 'q=a+b'],
+            'an encoded ? in the path'  => ['/what%3Fnot', '/what%3Fnot', '/what%3Fnot', null],
+            'invalid UTF-8'             => ['/caf%E9/x?q=%E9', '/caf%E9/x?q=%E9', '/caf%E9/x', 'q=%E9'],
+            'valid and invalid UTF-8'   => ['/caf%C3%A9/x%E9', '/café/x%E9', '/café/x%E9', null],
         ];
     }
 
-    /** The params as PHP's decoding of a beacon leaves them. */
-    private function wire(string $pathQuery, string $title, string $visitor, string $session): array
+    /** @return array<string, array> urls(), in the request and through the queue */
+    public static function urlsByPath(): array
     {
-        $pathQuery = str_replace('{c}', $this->ns() . 'campaign', $pathQuery);
+        return self::byPath(self::urls());
+    }
 
-        return [
+    /**
+     * urls() with valid UTF-8 only, for a 1.x beacon. Decoded twice, an invalid
+     * byte is no longer an escape, and what becomes of it is the 1.x path's
+     * existing handling (read as Windows-1252 in the request, replaced in a
+     * queued envelope), which this change leaves alone.
+     *
+     * @return array<string, array>
+     */
+    public static function validUtf8UrlsByPath(): array
+    {
+        return self::byPath(array_filter(self::urls(),
+            static fn (array $case) => mb_check_encoding(rawurldecode($case[0]), 'UTF-8')));
+    }
+
+    /** @return array<string, array> each case, in the request and through the queue */
+    private static function byPath(array $cases): array
+    {
+        $out = [];
+
+        foreach ($cases as $name => $case) {
+            $out[$name . ', direct'] = array_merge($case, [false]);
+            $out[$name . ', queued'] = array_merge($case, [true]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * A page view's params as PHP decodes the beacon: each value as the page
+     * had it, the tracker having encoded it once.
+     *
+     * @param array<string, string> $more
+     * @return array<string, string>
+     */
+    private function wire(string $href, string $visitor, string $session, bool $current, array $more = []): array
+    {
+        $wire = $more + [
             'site'  => $this->site,
             'v_id'  => $visitor,
             's_id'  => $session,
             'e_t'   => 'page_view',
-            'p_l'   => 'https://owa-test-site' . $pathQuery,
-            'p_r'   => 'https://www.example.net' . $pathQuery,
-            'p_t'   => $title,
+            'p_l'   => 'https://owa-test-site' . $href,
+            'p_r'   => 'https://www.example.net' . $href,
+            'p_t'   => 'A page',
             's_new' => '1',
             'v_new' => '1',
             'v_fts' => (string) time(),
             's_sts' => (string) time(),
             'v_nps' => '0',
         ];
+
+        if ($current) {
+            $wire['_v'] = '2';
+        }
+
+        return $wire;
+    }
+
+    /**
+     * What log.php hands logEvent() for those params: the request container,
+     * Compat::decodeOlderBeacon(), admission, and the copies an older beacon
+     * keeps.
+     *
+     * @param array<string, string> $wire
+     * @return array<string, mixed>
+     */
+    private static function beacon(array $wire): array
+    {
+        $saved = [$_GET, $_POST, $_SERVER];
+
+        $_GET  = $wire;
+        $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_HOST']      = 'owa.example.test';
+        $_SERVER['REQUEST_URI']    = '/owa/log.php';
+
+        try {
+            $request = new \OWA\Core\RequestContainer();
+            $arrived = \OWA\Module\Base\Classes\Beacon\Compat::decodeOlderBeacon($request);
+
+            return \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(
+                (array) $request->getAllOwaParams()) + $arrived;
+        } finally {
+            [$_GET, $_POST, $_SERVER] = $saved;
+        }
+    }
+
+    /** @return array<string, mixed> the page_view row a 2.0 or a 1.x beacon for $href stores */
+    private function pageView(string $href, bool $current, bool $queued, array $more = []): array
+    {
+        [$visitor, $session] = [$this->uniqueGuid(), $this->uniqueSessionId()];
+
+        return $this->store(self::beacon($this->wire($href, $visitor, $session, $current, $more)), $visitor, $session, $queued);
+    }
+
+    /**
+     * The table: a 2.0 beacon's page URL and referrer have the path decoded
+     * once and the query as the page had it, and the readings follow.
+     *
+     * @dataProvider urlsByPath
+     */
+    public function testACurrentBeaconStoresThePathDecodedAndTheQueryAsSent(string $href, string $stored, string $path, ?string $query, bool $queued): void
+    {
+        $row = $this->pageView($href, true, $queued);
+
+        $this->assertSame('https://owa-test-site' . $stored, $row['page_location']);
+        $this->assertSame($path, $row['page_path']);
+        $this->assertSame($query, $row['page_query']);
+        $this->assertSame('https://www.example.net' . $stored, $row['referer_url']);
+        $this->assertSame($query, $row['referer_query']);
+        $this->assertSame('2', (string) $row['beacon_version']);
+    }
+
+    /**
+     * A 1.x beacon, with no format version, is decoded a second time, as
+     * today: its page URL is what that decode makes of it.
+     *
+     * @dataProvider validUtf8UrlsByPath
+     */
+    public function testAnOlderBeaconIsDecodedASecondTime(string $href, string $stored, string $path, ?string $query, bool $queued): void
+    {
+        $row = $this->pageView($href, false, $queued);
+
+        $this->assertSame('https://owa-test-site' . rawurldecode($href), $row['page_location']);
+        $this->assertNull($row['beacon_version']);
+    }
+
+    /** A 2.0 beacon's title and event properties are what the page had; a 1.x beacon's are decoded again. */
+    public function testTitlesAndPropertiesAreExact(): void
+    {
+        $more = ['p_t' => 'Save 50%25', 'eps_note' => 'code %2541'];
+
+        $current = $this->pageView('/sale', true, false, $more);
+        $older   = $this->pageView('/sale', false, false, $more);
+
+        $this->assertSame('Save 50%25', $current['page_title']);
+        $this->assertSame('code %2541', json_decode((string) $current['params'], true)['note'] ?? null);
+
+        $this->assertSame('Save 50%', $older['page_title']);
+        $this->assertSame('code %41', json_decode((string) $older['params'], true)['note'] ?? null);
+    }
+
+    /**
+     * A campaign tag is read out of the query as a parameter value: a%20b and
+     * a+b are "a b", and an encoded & is part of the value. page_location
+     * keeps the query as it was sent; page_query drops the tag.
+     */
+    public function testACampaignTagInAnEncodedQueryIsReadAsAValue(): void
+    {
+        $c = $this->ns() . 'campaign';
+
+        $row = $this->pageView('/land?' . $c . '=spring%20sale%26more&x=a+b', true, false);
+
+        $this->assertSame('spring sale&more', $row['tagged_campaign']);
+        $this->assertSame('https://owa-test-site/land?' . $c . '=spring%20sale%26more&x=a+b', $row['page_location']);
+        $this->assertSame('x=a+b', $row['page_query']);
+
+        $plus = $this->pageView('/land?' . $c . '=a+b', true, false);
+
+        $this->assertSame('a b', $plus['tagged_campaign']);
     }
 
     /**
@@ -161,58 +282,6 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
         $this->assertNotSame([], $out, 'the page view was stored');
 
         return $out;
-    }
-
-    /** As log.php hands a beacon's params to its event: the copies, then the second decode, then admission. */
-    private static function beacon(array $wire): array
-    {
-        $H = \OWA\Module\Base\Classes\TrackingEventHelpers::class;
-
-        return self::decodedTwice($wire) + $H::arrivedUrls($wire);
-    }
-
-    /** With no copies: every value decoded a second time (decodeRequestParams()), then admitted. */
-    private static function decodedTwice(array $wire): array
-    {
-        return \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(array_map(
-            static fn($v) => is_string($v) ? rawurldecode($v) : $v, $wire));
-    }
-
-    /** Every case, ingested in the request and through the queue. */
-    public static function casesByPath(): array
-    {
-        $out = [];
-
-        foreach (self::cases() as $name => $case) {
-            $out[$name . ', direct'] = array_merge($case, [false]);
-            $out[$name . ', queued'] = array_merge($case, [true]);
-        }
-
-        return $out;
-    }
-
-    /** @dataProvider casesByPath */
-    public function testEveryStoredFieldKeepsItsFormAndOnlyACutOneChanges(string $pathQuery, string $title, array $complete, bool $queued): void
-    {
-        [$v1, $s1] = [$this->uniqueGuid(), $this->uniqueSessionId()];
-        [$v2, $s2] = [$this->uniqueGuid(), $this->uniqueSessionId()];
-
-        $before = $this->store(self::decodedTwice($this->wire($pathQuery, $title, $v1, $s1)), $v1, $s1, $queued);
-        $after  = $this->store(self::beacon($this->wire($pathQuery, $title, $v2, $s2)), $v2, $s2, $queued);
-
-        $complete = array_map(fn($v) => is_string($v) ? str_replace('{c}', $this->ns() . 'campaign', $v) : $v, $complete);
-
-        $this->assertSame(array_keys($before), array_keys($after));
-
-        foreach (array_keys($before) as $column) {
-
-            if (array_key_exists($column, $complete)) {
-                $this->assertSame($complete[$column], $after[$column], "$column, now whole");
-                $this->assertNotSame($before[$column], $after[$column], "$column was cut before");
-            } else {
-                $this->assertSame($before[$column], $after[$column], "$column keeps its form");
-            }
-        }
     }
 
     /** The copies are the URLs as PHP decoded them; a beacon cannot name them. */
