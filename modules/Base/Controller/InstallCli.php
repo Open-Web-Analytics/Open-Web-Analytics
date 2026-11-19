@@ -50,10 +50,20 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 
+    /**
+     * What the install is done through.
+     *
+     * @return \OWA\Module\Base\Classes\InstallManager
+     */
+    protected function installManager() {
+
+        return new \OWA\Module\Base\Classes\InstallManager();
+    }
+
     public function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $im = new \OWA\Module\Base\Classes\InstallManager();
+        $im = $this->installManager();
         \OWA\Core\CoreAPI::notice('Starting OWA Install from command line.');
 
         //create config file
