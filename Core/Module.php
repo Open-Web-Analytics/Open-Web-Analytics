@@ -1471,7 +1471,7 @@ abstract class Module {
         foreach ( (array) $declaration['dimensions'] as $name => $d ) {
 
             /*
-             * A dimension is a COLUMN or an EXPRESSION, and there are now two
+             * A dimension is a COLUMN or an EXPRESSION, and there are two
              * kinds of expression: several columns joined (`parts`) and one
              * component of a date (`datePart`). What they share is the only
              * thing the reporting seam needs to know -- the emitted SQL carries

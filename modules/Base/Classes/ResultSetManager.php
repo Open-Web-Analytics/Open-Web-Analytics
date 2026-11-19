@@ -2752,10 +2752,10 @@ class ResultSetManager extends \OWA\Core\Base {
 
         /*
          * A query by anything but a trend's axis that names no page size gets
-         * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
-         * which limits by the period -- one row a day, a sound bound only for a
-         * query BY day -- so a breakdown over the last seven days stopped at
-         * six rows, and said there were no more.
+         * DEFAULT_RESULTS_PER_PAGE, and pages. Without it the date range below
+         * would limit by the period -- one row a day, a sound bound only for a
+         * query BY day -- and a breakdown over the last seven days would stop
+         * at six rows and say there were no more.
          */
         if ( ! $this->getLimit() && ! $this->isByDate() ) {
 

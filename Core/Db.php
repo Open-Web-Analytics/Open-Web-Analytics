@@ -1801,7 +1801,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Days of slack on the lower bound used to prune per-session queries.
      *
-     * See factLowerBound(). Sized empirically, not from a known mechanism.
+     * See factDateRange(). Sized empirically, not from a known mechanism.
      */
     const FACT_LOWER_BOUND_SLACK_DAYS = 30;
 

@@ -1453,7 +1453,7 @@ class CoreAPI {
         // require. The legacy name built below ('owa_base_Update011_update')
         // has not existed since the PSR-4 relocation, so resolving it first is
         // what makes updates loadable at all.
-        // Callers name the update two different ways. Module::getUpdates()
+        // Callers name the update two different ways. Module::update()
         // passes the PSR-4 class basename it just read off disk ('Update017'),
         // while the updatesApply CLI's apply=/rollback= arguments are written
         // by a human as 'base.17' and arrive here as a bare sequence. Only the
