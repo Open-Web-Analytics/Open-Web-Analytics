@@ -1935,7 +1935,7 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     public function formatValue($type, $value) {
 
-        if (array_key_exists($type, $this->formatters)) {
+        if ($type !== null && array_key_exists($type, $this->formatters)) {
 
             $value = call_user_func($this->formatters[$type], $value);
         }
