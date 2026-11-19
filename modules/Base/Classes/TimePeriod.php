@@ -692,6 +692,15 @@ class TimePeriod {
                 $end = mktime(23, 59, 59, $month, $day, $year);
                 break;
 
+            /*
+             * A period with no dates, refused as ReportController and
+             * ReportsRest refuse a request naming it. set() reaches here
+             * unchecked; setFromMap() has already put the default in its place.
+             */
+            default:
+
+                throw new \InvalidArgumentException( sprintf(
+                    \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ), (string) $this->period ) );
         }
 
         $this->startDate->set($start, 'timestamp');
