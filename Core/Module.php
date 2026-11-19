@@ -1014,8 +1014,8 @@ abstract class Module {
             if ( ! $recorded ) {
 
                 /*
-                 * Freshness alone decides it: only base registers entities, so for every
-                 * other module the loop above never runs and this is already true. Omitting a
+                 * Freshness alone decides it: for a module that registers no entities the
+                 * loop above never runs and this is already true. Omitting a
                  * "requires schema 1" clause fails in the safe direction -- a version left
                  * unrecorded rather than one wrongly claimed current.
                  */
@@ -1900,8 +1900,8 @@ abstract class Module {
     /**
      * Abstract method for registering individual Filter Methods
      *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
+     * Called for every loaded module by Service::initializeFramework(), and
+     * redefined in a concrete module class.
      *
      * @return mixed unread: the constructor ignores it
      */

@@ -9,9 +9,10 @@
  * Core\Module::registerDimensionsFromConfig() picks this up; a module ships the
  * file and needs no code at all.
  *
- * ONLY THE COLUMN READS ARE HERE. The computed kinds PLAN 2.4.1 describes --
- * concat, map, datePart, test, filtered -- each need a renderer, and none of
- * them is a column read.
+ * THREE KINDS: a column read (`column`), several columns joined (`parts`) and
+ * a component of a date (`datePart`). Core\Module::registerDimensionsFromConfig()
+ * renders the last two through DimensionExpression. The other computed kinds
+ * PLAN 2.4.1 describes -- map, test, filtered -- are not supported.
  *
  * EVERY ONE IS DENORMALISED, structurally rather than by choice: the cube
  * carries its values as columns on the event row, so there is no dimension

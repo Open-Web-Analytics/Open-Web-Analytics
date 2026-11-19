@@ -1557,12 +1557,9 @@ class CoreAPI {
      * @return string|null         e.g. 'OWA\Module\Base\Entity\CustomReport'
      */
     /*
-     * Public because resolution is now needed without instantiation.
-     * Entity::setProperties() asks which dimension a foreign key points at for
-     * every column of every fact row it writes; building an entity to answer
-     * that would mean constructing a dozen throwaway objects per event. Pure
-     * name-to-class lookup, no side effects, and entityFactory() is public
-     * already.
+     * Public: a name-to-class lookup with no side effects, for a caller that
+     * needs the class without building the entity. In core, entityFactory()
+     * is the only caller.
      */
     public static function namespacedEntityClass($entity_name) {
 
