@@ -122,7 +122,8 @@ class SiteManager extends \OWA\Core\Base {
     }
 
     /**
-     * The Property a new Profile belongs to, found by domain or created.
+     * The Property a new Profile belongs to, found by domain among the
+     * Properties that are not archived, or created.
      *
      * Keyed on the domain, as 1.13's Update021 grouped them: two Profiles of one
      * website share a Property, and that is what makes adding a second way of
@@ -145,9 +146,7 @@ class SiteManager extends \OWA\Core\Base {
 
         if ( $domain !== '' ) {
 
-            $property->getByColumn( 'domain', $domain );
-
-            $existing = $property->get( 'id' );
+            $existing = self::livePropertyWithDomain( $property->getTableName(), $domain );
 
             if ( $existing ) {
 
@@ -178,6 +177,35 @@ class SiteManager extends \OWA\Core\Base {
         if ( $property->create() ) {
 
             return $id;
+        }
+
+        return null;
+    }
+
+    /**
+     * The oldest Property with this domain that is not archived. An archived
+     * Property is hidden from every screen, so a Profile put in one could not
+     * be found.
+     *
+     * @param  string $table the Property table
+     * @param  string $domain
+     * @return string|null its id
+     */
+    private static function livePropertyWithDomain( $table, $domain ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $table );
+        $db->selectColumn( 'id, archived_date' );
+        $db->where( 'domain', $domain );
+        $db->orderBy( 'creation_date', 'ASC' );
+        $db->orderBy( 'id', 'ASC' );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( empty( $row['archived_date'] ) ) {
+
+                return (string) $row['id'];
+            }
         }
 
         return null;
