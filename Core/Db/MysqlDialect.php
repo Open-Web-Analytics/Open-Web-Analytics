@@ -99,6 +99,9 @@ if ( ! defined( 'OWA_SQL_UPDATE_ROW' ) ) { define('OWA_SQL_UPDATE_ROW', 'UPDATE 
 if ( ! defined( 'OWA_SQL_INSERT_OR_ADD' ) ) { define('OWA_SQL_INSERT_OR_ADD',
     'INSERT INTO %1$s (%2$s) VALUES (%3$s) ON DUPLICATE KEY UPDATE %5$s = %5$s + ?'); }
 if ( ! defined( 'OWA_SQL_DELETE_ROW' ) ) { define('OWA_SQL_DELETE_ROW', "DELETE from %s %s"); }
+// A batch of a delete: table, WHERE condition, row count. PostgreSQL has no
+// DELETE ... LIMIT and deletes by ctid from a limited SELECT. JobQueue::prune().
+if ( ! defined( 'OWA_SQL_DELETE_LIMIT' ) ) { define('OWA_SQL_DELETE_LIMIT', 'DELETE FROM %s WHERE %s LIMIT %d'); }
 if ( ! defined( 'OWA_SQL_CREATE_INDEX' ) ) { define('OWA_SQL_CREATE_INDEX', 'CREATE INDEX %s ON %s (%s)'); }
 if ( ! defined( 'OWA_SQL_DROP_INDEX' ) ) { define('OWA_SQL_DROP_INDEX', 'DROP INDEX %s ON %s'); }
 if ( ! defined( 'OWA_SQL_INDEX' ) ) { define('OWA_SQL_INDEX', 'INDEX (%s)'); }
@@ -284,6 +287,9 @@ if ( ! defined( 'OWA_SQL_DESCENDING' ) ) { define('OWA_SQL_DESCENDING', 'DESC');
 if ( ! defined( 'OWA_SQL_ASCENDING' ) ) { define('OWA_SQL_ASCENDING', 'ASC'); }
 if ( ! defined( 'OWA_SQL_REGEXP' ) ) { define('OWA_SQL_REGEXP', 'REGEXP'); }
 if ( ! defined( 'OWA_SQL_NOTREGEXP' ) ) { define('OWA_SQL_NOTREGEXP', 'NOT REGEXP'); }
+// A result row's group key: the parts, none NULL, joined by the unit
+// separator, which no stored value holds. ResultSetManager::groupKeySql().
+if ( ! defined( 'OWA_SQL_GROUP_KEY' ) ) { define('OWA_SQL_GROUP_KEY', 'CONCAT_WS(CHAR(31), %s)'); }
 if ( ! defined( 'OWA_SQL_LIKE' ) ) { define('OWA_SQL_LIKE', 'LIKE'); }
 // Substring containment. MySQL spells it LOCATE(needle, haystack); PostgreSQL
 // has POSITION(needle IN haystack) and SQL Server CHARINDEX, so the whole
@@ -373,6 +379,77 @@ if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_R
 
 trait MysqlDialect
 {
+    /**
+     * The variable that caps a statement's time on this server, once asked:
+     * '' when it has none.
+     *
+     * @var string|null
+     */
+    private $select_time_variable = null;
+
+    /**
+     * The server's version string: "8.4.3" or "10.11.6-MariaDB"; '' when it
+     * does not answer.
+     *
+     * @return string
+     */
+    public function serverVersion() {
+
+        $row = $this->get_row( 'SELECT VERSION() AS v' );
+
+        return is_array( $row ) ? (string) ( $row['v'] ?? '' ) : '';
+    }
+
+    /**
+     * Run $fn with every SELECT in it limited to $seconds, then restore the
+     * session's own limit.
+     *
+     * For queries any report viewer shapes, whose cost the database cannot
+     * bound by itself: a filter or a wide period can make one run for minutes
+     * on a server that also serves other sites. MySQL calls the limit
+     * max_execution_time (milliseconds, SELECT only); MariaDB calls it
+     * max_statement_time (seconds). A server with neither runs $fn unlimited.
+     *
+     * @param int      $seconds
+     * @param callable $fn
+     * @return mixed   $fn's result
+     */
+    public function withSelectTimeLimit( $seconds, callable $fn ) {
+
+        if ( $this->select_time_variable === null ) {
+
+            $version = $this->serverVersion();
+            $this->select_time_variable = $version === '' ? ''
+                : ( stripos( $version, 'mariadb' ) !== false ? 'max_statement_time' : 'max_execution_time' );
+        }
+
+        $var = $this->select_time_variable;
+
+        if ( $var === '' ) {
+
+            return $fn();
+        }
+
+        $row      = $this->get_row( sprintf( 'SELECT @@SESSION.%s AS v', $var ) );
+        $previous = is_array( $row ) && is_numeric( $row['v'] ) ? $row['v'] : null;
+        $limit    = $var === 'max_execution_time' ? (int) $seconds * 1000 : (int) $seconds;
+
+        if ( $previous === null
+             || $this->query( sprintf( 'SET SESSION %s = %d', $var, $limit ) ) === false ) {
+
+            return $fn();
+        }
+
+        try {
+
+            return $fn();
+
+        } finally {
+
+            $this->query( sprintf( 'SET SESSION %s = %s', $var, $previous + 0 ) );
+        }
+    }
+
     /**
      * The encoding to negotiate on the connection.
      *

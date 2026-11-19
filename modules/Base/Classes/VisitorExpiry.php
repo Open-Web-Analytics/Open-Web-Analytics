@@ -120,17 +120,18 @@ class VisitorExpiry {
     }
 
     /**
-     * The rows that may go, as a WHERE clause over the store aliased `v`.
+     * The rows that may go, as a WHERE clause over the store.
      *
-     * @param int $cutoff yyyymm: rows last seen before it are candidates
+     * @param int    $cutoff yyyymm: rows last seen before it are candidates
+     * @param string $v      what the store is called in the statement: its alias, or its name
      * @return string
      */
-    protected static function expiredWhere( $cutoff ) {
+    protected static function expiredWhere( $cutoff, $v = 'v' ) {
 
         return sprintf(
-            'v.last_seen > 0 AND v.last_seen < %d '
-          . 'AND NOT EXISTS (SELECT 1 FROM %s r WHERE r.visitor_id = v.visitor_id)',
-            (int) $cutoff, self::rawTable() );
+            '%1$s.last_seen > 0 AND %1$s.last_seen < %2$d '
+          . 'AND NOT EXISTS (SELECT 1 FROM %3$s r WHERE r.visitor_id = %1$s.visitor_id)',
+            $v, (int) $cutoff, self::rawTable() );
     }
 
     /**
@@ -177,8 +178,10 @@ class VisitorExpiry {
             return 0;
         }
 
-        if ( $db->query( sprintf( 'DELETE v FROM %s v WHERE v.id IN (%s) AND %s',
-                self::table(), implode( ',', $ids ), self::expiredWhere( $cutoff ) ) ) === false ) {
+        // One table, no alias: the store is named in full where the condition
+        // refers to it.
+        if ( $db->query( sprintf( 'DELETE FROM %1$s WHERE %1$s.id IN (%2$s) AND %3$s',
+                self::table(), implode( ',', $ids ), self::expiredWhere( $cutoff, self::table() ) ) ) === false ) {
 
             return false;
         }

@@ -372,8 +372,8 @@ class EventPredicate {
 
                 return [
                     'sql' => sprintf(
-                        '( %s REGEXP \'^[-+]?[0-9]*\\\\.?[0-9]+$\' AND CAST( %s AS DECIMAL(30,10) ) %s ? )',
-                        $col, $col,
+                        '( %s %s \'^[-+]?[0-9]*\\\\.?[0-9]+$\' AND CAST( %s AS DECIMAL(30,10) ) %s ? )',
+                        $col, OWA_SQL_REGEXP, $col,
                         $operator === constant( $E . '::MATCH_GT' ) ? '>' : '<' ),
                     'params' => [ $value ] ];
 
