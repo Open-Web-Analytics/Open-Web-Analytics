@@ -80,6 +80,24 @@ class V2Event {
     }
 
     /**
+     * Whether a value is a visitor or session id: a positive integer that a
+     * signed BIGINT column holds, as an int or as its decimal digits.
+     *
+     * @param  mixed $v an event property, any type
+     * @return bool
+     */
+    public static function isId( $v ) {
+
+        if ( is_int( $v ) ) {
+
+            return $v > 0;
+        }
+
+        return is_string( $v ) && preg_match( '/^[1-9][0-9]{0,18}$/D', $v ) === 1
+            && ( strlen( $v ) < 19 || strcmp( $v, (string) PHP_INT_MAX ) <= 0 );
+    }
+
+    /**
      * An observed value with its control bytes removed.
      *
      * Keeps UNRESOLVED un-forgeable, and keeps control bytes out of a VARCHAR
