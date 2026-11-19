@@ -176,43 +176,20 @@ final class ConfigFileConstantsTest extends TestCase
         $this->assertStringContainsString('OWA_MAILER_HOST', implode(' ', $this->settings()->configProblems()));
     }
 
-    /** cmd=instance-info and the installer run EnvironmentCheck::all(). */
-    public function testTheEnvironmentCheckReportsIt(): void
-    {
-        $check = \OWA\Module\Base\Classes\EnvironmentCheck::configFileCode(
-            $this->tempConfig("<?php\n\$this->set('base', 'archive_old_events', false);\n"));
-
-        $this->assertFalse($check['passed']);
-        $this->assertStringContainsString('OWA_ARCHIVE_OLD_EVENTS', $check['msg']);
-
-        $this->assertTrue(\OWA\Module\Base\Classes\EnvironmentCheck::configFileCode(
-            $this->tempConfig("<?php\ndefine('OWA_ARCHIVE_OLD_EVENTS', false);\n"))['passed']);
-        $this->assertTrue(\OWA\Module\Base\Classes\EnvironmentCheck::configFileCode('/nonexistent/owa-config.php')['passed']);
-    }
-
     /**
-     * The upgrade, cmd=update, checks the file first and applies nothing.
-     * An old server is assumed too, so the update refuses even if the config
-     * check were gone: this must never run updates against a real database.
+     * The boot refusal is the one check. An environment check and an update
+     * preflight for the same file could never fail: every request, the CLI and
+     * the installer included, is refused before either runs.
      */
-    public function testTheUpgradePreflightRefuses(): void
+    public function testTheBootRefusalIsTheOnlyCheck(): void
     {
-        $this->privateProperty('config_file_problems')->setValue($this->settings(),
-            ConfigFile::problemsIn("<?php\n" . self::DEMO_GRANT . "\n"));
+        $this->assertFalse(method_exists(\OWA\Module\Base\Classes\EnvironmentCheck::class, 'configFileCode'));
 
-        \OWA\Module\Base\Classes\DatabaseRequirement::assume('5.7.44-log');
+        $src = (string) file_get_contents(__DIR__ . '/../modules/Base/Module.php');
+        $this->assertStringNotContainsString('configProblems()', substr($src, strpos($src, 'public function update()')));
 
-        try {
-            $this->assertFalse((new \OWA\Module\Base\Module())->update());
-        } finally {
-            \OWA\Module\Base\Classes\DatabaseRequirement::assume(null);
-        }
-
-        $src    = (string) file_get_contents(__DIR__ . '/../modules/Base/Module.php');
-        $update = substr($src, strpos($src, 'public function update()'));
-
-        $this->assertLessThan(strpos($update, 'DatabaseRequirement::problem()'), strpos($update, '->configProblems()'),
-            'the config file is checked before anything else');
+        $boot = (string) file_get_contents(__DIR__ . '/../Core/ServerRole.php');
+        $this->assertStringContainsString('configProblems()', $boot);
     }
 
     /** Each declared constant takes effect and governs its setting. */
