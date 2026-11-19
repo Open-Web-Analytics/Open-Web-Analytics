@@ -55,6 +55,10 @@ final class RefererCrawlRemovedTest extends TestCase
         }
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $service->loadCliCommands();
+
+        // Loaded, or the lookup below answers false whatever is registered.
+        $this->assertSame( 'base.instanceInfoCli', $service->getCliCommandClass( 'instance-info' ) );
 
         $this->assertFalse( $service->getCliCommandClass( 'update-referral' ),
             'the CLI command is still registered, so it resolves to a missing class' );
