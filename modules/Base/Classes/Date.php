@@ -103,13 +103,6 @@ class Date {
     }
 
     /**
-     * @return int|null
-     */
-    public function getMonth() {
-        return $this->month;
-    }
-
-    /**
      * @param  string $format '' for label, 'formal' for label_formal
      * @return string|null
      */

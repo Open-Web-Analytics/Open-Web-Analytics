@@ -494,13 +494,12 @@ abstract class Module {
         /*
          * DELIBERATELY NO DEFAULTS. Only eagerness.
          *
-         * A registered default lands in default_config, and
-         * pruneRedundantPersistedSettings() drops any stored value equal to
-         * its default -- so declaring `is_active => false` would let the prune
-         * delete a module's stored is_active row, and declaring
-         * `schema_version => 0` would do the same to a module sitting at
-         * version 0. Both make a module look uninstalled and re-run its
-         * updates. These two keys carry database STATE, not configuration, and
+         * A registered default lands in default_config, and persistSetting()
+         * drops any stored value equal to its default -- so declaring
+         * `is_active => false` would let it delete a module's stored is_active
+         * row, and declaring `schema_version => 0` would do the same to a
+         * module sitting at version 0. Both make a module look uninstalled and
+         * re-run its updates. These two keys carry database STATE, not configuration, and
          * nothing may treat them as restating a default.
          */
         return [

@@ -49,20 +49,6 @@ class Sanitize {
         return htmlentities($string, $quotes, $encoding);
     }
 
-    
-    /**
-     * Strip Whitespace
-     *
-     * @param     string     $input  String to strip
-     * @return    string             whitespace sanitized input
-     * @access    public
-     */
-    public static function stripWhitespace( $input ) {
-
-        $output = preg_replace( '/[\n\r\t]+/', '', $input );
-        return preg_replace( '/\s{2,}/', ' ', $output );
-    }
-
     /**
      * Strip IMG html tags
      *
@@ -321,31 +307,6 @@ class Sanitize {
     }
 
     /**
-     * @param  string $str
-     * @return string
-     */
-    public static function cleanFilename( $str ) {
-
-        $str = str_replace("http://", "", $str);
-        $str = str_replace("/", "", $str);
-        $str = str_replace("\\", "", $str);
-        $str = str_replace("../", "", $str);
-        $str = str_replace("..", "", $str);
-        $str = str_replace("?", "", $str);
-        $str = str_replace("%00", "", $str);
-
-        if (strpos($str, '%00')) {
-            $str = '';
-        }
-
-        if ($str == null) {
-            $str = '';
-        }
-
-        return $str;
-    }
-
-    /**
      * @param  mixed $url
      * @return string|void nothing for a value cleanInput() leaves empty
      */
@@ -427,29 +388,6 @@ class Sanitize {
          }
 
          return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, [] );
-    }
-
-    /**
-     * @param  mixed $md5
-     * @return string the hash, or '' for anything that is not one
-     */
-    public static function cleanMd5( $md5 ) {
-
-        $valid = false;
-
-        if ( ! empty( $md5 ) && preg_match( '/^[a-f0-9]{32}$/', $md5 ) ) {
-
-            $valid = true;
-        }
-
-        if ( $valid ) {
-
-            return $md5;
-        } else {
-
-            \OWA\Core\CoreAPI::debug("This is not a valid MD5: ".$md5 );
-            return "";
-        }
     }
 
     /**

@@ -76,9 +76,8 @@ final class SettingsDeclarationContractTest extends TestCase
      * Database-state settings are storable, and carry no default.
      *
      * schema_version and install_complete record what has happened to this
-     * installation. A default would put them within reach of
-     * pruneRedundantPersistedSettings(), and dropping one makes a module look
-     * uninstalled and re-run its updates.
+     * installation. persistSetting() drops a value equal to its default, and
+     * dropping one makes a module look uninstalled and re-run its updates.
      */
     public function testDatabaseStateSettingsAreStorableWithNoDefault(): void
     {

@@ -25,9 +25,6 @@ namespace OWA\Module\Base\Classes;
      /** @var array<mixed> module => key => the value stored install-wide */
      public $db_settings = [];
 
-     /** @var mixed nothing sets it */
-     public $fetched_from_db;
-
      /** @var bool|null whether a setting changed since the last save */
      public $is_dirty;
 
@@ -192,11 +189,9 @@ namespace OWA\Module\Base\Classes;
      public function setTimezone() {
 
          // set default timezone while surpressing any warning
-        if ( function_exists( 'date_default_timezone_set' ) ) {
-            $level = error_reporting( 0 );
-            date_default_timezone_set( $this->get( 'base', 'timezone' ) );
-            error_reporting( $level );
-        }
+         $level = error_reporting( 0 );
+         date_default_timezone_set( $this->get( 'base', 'timezone' ) );
+         error_reporting( $level );
      }
 
      /**
@@ -1135,10 +1130,9 @@ namespace OWA\Module\Base\Classes;
      /**
       * Write the install-wide settings back, one row per key.
       *
-      * The stored set is made to MATCH db_settings. Both places that drop a key
-      * -- persistSetting()'s default-equivalence prune and
-      * pruneRedundantPersistedSettings() -- unset it from db_settings and rely
-      * on the deletes here.
+      * The stored set is made to MATCH db_settings. persistSetting() drops a
+      * key that restates its default by unsetting it from db_settings, and
+      * relies on the deletes here.
       *
       * When load() never ran, the stored rows are merged UNDER db_settings and
       * nothing is deleted: a process that never read the settings does not know
@@ -2802,51 +2796,6 @@ namespace OWA\Module\Base\Classes;
          }
 
          return $stored == $default;
-     }
-
-     /**
-      * Drop persisted settings that merely restate the current code default.
-      *
-      * An old config GUI wrote the whole settings array rather than just changed
-      * fields, so installs hold values identical to the default of the day,
-      * pinned forever. Each one is a latent bug that surfaces the moment that
-      * default changes.
-      *
-      * Removing them is behaviour-preserving by definition: get() falls back to
-      * the very default the stored value duplicates. Keys with no code default
-      * (schema_version, install_complete) cannot match and are never touched.
-      *
-      * Caller is responsible for save().
-      *
-      * @return list<string> the "module.key" entries removed
-      */
-     public function pruneRedundantPersistedSettings() {
-
-         $removed = [];
-
-         foreach ( $this->db_settings as $module => $values ) {
-
-             if ( ! is_array( $values ) ) {
-                 continue;
-             }
-
-             foreach ( $values as $key => $value ) {
-
-                 if ( ! array_key_exists( $module, $this->default_config )
-                      || ! array_key_exists( $key, $this->default_config[ $module ] ) ) {
-                     continue;
-                 }
-
-                 if ( self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
-
-                     unset( $this->db_settings[ $module ][ $key ] );
-                     $removed[] = $module . '.' . $key;
-                     $this->markDirty();
-                 }
-             }
-         }
-
-         return $removed;
      }
 
      /**

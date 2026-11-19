@@ -92,70 +92,16 @@ final class SettingsPersistenceTest extends TestCase
         );
     }
 
-    public function testPruneRemovesRedundantCopiesButKeepsRealCustomisations(): void
-    {
-        $c = $this->settings();
-
-        $default = $c->default_config['base']['report_wrapper'];
-
-        // one redundant, one genuine
-        $c->db_settings['base']['report_wrapper']      = $default;
-        $c->db_settings['base']['query_string_filters'] = 'fbclid';
-
-        $removed = $c->pruneRedundantPersistedSettings();
-
-        $this->assertContains('base.report_wrapper', $removed);
-        $this->assertArrayNotHasKey('report_wrapper', $c->db_settings['base']);
-        $this->assertSame(
-            'fbclid',
-            $c->db_settings['base']['query_string_filters'] ?? null,
-            'prune must not touch a setting that differs from the default.'
-        );
-    }
-
     /**
-     * schema_version and install_complete have NO code default, so they can
-     * never compare equal and must survive a prune. If they were dropped, get()
-     * would return null and the install would look uninstalled.
-     */
-    public function testStructuralSettingsWithNoDefaultAreNeverPruned(): void
-    {
-        $c = $this->settings();
-
-        foreach (['schema_version', 'install_complete'] as $key) {
-            $this->assertArrayNotHasKey(
-                $key,
-                $c->default_config['base'],
-                "$key must have no code default, or pruning could drop it"
-            );
-        }
-
-        $c->db_settings['base']['schema_version']   = 12;
-        $c->db_settings['base']['install_complete'] = true;
-
-        $c->pruneRedundantPersistedSettings();
-
-        $this->assertSame(12, $c->db_settings['base']['schema_version'] ?? null);
-        $this->assertTrue($c->db_settings['base']['install_complete'] ?? null);
-    }
-
-    /**
-     * Cross-type equivalence. The settings form submits strings while defaults
-     * are typed, so real redundant copies look like '1' vs true or NULL vs ''.
-     * A strict test matches none of them and the prune becomes a no-op.
+     * Cross-type equivalence, the test persistSetting() drops a value by. The
+     * settings form submits strings while defaults are typed, so a value
+     * restating the default looks like '1' vs true or NULL vs ''.
      *
      * @dataProvider equivalentToDefaultProvider
      */
-    public function testValuesEquivalentToTheDefaultArePruned($stored, $default, string $why): void
+    public function testValuesEquivalentToTheDefaultAreNotStored($stored, $default, string $why): void
     {
-        $c = $this->settings();
-
-        $c->default_config['base']['zz_test_key'] = $default;
-        $c->db_settings['base']['zz_test_key']    = $stored;
-
-        $c->pruneRedundantPersistedSettings();
-
-        $this->assertArrayNotHasKey('zz_test_key', $c->db_settings['base'], $why);
+        $this->assertTrue($this->isEquivalentToDefault($stored, $default), $why);
     }
 
     public static function equivalentToDefaultProvider(): array
@@ -173,14 +119,13 @@ final class SettingsPersistenceTest extends TestCase
      */
     public function testValuesThatDifferAreKept($stored, $default, string $why): void
     {
-        $c = $this->settings();
+        $this->assertFalse($this->isEquivalentToDefault($stored, $default), $why);
+    }
 
-        $c->default_config['base']['zz_test_key'] = $default;
-        $c->db_settings['base']['zz_test_key']    = $stored;
-
-        $c->pruneRedundantPersistedSettings();
-
-        $this->assertSame($stored, $c->db_settings['base']['zz_test_key'] ?? null, $why);
+    private function isEquivalentToDefault($stored, $default): bool
+    {
+        return (new ReflectionMethod(\OWA\Module\Base\Classes\Settings::class, 'isEquivalentToDefault'))
+            ->invoke(null, $stored, $default);
     }
 
     /**
@@ -339,51 +284,6 @@ final class SettingsPersistenceTest extends TestCase
     }
 
 
-    /**
-     * The prune is confined to modules whose defaults are known.
-     *
-     * A module that ships settings.php contributes its defaults, and pruning
-     * those is correct -- a stored value equal to its declared default
-     * is exactly what the rule exists to drop.
-     *
-     * Two things must still hold, and they are what this asserts. A module that
-     * has declared NOTHING is untouched. And is_active /
-     * schema_version are never pruned for anyone, declared or not: they carry
-     * database state rather than configuration, and core registers them with
-     * eagerness but no default precisely so they can never look like a value
-     * restating one. Dropping them makes a module look uninstalled and re-run
-     * its updates.
-     */
-    public function testPruneSkipsModulesWithNoKnownDefaults(): void
-    {
-        $c = $this->settings();
-
-        $this->assertArrayNotHasKey(
-            'test_fixture',
-            $c->default_config,
-            'test_fixture declares nothing, so its defaults must stay unknown'
-        );
-
-        $c->db_settings['test_fixture']  = ['schema_version' => 1, 'is_active' => true];
-        $c->db_settings['sqs']           = ['is_active' => false];
-        $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
-
-        $removed = $c->pruneRedundantPersistedSettings();
-
-        foreach ($removed as $entry) {
-            $this->assertStringEndsNotWith('.is_active', $entry,
-                "prune removed $entry; is_active is database state and must never be dropped");
-            $this->assertStringEndsNotWith('.schema_version', $entry,
-                "prune removed $entry; schema_version is database state and must never be dropped");
-        }
-
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['test_fixture'],
-            'a module that declares nothing is left alone entirely');
-        $this->assertSame(['is_active' => false], $c->db_settings['sqs']);
-        $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],
-            'and a module that DOES declare still keeps its bootstrap state');
-    }
-
     public static function differsFromDefaultProvider(): array
     {
         return [
@@ -400,8 +300,7 @@ final class SettingsPersistenceTest extends TestCase
      * And a config-file-only setting cannot be persisted at all.
      *
      * base.report_wrapper is static -- a stored value there would be an arbitrary
-     * file include -- so persistSetting refuses it. The pruning rule above is
-     * shown on a setting that can legitimately hold a stored value.
+     * file include -- so persistSetting refuses it.
      */
     public function testAConfigFileOnlySettingCannotBePersistedAtAll(): void
     {

@@ -45,7 +45,6 @@ trait SettingsSingletonSnapshot
         'config',
         'default_config',
         'db_settings',
-        'fetched_from_db',
         'config_id',
         'config_from_db',
         'config_file_loaded',

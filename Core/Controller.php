@@ -32,13 +32,6 @@ class Controller extends \OWA\Core\Base {
     public $is_admin;
 
     /**
-     * The priviledge level required to access this controller
-     *
-     * @var string
-     */
-    public $priviledge_level;
-
-    /**
      * data validation control object, created by the first validation added
      *
      * @var \OWA\Module\Base\Classes\Validator|null

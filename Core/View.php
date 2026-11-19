@@ -104,10 +104,10 @@ class View extends \OWA\Core\Base {
     /** @var bool|null true for a view CoreAPI::subViewFactory() made */
     public $is_subview;
 
-    /** @var array<string, array<string, mixed>> id => url, path, deps, version, ie_only */
+    /** @var array<string, array<string, mixed>> id => url, path, deps, version */
     public $js = [];
 
-    /** @var array<string, array<string, mixed>> path => url, path, deps, version, ie_only */
+    /** @var array<string, array<string, mixed>> path => url, path, deps, version */
     public $css = [];
 
     /** @var bool assembleView() answers postProcess() rather than the page */
@@ -505,7 +505,7 @@ class View extends \OWA\Core\Base {
      * @param  string       $path    under the public asset tree
      * @param  string|null  $version assetVersion()'s when empty
      * @param  array<mixed> $deps
-     * @param  bool         $ie_only
+     * @param  bool         $ie_only ignored: no browser OWA supports reads an IE conditional comment
      * @return void
      */
     public function setCss($path, $version = null, $deps = [], $ie_only = false) {
@@ -525,7 +525,6 @@ class View extends \OWA\Core\Base {
         $this->css[$uid]['path'] = $fs_path;
         $this->css[$uid]['deps'] = $deps;
         $this->css[$uid]['version'] = $version;
-        $this->css[$uid]['ie_only'] = $ie_only;
     }
 
     /**
@@ -533,7 +532,7 @@ class View extends \OWA\Core\Base {
      * @param  string       $path    under the public asset tree
      * @param  string       $version assetVersion()'s when empty
      * @param  array<mixed> $deps
-     * @param  bool         $ie_only
+     * @param  bool         $ie_only ignored: no browser OWA supports reads an IE conditional comment
      * @return void
      */
     public function setJs($name, $path, $version ='', $deps = [], $ie_only = false) {
@@ -555,7 +554,6 @@ class View extends \OWA\Core\Base {
         $this->js[$uid]['path'] = $fs_path;
         $this->js[$uid]['deps'] = $deps;
         $this->js[$uid]['version'] = $version;
-        $this->js[$uid]['ie_only'] = $ie_only;
     }
 
     /**

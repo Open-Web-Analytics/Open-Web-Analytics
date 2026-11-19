@@ -210,25 +210,14 @@ class Status {
     }
 
     /**
-     * Whether a Profile's Property can be reported on, and if not, what to
-     * tell the reader. Null when the Property's cube exists.
+     * Whether a Property can be reported on, and if not, what to tell the
+     * reader. Null when the Property's cube exists.
      *
      * This answers "is reporting ready?", not "is the tag working?" -- that is
      * the Tracking Tag screen's question (SitesInvocation::lastEventReceived()).
      * So it never reads raw: a cube is created only by a scheduled build, and
      * what stands between a Property and its first cube is either the scheduler
      * or the next build.
-     *
-     * @param string $site_id
-     * @return Readiness|null
-     */
-    public static function readiness( $site_id ) {
-
-        return self::readinessOfProperty( Cubes::propertyIdForSite( (string) $site_id ) );
-    }
-
-    /**
-     * readiness() for a Property, which is what a report is of.
      *
      * @param string $property_id '' when there is none
      * @return Readiness|null
