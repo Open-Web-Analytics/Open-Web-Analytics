@@ -136,8 +136,8 @@
                data-owa-confirm
                data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this Property?' ) );?>"
                data-owa-confirm-body="<?php $owa_profiles = (int) ( $view->profileCount ?? 0 ); $view->out( sprintf( \OWA\Core\CoreAPI::tn(
-                   '“%1$s” and its %2$d Observation Profile stop recording and leave reporting. Everything collected is kept, and it can be restored.',
-                   '“%1$s” and its %2$d Observation Profiles stop recording and leave reporting. Everything collected is kept, and it can be restored.',
+                   '“%1$s” and its %2$d Observation Profile stop recording and leave reporting. Everything collected is kept.',
+                   '“%1$s” and its %2$d Observation Profiles stop recording and leave reporting. Everything collected is kept.',
                    $owa_profiles ), $view->property['name'] ?? '', $owa_profiles ) );?>"
                data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Property' ) );?>">
     </form>

@@ -54,7 +54,7 @@ final class CountedMessagesTest extends TestCase
         Strings::useTranslations([]);
 
         $this->assertSame(
-            '“Docs & Co” and its 1 Observation Profile stop recording and leave reporting. Everything collected is kept, and it can be restored.',
+            '“Docs & Co” and its 1 Observation Profile stop recording and leave reporting. Everything collected is kept.',
             $this->deleteConfirmation(1)
         );
         $this->assertStringStartsWith('“Docs & Co” and its 3 Observation Profiles stop recording', $this->deleteConfirmation(3));
