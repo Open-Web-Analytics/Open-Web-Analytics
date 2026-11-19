@@ -164,11 +164,14 @@ export function startRowsReport( config ) {
 
             var link = jQuery( this );
 
+            // noopener: the page opened is the tracked site's, and gets no
+            // handle on this window.
             window.open(
                 link.attr( 'href' ),
                 config.sizedWindow.name,
                 'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes'
                     + ',height=' + link.data( 'height' ) + ',width=' + link.data( 'width' )
+                    + ',noopener'
             );
         } );
     }

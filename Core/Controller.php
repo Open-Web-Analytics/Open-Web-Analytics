@@ -11,6 +11,14 @@ namespace OWA\Core;
 class Controller extends \OWA\Core\Base {
 
     /**
+     * True for an action only code runs, through CoreAPI::performAction()
+     * from a handler or another controller, with the parameters it builds
+     * (an event, a user). A request naming it is answered as an unknown
+     * action (CoreAPI::handleRequest()).
+     */
+    const IN_PROCESS_ONLY = false;
+
+    /**
      * Request Parameters passed in from caller
      *
      * @var array<mixed>

@@ -7,6 +7,9 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessEvent extends \OWA\Core\Controller {
 
+    /** Run by its handler through performAction(), never by a request. */
+    const IN_PROCESS_ONLY = true;
+
     /** @var \OWA\Module\Base\Classes\Event */
     public $event;
     /** @var \OWA\Module\Base\Classes\EventDispatch */

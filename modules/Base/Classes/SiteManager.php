@@ -183,6 +183,27 @@ class SiteManager extends \OWA\Core\Base {
     }
 
     /**
+     * The live Property ensurePropertyFor() would put a domain's Profile
+     * under; '' when it would make one.
+     *
+     * @param  string $domain
+     * @return string
+     */
+    public static function propertyIdForDomain( $domain ) {
+
+        $domain = self::normaliseDomain( $domain );
+
+        if ( $domain === '' ) {
+
+            return '';
+        }
+
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName();
+
+        return (string) self::livePropertyWithDomain( $table, $domain );
+    }
+
+    /**
      * The oldest Property with this domain that is not archived. An archived
      * Property is hidden from every screen, so a Profile put in one could not
      * be found.

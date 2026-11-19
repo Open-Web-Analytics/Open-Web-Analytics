@@ -6,7 +6,11 @@ namespace OWA\Module\Base\Controller;
  */
 
 class SitesAdd extends \OWA\Core\AdminController {
-    
+
+    // edit_sites on the Property the Profile is added to, not on the
+    // request's siteId.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
         
         $this->setRequiredCapability('edit_sites');
@@ -61,6 +65,26 @@ class SitesAdd extends \OWA\Core\AdminController {
         
     }
     
+    /**
+     * The Property the Profile goes under, as createSite() picks it: the
+     * request's propertyId, else the live Property of its domain. '' when a
+     * new Property is made for it, which is checked as any controller's
+     * capability is, against the request's siteId.
+     *
+     * @return string
+     */
+    protected function requestPropertyId() {
+
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        if ( $propertyId !== '' ) {
+
+            return $propertyId;
+        }
+
+        return \OWA\Module\Base\Classes\SiteManager::propertyIdForDomain( (string) $this->getParam( 'domain' ) );
+    }
+
     /**
      * The domain is NOT validated here, because it is not set here.
      *

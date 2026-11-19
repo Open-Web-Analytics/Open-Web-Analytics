@@ -87,7 +87,10 @@ describe('overlayLink formatter', () => {
         'data:text/html,<script>1</script>',
         '//example.test/pricing',
         'example.test/pricing',
-    ])('a recording of %s gets no link', (url) => {
+        'https://elsewhere.test\\@example.test/',
+        'https://elsewhere.te\tst@example.test/',
+        'https://example.test/\nx',
+    ])('a recording of %j gets no link', (url) => {
         expect(fmt(cell(Object.assign({}, PAYLOAD, { url })))).toBe('');
     });
 

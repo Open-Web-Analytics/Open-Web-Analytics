@@ -220,9 +220,12 @@ final class AttributedSourceBuildTest extends TestCase
         $session = self::GOAL_ON_LAND + 500;
         $trigger = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::GOAL_ON_LAND, $session, $this->t0, 'page_view');
 
-        // Below the trigger's id, so the id alone would sort it first.
-        $goalId = self::GOAL_ON_LAND;
+        // Below the trigger's id, so the id alone would sort it first. Taken
+        // from the trigger's: its id is a hash of a timestamp, so a fixed one
+        // is sometimes above it.
+        $goalId = $trigger - 1;
         $this->assertLessThan($trigger, $goalId);
+        $this->assertGreaterThan(0, $goalId);
 
         $goal = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $goal->setProperties([
