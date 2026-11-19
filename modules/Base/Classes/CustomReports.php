@@ -131,6 +131,23 @@ class CustomReports {
     ];
 
     /**
+     * The keys a saved report's widget may use: what the builder writes and
+     * report_widgets.php reads. Any other is refused (validate()).
+     */
+    const WIDGET_KEYS = [
+        'type', 'id', 'container', 'title', 'showTitle', 'query', 'colspan', 'rowspan',
+        'chartMetric', 'metricSets', 'more', 'link', 'links', 'constraints', 'ownConstraints',
+        'compare', 'valueLabels', 'formatters', 'rowActions', 'excludeColumns', 'boxWidth',
+        'showMetricBoxes', 'showBreakdownGrid', 'breakdownRows', 'plotGridRows', 'pagePath',
+    ];
+
+    /**
+     * A box width (boxWidth) as a CSS length: a positive number in one of
+     * these units, at most the bound beside it.
+     */
+    const BOX_WIDTH_UNITS = [ 'px' => 2000, '%' => 100, 'em' => 100, 'rem' => 100, 'vw' => 100, 'vh' => 100 ];
+
+    /**
      * One line about each type, shown where the type is chosen.
      *
      * The type is picked before anything else about a widget is, so this is
@@ -507,6 +524,19 @@ class CustomReports {
                     $where, $type, implode( ', ', array_keys( self::WIDGET_TYPES ) ) );
             }
 
+            $unknown = array_values( array_diff( array_map( 'strval', array_keys( $widget ) ), self::WIDGET_KEYS ) );
+
+            if ( $unknown ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%1$s has unknown keys: %2$s. A widget may use %3$s.' ),
+                    $where, implode( ', ', $unknown ), implode( ', ', self::WIDGET_KEYS ) );
+            }
+
+            if ( isset( $widget['boxWidth'] ) && ! self::isBoxWidth( $widget['boxWidth'] ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%s has a box width that is not a CSS length such as 150px or 20%%.' ), $where );
+            }
+
             $error = self::validateQuery( $widget, $where, $has_report_metrics, $property_id );
 
             if ( $error !== '' ) {
@@ -537,6 +567,24 @@ class CustomReports {
         }
 
         return '';
+    }
+
+    /**
+     * Whether a value is a box width: a number and a unit of BOX_WIDTH_UNITS,
+     * above zero and at most the unit's bound. It is written into a style
+     * attribute, so nothing else is.
+     *
+     * @param  mixed $value
+     * @return bool
+     */
+    public static function isBoxWidth( $value ) {
+
+        if ( ! is_string( $value ) || ! preg_match( '/^(\d{1,4}(?:\.\d{1,2})?)(px|%|em|rem|vw|vh)$/D', $value, $m ) ) {
+
+            return false;
+        }
+
+        return (float) $m[1] > 0 && (float) $m[1] <= self::BOX_WIDTH_UNITS[ $m[2] ];
     }
 
     /**
