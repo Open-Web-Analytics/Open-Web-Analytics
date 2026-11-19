@@ -92,8 +92,9 @@ if ( ! defined( 'OWA_SQL_UPDATE_ROW' ) ) { define('OWA_SQL_UPDATE_ROW', 'UPDATE 
 /*
  * Insert a counter row, or add to the one already there: table, columns,
  * placeholders, the key columns, the counter column. The last placeholder is
- * the amount to add. MySQL finds the row by any unique key and does not need
- * the key columns; a dialect whose upsert names its conflict target
+ * the amount to add, the same for every row. The placeholders may be several
+ * rows', joined by "), (". MySQL finds the row by any unique key and does not
+ * need the key columns; a dialect whose upsert names its conflict target
  * (ON CONFLICT (...) DO UPDATE) reads them from %4$s. Spam\Blocks uses it.
  */
 if ( ! defined( 'OWA_SQL_INSERT_OR_ADD' ) ) { define('OWA_SQL_INSERT_OR_ADD',

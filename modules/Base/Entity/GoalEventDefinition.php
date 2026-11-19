@@ -654,6 +654,61 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     }
 
     /**
+     * The conditions of several definitions, in one query: id => the
+     * definition's conditions, as loadConditions() gives them. A definition
+     * with none maps to an empty list.
+     *
+     * The definitions are on the names the first one is on.
+     *
+     * @param  list<GoalEventDefinition> $definitions
+     * @return array<string, list<GoalEventDefinitionCondition>>
+     */
+    public static function loadConditionsOf( array $definitions ) {
+
+        $out = [];
+
+        foreach ( $definitions as $definition ) {
+
+            if ( $definition->get( 'id' ) ) {
+
+                $out[ (string) $definition->get( 'id' ) ] = [];
+            }
+        }
+
+        if ( ! $out ) {
+
+            return $out;
+        }
+
+        $first  = reset( $definitions );
+        $entity = $first->conditionEntity();
+        $column = $first->conditionColumn();
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $entity->getTableName() );
+        $db->selectColumn( '*' );
+        $db->where( $column, array_map( 'strval', array_keys( $out ) ), 'in' );
+        $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $id = (string) $row[ $column ];
+
+            if ( ! isset( $out[ $id ] ) ) {
+
+                continue;
+            }
+
+            $condition = $first->conditionEntity();
+            $condition->setProperties( $row );
+
+            $out[ $id ][] = $condition;
+        }
+
+        return $out;
+    }
+
+    /**
      * Delete this definition AND the conditions that belong to it.
      *
      * Entity::delete() removes one row from one table, which would leave the

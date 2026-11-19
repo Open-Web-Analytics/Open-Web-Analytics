@@ -90,6 +90,39 @@ final class GoalMarkingTest extends TestCase
         GoalMarking::forget();
     }
 
+    /* ---------------- the cost ---------------- */
+
+    /**
+     * A Profile's goals are two queries, however many definitions it has: the
+     * definitions, and the conditions of all of them. The Property comes from
+     * the Profile's settings chain, which logEvent() has resolved by then.
+     */
+    public function testAProfilesGoalsAreTwoQueries(): void
+    {
+        $one = $this->makeGoal( [ [ 'page_path', 'begins', '/one' ] ], [ 'name' => 'Marking_probe_one' ] );
+        $two = $this->makeGoal( [ [ 'page_path', 'begins', '/two' ], [ 'page_title', 'contains', 'probe' ] ],
+            [ 'name' => 'Marking_probe_two' ] );
+
+        \OWA\Core\CoreAPI::getSetting( 'base', 'log_named_users', 'profile', $this->siteId );
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $before = $db->num_queries;
+        $goals  = ( new ReflectionMethod( GoalMarking::class, 'goalsFor' ) )->invoke( null, $this->siteId );
+
+        $this->assertSame( 2, $db->num_queries - $before );
+
+        $conditions = [];
+
+        foreach ( $goals as $goal ) {
+            $conditions[ (string) $goal['definition']->get( 'id' ) ] = array_map(
+                fn ( $c ) => $c->get( 'condition_value' ), $goal['conditions'] );
+        }
+
+        $this->assertSame( [ '/one' ], $conditions[ (string) $one->get( 'id' ) ] );
+        $this->assertSame( [ '/two', 'probe' ], $conditions[ (string) $two->get( 'id' ) ],
+            'each definition keeps its own conditions, in their order' );
+    }
+
     /* ---------------- the wiring ---------------- */
 
     /**
