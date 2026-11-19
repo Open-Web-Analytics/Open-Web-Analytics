@@ -57,9 +57,11 @@ class MyProfile extends \OWA\Core\AdminController {
             }
         }
 
-        if ( $this->getParam( 'myProfileError' ) ) {
+        $error = $this->carriedErrorText( $this->getParam( 'myProfileError' ) );
 
-            $this->set( 'my_profile_error', (string) $this->getParam( 'myProfileError' ) );
+        if ( $error !== '' ) {
+
+            $this->set( 'my_profile_error', $error );
         }
 
         if ( $this->getParam( 'myProfileSaved' ) ) {
@@ -77,5 +79,26 @@ class MyProfile extends \OWA\Core\AdminController {
             'vars'     => [ 'user_id', 'real_name', 'email_address', 'role', 'may_edit_email',
                             'my_profile_error', 'my_profile_saved', 'siteId',
                             'min_password_length' => MyProfileSave::MIN_PASSWORD_LENGTH ] ] );
+    }
+
+    /**
+     * The messages of the codes a refused save carried back
+     * (MyProfileSave::carriedErrors()); an unknown code shows nothing.
+     *
+     * @param  mixed $carried the myProfileError parameter
+     * @return string
+     */
+    private function carriedErrorText( $carried ) {
+
+        $errors = [];
+
+        foreach ( MyProfileSave::carriedErrors( $carried ) as $code ) {
+
+            $msg = $this->getMsg( $code, [ 'message' => [ MyProfileSave::MIN_PASSWORD_LENGTH ] ] );
+
+            $errors[] = (string) ( $msg['message'] ?? '' );
+        }
+
+        return implode( ' ', $errors );
     }
 }

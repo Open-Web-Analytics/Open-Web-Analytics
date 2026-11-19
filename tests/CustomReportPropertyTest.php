@@ -615,6 +615,37 @@ final class CustomReportPropertyTest extends TestCase
         $this->assertSame(self::P, (string) ($own['propertyId'] ?? ''));
     }
 
+    /**
+     * The builder's reason for a refused save comes from base.customReportSave
+     * in-process; a request carrying one shows nothing and draws the stored
+     * report, not what the request typed.
+     */
+    public function testTheBuilderShowsNoReasonTheRequestCarries(): void
+    {
+        $id = $this->store(self::P, 'Stored name');
+
+        $data = (array) (new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do'                => 'base.customReportEdit',
+            'customReportId'    => $id,
+            'customReportError' => 'Typed into the URL',
+            'customReportName'  => 'Also from the URL',
+        ]))->doAction();
+
+        $this->assertSame('', (string) ($data['custom_report_error'] ?? ''));
+        $this->assertSame('Stored name', (string) ($data['custom_report_name'] ?? ''));
+
+        $refused = new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do'               => 'base.customReportEdit',
+            'customReportId'   => $id,
+            'customReportName' => 'As submitted',
+        ]);
+        $refused->refusedWith('Why it was refused.');
+        $data = (array) $refused->doAction();
+
+        $this->assertSame('Why it was refused.', (string) ($data['custom_report_error'] ?? ''));
+        $this->assertSame('As submitted', (string) ($data['custom_report_name'] ?? ''));
+    }
+
     public function testAnEditFromAnotherPropertyIsRefusedAndChangesNothing(): void
     {
         $id = $this->store(self::P, 'Untouched');

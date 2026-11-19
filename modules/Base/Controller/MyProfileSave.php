@@ -12,6 +12,21 @@ class MyProfileSave extends \OWA\Core\AdminController {
     /** Shortest new password accepted (User::MIN_PASSWORD_LENGTH). */
     const MIN_PASSWORD_LENGTH = \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH;
 
+    /**
+     * The messages.php codes a refusal carries back to base.myProfile, and
+     * the only ones it shows.
+     */
+    const ERRORS = [ 2001, 3230, 3231, 3232, 3233, 3234, 3235, 3236, 3237, 3238 ];
+
+    /** The code of each failed validation, by its name. */
+    const VALIDATION_ERRORS = [
+        'email_address'    => 2001,
+        'current_password' => 3230,
+        'new_password'     => 3231,
+        'password_match'   => 3232,
+        'password_length'  => 3233,
+    ];
+
     public function __construct( $params ) {
 
         $this->setRequiredCapability( 'view_site_list' );
@@ -90,7 +105,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
         if ( ! $entity->wasPersisted() ) {
 
-            return $this->refuse( \OWA\Core\CoreAPI::t( 'That account does not exist.' ) );
+            return $this->refuse( 3234 );
         }
 
         $entity->set( 'real_name', trim( (string) $this->getParam( 'real_name' ) ) );
@@ -120,8 +135,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
                  */
                 if ( ! $user->isCapable( 'edit_own_email' ) ) {
 
-                    return $this->refuse(
-                        \OWA\Core\CoreAPI::t( 'Your role cannot change the account email address.' ) );
+                    return $this->refuse( 3235 );
                 }
 
                 $entity->set( 'email_address', $submitted_email );
@@ -136,7 +150,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
             $error = $this->changePassword( $entity, $user_id );
 
-            if ( $error !== '' ) {
+            if ( $error !== 0 ) {
 
                 return $this->refuse( $error );
             }
@@ -186,7 +200,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
      *
      * @param object $entity  the user row, already loaded
      * @param string $user_id
-     * @return string an error, or '' on success
+     * @return int a messages.php code, or 0 on success
      */
     private function changePassword( $entity, $user_id ) {
 
@@ -199,7 +213,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
          */
         if ( ! password_verify( $current, (string) $entity->get( 'password' ) ) ) {
 
-            return 'That is not your current password.';
+            return 3236;
         }
 
         /*
@@ -215,25 +229,27 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
         if ( ! $updated ) {
 
-            return 'The password could not be changed.';
+            return 3237;
         }
 
-        return '';
+        return 0;
     }
 
     /**
      * Back to the form, with what was typed and why it was refused.
      *
+     * Why travels as messages.php codes (ERRORS), not text: the redirect puts
+     * it on the URL, and base.myProfile shows a known code's message only.
      * The name and address ride along under submitted_ names so the form
      * redraws them; the password fields deliberately do not, because carrying a
      * secret back would put it in the page source of the refusal.
      *
-     * @param  string $message why, already translated
+     * @param  int ...$codes
      * @return null
      */
-    private function refuse( $message ) {
+    private function refuse( ...$codes ) {
 
-        $this->set( 'myProfileError', $message );
+        $this->set( 'myProfileError', implode( ',', $codes ) );
         $this->set( 'submitted_real_name', (string) $this->getParam( 'real_name' ) );
         $this->set( 'submitted_email_address', (string) $this->getParam( 'email_address' ) );
 
@@ -244,9 +260,33 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
     public function errorAction() {
 
-        $messages = (array) $this->getValidationErrorMsgs();
+        $codes = array_values( array_intersect_key( self::VALIDATION_ERRORS,
+            (array) $this->getValidationErrorMsgs() ) );
 
-        return $this->refuse( $messages ? implode( ' ', $messages )
-            : \OWA\Core\CoreAPI::t( 'Those details could not be saved.' ) );
+        return $this->refuse( ...( $codes ?: [ 3238 ] ) );
+    }
+
+    /**
+     * The codes a refusal carried, as base.myProfile reads them back: each
+     * one of ERRORS, once, in order; anything else is dropped.
+     *
+     * @param  mixed $carried the myProfileError parameter
+     * @return list<int>
+     */
+    public static function carriedErrors( $carried ) {
+
+        $codes = [];
+
+        foreach ( explode( ',', is_scalar( $carried ) ? (string) $carried : '' ) as $part ) {
+
+            $part = trim( $part );
+
+            if ( ctype_digit( $part ) && in_array( (int) $part, self::ERRORS, true ) ) {
+
+                $codes[] = (int) $part;
+            }
+        }
+
+        return array_values( array_unique( $codes ) );
     }
 }
