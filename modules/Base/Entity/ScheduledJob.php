@@ -14,13 +14,13 @@ namespace OWA\Module\Base\Entity;
  * to drift and nothing to migrate when either changes. last_params is a record
  * of what a past run used, never an input to the next one.
  *
- * EVERY COLUMN IS EITHER A NON-EMPTY STRING OR MONOTONIC. That is a constraint,
- * not an accident: Entity::set() skips falsy values, and partialUpdate() carries
- * the same guard, so nothing in the entity layer can write 0, '' or null. A
- * counter that had to be reset to zero would be unwritable. Hence
- * last_success_at / last_failure_at rather than a consecutive_failures field --
- * which also carries more information: "currently failing" is
- * last_failure_at > last_success_at, and "failing since" is last_failure_at.
+ * NO COLUMN IS EMPTIED. Entity::set() ignores '' and null
+ * (columnAcceptsFalsy()), so through the entity last_status, last_message and
+ * last_params are replaced, never cleared. Integer columns take 0.
+ *
+ * last_success_at / last_failure_at rather than a consecutive_failures field:
+ * "currently failing" is last_failure_at > last_success_at, and "failing
+ * since" is last_failure_at.
  */
 class ScheduledJob extends \OWA\Core\Entity {
 

@@ -357,8 +357,8 @@ class TrackingEventHelpers {
      * A `client` property's `from` set is the wire; every other kind's names
      * something the request or the event supplies, and a beacon carrying one of
      * those names is asserting a value it has no business setting -- its own
-     * city, its own region, its own campaign source. That refusal is now the
-     * absence of a client declaration rather than a denylist beside it.
+     * city, its own region, its own campaign source. Having no client
+     * declaration is the refusal; there is no denylist.
      *
      * @param  string $property
      * @return string[]

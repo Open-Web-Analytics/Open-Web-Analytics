@@ -604,8 +604,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * order two events in the same second could arrive either way round and
          * the same funnel could report different numbers on consecutive loads.
          * The id makes the order stable. It cannot make it MEANINGFUL -- ids
-         * are the tracker's random GUID -- which is what groupsAtSameTime()
-         * below exists to handle.
+         * are the tracker's random GUID -- which is what resolveTied() below
+         * exists to handle.
          */
         $e = $alias;
 

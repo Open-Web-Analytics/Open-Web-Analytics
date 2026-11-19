@@ -25,8 +25,7 @@
  * generated from (tests/tools/wiki/sections/settings.php), unless it is
  * `internal`: state OWA records for itself, a per-request flag, or a URL
  * derived from public_url at boot. Nobody configures those, and the reference
- * leaves them out. A handful have neither because nothing reads them;
- * WikiDocsSettingsTest lists them.
+ * leaves them out. WikiDocsSettingsTest fails a setting that has neither.
  *
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
@@ -34,9 +33,9 @@
  * uninstalled. Base's is_active is true in Settings::baseDefaults(): Base is
  * always active, including on a boot that reads no stored settings.
  *
- * Two settings are declared with no default for the same reason:
- * install_complete and goals are stored and have never had a code default,
- * and inventing one would put them within reach of the prune.
+ * install_complete is declared with no default for the same reason: it is
+ * stored and has never had a code default, and inventing one would put it
+ * within reach of the prune.
  *
  * The config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC: never read from the

@@ -2082,7 +2082,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Matched by name rather than per module because core cannot name the
       * modules: the directory-to-runtime-name mapping is lossy (see
-      * buildRegistry()). `name IN (...)` needs no module names at all, and is
+      * Module::settingsRegistry()). `name IN (...)` needs no module names at all, and is
       * exactly right -- these are eager wherever they occur, including for a
       * third-party module core has never heard of.
       *

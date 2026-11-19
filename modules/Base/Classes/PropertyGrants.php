@@ -9,8 +9,7 @@ namespace OWA\Module\Base\Classes;
  * The two meet here: a user granted ANY Profile of a Property may see it -- the
  * same rule ServiceUser::withSiblingProfiles() applies when access is checked --
  * and a change made on the Property Access screen is written to EVERY Profile,
- * archived ones included, so a restored Profile comes back with the Property's
- * grants rather than its old ones.
+ * archived ones included.
  */
 class PropertyGrants {
 
