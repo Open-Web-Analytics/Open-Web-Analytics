@@ -1616,7 +1616,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         try {
             // Strip the lead, leaving a gap a rotate would have to rebuild.
             $db->query("ALTER TABLE $table REMOVE PARTITIONING");
-            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($table, \OWA\Core\Db::makePartitionRanges(
                 $keep[0]['start'],
                 date('Ymd', strtotime(end($keep)['less_than'] . ' -1 day')),
                 $granularity
@@ -1637,7 +1637,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         } finally {
             $db->query("ALTER TABLE $table REMOVE PARTITIONING");
-            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($table, \OWA\Core\Db::makePartitionRanges(
                 $spans[0]['start'],
                 date('Ymd', strtotime(end($spans)['less_than'] . ' -1 day')),
                 $granularity

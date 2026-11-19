@@ -45,7 +45,7 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
         // Row size has nothing to do with how rows are divided up, and an
         // ALTER across seventy-odd partitions is a rebuild of each. Dropping
         // them takes this file from a minute and a half to a few seconds.
-        \OWA\Core\CoreAPI::dbSingleton()->removePartitioning($this->table);
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('ALTER TABLE %s REMOVE PARTITIONING', $this->table));
     }
 
     protected function tearDown(): void

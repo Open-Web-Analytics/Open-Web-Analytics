@@ -598,18 +598,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * The direction for an orderBy() that gave none.
-     *
-     * @param  string $flag
-     * @return void
-     */
-    public function order($flag) {
-
-        $this->_sqlParams['order'] = $flag;
-        return;
-    }
-
-    /**
      * @param  int|string $value
      * @return void
      */
@@ -1268,19 +1256,12 @@ class Db extends \OWA\Core\Base {
         $sorts = $this->_fetchSqlParams('orderby');
         if (!empty($sorts)) {
 
-            $order = $this->_fetchSqlParams('order');
-
             $i = 1;
             $sort_string = '';
             $count = count($sorts);
             foreach ($sorts as $sort) {
 
-                // needed for backwards compatibility.
-                if (!isset($sort[1])) {
-                    $sort[1] = $order;
-                }
-                
-                if ( ! $this->isValidSortDirectionValue( $sort[1] ) ) {
+                if ( ! isset( $sort[1] ) || ! $this->isValidSortDirectionValue( $sort[1] ) ) {
                     
                     $sort[1] = $this->getDefaultSortDirection();
                 }
@@ -1602,18 +1583,6 @@ class Db extends \OWA\Core\Base {
 
         return null;
     }
-
-    /**
-     * The columns of a table's primary key. Unknown, without introspection.
-     *
-     * @param string $table_name
-     * @return string[]
-     */
-    public function getPrimaryKeyColumns( $table_name ) {
-
-        return [];
-    }
-
 
     /**
      * The scheduler's lock table, resolved through the entity so the namespace
@@ -2085,61 +2054,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Partition an existing table by range.
-     *
-     * The partitioning column has to be part of every unique key, so the
-     * primary key is widened first. Both statements rebuild the table, which is
-     * why this belongs in a deliberate operation rather than on a request path.
-     *
-     * @param string $table_name
-     * @param string $column
-     * @param PartitionRanges $ranges
-     * @return QueryResult  false when refused
-     */
-    public function partitionTable( $table_name, $column, $ranges ) {
-
-        if ( ! $this->supportsPartitioning() ) {
-
-            return false;
-        }
-
-        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
-          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $column ) ) {
-
-            return false;
-        }
-
-        $clause = $this->makePartitionClause( $column, $ranges );
-
-        if ( ! $clause ) {
-
-            return false;
-        }
-
-        // Every unique key has to contain the partitioning column, so widen the
-        // primary key first where it does not. A table built by createTable()
-        // already has it; one that predates partitioning does not.
-        $pk = $this->getPrimaryKeyColumns( $table_name );
-
-        if ( $pk && ! in_array( $column, $pk, true ) ) {
-
-            $widened = array_merge( $pk, [ $column ] );
-
-            $ret = $this->query( sprintf(
-                'ALTER TABLE %s DROP PRIMARY KEY, ADD PRIMARY KEY (%s)',
-                $table_name, implode( ', ', $widened )
-            ) );
-
-            if ( ! $ret ) {
-
-                return false;
-            }
-        }
-
-        return $this->query( sprintf( 'ALTER TABLE %s%s', $table_name, $clause ) );
-    }
-
-    /**
      * Drop the named partition.
      *
      * @param string $table_name
@@ -2336,27 +2250,6 @@ class Db extends \OWA\Core\Base {
         return $this->changePartitions( $table_name, sprintf(
             OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $from ), implode( ', ', $parts )
         ) );
-    }
-
-    /**
-     * Flatten a partitioned table into an ordinary one.
-     *
-     * Keeps every row: the partitions are merged, not dropped. Against a table
-     * holding data this rewrites all of it, so it belongs on an empty staging
-     * table and nowhere else.
-     *
-     * @param string $table_name
-     * @return bool
-     */
-    public function removePartitioning( $table_name ) {
-
-        if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' )
-          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
-
-            return false;
-        }
-
-        return (bool) $this->query( sprintf( OWA_SQL_REMOVE_PARTITIONING, $table_name ) );
     }
 
     /**
@@ -3049,87 +2942,6 @@ class Db extends \OWA\Core\Base {
      * caller that supplies nothing.
      */
     const PARTITION_DETAIL_MONTHS = 36;
-
-
-
-    /**
-     * Ranges for a table that is being partitioned for the first time: coarse
-     * over old history, fine over the detail window and the lead.
-     *
-     * A flat monthly layout over a long-running installation asks for one
-     * partition per month of history -- over three hundred on a twenty-five year
-     * table -- which exceeds any reasonable open-file budget and leaves the
-     * operator no way through, since monthly is already the coarsest granularity
-     * and old data cannot be pruned before partitions exist to prune.
-     *
-     * Building the tiers up front avoids partitioning flat and merging
-     * afterwards, which would mean writing every old row twice.
-     *
-     * Whole calendar years are used for the old tier because a year is the unit
-     * an operator reasons about, and because retention still means something:
-     * history ages out a year at a time. Lumping it all into one partition
-     * instead would leave a table whose first routine retention run discards
-     * decades in a single statement.
-     *
-     * @param string $min_yyyymmdd    oldest data present
-     * @param string $through         upper boundary to reach (exclusive)
-     * @param string $granularity     granularity for the detail window
-     * @param int    $detail_months   how much recent history stays fine
-     * @param int|null $limit         the partition ceiling; null for none
-     * @return PartitionRanges ascending
-     */
-    public static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months, $limit = null ) {
-
-        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
-
-        // Nothing old enough to coarsen: this is just the flat layout.
-        if ( (string) $min_yyyymmdd >= $boundary ) {
-
-            return self::makePartitionRanges(
-                $min_yyyymmdd, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
-            );
-        }
-
-        $ranges = [];
-
-        // Old tier: whole calendar years, except the last, which closes on the
-        // month the detail window opens rather than on a January.
-        //
-        // That boundary has to be the one planPartitionCompaction() uses, or the
-        // two disagree about which periods are old: this would leave the months
-        // between January and the detail window as separate partitions, and the
-        // next rotate would immediately merge them. The table would be rewritten
-        // on every scheduled run, for no change in shape.
-        $first_year = (int) substr( $min_yyyymmdd, 0, 4 );
-        $last_year  = (int) substr( $boundary, 0, 4 );
-
-        // Detail tier first, because its size decides how much room the tail has.
-        $fine = self::makePartitionRanges(
-            $boundary, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
-        );
-
-        // Widen the tail blocks until the whole layout fits, exactly as
-        // planPartitionCompaction() does. Building 1-year blocks regardless and
-        // leaving the next rotation to coarsen them would mean the first
-        // scheduled run rewrote everything laid out here.
-        $years = max( 1, $last_year - $first_year + ( $boundary > $last_year . '0101' ? 1 : 0 ) );
-        $block = 1;
-
-        if ( $limit !== null ) {
-
-            for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
-
-                if ( count( $fine ) + (int) ceil( $years / $block ) <= $limit ) {
-
-                    break;
-                }
-            }
-        }
-
-        $ranges = self::yearBlocks( $first_year, $boundary, $block );
-
-        return array_merge( $ranges, $fine );
-    }
 
     /**
      * The old tier: blocks of whole calendar years from a year's January, the
@@ -4437,34 +4249,6 @@ class Db extends \OWA\Core\Base {
     public function distinct($column_name) {
 
         return sprintf(OWA_SQL_DISTINCT, $column_name);
-    }
-
-    /**
-     * @param  string $numerator
-     * @param  string $denominator
-     * @return string
-     */
-    public function division($numerator, $denominator) {
-
-        return sprintf(OWA_SQL_DIVISION, $numerator, $denominator);
-    }
-
-    /**
-     * @param  string $value
-     * @return string
-     */
-    public function round($value) {
-
-        return sprintf(OWA_SQL_ROUND, $value);
-    }
-
-    /**
-     * @param  string $value
-     * @return string
-     */
-    public function average($value) {
-
-        return sprintf(OWA_SQL_AVERAGE, $value);
     }
 
     /**
