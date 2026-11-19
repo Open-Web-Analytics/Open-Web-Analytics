@@ -3964,6 +3964,10 @@ class Db extends \OWA\Core\Base {
             $partition_column = $entity->getPartitionColumn();
         }
 
+        // A key over several columns is a table-level clause
+        // (Entity::setCompositePrimaryKey()), declared in place of the inline one.
+        $composite = method_exists( $entity, 'getCompositePrimaryKey' ) ? $entity->getCompositePrimaryKey() : [];
+
         $all_cols = $entity->getColumns();
 
         $columns = '';
@@ -3984,7 +3988,7 @@ class Db extends \OWA\Core\Base {
         foreach ($all_cols as $k => $v){
 
             // get column definition
-            $columns .= $v.' '.$entity->getColumnDefinition($v, (bool) $partition_column);
+            $columns .= $v.' '.$entity->getColumnDefinition($v, $partition_column || $composite);
 
             if ( $entity->isColumnIndexed( $v ) ) {
 
@@ -4023,12 +4027,9 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        // A key over several columns is a table-level clause (Entity::setCompositePrimaryKey()).
-        if ( ! $partition_column && method_exists( $entity, 'getCompositePrimaryKey' )
-             && $entity->getCompositePrimaryKey() ) {
+        if ( $composite ) {
 
-            $columns .= sprintf( ', %s (%s)', OWA_DTD_PRIMARY_KEY,
-                implode( ', ', $entity->getCompositePrimaryKey() ) );
+            $columns .= sprintf( ', %s (%s)', OWA_DTD_PRIMARY_KEY, implode( ', ', $composite ) );
         }
 
         if ( $indexes ) {
@@ -4042,7 +4043,8 @@ class Db extends \OWA\Core\Base {
 
             $pk = $entity->getPrimaryKeyColumn();
 
-            if ( $pk && $pk !== $partition_column ) {
+            // Without a declared key, the row's own key with the partition column after it.
+            if ( ! $composite && $pk && $pk !== $partition_column ) {
 
                 $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
             }

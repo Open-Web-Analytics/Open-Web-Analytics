@@ -452,6 +452,35 @@ abstract class FactMigrator {
     }
 
     /**
+     * The DELETEs removing these raw rows: one per day, naming it.
+     *
+     * Raw's key is (yyyymmdd, id), so an id with no day is looked for in
+     * every partition.
+     *
+     * @param  string    $table
+     * @param  list<Row> $rows  as build() made them
+     * @return list<string>
+     */
+    protected static function deletesByDay( $table, array $rows ) {
+
+        $by_day = [];
+
+        foreach ( $rows as $row ) {
+
+            $by_day[ (int) $row['yyyymmdd'] ][] = (int) $row['id'];
+        }
+
+        $out = [];
+
+        foreach ( $by_day as $day => $ids ) {
+
+            $out[] = sprintf( 'DELETE FROM %s WHERE yyyymmdd = %d AND id IN (%s)', $table, $day, implode( ',', $ids ) );
+        }
+
+        return $out;
+    }
+
+    /**
      * Undo one site's migration: delete exactly the raw rows it wrote.
      *
      * The ids are derived from the v1 rows, which the migration never
@@ -482,11 +511,9 @@ abstract class FactMigrator {
 
         while ( $rows = $this->read( $site_id, $after ) ) {
 
-            $ids = array_map( 'intval', array_column( $this->build( $rows, $scratch ), 'id' ) );
+            foreach ( self::deletesByDay( $table, $this->build( $rows, $scratch ) ) as $sql ) {
 
-            if ( $ids ) {
-
-                if ( $this->db()->query( sprintf( 'DELETE FROM %s WHERE id IN (%s)', $table, implode( ',', $ids ) ) ) === false ) {
+                if ( $this->db()->query( $sql ) === false ) {
 
                     throw new \RuntimeException( sprintf( 'v1 migration: reverting site %s failed.', $site_id ) );
                 }

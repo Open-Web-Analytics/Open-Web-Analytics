@@ -72,9 +72,8 @@ class VisitorExpiry {
      * lies wholly before the cutoff, and old periods are merged into blocks of
      * up to five years, so a kept block can hold days long before it.
      *
-     * Per site through site_date (site_id, yyyymmdd), which the server answers
-     * with a loose index scan -- one probe per site per partition. A plain
-     * MIN(yyyymmdd) has no index leading with the day and reads all of one.
+     * Per site through site_date (site_id, yyyymmdd, ...), which the server
+     * answers with a loose index scan -- one probe per site per partition.
      *
      * @return int|null
      */
