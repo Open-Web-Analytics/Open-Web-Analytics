@@ -9,26 +9,76 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * response ended before OWA is booted, so a visitor's browser never waits on
  * ingest or the database.
  *
- * Read from the source, because the server API that makes it real --
- * PHP-FPM's fastcgi_finish_request() -- is not what CI runs PHP under.
+ * PHP-FPM's fastcgi_finish_request() is not what CI runs PHP under, so the
+ * script is run with a stand-in for it that records what was loaded when the
+ * response was ended.
  */
 final class LogEndpointTest extends TestCase
 {
-    private function source(): string
+    /**
+     * Run log.php as a GET under the CLI, with $finisher (fastcgi_finish_request
+     * or litespeed_finish_request) defined to record the moment it is called,
+     * and the database connect disabled.
+     *
+     * @return array<string, array{files: list<string>, classes: list<string>, owa: bool}> keyed 'finish' and 'shutdown'
+     */
+    private function runLogPhp(string $finisher): array
     {
-        return (string) file_get_contents(dirname(__DIR__) . '/log.php');
+        $dir = sys_get_temp_dir() . '/owa_log_' . getmypid() . '_' . bin2hex(random_bytes(4));
+        $this->assertTrue(mkdir($dir, 0700, true));
+
+        $record  = $dir . '/record.json';
+        $prepend = $dir . '/prepend.php';
+
+        $shim = <<<'PHP'
+<?php
+$_SERVER['REQUEST_METHOD'] = 'GET';
+function owa_log_test_record($at) {
+    file_put_contents(getenv('OWA_LOG_TEST_RECORD'), json_encode([$at => [
+        'files'   => get_included_files(),
+        'classes' => array_values(array_filter(get_declared_classes(),
+            static fn ($c) => strncmp($c, 'OWA\\', 4) === 0)),
+        'owa'     => class_exists('owa', false),
+    ]]) . "\n", FILE_APPEND);
+}
+register_shutdown_function(static function () { owa_log_test_record('shutdown'); });
+PHP;
+
+        file_put_contents($prepend, $shim . "\nfunction $finisher() { owa_log_test_record('finish'); return true; }\n");
+
+        try {
+            exec('OWA_LOG_TEST_RECORD=' . escapeshellarg($record) . ' ' . escapeshellarg(PHP_BINARY)
+                . ' -d ' . escapeshellarg('auto_prepend_file=' . $prepend)
+                . ' -d ' . escapeshellarg('disable_functions=mysqli_real_connect,mysqli_connect')
+                . ' ' . escapeshellarg(dirname(__DIR__) . '/log.php') . ' > /dev/null 2>&1');
+
+            $at = [];
+            foreach (file_exists($record) ? file($record, FILE_IGNORE_NEW_LINES) : [] as $line) {
+                $at += (array) json_decode($line, true);
+            }
+
+            return $at;
+        } finally {
+            @unlink($record);
+            @unlink($prepend);
+            @rmdir($dir);
+        }
     }
 
+    /** PHP-FPM is told the response is complete before owa.php is loaded, and OWA boots after. */
     public function testTheResponseIsEndedBeforeOwaIsBooted(): void
     {
-        $src    = $this->source();
-        $finish = strpos($src, 'fastcgi_finish_request();');
-        $boot   = strpos($src, "require_once(__DIR__ . '/owa.php')");
+        $owa = realpath(dirname(__DIR__) . '/owa.php');
 
-        $this->assertNotFalse($finish, 'PHP-FPM is told the response is complete');
-        $this->assertNotFalse($boot);
-        $this->assertLessThan($boot, $finish, 'and told before anything is loaded');
-        $this->assertStringContainsString('litespeed_finish_request', $src);
+        foreach (['fastcgi_finish_request', 'litespeed_finish_request'] as $finisher) {
+
+            $at = $this->runLogPhp($finisher);
+
+            $this->assertArrayHasKey('finish', $at, "$finisher is not called");
+            $this->assertNotContains($owa, $at['finish']['files'], "$finisher is called after owa.php is loaded");
+            $this->assertFalse($at['finish']['owa']);
+            $this->assertContains($owa, $at['shutdown']['files'], 'OWA is booted once the response has ended');
+        }
     }
 
     /**
@@ -38,6 +88,19 @@ final class LogEndpointTest extends TestCase
      */
     public function testAPostIsAnswered204WithNoLocation(): void
     {
+        list($headers) = $this->cgi('POST');
+
+        $this->assertMatchesRegularExpression('/^Status: 204\b/mi', $headers);
+        $this->assertDoesNotMatchRegularExpression('/^Location:/mi', $headers);
+    }
+
+    /**
+     * log.php under php-cgi.
+     *
+     * @return array{0: string, 1: string} the headers, the body
+     */
+    private function cgi(string $method): array
+    {
         $cgi = trim((string) shell_exec('command -v php-cgi 2>/dev/null'));
 
         if ($cgi === '') {
@@ -46,7 +109,7 @@ final class LogEndpointTest extends TestCase
 
         $root = dirname(__DIR__);
         $env  = [
-            'REQUEST_METHOD'  => 'POST',
+            'REQUEST_METHOD'  => $method,
             'SCRIPT_FILENAME' => $root . '/log.php',
             'REDIRECT_STATUS' => '200',
             'CONTENT_LENGTH'  => '0',
@@ -55,7 +118,8 @@ final class LogEndpointTest extends TestCase
             'PATH'            => (string) getenv('PATH'),
         ];
 
-        $proc = proc_open([$cgi, '-d', 'display_errors=0', '-d', 'error_log=/dev/null'],
+        $proc = proc_open([$cgi, '-d', 'display_errors=0', '-d', 'error_log=/dev/null',
+            '-d', 'disable_functions=mysqli_real_connect,mysqli_connect'],
             [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root, $env);
         $this->assertIsResource($proc);
         fclose($pipes[0]);
@@ -64,33 +128,34 @@ final class LogEndpointTest extends TestCase
         fclose($pipes[2]);
         proc_close($proc);
 
-        $headers = strstr($out, "\r\n\r\n", true) ?: $out;
+        $split = strpos($out, "\r\n\r\n");
 
-        $this->assertMatchesRegularExpression('/^Status: 204\b/mi', $headers);
-        $this->assertDoesNotMatchRegularExpression('/^Location:/mi', $headers);
+        return $split === false ? [$out, ''] : [substr($out, 0, $split), substr($out, $split + 4)];
     }
 
-    /** Nothing ahead of the finish call boots OWA or reads a setting. */
+    /** Nothing ahead of the finish call loads an OWA class, so nothing there reads a setting. */
     public function testNothingBeforeTheFinishReadsASetting(): void
     {
-        $src    = $this->source();
-        $before = substr($src, 0, (int) strpos($src, 'fastcgi_finish_request();'));
+        $at = $this->runLogPhp('fastcgi_finish_request');
 
-        $this->assertStringNotContainsString('\\OWA\\', $before);
-        $this->assertStringNotContainsString('blank.php', $src);
+        $this->assertSame([], $at['finish']['classes']);
+        $this->assertNotSame([], $at['shutdown']['classes'], 'the run reached the boot');
+        $this->assertNotContains(realpath(dirname(__DIR__) . '/blank.php'), $at['shutdown']['files']);
     }
 
-    /** The declared length is the image's: a wrong one is dropped, and the response goes out chunked. */
+    /**
+     * A GET is answered with the 43-byte pixel and a Content-Length of its
+     * real length: a wrong one is dropped, and the response goes out chunked.
+     * Run under php-cgi, which prints the response's headers.
+     */
     public function testTheContentLengthIsThePixels(): void
     {
-        $src = $this->source();
+        list($headers, $body) = $this->cgi('GET');
 
-        $this->assertStringContainsString('header("Content-Length: " . strlen( $pixel ));', $src);
-        $this->assertDoesNotMatchRegularExpression('/Content-Length: \d+/', $src);
-
-        preg_match("/sprintf\\(\\s*'((?:%c)+)',\\s*([\\d,\\s]+)\\)/", $src, $m);
-        $this->assertSame(43, substr_count($m[1], '%c'));
-        $this->assertCount(43, array_filter(array_map('trim', explode(',', $m[2])), 'strlen'), 'one byte per %c');
+        $this->assertSame(1, preg_match('/^Content-Length: (\d+)\r?$/mi', $headers, $m), $headers);
+        $this->assertSame(43, strlen($body));
+        $this->assertSame('GIF89a', substr($body, 0, 6));
+        $this->assertSame(strlen($body), (int) $m[1]);
     }
 
     /** The tracking path does not ask whether updates are pending: nothing there acts on the answer. */
