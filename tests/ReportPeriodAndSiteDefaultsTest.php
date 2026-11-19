@@ -187,14 +187,28 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
                 "the picker offers \"$offered\" but it is not accepted" );
         }
 
-        // The REST controller must read that list rather than build a second one.
-        $rest = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/ReportsRest.php' );
+        // The REST controller accepts exactly that list.
+        foreach ( $valid as $period ) {
+            $this->assertNotContains( 'period', $this->restRefuses( $period ),
+                "ReportsRest refuses \"$period\", which the web accepts" );
+        }
 
-        $this->assertStringContainsString( 'getValidPeriods()', $rest,
-            'ReportsRest must validate against the shared list' );
-        $this->assertStringNotContainsString( 'getPeriodLabels()', $rest,
-            'building a second list from the dropdown labels is how these drifted apart' );
+        foreach ( [ 'all_time', 'not_a_period' ] as $period ) {
+            $this->assertContains( 'period', $this->restRefuses( $period ), "ReportsRest accepts \"$period\"" );
+        }
+    }
+
+    /** @return list<string> the fields ReportsRest's validation refuses for a resultset of this period */
+    private function restRefuses( string $period ): array
+    {
+        $rest = new \OWA\Module\Base\Controller\ReportsRest( [ 'metrics' => 'pageViews', 'period' => $period,
+            'startDate' => '20260801', 'endDate' => '20260815' ] );
+        $rest->validate();
+
+        $v = ( new \ReflectionProperty( \OWA\Core\Controller::class, 'v' ) )->getValue( $rest );
+        $v->doValidations();
+
+        return array_keys( (array) $v->getErrorMsgs() );
     }
 
     /**
