@@ -1518,40 +1518,15 @@ class TrackingEventHelpers {
 
     /**
      * The address this request came from, as ip_address is chosen and before
-     * anonymize_ips masks it: the first public address in the first of these
-     * headers the request has; '' when there is none.
+     * anonymize_ips masks it: the first address, from the right of
+     * X-Forwarded-For and REMOTE_ADDR, that no trusted proxy added
+     * (Core\ClientAddress); '' when there is none.
      *
      * @return string
      */
     public static function requestIp() {
 
-        $ip = '';
-
-        // array of SERVER params that could possibly contain the IP address
-        // ordered by probability of relevant match
-        $possible_ip_params = [
-
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_CLUSTER_CLIENT_IP',
-            'HTTP_FORWARDED_FOR',
-            'REMOTE_ADDR'
-
-        ];
-
-        // check for IP address, break when found.
-        foreach ( $possible_ip_params as $param ) {
-
-            if ( \OWA\Core\CoreAPI::getServerParam( $param ) ) {
-
-                 $ip = \OWA\Core\CoreAPI::getServerParam( $param );
-                 \OWA\Core\CoreAPI::debug("ip address $ip found in $param");
-                 
-                 break;
-             }
-        }
-
-        return self::chooseIp( $ip );
+        return \OWA\Core\ClientAddress::fromRequest();
     }
 
     /**

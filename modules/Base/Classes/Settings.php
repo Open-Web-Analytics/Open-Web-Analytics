@@ -257,7 +257,9 @@ namespace OWA\Module\Base\Classes;
 
          return array_merge(
              \OWA\Core\ConfigFile::messages( $this->config_file_problems, $this->config_file_checked ),
-             $this->role_capability_problems );
+             $this->role_capability_problems,
+             defined( \OWA\Core\ClientAddress::CONSTANT )
+                 ? \OWA\Core\ClientAddress::configProblems( constant( \OWA\Core\ClientAddress::CONSTANT ) ) : [] );
      }
 
      /**

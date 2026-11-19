@@ -119,6 +119,7 @@ return [
     'tracker_url_fragments' => false,
     'tracker_visitor_cookie_days' => 364,
     'tracking_url' => '',
+    'trusted_proxies' => [],
     'ua-regexes' => '',
     'use_32bit_hash' => false,
     'use_32bit_hash_before_v2' => false,

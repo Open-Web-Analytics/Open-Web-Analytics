@@ -214,6 +214,22 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
+         * The ids are BIGINT columns: a beacon's value that is not a positive
+         * integer they hold fails the insert, and the queue retries it until it
+         * is dead-lettered. Dropped here instead.
+         */
+        foreach ( [ 'visitor id' => $visitor_id, 'session id' => $session_id ] as $what => $id ) {
+
+            if ( ! \OWA\Module\Base\Classes\V2Event::isId( $id ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: dropping an event, its %s is not a positive integer.', $what ) );
+
+                return null;
+            }
+        }
+
+        /*
          * getSiteId() prefers `siteId` over `site_id`, where the guard above reads
          * `site_id`. The id hash and the stored column agree with each other, which is
          * the part that matters.
@@ -426,7 +442,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * below, which are names the release knows. `vps_` is the other half and
          * goes to the visitor store, not here.
          */
-        $custom = 0;
+        $custom  = 0;
+        $refused = [ 'over the cap' => [], 'declared numeric and not' => [] ];
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
@@ -456,9 +473,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             if ( $custom >= self::MAX_CUSTOM_PROPERTIES ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
-                    'v2 ingest: refused custom event property "%s"; the cap is %d.',
-                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+                $refused['over the cap'][] = $name;
 
                 continue;
             }
@@ -475,9 +490,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
                 if ( ! is_numeric( $value ) ) {
 
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        'v2 ingest: custom event property "%s" is declared numeric and is not.',
-                        $name ) );
+                    $refused['declared numeric and not'][] = $name;
 
                     continue;
                 }
@@ -487,6 +500,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             $params[ $name ] = $value;
         }
+
+        self::noticeRefused( 'event', $refused );
 
         /*
          * Event params the release knows by name but which belong to ONE event
@@ -803,6 +818,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     protected function writeUserProperties( $event, $row ) {
 
         $incoming = [];
+        $refused  = [ 'over the cap' => [], 'declared numeric and not' => [] ];
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
@@ -830,24 +846,22 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             if ( count( $incoming ) >= self::MAX_CUSTOM_PROPERTIES ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
-                    'v2 ingest: refused custom user property "%s"; the cap is %d.',
-                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+                $refused['over the cap'][] = $name;
 
                 continue;
             }
 
             if ( $numeric && ! is_numeric( $value ) ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
-                    'v2 ingest: custom user property "%s" is declared numeric and is not.',
-                    $name ) );
+                $refused['declared numeric and not'][] = $name;
 
                 continue;
             }
 
             $incoming[ $name ] = $numeric ? $value + 0 : (string) $value;
         }
+
+        self::noticeRefused( 'user', $refused );
 
         // Nothing set on this beacon, which is almost every beacon.
         if ( ! $incoming ) {
@@ -1272,5 +1286,42 @@ class EventRawHandlers extends \OWA\Core\Observer {
     protected function flag( $value ) {
 
         return $value ? 1 : 0;
+    }
+
+    /** The most refused names one notice lists. */
+    const NOTICE_NAMES = 5;
+
+    /**
+     * One notice for the custom properties of one event that were refused,
+     * however many: a beacon over the cap would otherwise write a line for
+     * each.
+     *
+     * @param  string                      $scope   event or user
+     * @param  array<string, list<string>> $refused why => the names refused for it
+     * @return void
+     */
+    protected static function noticeRefused( $scope, array $refused ) {
+
+        $parts = [];
+
+        foreach ( $refused as $why => $names ) {
+
+            if ( ! $names ) {
+
+                continue;
+            }
+
+            $shown = array_slice( $names, 0, self::NOTICE_NAMES );
+
+            $parts[] = sprintf( '%d %s (%s%s)', count( $names ), $why,
+                '"' . implode( '", "', $shown ) . '"', count( $names ) > count( $shown ) ? ', ...' : '' );
+        }
+
+        if ( $parts ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'v2 ingest: refused custom %s properties: %s; the cap is %d.',
+                $scope, implode( '; ', $parts ), self::MAX_CUSTOM_PROPERTIES ) );
+        }
     }
 }

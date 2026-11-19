@@ -80,6 +80,13 @@ final class RowIsAMappingTest extends TestCase
             }
 
             $set[ $property ] = ( $definition['data_type'] ?? '' ) === 'boolean' ? true : $value( $property, $i++ );
+
+            // An id the guard accepts: a positive integer (V2Event::isId()).
+            if ( in_array( $property, [ 'visitor_id', 'session_id' ], true ) ) {
+
+                $set[ $property ] = (string) ( 41000 + $i );
+            }
+
             $event->set( $property, $set[ $property ] );
         }
 

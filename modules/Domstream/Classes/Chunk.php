@@ -275,8 +275,7 @@ final class Chunk {
      */
     private static function isId( $v ) {
 
-        return ( is_int( $v ) && $v > 0 )
-            || ( is_string( $v ) && preg_match( '/^[1-9][0-9]{0,18}$/', $v ) );
+        return \OWA\Module\Base\Classes\V2Event::isId( $v );
     }
 
     /**
