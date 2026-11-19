@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout the released code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
 
@@ -41,7 +41,7 @@ jobs:
           php-version: '8.2'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
