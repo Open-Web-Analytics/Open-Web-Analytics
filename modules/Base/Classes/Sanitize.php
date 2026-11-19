@@ -121,6 +121,27 @@ class Sanitize {
      */
     public static function stripHtml( $input = '', $tags = [] ) {
 
+        // Passes repeat until one removes nothing: taking a tag out can join
+        // the text either side of it into a new one ('<<a>b>' leaves '<b>').
+        $output = (string) $input;
+
+        do {
+            $before = $output;
+            $output = self::stripHtmlOnce( $output, $tags );
+        } while ( $output !== $before );
+
+        return $output;
+    }
+
+    /**
+     * One pass of stripHtml().
+     *
+     * @param  string   $input
+     * @param  string[] $tags
+     * @return string
+     */
+    private static function stripHtmlOnce( $input, $tags ) {
+
         if ($tags) {
             // Each tag is stripped from what the previous pass left. The closing tag is
             // matched by whole name, as the opening one is, so stripping b does not take
@@ -128,15 +149,15 @@ class Sanitize {
             $output = $input;
             foreach ( $tags as $tag ) {
                 $tag = preg_quote( (string) $tag, '/' );
-                $output = preg_replace( '/<' . $tag . '\b[^>]*>/i', '', $output );
-                $output = preg_replace( '/<\/' . $tag . '\b[^>]*>/i', '', $output );
+                $output = (string) preg_replace( '/<' . $tag . '\b[^>]*>/i', '', $output );
+                $output = (string) preg_replace( '/<\/' . $tag . '\b[^>]*>/i', '', $output );
             }
         } else {
             // A tag is a < followed by a letter, /, ! or ?, as an HTML parser
             // reads one; it runs to the next > or, unclosed, to the end. Any
             // other < is text: strip_tags() treated "<5" as an unclosed tag, so
             // the constraint pageViews<5 arrived as "pageViews".
-            $output = preg_replace( '/<!--.*?(?:-->|$)|<[a-zA-Z\/!?][^>]*(?:>|$)/s', '', (string) $input );
+            $output = (string) preg_replace( '/<!--.*?(?:-->|$)|<[a-zA-Z\/!?][^>]*(?:>|$)/s', '', $input );
         }
 
         return $output;
