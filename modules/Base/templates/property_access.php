@@ -11,7 +11,7 @@
 ?>
 <h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Property Access Management' ) ); ?></h1>
 <div id="panel">
-<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Who can see this Property. A grant gives up to three capabilities: viewing reports, viewing e-commerce reports, and editing the Property. It covers all of the Property\'s Observation Profiles. Administrators always have access and cannot be changed here.' ) ); ?></div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Who can see this Property. A grant covers all of the Property\'s Observation Profiles; what a user can do there is set by their role. Administrators always have access and cannot be changed here.' ) ); ?></div>
 <form method="post" name="owa-allowedusersform">
     <fieldset name="owa-allowedusers" class="options">
     <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Allowed Users' ) ); ?></legend>

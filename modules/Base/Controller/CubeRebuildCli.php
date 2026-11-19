@@ -40,7 +40,10 @@ namespace OWA\Module\Base\Controller;
  * REGISTERED AS `rebuild-cube`, every five minutes at a spread offset
  * (Cron::minutelySpreadFor()). The default range is yesterday and today, and a
  * routine run skips the partitions that have not changed, so most runs cost a
- * scan per partition and no swap.
+ * scan per partition and no swap. Today's partition changes on every run, so
+ * a routine run rebuilds it only once it is due: ten times its last build's
+ * duration after that build began, and at least five minutes
+ * (Builder::nextBuildDue()).
  *
  * TWO CADENCES ARE POSSIBLE, one job each, because they answer
  * different questions. A frequent run over the current partition sets how stale
@@ -617,6 +620,27 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $outcome['skipped']++;
 
                 continue;
+            }
+
+            /*
+             * Today's partition, until it is due. It changes on every run and
+             * its build costs more as the day's traffic grows, so its builds
+             * are spaced by what the last one took. A routine run only, like
+             * the skip below.
+             */
+            if ( ! $dry_run && $routine && \OWA\Module\Base\Classes\Cube\Builder::holdsToday( $span ) ) {
+
+                $due = $builder->nextBuildDue( $span );
+
+                if ( ! \OWA\Module\Base\Classes\Cube\Builder::isDue( $due, (int) round( microtime( true ) * 1000000 ) ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( '%s %s: next build due at %s.', $table, $span['name'],
+                        \OWA\Module\Base\Classes\JobStatus::readable( intdiv( (int) $due, 1000000 ) ) ) );
+
+                    $outcome['skipped']++;
+
+                    continue;
+                }
             }
 
             /*

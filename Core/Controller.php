@@ -825,7 +825,7 @@ class Controller extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug( 'setRedirectAction', $new_data );
         $this->data = $new_data;
 
-        // need to remove these unsets once they are no longer set in the main doAction method
+        // doAction() sets params; a redirect carries none.
         if (array_key_exists('params', $this->data)) {
             unset($this->data['params']);
         }
