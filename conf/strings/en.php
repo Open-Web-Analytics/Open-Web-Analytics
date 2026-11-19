@@ -100,6 +100,7 @@ return [
     '%s has no metrics.' => '%s has no metrics.',
     '%s has the constraint "%s", which names no operator. Operators: %s.' => '%s has the constraint "%s", which names no operator. Operators: %s.',
     '%s has the constraint "%s", which names nothing to constrain on.' => '%s has the constraint "%s", which names nothing to constrain on.',
+    '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' => '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.',
     '%s is a %s, which draws one dimension. This one names %d dimensions. Use a %s for more than one.' => '%s is a %s, which draws one dimension. This one names %d dimensions. Use a %s for more than one.',
     '%s is a %s, which draws one metric. This one names %d metrics.' => '%s is a %s, which draws one metric. This one names %d metrics.',
     '%s is a %s, which is always over %s; this one names no dimension.' => '%s is a %s, which is always over %s; this one names no dimension.',

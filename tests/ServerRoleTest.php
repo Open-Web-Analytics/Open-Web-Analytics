@@ -20,7 +20,10 @@ final class ServerRoleTest extends TestCase
     /** Every constant a role with a database needs, defined. */
     private const DATABASE = [
         'OWA_DB_NAME' => 'owa', 'OWA_DB_HOST' => 'db', 'OWA_DB_USER' => 'owa', 'OWA_DB_PASSWORD' => '',
-        'OWA_NONCE_KEY' => 'k', 'OWA_NONCE_SALT' => 's', 'OWA_AUTH_KEY' => 'k', 'OWA_AUTH_SALT' => 's',
+        'OWA_NONCE_KEY'  => 'owatest-nonce-key-0123456789abcdef',
+        'OWA_NONCE_SALT' => 'owatest-nonce-salt-0123456789abcdef',
+        'OWA_AUTH_KEY'   => 'owatest-auth-key-0123456789abcdef',
+        'OWA_AUTH_SALT'  => 'owatest-auth-salt-0123456789abcdef',
         'OWA_PUBLIC_URL' => 'https://owa.example.test/',
     ];
 
@@ -171,6 +174,53 @@ final class ServerRoleTest extends TestCase
         $this->assertNull(ServerRole::bootProblem('cli', [], true, true), 'the installer writes the configuration');
         $this->assertSame(503, ServerRole::bootProblem('cli', [], true, false)['status']);
         $this->assertNull(ServerRole::bootProblem('cli', self::DATABASE, true, false));
+    }
+
+    /** @return iterable<string, array{mixed}> */
+    public static function weakSecrets(): iterable
+    {
+        yield 'empty'             => [''];
+        yield 'short'             => ['0123456789abcdef0123456789abcde'];
+        yield 'the example value' => ['yourauthkeygoeshere'];
+        yield 'not a string'      => [['an array']];
+    }
+
+    /**
+     * A secret that is empty, short or the example value refuses every
+     * request but the command line, naming the constant.
+     *
+     * @dataProvider weakSecrets
+     */
+    public function testBootRefusesAWeakSecret($value): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+
+        $defined = ['OWA_AUTH_KEY' => $value] + self::DATABASE;
+
+        $this->assertSame(['OWA_AUTH_KEY'], ServerRole::weakSecrets($defined));
+
+        foreach ([RequestType::UI, RequestType::REST, RequestType::TRACKING] as $type) {
+            $problem = ServerRole::bootProblem($type, $defined, true, false);
+
+            $this->assertSame(503, $problem['status'] ?? null, $type);
+            $this->assertStringStartsWith('OWA_AUTH_KEY in owa-config.php must be a random string of at least 32 characters',
+                $problem['message'], $type);
+        }
+
+        $this->assertNull(ServerRole::bootProblem(RequestType::CLI, $defined, true, false), 'cmd=reset-secrets can run');
+    }
+
+    public function testEachExampleSecretIsWeak(): void
+    {
+        $dist = (string) file_get_contents(__DIR__ . '/../owa-config-dist.php');
+
+        foreach (ServerRole::SECRET_CONSTANTS as $constant) {
+            $this->assertSame(1, preg_match("/define\\('$constant', '([^']*)'\\)/", $dist, $m), $constant);
+            $this->assertSame([$constant], ServerRole::weakSecrets([$constant => $m[1]]), $constant);
+        }
+
+        $this->assertSame([], ServerRole::weakSecrets(self::DATABASE));
+        $this->assertNull(ServerRole::bootProblem(RequestType::UI, self::DATABASE, true, false));
     }
 
     public function testBootRefusesAnUnknownRoleForEveryRequest(): void

@@ -62,6 +62,20 @@ final class ServerRole {
     ];
 
     /**
+     * The keys nonces, overlay tokens, session cookies and application
+     * passwords are signed with. Each must be a random string of at least
+     * SECRET_MIN_LENGTH characters: not empty, and not owa-config-dist.php's
+     * example value.
+     */
+    const SECRET_CONSTANTS = [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ];
+
+    /** The shortest secret accepted. The installer writes 64 characters. */
+    const SECRET_MIN_LENGTH = 32;
+
+    /** owa-config-dist.php's example values of SECRET_CONSTANTS. */
+    const SECRET_PLACEHOLDERS = [ 'yournoncekeygoeshere', 'yournoncesaltgoeshere', 'yourauthkeygoeshere', 'yourauthsaltgoeshere' ];
+
+    /**
      * What a role with a database also needs, not empty: absolute links,
      * mail, the published tracking bundles and signed REST requests are built
      * from it. A collector builds none of them.
@@ -361,7 +375,56 @@ final class ServerRole {
             ModuleActivation::queueBackends( $defined ),
             ModuleActivation::queueBackendConstants() );
 
-        return $problems ? [ 'status' => 503, 'message' => implode( ' ', $problems ) ] : null;
+        if ( $problems ) {
+
+            return [ 'status' => 503, 'message' => implode( ' ', $problems ) ];
+        }
+
+        /*
+         * Weak secrets refuse every request but the command line, where
+         * cmd=reset-secrets writes new ones; nothing there is signed for a
+         * browser.
+         */
+        $weak = $role->hasDatabase() && $request_type !== RequestType::CLI ? self::weakSecrets( $defined ?? self::definedConstants() ) : [];
+
+        if ( $weak ) {
+
+            return [ 'status' => 503, 'message' => sprintf(
+                CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
+                implode( ', ', $weak ), self::SECRET_MIN_LENGTH ) ];
+        }
+
+        return null;
+    }
+
+    /**
+     * The secrets (SECRET_CONSTANTS) that are defined but empty, shorter than
+     * SECRET_MIN_LENGTH or an example value. One not defined is
+     * configProblems()' to name.
+     *
+     * @param array<string, mixed> $defined the OWA_ constants
+     * @return list<string> their names
+     */
+    public static function weakSecrets( array $defined ) {
+
+        $weak = [];
+
+        foreach ( self::SECRET_CONSTANTS as $constant ) {
+
+            if ( ! array_key_exists( $constant, $defined ) ) {
+
+                continue;
+            }
+
+            $value = is_scalar( $defined[ $constant ] ) ? (string) $defined[ $constant ] : '';
+
+            if ( strlen( $value ) < self::SECRET_MIN_LENGTH || in_array( $value, self::SECRET_PLACEHOLDERS, true ) ) {
+
+                $weak[] = $constant;
+            }
+        }
+
+        return $weak;
     }
 
     /**
