@@ -34,10 +34,10 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
             $connected = (bool) $this->checkDbConnection();
 
             $checks[] = \OWA\Module\Base\Classes\EnvironmentCheck::check(
-                'Database connection',
-                $connected ? 'connected' : 'failed',
+                \OWA\Core\CoreAPI::t( 'Database connection' ),
+                $connected ? \OWA\Core\CoreAPI::t( 'connected' ) : \OWA\Core\CoreAPI::t( 'failed' ),
                 $connected,
-                'Check the database settings in ' . basename( (string) $config_file ) . '.' );
+                sprintf( \OWA\Core\CoreAPI::t( 'Check the database settings in %s.' ), basename( (string) $config_file ) ) );
         }
 
         $failed = array_values( array_filter( $checks, static function ( $check ) {

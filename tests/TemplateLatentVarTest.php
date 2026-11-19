@@ -239,30 +239,32 @@ final class TemplateLatentVarTest extends TestCase
     }
 
     /**
-     * Core/View sets validation_errors UNCONDITIONALLY, so a form template can
-     * read it without knowing which controller branch it arrived through.
-     *
-     * An empty array rather than null keeps if()/empty() behaving as they do
-     * for an absent key. Asserted against the source because the alternative
-     * -- standing up a full View with a body template -- would test the harness
-     * more than the guarantee.
+     * Core/View sets validation_errors UNCONDITIONALLY, on the body and on the
+     * subview, so a form template can read it without knowing which controller
+     * branch it arrived through. An empty array rather than null keeps
+     * if()/empty() behaving as they do for an absent key.
      */
     public function testValidationErrorsIsAlwaysSetOnTheBody(): void
     {
-        $src = file_get_contents(__DIR__ . '/../Core/View.php');
+        foreach ( [ [], [ 'name' => 'Name is required.' ] ] as $errors ) {
 
-        // Single-quoted on purpose: double-quoted, "$this->data" would interpolate
-        // the TEST's own (undefined) $data property to the empty string, and the
-        // assertions would pass whatever View.php contained.
-        $this->assertStringNotContainsString(
-            'if (array_key_exists(\'validation_errors\', $this->data)) {',
-            $src,
-            'validation_errors is conditional again -- a form reading $view->validation_errors will throw'
-        );
-        $this->assertStringContainsString(
-            '$this->data[\'validation_errors\'] ?? []',
-            $src,
-            'expected the unconditional set with an [] default'
-        );
+            $controller = new \OWA\Core\Controller( [] );
+            $controller->setView( 'base.noViewClassForThis', [ 'template' => 'json.php', 'vars' => [ 'json' => '' ] ] );
+            $controller->setSubview( 'base.noViewClassForThis', [ 'template' => 'json.php', 'vars' => [ 'json' => '' ] ] );
+
+            if ( $errors ) {
+                $controller->set( 'validation_errors', $errors );
+            }
+
+            $data = (array) $controller->data;
+            $view = \OWA\Core\CoreAPI::viewFactory( $data['view'], $data );
+            $view->setData( $data );
+            $view->assembleView( $data );
+
+            $this->assertSame( $errors, $view->body->vars['validation_errors'] ?? null,
+                'validation_errors is conditional again -- a form reading $view->validation_errors will throw' );
+            $this->assertSame( $errors, $view->subview->body->vars['validation_errors'] ?? null,
+                'and on the subview' );
+        }
     }
 }

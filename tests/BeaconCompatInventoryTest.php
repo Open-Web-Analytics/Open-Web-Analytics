@@ -345,28 +345,97 @@ final class BeaconCompatInventoryTest extends TestCase
     }
 
     /**
-     * And the other direction: Compat names no event type of its own, so a
-     * reshape it applies is one the index lists; and the migration makes a 1.x
-     * action with the same function compat applies, so the rule is in one place.
+     * And the other direction: Compat reshapes only what the index lists, with
+     * the function the index names. With the reshapes replaced, a track.action
+     * event is left as it came, and one listed with another function is
+     * reshaped by that function.
      */
     public function testNoReshapeIsAppliedThatTheIndexDoesNotList(): void
     {
-        $compat = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Beacon/Compat.php' );
+        $cached = new ReflectionProperty( Compat::class, 'event_reshapes' );
+        $was    = $cached->getValue();
 
-        foreach ( array_keys( (array) $this->index()['event_reshapes'] ) as $from ) {
+        $action = static function (): \OWA\Module\Base\Classes\Event {
 
-            $this->assertStringNotContainsString( "'$from'", $compat,
-                "Compat.php names $from itself; its reshape belongs in conf/beacon_compat.php only" );
+            $event = new \OWA\Module\Base\Classes\Event();
+            $event->setEventType( 'track.action' );
+            $event->setProperties( [ 'action_name' => 'Signup', 'action_group' => 'forms' ] );
+
+            return $event;
+        };
+
+        try {
+            $cached->setValue( null, [] );
+
+            $left = $action();
+            Compat::apply( $left );
+
+            $this->assertSame( 'track.action', $left->getEventType(), 'reshaped with no entry in the index' );
+            $this->assertSame( 'forms', $left->get( 'action_group' ) );
+
+            $cached->setValue( null, [ 'track.action' => [
+                'reads' => [ 'action_name' ],
+                'by'    => [ self::class, 'probeReshape' ],
+            ] ] );
+
+            $probed = $action();
+            Compat::apply( $probed );
+
+            $this->assertSame( 'probe_signup', $probed->getEventType(), 'not reshaped by the function the index names' );
+        } finally {
+            $cached->setValue( null, $was );
         }
+    }
 
+    /**
+     * @param  array<string, mixed> $read
+     * @return array{event_type: string, properties: array<string, mixed>}
+     */
+    public static function probeReshape( array $read ): array
+    {
+        return [ 'event_type' => 'probe_' . strtolower( (string) $read['action_name'] ), 'properties' => [] ];
+    }
+
+    /**
+     * The migration makes a 1.x action into the event the live reshape makes
+     * of a track.action beacon carrying the same values, so a migrated action
+     * and one sent today are one event.
+     */
+    public function testTheMigrationMakesTheEventTheReshapeMakes(): void
+    {
         $this->assertSame(
             [ \OWA\Module\Base\Classes\Migration\ActionMigrator::class, 'customEvent' ],
             $this->index()['event_reshapes']['track.action']['by'] );
 
-        $this->assertStringContainsString( 'self::customEvent( $r )', (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Migration/ActionMigrator.php' ),
-            'the migration no longer makes its events with the function compat applies' );
+        $values = [ 'action_name' => 'Signup Form Submit', 'action_group' => 'forms',
+            'action_label' => 'footer', 'numeric_value' => '3' ];
+
+        $live = new \OWA\Module\Base\Classes\Event();
+        $live->setEventType( 'track.action' );
+        $live->setProperties( $values );
+        Compat::apply( $live );
+
+        $migrator = new class extends \OWA\Module\Base\Classes\Migration\ActionMigrator {
+
+            /** @param array<string, mixed> $r */
+            public function one( array $r ): array
+            {
+                return $this->events( $r, [] );
+            }
+        };
+
+        $migrated = $migrator->one( $values + [ 'id' => 1, 'site_id' => 'owatest-site', 'visitor_id' => '11',
+            'session_id' => '12', 'timestamp' => 1700000000, 'yyyymmdd' => 20231114 ] );
+
+        $this->assertCount( 1, $migrated );
+        $this->assertSame( 'signup_form_submit', $live->getEventType() );
+        $this->assertSame( $live->getEventType(), $migrated[0]->getEventType() );
+        $this->assertSame( 'forms', $live->get( 'eps_group' ) );
+
+        foreach ( [ 'eps_group', 'eps_label', 'epn_value', 'eps_action_name' ] as $name ) {
+
+            $this->assertSame( $live->get( $name ), $migrated[0]->get( $name ), $name );
+        }
     }
 
     /**

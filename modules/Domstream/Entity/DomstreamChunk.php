@@ -29,6 +29,10 @@ class DomstreamChunk extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
+        // The day first, as on owa_event_raw: the id is a hash, so a chunk keyed
+        // id first lands at a random page of its partition (Update003).
+        $this->setCompositePrimaryKey( [ 'yyyymmdd', 'id' ] );
+
         $this->setProperty( $this->column( 'site_id', OWA_DTD_VARCHAR64, false ) );
         $this->setProperty( $this->column( 'recording_id', OWA_DTD_BIGINT, false ) );
         $this->setProperty( $this->column( 'seq', OWA_DTD_INT, false ) );

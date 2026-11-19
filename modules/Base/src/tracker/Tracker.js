@@ -1508,23 +1508,21 @@ class OWATracker  {
 
         if ( ! this.isClickTrackingEnabled ) {
             var that = this;
-            if (window.addEventListener) {
-                window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
+            window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
 
-                /*
-                 * A MIDDLE-CLICK fires auxclick, not click, and opening a link
-                 * in a new tab that way was never recorded. Links only: a middle
-                 * button anywhere else is autoscroll, not a click on anything.
-                 */
-                window.addEventListener('auxclick', function (e) {
+            /*
+             * A MIDDLE-CLICK fires auxclick, not click, and opening a link
+             * in a new tab that way was never recorded. Links only: a middle
+             * button anywhere else is autoscroll, not a click on anything.
+             */
+            window.addEventListener('auxclick', function (e) {
 
-                    if ( e.button === 1 ) {
+                if ( e.button === 1 ) {
 
-                        that.clickEventHandler( e, true );
-                    }
+                    that.clickEventHandler( e, true );
+                }
 
-                }, false);
-            }
+            }, false);
 
             this.isClickTrackingEnabled = true;
         }

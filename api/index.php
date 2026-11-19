@@ -6,9 +6,6 @@ require_once(__DIR__ . '/../owa.php');
  * REST API
  */
 
-// define entry point constant
-define('OWA_RESTAPI', true);
-
 // invoke OWA
 
 $config = [

@@ -102,6 +102,17 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
+        /*
+         * THE DAY FIRST IN THE KEY. InnoDB stores rows in primary key order,
+         * and an id is a hash of the event, so on (id, yyyymmdd) each insert
+         * lands at a random page of a month-sized partition, and so does each
+         * row a build reads. On (yyyymmdd, id) a day's rows are contiguous:
+         * ingest writes to today's pages and a build reads a day as one range.
+         * A lookup by id alone reads every partition, so each one also names
+         * the day (Entity::existsWithin()). Update094.
+         */
+        $this->setCompositePrimaryKey( [ 'yyyymmdd', 'id' ] );
+
         $this->setProperty( $this->column( 'visitor_fsts', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
@@ -422,8 +433,13 @@ class EventRaw extends \OWA\Core\Entity {
          * event-type one serves a breakdown of a single event over a period.
          * Two single-column indexes are not a substitute -- MySQL picks one and
          * filters the rest.
+         *
+         * site_date carries created_at, so Cube\Builder::isCurrent()'s test
+         * for rows that arrived after a build reads the index and no rows
+         * (Update094). The cube has no created_at and declares site_date
+         * without it.
          */
-        $this->addCompositeIndex( 'site_date', [ 'site_id', 'yyyymmdd' ] );
+        $this->addCompositeIndex( 'site_date', [ 'site_id', 'yyyymmdd', 'created_at' ] );
         $this->addCompositeIndex( 'site_type_date', [ 'site_id', 'event_type', 'yyyymmdd' ] );
 
         // A purchase already stored under this transaction id, looked up per

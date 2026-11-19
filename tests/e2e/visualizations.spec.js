@@ -114,7 +114,7 @@ test.describe('visualizations', () => {
         // Behind the button: it is not on the page until asked for.
         await expect(dialog).toBeHidden();
 
-        const newButton = page.locator('.owa_titleActions .owa_newCustomReport');
+        const newButton = page.getByRole('link', { name: 'New', exact: true });
         const modal = page.getByRole('dialog', { name: 'What do you want to make?' });
 
         // Escape and the X both put it away, focus back on New.

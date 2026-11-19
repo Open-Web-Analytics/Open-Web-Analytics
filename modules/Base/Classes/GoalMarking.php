@@ -43,9 +43,10 @@ class GoalMarking {
      * site_id => the active definitions, each with its conditions
      *
      * Ingest runs this for every row of every beacon, so the definitions and
-     * their conditions are read ONCE per site per process: loadConditions() is a
-     * query, and per definition per event it would be a query per beacon per
-     * definition.
+     * their conditions are read once per site per process, in two queries: the
+     * definitions, and the conditions of all of them. A process that runs for a
+     * while, such as a queue drain, marks with what it read first; a definition
+     * saved meanwhile applies from the next process.
      *
      * @var array<string, list<Goal>>
      */
@@ -336,7 +337,7 @@ class GoalMarking {
             return self::$goals[ $site_id ];
         }
 
-        $property_id = \OWA\Module\Base\Entity\GoalEventDefinition::propertyFor( $site_id );
+        $property_id = self::propertyOf( $site_id );
 
         /*
          * No Property means NO definitions. Db::where() drops a clause whose
@@ -357,12 +358,21 @@ class GoalMarking {
         $db->where( 'property_id', $property_id );
         $db->where( 'is_active', 1 );
 
+        $definitions = [];
+
         foreach ( (array) $db->getAllRows() as $row ) {
 
             $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
             $definition->setProperties( $row );
 
-            $conditions = $definition->loadConditions();
+            $definitions[] = $definition;
+        }
+
+        $all = \OWA\Module\Base\Entity\GoalEventDefinition::loadConditionsOf( $definitions );
+
+        foreach ( $definitions as $definition ) {
+
+            $conditions = $all[ (string) $definition->get( 'id' ) ] ?? [];
 
             /*
              * A definition with no conditions is dropped here rather than
@@ -387,11 +397,35 @@ class GoalMarking {
     }
 
     /**
+     * The Property a Profile belongs to, or '' when it has none.
+     *
+     * From the Profile's settings chain (CoreAPI::settingScopeChain()), which
+     * the tracking path has already resolved by the time an event is marked:
+     * logEvent() reads a Profile setting before it admits the event, and that
+     * read brings the chain back in the same query as the settings. So this
+     * asks the database nothing.
+     *
+     * @param  string $site_id
+     * @return string
+     */
+    protected static function propertyOf( $site_id ) {
+
+        foreach ( \OWA\Core\CoreAPI::settingScopeChain( 'profile', (string) $site_id ) as $scope ) {
+
+            if ( $scope['type'] === 'property' ) {
+
+                return (string) $scope['id'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Drop the memo.
      *
      * For tests, which create a definition and then expect the next row to be
-     * marked by it. In a request the memo is exactly right: definitions do not
-     * change while a beacon is being stored.
+     * marked by it, and for Update075, which renames goal events.
      *
      * @return void
      */

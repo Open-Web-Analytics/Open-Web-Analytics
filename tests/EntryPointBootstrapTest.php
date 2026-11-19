@@ -36,44 +36,6 @@ final class EntryPointBootstrapTest extends TestCase
         return dirname(__DIR__);
     }
 
-    /**
-     * The static half: each entry point reaches owa.php or owa_env.php from its
-     * own __DIR__ and by no other path, whether or not a decoy is around to
-     * prove it today.
-     *
-     * @dataProvider entryPoints
-     */
-    public function testTheBootstrapIncludeIsAnchoredToTheScriptDirectory(string $file): void
-    {
-        $path = $this->root() . '/' . $file;
-
-        $this->assertFileExists($path);
-
-        $src = (string) file_get_contents($path);
-
-        $this->assertMatchesRegularExpression(
-            '/(require|include)(_once)?\s*\(?\s*__DIR__\s*\.\s*[\'"]\/(\.\.\/)?(owa_env|owa)\.php[\'"]\s*\)?/',
-            $src,
-            $file . ' must include owa.php or owa_env.php relative to __DIR__.'
-        );
-
-        // Code only: the licence header says "required by applicable law".
-        $code = '';
-        foreach (token_get_all($src) as $t) {
-            $code .= is_array($t) ? (in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $t[1]) : $t;
-        }
-
-        preg_match_all('/\b(?:require|include)(?:_once)?\s*\(?\s*([^;]*?(?:owa_env|owa)\.php[\'"])\s*\)?\s*;/', $code, $m);
-
-        $this->assertNotEmpty($m[1]);
-
-        foreach ($m[1] as $target) {
-            $this->assertMatchesRegularExpression('/^__DIR__\s*\./', $target,
-                $file . ' includes ' . $target . ' by something other than __DIR__, so the current '
-                . 'working directory or a constant decides which installation boots.');
-        }
-    }
-
     /** @return array<int, array<int, string>> */
     public static function entryPoints(): array
     {
@@ -81,33 +43,42 @@ final class EntryPointBootstrapTest extends TestCase
     }
 
     /**
-     * The behavioural half, and the one that actually proves it: stand a DECOY
-     * owa_env.php in the working directory and confirm cli.php ignores it.
+     * Stand a DECOY owa_env.php and owa.php in the working directory, run the
+     * entry point there, and list the files it loaded: its own installation's
+     * owa_env.php is among them and the decoys are not.
      *
-     * Resolved through include_path the decoy would win, because '.' precedes
-     * the script's own directory there. A source assertion alone could be satisfied
-     * by a change that still resolves the wrong file.
+     * Resolved through include_path a decoy would win, because '.' precedes
+     * the script's own directory there. The database connect is disabled, so
+     * the run needs no database and writes nothing.
+     *
+     * @dataProvider entryPoints
      */
-    public function testAnEntryPointIgnoresAnOwaEnvInTheWorkingDirectory(): void
+    public function testAnEntryPointIgnoresAnOwaEnvInTheWorkingDirectory(string $file): void
     {
-        if (!owa_test_db_available()) {
-            $this->markTestSkipped('OWA database not reachable; the entry point cannot complete its boot.');
-        }
-
         $dir = sys_get_temp_dir() . '/owa_decoy_' . getmypid() . '_' . bin2hex(random_bytes(4));
 
         $this->assertTrue(mkdir($dir, 0700, true), 'could not create the decoy directory');
 
-        try {
-            // If this file is ever loaded, it announces itself and stops the
-            // process before OWA can mask the mistake.
-            file_put_contents($dir . '/owa_env.php', "<?php\nfwrite(STDOUT, 'DECOY_ENV_WAS_LOADED');\nexit(9);\n");
+        $loaded  = $dir . '/loaded.txt';
+        $prepend = $dir . '/prepend.php';
 
-            $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+        try {
+            // If either is ever loaded, it announces itself and stops the
+            // process before OWA can mask the mistake.
+            foreach (['owa_env.php', 'owa.php'] as $decoy) {
+                file_put_contents($dir . '/' . $decoy, "<?php\nfwrite(STDOUT, 'DECOY_ENV_WAS_LOADED');\nexit(9);\n");
+            }
+
+            // Shutdown functions run after exit() too, so the list is written however the script ends.
+            file_put_contents($prepend, "<?php\nregister_shutdown_function(static function () {\n"
+                . '    file_put_contents(' . var_export($loaded, true) . ", implode(\"\\n\", get_included_files()));\n});\n");
 
             $proc = proc_open(
-                escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($this->root() . '/cli.php'),
-                $descriptors,
+                escapeshellarg(PHP_BINARY)
+                    . ' -d ' . escapeshellarg('auto_prepend_file=' . $prepend)
+                    . ' -d ' . escapeshellarg('disable_functions=mysqli_real_connect,mysqli_connect')
+                    . ' ' . escapeshellarg($this->root() . '/' . $file),
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
                 $pipes,
                 $dir                       // <-- the working directory under test
             );
@@ -121,15 +92,25 @@ final class EntryPointBootstrapTest extends TestCase
             $status = proc_close($proc);
 
             $this->assertStringNotContainsString('DECOY_ENV_WAS_LOADED', $stdout,
-                'cli.php loaded owa_env.php from the working directory instead of its own -- '
+                $file . ' loaded a bootstrap file from the working directory instead of its own -- '
                 . 'on a multi-install machine that boots the wrong installation.');
 
             $this->assertNotSame(9, $status,
-                'cli.php exited through the decoy, so the working directory decided which '
+                $file . ' exited through a decoy, so the working directory decided which '
                 . 'environment was loaded.');
 
+            $files = file_exists($loaded) ? explode("\n", (string) file_get_contents($loaded)) : [];
+
+            $this->assertContains(realpath($this->root() . '/owa_env.php'), $files,
+                $file . ' did not load its own installation\'s owa_env.php');
+
+            $this->assertSame([], array_values(array_filter($files,
+                static fn ($f) => strpos($f, $dir . '/owa') === 0)), $file . ' loaded a decoy');
+
         } finally {
-            @unlink($dir . '/owa_env.php');
+            foreach (['owa_env.php', 'owa.php', 'loaded.txt', 'prepend.php'] as $f) {
+                @unlink($dir . '/' . $f);
+            }
             @rmdir($dir);
         }
     }

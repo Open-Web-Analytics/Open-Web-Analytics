@@ -89,4 +89,33 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
                 'The malformed-address error still reports whether the address is known.' );
         }
     }
+
+    /**
+     * Both replies are built with the address as a substitution list: the
+     * success reply names it in the message and leaves the headline alone, and
+     * the refusal, which has nothing to substitute, is message 2001 as it
+     * stands (MessageSubstitutionTest holds getMsg() to that).
+     */
+    public function testBothRepliesAreBuiltFromTheAddressGiven(): void
+    {
+        $address = 'nobody-' . substr( md5( uniqid( '', true ) ), 0, 8 ) . '@owatest.example.com';
+        $params  = [ 'email_address' => ' ' . $address . ' ' ];
+
+        $refused = new \OWA\Module\Base\Controller\PasswordResetRequest( $params );
+        $refused->errorAction();
+
+        $this->assertSame( $refused->getMsg( 2001 ), $refused->data['error_msg'] ?? null );
+
+        if ( ! owa_test_db_available() ) {
+            return;
+        }
+
+        // An address no user has: the reset handler finds no one and sends nothing.
+        $sent = new \OWA\Module\Base\Controller\PasswordResetRequest( $params );
+        $sent->action();
+
+        $this->assertStringContainsString( 'If an account exists for ' . $address . ',',
+            $sent->data['status_msg']['message'] ?? '' );
+        $this->assertSame( $sent->getMsg( 2000 )['headline'], $sent->data['status_msg']['headline'] ?? null );
+    }
 }

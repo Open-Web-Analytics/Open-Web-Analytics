@@ -103,6 +103,13 @@ final class ProfileChainQueryCountTest extends TestCase
     {
         $this->skipUnlessFullChain();
 
+        /*
+         * enableEcommerceReporting is lazy: its install value comes from the
+         * batch the first lazy read in a process sends (SettingsRegistryTest).
+         * Read here, so the counts below are of the Profile chain alone.
+         */
+        \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting' );
+
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         $cold = $this->queriesDuring( function () {

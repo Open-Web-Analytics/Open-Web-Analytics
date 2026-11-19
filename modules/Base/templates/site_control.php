@@ -38,9 +38,9 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
     }
 }
 ?>
-<div id="owa_siteControl" class="owa_siteControl">
+<div id="owa_siteControl" class="owa_siteControl" data-ui="site-control">
 
-    <div id="owa_siteControlSummary" class="owa_siteControlSummary" role="button" tabindex="0"
+    <div id="owa_siteControlSummary" class="owa_siteControlSummary" role="button" tabindex="0" data-ui="site-control:summary"
          aria-expanded="false" aria-controls="owa_siteControlPanel">
         <div class="owa_siteControlOrg"><?php $view->out( $owa_hierarchy['organization']['name'] ?? '' );?></div>
         <div class="owa_siteControlProperty">

@@ -14,8 +14,19 @@ class TrackerDefaults {
 
     const FILE = 'modules/Base/src/tracker/defaults.json';
 
-    /** @var array<string, mixed>|null */
+    /** @var array<string, mixed>|null the file, read once per process */
     private static $defaults;
+
+    /**
+     * Forget the file, so the next all() reads it again.
+     * CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forget() {
+
+        self::$defaults = null;
+    }
 
     /**
      * @return array<string, mixed> features, scrollThresholds, downloadExtensions, siteSearchParams

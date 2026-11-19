@@ -55,15 +55,16 @@ class TrackingEventHelpers {
      */
     public static function getInstance() {
 
-        static $o;
+        if ( ! self::$instance ) {
 
-        if ( ! $o ) {
-
-            $o = new \OWA\Module\Base\Classes\TrackingEventHelpers();
+            self::$instance = new \OWA\Module\Base\Classes\TrackingEventHelpers();
         }
 
-        return $o;
+        return self::$instance;
     }
+
+    /** @var TrackingEventHelpers|null getInstance() */
+    private static $instance = null;
 
     public function __construct() {
 
@@ -357,8 +358,8 @@ class TrackingEventHelpers {
      * A `client` property's `from` set is the wire; every other kind's names
      * something the request or the event supplies, and a beacon carrying one of
      * those names is asserting a value it has no business setting -- its own
-     * city, its own region, its own campaign source. That refusal is now the
-     * absence of a client declaration rather than a denylist beside it.
+     * city, its own region, its own campaign source. Having no client
+     * declaration is the refusal; there is no denylist.
      *
      * @param  string $property
      * @return string[]
@@ -2224,6 +2225,42 @@ class TrackingEventHelpers {
     private static $priorTouches = [];
 
     /**
+     * Drop the memos of stored state: the campaign key maps (scoped settings),
+     * the landing tags parsed with them, and the prior touches. The others are
+     * of config files, read once per process. CoreAPI::settingCacheFlush()
+     * calls this.
+     *
+     * @return void
+     */
+    public static function forget() {
+
+        self::$campaignKeys = [];
+        self::$landingTags  = [];
+        self::$priorTouches = [];
+    }
+
+    /**
+     * forget(), and the memos of config files and the instance as well. The
+     * instance records which filters it has attached to the event dispatcher,
+     * so it goes with the dispatcher: CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forgetAll() {
+
+        self::forget();
+
+        self::$instance              = null;
+        self::$property_config       = null;
+        self::$property_descriptions = [];
+        self::$internal_properties   = [];
+        self::$memo                  = [];
+        self::$event_names           = null;
+        self::$event_config          = null;
+        self::$goal_trigger_names    = null;
+    }
+
+    /**
      * The visitor's last non-direct touch before this session, from the visitor
      * store, as the evidence it was recorded as (PLAN 2.29).
      *
@@ -2751,7 +2788,7 @@ class TrackingEventHelpers {
      * THE COOKIE DOMAIN IS THE SITE. The page's own host is never outbound, and
      * neither is the cookie domain or any subdomain of it. The cookie domain is
      * the tracker_cookie_domain setting when one is set, else the page's host
-     * without www. -- as setCookieDomain() resolves it with nothing passed -- so
+     * without www. -- as the tracker's setCookieDomain() resolves it with nothing passed -- so
      * from www.example.com a link to example.com or shop.example.com stays.
      *
      * @param  string|null $target_host
@@ -2806,7 +2843,7 @@ class TrackingEventHelpers {
 
     /**
      * The domain that is the site: tracker_cookie_domain when set, else the
-     * page's host without www. -- as setCookieDomain() resolves it with nothing
+     * page's host without www. -- as the tracker's setCookieDomain() resolves it with nothing
      * passed.
      *
      * @param  string|null $page_host

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/PartitionFixtures.php';
 
 /**
  * The partition commands' own decisions: what they accept, what they refuse,
@@ -397,7 +398,7 @@ final class PartitionCliTest extends CliControllerTestCase
 
         try {
             $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
-            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
                 date('Ymd', strtotime(date('Ym') . '01 -120 months')),
                 date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
                 'monthly'
@@ -464,7 +465,7 @@ final class PartitionCliTest extends CliControllerTestCase
 
         try {
             $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
-            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+            owa_test_partition_table($t, owa_test_tiered_ranges(
                 date('Ymd', strtotime(date('Ym') . '01 -180 months')),
                 \OWA\Core\Db::partitionLeadBoundary(),
                 'monthly',

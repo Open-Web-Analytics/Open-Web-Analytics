@@ -492,15 +492,15 @@ class SystemHealth {
 
             $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Cache header unknown' ), sprintf(
                 \OWA\Core\CoreAPI::t( 'Fetching %s answered %s, so what browsers are told is unknown.' ),
-                (string) ( $cache['url'] ?? 'a bundle' ),
-                ! empty( $cache['status'] ) ? 'HTTP ' . $cache['status'] : 'nothing' ) );
+                (string) ( $cache['url'] ?? \OWA\Core\CoreAPI::t( 'a bundle' ) ),
+                ! empty( $cache['status'] ) ? 'HTTP ' . $cache['status'] : \OWA\Core\CoreAPI::t( 'nothing' ) ) );
         }
 
         if ( ! $findings ) {
 
             $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Current' ), $rows
-                ? 'Every Profile\'s bundle is published from this build and its settings.'
-                : 'No web Profile yet.' );
+                ? \OWA\Core\CoreAPI::t( 'Every Profile\'s bundle is published from this build and its settings.' )
+                : \OWA\Core\CoreAPI::t( 'No web Profile yet.' ) );
         }
 
         return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), $findings, [ 'rows' => $rows ] );

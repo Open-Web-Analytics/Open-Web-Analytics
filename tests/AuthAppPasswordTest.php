@@ -281,6 +281,12 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         foreach (['POST', 'PUT', 'DELETE'] as $method) {
             $this->assertFalse($this->authenticate(self::bearer($made['token']), $method)['auth_status'], $method);
         }
+
+        // Exactly the methods AppPasswords::READ_METHODS names, which the wiki's scope table lists.
+        foreach (['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'] as $method) {
+            $this->assertSame(in_array($method, AppPasswords::READ_METHODS, true),
+                $this->authenticate(self::bearer($made['token']), $method)['auth_status'], $method);
+        }
     }
 
     public function testARevokedPasswordFails(): void

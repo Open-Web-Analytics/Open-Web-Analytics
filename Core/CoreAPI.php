@@ -46,8 +46,42 @@ class CoreAPI {
         'profile'      => 4,
     ];
 
+    /*
+     * The per-process singletons and memos. forgetSingletons() clears them.
+     */
 
+    /** @var \OWA\Core\CoreAPI|null singleton() */
+    private static $api = null;
 
+    /** @var \OWA\Core\Db|null dbSingleton() */
+    private static $db = null;
+
+    /** @var \OWA\Module\Base\Classes\Settings|null configSingleton() */
+    private static $config = null;
+
+    /** @var \OWA\Module\Base\Classes\Error|null errorSingleton() */
+    private static $error = null;
+
+    /** @var \OWA\Module\Base\Classes\Service|null serviceSingleton() */
+    private static $service = null;
+
+    /** @var \OWA\Module\Base\Classes\Cache|null cacheSingleton() */
+    private static $cache = null;
+
+    /** @var \OWA\Core\RequestContainer|null requestContainerSingleton() */
+    private static $request = null;
+
+    /** @var bool whether handleRequest() has logged the request's param names */
+    private static $request_logged = false;
+
+    /** @var array<string, object> queue name => the queue getEventQueue() built */
+    private static $event_queues = [];
+
+    /** @var array<string, string>|null NONCE_KEY etc. => the constant's value, read by getSalt() */
+    private static $salts = null;
+
+    /** @var array<string, true> module directories getPresentModules() has warned about */
+    private static $warned_modules = [];
 
     /**
      * What singleton() was last given, when it was given something.
@@ -64,17 +98,15 @@ class CoreAPI {
      */
     public static function singleton($params = []) {
 
-        static $api;
-
-        if(!isset($api)):
-            $api = new \OWA\Core\CoreAPI();
+        if(!isset(self::$api)):
+            self::$api = new \OWA\Core\CoreAPI();
         endif;
 
         if(!empty($params)):
-            $api->params = $params;
+            self::$api->params = $params;
         endif;
 
-        return $api;
+        return self::$api;
     }
 
     /**
@@ -191,14 +223,12 @@ class CoreAPI {
      */
     public static function dbSingleton() {
 
-        static $db;
+        if (!isset(self::$db)) {
 
-        if (!isset($db)) {
-
-            $db = \OWA\Core\CoreAPI::dbFactory();
+            self::$db = \OWA\Core\CoreAPI::dbFactory();
         }
 
-        return $db;
+        return self::$db;
     }
 
     /**
@@ -248,15 +278,13 @@ class CoreAPI {
      */
     public static function configSingleton() {
 
-        static $config;
-
-        if( ! isset( $config ) ) {
+        if( ! isset( self::$config ) ) {
 
 
-            $config = new \OWA\Module\Base\Classes\Settings();
+            self::$config = new \OWA\Module\Base\Classes\Settings();
         }
 
-        return $config;
+        return self::$config;
     }
 
     /**
@@ -264,16 +292,14 @@ class CoreAPI {
      */
     public static function errorSingleton() {
 
-        static $e;
-
-        if( ! $e ) {
+        if( ! self::$error ) {
 
 
-            $e = new \OWA\Module\Base\Classes\Error();
+            self::$error = new \OWA\Module\Base\Classes\Error();
 
         }
 
-        return $e;
+        return self::$error;
     }
 
     /**
@@ -744,7 +770,8 @@ class CoreAPI {
     }
 
     /**
-     * Drop the scoped-setting caches.
+     * Drop the scoped-setting caches, and the tracking memos built from them
+     * (TrackingEventHelpers::forget()).
      *
      * Called on every scoped write. Blunt on purpose: a write is rare and a
      * stale read is a wrong answer, so the whole map goes rather than trying
@@ -757,6 +784,8 @@ class CoreAPI {
         self::$setting_row_cache   = [];
         self::$setting_scope_cache = [];
         self::$setting_chain_cache = [];
+
+        \OWA\Module\Base\Classes\TrackingEventHelpers::forget();
     }
 
     /**
@@ -1059,6 +1088,56 @@ class CoreAPI {
     }
 
     /**
+     * Drop every per-process singleton and memo, so the next call builds it
+     * again: the singletons here, the setting caches, and the memos of the
+     * classes below.
+     *
+     * For tests, and for a long-running process that has to see changed
+     * config files or stored state. Nothing on a request path calls it: within
+     * one, each accessor answers the same instance.
+     *
+     * All at once, because they depend on each other: the service's modules
+     * attach their handlers to the event dispatcher, and TrackingEventHelpers
+     * records which filters it has attached there. Dropping one of the three
+     * without the others would attach handlers twice, or not at all.
+     *
+     * What it leaves is unbooted: a fresh configSingleton() holds the config
+     * file and the defaults, and a fresh serviceSingleton() has no modules
+     * loaded. The caller boots again (new \owa()) before handling anything.
+     *
+     * @return void
+     */
+    public static function forgetSingletons() {
+
+        self::$api            = null;
+        self::$db             = null;
+        self::$config         = null;
+        self::$error          = null;
+        self::$service        = null;
+        self::$cache          = null;
+        self::$request        = null;
+        self::$request_logged = false;
+        self::$event_queues   = [];
+        self::$salts          = null;
+        self::$warned_modules = [];
+
+        self::settingCacheFlush();
+        self::forgetRegisteredSites();
+
+        \OWA\Core\Auth::forgetInstance();
+        \OWA\Core\Module::forgetSettingsRegistry();
+        \OWA\Core\Template::forgetAssetsBuilt();
+        \OWA\Module\Base\Classes\EventDispatch::forgetInstance();
+        \OWA\Module\Base\Classes\TrackingEventHelpers::forgetAll();
+        \OWA\Module\Base\Classes\GoalVocabulary::forgetDescriptions();
+        \OWA\Module\Base\Classes\TrackerDefaults::forget();
+        \OWA\Module\Base\Classes\Beacon\Compat::forget();
+        \OWA\Module\Base\Classes\Cube\Dimensions::forgetCapacity();
+        \OWA\Module\Base\Classes\Cube\Cubes::forgetExistence();
+        \OWA\Module\Base\Entity\GoalEventDefinition::forgetProperties();
+    }
+
+    /**
      * Test seam: answer for a site id without asking the database.
      *
      * @param  string $site_id
@@ -1194,16 +1273,14 @@ class CoreAPI {
      */
     public static function serviceSingleton() {
 
-        static $s;
-
-        if(empty($s)) {
+        if(empty(self::$service)) {
 
 
-            $s = new \OWA\Module\Base\Classes\Service();
+            self::$service = new \OWA\Module\Base\Classes\Service();
 
         }
 
-        return $s;
+        return self::$service;
     }
 
     /**
@@ -1211,14 +1288,12 @@ class CoreAPI {
      */
     public static function cacheSingleton() {
 
-        static $cache;
+        if ( empty ( self::$cache ) ) {
 
-        if ( empty ( $cache ) ) {
-
-            $cache = new \OWA\Module\Base\Classes\Cache();
+            self::$cache = new \OWA\Module\Base\Classes\Cache();
         }
 
-        return $cache;
+        return self::$cache;
     }
     
 
@@ -1227,16 +1302,14 @@ class CoreAPI {
      */
     public static function requestContainerSingleton() {
 
-        static $request;
-
-        if(!isset($request)):
+        if(!isset(self::$request)):
 
 
-            $request = new \OWA\Core\RequestContainer();
+            self::$request = new \OWA\Core\RequestContainer();
 
         endif;
 
-        return $request;
+        return self::$request;
 
     }
 
@@ -1275,12 +1348,10 @@ class CoreAPI {
         /*
          * Both halves name a class -- OWA\Module\<Module>\<Suffix>\<Action> --
          * and class_exists() hands that name to the autoloader, which maps it
-         * onto a file path. The value can be request supplied (an action not
-         * in the action registry), so it is validated here rather than trusted.
+         * onto a file path, so the name is validated here rather than trusted.
          *
          * RequestContainer sanitizes params through Sanitize::cleanInput(), but
          * that is HTML/encoding oriented and does not constrain a path.
-         * Sanitize::cleanFilename() does, but has never been wired to anything.
          *
          * Require a bare identifier for each half. A module or action name has
          * never legitimately contained a separator, and a positive match is used
@@ -1453,7 +1524,7 @@ class CoreAPI {
         // require. The legacy name built below ('owa_base_Update011_update')
         // has not existed since the PSR-4 relocation, so resolving it first is
         // what makes updates loadable at all.
-        // Callers name the update two different ways. Module::getUpdates()
+        // Callers name the update two different ways. Module::update()
         // passes the PSR-4 class basename it just read off disk ('Update017'),
         // while the updatesApply CLI's apply=/rollback= arguments are written
         // by a human as 'base.17' and arrive here as a bare sequence. Only the
@@ -2014,8 +2085,6 @@ class CoreAPI {
      */
     public static function getPresentModules() {
 
-        static $warned = [];
-
         $path = rtrim( \OWA\Core\Env::modulesDir(), '/' );
 
         if ( ! is_dir( $path ) ) {
@@ -2036,9 +2105,9 @@ class CoreAPI {
 
                 $modules[] = $dir;
 
-            } elseif ( ! isset( $warned[ $dir ] ) ) {
+            } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
 
-                $warned[ $dir ] = true;
+                self::$warned_modules[ $dir ] = true;
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     'modules/%s is not loaded: a module is a PascalCase directory with an '
@@ -2912,8 +2981,6 @@ class CoreAPI {
      */
     public static function handleRequest($caller_params = null, $action = '') {
 
-        static $init;
-
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         // Override request parsms with those passed by caller
         if (!empty($caller_params)) {
@@ -2922,7 +2989,7 @@ class CoreAPI {
 
         $params = $service->request->getAllOwaParams();
 
-        if ($init != true) {
+        if ( ! self::$request_logged ) {
             // Names only: the values are whatever a form posted, a password among them.
         \OWA\Core\CoreAPI::debug( 'Handling request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         }
@@ -2939,7 +3006,7 @@ class CoreAPI {
             }
         }
         
-        $init = true;
+        self::$request_logged = true;
         \OWA\Core\CoreAPI::debug('About to perform action: '.$action);
         return \OWA\Core\CoreAPI::performAction($action, $params);
 
@@ -3198,10 +3265,8 @@ class CoreAPI {
      */
     public static function getEventQueue( $name ) {
 
-        static $queues;
-
         // make queue if needed
-        if ( ! isset( $queues[ $name ] ) ) {
+        if ( ! isset( self::$event_queues[ $name ] ) ) {
 
             // get queue config
             $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -3216,7 +3281,7 @@ class CoreAPI {
                      && isset( $implementation[1] )
                 ) {
                     \OWA\Core\CoreAPI::debug( 'Queue implementation:', $implementation );
-                    $queues[ $name ] = \OWA\Core\Lib::simpleFactory( $implementation[0], '', $map );
+                    self::$event_queues[ $name ] = \OWA\Core\Lib::simpleFactory( $implementation[0], '', $map );
 
                 } else {
 
@@ -3229,7 +3294,7 @@ class CoreAPI {
             }
         }
             // return queue
-        return $queues[ $name ];
+        return self::$event_queues[ $name ];
     }
 
     /**
@@ -3334,13 +3399,11 @@ class CoreAPI {
      */
     public static function getSalt( $scheme ) {
 
-        static $cached_salts;
-
         $scheme = strtoupper($scheme);
 
-        if ( ! $cached_salts ) {
+        if ( ! self::$salts ) {
 
-            $cached_salts = [];
+            self::$salts = [];
             $ns = strtoupper( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
             foreach (['NONCE', 'SECRET', 'AUTH'] as $f ) {
@@ -3353,7 +3416,7 @@ class CoreAPI {
                         continue;
                     } else {
 
-                        $cached_salts[ $f.'_'.$s ] = constant("$const");
+                        self::$salts[ $f.'_'.$s ] = constant("$const");
                     }
                 }
             }
@@ -3363,14 +3426,14 @@ class CoreAPI {
         $key = '';
         $salt = '';
 
-        if (array_key_exists( $scheme.'_KEY', $cached_salts ) ) {
+        if (array_key_exists( $scheme.'_KEY', self::$salts ) ) {
 
-            $key = $cached_salts[ $scheme.'_KEY' ];
+            $key = self::$salts[ $scheme.'_KEY' ];
         }
 
-        if (array_key_exists( $scheme.'_SALT', $cached_salts ) ) {
+        if (array_key_exists( $scheme.'_SALT', self::$salts ) ) {
 
-            $salt = $cached_salts[ $scheme.'_SALT' ];
+            $salt = self::$salts[ $scheme.'_SALT' ];
         }
 
         return $key . $salt;

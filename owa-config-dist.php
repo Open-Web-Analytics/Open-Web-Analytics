@@ -385,6 +385,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //define('OWA_MAILER_PASSWORD', 'yourpasswordgoeshere');
 //define('OWA_MAILER_FROM', 'owa@example.com');
 //define('OWA_MAILER_FROM_NAME', 'OWA Server');
+//define('OWA_MAILER_OPTIONS', [ 'ssl' => [ 'cafile' => '/path/to/ca.pem' ] ]); // PHPMailer's SMTPOptions
 
 
 /**
