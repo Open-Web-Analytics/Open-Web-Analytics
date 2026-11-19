@@ -9,13 +9,20 @@ namespace OWA\Module\Base\Classes\Migration;
  * letters, digits and underscores, at most 40 -- prefixed with action_ where it
  * would otherwise be a built-in event's name, and the original kept as the
  * action_name parameter where that changed it. Group, label and value are
- * parameters, as a site sets them now.
+ * the group, label and value parameters.
+ *
+ * customEvent() is the rule, and the beacon compat layer applies the same one
+ * to a live track.action beacon (conf/beacon_compat.php, `event_reshapes`), so
+ * a migrated action and one sent today are one event.
  */
 class ActionMigrator extends FactMigrator {
 
     const SOURCE = 'action_fact';
 
     const NO_NAME = 'no_name';
+
+    /** A 1.x action's properties, as owa_action_fact and a 1.x beacon name them. */
+    const V1_PROPERTIES = [ 'action_name', 'action_group', 'action_label', 'numeric_value' ];
 
     protected function refusal( array $r ) {
 
@@ -24,25 +31,58 @@ class ActionMigrator extends FactMigrator {
 
     protected function events( array $r, array $refs ) {
 
-        $original = trim( (string) $r['action_name'] );
+        $event = self::customEvent( $r );
+
+        if ( $event === null ) {
+
+            return [];
+        }
+
+        return [ $this->baseEvent( $r, $refs, $event['event_type'], $event['properties'] ) ];
+    }
+
+    /**
+     * A 1.x action as the custom event v2 records it: named by eventName(), its
+     * group, label and value as eps_group, eps_label and epn_value, and the
+     * name as given in eps_action_name when eventName() changed it. A value
+     * that is not numeric is left out.
+     *
+     * @param  array<string, mixed> $action V1_PROPERTIES => value; other keys are ignored
+     * @return array{event_type: string, properties: array<string, mixed>}|null null when the name leaves nothing
+     */
+    public static function customEvent( array $action ) {
+
+        $original = trim( (string) ( $action['action_name'] ?? '' ) );
         $name     = self::eventName( $original );
 
-        $extra = [
-            'eps_group' => $r['action_group'] ?? null,
-            'eps_label' => $r['action_label'] ?? null,
-        ];
+        if ( $name === '' ) {
 
-        if ( isset( $r['numeric_value'] ) && is_numeric( $r['numeric_value'] ) ) {
+            return null;
+        }
 
-            $extra['epn_value'] = $r['numeric_value'] + 0;
+        $properties = [];
+
+        foreach ( [ 'eps_group' => 'action_group', 'eps_label' => 'action_label' ] as $to => $from ) {
+
+            $value = $action[ $from ] ?? null;
+
+            if ( $value !== null && $value !== false && $value !== '' ) {
+
+                $properties[ $to ] = $value;
+            }
+        }
+
+        if ( isset( $action['numeric_value'] ) && is_numeric( $action['numeric_value'] ) ) {
+
+            $properties['epn_value'] = $action['numeric_value'] + 0;
         }
 
         if ( $name !== $original ) {
 
-            $extra['eps_action_name'] = $original;
+            $properties['eps_action_name'] = $original;
         }
 
-        return [ $this->baseEvent( $r, $refs, $name, $extra ) ];
+        return [ 'event_type' => $name, 'properties' => $properties ];
     }
 
     /**
@@ -71,15 +111,21 @@ class ActionMigrator extends FactMigrator {
 
     /**
      * Whether an event name already means something other than a site's own
-     * action: a first-class event, or one a module routes to its own
-     * processor. A v1 action called "Purchase" became a purchase row, with
-     * none of a purchase's columns, and one sharing a module's event name was
-     * handed to that module's store; both are prefixed with action_ instead.
+     * action: a first-class event, one a module routes to its own processor,
+     * or one in the owa_ prefix the tracker reserves. A v1 action called
+     * "Purchase" became a purchase row, with none of a purchase's columns, and
+     * one sharing a module's event name was handed to that module's store; all
+     * are prefixed with action_ instead.
      *
      * @param  string $name
      * @return bool
      */
     public static function isTaken( $name ) {
+
+        if ( strncmp( (string) $name, 'owa_', 4 ) === 0 ) {
+
+            return true;
+        }
 
         if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 

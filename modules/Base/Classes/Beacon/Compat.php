@@ -16,9 +16,10 @@ namespace OWA\Module\Base\Classes\Beacon;
  *
  * WHAT IT IS NOT. Not a contract and not a gate. It never decides whether a
  * beacon is acceptable -- that is the identity guard in
- * EventRawHandlers::row(), which knows nothing of versions or renames. This
- * only ever ADDS the current spelling of a value that is already present, and
- * never overwrites one the beacon already carries under its current name.
+ * EventRawHandlers::row(), which knows nothing of versions or renames. A
+ * rename ADDS the current spelling of a value that is already present; a
+ * reshape (event_reshapes) replaces the properties it reads with the ones it
+ * makes. Neither overwrites a value the beacon carries under its current name.
  */
 class Compat {
 
@@ -27,6 +28,9 @@ class Compat {
 
     /** @var array<string, string>|null old event name => current event name */
     private static $event_names = null;
+
+    /** @var array<string, array{reads: list<string>, by: callable}>|null old event name => its reshape */
+    private static $event_reshapes = null;
 
     /**
      * The event names an older tracker sent, and what each is now.
@@ -50,6 +54,27 @@ class Compat {
         }
 
         return self::$event_names;
+    }
+
+    /**
+     * The event types an older tracker sent that become another event with
+     * other properties, and the function that does it.
+     *
+     * @return array<string, array{reads: list<string>, by: callable}> old name => reshape
+     */
+    public static function eventReshapes() {
+
+        if ( self::$event_reshapes === null ) {
+
+            $conf = (array) \OWA\Core\CoreAPI::loadConf(
+                'beacon_compat.php', 'beacon.compat' );
+
+            self::$event_reshapes = isset( $conf['event_reshapes'] )
+                ? (array) $conf['event_reshapes']
+                : [];
+        }
+
+        return self::$event_reshapes;
     }
 
     /**
@@ -203,13 +228,21 @@ class Compat {
      * be named, and this is the only place that knows they are legitimate.
      *
      * Read from the same index apply() reads, so the two cannot disagree about
-     * which names are bridged.
+     * which names are bridged: the FROM side of every rename, and the
+     * properties every reshape reads.
      *
      * @return string[]
      */
     public static function bridgedNames() {
 
-        return array_keys( self::renames() );
+        $names = array_keys( self::renames() );
+
+        foreach ( self::eventReshapes() as $reshape ) {
+
+            $names = array_merge( $names, (array) $reshape['reads'] );
+        }
+
+        return array_values( array_unique( $names ) );
     }
 
     /**
@@ -249,13 +282,22 @@ class Compat {
         $applied = 0;
 
         // The event's own name first: nothing downstream knows an old spelling.
-        $type    = (string) $event->getEventType();
-        $current = self::eventName( $type );
+        $type     = (string) $event->getEventType();
+        $reshapes = self::eventReshapes();
 
-        if ( $current !== $type ) {
+        if ( isset( $reshapes[ $type ] ) ) {
 
-            $event->setEventType( $current );
-            $applied++;
+            $applied += self::reshape( $event, $reshapes[ $type ] );
+
+        } else {
+
+            $current = self::eventName( $type );
+
+            if ( $current !== $type ) {
+
+                $event->setEventType( $current );
+                $applied++;
+            }
         }
 
         foreach ( self::renames() as $from => $to ) {
@@ -293,5 +335,49 @@ class Compat {
         }
 
         return $applied;
+    }
+
+    /**
+     * Turn an event into the one its reshape makes of it.
+     *
+     * The properties it reads are removed. A property the result names that
+     * the beacon already carries is left as the beacon has it, as a rename
+     * leaves a current spelling.
+     *
+     * @param  object $event
+     * @param  array{reads: list<string>, by: callable} $reshape
+     * @return int 1 when the event was reshaped, 0 when the function left it
+     */
+    private static function reshape( $event, array $reshape ) {
+
+        $properties = $event->getProperties();
+        $reads      = (array) $reshape['reads'];
+
+        $result = call_user_func( $reshape['by'],
+            array_intersect_key( $properties, array_flip( $reads ) ) );
+
+        if ( ! $result ) {
+
+            return 0;
+        }
+
+        foreach ( $reads as $name ) {
+
+            $event->delete( $name );
+        }
+
+        $event->setEventType( $result['event_type'] );
+
+        foreach ( (array) $result['properties'] as $name => $value ) {
+
+            if ( array_key_exists( $name, $properties ) && $properties[ $name ] !== '' ) {
+
+                continue;
+            }
+
+            $event->set( $name, $value );
+        }
+
+        return 1;
     }
 }

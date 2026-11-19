@@ -4916,11 +4916,11 @@ class OWATracker  {
      *
      * @deprecated Use trackCustomEvent( name, { eps_*: ... } ).
      *
-     * Sent with trackCustomEvent(): the action name is the event name, and the
-     * group, label and value are the custom event properties
-     * eps_action_group, eps_action_label and epn_numeric_value, in `params`.
-     * An action name that is not a legal event name, or is a reserved one, is
-     * refused rather than reshaped.
+     * Sent as 1.x sent it: a track.action event carrying action_group,
+     * action_name, action_label and numeric_value. The server turns it into
+     * the custom event the upgrade makes from a migrated 1.x action
+     * (conf/beacon_compat.php): 'Recipe Print' is stored as recipe_print, with
+     * the group, label and value as eps_group, eps_label and epn_value.
      *
      * @command
      * @param {string} action_group
@@ -4931,20 +4931,23 @@ class OWATracker  {
     trackAction(action_group, action_name, action_label, numeric_value) {
 
         var properties = {};
+        var given      = {
+            action_group:  action_group,
+            action_name:   action_name,
+            action_label:  action_label,
+            numeric_value: numeric_value
+        };
 
-        if ( action_group !== undefined && action_group !== null && action_group !== '' ) {
-            properties.eps_action_group = String( action_group );
-        }
+        Object.keys( given ).forEach( function ( name ) {
 
-        if ( action_label !== undefined && action_label !== null && action_label !== '' ) {
-            properties.eps_action_label = String( action_label );
-        }
+            if ( given[ name ] !== undefined && given[ name ] !== null && given[ name ] !== '' ) {
+                properties[ name ] = given[ name ];
+            }
+        } );
 
-        if ( typeof numeric_value === 'number' && isFinite( numeric_value ) ) {
-            properties.epn_numeric_value = numeric_value;
-        }
-
-        return this.trackCustomEvent( action_name, properties );
+        // raiseEvent(), not trackCustomEvent(): track.action is not a custom
+        // event name, and the server reshapes it.
+        return this.raiseEvent( 'track.action', properties );
     }
 
     /**

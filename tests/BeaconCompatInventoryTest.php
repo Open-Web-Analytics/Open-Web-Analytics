@@ -312,4 +312,60 @@ final class BeaconCompatInventoryTest extends TestCase
             }
         }
     }
+
+    /**
+     * Every indexed reshape is a function that exists, reads only what its
+     * entry declares, and makes a legal event.
+     */
+    public function testEveryIndexedReshapeIsAFunctionOfWhatItReads(): void
+    {
+        $reshapes = (array) ( $this->index()['event_reshapes'] ?? [] );
+
+        $this->assertNotEmpty( $reshapes, 'no reshapes declared; this would be vacuous' );
+
+        foreach ( $reshapes as $from => $reshape ) {
+
+            $this->assertIsCallable( $reshape['by'], "$from names a function that does not exist" );
+            $this->assertNotEmpty( $reshape['reads'], "$from reads nothing" );
+
+            $given  = array_fill_keys( (array) $reshape['reads'], 'probe' );
+            $result = call_user_func( $reshape['by'], $given );
+
+            $this->assertIsArray( $result, "$from made nothing of its own properties" );
+            $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $result['event_type'] ),
+                "$from becomes {$result['event_type']}, which the name gate refuses" );
+
+            $this->assertSame( $result, call_user_func( $reshape['by'], $given + [ 'not_read' => 'x' ] ),
+                "$from depends on a property its entry does not list in `reads`" );
+
+            // The endpoint admits what the reshape reads, or it never reaches it.
+            $this->assertSame( $given, \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $given ),
+                "the beacon endpoint drops a property $from reads" );
+        }
+    }
+
+    /**
+     * And the other direction: Compat names no event type of its own, so a
+     * reshape it applies is one the index lists; and the migration makes a 1.x
+     * action with the same function compat applies, so the rule is in one place.
+     */
+    public function testNoReshapeIsAppliedThatTheIndexDoesNotList(): void
+    {
+        $compat = (string) file_get_contents(
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Beacon/Compat.php' );
+
+        foreach ( array_keys( (array) $this->index()['event_reshapes'] ) as $from ) {
+
+            $this->assertStringNotContainsString( "'$from'", $compat,
+                "Compat.php names $from itself; its reshape belongs in conf/beacon_compat.php only" );
+        }
+
+        $this->assertSame(
+            [ \OWA\Module\Base\Classes\Migration\ActionMigrator::class, 'customEvent' ],
+            $this->index()['event_reshapes']['track.action']['by'] );
+
+        $this->assertStringContainsString( 'self::customEvent( $r )', (string) file_get_contents(
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Migration/ActionMigrator.php' ),
+            'the migration no longer makes its events with the function compat applies' );
+    }
 }

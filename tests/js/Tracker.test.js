@@ -23,42 +23,50 @@ describe('OWATracker event assembly', () => {
     });
 
     /**
-     * trackAction sends the action's OWN NAME as the event, with the rest as
-     * parameters: an event name is a name, and the group, label and value
-     * describe it, which is why eventName is a dimension.
+     * trackAction sends 1.x's track.action with 1.x's property names, for the
+     * server's beacon compat layer to reshape into the custom event a migrated
+     * 1.x action is. The reshaping rule lives on the server only.
      */
-    test('trackAction sends the action name as the event, with eps_ parameters', () => {
-        tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
+    test('trackAction sends a track.action event with the 1.x property names', () => {
+        tracker.trackAction('signup', 'Newsletter Opt In', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('newsletter_opt_in');
-        expect(e.get('eps_action_group')).toBe('signup');
-        expect(e.get('eps_action_label')).toBe('footer form');
-        expect(e.get('epn_numeric_value')).toBe(10);
+        expect(e.get('event_type')).toBe('track.action');
+        expect(e.get('action_group')).toBe('signup');
+        expect(e.get('action_name')).toBe('Newsletter Opt In');
+        expect(e.get('action_label')).toBe('footer form');
+        expect(e.get('numeric_value')).toBe(10);
+    });
 
-        // No action_* spellings on the event.
-        expect(e.get('action_name')).toBeUndefined();
-        expect(e.get('action_group')).toBeUndefined();
+    /** Absent arguments are not sent. */
+    test('trackAction leaves out the arguments it was not given', () => {
+        tracker.trackAction('group', 'Recipe Print');
+
+        const e = captured[0];
+        expect(e.get('action_label')).toBeUndefined();
         expect(e.get('numeric_value')).toBeUndefined();
     });
 
     /**
-     * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
-     *
-     * An event name may not contain a space, so a site passing one sends
-     * nothing and gets a debug line saying why.
-     *
-     * Refused rather than reshaped on purpose: silently turning 'test action' into
-     * 'test_action' would invent a name the site never chose and split its history
-     * across two of them.
+     * On the wire, as BeaconCompatActionTest.php feeds it to the server: the
+     * same fixture holds both sides.
      */
-    test('trackAction refuses an action name that is not a legal event name', () => {
-        tracker.trackAction('group', 'test action', 'label', 1);
-        tracker.trackAction('group', '9_starts_numeric', 'label', 1);
-        tracker.trackAction('group', 'page_view', 'label', 1);
+    test('trackAction puts on the wire what the server reshapes', () => {
+        const fixture = require('../fixtures/track_action_beacon.json');
+        const t = new OWATracker({ cookie_domain_set: true });
+        t.setSiteId('track-action-site');
 
-        expect(captured).toHaveLength(0);
+        let wire = null;
+        t.logEvent = (properties) => { wire = t.prepareRequestData(properties); };
+
+        t.trackAction('cooking', 'Recipe Print', 'Italian Chicken Soup', 1);
+
+        expect(wire).not.toBeNull();
+
+        for (const [key, value] of Object.entries(fixture.wire)) {
+            expect([key, wire[key]]).toEqual([key, value]);
+        }
     });
 
     test('trackPageView assembles a page_view event', () => {
