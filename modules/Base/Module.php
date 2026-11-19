@@ -1052,15 +1052,12 @@ class Module extends \OWA\Core\Module {
         /*
          * Every e-commerce report is in the NAV, not behind a links widget on the
          * overview.
-         *
-         * Every child declares view_reports_ecommerce like the group, so no link
-         * claims a weaker requirement than the group holding it.
          */
-        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), \OWA\Core\CoreAPI::t( 'Ecommerce' ), 6, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), \OWA\Core\CoreAPI::t( 'Revenue' ), 2, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), \OWA\Core\CoreAPI::t( 'Transactions' ), 3, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), \OWA\Core\CoreAPI::t( 'Average Order Value' ), 4, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), \OWA\Core\CoreAPI::t( 'Conversion Rate' ), 5, 'view_reports_ecommerce');
+        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), \OWA\Core\CoreAPI::t( 'Ecommerce' ), 6, 'view_reports', 'Reports','fa fa-shopping-cart');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), \OWA\Core\CoreAPI::t( 'Revenue' ), 2, 'view_reports');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), \OWA\Core\CoreAPI::t( 'Transactions' ), 3, 'view_reports');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), \OWA\Core\CoreAPI::t( 'Average Order Value' ), 4, 'view_reports');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), \OWA\Core\CoreAPI::t( 'Conversion Rate' ), 5, 'view_reports');
         /*
          * days-to-purchase and visits-to-purchase go with them. Each is one
          * dimension -- daysToTransaction, visitsToTransaction -- measuring the

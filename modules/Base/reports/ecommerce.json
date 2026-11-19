@@ -1,7 +1,6 @@
 {
     "title": "Ecommerce",
     "description": "Transactions, revenue and e-commerce conversion rate, with revenue by channel, the top orders and revenue by attributed source.",
-    "capability": "view_reports_ecommerce",
     "metrics": "sessions,transactions,transactionRevenue,ecommerceConversionRate,revenuePerSession,revenuePerTransaction",
     "widgets": [
         {

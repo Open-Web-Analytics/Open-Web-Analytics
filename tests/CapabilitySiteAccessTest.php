@@ -93,6 +93,20 @@ final class CapabilitySiteAccessTest extends TestCase
         );
     }
 
+    /** Several capabilities at once are added one by one, not as a nested list. */
+    public function testSeveralCapabilitiesAreAddedEach(): void
+    {
+        $c = $this->settings();
+
+        $c->addCapabilityToRole('analyst', ['test_gated_one', 'test_gated_two'], true);
+
+        $list = $this->siteAccessList();
+
+        $this->assertContains('test_gated_one', $list);
+        $this->assertContains('test_gated_two', $list);
+        $this->assertSame([], array_filter($list, 'is_array'), 'no entry is a list');
+    }
+
     /**
      * The capability still reaches the role itself either way -- the guard
      * governs only the site-access list.

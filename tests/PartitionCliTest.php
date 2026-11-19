@@ -760,6 +760,8 @@ final class PartitionCliTest extends CliControllerTestCase
         $this->assertStringContainsString('covering 2020-01-01 to 2027-01-01', $out,
             'the overall range spans the widest of the tables');
         $this->assertStringContainsString('31 days from now', $out, 'the shortest lead sets the deadline');
+        $this->assertStringContainsString('rotate-partitions job runs it daily', $out,
+            'the scheduler runs partition-rotate; nothing is to be added to cron');
         $this->assertStringContainsString(
             (new DateTimeImmutable('+31 days'))->format('Y-m-d'), $out
         );

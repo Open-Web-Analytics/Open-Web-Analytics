@@ -786,16 +786,17 @@ class CoreAPI {
          * looks saved and never takes effect -- and because the read path has
          * no business knowing which levels are legitimate.
          *
-         * An UNREGISTERED setting is unconstrained. That is the adoption path:
-         * base has not declared yet, and its eight scoped settings must keep
-         * working until it does.
+         * A setting no module declares is refused at every scope, as
+         * persistSetting() refuses it install-wide.
          */
         if ( ! \OWA\Core\CoreAPI::configSingleton()->mayWriteAtScope( $module, $name, $scopeType ) ) {
 
+            $scopes = \OWA\Core\CoreAPI::configSingleton()->scopesFor( $module, $name );
+
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Refusing to store %s.%s at %s scope: it is declared for %s.',
+                'Refusing to store %s.%s at %s scope: %s.',
                 $module, $name, $scopeType,
-                implode( ', ', (array) \OWA\Core\CoreAPI::configSingleton()->scopesFor( $module, $name ) ) ) );
+                $scopes === null ? 'no module declares it' : 'it is declared for ' . implode( ', ', $scopes ) ) );
 
             return false;
         }
@@ -883,14 +884,12 @@ class CoreAPI {
      * @param  string $module
      * @param  string $name
      * @param  mixed  $value
-     * @return null
+     * @return bool true when the value is now the setting's; false when it is
+     *              refused (Settings::persistSetting())
      */
     public static function persistSetting($module, $name, $value) {
 
-        $s = \OWA\Core\CoreAPI::configSingleton();
-        $s->persistSetting($module, $name, $value);
-
-        return null;
+        return (bool) \OWA\Core\CoreAPI::configSingleton()->persistSetting($module, $name, $value);
     }
 
     /**
@@ -1133,13 +1132,23 @@ class CoreAPI {
     }
 
     /**
+     * Capabilities OWA no longer has. A role configuration that still names
+     * one is not an error: getCapabilities() leaves the name out.
+     * view_reports_ecommerce: view_reports covers the e-commerce reports.
+     */
+    const RETIRED_CAPABILITIES = [ 'view_reports_ecommerce' ];
+
+    /**
      * @param  mixed $role
-     * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
+     * @return mixed the role's entry in the capabilities setting, less any
+     *               RETIRED_CAPABILITIES; array() for a role it does not name
      */
     public static function getCapabilities($role) {
         $caps = \OWA\Core\CoreAPI::getSetting('base', 'capabilities');
         if (array_key_exists($role, $caps)) {
-            return $caps[$role];
+            return is_array( $caps[ $role ] )
+                ? array_values( array_diff( $caps[ $role ], self::RETIRED_CAPABILITIES ) )
+                : $caps[ $role ];
         } else {
             return [];
         }
@@ -3498,7 +3507,7 @@ class CoreAPI {
 
     /**
      * @param  string $module_name
-     * @return null
+     * @return bool|null whether is_active was stored; null for no module name
      */
     public static function activateModule( $module_name ) {
 

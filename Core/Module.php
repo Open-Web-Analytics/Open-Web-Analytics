@@ -1136,7 +1136,7 @@ abstract class Module {
     /**
      * Places the Module into the active module list in the global configuration
      *
-     * @return null CoreAPI::persistSetting() answers nothing
+     * @return bool false when is_active was not stored (CoreAPI::persistSetting())
      */
     public function activate() {
     
