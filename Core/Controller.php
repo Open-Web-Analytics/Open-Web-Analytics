@@ -136,8 +136,8 @@ class Controller extends \OWA\Core\Base {
     }
     
     /**
-     * The answer while updates are pending: an error for the CLI and the REST
-     * API, a redirect to the updates screen for the web app.
+     * The answer while updates are pending: an error for the CLI, a 503 for
+     * the REST API, a redirect to the updates screen for the web app.
      *
      * @return mixed this controller's data
      */
@@ -158,10 +158,10 @@ class Controller extends \OWA\Core\Base {
                 break;
                 
             case \OWA\Core\RequestType::REST:
-            
+
                 $this->set('error_msg', $error_msg );
-                $this->setView('base.restApi');
-            
+                $this->restResponse( 503 );
+
                 break;
 
             default:
@@ -885,7 +885,8 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
-     * The page for a signed-in user without the capability this one needs.
+     * The page for a signed-in user without the capability this one needs;
+     * a 403 for the REST API.
      *
      * What was refused goes in the banner's detail line, under the message.
      * In the web UI the page keeps the menu, its report links of the first
@@ -903,8 +904,16 @@ class Controller extends \OWA\Core\Base {
         }
         $msg = $this->getMsg(2003);
         $msg['detail'] = $additionalMessage;
-        $this->setView('base.error');
         $this->set('error_msg', $msg);
+
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
+
+            $this->restResponse( 403 );
+
+            return;
+        }
+
+        $this->setView('base.error');
 
         if ( \OWA\Core\RequestType::isWebApp() ) {
             $navSite = (string) $this->resolveCurrentSiteId();

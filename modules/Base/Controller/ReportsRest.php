@@ -11,7 +11,6 @@ namespace OWA\Module\Base\Controller;
  *   propertyId   string     the Property the report is of
  *   siteId       string     one of its Profiles, to filter to; names the
  *                           Property when propertyId is absent
- *   report_name  string     'clickstream'
  *   metrics      string     'foo,bar'
  *   dimensions   string     'dim1,dim2,dim3'
  *   period       string     'today'
@@ -19,11 +18,18 @@ namespace OWA\Module\Base\Controller;
  *   endDate      string     'yyyymmdd'
  *   startTime    timestamp
  *   endTime      timestamp
- *   constraints  string     'con1=foo, con2=bar'
+ *   constraints  string     'con1==foo,con2==bar'
+ *   segment      string     'dynamic::con1==foo'
  *   page         int        1
- *   offset       int        0
- *   limit        int        10
- *   sort         string     'dim1,dim2'
+ *   resultsPerPage int      25, at most MAX_RESULTS_PER_PAGE
+ *   sort         string     'dim1,dim2-'
+ *   compare      string     a comparison period, or date_range with
+ *                           compareStartDate and compareEndDate
+ *   rowValues    string     JSON: dimension => list of values
+ *
+ * report_name (also the path segment after reports/) is refused: no named
+ * report is served here. offset is read and ignored; page and
+ * resultsPerPage choose the rows.
  */
 class ReportsRest extends \OWA\Core\ReportController {
 
@@ -97,7 +103,8 @@ class ReportsRest extends \OWA\Core\ReportController {
              * unrelated result set.
              */
             $this->addValidation( 'report_name', $this->get('report_name'), 'inArray',
-                [ 'possible_values' => [], 'stopOnError' => true ] );
+                [ 'possible_values' => [], 'stopOnError' => true,
+                  'errorMsg' => \OWA\Core\CoreAPI::t( 'report_name is not supported. Ask for metrics and dimensions instead.' ) ] );
         }
     }
     
@@ -152,11 +159,10 @@ class ReportsRest extends \OWA\Core\ReportController {
         /*
          * A malformed request is not a success, whatever the envelope contains.
          *
-         * This answered 201 unconditionally, so a query refused for naming a
-         * dimension that does not exist -- or for a constraint whose value went
-         * missing -- came back as success carrying an `errors` array that a
-         * client had no reason to read. The status is the only part most callers
-         * check.
+         * A query refused for naming a dimension that does not exist -- or for
+         * a constraint whose value went missing -- answers 422, not success
+         * with an `errors` array that a client has no reason to read. The
+         * status is the only part most callers check.
          *
          * 422 rather than 400: the request is well-formed HTTP and the
          * parameters are the right shape, they just cannot be honoured. It is
@@ -167,12 +173,12 @@ class ReportsRest extends \OWA\Core\ReportController {
          *
          * On a controller set() writes the data the VIEW is handed while get()
          * reads a REQUEST PARAMETER -- they are not a pair. Reading the response
-         * back with get('response') returns null on every request, so this
-         * answered 201 unconditionally and looked like it worked.
+         * back with get('response') returns null on every request.
          */
         $response = $this->data['response'] ?? null;
 
-        $status = 201;
+        // 200: a GET reads, it creates nothing.
+        $status = 200;
 
         if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
 
@@ -182,7 +188,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
             /*
              * 409, not 503: the server is fine, and the request is valid; what
-             * it asks about is not in a state to answer yet. Not 201 with no
+             * it asks about is not in a state to answer yet. Not 200 with no
              * rows, which is how a real zero looks.
              */
             $status = 409;
