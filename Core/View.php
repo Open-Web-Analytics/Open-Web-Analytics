@@ -505,7 +505,7 @@ class View extends \OWA\Core\Base {
      * @param  string       $path    under the public asset tree
      * @param  string|null  $version assetVersion()'s when empty
      * @param  array<mixed> $deps
-     * @param  bool         $ie_only ignored: no browser OWA supports reads an IE conditional comment
+     * @param  bool         $ie_only ignored: head.php has always emitted the stylesheet regardless
      * @return void
      */
     public function setCss($path, $version = null, $deps = [], $ie_only = false) {
@@ -532,10 +532,16 @@ class View extends \OWA\Core\Base {
      * @param  string       $path    under the public asset tree
      * @param  string       $version assetVersion()'s when empty
      * @param  array<mixed> $deps
-     * @param  bool         $ie_only ignored: no browser OWA supports reads an IE conditional comment
+     * @param  bool         $ie_only true: the script is not emitted. It was written inside
+     *                               an IE conditional comment, which no browser OWA supports reads
      * @return void
      */
     public function setJs($name, $path, $version ='', $deps = [], $ie_only = false) {
+
+        if ( $ie_only ) {
+
+            return;
+        }
 
         if (empty($version)) {
 
