@@ -1633,6 +1633,7 @@ return [
     'Visits, the most recent first: when each started, the visitor\'s address, landing page, source / medium, location and number of prior sessions.' => 'Visits, the most recent first: when each started, the visitor\'s address, landing page, source / medium, location and number of prior sessions.',
     'Waiting %1$s, dead letters %2$s.' => 'Waiting %1$s, dead letters %2$s.',
     'Waiting to publish.' => 'Waiting to publish.',
+    'Warning: %s' => 'Warning: %s',
     'We could not find OWA\'s %1$s. The form below creates it. If your server does not let PHP write the file, copy %2$s to %1$s yourself and fill in the same details.' => 'We could not find OWA\'s %1$s. The form below creates it. If your server does not let PHP write the file, copy %2$s to %1$s yourself and fill in the same details.',
     'Website' => 'Website',
     'Week of Year' => 'Week of Year',

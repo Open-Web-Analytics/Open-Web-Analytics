@@ -383,18 +383,56 @@ final class ServerRole {
         /*
          * Weak secrets refuse every request but the command line, where
          * cmd=reset-secrets writes new ones; nothing there is signed for a
-         * browser.
+         * browser. Every other command warns (secretsWarning()).
          */
-        $weak = $role->hasDatabase() && $request_type !== RequestType::CLI ? self::weakSecrets( $defined ?? self::definedConstants() ) : [];
+        $message = $request_type !== RequestType::CLI ? $role->secretsProblem( $defined ?? self::definedConstants() ) : null;
 
-        if ( $weak ) {
+        return $message !== null ? [ 'status' => 503, 'message' => $message ] : null;
+    }
 
-            return [ 'status' => 503, 'message' => sprintf(
-                CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
-                implode( ', ', $weak ), self::SECRET_MIN_LENGTH ) ];
+    /** The command that writes new secrets, which secretsWarning() leaves quiet. */
+    const RESET_SECRETS_COMMAND = 'reset-secrets';
+
+    /**
+     * Why this role's secrets are unusable (weakSecrets()), or null. A role
+     * without a database signs nothing, so its are never asked about.
+     *
+     * @param array<string, mixed> $defined the OWA_ constants
+     * @return string|null
+     */
+    public function secretsProblem( array $defined ) {
+
+        $weak = $this->hasDatabase() ? self::weakSecrets( $defined ) : [];
+
+        if ( ! $weak ) {
+
+            return null;
         }
 
-        return null;
+        return sprintf(
+            CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
+            implode( ', ', $weak ), self::SECRET_MIN_LENGTH );
+    }
+
+    /**
+     * The warning cli.php writes to stderr before a command when this role's
+     * secrets are unusable, so a scheduler running on them logs it; null for
+     * none, and for cmd=reset-secrets.
+     *
+     * @param string                    $command the cmd= it runs
+     * @param array<string, mixed>|null $defined the OWA_ constants; this process's when null
+     * @return string|null
+     */
+    public static function secretsWarning( $command, $defined = null ) {
+
+        if ( (string) $command === self::RESET_SECRETS_COMMAND ) {
+
+            return null;
+        }
+
+        $problem = self::current()->secretsProblem( $defined ?? self::definedConstants() );
+
+        return $problem !== null ? sprintf( CoreAPI::t( 'Warning: %s' ), $problem ) : null;
     }
 
     /**

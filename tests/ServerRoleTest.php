@@ -210,6 +210,36 @@ final class ServerRoleTest extends TestCase
         $this->assertNull(ServerRole::bootProblem(RequestType::CLI, $defined, true, false), 'cmd=reset-secrets can run');
     }
 
+    /** Every command but reset-secrets warns of a weak secret, so a scheduler's log says it. */
+    public function testACommandWarnsOfAWeakSecret(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+
+        $weak = ['OWA_NONCE_SALT' => 'yournoncesaltgoeshere'] + self::DATABASE;
+
+        $warning = ServerRole::secretsWarning('schedule-run', $weak);
+
+        $this->assertStringStartsWith('Warning: OWA_NONCE_SALT in owa-config.php must be a random string', (string) $warning);
+        $this->assertNull(ServerRole::secretsWarning('reset-secrets', $weak), 'the command that fixes it');
+        $this->assertNull(ServerRole::secretsWarning('schedule-run', self::DATABASE));
+
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
+        $this->assertNull(ServerRole::secretsWarning('schedule-run', $weak), 'a collector signs nothing');
+    }
+
+    public function testCliWritesTheWarningBeforeTheCommand(): void
+    {
+        $cli = (string) file_get_contents(__DIR__ . '/../cli.php');
+
+        $warn = strpos($cli, 'ServerRole::secretsWarning($params[\'cmd\'])');
+        $this->assertNotFalse($warn);
+        $this->assertLessThan(strpos($cli, '$owa->handleRequest($params)'), $warn);
+
+        // The quiet command is the one that writes new secrets.
+        \OWA\Core\CoreAPI::serviceSingleton()->loadCliCommands();
+        $this->assertSame('base.resetSecretsCli', \OWA\Core\CoreAPI::getCliCommandClass(ServerRole::RESET_SECRETS_COMMAND));
+    }
+
     public function testEachExampleSecretIsWeak(): void
     {
         $dist = (string) file_get_contents(__DIR__ . '/../owa-config-dist.php');
