@@ -82,7 +82,7 @@ final class SecretConstantsTest extends TestCase
         $this->assertSame(self::NAMES, Settings::unusableSecretConstants(array_combine($m[1], $m[2])));
     }
 
-    public function testAControllerAnswersWithTheConstantsAndDoesNotRun(): void
+    public function testOnTheWebTheControllerDoesNotRunAndThePageNamesNoConstant(): void
     {
         $this->skipWhileInstalling();
 
@@ -92,8 +92,30 @@ final class SecretConstantsTest extends TestCase
 
         $this->assertFalse($controller->ran, 'the action did not run');
         $this->assertSame('base.error', $data['view']);
-        $this->assertStringContainsString('OWA_NONCE_SALT, OWA_AUTH_KEY', $data['error_msg']);
-        $this->assertStringContainsString('64 random hex characters', $data['error_msg']);
+        $this->assertStringContainsString('configuration needs attention', $data['error_msg']);
+        $this->assertStringContainsString('cmd=reset-secrets', $data['error_msg']);
+        $this->assertStringNotContainsString('OWA_', $data['error_msg']);
+    }
+
+    public function testAsRestTheResponseNamesNoConstant(): void
+    {
+        $this->skipWhileInstalling();
+
+        $controller = self::controller(['OWA_AUTH_KEY']);
+
+        $data = $this->inMode('rest_api', fn () => $controller->doAction());
+
+        $this->assertFalse($controller->ran);
+        $this->assertSame('base.restApi', $data['view']);
+        $this->assertStringNotContainsString('OWA_', implode(' ', $data['error_msg']));
+    }
+
+    public function testTheLoggedMessageNamesTheConstantsAndHowToMakeThem(): void
+    {
+        $msg = self::controller([])->getMsg(3313, ['message' => ['OWA_NONCE_SALT, OWA_AUTH_KEY']]);
+
+        $this->assertStringContainsString('OWA_NONCE_SALT, OWA_AUTH_KEY', $msg['message']);
+        $this->assertStringContainsString('64 random hex characters', $msg['message']);
     }
 
     public function testOnTheCommandLineTheMessageNamesTheConstants(): void

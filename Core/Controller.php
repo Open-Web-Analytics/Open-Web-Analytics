@@ -188,6 +188,9 @@ class Controller extends \OWA\Core\Base {
     /**
      * The answer when owa-config.php has an unusable key or salt.
      *
+     * The constants are named in the error log and on the command line; a web
+     * page or REST response only says the configuration needs attention.
+     *
      * @param string[] $constants from Settings::unusableSecretConstants()
      * @return array
      */
@@ -211,7 +214,7 @@ class Controller extends \OWA\Core\Base {
             case 'rest_api':
 
                 $this->setView( 'base.restApi' );
-                $this->set( 'error_msg', $msg );
+                $this->set( 'error_msg', $this->getMsg( 3314 ) );
                 http_response_code( 500 );
 
                 break;
@@ -219,7 +222,7 @@ class Controller extends \OWA\Core\Base {
             default:
 
                 $this->setView( 'base.error' );
-                $this->set( 'error_msg', implode( ' ', array_values( $msg ) ) );
+                $this->set( 'error_msg', $this->getMsgAsString( 3314 ) );
                 http_response_code( 500 );
         }
 
