@@ -111,20 +111,24 @@ final class SqlPortabilityLintTest extends TestCase {
     ];
 
     /**
-     * Exempt directories.
+     * Every module's update scripts: modules/<Module>/Update/.
      *
      * Update scripts are historical: each one migrates a schema that existed at
      * one moment in the past, and every installation that has ever run one was
      * on MySQL, because MySQL is the only backend OWA has ever had. A new
-     * install on another backend starts at the current schema and never
-     * executes them. Their SQL is a record of what happened, not a statement
-     * about what OWA supports, and rewriting it would be editing history to no
-     * effect.
+     * install on another backend starts at the current schema -- Base's, and
+     * each module's, whose tables are created from its entities when it is
+     * installed -- and never executes them. Their SQL is a record of what
+     * happened, not a statement about what OWA supports, and rewriting it would
+     * be editing history to no effect.
      */
+    private const EXEMPT_UPDATE_DIRS = '#^modules/[^/]+/Update/#';
+
+    /** Exempt directories, by path. */
     private const EXEMPT_DIRS = [
-        'modules/Base/Update/',
-        // The v1 migration, for the same reason: it runs once, on an
-        // installation upgrading from 1.14, and every one of those is MySQL.
+        // The v1 migration, for the same reason as the update scripts: it runs
+        // once, on an installation upgrading from 1.14, and every one of those
+        // is MySQL.
         'modules/Base/Classes/Migration/',
     ];
 
@@ -158,6 +162,10 @@ final class SqlPortabilityLintTest extends TestCase {
                 $relative = str_replace( $root . '/', '', $path );
 
                 if ( in_array( $relative, self::EXEMPT, true ) ) {
+                    continue;
+                }
+
+                if ( preg_match( self::EXEMPT_UPDATE_DIRS, $relative ) ) {
                     continue;
                 }
 
@@ -275,5 +283,25 @@ final class SqlPortabilityLintTest extends TestCase {
                 sprintf( '%s is exempted from the SQL portability lint but no longer exists', $relative )
             );
         }
+    }
+
+    /**
+     * Only a module's Update/ directory is exempt: the rest of the module is
+     * linted, and so is a file elsewhere whose path merely contains Update.
+     */
+    public function testOnlyEachModulesUpdateDirectoryIsExempt(): void {
+
+        $files = $this->sourceFiles();
+
+        $this->assertArrayNotHasKey( 'modules/Base/Update/Update094.php', $files );
+        $this->assertArrayNotHasKey( 'modules/Domstream/Update/Update003.php', $files );
+
+        $this->assertArrayHasKey( 'modules/Domstream/Controller/ProcessEvent.php', $files );
+        $this->assertArrayHasKey( 'modules/Domstream/Entity/DomstreamChunk.php', $files );
+        $this->assertArrayHasKey( 'modules/Base/Controller/UpdatesApplyCli.php', $files );
+        $this->assertArrayHasKey( 'Core/Update.php', $files );
+
+        $this->assertNotEmpty( glob( dirname( __DIR__ ) . '/modules/*/Update', GLOB_ONLYDIR ),
+            'no module has an Update directory, so the exemption covers nothing' );
     }
 }
