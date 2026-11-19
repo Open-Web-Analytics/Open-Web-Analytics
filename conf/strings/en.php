@@ -830,6 +830,8 @@ return [
     'No link' => 'No link',
     'No locations: they need the MaxMind GeoIP module.' => 'No locations: they need the MaxMind GeoIP module.',
     'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.' => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
+    'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.' => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
+    'No longer read. Set OWA_DEBUG to true for debug logging.' => 'No longer read. Set OWA_DEBUG to true for debug logging.',
     'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.' => 'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.',
     'No longer read. The role decides: full and worker run the scheduler.' => 'No longer read. The role decides: full and worker run the scheduler.',
     'No longer read. The servers whose role runs the scheduler drain the queue.' => 'No longer read. The servers whose role runs the scheduler drain the queue.',
