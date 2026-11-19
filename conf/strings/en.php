@@ -11,6 +11,8 @@
 //
 return [
     '"%s" cannot be queried here.' => '"%s" cannot be queried here.',
+    '"%s" is a metric; a segment can select only on dimensions.' => '"%s" is a metric; a segment can select only on dimensions.',
+    '"%s" is calculated from other metrics, so it cannot be constrained on.' => '"%s" is calculated from other metrics, so it cannot be constrained on.',
     '"%s" is not a comparison.' => '"%s" is not a comparison.',
     '"%s" is not a constraint: it needs a name, an operator and a value.' => '"%s" is not a constraint: it needs a name, an operator and a value.',
     '"%s" is not a database name OWA can use.' => '"%s" is not a database name OWA can use.',
@@ -184,6 +186,7 @@ return [
     'A report needs at least one widget.' => 'A report needs at least one widget.',
     'A request whose spam score reaches this number is not recorded. Leave blank to record every request; each one still gets a score.' => 'A request whose spam score reaches this number is not recorded. Leave blank to record every request; each one still gets a score.',
     'A saved report cannot declare a capability.' => 'A saved report cannot declare a capability.',
+    'A saved segment (id::) is not supported. Send its conditions as dynamic::.' => 'A saved segment (id::) is not supported. Send its conditions as dynamic::.',
     'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.' => 'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.',
     'A to Z' => 'A to Z',
     'A user with that email address already exists.' => 'A user with that email address already exists.',

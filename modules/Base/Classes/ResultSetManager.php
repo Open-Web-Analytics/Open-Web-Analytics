@@ -28,6 +28,13 @@ class ResultSetManager extends \OWA\Core\Base {
     const DEFAULT_RESULTS_PER_PAGE = 25;
 
     /**
+     * The constraint a time period bounds the clock with (setTimePeriod()):
+     * unix seconds, start and end. Not a dimension; applyConstraint() reads
+     * it against the cube's `ts`.
+     */
+    const TIME_BOUND = 'timestamp';
+
+    /**
      * The params of the caller, either a report or graph: constraints
      * (name => Constraint), orderby (Sorts), offset, period (a TimePeriod)
      *
@@ -236,6 +243,31 @@ class ResultSetManager extends \OWA\Core\Base {
                     ) );
 
                     continue;
+                }
+
+                /*
+                 * A metric is tested on its aggregate (HAVING). "(not set)" is
+                 * an empty test, which only a dimension has, and a calculated
+                 * metric has no aggregate of its own. Refused here: at query
+                 * time the query would run without the filter.
+                 */
+                if ( $this->isMetric( $constraint['name'] ) ) {
+
+                    if ( self::emptyTestFor( $constraint ) ) {
+
+                        $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t( '%s is a metric; only a dimension can be %s.' ),
+                            $constraint['name'], self::NOT_SET_LABEL ) );
+
+                        continue;
+                    }
+
+                    if ( $this->isCalculatedMetric( $constraint['name'] ) ) {
+
+                        $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
+                            '"%s" is calculated from other metrics, so it cannot be constrained on.' ), $constraint['name'] ) );
+
+                        continue;
+                    }
                 }
 
                 if ( in_array( $constraint['operator'] ?? '', [ '=~', '!~' ], true ) ) {
@@ -1016,6 +1048,20 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         /*
+         * The period's clock bound, in seconds, on the cube's `ts`: the edge
+         * stamp in microseconds. The end second is counted whole.
+         */
+        if ( $constraint['name'] === self::TIME_BOUND && is_array( $constraint['value'] ) ) {
+
+            $db->where( $entity->getTableAlias() . '.ts', [
+                'start' => (int) $constraint['value']['start'] * 1000000,
+                'end'   => (int) $constraint['value']['end'] * 1000000 + 999999,
+            ], 'BETWEEN', $constraint['key'] ?? null );
+
+            return;
+        }
+
+        /*
          * `==(not set)` AND `!=(not set)` ARE THE EMPTY TEST, not a comparison.
          *
          * "(not set)" is the label formatDimensionValue() gives NULL and '';
@@ -1097,22 +1143,32 @@ class ResultSetManager extends \OWA\Core\Base {
 
         $this->query_params['segment'] = $segment;
 
+        /*
+         * A saved segment (id::) is not implemented. Refused: with no
+         * conditions read, the query would run over everybody.
+         */
+        if ( substr($segment, 0, 4) === 'id::') {
+
+            $this->addRequestError( \OWA\Core\CoreAPI::t( 'A saved segment (id::) is not supported. Send its conditions as dynamic::.' ) );
+
+            return;
+        }
+
         if ( substr($segment, 0, 9) === 'dynamic::') {
 
             $segment = substr($segment, 9);
-
-        } elseif ( substr($segment, 0, 4) === 'id::') {
-            // look up segment from db
         }
 
         $parsed = $this->parseConstraintsString( $segment );
-        $metrics = [];
         $dimensions = [];
 
         foreach ( $parsed as $item ) {
 
             if ( $this->isMetric( $item['name'] ) ) {
-                $metrics[$item['name']] = $item;
+
+                // Not implemented: the segment's query selects on dimensions only.
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
+                    '"%s" is a metric; a segment can select only on dimensions.' ), $item['name'] ) );
 
             } elseif ($this->isDimension( $item['name'] ) ) {
                 $dimensions[$item['name']] = $item;
@@ -1130,7 +1186,7 @@ class ResultSetManager extends \OWA\Core\Base {
             }
         }
 
-        $this->segment = ['metrics' => $metrics, 'dimensions' => $dimensions];
+        $this->segment = ['metrics' => [], 'dimensions' => $dimensions];
     }
 
     /**
@@ -1302,6 +1358,26 @@ class ResultSetManager extends \OWA\Core\Base {
 
         $metrics = \OWA\Core\CoreAPI::getAllMetrics();
         return in_array( $name, array_keys( $metrics ) );
+    }
+
+    /**
+     * Whether a registered metric is computed from others (a ratio, a
+     * difference) rather than aggregated from a column.
+     *
+     * @param  string $name
+     * @return bool
+     */
+    protected function isCalculatedMetric( $name ) {
+
+        foreach ( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $name ) as $map ) {
+
+            if ( \OWA\Core\CoreAPI::metricFactory( $map['class'], $map['params'] )->isCalculated() ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1608,7 +1684,7 @@ class ResultSetManager extends \OWA\Core\Base {
       
           $period_name = 'time_range';
           $map = ['startTime' => $startTime, 'endTime' => $endTime];
-          $dimension_name = 'timestamp';
+          $dimension_name = self::TIME_BOUND;
           $format = 'timestamp';
       
       } else {
@@ -1657,7 +1733,7 @@ class ResultSetManager extends \OWA\Core\Base {
         // The date is computed from the same timestamps in the same timezone the
         // yyyymmdd column was written in, so a range spanning midnight yields two days
         // and still prunes to those two partitions.
-        if ( $dimension_name === 'timestamp' && $start && $end ) {
+        if ( $dimension_name === self::TIME_BOUND && $start && $end ) {
 
             $this->setConstraint(
                 'date',
@@ -1702,7 +1778,7 @@ class ResultSetManager extends \OWA\Core\Base {
             if ( ( $endTs - $startTs ) < 86400 && date( 'His', $startTs ) !== '000000' ) {
 
                 $this->setConstraint(
-                    'timestamp',
+                    self::TIME_BOUND,
                     [ 'start' => $startTs, 'end' => $endTs ],
                     'BETWEEN'
                 );
@@ -2944,10 +3020,6 @@ class ResultSetManager extends \OWA\Core\Base {
             $db = \OWA\Core\CoreAPI::dbFactory();
             $db->select( $segment_entity->getTableAlias().'.*' );
             $db->from( $segment_entity->getTableName(), $segment_entity->getTableAlias() );
-
-            if ( isset( $segment['metrics'] ) ) {
-
-            }
 
             if ( isset( $segment['dimensions'] ) ) {
 
