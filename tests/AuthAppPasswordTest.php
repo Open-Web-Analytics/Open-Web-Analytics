@@ -336,7 +336,9 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     {
         list($user, $made) = $this->userWithPassword();
 
+        // Behind a proxy on this host, as the chain's last hop.
         $this->authenticate(self::bearer($made['token']) + [
+            'REMOTE_ADDR'          => '127.0.0.1',
             'HTTP_X_FORWARDED_FOR' => '198.51.100.9, 203.0.113.5, 10.0.0.2',
         ]);
 

@@ -406,6 +406,7 @@ return [
         'modules_url'         => [ 'internal' => true ],
         'rest_api_url'        => [ 'internal' => true ],
         'tracking_mode'       => [ 'internal' => true ],
+        'trusted_proxies'     => [ 'config_constant' => 'OWA_TRUSTED_PROXIES', 'default' => [], 'description' => 'Proxies in front of OWA with public addresses, as a list of IP addresses and CIDR ranges. The client address is the first one, from the right of X-Forwarded-For and the connecting address, that is neither private nor listed here. A server that sends events with the PHP SDK forwards the visitor\'s address, so it must be listed. Empty by default.' ],
         'tracking_url'        => [ 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ],
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => [ 'default' => 'ui', 'internal' => true ],

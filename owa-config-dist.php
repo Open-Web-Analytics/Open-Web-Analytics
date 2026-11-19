@@ -136,6 +136,20 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //define('OWA_ASSETS_URL', 'https://cdn.example.com/owa/');
 
 /**
+ * TRUSTED PROXIES
+ *
+ * The client address of a request is the first address, from the right of
+ * X-Forwarded-For and the connecting address, that no trusted proxy added.
+ * Private and reserved addresses (a load balancer or cache on the same network)
+ * are trusted already. List here, as addresses and CIDR ranges, any proxy in
+ * front of OWA with a public address, and any server that sends events with the
+ * PHP SDK: it forwards the visitor's address in X-Forwarded-For. An entry that
+ * is not an address or a range stops OWA until it is fixed.
+ */
+
+//define('OWA_TRUSTED_PROXIES', [ '192.0.2.10', '2001:db8:10::/48' ]);
+
+/**
  * DATA DIRECTORIES
  *
  *   OWA_DATA_DIR          where OWA writes: its error log, the file event queue,

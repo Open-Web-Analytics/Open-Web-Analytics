@@ -398,26 +398,15 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
-     * The client address as the nearest proxy saw it.
-     *
-     * The rightmost public address in X-Forwarded-For, not the leftmost: each
-     * proxy appends, so the left end is whatever the client chose to send.
+     * The client address: the first address, from the right of
+     * X-Forwarded-For and REMOTE_ADDR, that no trusted proxy added
+     * (Core\ClientAddress), as a tracked event's is chosen.
      *
      * @return string
      */
     private static function lastPublicHop() {
 
-        $chain = explode( ',', (string) \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' ) );
-
-        foreach ( array_reverse( $chain ) as $hop ) {
-
-            if ( \OWA\Core\Lib::isNotPrivateIp( trim( $hop ) ) ) {
-
-                return trim( $hop );
-            }
-        }
-
-        return (string) \OWA\Core\CoreAPI::getServerParam( 'REMOTE_ADDR' );
+        return \OWA\Core\ClientAddress::fromRequest();
     }
 
     /**
