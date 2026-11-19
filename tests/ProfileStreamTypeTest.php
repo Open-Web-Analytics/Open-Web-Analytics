@@ -177,12 +177,16 @@ final class ProfileStreamTypeTest extends TestCase
     /** Only web Profiles can grant a CORS origin -- a bundle id is not a host. */
     public function testOnlyWebProfilesContributeCorsOrigins(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/View/RestApi.php' );
+        $origin = 'https://com.example.app';
+        $match  = static fn ( array $site ) => \OWA\Core\View\RestApi::matchAllowedOrigin( $origin, [ $site + [ 'domain' => 'com.example.app' ] ] );
 
-        $this->assertStringContainsString( "\$streamType !== 'web'", $src,
+        $this->assertSame( $origin, $match( [ 'stream_type' => 'web' ] ) );
+        $this->assertSame( $origin, $match( [] ), 'a Profile that predates stream_type is a website' );
+
+        $this->assertNull( $match( [ 'stream_type' => 'app' ] ),
             'An app Profile\'s identifier is parsed as a host for CORS matching.' );
 
-        $this->assertStringContainsString( "! empty( \$site['archived_date'] )", $src,
+        $this->assertNull( $match( [ 'stream_type' => 'web', 'archived_date' => '2026-01-01 00:00:00' ] ),
             'An archived Profile still grants its origin, though it has stopped observing.' );
     }
 }
