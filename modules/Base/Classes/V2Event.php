@@ -41,7 +41,7 @@ class V2Event {
      *     wideStringGuid( site_id + visitor_id + session_id + ts + event_name [+ '#' + event_seq] )
      *
      * Derived, never minted -- so a redelivered beacon derives the same ids and
-     * collapses on PRIMARY KEY (id, yyyymmdd) instead of counting twice. That
+     * collapses on PRIMARY KEY (yyyymmdd, id) instead of counting twice. That
      * is the whole reason a fact id is content-derived here, where 1.x mints
      * fact ids randomly: a fact that arrives twice is the same fact, and two
      * facts differing in any input differ in their id.

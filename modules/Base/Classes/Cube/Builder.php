@@ -1148,7 +1148,7 @@ class Builder {
         $columns = 'r.' . implode( ', r.', array_merge( [ 'id', 'yyyymmdd' ], array_keys( $reads ) ) );
         $after   = null;
 
-        // Keyed on (yyyymmdd, id), the partition key first, so each page is a
+        // Keyed on (yyyymmdd, id), raw's primary key, so each page is a
         // pruned range scan rather than a sort of the partition.
         do {
 
@@ -1250,7 +1250,8 @@ class Builder {
             $definitions[] = $column . ' VARCHAR(255) NULL';
         }
 
-        $definitions[] = 'PRIMARY KEY (c_id, c_yyyymmdd)';
+        // In raw's key order, which is the order candidatePages() reads.
+        $definitions[] = 'PRIMARY KEY (c_yyyymmdd, c_id)';
 
         $this->db->query( sprintf( OWA_SQL_DROP_TABLE, $this->tables['computed'] ) );
 

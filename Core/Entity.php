@@ -1331,7 +1331,8 @@ class Entity {
      * Partition this entity's table by range on a column.
      *
      * The column has to be part of every unique key, so declaring it also makes
-     * the primary key composite -- see Db::createTable().
+     * the primary key composite: (primary key column, this column), or the key
+     * setCompositePrimaryKey() declares. See Db::createTable().
      *
      * @param  string $column
      * @return void
@@ -1386,8 +1387,12 @@ class Entity {
      * For a table whose rows are identified by what they count, such as
      * owa_spam_block's (day, Profile, rule), where a derived id column would
      * be a second spelling of the same three values. Db::createTable() emits
-     * it at table level; no column may also call DbColumn::setPrimaryKey().
-     * Not for a partitioned table, whose key createTable() builds itself.
+     * it at table level, in place of any column's DbColumn::setPrimaryKey().
+     *
+     * A partitioned table that declares none is keyed on its primary key
+     * column followed by the partition column. One that declares one must
+     * include the partition column in it, as owa_event_raw's (yyyymmdd, id)
+     * does. getPrimaryKeyColumn() still names the column a row is loaded by.
      *
      * @param  list<string> $columns
      * @return void
