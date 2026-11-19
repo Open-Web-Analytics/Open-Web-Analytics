@@ -11,23 +11,40 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class InProcessOnlyActionsTest extends TestCase
 {
-    /** @return array<string, array{string}> */
+    /** @return array<string, array{string, string}> action => [action, its controller] */
     public static function handlerActions(): array
     {
         return [
-            'base.usersResetPassword' => ['base.usersResetPassword'],
-            'base.usersSetPassword'   => ['base.usersSetPassword'],
-            'base.usersNewAccount'    => ['base.usersNewAccount'],
-            'base.notifyNewSession'   => ['base.notifyNewSession'],
-            'base.processEvent'       => ['base.processEvent'],
-            'base.processRequest'     => ['base.processRequest'],
-            'domstream.processEvent'  => ['domstream.processEvent'],
+            'base.usersResetPassword' => ['base.usersResetPassword', \OWA\Module\Base\Controller\UsersResetPassword::class],
+            'base.usersSetPassword'   => ['base.usersSetPassword', \OWA\Module\Base\Controller\UsersSetPassword::class],
+            'base.usersNewAccount'    => ['base.usersNewAccount', \OWA\Module\Base\Controller\UsersNewAccount::class],
+            'base.notifyNewSession'   => ['base.notifyNewSession', \OWA\Module\Base\Controller\NotifyNewSession::class],
+            'base.processEvent'       => ['base.processEvent', \OWA\Module\Base\Controller\ProcessEvent::class],
+            'base.processRequest'     => ['base.processRequest', \OWA\Module\Base\Controller\ProcessRequest::class],
+            'domstream.processEvent'  => ['domstream.processEvent', \OWA\Module\Domstream\Controller\ProcessEvent::class],
         ];
     }
 
-    /** @dataProvider handlerActions */
-    public function testAHandlersActionIsInProcessOnly(string $action): void
+    /**
+     * The controller declares it; and where its module is active, the
+     * registered action is that controller and is refused. Domstream is
+     * active only on an install that activated it.
+     *
+     * @dataProvider handlerActions
+     */
+    public function testAHandlersActionIsInProcessOnly(string $action, string $class): void
     {
+        $this->assertTrue($class::IN_PROCESS_ONLY, $class);
+
+        $map = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue('actions', $action);
+
+        if (!is_array($map)) {
+            $this->assertStringStartsWith('domstream.', $action, 'every Base action is registered');
+
+            return;
+        }
+
+        $this->assertSame(ltrim($class, '\\'), ltrim((string) $map['class_name'], '\\'));
         $this->assertTrue(\OWA\Core\CoreAPI::isInProcessOnlyAction($action));
     }
 
@@ -44,7 +61,7 @@ final class InProcessOnlyActionsTest extends TestCase
      *
      * @dataProvider handlerActions
      */
-    public function testARequestForOneIsNotRun(string $action): void
+    public function testARequestForOneIsNotRun(string $action, string $class): void
     {
         $code = http_response_code();
         ob_start();
