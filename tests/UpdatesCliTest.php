@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/CapturesLog.php';
 
 /**
  * Probe update. Extends the real Core\Update so the guard logic under test is
@@ -54,6 +55,8 @@ final class UpdateGuardProbe extends \OWA\Core\Update
  */
 final class UpdatesCliTest extends CliControllerTestCase
 {
+    use CapturesLog;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -90,34 +93,57 @@ final class UpdatesCliTest extends CliControllerTestCase
 
     public function testCliUpdateControllerIsGatedToCliOnly(): void
     {
-        $src = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApplyCli.php'
-        );
-
         // Its protection is the SAPI gate in Core\Controller\Cli::__construct
         // (which exits unless request_type === 'cli'), NOT a capability. If it
         // ever stops extending that base it becomes web-reachable with no gate
         // at all.
-        $this->assertMatchesRegularExpression(
-            '/class\s+UpdatesApplyCli\s+extends\s+\\\\OWA\\\\Core\\\\Controller\\\\Cli/',
-            $src,
+        $this->assertTrue(
+            is_subclass_of(\OWA\Module\Base\Controller\UpdatesApplyCli::class, \OWA\Core\Controller\Cli::class),
             'UpdatesApplyCli must extend Core\\Controller\\Cli -- that base is '
             . 'what confines it to the command line.'
         );
     }
 
+    /**
+     * cmd=update rollback=<module>.<sequence>, run on the probe, and what it
+     * logged. Built without the constructor's OWA_UPDATING define, which a
+     * second construction in one process would repeat.
+     *
+     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     */
+    private function rollBack(UpdateGuardProbe $probe): array
+    {
+        $cli = new class(['rollback' => 'base.' . $probe->schema_version], $probe)
+            extends \OWA\Module\Base\Controller\UpdatesApplyCli {
+            private $probe;
+
+            public function __construct($params, $probe)
+            {
+                $this->probe = $probe;
+                \OWA\Core\Controller\Cli::__construct($params);
+            }
+
+            protected function namedUpdate($update, $arg)
+            {
+                return $this->probe;
+            }
+        };
+
+        $log = $this->logDuring(static function () use ($cli) {
+            $cli->action();
+        });
+
+        return [$cli, $log];
+    }
+
+    /** The only rollback interface OWA has: `cmd=update rollback=base.UpdateNNN`. */
     public function testRollbackIsReachableFromTheCli(): void
     {
-        $src = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApplyCli.php'
-        );
+        list($cli, $log) = $this->rollBack($this->makeProbe($this->currentSchemaVersion() + 1));
 
-        $this->assertStringContainsString(
-            "getParam('rollback')",
-            $src,
-            'The CLI must keep exposing rollback (`cmd=update rollback=base.UpdateNNN`); '
-            . 'it is the only rollback interface OWA has.'
-        );
+        $this->assertTrue(UpdateGuardProbe::$downCalled, 'rollback= did not reach the update');
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
+        $this->assertStringContainsString('Rollback completed.', $log);
     }
 
     /**
@@ -307,20 +333,14 @@ final class UpdatesCliTest extends CliControllerTestCase
      */
     public function testCliReportsAFailedRollbackHonestly(): void
     {
-        $src = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApplyCli.php'
-        );
+        UpdateGuardProbe::$downShouldFail = true;
 
-        $this->assertMatchesRegularExpression(
-            '/\$ret\s*=\s*\$u->rollback\(\)\s*;/',
-            $src,
-            'UpdatesApplyCli::rollback() must capture the return value.'
-        );
-        $this->assertStringContainsString(
-            'did NOT complete',
-            $src,
-            'UpdatesApplyCli must tell the operator when a rollback did not '
-            . 'complete instead of always printing "Rollback completed."'
-        );
+        list($cli, $log) = $this->rollBack($this->makeProbe($this->currentSchemaVersion() + 1));
+
+        $this->assertTrue(UpdateGuardProbe::$downCalled);
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertStringContainsString('Rollback did NOT complete', $log);
+        $this->assertStringNotContainsString('Rollback completed.', $log);
     }
 }

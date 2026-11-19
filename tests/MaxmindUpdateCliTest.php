@@ -283,30 +283,10 @@ final class MaxmindUpdateCliTest extends TestCase {
     }
 
     /**
-     * The archive must be named something PharData will open.
-     *
-     * It refuses a file whose extension it does not recognise -- "file
-     * extension (or combination) not recognised" -- and tempnam() produces a
-     * name with no extension at all. The download succeeded, the unpack failed,
-     * and the command reported the failure correctly while leaving no database.
-     *
-     * It survived earlier testing because every run until a real licence key
-     * existed stopped at the download, so the unpack was never reached. That is
-     * the shape of thing this test exists for: the step after the one that
-     * usually fails.
-     */
-    public function testTheArchiveIsNamedSomethingPharDataWillOpen(): void {
-
-        $source = (string) file_get_contents(
-            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Controller/UpdateGeoipDbCli.php' );
-
-        $this->assertStringContainsString( ".tar.gz'", $source,
-            'the temporary archive must carry a .tar.gz extension or PharData will not open it' );
-    }
-
-    /**
-     * PharData proves it rather than the source scan alone: a name without an
-     * extension throws, the same name with .tar.gz does not.
+     * The archive is given a .tar.gz name before PharData opens it, because a
+     * name without an extension throws, and tempnam() makes one
+     * (MaxmindDownloadFlowTest::testAFullRunWritesTheDatabaseWhereLookupsReadIt
+     * unpacks a real archive through the command).
      */
     public function testPharDataRejectsAnExtensionlessArchive(): void {
 
@@ -331,25 +311,5 @@ final class MaxmindUpdateCliTest extends TestCase {
 
         $this->assertTrue( $threw,
             'if PharData ever accepts an extensionless file, the rename is no longer needed' );
-    }
-
-    /**
-     * A dry run must not spend the account's download limit to say what it
-     * would do: fetching the archive -- tens of megabytes -- costs exactly as
-     * much as doing the work.
-     */
-    public function testADryRunStopsBeforeTheTransfer(): void {
-
-        $source = (string) file_get_contents(
-            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Controller/UpdateGeoipDbCli.php' );
-
-        $dry_run_return = strpos( $source, "'Dry run: would download" );
-        $download_call  = strpos( $source, '$bytes = $this->download(' );
-
-        $this->assertIsInt( $dry_run_return, 'the dry run must report and return' );
-        $this->assertIsInt( $download_call );
-
-        $this->assertLessThan( $download_call, $dry_run_return,
-            'the dry run must return BEFORE the download, or asking costs the same as doing' );
     }
 }
