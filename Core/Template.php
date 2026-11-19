@@ -620,14 +620,26 @@ class Template extends TemplateEngine {
      */
     public static function assetsAreBuilt() {
 
-        static $built = null;
+        if ( self::$assets_built === null ) {
 
-        if ( $built === null ) {
-
-            $built = is_dir( \OWA\Core\Env::root() . '/public/base/dist' );
+            self::$assets_built = is_dir( \OWA\Core\Env::root() . '/public/base/dist' );
         }
 
-        return $built;
+        return self::$assets_built;
+    }
+
+    /** @var bool|null what assetsAreBuilt() found */
+    private static $assets_built = null;
+
+    /**
+     * Forget what assetsAreBuilt() found. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetAssetsBuilt() {
+
+        self::$assets_built = null;
     }
 
     /**

@@ -63,11 +63,13 @@ class ProcessEvent extends \OWA\Core\Controller {
      */
     public static function store( array $rows ) {
 
-        $chunk = \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_chunk' );
-        $chunk->load( $rows['chunk']['id'], 'id',
-            \OWA\Core\Db::factDateConstraint( $rows['chunk']['yyyymmdd'] ) );
-
-        if ( $chunk->wasPersisted() ) {
+        /*
+         * Looked for within its own yyyymmdd's range only. That date is the
+         * edge's, so a chunk sent again has a later one, and the range reaches
+         * FACT_LOWER_BOUND_SLACK_DAYS back from it (Db::factDateRange()).
+         */
+        if ( \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_chunk' )->existsWithin( 'id',
+                $rows['chunk']['id'], \OWA\Core\Db::factDateConstraint( $rows['chunk']['yyyymmdd'] ) ) ) {
 
             \OWA\Core\CoreAPI::debug( 'domstream: chunk already stored.' );
 

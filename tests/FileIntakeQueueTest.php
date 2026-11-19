@@ -489,13 +489,53 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertSame([$this->dir . 'archive/new.txt'], glob($this->dir . 'archive/*'));
     }
 
-    /** No vendor package on the tracking path (PLAN 2.30.3; the source-checkout boot constraint). */
+    /**
+     * No vendor package on the tracking path (PLAN 2.30.3; the source-checkout
+     * boot constraint), and no shelling out: the queue sends, receives, acks,
+     * dead-letters and prunes in a process with only OWA's own autoloader and
+     * with exec() and its kind disabled, and loads nothing from vendor/.
+     */
     public function testTheQueueNeedsNoLoggingLibrary(): void
     {
-        $source = file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/FileEventQueue.php');
+        $script = $this->dir . 'probe.php';
+        $root   = \OWA\Core\Env::root();
 
-        $this->assertDoesNotMatchRegularExpression('/^use\s+Monolog/m', $source);
-        $this->assertStringNotContainsString('exec(', $source);
+        $this->assertTrue(mkdir($this->dir . 'queue/', 0775, true));
+        file_put_contents($script, <<<'PHP'
+<?php
+[, $root, $dir] = $argv;
+// owa_env.php's own autoloader, for a checkout without vendor/.
+spl_autoload_register(function ($class) use ($root) {
+    foreach (['OWA\\Core\\' => $root . '/Core/', 'OWA\\Module\\' => $root . '/modules/'] as $prefix => $base) {
+        if (strncmp($class, $prefix, strlen($prefix)) === 0) {
+            $file = $base . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+            if (is_readable($file)) {
+                require_once $file;
+            }
+            return;
+        }
+    }
+});
+$q = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir, 'queue_name' => 'tracker-ingest']);
+$q->provision();
+$sent = $q->send(['v' => 1, 'type' => 'page_view', 'properties' => ['n' => 'a'], 'queued_at' => 1])
+    && $q->send(['v' => 1, 'type' => 'page_view', 'properties' => ['n' => 'b'], 'queued_at' => 1]);
+$got = $q->receive(10);
+$q->ack($got[0]);
+$q->deadLetter($got[1], 'probe');
+$q->pruneArchive(3600);
+$vendor = array_values(array_filter(array_merge(get_declared_classes(), get_declared_interfaces()),
+    fn ($c) => strpos((string) (new ReflectionClass($c))->getFileName(), $root . '/vendor/') === 0));
+echo json_encode(['sent' => $sent, 'received' => count($got), 'depth' => $q->depth(), 'vendor' => $vendor]);
+PHP
+        );
+
+        $out = (string) shell_exec(escapeshellarg(PHP_BINARY)
+            . ' -d ' . escapeshellarg('disable_functions=exec,shell_exec,system,passthru,proc_open,popen,mysqli_real_connect,mysqli_connect')
+            . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($root) . ' ' . escapeshellarg($this->dir . 'queue/') . ' 2>&1');
+
+        $this->assertSame(['sent' => true, 'received' => 2, 'depth' => 0, 'vendor' => []],
+            json_decode($out, true), $out);
     }
 
     /**

@@ -46,7 +46,7 @@ abstract class FactMigrator {
 
     /**
      * The mediums v1 assigned itself rather than read from a link: its
-     * default, and its three readings of the referrer (resolveMedium()).
+     * default, and its three readings of the referrer (1.x's resolveMedium()).
      */
     const GENERATED_MEDIUMS = [ 'direct', 'organic-search', 'social-network', 'referral' ];
 
@@ -452,6 +452,35 @@ abstract class FactMigrator {
     }
 
     /**
+     * The DELETEs removing these raw rows: one per day, naming it.
+     *
+     * Raw's key is (yyyymmdd, id), so an id with no day is looked for in
+     * every partition.
+     *
+     * @param  string    $table
+     * @param  list<Row> $rows  as build() made them
+     * @return list<string>
+     */
+    protected static function deletesByDay( $table, array $rows ) {
+
+        $by_day = [];
+
+        foreach ( $rows as $row ) {
+
+            $by_day[ (int) $row['yyyymmdd'] ][] = (int) $row['id'];
+        }
+
+        $out = [];
+
+        foreach ( $by_day as $day => $ids ) {
+
+            $out[] = sprintf( 'DELETE FROM %s WHERE yyyymmdd = %d AND id IN (%s)', $table, $day, implode( ',', $ids ) );
+        }
+
+        return $out;
+    }
+
+    /**
      * Undo one site's migration: delete exactly the raw rows it wrote.
      *
      * The ids are derived from the v1 rows, which the migration never
@@ -482,11 +511,9 @@ abstract class FactMigrator {
 
         while ( $rows = $this->read( $site_id, $after ) ) {
 
-            $ids = array_map( 'intval', array_column( $this->build( $rows, $scratch ), 'id' ) );
+            foreach ( self::deletesByDay( $table, $this->build( $rows, $scratch ) ) as $sql ) {
 
-            if ( $ids ) {
-
-                if ( $this->db()->query( sprintf( 'DELETE FROM %s WHERE id IN (%s)', $table, implode( ',', $ids ) ) ) === false ) {
+                if ( $this->db()->query( $sql ) === false ) {
 
                     throw new \RuntimeException( sprintf( 'v1 migration: reverting site %s failed.', $site_id ) );
                 }
@@ -884,8 +911,8 @@ abstract class FactMigrator {
      *
      * EXCEPT WHAT v1 FILLED IN ITSELF. A campaign link without utm_medium or
      * utm_source still got a medium and a source: v1 defaulted the medium to
-     * `direct` or classified the referrer (resolveMedium()), and took the
-     * source from the referring host (resolveSource()). Those are verdicts
+     * `direct` or classified the referrer (1.x's resolveMedium()), and took the
+     * source from the referring host (1.x's resolveSource()). Those are verdicts
      * too, and as tags they would be read as what the link said -- `direct`
      * matches no channel rule, so every such session was Unassigned. They are
      * dropped, and the cube derives both from the referrer. A link that did

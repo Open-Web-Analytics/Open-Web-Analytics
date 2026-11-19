@@ -84,6 +84,26 @@ final class EventDispatchListenerShapeTest extends TestCase
             'the handler registered AFTER the static one did not run, so the dispatch '
             . 'was stopped by the shape of an earlier listener' );
     }
+
+    /**
+     * filter() names each callback in a debug line, built before debug()
+     * decides whether to write it. A Closure or an invokable object has no
+     * string form, so naming one by sprintf() ended the request.
+     */
+    public function testAClosureOrInvokableFilterRuns(): void
+    {
+        $d = $this->dispatch();
+
+        $d->attachFilter( 'shape.filter', static fn ( $value ) => $value . '+closure' );
+        $d->attachFilter( 'shape.filter', new EventDispatchShapeInvokable(), 20 );
+
+        $this->assertSame( 'v+closure+invokable', $d->filter( 'shape.filter', 'v' ) );
+
+        $name = new ReflectionMethod( $d, 'listenerName' );
+
+        $this->assertSame( '(closure)', $name->invoke( null, static fn () => null ) );
+        $this->assertSame( EventDispatchShapeInvokable::class, $name->invoke( null, new EventDispatchShapeInvokable() ) );
+    }
 }
 
 class EventDispatchShapeSpy
@@ -103,5 +123,13 @@ class EventDispatchShapeSpy
         self::$ranStatic = true;
 
         return OWA_EHS_EVENT_HANDLED;
+    }
+}
+
+class EventDispatchShapeInvokable
+{
+    public function __invoke( $value )
+    {
+        return $value . '+invokable';
     }
 }

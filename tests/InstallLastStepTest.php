@@ -5,6 +5,8 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/InstallerHarness.php';
+require_once __DIR__ . '/SettingsSingletonSnapshot.php';
 
 /**
  * The installer's last step and what its pages show.
@@ -20,7 +22,33 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class InstallLastStepTest extends TestCase
 {
+    use InstallerHarness;
+    use SettingsSingletonSnapshot;
+
     private const ROOT = __DIR__ . '/..';
+
+    protected function setUp(): void
+    {
+        $this->snapshotSettings();
+        $this->setUpInstaller();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->restoreSettings();
+    }
+
+    /** @return array<string, string> the wizard's last form, filled in */
+    private function wizardPost(array $over = []): array
+    {
+        return array_merge([
+            'domain'        => 'https://example.test',
+            'user_id'       => 'owatest-admin',
+            'email_address' => 'owatest-admin@example.test',
+            'password'      => 'owatest-admin-password',
+            'timezone'      => 'Europe/Berlin',
+        ], $over);
+    }
 
     private function source(string $file): string
     {
@@ -64,23 +92,81 @@ final class InstallLastStepTest extends TestCase
         }
     }
 
-    public function testBothInstallersSaveTheLastStepTogether(): void
+    /**
+     * The wizard writes the admin, the first site and the timezone inside
+     * finishInstall(), which sets the install-complete flag with them, and
+     * announces the install once that has committed.
+     */
+    public function testTheWizardSavesTheLastStepTogetherThenAnnouncesIt(): void
     {
-        $this->assertStringContainsString('->finishInstall(', $this->source('modules/Base/Controller/InstallBase.php'));
-        $this->assertStringContainsString('->finishInstall(', $this->source('modules/Base/Controller/InstallCli.php'));
+        $this->settings()->set('base', 'install_complete', false);
 
-        foreach (['InstallBase', 'InstallCli'] as $c) {
-            $this->assertStringNotContainsString("persistSetting('base', 'install_complete'",
-                $this->source("modules/Base/Controller/$c.php"), "$c sets the flag only through finishInstall()");
-        }
+        $this->installController(\OWA\Module\Base\Controller\InstallBase::class, $this->wizardPost())->action();
+
+        $this->assertSame([
+            'installSchema',
+            'finishInstall:begin',
+            'createAdminUser:owatest-admin',
+            'createDefaultSite:https://example.test',
+            'persistSetting:base.timezone="Europe\\/Berlin"',
+            'finishInstall:end',
+            'announceInstallComplete:owatest-admin:owatest-site',
+        ], InstallerRecording::$calls);
+
+        $this->assertFalse((bool) $this->settings()->get('base', 'install_complete'),
+            'the flag is set by finishInstall() only');
     }
 
+    /** cmd=install does the same, without a timezone of its own. */
+    public function testTheCliInstallSavesTheLastStepTogetherThenAnnouncesIt(): void
+    {
+        $this->settings()->set('base', 'install_complete', false);
+
+        $this->installCli($this->wizardPost())->action();
+
+        $this->assertSame([
+            'installSchema',
+            'finishInstall:begin',
+            'createAdminUser:owatest-admin',
+            'createDefaultSite:https://example.test',
+            'finishInstall:end',
+            'announceInstallComplete:owatest-admin:owatest-site',
+        ], InstallerRecording::$calls);
+
+        $this->assertFalse((bool) $this->settings()->get('base', 'install_complete'),
+            'the flag is set by finishInstall() only');
+    }
+
+    /** A last step that did not commit is not announced, by either installer. */
+    public function testALastStepThatDidNotCommitIsNotAnnounced(): void
+    {
+        $this->im->commits = false;
+
+        $wizard = $this->installController(\OWA\Module\Base\Controller\InstallBase::class, $this->wizardPost());
+        $wizard->action();
+
+        $this->assertSame([], $this->recorded('announceInstallComplete'));
+        $this->assertStringContainsString('nothing was saved', (string) $wizard->data['error_msg']);
+
+        InstallerRecording::$calls = [];
+        $cli = $this->installCli($this->wizardPost());
+        $cli->action();
+
+        $this->assertSame([], $this->recorded('announceInstallComplete'));
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+    }
+
+    /** It redirects to the start, and writes nothing. */
     public function testTheFinishPageWritesNothing(): void
     {
-        $src = $this->source('modules/Base/Controller/InstallFinish.php');
+        $this->settings()->set('base', 'install_complete', false);
 
-        $this->assertStringNotContainsString('persistSetting', $src);
-        $this->assertStringNotContainsString('->save()', $src);
+        $finish = $this->installController(\OWA\Module\Base\Controller\InstallFinish::class, []);
+        $finish->action();
+
+        $this->assertSame([], InstallerRecording::$calls);
+        $this->assertFalse((bool) $this->settings()->get('base', 'install_complete'));
+        $this->assertSame('base.installStart', $finish->data['do']);
     }
 
     public function testANonceIsCheckedAgainstTheActionThatRuns(): void
@@ -111,9 +197,32 @@ final class InstallLastStepTest extends TestCase
         // cmd=instance-info keeps them in full.
         $this->assertSame('/srv/elsewhere/data/logs/', $shown->invoke(null, '/srv/elsewhere/data/logs/', false));
 
-        $env = $this->source('modules/Base/Controller/InstallCheckEnv.php');
-        $this->assertStringContainsString('EnvironmentCheck::all( $config_file, true )', $env);
-        $this->assertStringNotContainsString("'Check the database settings in ' . \$config_file", $env);
+    }
+
+    /**
+     * The environment check lists the checks cmd=instance-info runs, with
+     * paths relative to OWA's directory, and names the config file by its
+     * name alone when the database does not connect.
+     */
+    public function testTheEnvironmentCheckShowsTheSharedChecksWithoutAbsolutePaths(): void
+    {
+        $this->im->connects = false;
+
+        $env = $this->installController(\OWA\Module\Base\Controller\InstallCheckEnv::class, []);
+        $env->action();
+
+        $config_file = (string) \OWA\Core\CoreAPI::getSetting('base', 'config_file');
+        $shared      = \OWA\Module\Base\Classes\EnvironmentCheck::all($config_file, true);
+        $checks      = $env->data['checks'];
+
+        $this->assertSame($shared, array_slice($checks, 0, count($shared)));
+
+        $database = $checks[count($shared)];
+        $this->assertSame('Database connection', $database['name']);
+        $this->assertFalse($database['passed']);
+        $this->assertSame('Check the database settings in ' . basename($config_file) . '.', $database['msg']);
+
+        $this->assertStringNotContainsString(\OWA\Core\Env::root(), json_encode($checks, JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -123,19 +232,50 @@ final class InstallLastStepTest extends TestCase
      */
     public function testTheDatabaseStepDoesNotRunOnAnExistingConfig(): void
     {
-        $src = $this->source('modules/Base/Controller/InstallConfig.php');
-        $fn  = substr($src, (int) strpos($src, 'function doAction('));
-        $fn  = substr($fn, 0, (int) strpos($fn, "\n    }\n"));
+        $post = [
+            'action' => 'base.installConfig', 'nonce' => \OWA\Core\CoreAPI::createNonce('base.installConfig'),
+            'db_host' => '127.0.0.1', 'db_name' => 'owatest', 'db_user' => 'owatest', 'db_password' => 'owatest',
+            'db_type' => 'mysql', 'public_url' => 'https://owa.example.test/',
+        ];
 
-        $this->assertStringContainsString('isConfigFilePresent()', $fn);
-        $this->assertStringContainsString("setRedirectAction( 'base.installCheckEnv' )", $fn);
-        $this->assertLessThan(strpos($fn, 'parent::doAction()'), strpos($fn, 'isConfigFilePresent()'));
+        $step = new class($post) extends \OWA\Module\Base\Controller\InstallConfig {
+            public $ran = false;
+
+            public function action()
+            {
+                $this->ran = true;
+            }
+        };
+
+        $step->im = $this->im;
+        $step->c  = $this->settings;
+        $step->doAction();
+
+        $this->assertFalse($step->ran, 'a valid post reaches nothing with a config file in place');
+        $this->assertSame('base.installCheckEnv', $step->data['do'] ?? null);
+        $this->assertArrayNotHasKey('validation_errors', $step->data);
+
+        // Without one, the same post is the database step's.
+        $this->settings->present = false;
+        $step->doAction();
+
+        $this->assertTrue($step->ran);
     }
 
+    /**
+     * cmd=install takes the admin's password from password= only: none given,
+     * none used, whatever the database password is.
+     */
     public function testTheCliInstallNeverUsesTheDatabasePassword(): void
     {
-        $this->assertStringNotContainsString("get('base', 'db_password')",
-            $this->source('modules/Base/Controller/InstallCli.php'));
+        $this->settings()->set('base', 'db_password', 'owatest-db-password');
+
+        $post = $this->wizardPost();
+        unset($post['password']);
+
+        $this->installCli($post)->action();
+
+        $this->assertSame([null], $this->im->passwords);
     }
 
     /**

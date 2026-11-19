@@ -16,7 +16,7 @@
  * form's shape. If the assembly is wrong, every server test still passes.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login, loginAs } = require('./fixtures');
+const { FIXTURE, login, loginAs, ui } = require('./fixtures');
 
 /** A name unique to this run, so reruns do not collide on the roster. */
 const reportName = (label) => `E2E ${label} ${Date.now()}`;
@@ -91,7 +91,7 @@ async function buildOne(page, label, shared = false) {
     await page.fill('#customReportName', name);
 
     if (shared) {
-        await page.check('#isShared');
+        await page.getByRole('switch', { name: 'Shared in everyone\'s list' }).check();
     }
 
     // A new report starts EMPTY, so the widget has to be added. There is
@@ -491,7 +491,7 @@ test.describe('custom reports', () => {
         test('a new report starts with no widgets and cannot be saved', async ({ page }) => {
             await openBuilder(page);
 
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
 
             // The plus is there, and it is the only thing to press.
             await expect(page.locator('#addWidget')).toBeVisible();
@@ -545,7 +545,7 @@ test.describe('custom reports', () => {
             // Still on the builder, with the sentence still saying why.
             await expect(page.locator('#customReportForm')).toBeVisible();
             await expect(page.locator('#customReportEmpty')).toBeVisible();
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
         });
 
         /**
@@ -670,7 +670,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgFilterValue')).toBeHidden();
             await page.click('#dlgFilterAdd');
 
-            await expect(page.locator('#dlgFilters .owa_filterPill')).toContainText('has a value');
+            await expect(ui(page.getByRole('dialog', { name: 'Widget settings' }), 'filter:pills')).toContainText('has a value');
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
@@ -853,21 +853,21 @@ test.describe('custom reports', () => {
             await startWidget(page, 'grid');
             await dialogCancel(page).click();
 
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
             await expect(page.locator('#customReportEmpty')).toBeVisible();
 
             // The same, closed with the X rather than the button...
             await startWidget(page, 'grid');
             await page.click('#dlgClose');
 
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
 
             // ...and with Escape.
             await startWidget(page, 'grid');
             await page.locator('#dlgTitle').press('Escape');
 
             await expect(page.locator('#widgetDialog')).toBeHidden();
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
         });
 
         /**
@@ -1289,7 +1289,7 @@ test.describe('custom reports', () => {
             await openBuilder(page);
 
             // From NOUGHT: a new report starts with no block.
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
 
             // The plus asks what KIND now, so each one is a choice as well as
             // a click -- and the chooser is modal, so the next plus is behind
@@ -1404,23 +1404,23 @@ test.describe('custom reports', () => {
         test('the gallery closes on Escape and returns focus to the plus', async ({ page }) => {
             await openBuilder(page);
 
-            const plus = page.locator('#addWidget');
+            const plus = page.getByRole('button', { name: 'Add a widget', exact: true });
             const gallery = page.getByRole('dialog', { name: 'Add a widget' });
 
             await plus.click();
             await expect(gallery).toBeVisible();
-            await expect(gallery.locator('.owa_typeChoice').first(), 'focus is in the gallery').toBeFocused();
+            await expect(ui(page, 'dialog:widget-type').getByRole('button').first(), 'focus is in the gallery').toBeFocused();
 
             await page.keyboard.press('Escape');
             await expect(gallery).toBeHidden();
             await expect(plus).toBeFocused();
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
 
             await plus.click();
-            await gallery.locator('.owa_typeChoice[data-type="trend"]').click();
+            await gallery.getByRole('button', { name: /^Trend chart/ }).click();
             await expect(gallery).toBeHidden();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            await expect(page.getByRole('dialog', { name: 'Widget settings' })).toBeVisible();
+            await expect(ui(page, 'builder:block')).toHaveCount(1);
         });
 
         /** The metric picker offers nothing past its cap. */
@@ -2366,7 +2366,7 @@ test.describe('custom reports', () => {
 
             await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
 
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(ui(page, 'builder:block')).toHaveCount(0);
             await expect(page.locator('#customReportEmpty')).toBeVisible();
             await expect(page.locator('#customReportSubmit')).toBeDisabled();
 
@@ -2822,7 +2822,7 @@ test.describe('custom reports', () => {
 
                 await openBuilder(page);
                 await page.fill('#customReportName', name);
-                await page.check('#isShared');
+                await page.getByRole('switch', { name: 'Shared in everyone\'s list' }).check();
                 await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
                 await page.click('#customReportSubmit');
                 await page.waitForLoadState('networkidle');
@@ -2843,7 +2843,7 @@ test.describe('custom reports', () => {
 
                 await openBuilder(page);
                 await page.fill('#customReportName', name);
-                await page.check('#isShared');
+                await page.getByRole('switch', { name: 'Shared in everyone\'s list' }).check();
                 await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
                 await page.click('#customReportSubmit');
                 await page.waitForLoadState('networkidle');
@@ -2908,7 +2908,7 @@ test.describe('custom reports', () => {
 
         await openBuilder(page);
         await page.fill('#customReportName', name);
-        await page.check('#isShared');
+        await page.getByRole('switch', { name: 'Shared in everyone\'s list' }).check();
         await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
         await page.click('#customReportSubmit');
         await page.waitForLoadState('networkidle');
@@ -3094,7 +3094,7 @@ test.describe('custom reports', () => {
 
             expect(refused.status()).toBe(404);
             await expect(theirs.locator('body')).toContainText('The page could not be found.');
-            await expect(theirs.locator('.owa_reportTitle')).toHaveCount(0);
+            await expect(theirs.getByRole('heading', { name: privateName })).toHaveCount(0);
             await expect(theirs.locator('body')).not.toContainText(privateName);
         } finally {
             await reader.close();

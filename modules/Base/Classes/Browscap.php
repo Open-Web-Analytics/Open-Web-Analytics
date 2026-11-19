@@ -169,7 +169,8 @@ class Browscap extends \OWA\Core\Base {
      *
      * 'Other' is the parser's own word for "no rule matched", which is an
      * ANSWER about a desktop browser and an ABSENCE about a phone. It is
-     * returned here unchanged; deciding what it means is deviceType()'s job,
+     * returned here unchanged; deciding what it means is the job of
+     * TrackingEventHelpers::resolveDeviceType(),
      * and storing it is not -- absence is NULL in owa_event_raw.
      */
 

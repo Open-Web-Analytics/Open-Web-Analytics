@@ -4,15 +4,18 @@ use PHPUnit\Framework\TestCase;
 use OWA\Core\CoreAPI;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/RunsUnderPhpCgi.php';
 
 /**
  * The options createCookie() sets a cookie with (CoreAPI::cookieOptions()).
  *
  * setcookie() writes no header under the CLI, so the options are asserted
- * where they are made.
+ * where they are made, and createCookie() itself is run under php-cgi.
  */
 final class CreateCookieOptionsTest extends TestCase
 {
+    use RunsUnderPhpCgi;
+
     public function testThePathIsTheOneGiven(): void
     {
         $this->assertSame('/reports', CoreAPI::cookieOptions(0, '/reports', '', false, false)['path']);
@@ -79,14 +82,27 @@ final class CreateCookieOptionsTest extends TestCase
         });
     }
 
-    /** createCookie() sets the cookie with that answer, not with Lib::isHttps() alone. */
+    /**
+     * createCookie() sets the cookie with that answer, not with Lib::isHttps()
+     * alone. Run under php-cgi, which prints the response's headers.
+     */
     public function testCreateCookieAsksIt(): void
     {
-        $m   = new ReflectionMethod(CoreAPI::class, 'createCookie');
-        $src = implode('', array_slice(file($m->getFileName()), $m->getStartLine() - 1, $m->getEndLine() - $m->getStartLine() + 1));
+        $this->assertMatchesRegularExpression('/; secure\b/i', $this->setCookieHeader(['HTTPS' => 'on'], false),
+            'on HTTPS the cookie is Secure though $secure is false');
+        $this->assertMatchesRegularExpression('/; secure\b/i', $this->setCookieHeader([], true),
+            '$secure true marks it Secure over HTTP');
+        $this->assertDoesNotMatchRegularExpression('/; secure\b/i', $this->setCookieHeader([], false));
+    }
 
-        $this->assertStringContainsString('self::cookieIsSecure($secure)', $src);
-        $this->assertStringNotContainsString('Lib::isHttps()', $src);
+    /** The Set-Cookie header tests/fixtures/create_cookie_probe.php's request answers with. */
+    private function setCookieHeader(array $server, bool $secure): string
+    {
+        $headers = $this->cgiHeaders('tests/fixtures/create_cookie_probe.php', $server + ['PROBE_SECURE' => $secure ? '1' : '0']);
+
+        $this->assertSame(1, preg_match('/^Set-Cookie: [^\r\n]*probe=v[^\r\n]*/mi', $headers, $m), 'no cookie was set: ' . $headers);
+
+        return $m[0];
     }
 
     /** Every caller in the code means the root path, and the default is it. */

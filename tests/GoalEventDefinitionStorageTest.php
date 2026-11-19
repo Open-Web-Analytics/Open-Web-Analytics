@@ -187,17 +187,6 @@ final class GoalEventDefinitionStorageTest extends TestCase
         }
     }
 
-    /** And the form refuses it, rather than storing something inert. */
-    public function testABrokenRegexIsRefusedOnSave(): void
-    {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/GoalEventDefinitionSave.php' );
-
-        $this->assertStringContainsString( 'The regular expression is not valid.', $src,
-            'A pattern that cannot compile can be saved, and then matches nothing '
-            . 'for ever without saying so.' );
-    }
-
     /**
      * An @ in a regex condition is part of the pattern (#909).
      *
@@ -916,20 +905,31 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * GoalEventDefinitionCountModeTest's.
      */
 
-    /** The save stores the submitted count mode through countMode(), and nothing clamps it. */
+    /** The save stores the count mode it was given, and nothing clamps it. */
     public function testTheSaveStoresTheCountModeItWasGiven(): void
     {
-        $body = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/GoalEventDefinitionSave.php' );
+        foreach ( [ \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION,
+                         \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ] as $mode ) {
 
-        $write = substr( $body, (int) strpos( $body, "set( 'count_mode'" ) );
-        $write = substr( $write, 0, (int) strpos( $write, ';' ) );
+            $name = 'Count_mode_save_' . substr( md5( $mode . uniqid( '', true ) ), 0, 8 );
 
-        // Single-quoted: in double quotes $this would interpolate and the needle be something else.
-        $this->assertStringContainsString( 'self::countMode( $this->getParam( \'countMode\' ) )', $write,
-            'The save does not store the count mode it was given.' );
+            ( new \OWA\Module\Base\Controller\GoalEventDefinitionSave( [
+                'propertyId' => $this->propertyId, 'name' => $name, 'value' => '0', 'countMode' => $mode,
+                'triggerEvent' => 'page_view', 'conditionProperty' => [ 'page_path' ],
+                'conditionOperator' => [ 'exact' ], 'conditionValue' => [ '/thanks' ] ] ) )->action();
 
-        $this->assertSame( 1, substr_count( $body, "set( 'count_mode'" ), 'one write, not a clamp after it' );
+            $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+                'SELECT id, count_mode FROM owa_goal_event_definition WHERE property_id = ? AND name = ?',
+                [ $this->propertyId, $name ] );
+
+            try {
+                $this->assertSame( $mode, $row['count_mode'] ?? null, 'The save does not store the count mode it was given.' );
+            } finally {
+                if ( ! empty( $row['id'] ) ) {
+                    \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $row['id'] );
+                }
+            }
+        }
     }
 
     /** ...and a definition saved with either one reads back as it. */

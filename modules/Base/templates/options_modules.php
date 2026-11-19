@@ -4,7 +4,7 @@
 
 <?php if (!empty($view->modules)): ?>
 
-<table width="100%" id="module_roster" class="management">
+<table width="100%" id="module_roster" class="management" data-ui="module-roster">
     <thead>
     <TR>
         <TH><?php $view->out( \OWA\Core\CoreAPI::t( 'Module' ) ); ?></TH>

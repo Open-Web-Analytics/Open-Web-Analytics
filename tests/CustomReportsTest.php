@@ -1308,23 +1308,17 @@ final class CustomReportsTest extends TestCase
      * `array(false)`, the JavaScript gets `[false]`, and an indexOf against it
      * quietly says no.
      *
-     * The controller is read from the source, because the failure is a
-     * MISSING name and every set() has to be found, whichever branch it is on.
+     * Run on the refused-save path, which sets every name, and, with a
+     * database, on a report that is not found.
      */
     public function testTheBuilderForwardsEverythingItsControllerSets(): void
     {
-        $controller = file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/CustomReportEdit.php' );
+        $paths = [ [ 'customReportError' => 'Refused.', 'customReportName' => 'Typed' ] ];
 
-        /*
-         * SINGLE-quoted, and it matters. In a double-quoted PHP string
-         * `$this->set` interpolates away to nothing, and the pattern would then
-         * match something else entirely -- confidently.
-         */
-        preg_match_all( '~\$this->set\(\s*.([A-Za-z_0-9]+).~', $controller, $set );
+        if ( owa_test_db_available() ) {
 
-        // The check has to be capable of failing: there must be something to compare.
-        $this->assertGreaterThan( 15, count( $set[1] ) );
+            $paths[] = [ 'customReportId' => '999999999999' ];
+        }
 
         /*
          * Two are deliberately not forwarded, and neither is read by the body:
@@ -1338,12 +1332,26 @@ final class CustomReportsTest extends TestCase
          */
         $exempt = [ 'custom_report', 'title' ];
 
-        $missing = array_values( array_diff(
-            array_unique( $set[1] ), \OWA\Module\Base\Controller\CustomReportEdit::SCREEN_VARS, $exempt ) );
+        foreach ( $paths as $params ) {
 
-        $this->assertSame( [], $missing,
-            'the builder controller sets these and does not hand them to its template, so the '
-          . 'template reads false for each: ' . implode( ', ', $missing ) );
+            $controller = new \OWA\Module\Base\Controller\CustomReportEdit( $params );
+            $before     = array_keys( (array) $controller->data );
+
+            $controller->action();
+
+            $set = array_values( array_diff( array_keys( (array) $controller->data ), $before ) );
+
+            // The check has to be capable of failing: there must be something to compare.
+            $this->assertGreaterThan( 15, count( $set ) );
+            $this->assertContains( 'custom_report_error', $set );
+
+            $missing = array_values( array_diff(
+                $set, \OWA\Module\Base\Controller\CustomReportEdit::SCREEN_VARS, $exempt ) );
+
+            $this->assertSame( [], $missing,
+                'the builder controller sets these and does not hand them to its template, so the '
+              . 'template reads false for each: ' . implode( ', ', $missing ) );
+        }
     }
 
     public function testAtMostTenWidgets(): void
@@ -2175,19 +2183,14 @@ final class CustomReportsTest extends TestCase
     /**
      * Each screen asks for the capability that matches what it IS.
      *
-     * The roster asks for view_site_list -- the capability that means "any
-     * signed-in user". Not view_reports, which looks like the obvious choice
-     * and is wrong: view_reports sits in capabilitiesThatRequireSiteAccess, so
-     * it is only ever satisfied against a particular site, and the roster has
-     * no site. Requiring it refused every non-admin with "No access to any
-     * site", which the e2e suite caught and no unit test could.
+     * The roster asks for view_reports, held on the Property it lists, as
+     * every report screen does (CustomReportsRosterAccessTest drives it).
      *
-     * ASSERTED AS THE DECLARED CAPABILITY rather than by driving each screen,
-     * for the same reason: passing view_reports needs a user with a real grant
-     * on a real site, and a test user given only a ROLE has no grants. The
-     * behavioural tests -- an analyst opening a report an admin built, and an
-     * analyst being refused the builder -- live in the e2e suite, where the
-     * fixture users are real.
+     * ASSERTED AS THE DECLARED CAPABILITY rather than by driving each screen:
+     * passing view_reports needs a user with a grant on a site, and a test
+     * user given only a ROLE has no grants. The behavioural tests -- an
+     * analyst opening a report an admin built, and an analyst being refused
+     * the builder -- live in the e2e suite, where the fixture users are real.
      *
      * @dataProvider declaredCapabilityProvider
      */
@@ -2201,8 +2204,8 @@ final class CustomReportsTest extends TestCase
     public static function declaredCapabilityProvider(): array
     {
         return [
-            'the roster is for any signed-in user' => [
-                '\OWA\Module\Base\Controller\CustomReports', 'view_site_list'],
+            'the roster is for readers of reports' => [
+                '\OWA\Module\Base\Controller\CustomReports', 'view_reports'],
             'building is for authors' => [
                 '\OWA\Module\Base\Controller\CustomReportEdit', 'edit_reports'],
             'saving is for authors' => [

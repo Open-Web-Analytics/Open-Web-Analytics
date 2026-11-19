@@ -195,7 +195,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                                 $view->out( $owa_action['class'] ); endif; ?>"
                            href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
                             if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
-                                $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
+                                $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon" aria-hidden="true"></i><?php
                             endif; ?><?php $view->out( $owa_action['label'] ); ?></a>
                         <?php endforeach; ?>
                     </div>

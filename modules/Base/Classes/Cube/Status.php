@@ -24,7 +24,7 @@ namespace OWA\Module\Base\Classes\Cube;
  * @phpstan-import-type JobState from \OWA\Module\Base\Classes\JobStatus
  * @phpstan-type Check array{key: string, label: string, level: string, detail: string}
  * @phpstan-type Summary array{property_id: string, name: string, table: string, exists: bool, checks: list<Check>, behind_from: int|null, scheduler: JobState, level: string}
- * @phpstan-type DayRow array{day: int, raw: int, cube: int, partition: string, built_at: int|null, settled: bool}
+ * @phpstan-type DayRow array{day: int, raw: int, cube: int, partition: string, built_at: int|null, settled: bool, next_build: int|null}
  * @phpstan-type PartitionFacts array{count: int, first: int|null, lead_end: int|null, daily_through: int|null, today_daily: bool, catch_all: string, catch_all_rows: int}
  * @phpstan-type Readiness array{state: string, headline: string, message: string, cron: string, property_id: string}
  *
@@ -163,7 +163,9 @@ class Status {
     /**
      * Per recent day: raw rows for the Property, cube rows, the partition that
      * holds the day and when it was last built. A gap is raw above zero with
-     * the cube at zero, or the two disagreeing on a settled day.
+     * the cube at zero, or the two disagreeing on a settled day. Today's row
+     * also says when a routine run rebuilds it next (Builder::nextBuildDue()),
+     * the others null.
      *
      * @param  string $property_id
      * @param  string $table  its cube
@@ -197,12 +199,14 @@ class Status {
             $built_at = $span ? $built[ $span['name'] ] : null;
 
             $rows[] = [
-                'day'       => $day,
-                'raw'       => (int) ( $raw[ $day ] ?? 0 ),
-                'cube'      => (int) ( $cube[ $day ] ?? 0 ),
-                'partition' => $span ? $span['name'] : '',
-                'built_at'  => $built_at,
-                'settled'   => $span ? $builder->isSettled( $span, $built_at ) : false,
+                'day'        => $day,
+                'raw'        => (int) ( $raw[ $day ] ?? 0 ),
+                'cube'       => (int) ( $cube[ $day ] ?? 0 ),
+                'partition'  => $span ? $span['name'] : '',
+                'built_at'   => $built_at,
+                'settled'    => $span ? $builder->isSettled( $span, $built_at ) : false,
+                'next_build' => $i === 0 && $span && $built_at !== null
+                    ? Builder::dueAt( $built_at, $builder->buildMsec( $span, $built_at ) ) : null,
             ];
         }
 
@@ -210,25 +214,14 @@ class Status {
     }
 
     /**
-     * Whether a Profile's Property can be reported on, and if not, what to
-     * tell the reader. Null when the Property's cube exists.
+     * Whether a Property can be reported on, and if not, what to tell the
+     * reader. Null when the Property's cube exists.
      *
      * This answers "is reporting ready?", not "is the tag working?" -- that is
      * the Tracking Tag screen's question (SitesInvocation::lastEventReceived()).
      * So it never reads raw: a cube is created only by a scheduled build, and
      * what stands between a Property and its first cube is either the scheduler
      * or the next build.
-     *
-     * @param string $site_id
-     * @return Readiness|null
-     */
-    public static function readiness( $site_id ) {
-
-        return self::readinessOfProperty( Cubes::propertyIdForSite( (string) $site_id ) );
-    }
-
-    /**
-     * readiness() for a Property, which is what a report is of.
      *
      * @param string $property_id '' when there is none
      * @return Readiness|null

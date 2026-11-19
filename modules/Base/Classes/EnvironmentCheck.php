@@ -39,6 +39,24 @@ class EnvironmentCheck {
     ];
 
     /**
+     * The check for one of REQUIRED_EXTENSIONS.
+     *
+     * @param string $extension
+     * @param bool   $loaded
+     * @return Check
+     */
+    public static function extension( $extension, $loaded ) {
+
+        return self::check(
+            sprintf( \OWA\Core\CoreAPI::t( 'PHP extension: %s' ), $extension ),
+            $loaded ? \OWA\Core\CoreAPI::t( 'loaded' ) : \OWA\Core\CoreAPI::t( 'missing' ),
+            $loaded,
+            sprintf( \OWA\Core\CoreAPI::t( '%1$s Install the %2$s extension and restart PHP.' ),
+                \OWA\Core\Strings::translate( self::REQUIRED_EXTENSIONS[ $extension ] ?? '' ), $extension ),
+            sprintf( '`%s` is loaded.', $extension ) );
+    }
+
+    /**
      * A path as a check shows it: in full for cmd=instance-info and System
      * Health, relative to OWA's directory for the web installer, which anyone
      * can open before OWA is installed.
@@ -88,14 +106,9 @@ class EnvironmentCheck {
             function_exists( 'mysqli_stmt_get_result' ),
             defined( 'OWA_DB_TYPE' ) ? (string) OWA_DB_TYPE : 'mysql' );
 
-        foreach ( self::REQUIRED_EXTENSIONS as $extension => $what_for ) {
+        foreach ( array_keys( self::REQUIRED_EXTENSIONS ) as $extension ) {
 
-            $checks[] = self::check(
-                sprintf( \OWA\Core\CoreAPI::t( 'PHP extension: %s' ), $extension ),
-                extension_loaded( $extension ) ? \OWA\Core\CoreAPI::t( 'loaded' ) : \OWA\Core\CoreAPI::t( 'missing' ),
-                extension_loaded( $extension ),
-                sprintf( \OWA\Core\CoreAPI::t( '%1$s Install the %2$s extension and restart PHP.' ), $what_for, $extension ),
-                sprintf( '`%s` is loaded.', $extension ) );
+            $checks[] = self::extension( $extension, extension_loaded( $extension ) );
         }
 
         /*
@@ -180,7 +193,7 @@ class EnvironmentCheck {
 
         return self::check(
             \OWA\Core\CoreAPI::t( '64-bit PHP' ),
-            ( (int) $int_size * 8 ) . '-bit',
+            sprintf( \OWA\Core\CoreAPI::t( '%d-bit' ), (int) $int_size * 8 ),
             (int) $int_size === 8,
             \OWA\Core\CoreAPI::t( 'OWA needs a 64-bit build of PHP. Install a 64-bit PHP and point this virtual host at it.' ),
             'PHP is a 64-bit build.' );

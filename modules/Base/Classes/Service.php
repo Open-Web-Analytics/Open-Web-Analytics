@@ -27,8 +27,6 @@ class Service extends \OWA\Core\Base {
     public $maps = [];
     /** @var bool */
     public $update_required = false;
-    /** @var bool */
-    public $install_required = false;
     /** @var list<string> */
     public $modules_needing_updates = [];
     /** @var array<string, \OWA\Core\Module> name => module */
@@ -642,14 +640,6 @@ class Service extends \OWA\Core\Base {
     public function getModulesNeedingUpdates() {
 
         return $this->modules_needing_updates;
-    }
-
-
-    /**
-     * @return void
-     */
-    public function setInstallRequired() {
-        $this->install_required = true;
     }
 
     /**

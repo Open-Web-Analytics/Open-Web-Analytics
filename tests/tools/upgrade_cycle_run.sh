@@ -47,11 +47,19 @@ php tests/tools/upgrade_cycle.php down "$@" || exit 1
 
 echo
 echo "--- upgrading it again: cli.php cmd=update, the real command ---"
-# NOT checked here. A failure is the finding, and the verify phase reports it
-# with the schema version it actually reached -- which is more use than a bare
-# non-zero exit from a command whose own output is already above.
+# Its exit code is held until verify has run, which reports the schema version
+# the update reached. pipefail makes it the exit code of php, not of sed.
 php cli.php cmd=update 2>&1 | sed 's/^/    /'
+update_rc=$?
 
 echo
 echo "--- verifying ---"
 php tests/tools/upgrade_cycle.php verify "$@"
+verify_rc=$?
+
+if [ "$update_rc" -ne 0 ]; then
+    echo "cli.php cmd=update exited $update_rc" >&2
+    exit "$update_rc"
+fi
+
+exit "$verify_rc"

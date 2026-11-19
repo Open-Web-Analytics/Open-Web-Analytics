@@ -71,19 +71,16 @@ class Setting extends \OWA\Core\Entity {
         $this->setProperty( $value );
 
         /*
-         * Whether load() fetches this row at boot.
-         *
-         * WordPress's wp_options.autoload is the same choice. Indexed because
-         * the boot query filters on it and nothing else narrows the install
-         * scope.
+         * Written 1 by both write paths, and read by nothing: what boot
+         * fetches is decided by the settings registry, by name
+         * (Settings::eagerPredicate()). Not indexed, as no query filters on it.
          *
          * NOT NULL default 1, so a row written by code that has never heard of
-         * this column is loaded at boot. Opting OUT is the deliberate act.
+         * this column holds what every other row holds.
          */
         $autoload = new \OWA\Module\Base\Classes\DbColumn( 'autoload', OWA_DTD_BOOLEAN );
         $autoload->setDefaultValue( 1 );
         $autoload->setNotNull();
-        $autoload->setIndex();
         $this->setProperty( $autoload );
 
         $creation_date = new \OWA\Module\Base\Classes\DbColumn( 'creation_date', OWA_DTD_BIGINT );

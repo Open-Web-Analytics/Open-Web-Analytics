@@ -1525,8 +1525,8 @@ class CustomReports {
         /*
          * LONGEST FIRST. '>=' contains '>' and '=@' contains '=', so testing in
          * any other order splits `medium=@news` at the wrong character and
-         * reports a name of `medium=`. The builder's splitConstraint() sorts
-         * for the same reason.
+         * reports a name of `medium=`. ResultSetManager::CONSTRAINT_OPERATORS is
+         * ordered for the same reason.
          */
         usort( $operators, static function ( $a, $b ) {
 

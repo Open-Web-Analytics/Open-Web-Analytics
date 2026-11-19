@@ -25,18 +25,17 @@
  * generated from (tests/tools/wiki/sections/settings.php), unless it is
  * `internal`: state OWA records for itself, a per-request flag, or a URL
  * derived from public_url at boot. Nobody configures those, and the reference
- * leaves them out. A handful have neither because nothing reads them;
- * WikiDocsSettingsTest lists them.
+ * leaves them out. WikiDocsSettingsTest fails a setting that has neither.
  *
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
- * pruneRedundantPersistedSettings() drop them and the module would look
- * uninstalled. Base's is_active is true in Settings::baseDefaults(): Base is
- * always active, including on a boot that reads no stored settings.
+ * persistSetting() drop them and the module would look uninstalled. Base's
+ * is_active is true in Settings::baseDefaults(): Base is always active,
+ * including on a boot that reads no stored settings.
  *
- * Two settings are declared with no default for the same reason:
- * install_complete and goals are stored and have never had a code default,
- * and inventing one would put them within reach of the prune.
+ * install_complete is declared with no default for the same reason: it is
+ * stored and has never had a code default, and inventing one would let
+ * persistSetting() drop it.
  *
  * The config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC: never read from the
@@ -123,6 +122,8 @@ return [
         'configuration_id' => [ 'default' => '1', 'internal' => true ],
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
         'cookie_persistence' => [ 'config_constant' => 'OWA_COOKIE_PERSISTENCE', 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ],
+        // A Property's last cube build: partition, built_at and milliseconds (Cube\Builder::recordBuild()). No screen edits it.
+        'cube_last_build' => [ 'default' => [], 'storable' => true, 'internal' => true, 'scopes' => [ 'property' ] ],
         'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
         'data_dir' => [ 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [
@@ -296,6 +297,7 @@ return [
         'mailer-from' => [ 'config_constant' => 'OWA_MAILER_FROM', 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ],
         'mailer-fromName' => [ 'config_constant' => 'OWA_MAILER_FROM_NAME', 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ],
         'mailer-host' => [ 'config_constant' => 'OWA_MAILER_HOST', 'default' => '', 'description' => 'The SMTP server host, used when mailer-use-smtp is on.' ],
+        'mailer-options' => [ 'config_constant' => 'OWA_MAILER_OPTIONS', 'default' => [], 'description' => 'Options for the SMTP connection\'s stream context, as an array (PHPMailer\'s SMTPOptions), such as [ \'ssl\' => [ \'cafile\' => \'/path/to/ca.pem\' ] ]. Used when mailer-use-smtp is on. None by default.' ],
         'mailer-password' => [ 'config_constant' => 'OWA_MAILER_PASSWORD', 'default' => '', 'description' => 'The password for the SMTP server, used with mailer-username.' ],
         'mailer-port' => [ 'config_constant' => 'OWA_MAILER_PORT', 'default' => '', 'description' => 'The SMTP server port. Empty uses the mail library\'s default.' ],
         'mailer-smtpAuth' => [ 'config_constant' => 'OWA_MAILER_SMTP_AUTH', 'default' => false, 'description' => 'Whether OWA authenticates to the SMTP server. Off by default.' ],
@@ -346,6 +348,7 @@ return [
         'campaignUtmParams' => [
             'default'  => true,
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Read utm_ Campaign Parameters' ),
@@ -362,6 +365,7 @@ return [
         'campaignKeys' => [
             'default'  => [],
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property', 'profile' ],
             'type'     => 'map',
             'keys'     => array_keys( \OWA\Module\Base\Classes\TrackingEventHelpers::CAMPAIGN_KEYS ),
@@ -403,6 +407,7 @@ return [
          * catalogue complete enough for the read sweep to need no exceptions.
          */
         'main_url'            => [ 'internal' => true ],
+        'main_absolute_url'   => [ 'internal' => true ],
         'modules_url'         => [ 'internal' => true ],
         'rest_api_url'        => [ 'internal' => true ],
         'tracking_mode'       => [ 'internal' => true ],
@@ -432,6 +437,8 @@ return [
         'retired_goals_before_092' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'cache_settings_before_086' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update093: the names of the autoload indexes it dropped, for its down().
+        'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],
@@ -630,6 +637,7 @@ return [
         'tracker_cookie_domain' => [
             'default'  => '',
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain' ),

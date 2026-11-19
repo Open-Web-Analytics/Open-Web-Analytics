@@ -131,18 +131,11 @@ class CustomReport extends \OWA\Core\Entity {
     const TYPE_REPORT        = 'report';
     const TYPE_VISUALIZATION = 'visualization';
 
-    /** @return string */
-    public function reportType() {
-
-        return $this->get( 'report_type' ) === self::TYPE_VISUALIZATION
-            ? self::TYPE_VISUALIZATION : self::TYPE_REPORT;
-    }
-
     /**
      * Is this one listed to everybody?
      *
      * Falsy reads as private, which is what NULL means on every row that
-     * predates the column -- the same shape as reportType() above.
+     * predates the column.
      *
      * @return bool
      */

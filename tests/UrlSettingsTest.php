@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/BootsWithConstants.php';
 
 /**
  * The three URLs an install is reached at: OWA_PUBLIC_URL (screens, API,
@@ -13,6 +14,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class UrlSettingsTest extends TestCase
 {
+    use BootsWithConstants;
+
     /** A fresh Settings, so nothing here disturbs the booted one. */
     private function settings(array $set): \OWA\Module\Base\Classes\Settings
     {
@@ -99,12 +102,14 @@ final class UrlSettingsTest extends TestCase
         $this->assertSame('', (string) $s->get('base', 'assets_url'));
     }
 
-    /** Both are governed by their constants: applyConfigConstants() names them, so the wiki lists them. */
+    /** Both are governed by their constants, which a boot applies and names (fixtures/settings_from_constants_probe.php). */
     public function testBothAreConfigFileConstants(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/Settings.php');
-
-        $this->assertStringContainsString("setFromConfigConstant( 'base', 'tracking_url', (string) OWA_TRACKING_URL, 'OWA_TRACKING_URL')", $source);
-        $this->assertStringContainsString("setFromConfigConstant( 'base', 'assets_url', (string) OWA_ASSETS_URL, 'OWA_ASSETS_URL')", $source);
+        $this->assertSame([
+            'base.tracking_url' => ['value' => 'https://t.example.test/owa/', 'constant' => 'OWA_TRACKING_URL'],
+            'base.assets_url'   => ['value' => 'https://cdn.example.test/owa/', 'constant' => 'OWA_ASSETS_URL'],
+        ], $this->bootWith(
+            ['OWA_TRACKING_URL' => 'https://t.example.test/owa/', 'OWA_ASSETS_URL' => 'https://cdn.example.test/owa/'],
+            'base.tracking_url', 'base.assets_url'));
     }
 }

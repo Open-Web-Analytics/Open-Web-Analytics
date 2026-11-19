@@ -16,9 +16,9 @@ class CreateTableDeclaresOptionsTest extends TestCase
     /**
      * Where a CREATE TABLE literal is not a table being declared.
      * MysqlDialect: OWA_SQL_CREATE_TABLE's last %s is createTable()'s options.
-     * Db: createUnpartitionedCopy() rewrites a SHOW CREATE TABLE of an existing table.
+     * Db\Partitions: createUnpartitionedCopy() rewrites a SHOW CREATE TABLE of an existing table.
      */
-    const EXEMPT = ['Core/Db/MysqlDialect.php', 'Core/Db.php'];
+    const EXEMPT = ['Core/Db/MysqlDialect.php', 'Core/Db/Partitions.php'];
 
     /** @return array relative path => true, for each file holding a CREATE TABLE literal */
     private function filesCreatingTables(): array

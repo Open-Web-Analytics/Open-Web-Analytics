@@ -65,6 +65,8 @@ if ( in_array( 'sqs', $active, true ) ) {
     $out += [
         'sqs_type' => (bool) \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'event_queue_types', 'sqs' ),
         'region'   => \OWA\Module\Sqs\Classes\Sqs::region(),
+        'region_governed' => \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'sqs', 'region' ),
+        'region_setting'  => \OWA\Core\CoreAPI::getSetting( 'sqs', 'region' ),
         'name'     => $queue->name(),
         'derived'  => \OWA\Module\Sqs\Classes\Sqs::queueName(),
         // url( false ): built from the credentials' account, so no request is made.

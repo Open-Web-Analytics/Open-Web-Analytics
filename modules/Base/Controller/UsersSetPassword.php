@@ -23,7 +23,7 @@ class UsersSetPassword extends \OWA\Core\Controller {
             $data['view'] = 'base.usersSetPassword';
             $data['view_method'] = 'email';
             $data['ip'] = $event->get('ip');
-            $data['subject'] = 'Password Change Complete';
+            $data['subject'] = \OWA\Core\CoreAPI::t( 'Password Change Complete' );
             $data['email_address'] = $u->get('email_address');
         }
 

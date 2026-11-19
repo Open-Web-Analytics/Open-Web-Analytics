@@ -195,10 +195,9 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             ) );
         }
 
-        // A dry run stops HERE, before the transfer. It used to report after
-        // downloading, which meant asking what would happen cost the same tens
-        // of megabytes against the account's download limit as doing it --
-        // the opposite of what a dry run is for. The HEAD above costs nothing.
+        // A dry run stops here, before the transfer: downloading would cost the
+        // same tens of megabytes against the account's download limit as doing
+        // it. The HEAD above costs nothing.
         if ( $dry_run ) {
 
             return $this->refuse( sprintf(

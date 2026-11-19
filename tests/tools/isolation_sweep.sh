@@ -39,19 +39,17 @@ for f in "${files[@]}"; do
     [ -e "$f" ] || continue
     checked=$((checked + 1))
 
-    if out=$("$PHPUNIT" --no-coverage "$f" 2>&1) && printf '%s' "$out" | grep -qE '^(OK|OK \()'; then
-        continue
-    fi
-
-    # A file whose every case skips (no database, say) reports "No tests
-    # executed" rather than OK. That is not an isolation failure.
-    if printf '%s' "$out" | grep -qE 'No tests executed|OK, but'; then
+    # PHPUnit's exit code alone. A file whose every case skips exits 0; a
+    # deprecation or a warning exits 1 under phpunit.xml's failOnDeprecation
+    # and failOnWarning, and prints "OK, but there were issues!".
+    if out=$("$PHPUNIT" --no-coverage "$f" 2>&1); then
         continue
     fi
 
     failed=$((failed + 1))
     printf '\n--- %s fails on its own ---\n' "$f"
-    printf '%s\n' "$out" | sed -n '/^There \(was\|were\)/,$p' | head -40
+    # From the first failure, error, deprecation or warning PHPUnit lists.
+    printf '%s\n' "$out" | sed -n '/^\(There \(was\|were\)\|[0-9]* tests\? triggered\)/,$p' | head -40
 done
 
 printf '\n%s\n' "Checked $checked file(s); $failed failed in isolation."
