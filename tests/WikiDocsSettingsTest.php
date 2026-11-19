@@ -146,6 +146,8 @@ final class WikiDocsSettingsTest extends TestCase
             'server_role'             => 'OWA_SERVER_ROLE',
             // The constant, not OWA_QUEUE_EVENTS, the 1.x alias read after it.
             'queue_tracking_events'   => 'OWA_QUEUE_TRACKING_EVENTS',
+            // Applied by hand (Settings::HAND_APPLIED_CONSTANTS), not by a pattern in the source.
+            'capabilities'            => 'OWA_ROLE_CAPABILITIES',
         ] as $key => $constant ) {
 
             $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),

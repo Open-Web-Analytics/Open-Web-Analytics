@@ -99,6 +99,12 @@ return function ( $arg = null ) {
         $constants[ 'base|' . $hit[2] ] = $hit[1];
     }
 
+    // Applied by hand, as Settings lists them: OWA_ROLE_CAPABILITIES among them,
+    // which the source scan above does not see.
+    foreach ( Settings::HAND_APPLIED_CONSTANTS as $id => $const ) {
+        $constants[ $id ] ??= $const;
+    }
+
     // Declared on the setting.
     foreach ( $registry['fields'] as $id => $args ) {
         if ( ! empty( $args['config_constant'] ) ) {
