@@ -300,13 +300,29 @@ final class ReportRegistryTest extends TestCase
      */
     public function testRegistrationIsNotDoneByTheConstructor(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Module.php' );
+        $module = new class extends \OWA\Core\Module {
 
-        $constructor = substr( $src, strpos( $src, 'function __construct' ) );
-        $constructor = substr( $constructor, 0, strpos( $constructor, "\n    }" ) );
+            /** @var int */
+            public static $asked = 0;
 
-        $this->assertStringNotContainsString( 'registerReports', $constructor,
+            public function __construct() {
+
+                $this->name = 'owatest_lazy_reports';
+
+                parent::__construct();
+            }
+
+            public function registerReports() {
+
+                self::$asked++;
+
+                return false;
+            }
+        };
+
+        $this->assertSame( 0, $module::$asked,
             'report registration in the constructor puts it on the tracker path' );
+        $this->assertFalse( $module->reports_registered );
 
         // ...and the lazy path is what actually populates it.
         $this->assertNotEmpty( \OWA\Core\CoreAPI::getReportRegistry() );

@@ -76,11 +76,6 @@ final class SettingTierMoveTest extends TestCase
         }
     }
 
-    private function source( string $path ): string
-    {
-        return (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path );
-    }
-
     /* ------------------------------------------------------------------ *
      * One store, one reader
      * ------------------------------------------------------------------ */
@@ -331,25 +326,75 @@ final class SettingTierMoveTest extends TestCase
     /**
      * The one that could not be scoped in place.
      *
-     * announce_visitors and notice_email are not read in
-     * Module::_registerEventHandlers, which runs at module-registration time --
-     * before any event, and so before there is a site to ask about. Read there,
-     * they could only ever be install-wide.
+     * announce_visitors and notice_email are per-Profile, and handlers are
+     * registered at module-registration time, before there is a site to ask
+     * about. So the handler is registered whatever the install-wide value is
+     * (false by default, which is what every boot without a stored value sees).
      */
-    public function testTheAnnouncementDecisionIsNotMadeAtRegistrationTime(): void
+    public function testTheAnnouncementHandlerIsRegisteredWhateverTheInstallSays(): void
     {
-        $src = $this->source( 'modules/Base/Module.php' );
+        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
+        $classes  = [];
 
-        $this->assertStringNotContainsString(
-            "getSetting( 'base', 'announce_visitors' )", $src,
+        foreach ( $dispatch->listenersFor( 'base.new_session' ) as $id ) {
+
+            $listener  = $dispatch->listeners[ $id ] ?? null;
+            $classes[] = is_array( $listener ) && is_object( $listener[0] ) ? get_class( $listener[0] ) : '';
+        }
+
+        $this->assertContains( \OWA\Module\Base\Handler\NotifyHandlers::class, $classes,
             'The handler is registered based on an install-wide read, so a per-Profile '
             . 'value cannot take effect.' );
+    }
 
-        $handler = $this->source( 'modules/Base/Handler/NotifyHandlers.php' );
+    /** The handler decides, from the Profile the event names. */
+    public function testTheProfileDecidesWhetherASessionIsAnnounced(): void
+    {
+        $this->skipUnlessParented();
 
-        $this->assertStringContainsString(
-            "'announce_visitors', 'profile'", $handler,
-            'The decision did not move to the handler, where the event names a site.' );
+        $s       = \OWA\Core\CoreAPI::serviceSingleton();
+        $action  = $s->getMapValue( 'actions', 'base.notifyNewSession' );
+        $install = [];
+
+        foreach ( [ 'announce_visitors', 'notice_email' ] as $name ) {
+            $install[ $name ] = \OWA\Core\CoreAPI::getSetting( 'base', $name );
+        }
+
+        $s->setMapValue( 'actions', 'base.notifyNewSession',
+            [ 'class_name' => RecordedAnnouncement::class, 'file' => __FILE__ ] );
+        RecordedAnnouncement::$heard = [];
+
+        $event = \OWA\Core\CoreAPI::getEventDispatch()->makeEvent( 'base.new_session' );
+        $event->set( 'site_id', $this->siteId );
+
+        try {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'announce_visitors', false );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'notice_email', '' );
+            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'announce_visitors', true );
+            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'notice_email', 'ops@owatest.example.com' );
+
+            ( new \OWA\Module\Base\Handler\NotifyHandlers() )->notify( $event );
+
+            $this->assertSame( [ $this->siteId ], RecordedAnnouncement::$heard,
+                'The Profile asked for announcements and the install-wide value refused them.' );
+
+            RecordedAnnouncement::$heard = [];
+            \OWA\Core\CoreAPI::setSetting( 'base', 'announce_visitors', true );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'notice_email', 'ops@owatest.example.com' );
+            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'announce_visitors', false );
+
+            ( new \OWA\Module\Base\Handler\NotifyHandlers() )->notify( $event );
+
+            $this->assertSame( [], RecordedAnnouncement::$heard,
+                'The Profile turned announcements off and the install-wide value sent one.' );
+        } finally {
+            $s->setMapValue( 'actions', 'base.notifyNewSession', $action );
+
+            foreach ( $install as $name => $value ) {
+                \OWA\Core\CoreAPI::setSetting( 'base', $name, $value );
+                \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', $name );
+            }
+        }
     }
 
     /**
@@ -379,16 +424,67 @@ final class SettingTierMoveTest extends TestCase
     }
 
     /** Excluding an IP is a per-Profile judgement about one office, not a box-wide one. */
-    public function testTheExcludedIpCheckTakesASite(): void
+    public function testTheExcludedIpListIsTheEventsProfiles(): void
     {
-        $src = $this->source( 'Core/CoreAPI.php' );
+        $this->skipUnlessParented();
 
-        $this->assertStringContainsString(
-            'isIpAddressExcluded( $ip_address, $siteId', $src,
-            'isIpAddressExcluded() cannot consult a Profile.' );
+        $ip      = \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp();
+        $saved   = [];
+        $dir     = sys_get_temp_dir() . '/owa-tier-ip-' . bin2hex( random_bytes( 4 ) ) . '/';
 
-        $this->assertStringContainsString(
-            "isIpAddressExcluded( \$ip_address, \$event->get('site_id') )", $src,
-            'The caller has an event in hand but is not passing its site.' );
+        $this->assertNotSame( '', $ip, 'The request has no address to exclude.' );
+
+        foreach ( [ 'excluded_ips', 'queue_tracking_events' ] as $name ) {
+            $saved[ $name ] = \OWA\Core\CoreAPI::getSetting( 'base', $name );
+        }
+
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue( [ 'path' => $dir ] );
+
+        $queued = static function () use ( $dir ): int {
+            return is_file( $dir . 'events.txt' )
+                ? count( array_filter( file( $dir . 'events.txt', FILE_IGNORE_NEW_LINES ) ) ) : 0;
+        };
+
+        try {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'excluded_ips', '' );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'queue_tracking_events', true );
+            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'excluded_ips', '198.51.100.1, ' . $ip );
+
+            $this->assertTrue( (bool) \OWA\Core\CoreAPI::isIpAddressExcluded( $ip, $this->siteId ),
+                'isIpAddressExcluded() did not consult the Profile.' );
+            $this->assertFalse( (bool) \OWA\Core\CoreAPI::isIpAddressExcluded( $ip ),
+                'The install-wide list is empty.' );
+
+            \OWA\Core\CoreAPI::logEvent( 'page_view', [ 'site_id' => $this->siteId, 'page_location' => 'https://tier.test/a' ] );
+
+            $this->assertSame( 0, $queued(), 'An event from an address its Profile excludes was queued.' );
+
+            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', 'excluded_ips' );
+
+            \OWA\Core\CoreAPI::logEvent( 'page_view', [ 'site_id' => $this->siteId, 'page_location' => 'https://tier.test/a' ] );
+
+            $this->assertSame( 1, $queued(), 'With the Profile\'s list cleared the event was still refused.' );
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', 'excluded_ips' );
+
+            foreach ( $saved as $name => $value ) {
+                \OWA\Core\CoreAPI::setSetting( 'base', $name, $value );
+            }
+
+            exec( 'rm -rf ' . escapeshellarg( $dir ) );
+        }
+    }
+}
+
+/** Records the site of each announcement it is asked to send. */
+class RecordedAnnouncement extends \OWA\Core\Controller
+{
+    /** @var list<string> */
+    public static $heard = [];
+
+    public function action()
+    {
+        self::$heard[] = (string) $this->getParam( 'site' )->get( 'site_id' );
     }
 }

@@ -80,9 +80,10 @@ final class InstanceInfoCliTest extends TestCase
 
     public function testTheCommandIsRegistered(): void
     {
-        $source = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php');
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
 
-        $this->assertStringContainsString("registerCliCommand('instance-info'", $source);
+        $this->assertSame('base.instanceInfoCli', $s->getCliCommandClass('instance-info'));
     }
 
     /**

@@ -64,50 +64,50 @@ final class DbCharacterEncodingTest extends TestCase {
     }
 
     /**
-     * The guard that actually holds. While the declared encoding IS utf8, a
-     * hard-coded 'utf8' and the constant produce identical behaviour, so no
-     * behavioural assertion can separate them -- what is checkable is that the
-     * drivers carry no encoding literal of their own.
-     *
-     * Single-quoted needles: a double-quoted one containing $this-> would
-     * interpolate away and pass unconditionally.
+     * The drivers carry no encoding of their own: whatever
+     * connectionCharacterEncoding() answers is what the DSN asks for. While the
+     * declared encoding is the default, a hard-coded one behaves the same, so a
+     * driver that answers something else is what tells the two apart.
      */
-    public function testTheDriversHardCodeNoEncoding(): void {
+    public function testThePdoDsnAsksForWhatTheDriverAnswers(): void {
 
-        $root = dirname( __DIR__ );
+        $driver = new class( 'db.example.com', 3306, 'owatest', 'owatest', 'owatest' ) extends \OWA\Core\Db\PdoMysql {
 
-        foreach ( [ 'Core/Db/PdoMysql.php', 'Core/Db/Mysql.php' ] as $relative ) {
+            protected function connectionCharacterEncoding() {
 
-            $source = (string) file_get_contents( $root . '/' . $relative );
-
-            // Strip comments before looking: the explanation of why utf8 is the
-            // wrong thing to hard-code necessarily mentions utf8.
-            $code = '';
-
-            foreach ( token_get_all( $source ) as $token ) {
-
-                if ( is_array( $token ) && in_array( $token[0], [ T_COMMENT, T_DOC_COMMENT ], true ) ) {
-                    continue;
-                }
-
-                $code .= is_array( $token ) ? $token[1] : $token;
+                return 'latin1';
             }
+        };
 
-            foreach ( [ "'utf8'", '"utf8"', 'charset=utf8', "'utf8mb4'", "'utf8mb3'" ] as $needle ) {
+        $dsn = ( new ReflectionMethod( $driver, 'dsn' ) )->invoke( $driver );
 
-                $this->assertStringNotContainsString(
-                    $needle,
-                    $code,
-                    sprintf(
-                        '%s hard-codes %s. The connection encoding must come from '
-                      . 'OWA_DTD_CHARACTER_ENCODING_UTF8, or it silently stops matching the schema '
-                      . 'the moment an installation configures a different one.',
-                        $relative,
-                        $needle
-                    )
-                );
-            }
+        $this->assertStringContainsString( 'charset=latin1', $dsn,
+            'the DSN hard-codes an encoding: it must come from OWA_DTD_CONNECTION_ENCODING, '
+          . 'or it silently stops matching the schema the moment an installation configures another' );
+    }
+
+    /** The same for mysqli, whose set_charset() is only observable on a live connection. */
+    public function testTheMysqliConnectionNegotiatesWhatTheDriverAnswers(): void {
+
+        if ( ! owa_test_db_available() ) {
+
+            $this->markTestSkipped( 'OWA database not reachable.' );
         }
+
+        $p = \OWA\Core\CoreAPI::dbSingleton()->connectionParams;
+
+        $driver = new class( $p['host'], $p['port'], $p['name'], $p['user'], $p['password'] ) extends \OWA\Core\Db\Mysql {
+
+            protected function connectionCharacterEncoding() {
+
+                return 'latin1';
+            }
+        };
+
+        $this->assertTrue( $driver->connect(), 'the driver could not connect with the configured credentials' );
+
+        $this->assertSame( 'latin1', mysqli_character_set_name( $driver->connection ),
+            'the mysqli connection hard-codes an encoding: it must come from OWA_DTD_CONNECTION_ENCODING' );
     }
 
     /**
