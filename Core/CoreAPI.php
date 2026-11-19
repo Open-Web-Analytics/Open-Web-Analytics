@@ -1145,7 +1145,8 @@ class CoreAPI {
      */
     public static function getCapabilities($role) {
         $caps = \OWA\Core\CoreAPI::getSetting('base', 'capabilities');
-        if (array_key_exists($role, $caps)) {
+        // A null role (no user) names no entry; as a key, null is deprecated.
+        if ($role !== null && array_key_exists($role, $caps)) {
             return is_array( $caps[ $role ] )
                 ? array_values( array_diff( $caps[ $role ], self::RETIRED_CAPABILITIES ) )
                 : $caps[ $role ];

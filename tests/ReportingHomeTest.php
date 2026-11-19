@@ -59,19 +59,22 @@ final class ReportingHomeTest extends TestCase
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
 
-        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
-
-        $cookies = new \ReflectionProperty( $request, 'cookies' );
-        $original = $cookies->getValue( $request );
+        /*
+         * Set where getStateParam() reads it: the request's state, as the
+         * request container fills it from the cookie. Set on $request->cookies,
+         * as this test did, it never arrived and the test checked nothing.
+         */
+        $state  = \OWA\Core\CoreAPI::serviceSingleton()->request->state;
+        $before = [ $state->stores, $state->initial_state ];
+        $key    = \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE;
 
         try {
 
-            $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+            unset( $state->stores[ $key ] );
+            $state->setInitialState( $key, [ '987654321987' ] );
 
-            $cookies->setValue( $request, array_merge( (array) $original, [
-                $ns . \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE
-                    => '987654321987',
-            ] ) );
+            $this->assertSame( '987654321987', (string) \OWA\Core\CoreAPI::getStateParam( $key ),
+                'the fixture must reach what ReportingHome reads' );
 
             $data = $this->redirect();
 
@@ -86,7 +89,7 @@ final class ReportingHomeTest extends TestCase
 
         } finally {
 
-            $cookies->setValue( $request, $original );
+            [ $state->stores, $state->initial_state ] = $before;
         }
     }
 

@@ -74,7 +74,7 @@ class SitesRest extends \OWA\Core\View\RestApi {
              * sometimes is worse than one that is sometimes blank: a consumer
              * cannot tell "no Property" from "this build does not send it".
              */
-            $row['property_name'] = $names[ $site->get( 'property_id' ) ] ?? '';
+            $row['property_name'] = $names[ (string) $site->get( 'property_id' ) ] ?? '';
 
             $out[ $key ] = $row;
         }

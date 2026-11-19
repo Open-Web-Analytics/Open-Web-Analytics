@@ -6,6 +6,7 @@
          displayDetailsOnTestsThatTriggerWarnings="true"
          displayDetailsOnTestsThatTriggerDeprecations="true"
          failOnWarning="true"
+         failOnDeprecation="true"
          cacheDirectory=".phpunit.cache">
     <testsuites>
         <testsuite name="OWA Unit Tests">
