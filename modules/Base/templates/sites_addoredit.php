@@ -151,7 +151,7 @@
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this Observation Profile' ) ); ?></div>
     <div class="owa_dangerZoneBody">
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'The Profile stops collecting data and is removed from reports. Its Property and the Property\'s other Profiles are not affected. If this is the Property\'s last Profile, the Property is left with none, and you can add new ones.' ) ); ?>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'The Profile stops collecting data. What it has collected stays in its Property\'s reports. Its Property and the Property\'s other Profiles are not affected. If this is the Property\'s last Profile, the Property is left with none, and you can add new ones.' ) ); ?>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.sitesDelete');?>
@@ -161,7 +161,7 @@
                name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Profile' ) ); ?>"
                data-owa-confirm
                data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this Observation Profile?' ) ); ?>"
-               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops recording and leaves reporting. Everything it collected is kept, and it can be restored.' ), $view->site['name'] ?? '' ) ); ?>"
+               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops recording. What it collected is kept, and stays in its Property\'s reports.' ), $view->site['name'] ?? '' ) ); ?>"
                data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Profile' ) ); ?>">
     </form>
 </div>

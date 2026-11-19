@@ -192,6 +192,16 @@ final class ServerRoleTest extends TestCase
         $this->assertStringContainsString('OWA_SERVER_ROLE', $notices['OWA_USE_STATIC_CONFIG_ONLY']);
     }
 
+    /** 1.x's debug constants are not read; OWA_DEBUG replaces both. */
+    public function testTheOneXDebugConstantsGetAnUpgradeNotice(): void
+    {
+        $notices = ServerRole::upgradeNotices(['OWA_ERROR_HANDLER' => 'development', 'OWA_LOG_PHP_ERRORS' => true]);
+
+        $this->assertSame(['OWA_ERROR_HANDLER', 'OWA_LOG_PHP_ERRORS'], array_keys($notices));
+        $this->assertStringContainsString('OWA_DEBUG', $notices['OWA_ERROR_HANDLER']);
+        $this->assertStringContainsString('OWA_DEBUG', $notices['OWA_LOG_PHP_ERRORS']);
+    }
+
     public function testTheOneXStaticSwitchOnlyStopsTheStoredSettingsRead(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'skip_stored_settings');

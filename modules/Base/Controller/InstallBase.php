@@ -100,13 +100,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
                 return;
             }
 
-            // fire install complete event.
-            $ed = \OWA\Core\CoreAPI::getEventDispatch();
-            $event = $ed->eventFactory();
-            $event->set('u', $this->getParam('user_id'));
-            $event->set('site_id', $site_id);
-            $event->setEventType('install_complete');
-            $ed->notify($event);
+            $this->im->announceInstallComplete( $this->getParam('user_id'), $site_id );
 
             // set view
             $this->set('u', $this->getParam('user_id'));

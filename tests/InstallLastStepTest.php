@@ -137,4 +137,51 @@ final class InstallLastStepTest extends TestCase
         $this->assertStringNotContainsString("get('base', 'db_password')",
             $this->source('modules/Base/Controller/InstallCli.php'));
     }
+
+    /**
+     * The first Profile's tracking bundle, which the tag on the finish screen
+     * loads, is published when the install completes, by the wizard and by
+     * cmd=install alike; one that cannot be written then is queued. Before,
+     * neither published it and the tag answered 404.
+     */
+    public function testTheFirstProfileSBundleIsPublishedOrQueued(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs the database');
+        }
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $table   = 'owa_job_queue_phpunit_install';
+        $siteId  = 'install-bundle-' . bin2hex(random_bytes(4));
+        $noBuild = sys_get_temp_dir() . '/owa-install-nobuild-' . bin2hex(random_bytes(4)) . '/';
+        mkdir($noBuild, 0700);
+
+        $db->query('DROP TABLE IF EXISTS ' . $table);
+        $db->query('CREATE TABLE ' . $table . ' LIKE owa_job_queue');
+        \OWA\Module\Base\Classes\JobQueue::$table = $table;
+        // No build manifest, so the bundle cannot be written now and is queued.
+        \OWA\Module\Base\Classes\TrackerBundle::$buildDir = $noBuild;
+
+        try {
+            $im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
+
+            $this->assertSame($siteId, $im->finishInstall(function () use ($siteId) {
+                $site = \OWA\Core\CoreAPI::entityFactory('base.site');
+                $site->set('id', $site->generateId($siteId));
+                $site->set('site_id', $siteId);
+                $site->set('domain', $siteId . '.example');
+                $site->create();
+                return $siteId;
+            }));
+
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . $siteId),
+                'the first Profile\'s bundle was neither published nor queued');
+        } finally {
+            \OWA\Module\Base\Classes\TrackerBundle::$buildDir = null;
+            \OWA\Module\Base\Classes\JobQueue::$table = null;
+            $db->query('DROP TABLE IF EXISTS ' . $table);
+            $db->query(sprintf("DELETE FROM owa_site WHERE site_id = '%s'", addslashes($siteId)));
+            rmdir($noBuild);
+        }
+    }
 }

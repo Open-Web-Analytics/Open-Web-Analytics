@@ -149,7 +149,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         foreach ( [ $this->queue_dir, $this->unprocessed_path, $this->processing_path,
                          $this->delayed_path, $this->archive_path ] as $d ) {
 
-            if ( ! is_dir( $d ) && ! @mkdir( $d, 0755, true ) && ! is_dir( $d ) ) {
+            // The web server writes beacons here and the CLI drains them.
+            if ( ! \OWA\Core\Lib::makeSharedDir( $d ) ) {
 
                 \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot make queue directory $d." );
 
@@ -568,6 +569,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /**
      * Append one line to $path, safe against a rotation renaming it.
      *
+     * A file this creates is made group-writable (0664), as the directories
+     * are: the web server and the CLI both append to events.txt.
+     *
      * @param  string $path
      * @param  string $line  without its newline
      * @return bool
@@ -576,6 +580,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         for ( $try = 0; $try < 5; $try++ ) {
 
+            $created = ! file_exists( $path );
+
             $fh = @fopen( $path, 'a' );
 
             if ( ! $fh ) {
@@ -583,6 +589,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
                 \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot open $path for writing." );
 
                 return false;
+            }
+
+            if ( $created ) {
+
+                @chmod( $path, 0664 );
             }
 
             flock( $fh, LOCK_EX );

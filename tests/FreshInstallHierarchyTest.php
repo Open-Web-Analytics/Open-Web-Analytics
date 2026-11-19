@@ -253,6 +253,52 @@ final class FreshInstallHierarchyTest extends TestCase
     }
 
     /**
+     * An archived Property is not reused. It is hidden from every screen, so a
+     * new Profile for its domain put there could not be found.
+     */
+    public function testAnArchivedPropertyIsNotReused(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
+        }
+
+        $sm     = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $domain = 'archived-' . substr( md5( uniqid( '', true ) ), 0, 8 ) . '.example';
+
+        $first = $sm->ensurePropertyFor( $domain, 'First' );
+
+        $this->assertNotEmpty( $first );
+
+        $created = [ $first ];
+
+        try {
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+            $property->load( $first );
+            $property->set( 'archived_date', 1756000000 );
+            $property->update();
+
+            $second = $sm->ensurePropertyFor( $domain, 'Second' );
+
+            $this->assertNotEmpty( $second );
+
+            $created[] = $second;
+
+            $this->assertNotSame( $first, $second,
+                'The new Profile would have been put in the archived Property.' );
+
+            $this->assertSame( $second, $sm->ensurePropertyFor( $domain, 'Third' ),
+                'The live Property for the domain is found again.' );
+
+        } finally {
+
+            foreach ( array_unique( $created ) as $id ) {
+                $p = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+                $p->delete( $id );
+            }
+        }
+    }
+
+    /**
      * A Property does not need a domain.
      *
      * Think an app: there is no domain to name it by, and the Property is a

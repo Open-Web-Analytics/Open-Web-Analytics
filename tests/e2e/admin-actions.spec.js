@@ -408,8 +408,10 @@ test.describe('admin: site CRUD', () => {
         const confirmDialog = page.locator('#owa_confirmDialog');
         await expect(confirmDialog).toBeVisible();
 
-        // It has to say what actually happens: this is archived, not destroyed.
-        await expect(confirmDialog).toContainText('restore');
+        // It has to say what actually happens: archived, not destroyed, and its
+        // history stays in the Property's reports. No restore is promised.
+        await expect(confirmDialog).toContainText('is kept');
+        await expect(confirmDialog).not.toContainText('restore');
 
         // Cancel is the default answer to a destructive question, so it must
         // really cancel.

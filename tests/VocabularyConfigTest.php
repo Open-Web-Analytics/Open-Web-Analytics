@@ -227,4 +227,40 @@ final class VocabularyConfigTest extends TestCase
         $this->assertSame('base.event', $module->metrics['zzCubeCount'][0]['params']['entity'] ?? null);
         $this->assertArrayHasKey('zzCubeRatio', $module->metrics ?? []);
     }
+
+    /**
+     * A metric that aggregates a column but names no entity or column is refused
+     * at registration, rather than registered and failing when a report builds
+     * it (entityFactory('')).
+     */
+    public function testAnAggregateMetricNamingNoEntityIsRefused(): void
+    {
+        $module = $this->module();
+
+        $module->registerMetricDefinition([
+            'name' => 'zzNoEntity', 'label' => 'N', 'metric_type' => 'count',
+            'data_type' => 'integer', 'column' => 'id' ]);
+        $module->registerMetricDefinition([
+            'name' => 'zzNoColumn', 'label' => 'N', 'entity' => 'base.event',
+            'metric_type' => 'sum', 'data_type' => 'integer' ]);
+        $module->registerMetricDefinition([
+            'label' => 'N', 'entity' => 'base.event', 'metric_type' => 'count',
+            'data_type' => 'integer', 'column' => 'id' ]);
+        $module->registerMetricDefinition([
+            'name' => 'zzNoType', 'entity' => 'base.event', 'data_type' => 'integer', 'column' => 'id' ]);
+
+        $this->assertSame([], array_keys($module->metrics ?? []));
+    }
+
+    /** A definition with no label is labelled with its name. */
+    public function testAMetricWithNoLabelIsLabelledWithItsName(): void
+    {
+        $module = $this->module();
+
+        $module->registerMetricDefinition([
+            'name' => 'zzUnlabelled', 'entity' => 'base.event',
+            'metric_type' => 'count', 'data_type' => 'integer', 'column' => 'id' ]);
+
+        $this->assertSame('zzUnlabelled', $module->metrics['zzUnlabelled'][0]['label'] ?? null);
+    }
 }

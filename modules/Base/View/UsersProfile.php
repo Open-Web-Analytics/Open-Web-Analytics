@@ -33,7 +33,7 @@ class UsersProfile extends \OWA\Core\View {
         //page title
         $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'User Profile' ));
         $this->body->set_template('users_addoredit.php');
-        $this->body->set('roles', \OWA\Core\CoreAPI::getAllRoles());
+        $this->body->set('roles', \OWA\Core\CoreAPI::getAssignableRoles());
 
         $this->body->set('user', $user);
 

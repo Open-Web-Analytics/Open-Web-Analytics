@@ -40,4 +40,49 @@ final class SanitizeStripHtmlTest extends TestCase
     {
         $this->assertSame( 'onetwo', Sanitize::stripHtml( '<p>one</p><b>two</b>' ) );
     }
+
+    /**
+     * A constraint compares with < and <=. Neither starts a tag, so neither is
+     * stripped, nor is anything after it.
+     *
+     * @dataProvider textWithALessThanSign
+     */
+    public function testALessThanSignThatStartsNoTagIsKept( string $text ): void
+    {
+        $this->assertSame( $text, Sanitize::stripHtml( $text ) );
+    }
+
+    /** @return array<string, array{string}> */
+    public static function textWithALessThanSign(): array
+    {
+        return [
+            'less than'           => [ 'pageViews<5' ],
+            'less than or equal'  => [ 'pageViews<=5' ],
+            'two constraints'     => [ 'pageViews<5,bounces<=1' ],
+            'a spaced comparison' => [ 'a < b' ],
+            'a negative number'   => [ 'revenue<-1' ],
+        ];
+    }
+
+    /**
+     * @dataProvider markup
+     */
+    public function testMarkupIsStripped( string $input, string $expected ): void
+    {
+        $this->assertSame( $expected, Sanitize::stripHtml( $input ) );
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function markup(): array
+    {
+        return [
+            'a closed tag'          => [ 'a<b>c</b>d', 'acd' ],
+            'an unclosed tag'       => [ 'x<img src=x onerror=alert(1)', 'x' ],
+            'a comment'             => [ 'a<!-- c -->b', 'ab' ],
+            'an unclosed comment'   => [ 'a<!-- c', 'a' ],
+            'a declaration'         => [ '<!DOCTYPE html>a', 'a' ],
+            'a processing tag'      => [ 'a<?php echo 1; ?>b', 'ab' ],
+            'a tag after a compare' => [ 'pageViews<5<script>x', 'pageViews<5x' ],
+        ];
+    }
 }
