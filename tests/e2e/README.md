@@ -7,8 +7,8 @@ reporting safety net for the Phase 3 jQuery migration:
 |-------|----------|------------|----------------|
 | Build integrity | `tests/js/reporting/BundleIntegrity.test.js` | yes (Jest) | the reporting bundle is built from the expected inputs, in the right order |
 | jsdom load | `tests/js/reporting/BundleLoad.test.js` | yes (Jest) | the bundle executes and the OWA objects construct outside a browser |
-| **Real render (this dir)** | `tests/e2e/reporting-dashboard.spec.js` | **no — manual/local** | Flot charts, jqGrid tables, and chosen select menus actually paint on a live logged-in dashboard |
-| **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | **no — manual/local** | the heatmap overlay's control panel + canvas build on the tracker path, with DOM APIs alone (the tracker side carries no jQuery) |
+| **Real render (this dir)** | `tests/e2e/reporting-dashboard.spec.js` | yes (the `e2e` job) | Flot charts, jqGrid tables, and chosen select menus actually paint on a live logged-in dashboard |
+| **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | yes (the `e2e` job) | the heatmap overlay's control panel + canvas build on the tracker path, with DOM APIs alone (the tracker side carries no jQuery) |
 
 The jsdom layers cannot paint; these Playwright tests drive headless Chromium
 against a live OWA dashboard. As of Phase 3.2 the reporting bundle runs on jQuery
@@ -16,12 +16,19 @@ against a live OWA dashboard. As of Phase 3.2 the reporting bundle runs on jQuer
 is. The version assertion here (and in the build-integrity test) pins 3.6.0 — a
 future bump must be a conscious, reviewed change.
 
-## Why this isn't in CI
+## In CI
 
-These tests need a **live, seeded OWA instance** (web server + database), which
-the stateless CI jobs don't provide. They are a local/pre-merge gate. The
-build-integrity and jsdom tests — which need only the built bundle — cover the
-same bundle in CI.
+These tests need a **live, seeded OWA instance** (web server + database). The
+`e2e` job in `.github/workflows/ci.yml` builds the bundles and runs two suites
+against a database service, on MySQL 8.0, MySQL 8.4 and MariaDB 10.11 and 11.8:
+
+- `npm run test:e2e:install` (`playwright.install.config.js`): the install
+  wizard and the CLI installer, each into its own scratch database;
+- `npm run test:e2e:selfhost` (`playwright.selfhost.config.js`): every other
+  spec in this directory, against a throwaway install that
+  `selfhost_harness.php` provisions and serves with `php -S`.
+
+`npm run test:e2e:selfhost` runs the same suite locally.
 
 ## Running
 

@@ -6,7 +6,8 @@
  *
  * Boots OWA once in the same 'tracking' request type that log.php uses, so
  * \OWA\Core\CoreAPI::logEvent() runs the real ingestion pipeline synchronously
- * (queue_events defaults to false) down to the fact-table INSERT.
+ * (queue_tracking_events defaults to false) down to the INSERT into the raw
+ * event table (base.event_raw).
  *
  * These tests write to the configured OWA database (the dev/test schema in
  * owa-config.php). Each test uses a unique GUID and removes its own row in
