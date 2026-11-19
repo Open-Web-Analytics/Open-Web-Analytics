@@ -18,7 +18,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * name gate.
  *
  * The beacons here go through log.php's own steps: the request container,
- * the second decode, admission, then Compat::apply() as logEvent() runs it.
+ * Compat::decodeOlderBeacon(), admission, then Compat::apply() as logEvent() runs it.
  */
 final class BeaconCompatActionTest extends TestCase
 {
@@ -59,7 +59,7 @@ final class BeaconCompatActionTest extends TestCase
         $_GET = $query;
 
         $request = new \OWA\Core\RequestContainer();
-        $request->decodeRequestParams();
+        \OWA\Module\Base\Classes\Beacon\Compat::decodeOlderBeacon( $request );
 
         $event = new \OWA\Module\Base\Classes\Event();
         $type  = $request->getParam( 'e_t' );

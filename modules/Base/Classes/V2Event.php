@@ -114,6 +114,95 @@ class V2Event {
     const MAX_HOSTNAME = 253;
 
     /**
+     * A URL in the form it is stored: the path percent-decoded once, and the
+     * scheme, host, query and fragment exactly as given.
+     *
+     * So `/caf%C3%A9/a%20b?q=a%20b` is `/café/a b?q=a%20b`. A path is read by
+     * people; a query string is data, and decoding it would change where its
+     * pairs split.
+     *
+     * Escapes that stay in the path:
+     *
+     *   - %3F and %23, because a ? or # there would end the path when the URL
+     *     is read again;
+     *   - a control character, which is not text;
+     *   - a byte that is not part of a valid UTF-8 character: /caf%E9 stays
+     *     /caf%E9, where /caf%C3%A9 is /café.
+     *
+     * A % that does not start an escape is left as it is. One pass, so %2541
+     * becomes %41 and no further.
+     *
+     * @param  mixed $url
+     * @return mixed the URL in that form; anything not a non-empty string as given
+     */
+    public static function readableUrl( $url ) {
+
+        if ( ! is_string( $url ) || $url === ''
+             || ! preg_match( '~^((?:[A-Za-z][A-Za-z0-9+.\-]*:)?(?://[^/?#]*)?)([^?#]*)(.*)$~s', $url, $m ) ) {
+
+            return $url;
+        }
+
+        $path = preg_replace_callback( '/(?:%[0-9A-Fa-f]{2})+/', static function ( $run ) {
+
+            return self::decodeEscapeRun( $run[0] );
+
+        }, $m[2] );
+
+        return $m[1] . $path . $m[3];
+    }
+
+    /**
+     * A run of percent escapes from a path, decoded where each character is
+     * valid UTF-8 and allowed in a stored path (readableUrl()); every other
+     * byte keeps its escape as it was written.
+     *
+     * @param  string $run  one or more %XX escapes, nothing else
+     * @return string
+     */
+    private static function decodeEscapeRun( $run ) {
+
+        $escapes = str_split( $run, 3 );
+        $bytes   = array_map( static fn ( $escape ) => hexdec( substr( $escape, 1 ) ), $escapes );
+        $count   = count( $bytes );
+        $out     = '';
+
+        for ( $i = 0; $i < $count; ) {
+
+            $lead = $bytes[ $i ];
+
+            if ( $lead < 0x80 ) {
+
+                $out .= $lead === 0x3F || $lead === 0x23 || $lead < 0x20 || $lead === 0x7F
+                    ? $escapes[ $i ] : chr( $lead );
+                $i++;
+
+                continue;
+            }
+
+            $length = $lead >= 0xC2 && $lead <= 0xDF ? 2
+                : ( $lead >= 0xE0 && $lead <= 0xEF ? 3
+                : ( $lead >= 0xF0 && $lead <= 0xF4 ? 4 : 0 ) );
+
+            $char = $length && $i + $length <= $count
+                ? implode( '', array_map( 'chr', array_slice( $bytes, $i, $length ) ) ) : '';
+
+            if ( $char !== '' && mb_check_encoding( $char, 'UTF-8' ) ) {
+
+                $out .= $char;
+                $i   += $length;
+
+                continue;
+            }
+
+            $out .= $escapes[ $i ];
+            $i++;
+        }
+
+        return $out;
+    }
+
+    /**
      * Split a URL into the three readings owa_event_raw stores beside it.
      *
      * Stored as columns rather than parsed in SQL at read time, because a GROUP

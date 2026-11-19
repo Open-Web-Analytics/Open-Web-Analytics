@@ -368,4 +368,48 @@ final class BeaconCompatInventoryTest extends TestCase
             \OWA\Core\Env::root() . '/modules/Base/Classes/Migration/ActionMigrator.php' ),
             'the migration no longer makes its events with the function compat applies' );
     }
+
+    /**
+     * The second decode is applied from the index: the version it names is the
+     * one Compat reads, and the current tracker is at or above it, so its
+     * beacons are decoded once.
+     */
+    public function testTheSecondDecodeIsAppliedFromTheIndex(): void
+    {
+        $from = (int) ( $this->index()['decoded_once_from_version'] ?? 0 );
+
+        $this->assertGreaterThan( 0, $from );
+        $this->assertSame( $from, Compat::decodedOnceFromVersion() );
+
+        $tracker = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js' );
+
+        $this->assertSame( 1, preg_match( '/static get BEACON_FORMAT_VERSION\(\) \{\s*return (\d+);/', $tracker, $m ),
+            'OWATracker.BEACON_FORMAT_VERSION is gone; this test is stale' );
+        $this->assertGreaterThanOrEqual( $from, (int) $m[1], "the tracker's beacons would be decoded twice" );
+
+        $this->assertFalse( Compat::decodesOnce( null ), 'a beacon with no version is decoded twice' );
+        $this->assertFalse( Compat::decodesOnce( $from - 1 ) );
+        $this->assertTrue( Compat::decodesOnce( (string) $from ) );
+    }
+
+    /** And nothing applies it but Compat: decodeRequestParams() has no other caller. */
+    public function testOnlyCompatDecodesABeaconASecondTime(): void
+    {
+        $root    = \OWA\Core\Env::root();
+        $callers = [];
+
+        $files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/modules', FilesystemIterator::SKIP_DOTS ) );
+
+        foreach ( array_merge( iterator_to_array( $files ), glob( $root . '/Core/{,*/}*.php', GLOB_BRACE ), glob( $root . '/*.php' ) ) as $file ) {
+
+            $file = (string) $file;
+
+            if ( substr( $file, -4 ) === '.php' && strpos( (string) file_get_contents( $file ), '->decodeRequestParams()' ) !== false ) {
+
+                $callers[] = substr( $file, strlen( $root ) + 1 );
+            }
+        }
+
+        $this->assertSame( [ 'modules/Base/Classes/Beacon/Compat.php' ], $callers );
+    }
 }

@@ -883,9 +883,10 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The internal properties holding the page URL and its referrer as PHP's
-     * decoding of the beacon left them, before decodeRequestParams() decodes
-     * every value a second time (log.php). Request-set and stored by nothing
+     * The internal properties holding an older beacon's page URL and referrer
+     * as PHP's decoding left them, before decodeRequestParams() decodes every
+     * value a second time (Beacon\Compat::decodeOlderBeacon()). A current
+     * beacon is decoded once and has none. Request-set and stored by nothing
      * (tracking_properties.json).
      */
     const ARRIVED = [
@@ -895,8 +896,9 @@ class TrackingEventHelpers {
 
     /**
      * The page URL and referrer of a beacon's params as they are now, by
-     * their ARRIVED names. log.php takes them before the second decode and adds
-     * them after admission, so a beacon cannot name them.
+     * their ARRIVED names. Beacon\Compat::decodeOlderBeacon() takes them before
+     * an older beacon's second decode, and log.php adds them after admission,
+     * so a beacon cannot name them.
      *
      * @param  array<mixed> $params  the request's params, decoded once by PHP
      * @return array<string, string>
@@ -933,8 +935,8 @@ class TrackingEventHelpers {
      * or # in the query, into the characters that end them: the path, the
      * query and the pairs in it then split in the wrong place. A URL holding
      * none of those reads the same either way, so its readings are taken from
-     * the stored URL, exactly as before. An event built in process, or queued
-     * before the copies existed, has none.
+     * the stored URL. A current beacon, decoded once, an event built in
+     * process, and one queued before the copies existed have none.
      *
      * @param  object $event
      * @param  string $property  page_location or HTTP_REFERER
@@ -960,6 +962,32 @@ class TrackingEventHelpers {
             || preg_match( '/%(26|23)/i', (string) ( $parts['query'] ?? '' ) );
 
         return $cut ? $url : null;
+    }
+
+    /**
+     * A URL property of a current beacon in its stored form
+     * (V2Event::readableUrl()): the path decoded once, the query and fragment
+     * as the page had them. The first callback of every data_type url
+     * property the client sets.
+     *
+     * Only for a beacon decoded once (Beacon\Compat::decodesOnce()). An older
+     * beacon's values were decoded a second time already, and an event with no
+     * format version is left as it was built.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
+    public static function readableUrl( $value, $event ) {
+
+        if ( ! is_string( $value ) || $value === ''
+             || ! \OWA\Module\Base\Classes\Beacon\Compat::decodesOnce( $event->get( 'beacon_version' ) ) ) {
+
+            return $value;
+        }
+
+        return \OWA\Module\Base\Classes\Sanitize::cleanTrackingText(
+            \OWA\Module\Base\Classes\V2Event::readableUrl( $value ) );
     }
 
     /**
@@ -1359,9 +1387,10 @@ class TrackingEventHelpers {
 
     /*
      * The page URL and its referrer AS THE BEACON CARRIED THEM, for the
-     * query_string spam rules. Copied here, in the edge stamp, because the
-     * property stage cleans both (data_type url: tags stripped, quotes and
-     * dollar signs escaped), which removes exactly what those rules look for.
+     * query_string spam rules, copied in the edge stamp before the property
+     * stage. Read with carried(): the property stage rewrites a current
+     * beacon's page_location and HTTP_REFERER later (readableUrl()), so for
+     * one of those the copy comes from the key the beacon sent.
      */
 
     /**
@@ -1371,7 +1400,7 @@ class TrackingEventHelpers {
      */
     public static function receivedPageLocation( $value, $event ) {
 
-        return self::received( $value, $event->get( 'page_location' ) );
+        return self::received( $value, self::carried( $event, 'page_location' ) );
     }
 
     /**
@@ -1381,7 +1410,39 @@ class TrackingEventHelpers {
      */
     public static function receivedReferer( $value, $event ) {
 
-        return self::received( $value, $event->get( 'HTTP_REFERER' ) );
+        return self::received( $value, self::carried( $event, 'HTTP_REFERER' ) );
+    }
+
+    /**
+     * A client property's value under the key the beacon sent it by: its wire
+     * key, else an older tracker's name for it (Beacon\Compat::renames()).
+     * The property itself only for an event that is not a current beacon,
+     * whose URL readableUrl() leaves as it is. Null when there is none.
+     *
+     * @param  Event  $event
+     * @param  string $property
+     * @return mixed
+     */
+    private static function carried( $event, $property ) {
+
+        $properties = (array) $event->getProperties();
+        $keys       = array_merge( self::wireKeysFor( $property ),
+            array_keys( \OWA\Module\Base\Classes\Beacon\Compat::renames(), $property, true ) );
+
+        if ( ! \OWA\Module\Base\Classes\Beacon\Compat::decodesOnce( $properties['beacon_version'] ?? null ) ) {
+
+            $keys[] = $property;
+        }
+
+        foreach ( $keys as $key ) {
+
+            if ( array_key_exists( $key, $properties ) ) {
+
+                return $properties[ $key ];
+            }
+        }
+
+        return null;
     }
 
     /**

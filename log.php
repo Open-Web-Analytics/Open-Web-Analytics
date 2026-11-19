@@ -98,9 +98,8 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $owa->e->debug('Logging new tracking event...');
     
     $service = \OWA\Core\CoreAPI::serviceSingleton();
-    // The page URL and referrer before the second decode, which can cut them (TrackingEventHelpers::arrivedUrlIfCut()).
-    $arrived = \OWA\Module\Base\Classes\TrackingEventHelpers::arrivedUrls( $service->request->getAllOwaParams() );
-    $service->request->decodeRequestParams();
+    // An older beacon's second decode, and the URLs as they were before it (conf/beacon_compat.php).
+    $arrived = \OWA\Module\Base\Classes\Beacon\Compat::decodeOlderBeacon( $service->request );
     $event = new \OWA\Module\Base\Classes\Event();
     // e_t from the current tracker, event_type from an older one.
     $event_type = \OWA\Core\CoreAPI::getRequestParam('e_t');
