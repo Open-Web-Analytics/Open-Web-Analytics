@@ -137,6 +137,9 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
      * would land in the wrong places.
      *
      * Delegated, so it keeps working when the grid redraws its rows.
+     *
+     * noopener: the recorded page gets no window.opener. The player reaches
+     * OWA through the api_url in its fragment.
      */
     jQuery( '#domstreams-grid' ).on( 'click', 'a.play', function ( e ) {
 
@@ -149,7 +152,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
         window.open(
             link.attr( 'href' ),
             'OWA Dom Stream',
-            'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes'
+            'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes,noopener'
                 + ',height=' + height + ',width=' + width
         );
     } );
