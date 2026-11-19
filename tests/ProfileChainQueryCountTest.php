@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * A Profile's settings resolve in one query.
@@ -16,6 +17,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ProfileChainQueryCountTest extends TestCase
 {
+    use DeclaresProbeSettings;
+
     private string $key;
     private string $siteId = '';
     private string $propertyId = '';
@@ -26,7 +29,7 @@ final class ProfileChainQueryCountTest extends TestCase
         $this->key = 'chain_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         // Declared, as only a declared setting may be stored at a scope.
-        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $this->key,
+        $this->declareProbe( 'base', $this->key,
             [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
 
         if ( ! owa_test_db_available() ) {
@@ -54,6 +57,8 @@ final class ProfileChainQueryCountTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->forgetProbes();
+
         if ( ! $this->siteId ) {
             return;
         }

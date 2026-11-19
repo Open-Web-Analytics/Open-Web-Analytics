@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * Removing a Profile or a Property archives it rather than destroying it.
@@ -18,6 +19,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ArchiveNotDeleteTest extends TestCase
 {
+    use DeclaresProbeSettings;
+
     private string $siteId = '';
     private string $propertyId = '';
     private array $archived = [];
@@ -47,6 +50,8 @@ final class ArchiveNotDeleteTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->forgetProbes();
+
         foreach ( $this->archived as $entry ) {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( $entry[0] );
@@ -163,7 +168,7 @@ final class ArchiveNotDeleteTest extends TestCase
         $probe = 'archive_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         // Declared, as only a declared setting may be stored at a scope.
-        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $probe,
+        $this->declareProbe( 'base', $probe,
             [ 'storable' => true, 'scopes' => [ 'install', 'profile' ] ] );
 
         \OWA\Core\CoreAPI::setScopedSetting(

@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * Settings resolve down the hierarchy, and a stored false is a value.
@@ -14,6 +15,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ScopedSettingsTest extends TestCase
 {
+    use DeclaresProbeSettings;
+
     private string $key;
     private string $siteId = '';
     private string $propertyId = '';
@@ -23,7 +26,7 @@ final class ScopedSettingsTest extends TestCase
         $this->key = 'scoped_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         // Declared, as only a declared setting may be stored at a scope.
-        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $this->key,
+        $this->declareProbe( 'base', $this->key,
             [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
 
         if ( ! owa_test_db_available() ) {
@@ -47,6 +50,8 @@ final class ScopedSettingsTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->forgetProbes();
+
         if ( ! $this->siteId ) {
             return;
         }

@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * Settings that describe ONE observed thing live on that thing, so a box
@@ -16,6 +17,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class SettingTierMoveTest extends TestCase
 {
+    use DeclaresProbeSettings;
+
     private string $key;
     private string $siteId = '';
     private string $propertyId = '';
@@ -25,7 +28,7 @@ final class SettingTierMoveTest extends TestCase
         $this->key = 'tier_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         // Declared, as only a declared setting may be stored at a scope.
-        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $this->key,
+        $this->declareProbe( 'base', $this->key,
             [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
 
         if ( ! owa_test_db_available() ) {
@@ -49,6 +52,8 @@ final class SettingTierMoveTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->forgetProbes();
+
         if ( ! $this->siteId ) {
             return;
         }
