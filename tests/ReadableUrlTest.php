@@ -28,6 +28,12 @@ final class ReadableUrlTest extends TestCase
             'the host as sent'     => ['https://us%65r@x.test:8080/p%20q', 'https://us%65r@x.test:8080/p q'],
             'no path'              => ['https://x.test?q=a%20b', 'https://x.test?q=a%20b'],
             'a relative URL'       => ['/a%20b?q=a%20b', '/a b?q=a%20b'],
+            'invalid UTF-8'        => ['https://x.test/caf%E9/x?q=%E9', 'https://x.test/caf%E9/x?q=%E9'],
+            'no UTF-8 at all'      => ['https://x.test/bad%FF%FEseq', 'https://x.test/bad%FF%FEseq'],
+            'valid and invalid'    => ['https://x.test/caf%C3%A9/x%E9', 'https://x.test/café/x%E9'],
+            'valid then invalid'   => ['https://x.test/caf%C3%A9%E9', 'https://x.test/café%E9'],
+            'a cut-off character'  => ['https://x.test/a%E2%82', 'https://x.test/a%E2%82'],
+            'four bytes'           => ['https://x.test/%F0%9F%98%80', 'https://x.test/😀'],
         ];
     }
 

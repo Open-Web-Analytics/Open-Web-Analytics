@@ -48,15 +48,37 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
             'a literal % and &'         => ['/50%25off/a%26b?x=1%262&y=%2541', '/50%off/a&b?x=1%262&y=%2541', '/50%off/a&b', 'x=1%262&y=%2541'],
             'a plus sign'               => ['/a+b?q=a+b', '/a+b?q=a+b', '/a+b', 'q=a+b'],
             'an encoded ? in the path'  => ['/what%3Fnot', '/what%3Fnot', '/what%3Fnot', null],
+            'invalid UTF-8'             => ['/caf%E9/x?q=%E9', '/caf%E9/x?q=%E9', '/caf%E9/x', 'q=%E9'],
+            'valid and invalid UTF-8'   => ['/caf%C3%A9/x%E9', '/café/x%E9', '/café/x%E9', null],
         ];
     }
 
     /** @return array<string, array> urls(), in the request and through the queue */
     public static function urlsByPath(): array
     {
+        return self::byPath(self::urls());
+    }
+
+    /**
+     * urls() with valid UTF-8 only, for a 1.x beacon. Decoded twice, an invalid
+     * byte is no longer an escape, and what becomes of it is the 1.x path's
+     * existing handling (read as Windows-1252 in the request, replaced in a
+     * queued envelope), which this change leaves alone.
+     *
+     * @return array<string, array>
+     */
+    public static function validUtf8UrlsByPath(): array
+    {
+        return self::byPath(array_filter(self::urls(),
+            static fn (array $case) => mb_check_encoding(rawurldecode($case[0]), 'UTF-8')));
+    }
+
+    /** @return array<string, array> each case, in the request and through the queue */
+    private static function byPath(array $cases): array
+    {
         $out = [];
 
-        foreach (self::urls() as $name => $case) {
+        foreach ($cases as $name => $case) {
             $out[$name . ', direct'] = array_merge($case, [false]);
             $out[$name . ', queued'] = array_merge($case, [true]);
         }
@@ -154,7 +176,7 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
      * A 1.x beacon, with no format version, is decoded a second time, as
      * today: its page URL is what that decode makes of it.
      *
-     * @dataProvider urlsByPath
+     * @dataProvider validUtf8UrlsByPath
      */
     public function testAnOlderBeaconIsDecodedASecondTime(string $href, string $stored, string $path, ?string $query, bool $queued): void
     {
