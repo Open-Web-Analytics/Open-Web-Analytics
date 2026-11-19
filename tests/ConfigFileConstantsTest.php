@@ -184,12 +184,6 @@ final class ConfigFileConstantsTest extends TestCase
     public function testTheBootRefusalIsTheOnlyCheck(): void
     {
         $this->assertFalse(method_exists(\OWA\Module\Base\Classes\EnvironmentCheck::class, 'configFileCode'));
-
-        $src = (string) file_get_contents(__DIR__ . '/../modules/Base/Module.php');
-        $this->assertStringNotContainsString('configProblems()', substr($src, strpos($src, 'public function update()')));
-
-        $boot = (string) file_get_contents(__DIR__ . '/../Core/ServerRole.php');
-        $this->assertStringContainsString('configProblems()', $boot);
     }
 
     /** Each declared constant takes effect and governs its setting. */

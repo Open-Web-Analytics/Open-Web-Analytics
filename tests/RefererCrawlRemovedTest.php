@@ -54,12 +54,12 @@ final class RefererCrawlRemovedTest extends TestCase
             $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/' . $file );
         }
 
-        $module = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Module.php' );
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
 
-        $this->assertStringNotContainsString( 'update-referral', $module,
+        $this->assertFalse( $service->getCliCommandClass( 'update-referral' ),
             'the CLI command is still registered, so it resolves to a missing class' );
 
-        $this->assertStringNotContainsString( 'crawlReferralCli', $module,
+        $this->assertEmpty( $service->getMapValue( 'actions', 'base.crawlReferralCli' ),
             'the action is still registered' );
     }
 
