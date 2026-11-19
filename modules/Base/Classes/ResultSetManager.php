@@ -2428,8 +2428,11 @@ class ResultSetManager extends \OWA\Core\Base {
             $this->db->selectColumn( sprintf( 'MAX(%s.built_at)', $bm->getTableAlias() ), 'owa_as_of' );
         }
 
-        // generate aggregate results
-        $results = $this->db->getOneRow();
+        // Bounded as the rows are: the same filter and period shape this query.
+        $db      = $this->db;
+        $results = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db ) {
+            return $db->getOneRow();
+        } );
 
         if ( $as_of && is_array( $results ) && array_key_exists( 'owa_as_of', $results ) ) {
 
@@ -2959,10 +2962,17 @@ class ResultSetManager extends \OWA\Core\Base {
                 // controllers sets a sort, so no shipped report ever took the
                 // unsorted path. Found by reporting-facets.spec.js, which asks
                 // for a breakdown without one.
-                $dresults = $this->computeDimensionalRows( $bm );
+                $dresults = (array) $this->computeDimensionalRows( $bm );
 
-                // paginate the results
-                $dresults = $this->applyMetaDataToResults( $dresults );
+                /*
+                 * The read-ahead is counted, not shown: generate() keeps the
+                 * first getLimit() rows, so only those are formatted.
+                 */
+                $per      = (int) $this->getLimit();
+                $dresults = $per > 0
+                    ? array_merge( $this->applyMetaDataToResults( array_slice( $dresults, 0, $per ) ),
+                        array_slice( $dresults, $per ) )
+                    : $this->applyMetaDataToResults( $dresults );
 
                 // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [

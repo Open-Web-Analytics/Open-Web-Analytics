@@ -154,6 +154,13 @@ final class StringsCatalogueTest extends TestCase
             'a REST request error'      => ["\$rsm->addRequestError( 'rowValues must be JSON.' );", 1, 'addRequestError() message'],
             'a nav label'               => ["\$this->addNavigationLinkInSubGroup( 'Content', \$this->reportRef( 'pages' ), 'Pages', 1 );", 1, 'addNavigationLinkInSubGroup() label'],
             'a labelled setting'        => ["return array( 'x' => array( 'label' => \\OWA\\Core\\CoreAPI::t( 'X' ),\n 'description' => 'What x does.' ) );", 2, "'description' value", true],
+            'a mail subject'            => ["\$this->setMailSubject( 'Your New Password' );", 1, 'setMailSubject() message'],
+            'a subject set on a view'   => ["\$this->set( 'subject', sprintf( 'New Visit to %s', \$d ) );", 1, "set( 'subject' ) value"],
+            'a subject in event data'   => ["\$data['subject'] = 'Account Setup';", 1, "['subject'] value"],
+            'an error property'         => ["\$this->error = sprintf( 'More than %s rows.', \$n );", 1, '->error value'],
+            'a check\'s detail'         => ["return self::check( 'cube', \\OWA\\Core\\CoreAPI::t( 'Cube' ), self::RED, 'Not built yet.' );", 1, 'check() label'],
+            'an environment check name' => ["\$c = EnvironmentCheck::check( 'Database connection', \\OWA\\Core\\CoreAPI::t( 'ok' ), true, \\OWA\\Core\\CoreAPI::t( 'Fix it.' ) );", 1, 'check() label'],
+            'a finding\'s detail'       => ["\$f[] = self::finding( 'green', \\OWA\\Core\\CoreAPI::t( 'Current' ), 'No web Profile yet.' );", 1, 'finding() label'],
         ];
     }
 
@@ -178,6 +185,8 @@ final class StringsCatalogueTest extends TestCase
             'another set() key'         => ["\$this->set( 'reportId', 'Some Report' );"],
             'an unlabelled setting'     => ["return array( 'x' => array( 'description' => 'For the wiki.' ) );", true],
             'a description elsewhere'   => ["\$this->registerReport( 'r', array( 'description' => 'For the wiki.' ) );"],
+            'a check\'s key'            => ["return self::check( 'cube', \\OWA\\Core\\CoreAPI::t( 'Cube' ), self::RED, \\OWA\\Core\\CoreAPI::t( 'Not built yet.' ) );"],
+            'an error in a result'      => ["\$result['error'] = 'the build statement failed';"],
         ];
     }
 
