@@ -9,8 +9,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * A report screen resumes on the Property this browser last reported on (the
  * `lpr` cookie), else the first the reader may see. The REST API neither reads
- * nor writes the cookie: a REST request naming neither propertyId nor siteId is
- * of the reader's only Property, or refused with a 422.
+ * nor writes the cookie, and infers no Property: a REST request naming neither
+ * propertyId nor siteId is refused with a 422, whatever the reader may see.
  *
  * No database: the reader's sites and the user are stubs.
  */
@@ -123,14 +123,28 @@ final class RestPropertyResolutionTest extends TestCase
         $this->assertSame('Name the Property with propertyId, or a Profile with siteId.', $data['error_msg']);
     }
 
-    public function testARestRequestNamingNoPropertyIsOfTheReadersOnlyOne(): void
+    /** Even a reader who may see one Property names it: nothing is inferred. */
+    public function testARestRequestNamingNoPropertyIsRefusedWhenTheReaderHasOne(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
 
         $c = $this->controller(['92000001', '92000001']);
 
+        $this->assertFalse($c->capable(self::reader()));
+        $this->assertNull($c->getParam('propertyId'));
+
+        $c->authenticatedButNotCapableAction();
+
+        $this->assertSame(422, http_response_code());
+    }
+
+    public function testARestRequestNamingAPropertyIsNotRefused(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
+
+        $c = $this->controller(['92000001', '92000002'], ['propertyId' => '92000002']);
+
         $this->assertTrue($c->capable(self::reader()));
-        $this->assertSame('92000001', $c->getParam('propertyId'));
     }
 
     public function testARestRequestNamingAProfileIsNotRefused(): void
@@ -174,16 +188,6 @@ final class RestPropertyResolutionTest extends TestCase
         $this->assertSame('92000002', $c->resolve());
         $this->assertTrue($c->remembers());
         $this->assertTrue($c->capable(self::reader()), 'a screen is not refused for naming no Property');
-    }
-
-    public function testTheOnlyPropertyOfSomeSites(): void
-    {
-        $only = [\OWA\Core\ReportController::class, 'onlyPropertyOf'];
-
-        $this->assertSame('7', $only([self::site('7'), self::site('7'), self::site('')]));
-        $this->assertSame('', $only([self::site('7'), self::site('8')]));
-        $this->assertSame('', $only([self::site('0')]));
-        $this->assertSame('', $only([]));
     }
 }
 

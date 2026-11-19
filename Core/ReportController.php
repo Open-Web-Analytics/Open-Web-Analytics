@@ -38,17 +38,16 @@ class ReportController extends \OWA\Core\AdminController {
     /**
      * Whether a REST request to this route is of a Property.
      *
-     * One that names neither propertyId nor siteId is answered for the
-     * reader's only Property, or refused with a 422 when the reader may see
-     * more than one, or none. False for a route that is not about a Property
-     * (v1/sites). The REST API never reads or writes the last-Property cookie;
+     * One that names neither propertyId nor siteId is refused with a 422,
+     * whatever the reader may see: the API infers no Property. False for a
+     * route that is not about a Property (v1/sites). The REST API never reads or writes the last-Property cookie;
      * the report screens do (resolvePropertyId()).
      *
      * @var bool
      */
     protected $rest_needs_property = true;
 
-    /** @var bool a REST request named no Property and the reader has no only one */
+    /** @var bool a REST request to a route of a Property named none */
     private $names_no_property = false;
     
     /**
@@ -77,10 +76,9 @@ class ReportController extends \OWA\Core\AdminController {
     use \OWA\Core\PropertyScopedAccess { isCurrentUserCapable as isCapableOnProperty; }
 
     /**
-     * A REST request that names no Property is of the reader's only one, and
-     * is checked against it; with more than one, or none, it is refused
-     * (authenticatedButNotCapableAction()). Decided here, the first point at
-     * which the reader is known and before anything reads the Property.
+     * A REST request to a route of a Property that names none is refused
+     * (authenticatedButNotCapableAction()), before the capability check, so
+     * every signed-in caller gets the same 422.
      *
      * @param  \OWA\Module\Base\Classes\ServiceUser $currentUser
      * @return bool
@@ -90,16 +88,9 @@ class ReportController extends \OWA\Core\AdminController {
         if ( $this->rest_needs_property && \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )
                 && (string) $this->getParam( 'propertyId' ) === '' && ! $this->getCurrentSiteId() ) {
 
-            $only = self::onlyPropertyOf( $this->getSitesAllowedForCurrentUser() );
+            $this->names_no_property = true;
 
-            if ( $only === '' ) {
-
-                $this->names_no_property = true;
-
-                return false;
-            }
-
-            $this->setParam( 'propertyId', $only );
+            return false;
         }
 
         return $this->isCapableOnProperty( $currentUser );
@@ -123,30 +114,6 @@ class ReportController extends \OWA\Core\AdminController {
         }
 
         return parent::authenticatedButNotCapableAction( $additionalMessage );
-    }
-
-    /**
-     * The one Property these sites belong to, or '' when they belong to more
-     * than one or to none.
-     *
-     * @param  iterable<mixed> $sites site entities, as getSitesAllowedForCurrentUser() returns them
-     * @return string
-     */
-    public static function onlyPropertyOf( $sites ) {
-
-        $properties = [];
-
-        foreach ( (array) $sites as $site ) {
-
-            $propertyId = (string) $site->get( 'property_id' );
-
-            if ( $propertyId !== '' && $propertyId !== '0' ) {
-
-                $properties[ $propertyId ] = true;
-            }
-        }
-
-        return count( $properties ) === 1 ? (string) key( $properties ) : '';
     }
 
     /**
@@ -523,8 +490,8 @@ class ReportController extends \OWA\Core\AdminController {
      * without one) and no way off it but the back button.
      *
      * A REST request goes no further than the siteId: one that needs a
-     * Property and names none was given the reader's only Property, or
-     * refused, before this runs (isCurrentUserCapable()).
+     * Property and names none was refused before this runs
+     * (isCurrentUserCapable()).
      *
      * A named Property is not checked against $sites here. Access was checked
      * against it before pre() ran (isCurrentUserCapable()), and an

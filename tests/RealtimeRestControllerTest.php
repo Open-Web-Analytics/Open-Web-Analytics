@@ -19,11 +19,8 @@ final class RealtimeRestControllerTest extends RestControllerTestCase
         $this->assertNotAuthenticated($resp, 'GET /realtime');
     }
 
-    /** A reader who may see more than one Property names the one meant. */
     public function testAPropertyIsRequired(): void
     {
-        $this->makeSite('one');
-        $this->makeSite('two');
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(\OWA\Module\Base\Controller\RealtimeRest::class, 'RealtimeRest.php', []);

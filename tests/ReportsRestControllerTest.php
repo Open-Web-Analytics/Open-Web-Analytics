@@ -45,10 +45,10 @@ final class ReportsRestControllerTest extends RestControllerTestCase
      * A Profile of its own, and optionally a cube for its Property.
      *
      * A query names its Profile -- one naming neither propertyId nor siteId
-     * is refused when the reader may see more than one Property -- and whether
-     * it can be answered depends on that Profile's Property having a cube. So
-     * each test names the Profile it means and says whether its cube exists,
-     * rather than relying on whatever an earlier test left behind.
+     * is refused -- and whether it can be answered depends on that Profile's
+     * Property having a cube. So each test names the Profile it means and says
+     * whether its cube exists, rather than relying on whatever an earlier test
+     * left behind.
      */
     private function profile(bool $with_cube): string
     {
@@ -169,15 +169,11 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     }
 
     /**
-     * A request naming neither propertyId nor siteId is refused when the reader
-     * may see more than one Property, whatever Property the browser last
-     * reported on: the REST API does not read the lpr cookie.
+     * A request naming neither propertyId nor siteId is refused: the REST API
+     * infers no Property, and does not read the lpr cookie.
      */
     public function testAQueryNamingNoPropertyIsRefused(): void
     {
-        // Two Properties, so the reader has no only one.
-        $this->makeSite('one');
-        $this->makeSite('two');
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
