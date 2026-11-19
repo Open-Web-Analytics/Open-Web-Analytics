@@ -1278,12 +1278,10 @@ class CoreAPI {
         /*
          * Both halves name a class -- OWA\Module\<Module>\<Suffix>\<Action> --
          * and class_exists() hands that name to the autoloader, which maps it
-         * onto a file path. The value can be request supplied (an action not
-         * in the action registry), so it is validated here rather than trusted.
+         * onto a file path, so the name is validated here rather than trusted.
          *
          * RequestContainer sanitizes params through Sanitize::cleanInput(), but
          * that is HTML/encoding oriented and does not constrain a path.
-         * Sanitize::cleanFilename() does, but has never been wired to anything.
          *
          * Require a bare identifier for each half. A module or action name has
          * never legitimately contained a separator, and a positive match is used

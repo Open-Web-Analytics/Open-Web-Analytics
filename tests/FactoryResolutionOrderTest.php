@@ -53,7 +53,7 @@ final class FactoryResolutionOrderTest extends TestCase
     /**
      * A name already carrying its prefix has no parts to work from.
      *
-     * moduleFactory hands the whole built name in as $class_name, so the
+     * A caller may hand the whole built name in as $class_name, so the
      * convention has to decline rather than compute something from it.
      */
     public function testAnAlreadyBuiltNameIsDeclined(): void

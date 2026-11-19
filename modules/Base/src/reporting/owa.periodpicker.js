@@ -38,18 +38,6 @@ export function toYmd( t ) {
         + String( d.getUTCDate() ).padStart( 2, '0' );
 }
 
-/** yyyymmdd -> yyyy-mm-dd, the value of an <input type="date">. */
-export function toIso( ymd ) {
-
-    return ymd ? ymd.substr( 0, 4 ) + '-' + ymd.substr( 4, 2 ) + '-' + ymd.substr( 6, 2 ) : '';
-}
-
-/** yyyy-mm-dd -> yyyymmdd, or '' if it is not a date. */
-export function fromIso( iso ) {
-
-    return /^\d{4}-\d{2}-\d{2}$/.test( String( iso || '' ) ) ? iso.replace( /-/g, '' ) : '';
-}
-
 function addDays( ymd, n ) {
 
     return toYmd( toTime( ymd ) + n * DAY );

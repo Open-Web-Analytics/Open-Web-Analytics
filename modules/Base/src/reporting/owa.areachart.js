@@ -2273,18 +2273,6 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * A compared chart's tooltip: the day against the day it is compared to,
-     * then every line's value there, its value on the compared day and the
-     * change. Null when nothing is compared.
-     */
-    comparedTooltip : function ( x ) {
-
-        var compares = ( this.dataseries || [] ).filter( function ( s ) { return s.isCompare; } );
-
-        return compares.length ? this.pointTooltip( x ) : null;
-    },
-
-    /**
      * The tooltip at x: the day, then every line's value there. Compared, the
      * day it is compared to, and each line's value then and its change.
      */

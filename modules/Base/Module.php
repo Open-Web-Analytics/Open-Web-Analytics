@@ -423,14 +423,11 @@ class Module extends \OWA\Core\Module {
 
         $this->registerScopedSettingsFieldSets();
 
-        $this->registerAction( 'base.addSiteRest',                   'OWA\\Module\\Base\\Controller\\AddSiteRest' );
-        $this->registerAction( 'base.addUserRest',                   'OWA\\Module\\Base\\Controller\\AddUserRest' );
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli' );
         $this->registerAction( 'base.appPasswordCreateCli',          'OWA\\Module\\Base\\Controller\\AppPasswordCreateCli' );
         $this->registerAction( 'base.appPasswordListCli',            'OWA\\Module\\Base\\Controller\\AppPasswordListCli' );
         $this->registerAction( 'base.appPasswordRevokeCli',          'OWA\\Module\\Base\\Controller\\AppPasswordRevokeCli' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight' );
-        $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli' );
         $this->registerAction( 'base.v1DropCli',                     'OWA\\Module\\Base\\Controller\\V1DropCli' );
         $this->registerAction( 'base.stringsExtractCli',             'OWA\\Module\\Base\\Controller\\StringsExtractCli' );
@@ -469,7 +466,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.propertyRetention',             'OWA\\Module\\Base\\Controller\\PropertyRetention' );
         $this->registerAction( 'base.propertyProfiles',              'OWA\\Module\\Base\\Controller\\PropertyProfiles' );
         $this->registerAction( 'base.propertyRetentionUpdate',       'OWA\\Module\\Base\\Controller\\PropertyRetentionUpdate' );
-        $this->registerAction( 'base.retentionPreviewRest',          'OWA\\Module\\Base\\Controller\\RetentionPreviewRest' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher' );
         $this->registerAction( 'base.passwordResetForm',             'OWA\\Module\\Base\\Controller\\PasswordResetForm' );
         $this->registerAction( 'base.passwordResetRequest',          'OWA\\Module\\Base\\Controller\\PasswordResetRequest' );
@@ -499,9 +495,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report' );
-        $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli' );
-        $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest' );
         $this->registerAction( 'base.reportingHome',                 'OWA\\Module\\Base\\Controller\\ReportingHome' );
         $this->registerAction( 'base.propertyProfile',               'OWA\\Module\\Base\\Controller\\PropertyProfile' );
         $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile' );
@@ -529,14 +523,9 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEditTagSettings',          'OWA\\Module\\Base\\Controller\\SitesEditTagSettings' );
         $this->registerAction( 'base.sitesInvocation',               'OWA\\Module\\Base\\Controller\\SitesInvocation' );
         $this->registerAction( 'base.sitesProfile',                  'OWA\\Module\\Base\\Controller\\SitesProfile' );
-        $this->registerAction( 'base.sitesRest',                     'OWA\\Module\\Base\\Controller\\SitesRest' );
         $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates' );
         $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply' );
-        $this->registerAction( 'base.notificationsRest',              'OWA\\Module\\Base\\Controller\\NotificationsRest' );
-        $this->registerAction( 'base.realtimeRest',                  'OWA\\Module\\Base\\Controller\\RealtimeRest' );
         $this->registerAction( 'base.reportRealtime',                'OWA\\Module\\Base\\Controller\\ReportRealtime' );
-        $this->registerAction( 'base.notificationMarkReadRest',           'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest' );
-        $this->registerAction( 'base.notificationDismissRest',       'OWA\\Module\\Base\\Controller\\NotificationDismissRest' );
         $this->registerAction( 'base.notificationsFetchCli',        'OWA\\Module\\Base\\Controller\\NotificationsFetchCli' );
         $this->registerAction( 'base.updatesApplyCli',               'OWA\\Module\\Base\\Controller\\UpdatesApplyCli' );
         $this->registerAction( 'base.users',                         'OWA\\Module\\Base\\Controller\\Users' );
@@ -554,7 +543,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.myAppPasswordRevoke',       'OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke' );
         $this->registerAction( 'base.userAppPasswordRevoke',     'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke' );
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword' );
-        $this->registerAction( 'base.usersRest',                     'OWA\\Module\\Base\\Controller\\UsersRest' );
         $this->registerAction( 'base.usersSetPassword',              'OWA\\Module\\Base\\Controller\\UsersSetPassword' );
     }
 

@@ -29,13 +29,13 @@
  *
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
- * pruneRedundantPersistedSettings() drop them and the module would look
- * uninstalled. Base's is_active is true in Settings::baseDefaults(): Base is
- * always active, including on a boot that reads no stored settings.
+ * persistSetting() drop them and the module would look uninstalled. Base's
+ * is_active is true in Settings::baseDefaults(): Base is always active,
+ * including on a boot that reads no stored settings.
  *
  * install_complete is declared with no default for the same reason: it is
- * stored and has never had a code default, and inventing one would put it
- * within reach of the prune.
+ * stored and has never had a code default, and inventing one would let
+ * persistSetting() drop it.
  *
  * The config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC: never read from the

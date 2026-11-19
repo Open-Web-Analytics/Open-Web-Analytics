@@ -550,8 +550,7 @@ final class CubeRotateTest extends TestCase
      * The two triggers are complementary around the same instant -- merge when
      * the window no longer reaches a month, carve while it still does -- so the
      * sets are disjoint by construction. Overlap them and the table is rewritten
-     * on every scheduled run for no change in shape, which is the failure
-     * makeTieredPartitionRanges() already carries a warning about.
+     * on every scheduled run for no change in shape.
      */
     public function testAMonthIsNeverBothMergedAndCarved(): void
     {

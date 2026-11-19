@@ -442,18 +442,7 @@ class Entity {
 
         return null;
     }
-    
-    /**
-     * @deprecated setProperties()
-     *
-     * @param  array<string, mixed> $values column => value
-     * @return void
-     */
-    public function setValues($values) {
-        
-        $this->setProperties($values);
-    }
-    
+
     /**
      * @param  string $name
      * @param  bool   $filter

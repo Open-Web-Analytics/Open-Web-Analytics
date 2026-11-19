@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PartitionFixtures.php';
 require_once __DIR__ . '/V1Schema.php';
 
 /**
@@ -144,8 +145,7 @@ final class Update062Test extends TestCase
                 $db->query(sprintf('DROP TABLE IF EXISTS %s', $table));
                 $db->query(sprintf('CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL,'
                     . ' PRIMARY KEY (id, yyyymmdd))', $table));
-                $db->partitionTable($table, 'yyyymmdd',
-                    \OWA\Core\Db::makePartitionRanges('20260901', '20260930', 'daily'));
+                owa_test_partition_table($table, \OWA\Core\Db::makePartitionRanges('20260901', '20260930', 'daily'));
 
                 foreach (['since', 'all'] as $name) {
                     \OWA\Core\CoreAPI::setRequestParam($name, null);

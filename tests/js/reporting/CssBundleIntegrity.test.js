@@ -146,7 +146,7 @@ describe('reporting CSS build integrity', () => {
                 'css/chosen-sprite.png',
                 'css/font-awesome/css/all.min.css',
                 'css/owa.css', // dual-role: build input AND served raw to the installer
-                'i/funnel_flow.png', // owa.report.css ../i/ funnel image
+                'i/owa_logo_72w.jpg', // the i/ directory, a sibling of css/
             ];
             const missing = copied.filter((f) => !fs.existsSync(path.join(publicBase, f)));
             expect(missing).toEqual([]);

@@ -103,9 +103,7 @@ if ( ! defined( 'OWA_SQL_DELETE_ROW' ) ) { define('OWA_SQL_DELETE_ROW', "DELETE 
 // A batch of a delete: table, WHERE condition, row count. PostgreSQL has no
 // DELETE ... LIMIT and deletes by ctid from a limited SELECT. JobQueue::prune().
 if ( ! defined( 'OWA_SQL_DELETE_LIMIT' ) ) { define('OWA_SQL_DELETE_LIMIT', 'DELETE FROM %s WHERE %s LIMIT %d'); }
-if ( ! defined( 'OWA_SQL_CREATE_INDEX' ) ) { define('OWA_SQL_CREATE_INDEX', 'CREATE INDEX %s ON %s (%s)'); }
 if ( ! defined( 'OWA_SQL_DROP_INDEX' ) ) { define('OWA_SQL_DROP_INDEX', 'DROP INDEX %s ON %s'); }
-if ( ! defined( 'OWA_SQL_INDEX' ) ) { define('OWA_SQL_INDEX', 'INDEX (%s)'); }
 if ( ! defined( 'OWA_SQL_BEGIN_TRANSACTION' ) ) { define('OWA_SQL_BEGIN_TRANSACTION', 'BEGIN'); }
 if ( ! defined( 'OWA_SQL_END_TRANSACTION' ) ) { define('OWA_SQL_END_TRANSACTION', 'COMMIT'); }
 if ( ! defined( 'OWA_SQL_ROLLBACK_TRANSACTION' ) ) { define('OWA_SQL_ROLLBACK_TRANSACTION', 'ROLLBACK'); }
@@ -113,7 +111,6 @@ if ( ! defined( 'OWA_DTD_TABLE_TYPE' ) ) { define('OWA_DTD_TABLE_TYPE', 'ENGINE 
 if ( ! defined( 'OWA_DTD_TABLE_TYPE_DEFAULT' ) ) { define('OWA_DTD_TABLE_TYPE_DEFAULT', 'INNODB'); }
 if ( ! defined( 'OWA_DTD_TABLE_TYPE_DISK' ) ) { define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB'); }
 if ( ! defined( 'OWA_DTD_TABLE_TYPE_MEMORY' ) ) { define('OWA_DTD_TABLE_TYPE_MEMORY', 'MEMORY'); }
-if ( ! defined( 'OWA_SQL_ALTER_TABLE_TYPE' ) ) { define('OWA_SQL_ALTER_TABLE_TYPE', 'ALTER TABLE %s ENGINE = %s'); }
 // Partitioning. A driver that cannot partition simply leaves these undefined,
 // and the table is created and managed unpartitioned -- the feature is absent
 // rather than broken. The syntax differs enough between platforms (Postgres
@@ -122,7 +119,6 @@ if ( ! defined( 'OWA_SQL_ALTER_TABLE_TYPE' ) ) { define('OWA_SQL_ALTER_TABLE_TYP
 if ( ! defined( 'OWA_DTD_PARTITION_BY_RANGE' ) ) { define('OWA_DTD_PARTITION_BY_RANGE', ' PARTITION BY RANGE (%s) (%s)'); }
 if ( ! defined( 'OWA_DTD_PARTITION_LESS_THAN' ) ) { define('OWA_DTD_PARTITION_LESS_THAN', 'PARTITION %s VALUES LESS THAN (%s)'); }
 if ( ! defined( 'OWA_DTD_PARTITION_MAXVALUE' ) ) { define('OWA_DTD_PARTITION_MAXVALUE', 'MAXVALUE'); }
-if ( ! defined( 'OWA_SQL_PARTITION_TABLE' ) ) { define('OWA_SQL_PARTITION_TABLE', 'ALTER TABLE %s' . OWA_DTD_PARTITION_BY_RANGE); }
 if ( ! defined( 'OWA_SQL_DROP_PARTITION' ) ) { define('OWA_SQL_DROP_PARTITION', 'ALTER TABLE %s DROP PARTITION %s'); }
 if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_PARTITION', 'ALTER TABLE %s REORGANIZE PARTITION %s INTO (%s)'); }
 /*
@@ -134,13 +130,12 @@ if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_
  * without anything downstream noticing.
  *
  * MySQL requires the incoming table to be unpartitioned and otherwise identical
- * -- same columns in the same order, same indexes, same engine. CREATE TABLE
- * LIKE plus REMOVE PARTITIONING produces that from the target itself.
+ * -- same columns in the same order, same indexes, same engine.
+ * Db::createUnpartitionedCopy() builds it from the target's own DDL.
  *
  * ClickHouse spells the same operation REPLACE PARTITION.
  */
 if ( ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) { define('OWA_SQL_EXCHANGE_PARTITION', 'ALTER TABLE %s EXCHANGE PARTITION %s WITH TABLE %s'); }
-if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTITIONING', 'ALTER TABLE %s REMOVE PARTITIONING'); }
 /*
  * How long a statement waits for a table's metadata lock: the wait a partition
  * change is bounded by (Db::changePartitions()). The unit is seconds, and the
@@ -148,9 +143,7 @@ if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTI
  */
 if ( ! defined( 'OWA_SQL_GET_LOCK_WAIT' ) ) { define('OWA_SQL_GET_LOCK_WAIT', 'SELECT @@SESSION.lock_wait_timeout AS seconds'); }
 if ( ! defined( 'OWA_SQL_SET_LOCK_WAIT' ) ) { define('OWA_SQL_SET_LOCK_WAIT', 'SET SESSION lock_wait_timeout = %d'); }
-if ( ! defined( 'OWA_SQL_TRUNCATE_TABLE' ) ) { define('OWA_SQL_TRUNCATE_TABLE', 'TRUNCATE TABLE %s'); }
 if ( ! defined( 'OWA_SQL_SHOW_CREATE_TABLE' ) ) { define('OWA_SQL_SHOW_CREATE_TABLE', 'SHOW CREATE TABLE %s'); }
-if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_LIKE', 'CREATE TABLE %s LIKE %s'); }
 /*
  * Rebuild a table in place, keeping every row.
  *
@@ -303,7 +296,6 @@ if ( ! defined( 'OWA_SQL_NOT_CONTAINS' ) ) { define('OWA_SQL_NOT_CONTAINS', 'LOC
 // "50% off" would quietly match far more than it says -- and escaping them is a
 // thing to get wrong once per call site. Same argument order: needle, column.
 if ( ! defined( 'OWA_SQL_STARTS_WITH' ) ) { define('OWA_SQL_STARTS_WITH', 'LOCATE(%s, %s) = 1'); }
-if ( ! defined( 'OWA_SQL_ADD_INDEX' ) ) { define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s'); }
 // Named form. The unnamed one above lets MySQL pick the name, so repeating it
 // yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.
 if ( ! defined( 'OWA_SQL_ADD_NAMED_INDEX' ) ) { define('OWA_SQL_ADD_NAMED_INDEX', 'ALTER TABLE %s ADD INDEX %s (%s) %s'); }
@@ -313,10 +305,7 @@ if ( ! defined( 'OWA_SQL_COUNT' ) ) { define('OWA_SQL_COUNT', 'COUNT(%s)'); }
 // GoalEventDefinition::compare() sees it.
 if ( ! defined( 'OWA_SQL_COALESCE' ) ) { define('OWA_SQL_COALESCE', 'COALESCE(%s, %s)'); }
 if ( ! defined( 'OWA_SQL_SUM' ) ) { define('OWA_SQL_SUM', 'SUM(%s)'); }
-if ( ! defined( 'OWA_SQL_ROUND' ) ) { define('OWA_SQL_ROUND', 'ROUND(%s)'); }
-if ( ! defined( 'OWA_SQL_AVERAGE' ) ) { define('OWA_SQL_AVERAGE', 'AVG(%s)'); }
 if ( ! defined( 'OWA_SQL_DISTINCT' ) ) { define('OWA_SQL_DISTINCT', 'DISTINCT %s'); }
-if ( ! defined( 'OWA_SQL_DIVISION' ) ) { define('OWA_SQL_DIVISION', '(%s / %s)'); }
 // The encoding NEW tables are declared with when the entity does not name one.
 //
 // 'utf8' is MySQL's three-byte encoding and cannot hold anything above U+FFFF.
@@ -806,33 +795,6 @@ trait MysqlDialect
         sort( $counters );
 
         return $counters;
-    }
-
-    /**
-     * The columns of a table's primary key, in key order.
-     *
-     * @param string $table_name
-     * @return string[]
-     */
-    public function getPrimaryKeyColumns( $table_name ) {
-
-        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
-
-            return [];
-        }
-
-        $sql = "SELECT COLUMN_NAME AS c FROM information_schema.STATISTICS "
-             . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND INDEX_NAME = 'PRIMARY' "
-             . "ORDER BY SEQ_IN_INDEX";
-
-        $cols = [];
-
-        foreach ( (array) $this->get_results( sprintf( $sql, $table_name ) ) as $row ) {
-
-            $cols[] = $row['c'];
-        }
-
-        return $cols;
     }
 
     /**

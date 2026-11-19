@@ -45,7 +45,6 @@
 
             <div class="owa_publicMain">
                 <?php include($view->setTemplate('msgs.php'));?>
-                <?php if (isset($view->content)) { echo $view->content; }?>
                 <?php echo $view->body;?>
             </div>
 

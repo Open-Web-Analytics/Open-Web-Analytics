@@ -325,9 +325,8 @@ class Site extends \OWA\Core\Entity {
      * Applies a form submission to this site's grants as a delta.
      *
      * Only users the form rendered can be affected, and only rows that
-     * actually change are written -- unlike updateAssignedUserIds(), which
-     * deletes every grant for the site before reinserting the survivors, so
-     * the common edit passes through a state where nobody has access at all.
+     * actually change are written, so an edit never passes through a state
+     * where nobody has access.
      *
      * @param    array<int|string>    $rendered    user ids the form offered
      * @param    array<int|string>    $checked    user ids the operator ticked
@@ -370,37 +369,6 @@ class Site extends \OWA\Core\Entity {
 
         return $changes;
     }
-
-    /**
-     * Replaces the whole grant set for this site.
-     *
-     * Prefer applyAssignedUserChanges(): this deletes every grant before
-     * reinserting, so a caller that computes the set wrongly -- or a form that
-     * submits nothing -- removes everyone.
-     *
-     * @param array<int|string> $userIds
-     * @return void
-     */
-    public function updateAssignedUserIds(array $userIds) {
-         if (!$this->get('id')) {
-             throw new \Exception('no site data loaded!');
-         }
-         $db = \OWA\Core\CoreAPI::dbSingleton();
-         $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
-         $db->where( 'site_id', $this->get('id') );
-         $ret = $db->executeQuery();
-
-         foreach ($userIds as $id) {
-             $relation = \OWA\Core\CoreAPI::entityFactory('base.site_user');
-            $relation->set( 'user_id', intval ($id ) );
-            $relation->set( 'site_id', $this->get('id') );
-            $relation->save();
-         }
-
-         unset ( self::$cachedAssignedUsers[$this->get('id')] );
-
-    }
-
 
     /**
      * Returns collection of owa_user entities that are allowed for current user

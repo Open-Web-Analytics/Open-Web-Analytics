@@ -283,15 +283,5 @@ OWA.sparkline.prototype = {
         p.className = 'owa_sparkline';
         p.appendChild( OWA.sparkline.svg( data, this.options, this.summary( data ) ) );
         box.appendChild( p );
-    },
-
-    setHeight: function(height) {
-
-        this.options.height = height;
-    },
-
-    setWidth: function(width) {
-
-        this.options.width = width;
     }
 }

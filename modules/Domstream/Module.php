@@ -101,8 +101,6 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\ProcessEvent' );
         $this->registerAction( 'domstream.reportDomstreams',
             'OWA\\Module\\Domstream\\Controller\\ReportDomstreams' );
-        $this->registerAction( 'domstream.domstreamsRest',
-            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 
     public function _registerEntities() {

@@ -1200,20 +1200,6 @@ class ResultSetManager extends \OWA\Core\Base {
     /**
      * @return list<string>
      */
-    public function getMetricNamesFromSegment() {
-
-        if ( isset($this->segment['metrics'] ) ) {
-
-            return array_keys($this->segment['metrics']);
-        } else {
-
-            return [];
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
     public function getDimensionNamesFromSegment() {
 
         if ( isset( $this->segment['dimensions'] ) ) {

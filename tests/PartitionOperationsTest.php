@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/PartitionFixtures.php';
+
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -75,8 +77,7 @@ final class PartitionOperationsTest extends TestCase
 
         $this->assertFalse($db->isPartitioned($t));
 
-        $ok = $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
-        $this->assertTrue($ok, 'partitioning should succeed');
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
         $this->assertTrue($db->isPartitioned($t));
 
         // A malformed date has no lower bound to fall below, so it lands in the
@@ -88,27 +89,13 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'the January rows should be gone');
     }
 
-    /** The primary key is widened where it does not already carry the column. */
-    public function testPartitioningWidensThePrimaryKey()
-    {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $name = 'owa_test_part_' . bin2hex(random_bytes(4));
-        $this->tables[] = $name;
-
-        $db->query(sprintf('CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id))', $name));
-        $this->assertSame(['id'], $db->getPrimaryKeyColumns($name));
-
-        $this->assertTrue($db->partitionTable($name, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly')));
-        $this->assertSame(['id', 'yyyymmdd'], $db->getPrimaryKeyColumns($name));
-    }
-
     /** Changing granularity rewrites one month at a time, and is a no-op when already correct. */
     public function testRepartitionIsPerMonthAndIdempotent()
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
         $db->query(sprintf('INSERT INTO %s VALUES (1,20260103),(2,20260210),(3,20260315)', $t));
 
         $result = $db->repartitionTable($t, 'half-month');
@@ -128,7 +115,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20251101, 20260315, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20251101, 20260315, 'monthly'));
 
         // Mid-January: December and earlier can go, January cannot.
         $plan = $db->getDroppablePartitions($t, 20260115);
@@ -155,7 +142,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
 
         $plan = $db->getDroppablePartitions($t, 29991231);
 
@@ -174,7 +161,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260415, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260415, 'monthly'));
         $db->query(sprintf('INSERT INTO %s VALUES (1,20260105),(2,20260205),(3,20260305),(4,20260405)', $t));
 
         $result = $db->repartitionTable($t, 'quarter-month', false, '20260301', '20260401');
@@ -197,7 +184,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
         $before = $this->partitionNames($t);
 
         $result = $db->repartitionTable($t, 'quarter-month', false, '20200101', '20200201');
@@ -216,7 +203,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         // Three months, monthly.
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
 
         // Converting only March: four parts for March, plus January and February.
         $plan = $db->repartitionTable($t, 'quarter-month', true, '20260301', '20260401');
@@ -261,7 +248,7 @@ final class PartitionOperationsTest extends TestCase
         $current = date('Ymd', strtotime('-10 days'));
         $ahead   = date('Ymd', strtotime('+10 days'));
 
-        $db->partitionTable($t, 'yyyymmdd', [
+        owa_test_partition_table($t, [
             'p' . $older   => $current,
             'p' . $current => $ahead,
         ]);
@@ -294,7 +281,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20240101, 20240415, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20240101, 20240415, 'monthly'));
 
         $this->assertNull($db->getDroppablePartitions($t, 20240301)['requested']);
     }
@@ -314,7 +301,7 @@ final class PartitionOperationsTest extends TestCase
         // A table partitioned months ago and never topped up: recent writes
         // have piled into the catch-all, where retention cannot reach them.
         $start = date('Ymd', strtotime($month . ' -6 months'));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
         $db->query(sprintf('INSERT INTO %s VALUES (1,%s),(2,%s)', $t, $start, date('Ymd')));
 
         $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t PARTITION (pmax)")['n'],
@@ -369,7 +356,7 @@ final class PartitionOperationsTest extends TestCase
 
         $through = \OWA\Core\Db::partitionLeadBoundary();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd'), date('Ymd', strtotime($through . ' -1 day')), 'monthly'
         ));
 
@@ -393,7 +380,7 @@ final class PartitionOperationsTest extends TestCase
         $month = date('Ym') . '01';
         $old = date('Ymd', strtotime($month . ' -' . $years_back . ' years +14 days'));
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             $month, date('Ymd', strtotime($month . ' +2 days')), 'daily'));
         $db->query(sprintf('INSERT INTO %s VALUES (1,%s),(2,%s)', $t, $old, $month));
 
@@ -470,7 +457,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         $month = date('Ym') . '01';
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($month, $month, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges($month, $month, 'monthly'));
 
         $before = $this->partitionNames($t);
         $from = date('Ymd', strtotime($month . ' -3 months +19 days'));
@@ -495,7 +482,7 @@ final class PartitionOperationsTest extends TestCase
 
             $t = $this->makeTable();
 
-            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
                 date('Ymd', strtotime($month . ' -2 months')), date('Ymd'), $granularity
             ));
 
@@ -536,7 +523,7 @@ final class PartitionOperationsTest extends TestCase
             $this->assertCount($expected, $ranges, "$label should yield $expected daily partitions");
 
             $t = $this->makeTable();
-            $db->partitionTable($t, 'yyyymmdd', $ranges);
+            owa_test_partition_table($t, $ranges);
 
             $this->assertSame(
                 'daily',
@@ -557,7 +544,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
         $month = date('Ym') . '01';
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             $month, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary(3) . ' -1 day')), 'quarter-month'
         ));
 
@@ -587,7 +574,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
         $month = date('Ym') . '01';
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime($month . ' -6 months')), date('Ymd'), 'monthly'
         ));
 
@@ -619,7 +606,7 @@ final class PartitionOperationsTest extends TestCase
         $month = date('Ym') . '01';
 
         // Three years of history, and a lead that ran down long ago.
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime($month . ' -36 months')), date('Ymd'), 'monthly'
         ));
 
@@ -715,7 +702,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         $db->query(sprintf('ALTER TABLE %s ADD session_id BIGINT, ADD KEY session_id (session_id)', $t));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20250101, 20251231, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20250101, 20251231, 'monthly'));
 
         // One session on 15 June with three requests, one of them next day.
         $db->query(sprintf(
@@ -818,55 +805,6 @@ final class PartitionOperationsTest extends TestCase
     }
 
     /**
-     * A long-running installation must be partitionable at all.
-     *
-     * A flat monthly layout over decades asks for one partition per month, which
-     * no open-file budget accommodates — and there is no way out, since monthly
-     * is already the coarsest granularity and old data cannot be pruned before
-     * partitions exist to prune. The old tier is what makes it possible.
-     */
-    public function testTieredRangesMakeALongHistoryPartitionable()
-    {
-        $through = \OWA\Core\Db::partitionLeadBoundary();
-        $min     = date('Ymd', strtotime(date('Ym') . '01 -300 months'));
-
-        $flat   = \OWA\Core\Db::makePartitionRanges($min, date('Ymd', strtotime($through . ' -1 day')), 'monthly');
-        $tiered = \OWA\Core\Db::makeTieredPartitionRanges($min, $through, 'monthly', 36);
-
-        $this->assertGreaterThan(300, count($flat), '25 years flat should be unmanageable');
-        $this->assertLessThan(100, count($tiered), 'tiered should be manageable');
-
-        // Ascending, contiguous, and every boundary a real date.
-        $prev = null;
-        foreach ($tiered as $name => $less_than) {
-            $this->assertMatchesRegularExpression('/^p\d{8}$/', $name, 'names must stay p<yyyymmdd>');
-            if ($prev !== null) {
-                $this->assertSame($prev, substr($name, 1), 'tiers must not leave a gap or overlap');
-            }
-            $prev = $less_than;
-        }
-
-        // Recent history keeps its granularity.
-        $recent = array_slice(array_keys($tiered), -12);
-        foreach ($recent as $name) {
-            $this->assertSame('01', substr($name, 7, 2), 'detail-window partitions are monthly');
-        }
-    }
-
-    /** An install with only recent data gets no old tier at all. */
-    public function testTieredRangesAreFlatWhenAllDataIsRecent()
-    {
-        $through = \OWA\Core\Db::partitionLeadBoundary();
-        $min     = date('Ymd', strtotime(date('Ym') . '01 -6 months'));
-
-        $this->assertSame(
-            count(\OWA\Core\Db::makePartitionRanges($min, date('Ymd', strtotime($through . ' -1 day')), 'monthly')),
-            count(\OWA\Core\Db::makeTieredPartitionRanges($min, $through, 'monthly', 36)),
-            'nothing outside the detail window means nothing to coarsen'
-        );
-    }
-
-    /**
      * Compaction keeps a table within its budget by merging, never by deleting.
      *
      * This is the property the whole design rests on: partition count stops
@@ -878,7 +816,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         $start = date('Ymd', strtotime(date('Ym') . '01 -120 months'));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
 
         for ($m = -120; $m <= 0; $m += 6) {
@@ -924,7 +862,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         $start = date('Ymd', strtotime(date('Ym') . '01 -120 months'));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
 
         for ($m = -120; $m <= 0; $m++) {
@@ -976,7 +914,7 @@ final class PartitionOperationsTest extends TestCase
         $t = $this->makeTable();
 
         $start = date('Ymd', strtotime(date('Ym') . '01 -240 months'));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
 
         // A budget below the floor: the detail window alone exceeds it.
@@ -1077,7 +1015,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime(date('Ym') . '01 -6 months')),
             date('Ymd', strtotime(date('Ym') . '01 +3 months')),
             'monthly'
@@ -1160,7 +1098,7 @@ final class PartitionOperationsTest extends TestCase
 
             $t = $this->makeTable();
 
-            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
                 date('Ymd', strtotime(date('Ym') . '01 -6 months')),
                 date('Ymd', strtotime(date('Ym') . "01 +$ahead months")),
                 'monthly'
@@ -1197,7 +1135,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime(date('Ym') . '01 -12 months')),
             date('Ymd', strtotime(date('Ym') . '01 -3 months')),
             'monthly'
@@ -1223,7 +1161,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime(date('Ym') . '01 -6 months')),
             date('Ymd', strtotime(date('Ym') . '01 +1 month')),
             'monthly'
@@ -1318,7 +1256,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime(date('Ym') . '01 -2 months')),
             date('Ymd', strtotime(date('Ym') . '01 +1 month')),
             'monthly'
@@ -1336,7 +1274,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(
             date('Ymd', strtotime(date('Ym') . "01 -$months months")),
             date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
             'monthly'
@@ -1494,7 +1432,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+        owa_test_partition_table($t, owa_test_tiered_ranges(
             date('Ymd', strtotime(date('Ym') . "01 -$history_months months")),
             \OWA\Core\Db::partitionLeadBoundary(),
             $granularity,
@@ -1598,7 +1536,7 @@ final class PartitionOperationsTest extends TestCase
             $lead = $next;
         }
 
-        $db->partitionTable($t, 'yyyymmdd', $ranges);
+        owa_test_partition_table($t, $ranges);
 
         $id = 0;
         for ($d = $front; $d < date('Ym01', strtotime('first day of +1 month')); $d = date('Ymd', strtotime($d . ' +7 days'))) {
@@ -2055,12 +1993,12 @@ final class PartitionOperationsTest extends TestCase
         ));
     }
 
-    /** Partition an empty table with makeTieredPartitionRanges(). */
+    /** Partition an empty table with tiered ranges. */
     private function partitionTiered($table, $granularity = 'monthly', $history = 120, $limit = 200)
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+        owa_test_partition_table($table, owa_test_tiered_ranges(
             date('Ymd', strtotime(date('Ym') . "01 -$history months")),
             \OWA\Core\Db::partitionLeadBoundary(),
             $granularity,
@@ -2233,7 +2171,7 @@ final class PartitionOperationsTest extends TestCase
 
         $month = date('Ym') . '01';
         $start = date('Ymd', strtotime($month . ' -3 months'));
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
         $before = $this->partitionNames($t);
 
         $found = $this->lockWait();
@@ -2280,7 +2218,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
+        owa_test_partition_table($t, \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
 
         $staging = $t . '_x';
         $this->tables[] = $staging;
