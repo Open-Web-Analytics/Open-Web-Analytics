@@ -1614,6 +1614,26 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A tagged landing with no referrer, as from an email client that sends
+     * none: the tags are the acquisition.
+     */
+    public function testATaggedLandingWithNoReferrerWritesItsTags(): void
+    {
+        $rows = $this->firePageView([
+            'HTTP_REFERER' => '',
+        ]);
+
+        $this->assertArrayHasKey('first_visit', $rows, 'the fixture is a landing');
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame('spring', $row['acq_campaign'] ?? null);
+        $this->assertNull($row['acq_referer_host']);
+    }
+
+    /**
      * A later page view of the first session refers from the site's own landing
      * page. That referrer is not evidence of how the visitor arrived: a row
      * written from it read as direct, and the tagged landing, arriving after it
