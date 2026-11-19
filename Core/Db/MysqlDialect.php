@@ -115,7 +115,7 @@ if ( ! defined( 'OWA_DTD_TABLE_TYPE_MEMORY' ) ) { define('OWA_DTD_TABLE_TYPE_MEM
 // and the table is created and managed unpartitioned -- the feature is absent
 // rather than broken. The syntax differs enough between platforms (Postgres
 // declares the parent then creates each partition as its own table) that only
-// the fragments belong here; the sequencing stays in Db.
+// the fragments belong here; the sequencing is in Db\Partitions.
 if ( ! defined( 'OWA_DTD_PARTITION_BY_RANGE' ) ) { define('OWA_DTD_PARTITION_BY_RANGE', ' PARTITION BY RANGE (%s) (%s)'); }
 if ( ! defined( 'OWA_DTD_PARTITION_LESS_THAN' ) ) { define('OWA_DTD_PARTITION_LESS_THAN', 'PARTITION %s VALUES LESS THAN (%s)'); }
 if ( ! defined( 'OWA_DTD_PARTITION_MAXVALUE' ) ) { define('OWA_DTD_PARTITION_MAXVALUE', 'MAXVALUE'); }
