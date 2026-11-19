@@ -978,6 +978,7 @@ return [
     'Partition' => 'Partition',
     'Partitions' => 'Partitions',
     'Password' => 'Password',
+    'Password Change Complete' => 'Password Change Complete',
     'Password Reset' => 'Password Reset',
     'Password is required.' => 'Password is required.',
     'Paste this into the %s of every page, once. It loads this Profile’s tracker with the settings above.' => 'Paste this into the %s of every page, once. It loads this Profile’s tracker with the settings above.',
