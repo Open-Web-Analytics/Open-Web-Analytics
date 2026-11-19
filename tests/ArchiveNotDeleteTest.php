@@ -24,6 +24,7 @@ final class ArchiveNotDeleteTest extends TestCase
     private string $siteId = '';
     private string $propertyId = '';
     private array $archived = [];
+    private array $properties = [];
 
     protected function setUp(): void
     {
@@ -68,6 +69,15 @@ final class ArchiveNotDeleteTest extends TestCase
         }
 
         $this->archived = [];
+
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName();
+
+        foreach ( $this->properties as $id ) {
+
+            \OWA\Core\CoreAPI::dbSingleton()->query( "DELETE FROM $table WHERE id = ?", [ $id ] );
+        }
+
+        $this->properties = [];
 
         \OWA\Core\CoreAPI::forgetRegisteredSites();
     }
@@ -115,6 +125,95 @@ final class ArchiveNotDeleteTest extends TestCase
         $site->update();
 
         \OWA\Core\CoreAPI::forgetRegisteredSites();
+    }
+
+    /**
+     * The live Profiles of a Property, each remembered to be put back.
+     *
+     * @return list<string> owa_site row ids
+     */
+    private function rememberLiveProfiles( string $propertyId ): array
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'id, archived_date' );
+        $db->where( 'property_id', $propertyId );
+
+        $ids = [];
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( empty( $row['archived_date'] ) ) {
+
+                $this->archived[] = [ 'base.site', $row['id'] ];
+                $ids[]            = (string) $row['id'];
+            }
+        }
+
+        return $ids;
+    }
+
+    /** A Property with no Profiles, removed in tearDown. */
+    private function newProperty( ?int $archivedDate ): string
+    {
+        $id = (string) \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() );
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $property->set( 'id', $id );
+        $property->set( 'organization_id', ( new \OWA\Module\Base\Classes\SiteManager() )->ensureOrganization() );
+        $property->set( 'name', 'owatest empty property ' . $id );
+        $property->set( 'domain', 'empty-' . $id . '.owatest.example.com' );
+        $property->set( 'creation_date', time() );
+
+        if ( $archivedDate !== null ) {
+
+            $property->set( 'archived_date', $archivedDate );
+        }
+
+        $property->create();
+
+        $this->properties[] = $id;
+
+        return $id;
+    }
+
+    /** A controller exposing the site list and the site control's hierarchy. */
+    private function controller(): object
+    {
+        return new class( [] ) extends \OWA\Core\Controller {
+
+            public function sites() { return $this->getSitesAllowedForCurrentUser(); }
+
+            public function hierarchy( $sites ) { return $this->getSiteHierarchy( $sites ); }
+        };
+    }
+
+    private function asRole( string $role, callable $run ): void
+    {
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $was  = $user->getRole();
+
+        $user->setRole( $role );
+
+        try {
+            $run();
+        } finally {
+            $user->setRole( $was );
+        }
+    }
+
+    /** @return list<string> the site_ids listed under a Property in the site control */
+    private function profilesUnder( array $hierarchy, string $propertyId ): array
+    {
+        foreach ( $hierarchy['properties'] as $property ) {
+
+            if ( (string) $property['id'] === $propertyId ) {
+
+                return array_column( $property['profiles'], 'site_id' );
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -261,26 +360,43 @@ final class ArchiveNotDeleteTest extends TestCase
             'A restored Profile reads as archived, so restoring does not work.' );
     }
 
-    /** No read may use IS NULL, for the reason above. */
-    public function testNoReadTestsTheColumnForNull(): void
+    /**
+     * A restored row (archived_date 0) is listed again by every reader, which an
+     * IS NULL test would get wrong: the admin site list, the site control, the
+     * Property's live-Profile count and the collection check.
+     */
+    public function testARestoredProfileIsListedEverywhereAgain(): void
     {
-        $paths = [
-            'Core/Controller.php',
-            'Core/CoreAPI.php',
-            'modules/Base/Classes/ServiceUser.php',
-            'modules/Base/Controller/PropertyDelete.php',
-            'modules/Base/Controller/PropertyProfile.php',
-        ];
+        $this->skipUnlessParented();
 
-        foreach ( $paths as $path ) {
+        $this->archiveProfile( $this->siteId );
 
-            $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path );
+        $without = \OWA\Module\Base\Controller\PropertyProfile::countLiveProfiles( $this->propertyId );
 
-            $this->assertDoesNotMatchRegularExpression(
-                '/archived_date[^\n]*IS\s+NULL/i', $src,
-                "$path tests archived_date for NULL, which reads every RESTORED row as "
-                . 'archived -- restoring writes 0, not NULL.' );
-        }
+        $site = $this->site( $this->siteId );
+        $site->set( 'archived_date', 0 );
+        $site->update();
+
+        \OWA\Core\CoreAPI::forgetRegisteredSites();
+
+        $this->asRole( 'admin', function () use ( $without ) {
+
+            $sites = $this->controller()->sites();
+
+            $this->assertArrayHasKey( $this->siteId, $sites,
+                'A restored Profile is missing from the admin site list.' );
+
+            $profiles = $this->profilesUnder( $this->controller()->hierarchy( $sites ), $this->propertyId );
+
+            $this->assertContains( $this->siteId, $profiles,
+                'A restored Profile is missing from the site control.' );
+
+            $this->assertSame( $without + 1,
+                \OWA\Module\Base\Controller\PropertyProfile::countLiveProfiles( $this->propertyId ),
+                'A restored Profile is not counted as live.' );
+        } );
+
+        $this->assertTrue( \OWA\Core\CoreAPI::isSiteRegistered( $this->siteId ) );
     }
 
     /**
@@ -292,48 +408,89 @@ final class ArchiveNotDeleteTest extends TestCase
      * direction would make an implicit destructive act ride along with an
      * explicit one -- and an empty Property is a legitimate state, the one that
      * lets someone start a website's Profiles over.
+     *
+     * Neither destroys a row: both archive.
      */
-    public function testTheCascadeRunsDownwardOnly(): void
+    public function testDeletingAPropertyArchivesItAndItsProfiles(): void
     {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyDelete.php' );
+        $this->skipUnlessParented();
 
-        $this->assertStringContainsString( "where( 'property_id', \$propertyId )", $src,
-            'Deleting a Property does not reach its Profiles.' );
+        $this->archived[] = [ 'base.property', $this->propertyId ];
+        $profiles         = $this->rememberLiveProfiles( $this->propertyId );
 
-        $profileDelete = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/SitesDelete.php' );
+        $this->assertNotEmpty( $profiles );
 
-        // Quoted whole: the redirect names base.propertyProfiles, which is a screen.
-        $this->assertStringNotContainsString( "'base.property'", $profileDelete,
-            'Deleting a Profile touches its Property, so removing the last Profile of a '
-            . 'website would silently remove the website.' );
+        ( new \OWA\Module\Base\Controller\PropertyDelete( [ 'propertyId' => $this->propertyId ] ) )->action();
 
-        /* And neither of them destroys anything. */
-        foreach ( [ $src, $profileDelete ] as $controller ) {
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $property->load( $this->propertyId );
 
-            $this->assertStringNotContainsString( '->delete(', $controller,
-                'A delete controller still destroys rows.' );
+        $this->assertTrue( $property->wasPersisted(), 'Deleting a Property destroyed its row.' );
+        $this->assertTrue( $property->isArchived(), 'Deleting a Property did not archive it.' );
 
-            $this->assertStringContainsString( "set( 'archived_date'", $controller );
+        foreach ( $profiles as $id ) {
+
+            $profile = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $profile->load( $id );
+
+            $this->assertTrue( $profile->wasPersisted(), 'Deleting a Property destroyed a Profile row.' );
+            $this->assertTrue( $profile->isArchived(), 'Deleting a Property does not reach its Profiles.' );
         }
+    }
+
+    public function testDeletingAProfileLeavesItsProperty(): void
+    {
+        $this->skipUnlessParented();
+
+        // The Property too, so a failure here does not leave it archived.
+        $this->archived[] = [ 'base.site', $this->site( $this->siteId )->get( 'id' ) ];
+        $this->archived[] = [ 'base.property', $this->propertyId ];
+
+        ( new \OWA\Module\Base\Controller\SitesDelete( [ 'siteId' => $this->siteId ] ) )->action();
+
+        $site = $this->site( $this->siteId );
+
+        $this->assertTrue( $site->wasPersisted(), 'Deleting a Profile destroyed its row.' );
+        $this->assertTrue( $site->isArchived(), 'Deleting a Profile did not archive it.' );
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $property->load( $this->propertyId );
+
+        $this->assertFalse( $property->isArchived(),
+            'Deleting a Profile archived its Property, so removing the last Profile of a '
+            . 'website would silently remove the website.' );
     }
 
     /**
      * An empty Property stays reachable for whoever can see every Profile:
      * one whose last Profile was removed, and one created from the fan-out before
      * it had any. Filtered out for having none, no screen could get back to it.
+     * For anyone else it is left out, and so is an archived Property.
      */
     public function testTheHierarchyKeepsAnEmptyPropertyForAnAdmin(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Controller.php' );
+        $empty    = $this->newProperty( null );
+        $archived = $this->newProperty( 1756000000 );
 
-        $this->assertStringContainsString( "return \$p['profiles'] || \$seesEveryProfile;", $src,
-            'A Property with no Profiles is dropped unconditionally, so it cannot be '
-            . 'repopulated after its last Profile is removed.' );
+        $ids = function () {
 
-        $this->assertStringContainsString( "if ( ! empty( \$row['archived_date'] ) )", $src,
-            'Archived Properties are still rendered in the site control.' );
+            return array_map( 'strval', array_column( $this->controller()->hierarchy( [] )['properties'], 'id' ) );
+        };
+
+        $this->asRole( 'admin', function () use ( $ids, $empty, $archived ) {
+
+            $this->assertContains( $empty, $ids(),
+                'A Property with no Profiles is dropped for an admin, so it cannot be '
+                . 'repopulated after its last Profile is removed.' );
+
+            $this->assertNotContains( $archived, $ids(), 'An archived Property is still in the site control.' );
+        } );
+
+        $this->asRole( 'viewer', function () use ( $ids, $empty ) {
+
+            $this->assertNotContains( $empty, $ids(),
+                'A Property none of whose Profiles the viewer can see is shown to them.' );
+        } );
     }
 
     /**
@@ -380,22 +537,6 @@ final class ArchiveNotDeleteTest extends TestCase
             \OWA\Module\Base\Classes\TrackerBundle::$outDir = $was;
             @unlink( $out . $this->siteId . '.js' );
             @rmdir( $out );
-        }
-    }
-
-    /** Every listing has to agree, or an archived Profile reappears in one of them. */
-    public function testEveryProfileListingExcludesArchived(): void
-    {
-        $paths = [
-            'Core/Controller.php'                    => 'the admin site list',
-            'modules/Base/Classes/ServiceUser.php'   => 'the granted site list',
-        ];
-
-        foreach ( $paths as $path => $what ) {
-
-            $this->assertStringContainsString(
-                'isArchived()', (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path ),
-                "An archived Profile is still visible through $what." );
         }
     }
 }
