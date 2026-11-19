@@ -143,12 +143,14 @@ class Sanitize {
     }
 
     /**
+     * A non-breaking space (U+00A0) becomes a space.
+     *
      * @param  string $input
      * @return string
      */
     public static function removeHiddenSpaces( $input = '' ) {
 
-        return str_replace( chr( 0xCA ), '', str_replace( ' ', ' ', $input ) );
+        return str_replace( "\u{00A0}", ' ', $input );
     }
 
     /**
@@ -161,6 +163,8 @@ class Sanitize {
     }
 
     /**
+     * Changes nothing: each backslash it matches is replaced with a backslash.
+     *
      * @param  string $input
      * @return string|null null when the pattern fails
      */
@@ -179,6 +183,8 @@ class Sanitize {
     }
 
     /**
+     * Unescapes: `\$` becomes `$`.
+     *
      * @param  string $input
      * @return string
      */
@@ -190,13 +196,13 @@ class Sanitize {
     /**
      * Sanitizes for safe input. Takes an array of options:
      *
-     * - hidden_spaces - removes any non space whitespace characters
+     * - hidden_spaces - a non-breaking space becomes a space (removeHiddenSpaces())
      * - escape_html - Encode any html entities.
-     * - dollar - Escape `$` with `\$`
+     * - dollar - `\$` becomes `$` (escapeDollarSigns())
      * - carriage - Remove `\r`
-     * - unicode
-     * - backslash -
-     * - remove_html - Strip HTML with strip_tags.
+     * - unicode - `&amp;#N;` becomes `&#N;` (escapeUnicode())
+     * - backslash - changes nothing (escapeBackslash())
+     * - remove_html - Strip tags (stripAllTags()).
      *
      * `encode` is accepted and not read.
      *

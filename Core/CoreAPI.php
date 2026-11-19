@@ -744,7 +744,8 @@ class CoreAPI {
     }
 
     /**
-     * Drop the scoped-setting caches.
+     * Drop the scoped-setting caches, and the tracking memos built from them
+     * (TrackingEventHelpers::forget()).
      *
      * Called on every scoped write. Blunt on purpose: a write is rare and a
      * stale read is a wrong answer, so the whole map goes rather than trying
@@ -757,6 +758,8 @@ class CoreAPI {
         self::$setting_row_cache   = [];
         self::$setting_scope_cache = [];
         self::$setting_chain_cache = [];
+
+        \OWA\Module\Base\Classes\TrackingEventHelpers::forget();
     }
 
     /**
@@ -1453,7 +1456,7 @@ class CoreAPI {
         // require. The legacy name built below ('owa_base_Update011_update')
         // has not existed since the PSR-4 relocation, so resolving it first is
         // what makes updates loadable at all.
-        // Callers name the update two different ways. Module::getUpdates()
+        // Callers name the update two different ways. Module::update()
         // passes the PSR-4 class basename it just read off disk ('Update017'),
         // while the updatesApply CLI's apply=/rollback= arguments are written
         // by a human as 'base.17' and arrive here as a bare sequence. Only the

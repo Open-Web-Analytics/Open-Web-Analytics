@@ -231,6 +231,29 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         ];
     }
 
+    /** The refusal in the JSON quotes the value as sent, not HTML-escaped. */
+    public function testARefusedDateIsQuotedAsSent(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'siteId' => $this->profile(false), 'startDate' => 'a"b', 'endDate' => '20260810']
+        );
+
+        $this->assertSame(422, $resp['status']);
+
+        $messages = [];
+        array_walk_recursive($resp['json'], static function ($v) use (&$messages) {
+            if (is_string($v)) {
+                $messages[] = $v;
+            }
+        });
+
+        $this->assertContains('The start date "a"b" is not a date. Dates are yyyymmdd.', $messages);
+    }
+
     /**
      * A well-formed range is still served, so the guard above has not simply
      * closed the endpoint to date ranges.

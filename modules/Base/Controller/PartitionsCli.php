@@ -608,9 +608,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * trigger is the window no longer reaching the month's final day.
      *
      * This is the half that RELEASES partitions; carvePlan() is the half that
-     * claims them, and it claims only out to cubeDailyBoundary(). A merge here
-     * is what stops the daily part trailing backwards without limit while the
-     * carve extends it forwards.
+     * claims them, out to Db::CUBE_DAILY_MONTHS months from where the daily
+     * part starts. A merge here is what stops the daily part trailing
+     * backwards without limit while the carve extends it forwards.
      *
      * @param string $table
      * @param bool   $dry_run

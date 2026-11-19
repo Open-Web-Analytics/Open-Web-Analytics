@@ -1210,6 +1210,33 @@ final class CubeReportingTest extends TestCase
             'sorting by the alias would sort on a column the query does not select');
     }
 
+    /**
+     * A segment selects the rows the report reads. Its conditions are bound
+     * values in a subselect, and the statement that embeds it binds them.
+     * Three rows of the fixture are on /two: two page views and the click.
+     */
+    public function testASegmentReportReadsOnlyTheSegmentsRows(): void
+    {
+        $rsm = $this->manager('eventCount', 'eventName');
+        $rsm->setSegment('dynamic::pagePath==/two');
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+        $this->assertSame(3, (int) $rs->aggregates['eventCount']['value']);
+
+        $byName = [];
+
+        foreach ((array) $rs->resultsRows as $row) {
+
+            $byName[$row['eventName']['value']] = (int) $row['eventCount']['value'];
+        }
+
+        ksort($byName);
+
+        $this->assertSame(['click' => 1, 'page_view' => 2], $byName);
+    }
+
     /** The site-to-Property lookup, which is what the binding rests on. */
     public function testThePropertyLookupAnswersAndRefuses(): void
     {

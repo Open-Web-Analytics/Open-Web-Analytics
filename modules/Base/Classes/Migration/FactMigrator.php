@@ -46,7 +46,7 @@ abstract class FactMigrator {
 
     /**
      * The mediums v1 assigned itself rather than read from a link: its
-     * default, and its three readings of the referrer (resolveMedium()).
+     * default, and its three readings of the referrer (1.x's resolveMedium()).
      */
     const GENERATED_MEDIUMS = [ 'direct', 'organic-search', 'social-network', 'referral' ];
 
@@ -884,8 +884,8 @@ abstract class FactMigrator {
      *
      * EXCEPT WHAT v1 FILLED IN ITSELF. A campaign link without utm_medium or
      * utm_source still got a medium and a source: v1 defaulted the medium to
-     * `direct` or classified the referrer (resolveMedium()), and took the
-     * source from the referring host (resolveSource()). Those are verdicts
+     * `direct` or classified the referrer (1.x's resolveMedium()), and took the
+     * source from the referring host (1.x's resolveSource()). Those are verdicts
      * too, and as tags they would be read as what the link said -- `direct`
      * matches no channel rule, so every such session was Unassigned. They are
      * dropped, and the cube derives both from the referrer. A link that did

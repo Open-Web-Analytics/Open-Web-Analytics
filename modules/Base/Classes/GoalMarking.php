@@ -43,9 +43,11 @@ class GoalMarking {
      * site_id => the active definitions, each with its conditions
      *
      * Ingest runs this for every row of every beacon, so the definitions and
-     * their conditions are read ONCE per site per process: loadConditions() is a
+     * their conditions are read once per site per process: loadConditions() is a
      * query, and per definition per event it would be a query per beacon per
-     * definition.
+     * definition. A process that runs for a while, such as a queue drain, marks
+     * with what it read first; a definition saved meanwhile applies from the
+     * next process.
      *
      * @var array<string, list<Goal>>
      */
@@ -390,8 +392,7 @@ class GoalMarking {
      * Drop the memo.
      *
      * For tests, which create a definition and then expect the next row to be
-     * marked by it. In a request the memo is exactly right: definitions do not
-     * change while a beacon is being stored.
+     * marked by it, and for Update075, which renames goal events.
      *
      * @return void
      */
