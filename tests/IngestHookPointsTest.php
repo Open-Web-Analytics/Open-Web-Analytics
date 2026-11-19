@@ -46,7 +46,7 @@ final class IngestHookPointsTest extends TestCase
      * name. A constant nothing calls would enumerate cleanly and never run.
      *
      * The beacon's site id holds spaces, which no site id may, so it stops at
-     * the site check without a lookup; the database connect is disabled too.
+     * the site check without a lookup.
      * IngestPointsReachedTest follows one beacon through the rest.
      */
     public function testLogPhpRunsTheRequestPointsInOrder(): void
@@ -80,7 +80,6 @@ PHP
         try {
             exec( 'OWA_POINTS_RECORD=' . escapeshellarg( $record ) . ' ' . escapeshellarg( PHP_BINARY )
                 . ' -d ' . escapeshellarg( 'auto_prepend_file=' . $prepend )
-                . ' -d ' . escapeshellarg( 'disable_functions=mysqli_real_connect,mysqli_connect' )
                 . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/log.php' ) . ' > /dev/null 2>&1' );
 
             $heard = file_exists( $record ) ? file( $record, FILE_IGNORE_NEW_LINES ) : [];

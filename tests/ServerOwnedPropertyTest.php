@@ -157,8 +157,7 @@ final class ServerOwnedPropertyTest extends TestCase
     /**
      * log.php passes the request through the gate: run it with a beacon that
      * also names server-owned properties, and read the event it builds at
-     * Ingest::REQUEST_POST. The listener exits there, so nothing is stored,
-     * and the database connect is disabled.
+     * Ingest::REQUEST_POST. The listener exits there, so nothing is stored.
      */
     public function testLogPhpUsesTheFilter(): void
     {
@@ -191,7 +190,6 @@ PHP
         try {
             exec( 'OWA_LOG_TEST_RECORD=' . escapeshellarg( $record ) . ' ' . escapeshellarg( PHP_BINARY )
                 . ' -d ' . escapeshellarg( 'auto_prepend_file=' . $prepend )
-                . ' -d ' . escapeshellarg( 'disable_functions=mysqli_real_connect,mysqli_connect' )
                 . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/log.php' ) . ' > /dev/null 2>&1' );
 
             $this->assertFileExists( $record, 'log.php built no event' );
