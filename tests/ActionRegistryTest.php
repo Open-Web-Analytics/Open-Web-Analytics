@@ -3,17 +3,12 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every core controller must be registered against an action name.
+ * Every core controller is registered against an action name or a REST route.
  *
- * CoreAPI::performAction() has two branches. The registered one hands the class
- * name from the action map to Lib::simpleFactory(). The unregistered
- * one falls through to moduleFactory(), which reconstructs a class name AND a
- * filesystem path by concatenating the request's own 'do' param.
- *
- * That legacy branch has to stay: third-party modules resolve through it, and
- * removing it would break them. It is guarded by an identifier check (see
- * ActionNameValidationTest), but core should never depend on it. A controller
- * added without registering it fails the count check.
+ * CoreAPI::performAction() hands the class name from the action map to
+ * Lib::simpleFactory(), and answers a name not in the map as a missing page. A
+ * REST route is resolved from the route map alone, so a REST controller has no
+ * action name. A controller added without either fails the count check.
  */
 final class ActionRegistryTest extends TestCase
 {
@@ -44,14 +39,14 @@ final class ActionRegistryTest extends TestCase
         $this->assertGreaterThan(1, $floor, 'no controllers found, so this proves nothing');
 
         $this->assertGreaterThanOrEqual($floor, count($this->actionMap()),
-            'The action registry does not even cover Base, so requests are resolving '
-            . 'through the legacy path.');
+            'The action registry does not even cover Base, so module registration did not run.');
     }
 
     /** Base controllers that can be reached as a 'do' action. */
     private function dispatchableBaseControllers(): array
     {
-        $out = [];
+        $out  = [];
+        $rest = $this->restRouteClasses();
 
         foreach (glob(\OWA\Core\Env::root() . '/modules/Base/Controller/*.php') as $file) {
             $short = basename($file, '.php');
@@ -63,6 +58,10 @@ final class ActionRegistryTest extends TestCase
             $class = 'OWA\\Module\\Base\\Controller\\' . $short;
 
             if (class_exists($class) && (new \ReflectionClass($class))->isAbstract()) {
+                continue;
+            }
+
+            if (isset($rest[$class])) {
                 continue;
             }
 
@@ -105,8 +104,8 @@ final class ActionRegistryTest extends TestCase
         }
 
         $this->assertSame([], $missing,
-            "These Base controllers have no registered action, so they resolve through the "
-            . "legacy concatenation path: " . implode(', ', $missing));
+            "These Base controllers have no registered action or REST route, so nothing "
+            . "reaches them: " . implode(', ', $missing));
     }
 
     public function testRegisteredClassesActuallyExist(): void
@@ -132,10 +131,9 @@ final class ActionRegistryTest extends TestCase
      *
      * registerRestApiRoute() stores its own class name in
      * $restApiRoutes -- not in the action map -- so
-     * testRegisteredClassesActuallyExist() above does not see it. A controller
-     * registered in both places (every REST controller here) can be renamed in
-     * one and left stale in the other, and the action-map test still passes.
-     * The break then surfaces only when a client actually calls that endpoint.
+     * testRegisteredClassesActuallyExist() above does not see it. A renamed
+     * controller left stale here surfaces only when a client calls that
+     * endpoint.
      */
     public function testRegisteredRestRouteClassesActuallyExist(): void
     {
@@ -177,16 +175,55 @@ final class ActionRegistryTest extends TestCase
      */
     public function testARegisteredActionBuildsItsController(): void
     {
-        $base = $this->actionMap()['base.addSiteRest'] ?? null;
+        $base = $this->actionMap()['base.sitesAdd'] ?? null;
         $this->assertNotNull($base);
-        $this->assertSame(\OWA\Module\Base\Controller\AddSiteRest::class, $base['class_name']);
+        $this->assertSame(\OWA\Module\Base\Controller\SitesAdd::class, $base['class_name']);
 
-        $this->assertInstanceOf(\OWA\Module\Base\Controller\AddSiteRest::class,
+        $this->assertInstanceOf(\OWA\Module\Base\Controller\SitesAdd::class,
             \OWA\Core\Lib::simpleFactory($base['class_name'], '', []));
 
-        $this->assertInstanceOf(\OWA\Module\Base\Controller\AddSiteRest::class,
+        $this->assertInstanceOf(\OWA\Module\Base\Controller\SitesAdd::class,
             \OWA\Core\Lib::simpleFactory($base['class_name'], 'Controller/NoSuchFile.php', []),
             'a path passed by an older caller is ignored');
+    }
+
+    /**
+     * A REST controller is reached by its route, never as a 'do' action: the
+     * admin endpoint would run it outside the REST request it is written for.
+     */
+    public function testNoRestControllerIsAnAction(): void
+    {
+        $rest = $this->restRouteClasses();
+
+        $this->assertNotEmpty($rest, 'no REST routes registered, so this proves nothing');
+
+        $both = [];
+
+        foreach ($this->actionMap() as $action => $meta) {
+            if (isset($rest[$meta['class_name']])) {
+                $both[] = $action;
+            }
+        }
+
+        $this->assertSame([], $both, 'REST controllers registered as actions: ' . implode(', ', $both));
+    }
+
+    /** @return array<string, true> every class a REST route names */
+    private function restRouteClasses(): array
+    {
+        $out = [];
+
+        foreach (\OWA\Core\CoreAPI::serviceSingleton()->getAllRestApiRoutes() as $versions) {
+            foreach ($versions as $names) {
+                foreach ($names as $methods) {
+                    foreach ($methods as $meta) {
+                        $out[$meta['class_name']] = true;
+                    }
+                }
+            }
+        }
+
+        return $out;
     }
 
     /** A module written before PSR-4 still passes a class file path; it is accepted and ignored. */
