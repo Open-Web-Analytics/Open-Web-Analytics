@@ -3,7 +3,8 @@
 namespace OWA\Module\MaxmindGeoip\Controller;
 
 /**
- * Refresh the GeoLite2 city database that IP lookups resolve against.
+ * Refresh the GeoLite2 database that IP lookups resolve against: the edition
+ * the db_edition setting names (Maxmind::edition()).
  *
  *     php cli.php cmd=update-geoip-db
  *
