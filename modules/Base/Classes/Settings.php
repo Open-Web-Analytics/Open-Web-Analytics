@@ -773,8 +773,7 @@ namespace OWA\Module\Base\Classes;
       * blob out of owa_configuration; the merge below is unchanged, only where
       * the overrides come from.
       *
-      * Which store is read is decided by legacyBlobIsAuthoritative(), the same
-      * way round as save() decides where to write.
+      * Which store is read is decided by readStoreOfRecord().
       *
       * @param int|string $id  retained for callers; the install scope has one id
       * @return void
@@ -783,9 +782,7 @@ namespace OWA\Module\Base\Classes;
 
         $this->config_id = $id;
 
-        $db_settings = $this->legacyBlobIsAuthoritative()
-            ? $this->readLegacyConfigurationBlob()
-            : $this->readInstallSettings();
+        $db_settings = $this->readStoreOfRecord();
 
         if (!empty($db_settings)) {
 
@@ -880,10 +877,67 @@ namespace OWA\Module\Base\Classes;
         $this->store_ready = true;
      }
 
+     /** The schema from which install settings are rows: Update043's. */
+     const SETTING_ROWS_SCHEMA = 43;
+
+     /**
+      * The install settings, from whichever store holds them.
+      *
+      * The rows are read first. Update043 unpacks the blob into rows, drops
+      * owa_configuration, and only then is schema 43 saved, into the rows. So
+      * rows holding a base schema_version of 43 or later settle it without
+      * legacyBlobIsAuthoritative(), whose table lookup would otherwise run on
+      * every request. Otherwise -- no rows, or rows of an Update043 that
+      * stopped part way -- the table decides, as save() does.
+      *
+      * @return array<mixed> module => key => value
+      */
+     private function readStoreOfRecord() {
+
+        $rows = null;
+
+        if ( $this->legacy_blob_present === null ) {
+
+            $rows = $this->readInstallSettings();
+
+            if ( self::rowsAreTheStore( $rows ) ) {
+
+                $this->legacy_blob_present = false;
+
+                return $rows;
+            }
+        }
+
+        if ( $this->legacyBlobIsAuthoritative() ) {
+
+            return $this->readLegacyConfigurationBlob();
+        }
+
+        return $rows ?? $this->readInstallSettings();
+     }
+
+     /**
+      * Whether install rows read at boot show Update043 complete: a base
+      * schema_version of SETTING_ROWS_SCHEMA or later. See readStoreOfRecord().
+      *
+      * @param  array<mixed> $rows module => key => value
+      * @return bool
+      */
+     protected static function rowsAreTheStore( array $rows ) {
+
+        $version = $rows['base']['schema_version'] ?? null;
+
+        return is_numeric( $version ) && (int) $version >= self::SETTING_ROWS_SCHEMA;
+     }
+
      /**
       * Every install-scope setting, as [module][key] => value.
       *
       * ONE query: rows would otherwise cost a query each.
+      *
+      * Every key boot asked for is resolved by it, a key with no row as much
+      * as one with a row, so no later read of an eager key without a row
+      * sends resolveAllPending() to the database.
       *
       * @return array<mixed> module => key => value
       */
@@ -901,7 +955,21 @@ namespace OWA\Module\Base\Classes;
             $this->eagerPredicate( $params ),
             $this->constantExclusion( $params ) );
 
+        $errors = $db->queryErrorCount();
+
         $rows = (array) $db->get_results( $sql, $params );
+
+        if ( $db->queryErrorCount() === $errors ) {
+
+            foreach ( $this->eagerSettings() as $module => $keys ) {
+
+                foreach ( $keys as $key ) {
+
+                    $this->loaded[ $module . '|' . $key ] = true;
+                    unset( $this->pending[ $module . '|' . $key ] );
+                }
+            }
+        }
 
         $settings = [];
 
@@ -949,7 +1017,8 @@ namespace OWA\Module\Base\Classes;
       * Memoised: a request that saves twice should not ask twice, and the
       * table cannot appear or vanish under a running request that is not
       * itself the migration. The migration calls settingStoreRecheck() when it
-      * is.
+      * is. readStoreOfRecord() answers false without asking when the rows
+      * hold schema 43 or later.
       *
       * @return bool
       */

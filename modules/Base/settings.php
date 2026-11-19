@@ -346,6 +346,7 @@ return [
         'campaignUtmParams' => [
             'default'  => true,
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Read utm_ Campaign Parameters' ),
@@ -362,6 +363,7 @@ return [
         'campaignKeys' => [
             'default'  => [],
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property', 'profile' ],
             'type'     => 'map',
             'keys'     => array_keys( \OWA\Module\Base\Classes\TrackingEventHelpers::CAMPAIGN_KEYS ),
@@ -630,6 +632,7 @@ return [
         'tracker_cookie_domain' => [
             'default'  => '',
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain' ),
