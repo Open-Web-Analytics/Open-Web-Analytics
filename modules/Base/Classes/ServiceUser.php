@@ -276,9 +276,18 @@ class ServiceUser extends \OWA\Core\Base {
         $list = [];
 
         if ( ! empty($site_ids) ) {
+
+            // Every granted Profile in one query, rather than a load each.
+            $rows = self::siteRowsById( array_column( (array) $site_ids, 'site_id' ) );
+
             foreach ($site_ids as $row) {
+
                 $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
-                $siteEntity->load($row['site_id']);
+
+                if ( isset( $rows[ (string) $row['site_id'] ] ) ) {
+
+                    $siteEntity->hydrate( $rows[ (string) $row['site_id'] ] );
+                }
 
                 /*
                  * Archived Profiles drop out here, which also settles
@@ -298,6 +307,34 @@ class ServiceUser extends \OWA\Core\Base {
         }
 
         $this->assignedSites = self::withSiblingProfiles( $list );
+    }
+
+    /**
+     * owa_site rows by id, as id => row. An id with no row is left out.
+     *
+     * @param  list<mixed> $ids owa_site.id values
+     * @return array<string, array<string, scalar|null>>
+     */
+    private static function siteRowsById( array $ids ) {
+
+        $ids = array_values( array_unique( array_filter( array_map( 'strval', $ids ), 'ctype_digit' ) ) );
+
+        if ( ! $ids ) {
+
+            return [];
+        }
+
+        $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SELECT * FROM %s WHERE id IN (%s)',
+            \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName(), \OWA\Core\Db::placeholders( count( $ids ) ) ), $ids );
+
+        $out = [];
+
+        foreach ( $rows as $row ) {
+
+            $out[ (string) $row['id'] ] = (array) $row;
+        }
+
+        return $out;
     }
 
     /**
