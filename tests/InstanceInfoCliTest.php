@@ -387,6 +387,6 @@ final class InstanceInfoCliTest extends TestCase
 
         $this->assertStringNotContainsString('or later', $current,
             'a supported server is not told to upgrade');
-        $this->assertStringContainsString('information_schema.PARTITIONS', $current);
+        $this->assertStringContainsString('The partition list could not be read.', $current);
     }
 }
