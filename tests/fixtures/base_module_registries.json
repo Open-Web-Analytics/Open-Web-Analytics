@@ -1,0 +1,1250 @@
+{
+    "actions": {
+        "base.changeUserPasswordCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli"
+        },
+        "base.appPasswordCreateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\AppPasswordCreateCli"
+        },
+        "base.appPasswordListCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\AppPasswordListCli"
+        },
+        "base.appPasswordRevokeCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\AppPasswordRevokeCli"
+        },
+        "base.corsPreflight": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CorsPreflight"
+        },
+        "base.cubeRebuildCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CubeRebuildCli"
+        },
+        "base.v1DropCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\V1DropCli"
+        },
+        "base.stringsExtractCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\StringsExtractCli"
+        },
+        "base.updateUaRegexesCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli"
+        },
+        "base.installBase": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallBase"
+        },
+        "base.installCheckEnv": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallCheckEnv"
+        },
+        "base.installCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallCli"
+        },
+        "base.installConfig": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallConfig"
+        },
+        "base.installDefaultsEntry": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallDefaultsEntry"
+        },
+        "base.installFinish": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallFinish"
+        },
+        "base.installStart": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstallStart"
+        },
+        "base.login": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Login"
+        },
+        "base.loginForm": {
+            "class_name": "OWA\\Module\\Base\\Controller\\LoginForm"
+        },
+        "base.logout": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Logout"
+        },
+        "base.moduleActivate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ModuleActivate"
+        },
+        "base.moduleActivateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ModuleActivateCli"
+        },
+        "base.moduleDeactivate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ModuleDeactivate"
+        },
+        "base.moduleDeactivateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ModuleDeactivateCli"
+        },
+        "base.moduleInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ModuleInstallCli"
+        },
+        "base.notifyNewSession": {
+            "class_name": "OWA\\Module\\Base\\Controller\\NotifyNewSession"
+        },
+        "base.optionsGeneral": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsGeneral"
+        },
+        "base.visualizations": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Visualizations"
+        },
+        "base.visualizationSave": {
+            "class_name": "OWA\\Module\\Base\\Controller\\VisualizationSave"
+        },
+        "base.visualizationEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\VisualizationEdit"
+        },
+        "base.visualizationFunnel": {
+            "class_name": "OWA\\Module\\Base\\Controller\\VisualizationFunnel"
+        },
+        "base.visualizationPreview": {
+            "class_name": "OWA\\Module\\Base\\Controller\\VisualizationPreview"
+        },
+        "base.goalEventDefinitions": {
+            "class_name": "OWA\\Module\\Base\\Controller\\GoalEventDefinitions"
+        },
+        "base.goalEventDefinitionEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\GoalEventDefinitionEdit"
+        },
+        "base.goalEventDefinitionSave": {
+            "class_name": "OWA\\Module\\Base\\Controller\\GoalEventDefinitionSave"
+        },
+        "base.goalEventDefinitionDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\GoalEventDefinitionDelete"
+        },
+        "base.optionsModules": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsModules"
+        },
+        "base.optionsReset": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsReset"
+        },
+        "base.optionsUpdate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsUpdate"
+        },
+        "base.optionsRetention": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsRetention"
+        },
+        "base.optionsRetentionUpdate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsRetentionUpdate"
+        },
+        "base.propertyRetention": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyRetention"
+        },
+        "base.propertyProfiles": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyProfiles"
+        },
+        "base.propertyRetentionUpdate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyRetentionUpdate"
+        },
+        "base.overlayLauncher": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OverlayLauncher"
+        },
+        "base.passwordResetForm": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PasswordResetForm"
+        },
+        "base.passwordResetRequest": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PasswordResetRequest"
+        },
+        "base.processEvent": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ProcessEvent"
+        },
+        "base.trackerIngestReplayCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\TrackerIngestReplayCli"
+        },
+        "base.trackerIngestProvisionCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\TrackerIngestProvisionCli"
+        },
+        "base.drainTrackerIngestCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\DrainTrackerIngestCli"
+        },
+        "base.processRequest": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ProcessRequest"
+        },
+        "base.pruneEventQueueArchivesCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli"
+        },
+        "base.partitionStatusCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PartitionStatusCli"
+        },
+        "base.cubeStatus": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CubeStatus"
+        },
+        "base.systemHealth": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SystemHealth"
+        },
+        "base.cubeStatusDetail": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CubeStatusDetail"
+        },
+        "base.customDimensions": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensions"
+        },
+        "base.customDimensionEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionEdit"
+        },
+        "base.customDimensionSave": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionSave"
+        },
+        "base.customDimensionDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionDelete"
+        },
+        "base.customDimensionListCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionListCli"
+        },
+        "base.customDimensionApplyCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionApplyCli"
+        },
+        "base.customDimensionRegisterCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionRegisterCli"
+        },
+        "base.customDimensionDeregisterCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomDimensionDeregisterCli"
+        },
+        "base.scheduleRunCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ScheduleRunCli"
+        },
+        "base.scheduleStatusCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ScheduleStatusCli"
+        },
+        "base.instanceInfoCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\InstanceInfoCli"
+        },
+        "base.serverCheckCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ServerCheckCli"
+        },
+        "base.partitionDropCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
+        },
+        "base.partitionReorganizeCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PartitionReorganizeCli"
+        },
+        "base.partitionRotateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PartitionRotateCli"
+        },
+        "base.report": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Report"
+        },
+        "base.resetSecretsCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ResetSecretsCli"
+        },
+        "base.reportingHome": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ReportingHome"
+        },
+        "base.propertyProfile": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyProfile"
+        },
+        "base.organizationProfile": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OrganizationProfile"
+        },
+        "base.profileSettings": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ProfileSettings"
+        },
+        "base.propertyAccess": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyAccess"
+        },
+        "base.propertyAccessUpdate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyAccessUpdate"
+        },
+        "base.propertyDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyDelete"
+        },
+        "base.propertyEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\PropertyEdit"
+        },
+        "base.organizationEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OrganizationEdit"
+        },
+        "base.customReports": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomReports"
+        },
+        "base.customReportEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomReportEdit"
+        },
+        "base.customReportMarkFavorite": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomReportMarkFavorite"
+        },
+        "base.customReportSave": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomReportSave"
+        },
+        "base.customReportDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CustomReportDelete"
+        },
+        "base.sitesAdd": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesAdd"
+        },
+        "base.sitesAddCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesAddCli"
+        },
+        "base.sitesDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesDelete"
+        },
+        "base.sitesEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesEdit"
+        },
+        "base.sitesEditSettings": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesEditSettings"
+        },
+        "base.trackerPublishCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\TrackerPublishCli"
+        },
+        "base.jobsCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\JobsCli"
+        },
+        "base.jobsRetryCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\JobsRetryCli"
+        },
+        "base.jobsForgetCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\JobsForgetCli"
+        },
+        "base.jobsPruneCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\JobsPruneCli"
+        },
+        "base.sitesEditTagSettings": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesEditTagSettings"
+        },
+        "base.sitesInvocation": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesInvocation"
+        },
+        "base.sitesProfile": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SitesProfile"
+        },
+        "base.updates": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Updates"
+        },
+        "base.updatesApply": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UpdatesApply"
+        },
+        "base.reportRealtime": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ReportRealtime"
+        },
+        "base.notificationsFetchCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\NotificationsFetchCli"
+        },
+        "base.updatesApplyCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UpdatesApplyCli"
+        },
+        "base.users": {
+            "class_name": "OWA\\Module\\Base\\Controller\\Users"
+        },
+        "base.usersAdd": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersAdd"
+        },
+        "base.usersChangePassword": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersChangePassword"
+        },
+        "base.usersDelete": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersDelete"
+        },
+        "base.usersEdit": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersEdit"
+        },
+        "base.usersNewAccount": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersNewAccount"
+        },
+        "base.usersPasswordEntry": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersPasswordEntry"
+        },
+        "base.usersProfile": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersProfile"
+        },
+        "base.myProfile": {
+            "class_name": "OWA\\Module\\Base\\Controller\\MyProfile"
+        },
+        "base.myProfileSave": {
+            "class_name": "OWA\\Module\\Base\\Controller\\MyProfileSave"
+        },
+        "base.myAppPasswords": {
+            "class_name": "OWA\\Module\\Base\\Controller\\MyAppPasswords"
+        },
+        "base.myAppPasswordCreateAjax": {
+            "class_name": "OWA\\Module\\Base\\Controller\\MyAppPasswordCreateAjax"
+        },
+        "base.myAppPasswordRevoke": {
+            "class_name": "OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke"
+        },
+        "base.userAppPasswordRevoke": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke"
+        },
+        "base.usersResetPassword": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersResetPassword"
+        },
+        "base.usersSetPassword": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersSetPassword"
+        }
+    },
+    "cli_commands": {
+        "update": "base.updatesApplyCli",
+        "strings-extract": "base.stringsExtractCli",
+        "v1-drop": "base.v1DropCli",
+        "fetch-notifications": "base.notificationsFetchCli",
+        "update-ua-regexes": "base.updateUaRegexesCli",
+        "drain-tracker-ingest": "base.drainTrackerIngestCli",
+        "tracker-ingest-replay": "base.trackerIngestReplayCli",
+        "tracker-ingest-provision": "base.trackerIngestProvisionCli",
+        "install": "base.installCli",
+        "activate": "base.moduleActivateCli",
+        "deactivate": "base.moduleDeactivateCli",
+        "install-module": "base.moduleInstallCli",
+        "add-site": "base.sitesAddCli",
+        "prune-event-queue-archives": "base.pruneEventQueueArchivesCli",
+        "partition-status": "base.partitionStatusCli",
+        "partition-drop": "base.partitionDropCli",
+        "partition-reorganize": "base.partitionReorganizeCli",
+        "partition-rotate": "base.partitionRotateCli",
+        "change-password": "base.changeUserPasswordCli",
+        "app-password-create": "base.appPasswordCreateCli",
+        "app-password-list": "base.appPasswordListCli",
+        "app-password-revoke": "base.appPasswordRevokeCli",
+        "reset-secrets": "base.resetSecretsCli",
+        "schedule-run": "base.scheduleRunCli",
+        "schedule-status": "base.scheduleStatusCli",
+        "instance-info": "base.instanceInfoCli",
+        "server-check": "base.serverCheckCli",
+        "cube-rebuild": "base.cubeRebuildCli",
+        "jobs": "base.jobsCli",
+        "jobs-retry": "base.jobsRetryCli",
+        "jobs-forget": "base.jobsForgetCli",
+        "jobs-prune": "base.jobsPruneCli",
+        "publish-trackers": "base.trackerPublishCli",
+        "custom-dimension-list": "base.customDimensionListCli",
+        "custom-dimension-apply": "base.customDimensionApplyCli",
+        "custom-dimension-register": "base.customDimensionRegisterCli",
+        "custom-dimension-deregister": "base.customDimensionDeregisterCli"
+    },
+    "rest_routes": {
+        "base": {
+            "v1": {
+                "sites": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\SitesRest",
+                        "conf": []
+                    },
+                    "POST": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\AddSiteRest",
+                        "conf": []
+                    }
+                },
+                "users": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\UsersRest",
+                        "conf": []
+                    },
+                    "POST": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\AddUserRest",
+                        "conf": []
+                    },
+                    "DELETE": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\DeleteUserRest",
+                        "conf": {
+                            "params_order": [
+                                "user_id"
+                            ]
+                        }
+                    }
+                },
+                "siteUsers": {
+                    "POST": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest",
+                        "conf": []
+                    }
+                },
+                "notifications": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\NotificationsRest",
+                        "conf": []
+                    },
+                    "POST": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\NotificationMarkReadRest",
+                        "conf": {
+                            "params_order": [
+                                "notificationId"
+                            ]
+                        }
+                    },
+                    "DELETE": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\NotificationDismissRest",
+                        "conf": {
+                            "params_order": [
+                                "notificationId"
+                            ]
+                        }
+                    }
+                },
+                "realtime": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\RealtimeRest",
+                        "conf": []
+                    }
+                },
+                "reports": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\ReportsRest",
+                        "conf": {
+                            "params_order": [
+                                "report_name"
+                            ]
+                        }
+                    }
+                },
+                "retentionPreview": {
+                    "GET": {
+                        "class_name": "OWA\\Module\\Base\\Controller\\RetentionPreviewRest",
+                        "conf": []
+                    }
+                }
+            }
+        }
+    },
+    "jobs": {
+        "rotate-partitions": {
+            "name": "rotate-partitions",
+            "command": "partition-rotate",
+            "schedule": "6 22 * * *",
+            "params": [],
+            "description": "Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods so the tables stay within the server's open-file limit. Deletes nothing unless told to keep less history (raw_retention_months, and cube_retention_months per Property).",
+            "module": "base",
+            "source": "code"
+        },
+        "drain-tracker-ingest": {
+            "name": "drain-tracker-ingest",
+            "command": "drain-tracker-ingest",
+            "schedule": "* * * * *",
+            "params": {
+                "scheduled": 1
+            },
+            "description": "Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue refused and the file queue kept. A minute with nothing waiting costs a few file checks.",
+            "module": "base",
+            "source": "code"
+        },
+        "replay-tracker-ingest": {
+            "name": "replay-tracker-ingest",
+            "command": "tracker-ingest-replay",
+            "schedule": "35 22 * * *",
+            "params": {
+                "scheduled": 1
+            },
+            "description": "Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed during an outage longer than the retries gets ingested after all. One already replayed is kept for cmd=tracker-ingest-replay: in the file queue until it is replayed, in AWS SQS for the queue's fourteen-day retention, after which SQS deletes it. One older than raw_retention_months is deleted instead.",
+            "module": "base",
+            "source": "code"
+        },
+        "prune-tracker-ingest-archive": {
+            "name": "prune-tracker-ingest-archive",
+            "command": "prune-event-queue-archives",
+            "schedule": "14 22 * * *",
+            "params": {
+                "scheduled": 1
+            },
+            "description": "Deletes the tracking intake's archived batch files older than raw_retention_months, the window event data is kept for. Deletes nothing when that is not set.",
+            "module": "base",
+            "source": "code"
+        },
+        "prune-job-queue": {
+            "name": "prune-job-queue",
+            "command": "jobs-prune",
+            "schedule": "11 22 * * *",
+            "params": [],
+            "description": "Deletes finished one-off jobs from the job queue: done ones after 7 days, failed ones after 30.",
+            "module": "base",
+            "source": "code"
+        },
+        "rebuild-cube": {
+            "name": "rebuild-cube",
+            "command": "cube-rebuild",
+            "schedule": "1,6,11,16,21,26,31,36,41,46,51,56 * * * *",
+            "params": [],
+            "description": "Builds each Property's reporting cube from new events, so reports are at most a few minutes behind. Skips the days that have not changed.",
+            "module": "base",
+            "source": "code"
+        },
+        "apply-custom-dimensions": {
+            "name": "apply-custom-dimensions",
+            "command": "custom-dimension-apply",
+            "schedule": "0,15,30,45 * * * *",
+            "params": [],
+            "description": "Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one rebuilds the table, which is too slow for the request that registered it. With nothing pending it is one quick read.",
+            "module": "base",
+            "source": "code"
+        },
+        "fetch-notifications": {
+            "name": "fetch-notifications",
+            "command": "fetch-notifications",
+            "schedule": "39 22 * * *",
+            "params": [],
+            "description": "Fetches OWA's release announcements for the notifications bell, once a day.",
+            "module": "base",
+            "source": "code"
+        }
+    },
+    "admin_panels": {
+        "base.optionsGeneral": {
+            "do": "base.optionsGeneral",
+            "title": "General",
+            "group": "General",
+            "order": 1,
+            "fieldsets": [
+                "base.tracking",
+                "base.announcements",
+                "base.reporting",
+                "base.restApi"
+            ],
+            "fieldset_groups": [
+                "tracking_tag"
+            ],
+            "anchortext": "General",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "owa_titled": true
+        },
+        "base.optionsRetention": {
+            "do": "base.optionsRetention",
+            "title": "Data retention",
+            "group": "General",
+            "order": 6,
+            "fieldsets": [
+                "base.retention"
+            ],
+            "anchortext": "Data retention",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "owa_titled": true
+        },
+        "base.optionsModules": {
+            "do": "base.optionsModules",
+            "title": "Modules",
+            "group": "General",
+            "order": 3,
+            "anchortext": "Modules",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "fieldsets": [],
+            "owa_titled": true
+        },
+        "base.cubeStatus": {
+            "do": "base.cubeStatus",
+            "title": "Reporting cubes",
+            "group": "General",
+            "order": 4,
+            "anchortext": "Reporting cubes",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "fieldsets": [],
+            "owa_titled": true
+        },
+        "base.systemHealth": {
+            "do": "base.systemHealth",
+            "title": "System health",
+            "group": "General",
+            "order": 5,
+            "anchortext": "System health",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "fieldsets": [],
+            "owa_titled": true
+        }
+    },
+    "fieldsets": {
+        "base.profileObservation": {
+            "id": "base.profileObservation",
+            "group": "profile_observation",
+            "order": 0,
+            "legend": "Page URLs",
+            "settings": [
+                "query_string_filters"
+            ],
+            "module": "base"
+        },
+        "base.profileCampaigns": {
+            "id": "base.profileCampaigns",
+            "group": "profile_observation",
+            "order": 1,
+            "legend": "Campaign parameters",
+            "settings": [
+                "campaignKeys"
+            ],
+            "module": "base"
+        },
+        "base.profilePrivacy": {
+            "id": "base.profilePrivacy",
+            "group": "profile_observation",
+            "order": 2,
+            "legend": "Privacy and exclusions",
+            "settings": [
+                "anonymize_ips",
+                "excluded_ips",
+                "log_named_users"
+            ],
+            "module": "base"
+        },
+        "base.profileAnnouncements": {
+            "id": "base.profileAnnouncements",
+            "group": "profile_observation",
+            "order": 3,
+            "legend": "Visitor announcements",
+            "settings": [
+                "announce_visitors",
+                "notice_email"
+            ],
+            "module": "base"
+        },
+        "base.propertyAttribution": {
+            "id": "base.propertyAttribution",
+            "settings": [
+                "attribution_lookback_days",
+                "campaignUtmParams",
+                "campaignKeys"
+            ],
+            "module": "base"
+        },
+        "base.propertyReporting": {
+            "id": "base.propertyReporting",
+            "settings": [
+                "enableEcommerceReporting",
+                "currencyISO3"
+            ],
+            "module": "base"
+        },
+        "base.propertyRetention": {
+            "id": "base.propertyRetention",
+            "settings": [
+                "cube_retention_months"
+            ],
+            "module": "base"
+        },
+        "base.trackingPageViews": {
+            "id": "base.trackingPageViews",
+            "group": "tracking_tag",
+            "order": 0,
+            "legend": "Page views",
+            "description": "When the tracker sends a page view, and what identifies the page.",
+            "settings": [
+                "tracker_page_views",
+                "tracker_route_changes",
+                "tracker_url_fragments"
+            ],
+            "module": "base"
+        },
+        "base.trackingClicks": {
+            "id": "base.trackingClicks",
+            "group": "tracking_tag",
+            "order": 1,
+            "legend": "Clicks and downloads",
+            "description": "Clicks on links and other elements, and which links count as downloads.",
+            "settings": [
+                "tracker_clicks",
+                "tracker_download_extensions"
+            ],
+            "module": "base"
+        },
+        "base.trackingForms": {
+            "id": "base.trackingForms",
+            "group": "tracking_tag",
+            "order": 2,
+            "legend": "Forms",
+            "description": "A visitor starting and submitting a form.",
+            "settings": [
+                "tracker_forms"
+            ],
+            "module": "base"
+        },
+        "base.trackingScroll": {
+            "id": "base.trackingScroll",
+            "group": "tracking_tag",
+            "order": 3,
+            "legend": "Scroll depth",
+            "description": "How far down each page visitors get.",
+            "settings": [
+                "tracker_scroll",
+                "tracker_scroll_thresholds"
+            ],
+            "module": "base"
+        },
+        "base.trackingSearch": {
+            "id": "base.trackingSearch",
+            "group": "tracking_tag",
+            "order": 4,
+            "legend": "Site search",
+            "description": "Searches made with your site’s own search box, read from the results page’s URL.",
+            "settings": [
+                "tracker_site_search",
+                "tracker_site_search_params"
+            ],
+            "module": "base"
+        },
+        "base.trackingErrors": {
+            "id": "base.trackingErrors",
+            "group": "tracking_tag",
+            "order": 5,
+            "legend": "JavaScript errors",
+            "description": "Uncaught errors in your pages’ scripts.",
+            "settings": [
+                "tracker_exceptions"
+            ],
+            "module": "base"
+        },
+        "base.trackingVisit": {
+            "id": "base.trackingVisit",
+            "group": "tracking_tag",
+            "order": 6,
+            "legend": "Visits and cookies",
+            "description": "How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.",
+            "settings": [
+                "tracker_session_cookie_days",
+                "tracker_visitor_cookie_days",
+                "tracker_cookie_domain"
+            ],
+            "module": "base"
+        },
+        "base.trackingPrivacy": {
+            "id": "base.trackingPrivacy",
+            "group": "tracking_tag",
+            "order": 7,
+            "legend": "Privacy signals",
+            "description": "Browsers that ask not to be tracked, with Do Not Track or Global Privacy Control.",
+            "settings": [
+                "tracker_honor_privacy_signals"
+            ],
+            "module": "base"
+        },
+        "base.tracking": {
+            "id": "base.tracking",
+            "legend": "Tracking Request Processing",
+            "settings": [
+                "spam_detection",
+                "spam_threshold",
+                "log_named_users",
+                "excluded_ips",
+                "anonymize_ips",
+                "query_string_filters",
+                "campaignUtmParams"
+            ],
+            "module": "base"
+        },
+        "base.announcements": {
+            "id": "base.announcements",
+            "legend": "Visitor Announcements",
+            "settings": [
+                "announce_visitors",
+                "notice_email"
+            ],
+            "module": "base"
+        },
+        "base.reporting": {
+            "id": "base.reporting",
+            "legend": "Reporting",
+            "settings": [
+                "timezone",
+                "attribution_lookback_days"
+            ],
+            "module": "base"
+        },
+        "base.restApi": {
+            "id": "base.restApi",
+            "group": "rest_api",
+            "legend": "REST API",
+            "settings": [
+                "app_passwords_enabled",
+                "app_passwords_require_https"
+            ],
+            "module": "base"
+        },
+        "base.retention": {
+            "id": "base.retention",
+            "legend": "Data Retention",
+            "description": "Each night's maintenance run (rotate-partitions) removes data outside these windows. Every Property can set its own reporting window on its Data Retention page.",
+            "settings": [
+                "raw_retention_months",
+                "cube_retention_months"
+            ],
+            "module": "base"
+        }
+    },
+    "navigation": {
+        "Reports": {
+            "Dashboard": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "dashboard"
+                },
+                "anchortext": "Dashboard",
+                "order": 1,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-tachometer-alt"
+            },
+            "Realtime": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "realtime"
+                },
+                "anchortext": "Realtime",
+                "order": 2,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-bolt"
+            },
+            "Custom Reports": {
+                "ref": {
+                    "do": "base.customReports"
+                },
+                "anchortext": "Custom Reports",
+                "order": 9,
+                "priviledge": "view_site_list",
+                "icon_class": "fa fa-sliders-h"
+            },
+            "Ecommerce": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "ecommerce"
+                },
+                "anchortext": "Ecommerce",
+                "order": 6,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-shopping-cart",
+                "subgroup": [
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "revenue"
+                        },
+                        "anchortext": "Revenue",
+                        "order": 2,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "transactions"
+                        },
+                        "anchortext": "Transactions",
+                        "order": 3,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "avg-order-value"
+                        },
+                        "anchortext": "Average Order Value",
+                        "order": 4,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "ecommerce-conversion-rate"
+                        },
+                        "anchortext": "Conversion Rate",
+                        "order": 5,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    }
+                ]
+            },
+            "Content": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "content"
+                },
+                "anchortext": "Content",
+                "order": 5,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-newspaper",
+                "subgroup": [
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "pages"
+                        },
+                        "anchortext": "Pages",
+                        "order": 1,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "page-types"
+                        },
+                        "anchortext": "Page Types",
+                        "order": 2,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "entry-pages"
+                        },
+                        "anchortext": "Entry Pages",
+                        "order": 3,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "exit-pages"
+                        },
+                        "anchortext": "Exit Pages",
+                        "order": 4,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "clicks"
+                        },
+                        "anchortext": "Clicks",
+                        "order": 5,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "scroll-depth"
+                        },
+                        "anchortext": "Scroll Depth",
+                        "order": 6,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "site-search"
+                        },
+                        "anchortext": "Site Search",
+                        "order": 7,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "forms"
+                        },
+                        "anchortext": "Forms",
+                        "order": 8,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    }
+                ]
+            },
+            "Visitors": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "visitors"
+                },
+                "anchortext": "Visitors",
+                "order": 4,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-user-friends",
+                "subgroup": [
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "geolocation"
+                        },
+                        "anchortext": "Geo-location",
+                        "order": 1,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "languages"
+                        },
+                        "anchortext": "Languages",
+                        "order": 2,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "visitors-loyalty"
+                        },
+                        "anchortext": "Visitor Loyalty",
+                        "order": 3,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "devices"
+                        },
+                        "anchortext": "Device Types",
+                        "order": 4,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "screen-resolutions"
+                        },
+                        "anchortext": "Screen Resolutions",
+                        "order": 5,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "browsers"
+                        },
+                        "anchortext": "Browser Types",
+                        "order": 6,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "os"
+                        },
+                        "anchortext": "Operating Systems",
+                        "order": 7,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "latest-visits"
+                        },
+                        "anchortext": "Latest Visits",
+                        "order": 8,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "events"
+                        },
+                        "anchortext": "Events",
+                        "order": 9,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    }
+                ]
+            },
+            "Traffic": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "traffic"
+                },
+                "anchortext": "Traffic",
+                "order": 3,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-random",
+                "subgroup": [
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "channels"
+                        },
+                        "anchortext": "Channels",
+                        "order": 0,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "user-acquisition"
+                        },
+                        "anchortext": "User Acquisition",
+                        "order": 2,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "model-comparison"
+                        },
+                        "anchortext": "Model Comparison",
+                        "order": 7,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "keywords"
+                        },
+                        "anchortext": "Search Terms",
+                        "order": 1,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "search-engines"
+                        },
+                        "anchortext": "Search Engines",
+                        "order": 3,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "referring-sites"
+                        },
+                        "anchortext": "Referring Web Sites",
+                        "order": 4,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "campaigns"
+                        },
+                        "anchortext": "Campaigns",
+                        "order": 5,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "ads"
+                        },
+                        "anchortext": "Ad Performance",
+                        "order": 6,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    },
+                    {
+                        "ref": {
+                            "do": "base.report",
+                            "reportId": "creative-performance"
+                        },
+                        "anchortext": "Creative Performance",
+                        "order": 8,
+                        "priviledge": "view_reports",
+                        "icon_class": ""
+                    }
+                ]
+            },
+            "Goals": {
+                "ref": {
+                    "do": "base.report",
+                    "reportId": "goals"
+                },
+                "anchortext": "Goals",
+                "order": 7,
+                "priviledge": "view_reports",
+                "icon_class": "fa fa-bullseye"
+            }
+        }
+    },
+    "view_navigation": []
+}
