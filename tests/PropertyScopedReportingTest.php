@@ -239,10 +239,9 @@ final class PropertyScopedReportingTest extends TestCase
     }
 
     /**
-     * The custom report and funnel lists require view_site_list, which is not
-     * held per site. Checked against "a Profile of the Property the reader may
-     * see" -- none, for another Property -- it passed anyway, and a viewer of
-     * one Property listed another's reports by naming its id.
+     * The custom report and funnel lists are refused for a Property the
+     * reader has no Profile of, whatever the capability: a viewer of one
+     * Property cannot list another's reports by naming its id.
      */
     public function testTheReportListsAreRefusedForAPropertyTheReaderCannotSee(): void
     {

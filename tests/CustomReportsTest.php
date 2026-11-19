@@ -2094,19 +2094,14 @@ final class CustomReportsTest extends TestCase
     /**
      * Each screen asks for the capability that matches what it IS.
      *
-     * The roster asks for view_site_list -- the capability that means "any
-     * signed-in user". Not view_reports, which looks like the obvious choice
-     * and is wrong: view_reports sits in capabilitiesThatRequireSiteAccess, so
-     * it is only ever satisfied against a particular site, and the roster has
-     * no site. Requiring it refused every non-admin with "No access to any
-     * site", which the e2e suite caught and no unit test could.
+     * The roster asks for view_reports, held on the Property it lists, as
+     * every report screen does (CustomReportsRosterAccessTest drives it).
      *
-     * ASSERTED AS THE DECLARED CAPABILITY rather than by driving each screen,
-     * for the same reason: passing view_reports needs a user with a real grant
-     * on a real site, and a test user given only a ROLE has no grants. The
-     * behavioural tests -- an analyst opening a report an admin built, and an
-     * analyst being refused the builder -- live in the e2e suite, where the
-     * fixture users are real.
+     * ASSERTED AS THE DECLARED CAPABILITY rather than by driving each screen:
+     * passing view_reports needs a user with a grant on a site, and a test
+     * user given only a ROLE has no grants. The behavioural tests -- an
+     * analyst opening a report an admin built, and an analyst being refused
+     * the builder -- live in the e2e suite, where the fixture users are real.
      *
      * @dataProvider declaredCapabilityProvider
      */
@@ -2120,8 +2115,8 @@ final class CustomReportsTest extends TestCase
     public static function declaredCapabilityProvider(): array
     {
         return [
-            'the roster is for any signed-in user' => [
-                '\OWA\Module\Base\Controller\CustomReports', 'view_site_list'],
+            'the roster is for readers of reports' => [
+                '\OWA\Module\Base\Controller\CustomReports', 'view_reports'],
             'building is for authors' => [
                 '\OWA\Module\Base\Controller\CustomReportEdit', 'edit_reports'],
             'saving is for authors' => [

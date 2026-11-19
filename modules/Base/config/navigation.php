@@ -30,15 +30,18 @@ return [
         ],
 
         /*
-         * The custom report roster. Gated on view_site_list rather than on
-         * edit_reports, because a reader who cannot author one can still be
-         * sent one -- the roster is where they find what they have been given.
+         * The custom report roster. Gated on view_reports, checked against a
+         * Profile of the nav's Property as every report link is, rather than
+         * on edit_reports: a reader who cannot author one can still be sent
+         * one, and the roster is where they find what they have been given.
+         * ReportController::withCustomReports() replaces this entry with one
+         * carrying the reader's favorites, under the same capability.
          */
         'Custom Reports' => [
             'ref'        => [ 'do' => 'base.customReports' ],
             'anchortext' => \OWA\Core\CoreAPI::t( 'Custom Reports' ),
             'order'      => 9,
-            'priviledge' => 'view_site_list',
+            'priviledge' => 'view_reports',
             'icon_class' => 'fa fa-sliders-h',
         ],
 
