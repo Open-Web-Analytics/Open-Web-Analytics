@@ -887,7 +887,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @return array<mixed> module => key => value
       */
-     private function readStoreOfRecord() {
+     protected function readStoreOfRecord() {
 
         $rows = null;
 

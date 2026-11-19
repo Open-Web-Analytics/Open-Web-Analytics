@@ -3,6 +3,10 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/InstallerHarness.php';
+require_once __DIR__ . '/BootsWithConstants.php';
+require_once __DIR__ . '/CapturesLog.php';
+require_once __DIR__ . '/SettingsSingletonSnapshot.php';
 
 /**
  * The reporting timezone is chosen at INSTALL, because changing it later is not
@@ -25,6 +29,34 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class InstallTimezoneTest extends TestCase
 {
+    use InstallerHarness;
+    use BootsWithConstants;
+    use CapturesLog;
+    use SettingsSingletonSnapshot;
+
+    protected function setUp(): void
+    {
+        $this->snapshotSettings();
+        $this->setUpInstaller();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->restoreSettings();
+    }
+
+    /** The wizard's last step, run against the recording installer, with $timezone submitted. */
+    private function installWith(string $timezone): void
+    {
+        $this->installController(\OWA\Module\Base\Controller\InstallBase::class, [
+            'domain'        => 'https://example.test',
+            'user_id'       => 'owatest-admin',
+            'email_address' => 'owatest-admin@example.test',
+            'password'      => 'owatest-admin-password',
+            'timezone'      => $timezone,
+        ])->action();
+    }
+
     private function installForm(): string
     {
         return (string) file_get_contents(
@@ -70,17 +102,17 @@ final class InstallTimezoneTest extends TestCase
         );
     }
 
+    /** With the rest of the last step, inside finishInstall(). */
     public function testTheInstallerPersistsTheChosenTimezone(): void
     {
-        $controller = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php'
-        );
+        $this->installWith('Pacific/Chatham');
 
-        $this->assertStringContainsString(
-            "persistSetting('base', 'timezone'",
-            $controller,
-            'a timezone collected but not persisted is worse than not asking'
-        );
+        $calls = InstallerRecording::$calls;
+        $at    = array_search('persistSetting:base.timezone="Pacific\\/Chatham"', $calls, true);
+
+        $this->assertIsInt($at, 'a timezone collected but not persisted is worse than not asking');
+        $this->assertGreaterThan(array_search('finishInstall:begin', $calls, true), $at);
+        $this->assertLessThan(array_search('finishInstall:end', $calls, true), $at);
     }
 
     /**
@@ -91,19 +123,12 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testAnUnknownTimezoneIsRefusedRatherThanStored(): void
     {
-        $controller = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php'
-        );
-
-        $this->assertStringContainsString(
-            'DateTimeZone::listIdentifiers()',
-            $controller,
-            'the submitted timezone must be checked against the real zone list'
-        );
-
-        // and the guard is real: a plausible-looking bad value is not a zone
         $this->assertNotContains('America/Nowhere', \DateTimeZone::listIdentifiers());
-        $this->assertContains('America/Los_Angeles', \DateTimeZone::listIdentifiers());
+
+        $this->installWith('America/Nowhere');
+
+        $this->assertSame([], $this->recorded('persistSetting:base.timezone'));
+        $this->assertNotSame([], $this->recorded('announceInstallComplete'), 'the install itself completes');
     }
 
     /**
@@ -130,13 +155,8 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testAConfigConstantSuppliesTheTimezone(): void
     {
-        $settings = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
-        );
-
-        $this->assertStringContainsString("defined('OWA_TIMEZONE')", $settings);
-        $this->assertStringContainsString(
-            "setFromConfigConstant( 'base', 'timezone', OWA_TIMEZONE, 'OWA_TIMEZONE')", $settings);
+        $this->assertSame(['base.timezone' => ['value' => 'Pacific/Chatham', 'constant' => 'OWA_TIMEZONE']],
+            $this->bootWith(['OWA_TIMEZONE' => 'Pacific/Chatham'], 'base.timezone'));
     }
 
     /**
@@ -146,24 +166,10 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testAnUnrecognisedConstantIsIgnoredRatherThanApplied(): void
     {
-        $settings = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
-        );
+        $booted = $this->bootWith(['OWA_TIMEZONE' => 'America/Nowhere'], 'base.timezone')['base.timezone'];
 
-        // The guard and the assignment must be in the SAME statement, or the
-        // constant would be applied first and validated afterwards.
-        $i = strpos($settings, "defined('OWA_TIMEZONE')");
-        $this->assertNotFalse($i, 'OWA_TIMEZONE is not read at all');
-
-        $statement = substr($settings, $i, 260);
-
-        $this->assertStringContainsString('DateTimeZone::listIdentifiers()', $statement);
-        $this->assertStringContainsString('in_array', $statement);
-        $this->assertLessThan(
-            strpos($statement, "'base', 'timezone', OWA_TIMEZONE"),
-            strpos($statement, 'listIdentifiers'),
-            'the zone list must be checked BEFORE the value is applied'
-        );
+        $this->assertNotSame('America/Nowhere', $booted['value']);
+        $this->assertSame('', $booted['constant'], 'an ignored constant governs nothing');
     }
 
     /**
@@ -253,44 +259,27 @@ final class InstallTimezoneTest extends TestCase
 
     /**
      * A constant-governed setting is NOT editable from the options page, so the
-     * form refuses it rather than storing a value that the next boot ignores.
+     * form refuses it rather than storing a value that the next boot ignores,
+     * and the notice NAMES the constant, because "set in owa-config.php" leaves
+     * the operator hunting for which line to change.
      *
      * The field renders disabled, so a browser will not submit it -- this is the
      * server-side guarantee behind that, for a crafted POST or a stale page.
      */
-    public function testTheOptionsFormRefusesAConstantGovernedSetting(): void
+    public function testTheOptionsFormRefusesAConstantGovernedSettingAndNamesTheConstant(): void
     {
-        $controller = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/OptionsUpdate.php'
-        );
+        $c = $this->settings();
+        $c->noteConfigConstant('base', 'timezone', 'OWA_TIMEZONE');
+        $c->set('base', 'timezone', 'Pacific/Chatham');
 
-        // Scoped to the governing-constant branch ONLY. A wider window catches
-        // the `continue` belonging to the sensitive-key check below it, and then
-        // passes even when this branch merely warns.
-        $i = strpos($controller, 'if ( $governing_constant ) {');
-        $this->assertNotFalse($i, 'the form never checks whether a constant governs the key');
+        $form = new \OWA\Module\Base\Controller\OptionsUpdate(['config' => ['base.timezone' => 'Europe/London']]);
 
-        $j = strpos($controller, 'isSensitiveSettingKey', $i);
-        $this->assertNotFalse($j, 'the sensitive-key check moved; this test needs updating');
+        $log = $this->logDuring(static function () use ($form) {
+            $form->action();
+        });
 
-        $branch = substr($controller, $i, $j - $i);
-
-        $this->assertMatchesRegularExpression('/Refusing to change/i', $branch);
-        $this->assertStringContainsString('continue;', $branch,
-            'it must skip the write, not merely warn about it');
-    }
-
-    /**
-     * ...and the notice NAMES the constant, because "set in owa-config.php"
-     * leaves the operator hunting for which line to change.
-     */
-    public function testTheRefusalNamesTheConstant(): void
-    {
-        $controller = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/OptionsUpdate.php'
-        );
-
-        $this->assertStringContainsString('$governing_constant', $controller);
+        $this->assertSame('Pacific/Chatham', $c->get('base', 'timezone'));
+        $this->assertStringContainsString('Refusing to change base.timezone: it is set by OWA_TIMEZONE in owa-config.php.', $log);
     }
 
     /**
@@ -402,42 +391,34 @@ final class InstallTimezoneTest extends TestCase
     }
 
     /**
-     * ...and load() actually calls the stripper, in the right place.
-     *
-     * A source assertion, deliberately: the effect is only observable when an
-     * installation has BOTH a constant and a stored value for the same key --
-     * timezone is the only setting that can be written from both sides -- so
-     * there is no state in which the wiring can be observed from behaviour alone
-     * without fabricating a database.
-     *
-     * Position matters as much as presence: it must run before the merge, or the
-     * database values it is meant to lose to have already been merged in.
+     * ...and load() applies it: a stored timezone does not survive a declared
+     * constant, while a stored value no constant governs is merged in.
      */
-    public function testLoadAppliesTheStripperBeforeMergingTheDatabase(): void
+    public function testLoadKeepsTheConstantsValueOverAStoredOne(): void
     {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
-        );
+        $settings = new class extends \OWA\Module\Base\Classes\Settings {
+            /** @var array<string, array<string, mixed>> */
+            public $stored = [];
 
-        // Wide enough to reach the merge, which sits ~2.7k into load(). A window
-        // that stops short makes this test fail for the wrong reason.
-        $load = substr($src, strpos($src, 'function load('), 4000);
+            public function __construct()
+            {
+            }
 
-        $strip  = strpos($load, 'stripSettingsSuppliedByConstants(');
-        $merge  = strpos($load, 'array_merge($default[$k]');
+            protected function readStoreOfRecord()
+            {
+                return $this->stored;
+            }
+        };
 
-        $this->assertNotFalse($strip, 'load() never applies the constant precedence rule');
-        $this->assertNotFalse($merge, 'the merge moved; this test needs updating');
-        $this->assertLessThan($merge, $strip, 'must run before the database is merged in');
+        $settings->config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
+        $settings->config->set('settings', ['base' => ['timezone' => 'Pacific/Chatham', 'currencyISO3' => 'USD']]);
+        $settings->noteConfigConstant('base', 'timezone', 'OWA_TIMEZONE');
+        $settings->stored = ['base' => ['timezone' => 'Europe/London', 'currencyISO3' => 'EUR']];
 
-        /*
-         * There is no security strip to run after: the config-file-only settings
-         * are declared static, so the boot query does not fetch them -- see
-         * BaseDeclarationPresentTest, which is what guarantees the declaration is
-         * there to do it.
-         */
-        $this->assertFalse(strpos($load, 'stripConfigFileOnlySettings('),
-            'the strip is gone; the declaration states the rule once');
+        $settings->load(1);
+
+        $this->assertSame('Pacific/Chatham', $settings->get('base', 'timezone'), 'a stored value must not survive a declared constant');
+        $this->assertSame('EUR', $settings->get('base', 'currencyISO3'));
     }
 
     /**
@@ -532,20 +513,12 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testTheInstallerDoesNotStoreAConstantGovernedTimezone(): void
     {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php' );
+        $this->settings->constant = 'OWA_TIMEZONE';
 
-        $this->assertMatchesRegularExpression(
-            "/configFileConstantFor\(\s*'base',\s*'timezone'\s*\)/", $src,
-            'InstallBase must consult the constant before persisting' );
+        $this->installWith('Pacific/Chatham');
 
-        $guard = strpos( $src, 'configFileConstantFor' );
-        $store = strpos( $src, "persistSetting('base', 'timezone'" );
-
-        $this->assertNotFalse( $guard );
-        $this->assertNotFalse( $store );
-        $this->assertLessThan( $store, $guard,
-            'the guard has to come before the write, not after it' );
+        $this->assertSame([], $this->recorded('persistSetting:base.timezone'));
+        $this->assertNotSame([], $this->recorded('announceInstallComplete'), 'the install itself completes');
     }
 
     /**
