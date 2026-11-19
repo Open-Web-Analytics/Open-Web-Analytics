@@ -97,8 +97,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
     /**
      * The definition's `capability`, when it names one, replaces view_reports
-     * as the capability a reader needs: the e-commerce reports declare
-     * view_reports_ecommerce.
+     * as the capability a reader needs. A module's report may declare its own.
      *
      * @param array<string, mixed> $definition a decoded report definition
      * @return void

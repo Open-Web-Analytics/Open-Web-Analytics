@@ -397,8 +397,7 @@ final class ReportRegistryTest extends TestCase
     /**
      * A report link in the nav and the report it opens require the same
      * capability. A link gated more tightly than its report hides the report
-     * from the menu while its URL still opens it: the e-commerce reports
-     * opened with view_reports alone.
+     * from the menu while its URL still opens it.
      */
     public function testANavLinkRequiresWhatItsReportRequires(): void
     {

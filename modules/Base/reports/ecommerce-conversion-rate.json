@@ -1,7 +1,6 @@
 {
     "title": "Conversion Rate",
     "description": "The share of sessions with a transaction, by day, and by attributed channel.",
-    "capability": "view_reports_ecommerce",
     "metrics": "sessions,ecommerceConversionRate",
     "widgets": [
         {

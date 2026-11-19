@@ -292,7 +292,7 @@ final class ReportDefinitionFormatTest extends TestCase
                 'needs a "message"' ],
 
             'capability is not a name' => [
-                $base + [ 'capability' => [ 'view_reports_ecommerce' ] ],
+                $base + [ 'capability' => [ 'owatest_probe_capability' ] ],
                 '"capability" must be a capability name' ],
         ];
     }
@@ -304,12 +304,12 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testADeclaredCapabilityIsTheOneRequired(): void
     {
         $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError(
-            $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) ) );
+            $this->base( [ 'capability' => 'owatest_probe_capability' ] ) ) );
 
         $declared = new \OWA\Core\ConfiguredReport( [] );
-        $declared->setDefinition( $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) );
+        $declared->setDefinition( $this->base( [ 'capability' => 'owatest_probe_capability' ] ) );
 
-        $this->assertSame( 'view_reports_ecommerce', $declared->getRequiredCapability() );
+        $this->assertSame( 'owatest_probe_capability', $declared->getRequiredCapability() );
 
         $plain = new \OWA\Core\ConfiguredReport( [] );
         $plain->setDefinition( $this->base() );
