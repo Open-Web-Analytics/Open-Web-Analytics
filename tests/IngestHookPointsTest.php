@@ -20,17 +20,6 @@ use OWA\Module\Base\Classes\Ingest;
  */
 final class IngestHookPointsTest extends TestCase
 {
-    /** Where each point must appear, so a rename cannot orphan it. */
-    private const SITES = [
-        Ingest::REQUEST_PRE   => 'log.php',
-        Ingest::REQUEST_POST  => 'log.php',
-        Ingest::EDGE_PRE      => 'Core/CoreAPI.php',
-        Ingest::EDGE_POST     => 'Core/CoreAPI.php',
-        Ingest::PROPERTY_PRE  => 'modules/Base/Controller/ProcessEvent.php',
-        Ingest::PROPERTY_POST => 'modules/Base/Controller/ProcessEvent.php',
-        Ingest::TRACKING_EVENTS_PRE_SAVE => 'modules/Base/Handler/EventRawHandlers.php',
-    ];
-
     public function testEveryStageHasItsPoints(): void
     {
         $points = Ingest::points();
@@ -52,31 +41,56 @@ final class IngestHookPointsTest extends TestCase
     }
 
     /**
-     * Each point is invoked at the stage it names.
+     * log.php runs the request stage's points, then logEvent() the edge
+     * stage's first: run it with a listener on every point that records its
+     * name. A constant nothing calls would enumerate cleanly and never run.
      *
-     * Read from the FILE, because a constant that nothing calls is the failure
-     * mode here: the points would enumerate cleanly, a listener would attach
-     * without error, and nothing would ever run it.
+     * The beacon's site id holds spaces, which no site id may, so it stops at
+     * the site check without a lookup; the database connect is disabled too.
+     * IngestPointsReachedTest follows one beacon through the rest.
      */
-    public function testEveryPointIsWiredWhereItBelongs(): void
+    public function testLogPhpRunsTheRequestPointsInOrder(): void
     {
-        $unwired = [];
+        $dir = sys_get_temp_dir() . '/owa_points_' . getmypid() . '_' . bin2hex( random_bytes( 4 ) );
+        $this->assertTrue( mkdir( $dir, 0700, true ) );
 
-        foreach ( self::SITES as $point => $file ) {
+        $record  = $dir . '/heard.txt';
+        $prepend = $dir . '/prepend.php';
 
-            $source = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
+        // Listeners by name: EventDispatch::filter() logs the name of each.
+        file_put_contents( $prepend, <<<'PHP'
+<?php
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_GET = [ 'owa_e_t' => 'page_view', 'owa_page_url' => 'https://www.example.com/a',
+    'owa_site_id' => 'no such site' ];
+// Called once the response has ended, before OWA boots.
+function fastcgi_finish_request() {
+    foreach ( \OWA\Module\Base\Classes\Ingest::points() as $i => $point ) {
+        eval( "function owa_test_point_$i( \$value ) {
+            file_put_contents( getenv( 'OWA_POINTS_RECORD' ), '$point' . \"\\n\", FILE_APPEND );
+            return \$value;
+        }" );
+        \OWA\Core\CoreAPI::registerFilter( $point, "owa_test_point_$i" );
+    }
+    return true;
+}
+PHP
+        );
 
-            // The constant's NAME, not its value: the call sites use
-            // Ingest::TRACKING_EVENTS_PRE_SAVE so they stay greppable.
-            $constant = strtoupper( str_replace( [ 'ingest.', '.' ], [ '', '_' ], $point ) );
+        try {
+            exec( 'OWA_POINTS_RECORD=' . escapeshellarg( $record ) . ' ' . escapeshellarg( PHP_BINARY )
+                . ' -d ' . escapeshellarg( 'auto_prepend_file=' . $prepend )
+                . ' -d ' . escapeshellarg( 'disable_functions=mysqli_real_connect,mysqli_connect' )
+                . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/log.php' ) . ' > /dev/null 2>&1' );
 
-            if ( strpos( $source, 'Ingest::' . $constant ) === false ) {
-
-                $unwired[] = $point . ' is not invoked in ' . $file;
-            }
+            $heard = file_exists( $record ) ? file( $record, FILE_IGNORE_NEW_LINES ) : [];
+        } finally {
+            @unlink( $record );
+            @unlink( $prepend );
+            @rmdir( $dir );
         }
 
-        $this->assertSame( [], $unwired, implode( "\n", $unwired ) );
+        $this->assertSame( [ Ingest::REQUEST_PRE, Ingest::REQUEST_POST, Ingest::EDGE_PRE ], $heard );
     }
 
     /**
