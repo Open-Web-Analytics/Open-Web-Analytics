@@ -308,8 +308,7 @@ final class SettingsDeclarationContractTest extends TestCase
      * A level nothing offers is one nobody can set: no screen, CLI or REST call
      * writes a scoped row but these screens. Settings of modules that are not
      * active are skipped, since their fieldsets register only when they are.
-     * `internal` ones are skipped too: nobody configures them, and goals keeps
-     * its Profile scope for the 1.x rows Update061 reads.
+     * `internal` ones are skipped too: nobody configures them.
      */
     public function testEveryLevelASettingDeclaresIsOfferedByAScreen(): void
     {
@@ -357,8 +356,7 @@ final class SettingsDeclarationContractTest extends TestCase
     /**
      * Read only at the install, so declared only there: Spam\Score reads the
      * install's spam_detection and spam_threshold, and an event's date parts
-     * are filed in the install's timezone. goals keeps the Profile scope its
-     * 1.x rows are at.
+     * are filed in the install's timezone.
      */
     public function testInstallOnlySettingsDeclareNoLevelBelowIt(): void
     {
@@ -368,7 +366,7 @@ final class SettingsDeclarationContractTest extends TestCase
         $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'spam_detection' ) );
         $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'spam_threshold' ) );
         $this->assertFalse( $c->isRegistered( 'base', 'log_robots' ), 'spam_threshold replaced it (Update084)' );
-        $this->assertSame( [ 'install', 'profile' ], $c->scopesFor( 'base', 'goals' ) );
+        $this->assertFalse( $c->isRegistered( 'base', 'goals' ), 'Update092 deleted its 1.x rows' );
 
         foreach ( [ 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ] as $key ) {
             $this->assertSame( [ 'install', 'profile' ], $c->scopesFor( 'base', $key ),

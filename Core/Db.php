@@ -306,7 +306,7 @@ class Db extends \OWA\Core\Base {
      * @param string $db_name
      * @param string $db_user
      * @param string $db_password
-     * @param bool   $open_new_connection
+     * @param bool   $open_new_connection unused; kept for drivers that implement this signature
      * @param bool   $persistant
      */
     public function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
