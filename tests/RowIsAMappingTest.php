@@ -23,8 +23,10 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * This requires the producer and the column to be the same statement.
  *
- * DERIVED FROM THE SOURCE, not from a hand-kept list, so a column added
- * tomorrow is covered without anyone remembering this file exists.
+ * EXECUTED, from the registry rather than a hand-kept list: one event carries
+ * every declared property, each with a value of its own, and the row
+ * rowFor() builds from it is read back. A column added tomorrow is covered
+ * without anyone remembering this file exists.
  */
 final class RowIsAMappingTest extends TestCase
 {
@@ -55,126 +57,118 @@ final class RowIsAMappingTest extends TestCase
      */
     private const IDENTITY = [ 'site_id', 'visitor_id', 'session_id', 'ts' ];
 
-    /** row()'s body, from the source. */
-    private function body(): string
+    /**
+     * The row built from an event carrying every declared property that has
+     * a column, each set to $value( property, position ).
+     *
+     * @param  callable(string, int): mixed $value
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>} the row, and property => value set
+     */
+    private function rowOfEveryProperty( callable $value ): array
     {
-        $source = file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Handler/EventRawHandlers.php' );
+        $event = new \OWA\Module\Base\Classes\Event();
+        $event->setEventType( 'page_view' );
 
-        $open = strpos( $source, 'protected function row( $event, $name ) {' );
+        $set = [];
+        $i   = 0;
 
-        $this->assertNotFalse( $open, 'row() has been renamed; this test is stale.' );
+        foreach ( Helpers::allProperties() as $property => $definition ) {
 
-        // to the next method's docblock at class-body indentation
-        $close = strpos( $source, "\n    /**", $open );
+            if ( Helpers::columnFor( $property ) === '' ) {
 
-        return substr( $source, $open, $close - $open );
-    }
+                continue;
+            }
 
-    /** @return array column => the expression assigned to it */
-    private function entries(): array
-    {
-        preg_match_all( "/^            '([a-z_0-9]+)'\s*=>\s*(.+?),?\s*$/m",
-            $this->body(), $found, PREG_SET_ORDER );
-
-        $entries = [];
-
-        foreach ( $found as $entry ) {
-
-            $entries[ $entry[1] ] = trim( rtrim( $entry[2], ',' ) );
+            $set[ $property ] = ( $definition['data_type'] ?? '' ) === 'boolean' ? true : $value( $property, $i++ );
+            $event->set( $property, $set[ $property ] );
         }
 
-        $this->assertGreaterThan( 50, count( $entries ),
-            'the row literal did not parse -- this test would pass vacuously' );
+        $this->assertGreaterThan( 50, count( $set ), 'too few declared properties to be checking anything' );
 
-        return $entries;
+        $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
+
+        $this->assertIsArray( $row, 'the identity guard refused an event carrying every property' );
+
+        return [ $row, $set ];
     }
 
     /**
-     * Every column is a property read, a local holding one, or a listed
-     * exception.
+     * Every column holds the value of the one property that declares it: each
+     * property is given a number of its own, so a column reading another
+     * property, or working a value out, holds a different number.
+     *
+     * The assertion the `revenue` bug failed: reading a property no registry
+     * entry declares, or one whose column is a different name, stores nothing.
      */
     public function testEveryColumnIsOnePropertyRead(): void
     {
-        $offenders = [];
+        list( $row, $set ) = $this->rowOfEveryProperty( static fn ( $property, $i ) => (string) ( 41000 + $i ) );
 
-        foreach ( $this->entries() as $column => $expression ) {
+        $wrong = [];
+
+        foreach ( $set as $property => $value ) {
+
+            $column = Helpers::columnFor( $property );
 
             if ( isset( self::NOT_A_PROPERTY[ $column ] ) ) {
 
                 continue;
             }
 
-            // $this->text( $event->get( 'x' ) ) / ->number( ... ) / ->decimal( ... )
-            // / ->flag( ... ), a bare $event->get( 'x' ), or one of the identity
-            // locals. The four coercions are the only wrappers allowed: each
-            // answers a storable value for one declared type and reads nothing
-            // but its argument. decimal() is spam_score's, which number() would
-            // cut to an integer.
-            $read = '/^(?:\$this->(?:text|number|decimal|flag)\(\s*)?\$event->get\(\s*\'\w+\'\s*\)/';
+            $expected = $value === true ? 1 : $value;
 
-            if ( preg_match( $read, $expression )
-                 || in_array( ltrim( $expression, '$' ), self::IDENTITY, true ) ) {
+            if ( ! array_key_exists( $column, $row ) || $row[ $column ] != $expected ) {
 
-                continue;
+                $wrong[ $column ] = $property . ' was ' . var_export( $value, true ) . ', the column holds '
+                    . var_export( $row[ $column ] ?? '<not written>', true );
             }
-
-            $offenders[ $column ] = $expression;
         }
 
-        $this->assertSame( [], $offenders,
-            "A column is being worked out in the row builder. Whatever computes it "
-            . "belongs in a callback named by the property registry, so the value and "
-            . "its column are one statement:\n"
-            . var_export( $offenders, true ) );
+        $this->assertSame( [], $wrong,
+            "A column does not hold the value of the property the registry maps to it. "
+            . "Whatever computes it belongs in a callback named by the registry:\n"
+            . var_export( $wrong, true ) );
     }
 
     /**
-     * And the property it reads declares that column.
-     *
-     * The assertion the `revenue` bug failed: reading a property no registry
-     * entry declares, or one whose column is a different name, both pass a
-     * read-shaped check and store nothing.
+     * Nothing in row() works a text value out: a value a derivation would
+     * change -- case, a query, a fragment, an encoded space -- reaches every
+     * text column as it was set. The derivations are callbacks the registry
+     * names, and run before row().
      */
-    public function testEveryColumnAgreesWithTheRegistry(): void
+    public function testRowComputesNothing(): void
     {
+        list( $numbered ) = $this->rowOfEveryProperty( static fn ( $property, $i ) => (string) ( 41000 + $i ) );
+
+        list( $row, $set ) = $this->rowOfEveryProperty(
+            static fn ( $property, $i ) => "Mixed Case $i/Path?Q=1&utm_source=x#Frag%20" );
+
         $checked = 0;
-        $wrong   = [];
+        $changed = [];
 
-        foreach ( $this->entries() as $column => $expression ) {
+        foreach ( $set as $property => $value ) {
 
-            if ( isset( self::NOT_A_PROPERTY[ $column ] ) ) {
+            $column = Helpers::columnFor( $property );
+
+            // The text columns: those that kept the number as a string.
+            if ( isset( self::NOT_A_PROPERTY[ $column ] ) || ! is_string( $numbered[ $column ] ?? null ) ) {
 
                 continue;
             }
-
-            if ( ! preg_match( "/\\\$event->get\(\s*'(\w+)'/", $expression, $m ) ) {
-
-                // an identity local; its property is asserted below
-                continue;
-            }
-
-            $property = $m[1];
-            $declared = Helpers::columnFor( $property );
 
             $checked++;
 
-            if ( $declared === $column ) {
+            if ( ( $row[ $column ] ?? null ) !== $value ) {
 
-                continue;
+                $changed[ $column ] = $row[ $column ] ?? '<not written>';
             }
-
-            $wrong[ $column ] = $property . ' declares column '
-                . ( $declared === '' ? '<none>' : $declared );
         }
 
-        $this->assertGreaterThan( 40, $checked,
-            'too few columns matched to be checking anything' );
+        $this->assertGreaterThan( 40, $checked, 'too few text columns to be checking anything' );
 
-        $this->assertSame( [], $wrong,
-            "A column is written from a property the registry maps somewhere else "
-            . "-- which is how `revenue` came to read a property no entry declares "
-            . "and store NULL on every purchase:\n" . var_export( $wrong, true ) );
+        $this->assertSame( [], $changed,
+            'row() is deriving a value. It belongs in a callback the registry names:' . "\n"
+            . var_export( $changed, true ) );
     }
 
     /** The identity locals are declared properties naming their own columns. */
@@ -188,42 +182,11 @@ final class RowIsAMappingTest extends TestCase
     }
 
     /**
-     * Nothing in row() works a value out.
-     *
-     * A token list rather than a shape check, because a derivation can be
-     * written to look like anything: what it cannot do is avoid calling
-     * something. Each of these was in row() and is now in a callback.
-     */
-    public function testRowComputesNothing(): void
-    {
-        $forbidden = [
-            'parseUrl', 'canonicalPath', 'filterQuery', 'minorUnits',
-            'parse_url', 'preg_', 'explode(', 'substr(', 'strtolower(',
-            'str_replace(', 'getSetting(', 'droppedQueryParams',
-        ];
-
-        $body  = $this->body();
-        $found = [];
-
-        foreach ( $forbidden as $token ) {
-
-            if ( strpos( $body, $token ) !== false ) {
-
-                $found[] = $token;
-            }
-        }
-
-        $this->assertSame( [], $found,
-            'row() is deriving a value: ' . implode( ', ', $found )
-            . '. It belongs in a callback the registry names.' );
-    }
-
-    /**
      * A NOT NULL column never receives NULL, even from an event the property
      * pass never touched.
      *
-     * EXECUTED, not read. Everything else here is static analysis of the
-     * literal, which cannot see a coercion returning the wrong absence.
+     * From an event with only the identity properties, where the tests above
+     * set every property.
      *
      * The path this guards is real: row() is reached by events built in process
      * and by queued ones, not only by a beacon that went through
@@ -284,7 +247,7 @@ final class RowIsAMappingTest extends TestCase
      */
     public function testEveryDeclaredColumnIsWritten(): void
     {
-        $columns = $this->entries();
+        list( $columns ) = $this->rowOfEveryProperty( static fn ( $property, $i ) => (string) ( 41000 + $i ) );
         $missing = [];
 
         foreach ( Helpers::allProperties() as $property => $definition ) {
@@ -323,7 +286,9 @@ final class RowIsAMappingTest extends TestCase
             }
         }
 
-        $unbacked = array_values( array_diff( array_keys( $this->entries() ),
+        list( $row ) = $this->rowOfEveryProperty( static fn ( $property, $i ) => (string) ( 41000 + $i ) );
+
+        $unbacked = array_values( array_diff( array_keys( $row ),
             array_keys( $backed ), array_keys( self::NOT_A_PROPERTY ) ) );
 
         $this->assertSame( [], $unbacked,
