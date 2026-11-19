@@ -538,14 +538,18 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function entityFor( $table ) {
 
-        $s  = \OWA\Core\CoreAPI::serviceSingleton();
-        $ns = \OWA\Core\Entity::TABLE_PREFIX;
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
 
-        foreach ( $s->modules['base']->getEntities() as $name ) {
+        foreach ( $s->modules as $module ) {
 
-            if ( $ns . $name === $table ) {
+            foreach ( (array) $module->getEntities() as $name ) {
 
-                return \OWA\Core\CoreAPI::entityFactory( 'base.' . $name );
+                $entity = \OWA\Core\CoreAPI::entityFactory( $module->name . '.' . $name );
+
+                if ( $entity->getTableName() === $table ) {
+
+                    return $entity;
+                }
             }
         }
 
