@@ -132,4 +132,54 @@ class MyProfileTest extends TestCase
                 sprintf('%s names a class that does not load', $action));
         }
     }
+
+    /**
+     * A refused save carries messages.php codes back on the redirect, and the
+     * form shows the message of a known code only: text on the URL is not
+     * shown.
+     */
+    public function testTheFormShowsOnlyTheMessagesOfKnownCodes(): void
+    {
+        $form = new \OWA\Module\Base\Controller\MyProfile([]);
+        $text = new \ReflectionMethod($form, 'carriedErrorText');
+
+        $this->assertSame('', $text->invoke($form, 'Your account was locked. Sign in at example.com.'));
+        $this->assertSame('', $text->invoke($form, '9999'));
+        $this->assertSame('', $text->invoke($form, ['3230']));
+        $this->assertSame('Current password is required.', $text->invoke($form, '3230,<b>x</b>,3230'));
+        $this->assertSame(
+            sprintf('The new passwords do not match. The new password must be at least %d characters.',
+                \OWA\Module\Base\Controller\MyProfileSave::MIN_PASSWORD_LENGTH),
+            $text->invoke($form, '3232,3233'));
+    }
+
+    /** Every code the save can carry has a message, and each validation has one. */
+    public function testEveryCarriedCodeHasAMessage(): void
+    {
+        $save = new \OWA\Module\Base\Controller\MyProfileSave([]);
+
+        foreach (\OWA\Module\Base\Controller\MyProfileSave::ERRORS as $code) {
+
+            $this->assertNotSame('', (string) ($save->getMsg($code)['message'] ?? ''), "code $code");
+        }
+
+        foreach (\OWA\Module\Base\Controller\MyProfileSave::VALIDATION_ERRORS as $name => $code) {
+
+            $this->assertContains($code, \OWA\Module\Base\Controller\MyProfileSave::ERRORS, $name);
+        }
+    }
+
+    /** Each validation the save adds has a code to carry. */
+    public function testEveryValidationHasACode(): void
+    {
+        $save = new \OWA\Module\Base\Controller\MyProfileSave([
+            'email_address' => 'x', 'current_password' => 'a', 'new_password' => 'b', 'new_password2' => 'c',
+        ]);
+        $save->validate();
+
+        $names = array_column((array) $save->v->validations, 'name');
+
+        $this->assertNotEmpty($names);
+        $this->assertSame([], array_values(array_diff($names, array_keys(\OWA\Module\Base\Controller\MyProfileSave::VALIDATION_ERRORS))));
+    }
 }

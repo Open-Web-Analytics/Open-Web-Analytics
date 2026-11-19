@@ -65,7 +65,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
         <?php foreach ( [ 'all' => \OWA\Core\CoreAPI::t( 'All' ), 'mine' => \OWA\Core\CoreAPI::t( 'Just mine' ), 'favorites' => \OWA\Core\CoreAPI::t( 'Favorites' ) ] as $owa_which => $owa_label ): ?>
         <a class="<?php echo $owa_active === $owa_which ? 'owa_rosterFilterActive' : ''; ?>"
            <?php echo $owa_active === $owa_which ? 'aria-current="true"' : ''; ?>
-           href="<?php echo $owa_filterLink( $owa_which ); ?>"><?php
+           href="<?php $view->out( $owa_filterLink( $owa_which ) ); ?>"><?php
             if ( $owa_which === 'favorites' ): ?><i class="fas fa-star" aria-hidden="true"></i><?php endif;
             $view->out( $owa_label ); ?></a>
         <?php endforeach; ?>
@@ -104,7 +104,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                         '<th class="%s"%s><a href="%s">%s%s</a></th>',
                         $active ? 'owa_sorted' : '',
                         $active ? ' aria-sort="' . ( $owa_desc ? 'descending' : 'ascending' ) . '"' : '',
-                        $url,
+                        $view->escape( $url ),
                         $active
                             ? '<i class="fas ' . ( $owa_desc ? 'fa-arrow-down' : 'fa-arrow-up' )
                               . ' owa_sortIndicator" aria-hidden="true"></i>'
@@ -135,7 +135,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
         <tr>
             <td class="owa_rosterStarCell">
                 <a class="owa_rosterStar<?php echo $owa_starred ? ' is-on' : ''; ?>"
-                   href="<?php $view->out( $owa_starUrl, false ); ?>"
+                   href="<?php $view->out( $owa_starUrl ); ?>"
                    aria-label="<?php $view->out( $owa_starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ) ); ?>"
                    title="<?php $view->out( $owa_starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ) ); ?>"><i
                    class="<?php echo $owa_starred ? 'fas' : 'far'; ?> fa-star" aria-hidden="true"></i></a>

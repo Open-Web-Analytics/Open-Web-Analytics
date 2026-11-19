@@ -22,7 +22,7 @@ $owa_s = (array) $view->sections;
 <?php foreach ( [ 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ] as $owa_key ): ?>
 <?php $owa_sec = (array) ( $owa_s[ $owa_key ] ?? [] ); if ( ! $owa_sec ) { continue; } ?>
 <fieldset>
-    <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); ?></legend>
+    <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); /* trusted: escapes its text */ ?></legend>
 
     <?php if ( in_array( $owa_key, [ 'data', 'install' ], true ) && ! empty( $owa_sec['facts'] ) ): ?>
     <table class="management owa_numericTable">
@@ -35,7 +35,7 @@ $owa_s = (array) $view->sections;
     <table class="management owa_numericTable">
     <?php foreach ( (array) $owa_sec['findings'] as $owa_f ): ?>
         <tr>
-            <td style="width:1%"><?php echo owa_cube_status_badge( $owa_f['level'] ); ?></td>
+            <td style="width:1%"><?php echo owa_cube_status_badge( $owa_f['level'] ); /* trusted: escapes its text */ ?></td>
             <td>
                 <b><?php $view->out( $owa_f['label'] ); ?></b><?php if ( $owa_f['detail'] !== '' ): ?>: <?php $view->out( $owa_f['detail'] ); ?><?php endif; ?>
                 <?php if ( $owa_f['command'] ): ?><br><code><?php $view->out( $owa_f['command'] ); ?></code><?php endif; ?>
@@ -49,7 +49,7 @@ $owa_s = (array) $view->sections;
         <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Job' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Schedule' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Last run' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Outcome' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Next' ) ); ?></th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_r ): ?>
         <tr>
-            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
+            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); /* trusted: escapes its text */ ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
             <td><?php $view->out( $owa_r['schedule'] ); ?></td>
             <td><?php $view->out( $owa_r['last_run'] ); ?></td>
             <td><?php $view->out( $owa_r['outcome_label'] ?: '--' ); ?><?php if ( $owa_r['outcome'] !== 'ok' && $owa_r['message'] !== '' ): ?><br><?php $view->out( $owa_r['message'] ); ?><?php endif; ?></td>
@@ -91,7 +91,7 @@ $owa_s = (array) $view->sections;
         <?php foreach ( $owa_sec['rows'] as $owa_b ): ?>
         <tr>
             <td><?php $view->out( $owa_b['name'] !== '' ? $owa_b['name'] : $owa_b['site_id'] ); ?><br><code><?php $view->out( $owa_b['site_id'] ); ?></code></td>
-            <td><?php echo owa_cube_status_badge( $owa_b['level'] ); ?> <?php $view->out( $owa_b['state'] ); ?></td>
+            <td><?php echo owa_cube_status_badge( $owa_b['level'] ); /* trusted: escapes its text */ ?> <?php $view->out( $owa_b['state'] ); ?></td>
             <td><?php $view->out( $owa_b['published_at'] ?: '--' ); ?></td>
         </tr>
         <?php endforeach; ?>

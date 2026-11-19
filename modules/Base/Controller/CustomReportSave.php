@@ -145,7 +145,9 @@ class CustomReportSave extends \OWA\Core\AdminController {
      * and a period object.
      *
      * The submitted definition rides along in the params, so the builder
-     * redraws what the author had rather than what was last stored.
+     * redraws what the author had rather than what was last stored. The
+     * reason is handed over in-process (refusedWith()): a request cannot
+     * put text of its own on the builder.
      *
      * Returned from both action() and errorAction(); doAction() uses what
      * either one hands back.
@@ -156,10 +158,10 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         $params = $this->params;
 
-        $params['do']                = 'base.customReportEdit';
-        $params['customReportError'] = $message;
+        $params['do'] = 'base.customReportEdit';
 
         $target = new CustomReportEdit( $params );
+        $target->refusedWith( $message );
 
         return $target->doAction();
     }
