@@ -105,8 +105,7 @@ final class InstallDatabase {
      */
     public static function serverDescription() {
 
-        $row     = \OWA\Core\CoreAPI::dbSingleton()->get_row( 'SELECT VERSION() AS v' );
-        $version = (string) ( $row['v'] ?? '' );
+        $version = \OWA\Core\CoreAPI::dbSingleton()->serverVersion();
 
         if ( $version === '' ) {
 

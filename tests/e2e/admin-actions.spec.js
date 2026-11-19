@@ -6,6 +6,7 @@ const {
     adminLogin,
     logout,
     clickAndWait,
+    ui,
 } = require('./fixtures');
 
 /**
@@ -76,7 +77,7 @@ test.describe('admin: authentication (login / logout)', () => {
          * The toggle is a better signal anyway: it is rendered only for an
          * authenticated request.
          */
-        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Account: / })).toBeVisible();
         await expect(page.locator('#owa_siteControl')).toBeVisible();
         await expect(
             page.locator('#owa_siteControlPanel a.owa_siteControlAdd').first()
@@ -94,7 +95,7 @@ test.describe('admin: authentication (login / logout)', () => {
 
     test('logout ends the session', async ({ page }) => {
         await adminLogin(page);
-        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Account: / })).toBeVisible();
 
         await logout(page);
 
@@ -113,7 +114,7 @@ test.describe('admin: authentication (login / logout)', () => {
 
         // Still signed in.
         await gotoAction(page, 'base.users');
-        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Account: / })).toBeVisible();
         await expect(page.locator('input[name="password"]')).toHaveCount(0);
 
         // The page's own button signs out.
@@ -638,7 +639,7 @@ test.describe('admin: module activation (snapshot + restore)', () => {
         // toggle it and back so the install ends in its original state
         // whichever way it started.
         const moduleRow = () =>
-            page.locator('#module_roster tr', { hasText: FIXTURE.toggleModule }).first();
+            ui(page, 'module-roster').getByRole('row').filter({ hasText: FIXTURE.toggleModule }).first();
 
         await gotoAction(page, 'base.optionsModules');
         // Determine the starting state from which toggle link renders.
@@ -735,7 +736,7 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
 
         // 3. ...and the NEW password does.
         await loginAs(page, FIXTURE.pwUserId, newPassword);
-        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Account: / })).toBeVisible();
     });
 });
 

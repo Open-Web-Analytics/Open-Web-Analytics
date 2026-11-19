@@ -2111,12 +2111,14 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * The variable that caps a statement's time on this server, once asked:
-     * '' when it has none.
+     * The server's version string, as it reports it; '' when it does not say.
      *
-     * @var string|null
+     * @return string
      */
-    private $select_time_variable = null;
+    public function serverVersion() {
+
+        return '';
+    }
 
     /**
      * Run $fn with every SELECT in it limited to $seconds, then restore the
@@ -2124,9 +2126,9 @@ class Db extends \OWA\Core\Base {
      *
      * For queries any report viewer shapes, whose cost the database cannot
      * bound by itself: a filter or a wide period can make one run for minutes
-     * on a server that also serves other sites. MySQL calls the limit
-     * max_execution_time (milliseconds, SELECT only); MariaDB calls it
-     * max_statement_time (seconds). A server with neither runs $fn unlimited.
+     * on a server that also serves other sites. A driver whose server can cap
+     * a statement's time overrides this (MysqlDialect); here $fn runs
+     * unlimited.
      *
      * @param int      $seconds
      * @param callable $fn
@@ -2134,38 +2136,7 @@ class Db extends \OWA\Core\Base {
      */
     public function withSelectTimeLimit( $seconds, callable $fn ) {
 
-        if ( $this->select_time_variable === null ) {
-
-            $row = $this->get_row( 'SELECT VERSION() AS v' );
-            $this->select_time_variable = ! is_array( $row ) ? ''
-                : ( stripos( (string) $row['v'], 'mariadb' ) !== false ? 'max_statement_time' : 'max_execution_time' );
-        }
-
-        $var = $this->select_time_variable;
-
-        if ( $var === '' ) {
-
-            return $fn();
-        }
-
-        $row      = $this->get_row( sprintf( 'SELECT @@SESSION.%s AS v', $var ) );
-        $previous = is_array( $row ) && is_numeric( $row['v'] ) ? $row['v'] : null;
-        $limit    = $var === 'max_execution_time' ? (int) $seconds * 1000 : (int) $seconds;
-
-        if ( $previous === null
-             || $this->query( sprintf( 'SET SESSION %s = %d', $var, $limit ) ) === false ) {
-
-            return $fn();
-        }
-
-        try {
-
-            return $fn();
-
-        } finally {
-
-            $this->query( sprintf( 'SET SESSION %s = %s', $var, $previous + 0 ) );
-        }
+        return $fn();
     }
 
     /**

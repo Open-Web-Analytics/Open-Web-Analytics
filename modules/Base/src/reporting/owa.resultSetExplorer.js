@@ -1303,7 +1303,7 @@ OWA.dataGrid.changeEl = function ( cell, compare ) {
 
     var d = describeChange( cell, compare );
 
-    return jQuery( '<span class="owa_gridChange"></span>' ).addClass( d.cls ).attr( 'title', d.title ).text( d.text );
+    return jQuery( '<span class="owa_gridChange" data-ui="grid-change"></span>' ).addClass( d.cls ).attr( 'title', d.title ).text( d.text );
 };
 
 /**
@@ -1521,7 +1521,7 @@ OWA.dataGrid.prototype = {
 
         if ( ! rows.length ) {
 
-            $grid.append( jQuery( '<p class="owa_gridEmpty"></p>' )
+            $grid.append( jQuery( '<p class="owa_gridEmpty" data-ui="grid-empty"></p>' )
                 .text( OWA.dataGrid.emptyText( rs, this.options.ownConstraints ) ) );
 
             return;
@@ -2280,7 +2280,7 @@ OWA.dataGrid.prototype = {
 
                 } else {
 
-                    $td.addClass( 'owa_gridMetric' );
+                    $td.addClass( 'owa_gridMetric' ).attr( 'data-ui', 'grid-metric' );
                 }
 
                 $td.html( that.cellHtml( c, cell, row, i, formatters ) );

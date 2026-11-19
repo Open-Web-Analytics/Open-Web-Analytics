@@ -182,7 +182,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame((int) $this->lastEvent()->get('yyyymmdd'), $day, 'the day raw would have filed it under');
     }
 
-    /** In the request, each blocked beacon writes its keys. */
+    /** In the request, each blocked beacon writes its keys, in one statement. */
     public function testDirectIngestCountsPerBeacon(): void
     {
         $before = Blocks::$writes;
@@ -190,7 +190,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->fireEvent('base.page_request', $this->beacon(false));
         $this->fireEvent('base.page_request', $this->beacon(false));
 
-        $this->assertSame(6, Blocks::$writes - $before, 'three keys, twice');
+        $this->assertSame(2, Blocks::$writes - $before, 'three keys, one statement, twice');
         $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2], $this->blocked());
     }
 
@@ -257,7 +257,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $counts = TrackerIngest::drain(time() + 30);
 
         $this->assertSame(3, $counts['ingested']);
-        $this->assertSame(3, Blocks::$writes - $before, 'one statement per key for the whole drain');
+        $this->assertSame(1, Blocks::$writes - $before, 'one statement for the whole drain: every key counted 2');
         $this->assertFalse(Blocks::batching(), 'the drain closed its batch');
         $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2], $this->blocked());
 
@@ -276,7 +276,10 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame([], $this->blocked(), 'nothing written while the batch is open');
         $this->assertSame(2, Blocks::pending()['20261104|' . $this->site . '|*']);
 
+        $before = Blocks::$writes;
+
         $this->assertTrue(Blocks::flush());
+        $this->assertSame(2, Blocks::$writes - $before, 'one statement per distinct count');
         $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 1, 'NO_FETCH_METADATA' => 2], $this->blocked());
 
         // Added to, not replaced.

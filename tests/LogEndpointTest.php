@@ -31,6 +31,55 @@ final class LogEndpointTest extends TestCase
         $this->assertStringContainsString('litespeed_finish_request', $src);
     }
 
+    /**
+     * A POST beacon is answered 204, with nothing to follow, and nothing
+     * before the response ends reads a setting. Run under php-cgi, which
+     * prints the response's headers.
+     */
+    public function testAPostIsAnswered204WithNoLocation(): void
+    {
+        $cgi = trim((string) shell_exec('command -v php-cgi 2>/dev/null'));
+
+        if ($cgi === '') {
+            $this->markTestSkipped('php-cgi is not installed');
+        }
+
+        $root = dirname(__DIR__);
+        $env  = [
+            'REQUEST_METHOD'  => 'POST',
+            'SCRIPT_FILENAME' => $root . '/log.php',
+            'REDIRECT_STATUS' => '200',
+            'CONTENT_LENGTH'  => '0',
+            'HTTP_HOST'       => 'collector.example.com',
+            'REQUEST_URI'     => '/owa/log.php',
+            'PATH'            => (string) getenv('PATH'),
+        ];
+
+        $proc = proc_open([$cgi, '-d', 'display_errors=0', '-d', 'error_log=/dev/null'],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root, $env);
+        $this->assertIsResource($proc);
+        fclose($pipes[0]);
+        $out = (string) stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+
+        $headers = strstr($out, "\r\n\r\n", true) ?: $out;
+
+        $this->assertMatchesRegularExpression('/^Status: 204\b/mi', $headers);
+        $this->assertDoesNotMatchRegularExpression('/^Location:/mi', $headers);
+    }
+
+    /** Nothing ahead of the finish call boots OWA or reads a setting. */
+    public function testNothingBeforeTheFinishReadsASetting(): void
+    {
+        $src    = $this->source();
+        $before = substr($src, 0, (int) strpos($src, 'fastcgi_finish_request();'));
+
+        $this->assertStringNotContainsString('\\OWA\\', $before);
+        $this->assertStringNotContainsString('blank.php', $src);
+    }
+
     /** The declared length is the image's: a wrong one is dropped, and the response goes out chunked. */
     public function testTheContentLengthIsThePixels(): void
     {

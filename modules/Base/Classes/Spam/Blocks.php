@@ -8,14 +8,17 @@ namespace OWA\Module\Base\Classes\Spam;
  * row of each rule it met (Entity\SpamBlock).
  *
  * WRITTEN AS IT HAPPENS, OR ONCE PER DRAIN. In the request, each blocked beacon
- * writes its keys as it is blocked. A drain of the tracker-ingest queue may
- * block hundreds of beacons from one attack in a minute, so it opens a batch
- * (begin()), the counts are totalled in memory, and flush() writes each key
- * once at the end. A drain that dies before flush() loses its counts and not
- * its beacons: the counts are a report, and the beacons were blocked either way.
+ * writes its keys as it is blocked, in one statement. A drain of the
+ * tracker-ingest queue may block hundreds of beacons from one attack in a
+ * minute, so it opens a batch (begin()), the counts are totalled in memory,
+ * and flush() writes them at the end, one statement per distinct count. A
+ * drain that dies before flush() loses its counts and not its beacons: the
+ * counts are a report, and the beacons were blocked either way.
  *
- * An insert-or-add (OWA_SQL_INSERT_OR_ADD, the dialect's upsert): two writers
- * adding to one row both count.
+ * An insert-or-add of several rows (OWA_SQL_INSERT_OR_ADD, the dialect's
+ * upsert): two writers adding to one row both count. The rows of a statement
+ * are in key order, so two statements meeting on the same rows lock them in
+ * the same order.
  */
 class Blocks {
 
@@ -62,7 +65,7 @@ class Blocks {
     }
 
     /**
-     * Write an open batch, one statement per key, and close it.
+     * Write an open batch, one statement per distinct count, and close it.
      *
      * @return bool false when a write failed; the rest are still written
      */
@@ -71,12 +74,18 @@ class Blocks {
         $batch       = (array) self::$batch;
         self::$batch = null;
         $ok          = true;
+        $by_count    = [];
 
         foreach ( $batch as $key => $count ) {
 
-            list( $yyyymmdd, $site_id, $rule ) = explode( '|', $key, 3 );
+            list( $yyyymmdd, $site_id, $rule ) = explode( '|', (string) $key, 3 );
 
-            $ok = self::write( (int) $yyyymmdd, $site_id, $rule, (int) $count ) && $ok;
+            $by_count[ (int) $count ][] = [ (int) $yyyymmdd, $site_id, $rule ];
+        }
+
+        foreach ( $by_count as $count => $keys ) {
+
+            $ok = self::write( $keys, $count ) && $ok;
         }
 
         return $ok;
@@ -92,22 +101,29 @@ class Blocks {
      */
     public static function record( $yyyymmdd, $site_id, array $rules ) {
 
-        $keys = array_unique( array_merge( [ \OWA\Module\Base\Entity\SpamBlock::TOTAL ],
+        $rules = array_unique( array_merge( [ \OWA\Module\Base\Entity\SpamBlock::TOTAL ],
             array_map( 'strval', $rules ) ) );
 
-        foreach ( $keys as $rule ) {
+        if ( self::$batch !== null ) {
 
-            if ( self::$batch !== null ) {
+            foreach ( $rules as $rule ) {
 
                 $key = (int) $yyyymmdd . '|' . (string) $site_id . '|' . $rule;
 
                 self::$batch[ $key ] = ( self::$batch[ $key ] ?? 0 ) + 1;
-
-                continue;
             }
 
-            self::write( (int) $yyyymmdd, (string) $site_id, $rule, 1 );
+            return;
         }
+
+        $keys = [];
+
+        foreach ( $rules as $rule ) {
+
+            $keys[] = [ (int) $yyyymmdd, (string) $site_id, $rule ];
+        }
+
+        self::write( $keys, 1 );
     }
 
     /**
@@ -148,29 +164,46 @@ class Blocks {
     }
 
     /**
-     * Add $count to one key's row.
+     * Add $count to each key's row, in one statement.
      *
-     * @param  int    $yyyymmdd
-     * @param  string $site_id
-     * @param  string $rule
-     * @param  int    $count
+     * @param  list<array{int, string, string}> $keys yyyymmdd, site_id, rule
+     * @param  int $count
      * @return bool false when the write failed
      */
-    private static function write( $yyyymmdd, $site_id, $rule, $count ) {
+    private static function write( array $keys, $count ) {
+
+        if ( ! $keys ) {
+
+            return true;
+        }
 
         self::$writes++;
+
+        sort( $keys );
 
         // The driver first: loading it is what defines the OWA_SQL_* constants.
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
+        $params = [];
+
+        foreach ( $keys as $key ) {
+
+            array_push( $params, $key[0], $key[1], $key[2], (int) $count );
+        }
+
+        $params[] = (int) $count;
+
+        // Several rows' placeholders, which the template's VALUES ( ) encloses.
         $ok = $db->query( sprintf( OWA_SQL_INSERT_OR_ADD, self::table(),
-                'yyyymmdd, site_id, rule, blocked', '?, ?, ?, ?', 'yyyymmdd, site_id, rule', 'blocked' ),
-            [ $yyyymmdd, $site_id, $rule, $count, $count ] ) !== false;
+                'yyyymmdd, site_id, rule, blocked', implode( '), (', array_fill( 0, count( $keys ), '?, ?, ?, ?' ) ),
+                'yyyymmdd, site_id, rule', 'blocked' ),
+            $params ) !== false;
 
         if ( ! $ok ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Spam detection: counting %d blocked %s for %s on %d failed.',
-                $count, \OWA\Core\Lib::plural( $count, 'beacon', 'beacons' ), $rule, $yyyymmdd ) );
+            \OWA\Core\CoreAPI::notice( sprintf( 'Spam detection: counting %d blocked %s for %s failed.',
+                $count, \OWA\Core\Lib::plural( $count, 'beacon', 'beacons' ),
+                implode( ', ', array_map( fn ( $key ) => $key[2] . ' on ' . $key[0], $keys ) ) ) );
         }
 
         return $ok;

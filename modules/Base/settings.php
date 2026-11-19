@@ -348,6 +348,7 @@ return [
         'campaignUtmParams' => [
             'default'  => true,
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Read utm_ Campaign Parameters' ),
@@ -364,6 +365,7 @@ return [
         'campaignKeys' => [
             'default'  => [],
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property', 'profile' ],
             'type'     => 'map',
             'keys'     => array_keys( \OWA\Module\Base\Classes\TrackingEventHelpers::CAMPAIGN_KEYS ),
@@ -435,6 +437,8 @@ return [
         'retired_goals_before_092' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'cache_settings_before_086' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update093: the names of the autoload indexes it dropped, for its down().
+        'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],
@@ -633,6 +637,7 @@ return [
         'tracker_cookie_domain' => [
             'default'  => '',
             'storable' => true,
+            'autoload' => true,
             'scopes'   => [ 'install', 'property' ],
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain' ),

@@ -52,6 +52,13 @@ class Site extends \OWA\Core\Entity {
         $this->properties['id']->setPrimaryKey();
         $this->properties['site_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+
+        /*
+         * Every beacon finds its Profile by site_id, which id is derived from
+         * (generateId()), so one site_id names one row. Update093 adds this
+         * to an existing table, as a plain index where the rows break that.
+         */
+        $this->addUniqueIndex( self::SITE_ID_INDEX, [ 'site_id' ] );
         $this->properties['domain'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['domain']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['name'] = new \OWA\Module\Base\Classes\DbColumn;
@@ -122,6 +129,9 @@ class Site extends \OWA\Core\Entity {
         $this->properties['app_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['app_id']->setDataType(OWA_DTD_VARCHAR255);
     }
+
+    /** The index on site_id. */
+    const SITE_ID_INDEX = 'site_id_lookup';
 
     /** Web is the default, and what every Profile migrated from 1.x is. */
     const STREAM_WEB = 'web';

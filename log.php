@@ -25,13 +25,16 @@ if (ob_get_level() == 0) {
 // removing any content encoding like gzip etc.
 header('Content-encoding: none', true);
 
-//check to se if request is a POST
+/*
+ * A POST is a beacon sent by sendBeacon() or a keepalive fetch, or a 1.x
+ * tracker's hidden-iframe form, and none of them reads the response: 204, no
+ * body and nowhere to go, so the browser makes no second request. Answered
+ * without settings, which are not built until after the response has ended.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // redirect to blank.php
-    \OWA\Core\Lib::redirectBrowser( str_replace('log.php', 'blank.php', \OWA\Core\Lib::get_current_url() ) );
-    // necessary or else buffer is not actually flushed
-    echo ' ';
+    http_response_code( 204 );
+
 } else {
     // return 1x1 pixel gif: 43 bytes
     $pixel = sprintf(

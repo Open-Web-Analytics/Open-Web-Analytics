@@ -133,7 +133,7 @@ foreach ( $owa_steps as $owa_s ) {
 
             <div class="owa_funnelStepNumber"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Step %s' ), $owa_step['step_number'] ) );?></div>
             <div class="funnelStepName"><?php $view->out($owa_step['name']);?></div>
-            <div class="funnelStepCount"><?php $view->out($owa_count);?> <span class="visitorCountLabel"><?php $view->out($owa_label);?></span></div>
+            <div class="funnelStepCount" data-ui="funnel:step-count"><?php $view->out($owa_count);?> <span class="visitorCountLabel"><?php $view->out($owa_label);?></span></div>
             <div class="funnelStepPath"><?php $view->out($owa_step['summary'] ?? '');?></div>
 
             <?php if ( $owa_k > 0 ):?>
@@ -163,7 +163,7 @@ foreach ( $owa_steps as $owa_s ) {
          * cannot do anything.
          */
     ?>
-    <div id="funnel-steps-grid"></div>
+    <div id="funnel-steps-grid" data-ui="funnel:steps"></div>
 </div>
 
 <?php else:?>

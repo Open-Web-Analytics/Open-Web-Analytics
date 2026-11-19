@@ -366,7 +366,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         const underTrend = await page.evaluate(() => ({
             boxes: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox').length,
-            sparklines: document.querySelectorAll('#siteTrend-metrics [data-ui^="kpi:"] [data-ui="sparkline"]').length,
+            sparklines: document.querySelectorAll('[data-ui="widget:siteTrend"] [data-ui^="kpi:"] [data-ui="sparkline"]').length,
         }));
 
         expect(underTrend.boxes).toBeGreaterThan(1);
@@ -1064,7 +1064,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // grid that selecting it loaded (tab.load() builds the explorers).
         await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByRole('tabpanel')).toHaveCount(1);
-        await expect(page.getByRole('tabpanel').locator('tr.owa_gridRow').first()).toBeVisible();
+        await expect(page.getByRole('tabpanel').locator('[data-ui="grid-row"]').first()).toBeVisible();
 
         // The arrow key selects the next set and shows its panel instead.
         await tabs.first().focus();
@@ -1077,7 +1077,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // And a click goes back.
         await tabs.first().click();
         await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
-        await expect(page.getByRole('tabpanel').locator('tr.owa_gridRow').first()).toBeVisible();
+        await expect(page.getByRole('tabpanel').locator('[data-ui="grid-row"]').first()).toBeVisible();
     });
 
     test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {
@@ -1382,18 +1382,18 @@ test.describe('a compared dashboard card', () => {
             + `&owa_compare=date_range&owa_compareStartDate=${day(29)}&owa_compareEndDate=${day(0)}`,
             { waitUntil: 'networkidle' });
 
-        const card = page.locator('#top-pages');
-        const rows = card.locator('tr.owa_gridRow');
+        const card = page.locator('[data-ui="widget:topContent"]');
+        const rows = card.locator('[data-ui="grid-row"]');
 
         await expect(rows.first()).toBeVisible({ timeout: 20_000 });
-        await expect(card.locator('.owa_gridEmpty')).toHaveCount(0);
+        await expect(card.locator('[data-ui="grid-empty"]')).toHaveCount(0);
         await expect(card.locator('[data-ui="card-total"] .owa_cardTotalNumber')).toHaveText('0');
         await expect(card.locator('[data-ui="card-total"] .owa_gridChange')).toHaveText('▼ 100.0%');
 
-        const first = rows.first().locator('td.owa_gridMetric').first();
+        const first = rows.first().locator('[data-ui="grid-metric"]').first();
         await expect(first).toContainText(/^0/);
-        await expect(first.locator('.owa_gridChange')).toHaveText('▼ 100.0%');
-        await expect(first.locator('.owa_gridChange')).toHaveAttribute('title', /\d{4}: [1-9]/);
+        await expect(first.locator('[data-ui="grid-change"]')).toHaveText('▼ 100.0%');
+        await expect(first.locator('[data-ui="grid-change"]')).toHaveAttribute('title', /\d{4}: [1-9]/);
     });
 });
 
@@ -1411,13 +1411,13 @@ test.describe('grid values', () => {
         await expect(grids.locator('[data-ui="grid-row"]').first()).toBeVisible({ timeout: 20_000 });
 
         const looks = await grids.evaluateAll((all) => all.map((grid) => {
-            const cell = grid.querySelector('[data-ui="grid-row"] td.owa_gridMetric');
+            const cell = grid.querySelector('[data-ui="grid-row"] [data-ui="grid-metric"]');
             if (!cell) {
                 return null;
             }
             const cs = getComputedStyle(cell);
             return {
-                card: !!grid.querySelector('.owa_gridTable.is-compact'),
+                card: !!grid.querySelector('[data-ui="card-summary"]'),
                 look: [cs.fontSize, cs.fontWeight, cs.color].join(' '),
             };
         }).filter(Boolean));
