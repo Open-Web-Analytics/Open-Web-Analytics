@@ -646,7 +646,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             $problem = null;
         }
 
-        return $problem ?: 'information_schema.PARTITIONS could not be queried. The database error is in '
+        return $problem ?: 'The partition list could not be read. The database error is in '
           . 'OWA\'s error log.';
     }
 
