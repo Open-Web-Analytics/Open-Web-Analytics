@@ -385,6 +385,9 @@ class RequestContainer {
     }
 
     /**
+     * URL-decode every param a second time, after PHP's decode. For an older
+     * beacon only: Beacon\Compat::decodeOlderBeacon() decides.
+     *
      * @return void
      */
     public function decodeRequestParams() {

@@ -883,9 +883,10 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The internal properties holding the page URL and its referrer as PHP's
-     * decoding of the beacon left them, before decodeRequestParams() decodes
-     * every value a second time (log.php). Request-set and stored by nothing
+     * The internal properties holding an older beacon's page URL and referrer
+     * as PHP's decoding left them, before decodeRequestParams() decodes every
+     * value a second time (Beacon\Compat::decodeOlderBeacon()). A current
+     * beacon is decoded once and has none. Request-set and stored by nothing
      * (tracking_properties.json).
      */
     const ARRIVED = [
@@ -895,8 +896,9 @@ class TrackingEventHelpers {
 
     /**
      * The page URL and referrer of a beacon's params as they are now, by
-     * their ARRIVED names. log.php takes them before the second decode and adds
-     * them after admission, so a beacon cannot name them.
+     * their ARRIVED names. Beacon\Compat::decodeOlderBeacon() takes them before
+     * an older beacon's second decode, and log.php adds them after admission,
+     * so a beacon cannot name them.
      *
      * @param  array<mixed> $params  the request's params, decoded once by PHP
      * @return array<string, string>
@@ -933,8 +935,8 @@ class TrackingEventHelpers {
      * or # in the query, into the characters that end them: the path, the
      * query and the pairs in it then split in the wrong place. A URL holding
      * none of those reads the same either way, so its readings are taken from
-     * the stored URL, exactly as before. An event built in process, or queued
-     * before the copies existed, has none.
+     * the stored URL. A current beacon, decoded once, an event built in
+     * process, and one queued before the copies existed have none.
      *
      * @param  object $event
      * @param  string $property  page_location or HTTP_REFERER
@@ -960,6 +962,32 @@ class TrackingEventHelpers {
             || preg_match( '/%(26|23)/i', (string) ( $parts['query'] ?? '' ) );
 
         return $cut ? $url : null;
+    }
+
+    /**
+     * A URL property of a current beacon in its stored form
+     * (V2Event::readableUrl()): the path decoded once, the query and fragment
+     * as the page had them. The first callback of every data_type url
+     * property the client sets.
+     *
+     * Only for a beacon decoded once (Beacon\Compat::decodesOnce()). An older
+     * beacon's values were decoded a second time already, and an event with no
+     * format version is left as it was built.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
+    public static function readableUrl( $value, $event ) {
+
+        if ( ! is_string( $value ) || $value === ''
+             || ! \OWA\Module\Base\Classes\Beacon\Compat::decodesOnce( $event->get( 'beacon_version' ) ) ) {
+
+            return $value;
+        }
+
+        return \OWA\Module\Base\Classes\Sanitize::cleanTrackingText(
+            \OWA\Module\Base\Classes\V2Event::readableUrl( $value ) );
     }
 
     /**

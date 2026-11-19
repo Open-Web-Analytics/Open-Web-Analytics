@@ -307,7 +307,7 @@
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
     "page_location": {
-        "description": "The full URL of the page, query string included, as the tracker sent it, without the parameters named in the query_string_filters setting.",
+        "description": "The full URL of the page, its path decoded and its query string as the tracker sent it, without the parameters named in the query_string_filters setting.",
         "set_by": "client",
         "from": [
             "p_l"
@@ -318,8 +318,10 @@
         ],
         "data_type": "url",
         "required": false,
-        "callbacks": [],
-        "note": "The complete page URL, query included. Only the parameters query_string_filters names are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; OWA's own parameters and the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks: a callback would run before the derivations that read the URL as it arrived. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
+        ],
+        "note": "The complete page URL, query included. Only the parameters query_string_filters names are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; OWA's own parameters and the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. One callback, readableUrl(), which decodes the path of a current beacon's URL once and leaves the query and fragment as they arrived, so the derivations read the query and the campaign tags as the page had them. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
     },
     "page_title": {
         "description": "The page's title.",
@@ -454,7 +456,7 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
-        "description": "The URL of the page that referred the visitor to this page, on every event of the page, without the parameters named in the query_string_filters setting. Absent when the browser sent none.",
+        "description": "The URL of the page that referred the visitor to this page, its path decoded, on every event of the page, without the parameters named in the query_string_filters setting. Absent when the browser sent none.",
         "set_by": "client",
         "from": [
             "p_r"
@@ -465,11 +467,13 @@
         ],
         "data_type": "url",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
+        ],
         "note": "THE PAGE'S REFERRER, ON EVERY EVENT. It was briefly scoped to the page view on the grounds that nothing downstream read a click's copy -- true of today's reports, and the wrong test. A click row's referer_url is the PRIOR PAGE THAT DROVE THE EVENT, which is a question the raw store should be able to answer later; and it cannot be recovered by joining to the page_view for the same page, because one session can reach the same page twice from different referrers. Keeping the evidence is the raw store's job -- the same reason `params` rides every row so a dimension registered tomorrow can be backfilled.\nThe per-event cost is a consequence of sending one beacon per event. BATCHING is the fix for it -- page, referrer and session values carried once per request, with the batch's events carrying only what differs between them. Dropping the value was not.\npage_location (VARCHAR 1024) and page_title ride every event for a stronger reason still: they are read PER ROW. The heatmap groups clickX/clickY constrained on pagePath, and dom-clicks takes a pagePath, so a click has to carry its own page."
     },
     "target_url": {
-        "description": "The URL of the link that was clicked, without port, user name, password or fragment.",
+        "description": "The URL of the link that was clicked, its path decoded, without port, user name, password or fragment.",
         "set_by": "client",
         "from": [
             "el_lu"
@@ -482,6 +486,7 @@
         "data_type": "url",
         "required": false,
         "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl",
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::makeUrlCanonical"
         ]
     },
@@ -1270,7 +1275,7 @@
         "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
     },
     "form_destination": {
-        "description": "The absolute URL the form submits to; the page itself when the form has no action.",
+        "description": "The absolute URL the form submits to, its path decoded; the page itself when the form has no action.",
         "set_by": "client",
         "from": [
             "fm_dst"
@@ -1282,7 +1287,9 @@
         ],
         "data_type": "url",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
+        ],
         "note": "Where the form submits, absolute. THE ONE FORM IDENTIFIER THAT CROSSES PAGES: two pages can each carry a form with no id and no name, and the action distinguishes them. A form with no action submits to the page itself, which is what the tracker falls back to."
     },
     "form_length": {
@@ -1522,7 +1529,7 @@
         ]
     },
     "page_path": {
-        "description": "The path of the page's URL, with a directory index page name, such as index.html, and a trailing slash removed.",
+        "description": "The path of the page's URL, decoded, with a directory index page name, such as index.html, and a trailing slash removed.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1539,7 +1546,7 @@
         "note": "The path, canonicalised: a last segment named in base.directory_index_pages and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
     },
     "page_query": {
-        "description": "The query string of the page's URL, without OWA's own parameters or campaign parameters.",
+        "description": "The query string of the page's URL as the tracker sent it, without OWA's own parameters or campaign parameters.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1573,7 +1580,7 @@
         "note": "The referring site’s host, and what the cube pass classifies source and medium from. Empty when the referrer is the page’s own host, the cookie domain or a subdomain of it -- the rule a click uses -- so a session starting from the site’s own page reads as direct rather than as a referral from itself; referer_url keeps the URL. Left alone beyond the host: it is somebody else’s URL, and canonicalising it with THIS install’s directory index pages would be a category error."
     },
     "referer_query": {
-        "description": "The query string of the referring page's URL, without the parameters named in the query_string_filters setting.",
+        "description": "The query string of the referring page's URL as the tracker sent it, without the parameters named in the query_string_filters setting.",
         "set_by": "event",
         "from": [
             "HTTP_REFERER"

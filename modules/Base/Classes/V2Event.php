@@ -114,6 +114,42 @@ class V2Event {
     const MAX_HOSTNAME = 253;
 
     /**
+     * A URL in the form it is stored: the path percent-decoded once, and the
+     * scheme, host, query and fragment exactly as given.
+     *
+     * So `/caf%C3%A9/a%20b?q=a%20b` is `/café/a b?q=a%20b`. A path is read by
+     * people; a query string is data, and decoding it would change where its
+     * pairs split.
+     *
+     * Three escapes stay in the path: %3F and %23, because a ? or # there
+     * would end the path when the URL is read again, and a control character,
+     * which is not text. A % that does not start an escape is left as it is.
+     * One pass, so %2541 becomes %41 and no further.
+     *
+     * @param  mixed $url
+     * @return mixed the URL in that form; anything not a non-empty string as given
+     */
+    public static function readableUrl( $url ) {
+
+        if ( ! is_string( $url ) || $url === ''
+             || ! preg_match( '~^((?:[A-Za-z][A-Za-z0-9+.\-]*:)?(?://[^/?#]*)?)([^?#]*)(.*)$~s', $url, $m ) ) {
+
+            return $url;
+        }
+
+        $path = preg_replace_callback( '/%([0-9A-Fa-f]{2})/', static function ( $escape ) {
+
+            $byte = hexdec( $escape[1] );
+
+            return $byte === 0x3F || $byte === 0x23 || $byte < 0x20 || $byte === 0x7F
+                ? $escape[0] : chr( $byte );
+
+        }, $m[2] );
+
+        return $m[1] . $path . $m[3];
+    }
+
+    /**
      * Split a URL into the three readings owa_event_raw stores beside it.
      *
      * Stored as columns rather than parsed in SQL at read time, because a GROUP

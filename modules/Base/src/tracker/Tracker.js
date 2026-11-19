@@ -1857,10 +1857,10 @@ class OWATracker  {
                 // starts a fragment (everything after it never leaves the browser),
                 // '&' begins a bogus new param, '=' splits the pair. A clicked link
                 // whose href held a '#' or '&' therefore lost click_x / site_id /
-                // session_id off the wire. The server expects encoded values -- it
-                // reads $_GET (PHP url-decodes) and decodeRequestParams() decodes
-                // again -- so encodeURIComponent here is the symmetric half of that
-                // contract. The KEY stays raw on purpose: the owa_* names are a fixed
+                // session_id off the wire. The server reads $_GET, which PHP
+                // url-decodes once, and decodes a beacon of this format version no
+                // further (conf/beacon_compat.php) -- so encodeURIComponent here is
+                // the symmetric half of that contract. The KEY stays raw on purpose: the owa_* names are a fixed
                 // vocabulary and the flattened array keys (owa_foo[0][bar]) rely on
                 // PHP's $_GET bracket parsing, which encoded brackets would defeat.
                 kvp = param + '=' + encodeURIComponent( properties[ param ] ) + '&';
@@ -4506,7 +4506,9 @@ class OWATracker  {
      *
      * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
      * beacon can become a row is the server's identity guard, which knows
-     * nothing of versions. This exists so that "has generation N died out yet"
+     * nothing of versions. The server reads it for how to decode: a beacon
+     * below 2, or with none, has its values URL-decoded a second time, as 1.x
+     * did (conf/beacon_compat.php, decoded_once_from_version). This exists so that "has generation N died out yet"
      * is a query against stored rows instead of a guess about how long a
      * customer's cache policy lets an old tracker live -- and OWA does not
      * control that policy.
