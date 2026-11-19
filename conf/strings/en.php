@@ -276,7 +276,7 @@ return [
     'Application passwords' => 'Application passwords',
     'Application passwords are turned off on this installation. Yours are kept, but every request that uses one is refused.' => 'Application passwords are turned off on this installation. Yours are kept, but every request that uses one is refused.',
     'Apply' => 'Apply',
-    'Apply these updates from the command line: <code>php cli.php cmd=update</code>' => 'Apply these updates from the command line: <code>php cli.php cmd=update</code>',
+    'Apply these updates from the command line: php cli.php cmd=update' => 'Apply these updates from the command line: php cli.php cmd=update',
     'Apply updates' => 'Apply updates',
     'Are you sure?' => 'Are you sure?',
     'As saved in the settings below.' => 'As saved in the settings below.',

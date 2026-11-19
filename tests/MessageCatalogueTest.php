@@ -124,6 +124,27 @@ final class MessageCatalogueTest extends TestCase
     }
 
     /**
+     * A message is text: msgs.php escapes it, so markup in one is shown as
+     * its tags.
+     */
+    public function testNoMessageCarriesMarkup(): void
+    {
+        $bad = [];
+
+        foreach ($this->catalogue() as $code => $message) {
+
+            foreach ((array) $message as $part => $text) {
+
+                if (preg_match('/<[a-zA-Z\/!]/', (string) $text)) {
+                    $bad[] = "$code $part";
+                }
+            }
+        }
+
+        $this->assertSame([], $bad, 'markup in: ' . implode(', ', $bad));
+    }
+
+    /**
      * Every code a controller sets actually exists.
      *
      * A code with no entry renders as a blank message -- the screen says an
