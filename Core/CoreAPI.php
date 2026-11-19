@@ -1132,13 +1132,23 @@ class CoreAPI {
     }
 
     /**
+     * Capabilities OWA no longer has. A role configuration that still names
+     * one is not an error: getCapabilities() leaves the name out.
+     * view_reports_ecommerce: view_reports covers the e-commerce reports.
+     */
+    const RETIRED_CAPABILITIES = [ 'view_reports_ecommerce' ];
+
+    /**
      * @param  mixed $role
-     * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
+     * @return mixed the role's entry in the capabilities setting, less any
+     *               RETIRED_CAPABILITIES; array() for a role it does not name
      */
     public static function getCapabilities($role) {
         $caps = \OWA\Core\CoreAPI::getSetting('base', 'capabilities');
         if (array_key_exists($role, $caps)) {
-            return $caps[$role];
+            return is_array( $caps[ $role ] )
+                ? array_values( array_diff( $caps[ $role ], self::RETIRED_CAPABILITIES ) )
+                : $caps[ $role ];
         } else {
             return [];
         }
