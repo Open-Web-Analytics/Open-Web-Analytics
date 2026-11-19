@@ -306,6 +306,34 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertFalse((new ReflectionMethod($own, 'isCurrentUserCapable'))->invoke($own, $viewer));
     }
 
+    /**
+     * Adding a Profile holds edit_sites on the Property it is added to: the
+     * one the request names, else the one its domain is on.
+     */
+    public function testAddingAProfileIsCheckedAgainstThePropertyItGoesUnder(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("UPDATE owa_property SET domain = 'psr-other.test' WHERE id = %d", self::OTHER_PROPERTY));
+
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        foreach ([\OWA\Module\Base\Controller\SitesAdd::class, \OWA\Module\Base\Controller\AddSiteRest::class] as $class) {
+
+            $check = function (array $params) use ($su, $class): bool {
+                $controller = new $class($params + ['siteId' => self::ONE]);
+                $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
+
+                return $m->invoke($controller, $su);
+            };
+
+            $this->assertTrue($check(['propertyId' => (string) self::PROPERTY, 'domain' => 'psr.test']), "$class: the user's own Property");
+            $this->assertFalse($check(['propertyId' => (string) self::OTHER_PROPERTY, 'domain' => 'psr-new.test']), "$class: another Property by its id");
+            $this->assertFalse($check(['domain' => 'https://PSR-other.test/']), "$class: another Property by its domain");
+            $this->assertTrue($check(['domain' => 'psr-new.test']), "$class: a new Property, against the user's siteId");
+        }
+    }
+
     public function testPropertyAccessShowsAGrantOnAnyProfile(): void
     {
         [, $id] = $this->viewer([self::TWO]);
