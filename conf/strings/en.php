@@ -803,6 +803,7 @@ return [
     'Name' => 'Name',
     'Name is required.' => 'Name is required.',
     'Name not found.' => 'Name not found.',
+    'Name the Property with propertyId, or a Profile with siteId.' => 'Name the Property with propertyId, or a Profile with siteId.',
     'Names command "%s", which is not registered, so it can never run.' => 'Names command "%s", which is not registered, so it can never run.',
     'Net Revenue' => 'Net Revenue',
     'Never' => 'Never',
