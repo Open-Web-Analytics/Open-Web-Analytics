@@ -2,35 +2,29 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * owa_event_raw, every cube and the two domstream tables keyed on
- * (yyyymmdd, id); raw's site_date index widened to (site_id, yyyymmdd,
- * created_at).
+ * owa_event_raw and every cube keyed on (yyyymmdd, id); raw's site_date index
+ * widened to (site_id, yyyymmdd, created_at).
  *
- * KEY. An id is a hash of the event (or of the chunk), so on (id, yyyymmdd)
- * each insert, and each row a build reads, is at a random page of a
- * month-sized partition. On (yyyymmdd, id) a day's rows are contiguous
- * (Entity\EventRaw). The cube entity inherits raw's key, and its staging table
- * is copied from the live cube, so each cube is re-keyed here too.
- * owa_domstream_chunk and owa_domstream_payload, where the Domstream module
- * has created them, are re-keyed in the same run so an install rebuilds once.
+ * KEY. An id is a hash of the event, so on (id, yyyymmdd) each insert, and
+ * each row a build reads, is at a random page of a month-sized partition. On
+ * (yyyymmdd, id) a day's rows are contiguous (Entity\EventRaw). The cube
+ * entity inherits raw's key, and its staging table is copied from the live
+ * cube, so each cube is re-keyed here too.
  *
  * SITE_DATE. With created_at in it, Cube\Builder::isCurrent()'s test for rows
  * that arrived after a build reads the index and no rows. Raw only: the cube
  * has no created_at.
  *
  * Each table is changed only when it has the old shape, and down() changes
- * only one with the new shape. The tables are independent, so the order is
- * not load-bearing: up() goes raw, domstream, cubes and down() the reverse.
- * A 1.x upgrade creates raw at Update034, the domstream tables at Domstream's
- * Update002 and the cubes from their entities, all in the new shape, so this
- * changes nothing there.
+ * only one with the new shape. A 1.x upgrade creates raw at Update034 and its
+ * cubes from the entity, both already in the new shape, so this changes
+ * nothing there.
  *
  * COST. A new primary key rebuilds the table: every row of every partition is
  * copied and every secondary index rebuilt, needing free space the size of
  * the table while it runs. Raw's two changes are one ALTER and one rebuild;
- * each other table is one more. InnoDB does it in place, with ingest
- * continuing, but the time is in proportion to the rows, which is why this is
- * CLI-only.
+ * each cube is one more. InnoDB does it in place, with ingest continuing, but
+ * the time is in proportion to the rows, which is why this is CLI-only.
  */
 class Update094 extends \OWA\Core\Update {
 
@@ -76,10 +70,10 @@ class Update094 extends \OWA\Core\Update {
             }
         }
 
-        foreach ( array_merge( $this->domstreamTables(), $this->cubeTables() ) as $table ) {
+        foreach ( $this->cubeTables() as $cube ) {
 
-            if ( $this->indexColumns( $table, 'PRIMARY' ) === self::OLD_KEY
-                 && ! $this->alter( $table, [ 'DROP PRIMARY KEY, ADD PRIMARY KEY (yyyymmdd, id)' ] ) ) {
+            if ( $this->indexColumns( $cube, 'PRIMARY' ) === self::OLD_KEY
+                 && ! $this->alter( $cube, [ 'DROP PRIMARY KEY, ADD PRIMARY KEY (yyyymmdd, id)' ] ) ) {
 
                 return false;
             }
@@ -88,13 +82,13 @@ class Update094 extends \OWA\Core\Update {
         return true;
     }
 
-    /** The exact inverse: the cubes, domstream, then raw, back to (id, yyyymmdd) and site_date (site_id, yyyymmdd). */
+    /** The exact inverse: the cubes, then raw, back to (id, yyyymmdd) and site_date (site_id, yyyymmdd). */
     public function down() {
 
-        foreach ( array_reverse( array_merge( $this->domstreamTables(), $this->cubeTables() ) ) as $table ) {
+        foreach ( $this->cubeTables() as $cube ) {
 
-            if ( $this->indexColumns( $table, 'PRIMARY' ) === self::NEW_KEY
-                 && ! $this->alter( $table, [ 'DROP PRIMARY KEY, ADD PRIMARY KEY (id, yyyymmdd)' ] ) ) {
+            if ( $this->indexColumns( $cube, 'PRIMARY' ) === self::NEW_KEY
+                 && ! $this->alter( $cube, [ 'DROP PRIMARY KEY, ADD PRIMARY KEY (id, yyyymmdd)' ] ) ) {
 
                 return false;
             }
@@ -130,30 +124,6 @@ class Update094 extends \OWA\Core\Update {
     protected function cubeTables() {
 
         return array_values( \OWA\Module\Base\Classes\Cube\Cubes::allTables() );
-    }
-
-    /**
-     * The domstream tables that exist. By name, so this needs no Domstream
-     * module loaded.
-     *
-     * @return list<string>
-     */
-    private function domstreamTables() {
-
-        $db  = \OWA\Core\CoreAPI::dbSingleton();
-        $out = [];
-
-        foreach ( [ 'domstream_chunk', 'domstream_payload' ] as $key ) {
-
-            $table = $this->tableFor( $key );
-
-            if ( $db->tableExists( $table ) ) {
-
-                $out[] = $table;
-            }
-        }
-
-        return $out;
     }
 
     /** @return string|null raw's table, or null where it does not exist */

@@ -20,7 +20,7 @@ class DomstreamPayload extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'yyyymmdd', OWA_DTD_INT ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
-        // Keyed as the chunk is, day first (Update094).
+        // Keyed as the chunk is, day first (Update003).
         $this->setCompositePrimaryKey( [ 'yyyymmdd', 'id' ] );
 
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'payload', OWA_DTD_BLOB ) );

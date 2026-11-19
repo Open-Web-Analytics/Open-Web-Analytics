@@ -6,10 +6,9 @@ use OWA\Module\Base\Update\Update094;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Update094: raw, each cube and the domstream tables re-keyed on (yyyymmdd,
- * id), raw's site_date widened to (site_id, yyyymmdd, created_at); down() puts
- * back exactly the old shape. Against scratch tables holding only the columns
- * the keys name.
+ * Update094: raw and each cube re-keyed on (yyyymmdd, id), raw's site_date
+ * widened to (site_id, yyyymmdd, created_at); down() puts back exactly the old
+ * shape. Against scratch tables holding only the columns the keys name.
  *
  * And the reason for site_date: isCurrent()'s statement, as Cube\Builder
  * writes it, reads raw through site_date alone.
@@ -18,9 +17,6 @@ final class Update094Test extends TestCase
 {
     const RAW  = 'owa_event_raw_update094_test';
     const CUBE = 'owa_event_update094_test';
-
-    const CHUNK   = 'owa_domstream_chunk_update094_test';
-    const PAYLOAD = 'owa_domstream_payload_update094_test';
 
     /** A raw table created from the entity, for the plan. */
     const ENTITY_RAW = 'zz_update094_raw';
@@ -35,9 +31,7 @@ final class Update094Test extends TestCase
         $this->update = new class extends Update094 {
             protected function cubeTables() { return [Update094Test::CUBE]; }
         };
-        // Every table it would find by name, scratch: the install's own are never touched.
-        $this->update->tables = ['base.event_raw' => self::RAW,
-            'domstream_chunk' => self::CHUNK, 'domstream_payload' => self::PAYLOAD];
+        $this->update->tables = ['base.event_raw' => self::RAW];
 
         if (!owa_test_db_available()) {
             return;
@@ -55,8 +49,8 @@ final class Update094Test extends TestCase
 
     private function dropScratch(): void
     {
-        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s, %s, %s, %s, owa_%s',
-            self::RAW, self::CUBE, self::CHUNK, self::PAYLOAD, self::ENTITY_RAW));
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s, %s, owa_%s',
+            self::RAW, self::CUBE, self::ENTITY_RAW));
     }
 
     private function requireDb(): void
@@ -66,7 +60,7 @@ final class Update094Test extends TestCase
         }
     }
 
-    /** Raw, a cube and the domstream tables as schema 93 created them, with a few rows in two partitions. */
+    /** Raw and a cube as schema 93 created them, with a few rows in two partitions. */
     private function createOldShape(): void
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -82,19 +76,6 @@ final class Update094Test extends TestCase
           . ' yyyymmdd INT NOT NULL, PRIMARY KEY (id, yyyymmdd),'
           . ' INDEX site_date (site_id, yyyymmdd), INDEX site_type_date (site_id, event_type, yyyymmdd)) %s%s',
             self::CUBE, $db->tableOptions(), self::PARTITIONS)));
-
-        $this->assertNotFalse($db->query(sprintf(
-            'CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, site_id VARCHAR(64) NOT NULL,'
-          . ' recording_id BIGINT NOT NULL, PRIMARY KEY (id, yyyymmdd), INDEX site_recording (site_id, recording_id)) %s%s',
-            self::CHUNK, $db->tableOptions(), self::PARTITIONS)));
-
-        $this->assertNotFalse($db->query(sprintf(
-            'CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, payload BLOB NULL,'
-          . ' PRIMARY KEY (id, yyyymmdd)) %s%s',
-            self::PAYLOAD, $db->tableOptions(), self::PARTITIONS)));
-
-        $db->query(sprintf("INSERT INTO %s VALUES (5, 20251230, 'owatest', 7), (4, 20260103, 'owatest', 7)", self::CHUNK));
-        $db->query(sprintf("INSERT INTO %s VALUES (5, 20251230, 'a'), (4, 20260103, 'b')", self::PAYLOAD));
 
         $db->query(sprintf("INSERT INTO %s VALUES (3, 'owatest', 'page_view', 10, 20251231),"
             . " (1, 'owatest', 'page_view', 11, 20260102), (2, 'owatest', 'click', NULL, 20260101)", self::RAW));
@@ -142,30 +123,14 @@ final class Update094Test extends TestCase
             \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
-    /** @return array<string, list<string>> table => its rows */
-    private function allRows(): array
-    {
-        $out = [];
-
-        foreach ([self::RAW, self::CUBE, self::CHUNK, self::PAYLOAD] as $table) {
-            $out[$table] = $this->rows($table);
-        }
-
-        return $out;
-    }
-
-    public function testUpRekeysEveryTableAndDownPutsTheOldShapeBack(): void
+    public function testUpRekeysRawAndTheCubeAndDownPutsTheOldShapeBack(): void
     {
         $this->requireDb();
         $this->createOldShape();
 
-        $raw     = $this->indexes(self::RAW);
-        $cube    = $this->indexes(self::CUBE);
-        $chunk   = $this->indexes(self::CHUNK);
-        $payload = $this->indexes(self::PAYLOAD);
-        $rows    = $this->allRows();
-
-        $this->assertCount(9, array_merge(...array_values($rows)), 'the fixture rows');
+        $raw  = $this->indexes(self::RAW);
+        $cube = $this->indexes(self::CUBE);
+        $rows = [$this->rows(self::RAW), $this->rows(self::CUBE)];
 
         $this->assertSame('id,yyyymmdd', $raw['PRIMARY']);
 
@@ -176,19 +141,14 @@ final class Update094Test extends TestCase
             'site_type_date' => 'site_id,event_type,yyyymmdd'], $this->indexes(self::RAW));
         $this->assertSame(['PRIMARY' => 'yyyymmdd,id', 'site_date' => 'site_id,yyyymmdd',
             'site_type_date' => 'site_id,event_type,yyyymmdd'], $this->indexes(self::CUBE));
-        $this->assertSame(['PRIMARY' => 'yyyymmdd,id', 'site_recording' => 'site_id,recording_id'],
-            $this->indexes(self::CHUNK));
-        $this->assertSame(['PRIMARY' => 'yyyymmdd,id'], $this->indexes(self::PAYLOAD));
-        $this->assertSame($rows, $this->allRows(), 'every row, in its partition');
+        $this->assertSame($rows, [$this->rows(self::RAW), $this->rows(self::CUBE)], 'every row, in its partition');
 
         $this->assertTrue($this->update->down());
         $this->assertTrue($this->update->down(), 'a second run changes nothing');
 
         $this->assertSame($raw, $this->indexes(self::RAW));
         $this->assertSame($cube, $this->indexes(self::CUBE));
-        $this->assertSame($chunk, $this->indexes(self::CHUNK));
-        $this->assertSame($payload, $this->indexes(self::PAYLOAD));
-        $this->assertSame($rows, $this->allRows());
+        $this->assertSame($rows, [$this->rows(self::RAW), $this->rows(self::CUBE)]);
     }
 
     /** A table created from the entity has the new shape already, and up() leaves it. */
@@ -202,7 +162,7 @@ final class Update094Test extends TestCase
         $this->assertSame('yyyymmdd,id', $before['PRIMARY']);
         $this->assertSame('site_id,yyyymmdd,created_at', $before['site_date']);
 
-        $this->update->tables['base.event_raw'] = $entity->getTableName();
+        $this->update->tables = ['base.event_raw' => $entity->getTableName()];
 
         $this->assertTrue($this->update->up());
         $this->assertSame($before, $this->indexes($entity->getTableName()));
