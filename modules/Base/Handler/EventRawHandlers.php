@@ -1066,7 +1066,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function writeVisitorAcquisition( $event, $row, $landing = false ) {
 
-        if ( ! $landing || (string) $event->get( 'num_prior_sessions' ) !== '0' ) {
+        $is_first_session = (string) $event->get( 'num_prior_sessions' ) === '0';
+
+        if ( ! $landing || ! $is_first_session ) {
 
             return true;
         }
