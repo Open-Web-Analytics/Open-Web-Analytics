@@ -29,7 +29,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = [ 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' ];
+    const KNOWN_KEYS = [ 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets', 'capability' ];
 
     /**
      * Top-level keys with a type, checked in this order: key => [ type test,
@@ -40,6 +40,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         'description' => [ 'is_string', '"description" must be a string' ],
         'settings'    => [ 'is_array', '"settings" must be an object' ],
         'params'      => [ 'is_array', '"params" must be an object of parameter name => options' ],
+        'capability'  => [ 'is_string', '"capability" must be a capability name' ],
     ];
 
     /**
@@ -72,6 +73,13 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_FORMATTERS = [ 'attributionList' ];
 
     /**
+     * The widget types report_widgets.php draws. An unknown type draws an
+     * empty frame, so it is refused. CustomReports::WIDGET_TYPES is the
+     * subset the builder offers.
+     */
+    const WIDGET_TYPES = [ 'trend', 'trend-card', 'metric-boxes', 'pie', 'report-links', 'heatmap-link', 'grid', 'grid-card' ];
+
+    /**
      * The renderer every configured report uses.
      *
      * Fixed here rather than named by each definition: a report definition is meant
@@ -88,12 +96,22 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     private $definition = [];
 
     /**
+     * The definition's `capability`, when it names one, replaces view_reports
+     * as the capability a reader needs: the e-commerce reports declare
+     * view_reports_ecommerce.
+     *
      * @param array<string, mixed> $definition a decoded report definition
      * @return void
      */
     public function setDefinition( array $definition ) {
 
         $this->definition = $definition;
+
+        if ( isset( $definition['capability'] ) && is_string( $definition['capability'] )
+             && $definition['capability'] !== '' ) {
+
+            $this->setRequiredCapability( $definition['capability'] );
+        }
     }
 
     /**
@@ -142,6 +160,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             if ( ! is_array( $widget ) || empty( $widget['type'] ) ) {
 
                 return sprintf( 'widget %s needs a "type"', $i );
+            }
+
+            if ( ! in_array( $widget['type'], self::WIDGET_TYPES, true ) ) {
+
+                return sprintf( 'widget %s: "%s" is not a widget type; the types are %s', $i,
+                    is_string( $widget['type'] ) ? $widget['type'] : gettype( $widget['type'] ), implode( ', ', self::WIDGET_TYPES ) );
             }
 
             if ( isset( $widget['more'] ) && empty( $widget['more']['reportId'] ) ) {

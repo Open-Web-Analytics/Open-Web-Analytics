@@ -17,6 +17,7 @@ $_owa_messages = [
     2005 => ['headline' => \OWA\Core\CoreAPI::t( 'This form is no longer valid' ), 'message' => \OWA\Core\CoreAPI::t( 'The form expired or was opened under another account. Start again from the previous screen.' )],
     2011 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password reset link is not valid.' )],
     2012 => ['headline' => \OWA\Core\CoreAPI::t( 'This link has expired' ), 'message' => \OWA\Core\CoreAPI::t( 'A link to set a password works for a limited time. Use "Forgot your password?" to get a new one.' )],
+    2013 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password was not changed. Open the link again and set it once more.' )],
 
     // Options/Configuration related
     2500 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Options saved.' )],
@@ -54,8 +55,8 @@ $_owa_messages = [
     3203 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The Observation Profile could not be added.' )],
     // Archived, not deleted: nothing is destroyed, so the wording does not
     // say it was. 3205 is the Property's.
-    3204 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Observation Profile deleted. An administrator can restore its data.' )],
-    3205 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Property and its Observation Profiles deleted. An administrator can restore their data.' )],
+    3204 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Observation Profile deleted. Its data is kept.' )],
+    3205 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Property and its Observation Profiles deleted. Their data is kept.' )],
     3208 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Remove http:// from the start of the domain.' )],
 
     // Custom dimensions. Registering writes a row; the ALTER happens later, under

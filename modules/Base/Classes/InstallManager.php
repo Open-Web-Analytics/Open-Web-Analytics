@@ -227,8 +227,6 @@ class InstallManager extends \OWA\Core\Base {
 
             $db->endTransaction();
 
-            return $site_id;
-
         } catch ( \Throwable $e ) {
 
             $db->rollbackTransaction();
@@ -236,6 +234,42 @@ class InstallManager extends \OWA\Core\Base {
 
             return false;
         }
+
+        /*
+         * The first Profile's tracking bundle, which its tag loads, as the
+         * Add profile screen publishes a new one. After the commit: the bundle
+         * is a file, outside the transaction. One that cannot be written now
+         * is queued for the scheduler.
+         */
+        try {
+
+            \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site_id );
+
+        } catch ( \Throwable $e ) {
+
+            \OWA\Core\CoreAPI::notice( 'The first Profile\'s tracking bundle was not published: ' . $e->getMessage() . '. Run cmd=publish-trackers.' );
+        }
+
+        return $site_id;
+    }
+
+    /**
+     * Raises install_complete, for a module to hear: once the install's last
+     * step is saved, by the install wizard and by cmd=install alike. Base
+     * listens for nothing.
+     *
+     * @param  string $user_id the admin account's user name
+     * @param  string $site_id the first site
+     * @return void
+     */
+    public function announceInstallComplete( $user_id, $site_id ) {
+
+        $ed    = \OWA\Core\CoreAPI::getEventDispatch();
+        $event = $ed->eventFactory();
+        $event->set( 'u', $user_id );
+        $event->set( 'site_id', $site_id );
+        $event->setEventType( 'install_complete' );
+        $ed->notify( $event );
     }
 
     /** @return bool */

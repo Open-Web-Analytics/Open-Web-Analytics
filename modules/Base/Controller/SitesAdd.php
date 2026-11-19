@@ -57,7 +57,7 @@ class SitesAdd extends \OWA\Core\AdminController {
         }
         
         // createSite() answers null when it could not create one.
-        $this->set( 'site', $site ? $site->_getProperties() : [] );
+        $this->set( 'site', $site ? $site->getPublicProperties() : [] );
         
     }
     

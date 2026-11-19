@@ -101,9 +101,9 @@ abstract class Pdo extends \OWA\Core\Db
                 \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
                 \PDO::ATTR_PERSISTENT         => (bool) $this->getConnectionParam('persistant'),
-                // Server-side prepares would gain nothing here (no placeholders
-                // are used) and change quote()/error timing, so keep the driver
-                // behaving like the mysqli transport.
+                // Emulated: PDO substitutes the positional placeholders of a
+                // query with bindings itself, so each query is one round trip
+                // and quote() and error timing match the mysqli transport.
                 \PDO::ATTR_EMULATE_PREPARES   => true,
                 // Columns come back as STRINGS, as mysqli returns them.
                 //

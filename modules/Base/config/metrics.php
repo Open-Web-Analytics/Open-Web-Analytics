@@ -284,7 +284,7 @@ return [
         ],
 
         /*
-         * newVisitors has no `returningVisitors` twin, deliberately.
+         * newUsers has no `returningUsers` twin, deliberately.
          *
          * To count returning users you take totalUsers and group it by the
          * New/returning dimension: two metrics splitting one population would
@@ -302,9 +302,8 @@ return [
          * its two sides, so the children are derived and nothing is
          * substituted.
          *
-         * A zero denominator gives NULL, not 0 -- "no visits, so pages per
-         * visit is not a number" is a different answer from "pages per visit is
-         * zero", and the formatter renders the first as absent.
+         * A zero or missing denominator gives 0 (Metric::computeRatio()), as a
+         * trend's empty interval does.
          */
         'pageViewsPerSession' => [
             'label'       => 'Pages Per Session',

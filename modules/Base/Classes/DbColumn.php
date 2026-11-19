@@ -26,12 +26,8 @@ class DbColumn {
       * hashing, hash the full value, or widen the column), and a flag here is
       * how they stay visible instead of being silently trimmed like the rest.
       *
-      * Nothing sets it false yet. owa_document.url is the known candidate: the
-      * document id is derived from the event's full page_url while the column
-      * stores a trimmed copy, so ~15% of rows already hold a url that does not
-      * derive to the id naming them. That divergence predates this flag -- the
-      * database was trimming them regardless -- but it is the case the flag
-      * exists to make addressable.
+      * owa_event_raw.event_type sets it false: the row id is derived from the
+      * whole name, so a trimmed name would be a different event.
       *
       * @var bool
       */
@@ -454,6 +450,17 @@ class DbColumn {
      public function setPrimaryKey() {
 
          $this->is_primary_key = true;
+     }
+
+     /**
+      * A UNIQUE constraint on this column alone. A key over several columns is
+      * the entity's: Entity::addUniqueIndex().
+      *
+      * @return void
+      */
+     public function setUnique() {
+
+         $this->is_unique = true;
      }
 
      /**

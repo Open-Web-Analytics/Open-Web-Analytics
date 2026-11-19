@@ -31,13 +31,30 @@ class UsersChangePassword extends \OWA\Core\Controller {
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->getParam('k'));
 
-        // log to event queue
         if ($status === true) {
-            $ed = \OWA\Core\CoreAPI::getEventDispatch();
-            $new_password = ['key' => $this->getParam('k'), 'password' => $this->getParam('password'), 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id')];
-            $ed->log($new_password, 'base.set_password');
+            /*
+             * Set here, not by a handler of base.set_password: the event carried
+             * the new password, in plain text, to every listener. It now says
+             * only that the password changed, for the confirmation mail.
+             */
+            $user_id = $auth->u->get('user_id');
+            $u = ( new \OWA\Module\Base\Classes\UserManager() )->updateUserPassword( [
+                'temp_passkey' => $this->getParam('k'),
+                'password'     => $this->getParam('password'),
+                'user_id'      => $user_id,
+            ] );
             $auth->deleteCredentials();
             $this->setRedirectAction('base.loginForm');
+
+            if ( ! $u ) {
+
+                $this->set('error_code', 2013);
+
+                return;
+            }
+
+            \OWA\Core\CoreAPI::getEventDispatch()->log(
+                [ 'ip' => $_SERVER['REMOTE_ADDR'] ?? '', 'user_id' => $user_id ], 'base.set_password' );
             $this->setStatusCode( 3006 );
         } else {
             $this->setRedirectAction('base.loginForm');

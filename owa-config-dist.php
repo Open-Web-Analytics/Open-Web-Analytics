@@ -164,7 +164,10 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 /**
  * CONFIGURATION ID
  *
- * Override to load an alternative user configuration
+ * Read only by the upgrade from 1.x: the id of the 1.x owa_configuration row
+ * whose settings the upgrade moves into owa_setting. Leave it unset unless your
+ * 1.x install set it. Once the upgrade has run it has no effect: 2.0 keeps one
+ * set of install settings.
  */
 
 //define('OWA_CONFIGURATION_ID', '1');
