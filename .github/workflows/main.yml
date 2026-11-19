@@ -17,7 +17,7 @@ jobs:
     # merged into it, the 1.x branch for a 1.x release, or a hotfix branch for a
     # patch release. It checked out master whatever it was run on.
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
       with:
         ref: ${{ github.ref }}
     # create a release branch and bump version in appropriate files.
@@ -48,7 +48,7 @@ jobs:
     # happens to default to. What actually holds the floor is config.platform.php in
     # composer.json, which fixes resolution regardless of the PHP in use.
     - name: Setup PHP
-      uses: shivammathur/setup-php@v2
+      uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
       with:
         php-version: '8.2'
         tools: composer:v2
@@ -56,12 +56,12 @@ jobs:
       run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
     # setup node and build js/asset bundles
     - name: Setup Node/npm 
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
     - name: Build Javascript/Asset Packages
       run: |
-        npm install
+        npm ci
         npm run build
     # Generate a release tarball excluding files that are not needed in a distro.
     #
@@ -86,29 +86,16 @@ jobs:
     - name: Generate Release Tarball
       run: |
         tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./webpack.public-htaccess.js' --exclude='./modules/Base/src' --exclude='./modules/Domstream/src' --exclude='./node_modules' --exclude='./.build' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./.php-cs-fixer.dist.php' --exclude='./.php-cs-fixer.cache' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright*.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
-    #create a draft release on github and attach tarball as asset
+    # A draft release of the release branch, with the tarball attached. The tag
+    # is created when the draft is published.
     - name: Create Draft Github Release
-      id: create_release
-      uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        commitish: release-${{ env.VERSION }}
-        tag_name: ${{ env.VERSION }}
-        release_name: Release ${{ env.VERSION }}
-        body: |
-           Changes in this Release
-            - First Change
-            - Second Change
-        draft: true
-        prerelease: false
-    - name: Upload Tarball to Github Release
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./owa_${{ env.VERSION}}_packaged.tar
-        asset_name: owa_${{ env.VERSION}}_packaged.tar
-        asset_content_type: application/tar
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "${{ env.VERSION }}" "./owa_${{ env.VERSION }}_packaged.tar" \
+          --draft \
+          --target "release-${{ env.VERSION }}" \
+          --title "Release ${{ env.VERSION }}" \
+          --notes "Changes in this Release
+         - First Change
+         - Second Change"

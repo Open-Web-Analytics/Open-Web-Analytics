@@ -51,7 +51,8 @@ namespace OWA\Module\Base\Classes\Cube;
 class Builder {
 
     /**
-     * Days of raw read before the partition starts.
+     * Days of raw read before the partition starts, for the sessions that have
+     * a row in it (spanSessions()).
      *
      * Covers a session that began the day before: its first event is the
      * landing page and the source of everything stamped from it. Sessions are
@@ -61,7 +62,8 @@ class Builder {
     const LOOKBACK_DAYS = 1;
 
     /**
-     * Days of raw read after the partition ends.
+     * Days of raw read after the partition ends, for the sessions that have a
+     * row in it (spanSessions()).
      *
      * The other side of a session that runs across midnight: without them a
      * day's build saw the session end at midnight, stamped is_exit on its last
@@ -71,6 +73,36 @@ class Builder {
      * day rebuilds this one.
      */
     const LOOKAHEAD_DAYS = 1;
+
+    /**
+     * The shortest time, in seconds from when its last build began, before a
+     * routine run rebuilds today's partition again.
+     *
+     * Today's partition changes on every run, so a routine run rebuilds it
+     * when it is due (nextBuildDue()) rather than whenever it has changed.
+     * Past partitions, named ranges and catch-up are not spaced.
+     */
+    const NEXT_BUILD_FLOOR = 300;
+
+    /**
+     * ...and no sooner than this many times its last build's duration after
+     * that build began, so rebuilding today takes no more than about a tenth
+     * of the time.
+     */
+    const NEXT_BUILD_FACTOR = 10;
+
+    /**
+     * Seconds before it is due that a run still rebuilds today.
+     *
+     * The job runs every five minutes and a build begins some seconds into
+     * its run, so the next run starts a little less than NEXT_BUILD_FLOOR
+     * after the build began. Without this, a floor equal to the job's cadence
+     * would skip every other run.
+     */
+    const NEXT_BUILD_EARLY = 60;
+
+    /** The setting holding the last build's partition, built_at and duration (recordBuild()). */
+    const LAST_BUILD_SETTING = 'cube_last_build';
 
     /** Suffix of the staging table, built and dropped around each swap. */
     const STAGING_SUFFIX = '_rebuild';
@@ -353,6 +385,13 @@ class Builder {
      * row whose stamp is older than its built_at; the session-length margin
      * covers that, since no build within it counts as current.
      *
+     * One statement, three EXISTS tests, evaluated in CASE order and stopping
+     * at the first that decides: a row of the span that arrived later than a
+     * session length before the build; no row of the span that says when it
+     * arrived; a row after the span, in one of its sessions, that arrived
+     * later than a session length before the build. For today's partition the
+     * first test decides, at the first such row it finds.
+     *
      * @param Span $span from partitions()
      * @return bool
      */
@@ -365,38 +404,62 @@ class Builder {
             return false;
         }
 
-        $row = $this->db->get_row( sprintf(
-            'SELECT MAX(r.created_at) AS newest FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s',
-            $this->tables['raw'], (int) $span['start'], (int) $span['less_than'],
-            $this->siteFilter( 'r' ) ) );
-
-        $newest = is_array( $row ) && ! empty( $row['newest'] ) ? (int) $row['newest'] : null;
-
-        if ( $newest === null ) {
-
-            return false;
-        }
+        $start = (int) $span['start'];
+        $end   = (int) $span['less_than'];
 
         /*
-         * ...and the rows after it that continue its sessions: the build reads
-         * them (LOOKAHEAD_DAYS), so one arriving later changes this partition.
-         * Only those -- the next day's other traffic changes nothing here, and
-         * counting it would rebuild yesterday every time today got a row.
+         * The rows after the span that continue its sessions count too: the
+         * build reads them (LOOKAHEAD_DAYS), so one arriving later changes
+         * this partition. Only those -- the next day's other traffic changes
+         * nothing here, and counting it would rebuild yesterday every time
+         * today got a row.
+         *
+         * closedBefore() is "now minus a session length", so a row stamped
+         * after closedBefore( built_at ) was in a session that could still be
+         * open when the build ran.
          */
         $row = $this->db->get_row( sprintf(
-            'SELECT MAX(n.created_at) AS newest FROM %1$s n WHERE n.yyyymmdd >= %3$d AND n.yyyymmdd < %4$d%5$s'
-          . ' AND (n.site_id, n.visitor_id, n.session_id) IN (SELECT r.site_id, r.visitor_id, r.session_id'
-          . ' FROM %1$s r WHERE r.yyyymmdd >= %2$d AND r.yyyymmdd < %3$d%6$s)',
-            $this->tables['raw'], (int) $span['start'], (int) $span['less_than'],
-            $this->lookahead( (int) $span['less_than'] ), $this->siteFilter( 'n' ), $this->siteFilter( 'r' ) ) );
+            'SELECT CASE'
+          . ' WHEN EXISTS (SELECT 1 FROM %1$s r WHERE r.yyyymmdd >= %2$d AND r.yyyymmdd < %3$d%5$s'
+          . ' AND r.created_at > %7$d) THEN 0'
+          . ' WHEN NOT EXISTS (SELECT 1 FROM %1$s r WHERE r.yyyymmdd >= %2$d AND r.yyyymmdd < %3$d%5$s'
+          . ' AND r.created_at IS NOT NULL) THEN 0'
+          . ' WHEN EXISTS (SELECT 1 FROM %1$s n WHERE n.yyyymmdd >= %3$d AND n.yyyymmdd < %4$d%6$s'
+          . ' AND n.created_at > %7$d%8$s) THEN 0'
+          . ' ELSE 1 END AS current',
+            $this->tables['raw'], $start, $end, $this->lookahead( $end ),
+            $this->siteFilter( 'r' ), $this->siteFilter( 'n' ),
+            $this->closedBefore( $built_at ),
+            $this->spanSessions( 'n', $start, $end ) ) );
 
-        if ( is_array( $row ) && ! empty( $row['newest'] ) ) {
+        return is_array( $row ) && isset( $row['current'] ) && (int) $row['current'] === 1;
+    }
 
-            $newest = max( $newest, (int) $row['newest'] );
-        }
+    /**
+     * Restricts a read of raw to the sessions that have a row in a span.
+     *
+     * The session window and the page-neighbour window read LOOKBACK_DAYS
+     * before a span and LOOKAHEAD_DAYS after it, for the sessions that run
+     * across its boundaries, and their output is joined to the span's rows
+     * only. A session with no row in the span adds nothing to the build, so
+     * its rows are kept out of the sort. Every row of the span passes.
+     *
+     * Keyed on the windows' PARTITION BY, so a session is the same set of rows
+     * here as there. A semi-join: the planner can run it as lookups on raw's
+     * session_id index from the span's sessions, or as one materialization of
+     * them probed per row.
+     *
+     * @param string $alias  of raw in the read being restricted
+     * @param int    $start  yyyymmdd, inclusive
+     * @param int    $end    yyyymmdd, exclusive
+     * @return string  SQL, beginning with AND
+     */
+    protected function spanSessions( $alias, $start, $end ) {
 
-        // closedBefore() is "now minus a session length", so this is newest plus one.
-        return $built_at >= $newest + ( $newest - $this->closedBefore( $newest ) );
+        return sprintf(
+            ' AND (%1$s.site_id, %1$s.visitor_id, %1$s.session_id) IN (SELECT ss.site_id, ss.visitor_id,'
+          . ' ss.session_id FROM %2$s ss WHERE ss.yyyymmdd >= %3$d AND ss.yyyymmdd < %4$d%5$s)',
+            $alias, $this->tables['raw'], (int) $start, (int) $end, $this->siteFilter( 'ss' ) );
     }
 
     /**
@@ -501,6 +564,119 @@ class Builder {
         }
 
         return $oldest !== null && $oldest < (int) $from ? $oldest : null;
+    }
+
+    /**
+     * Whether a partition holds today's date.
+     *
+     * @param Span     $span
+     * @param int|null $today yyyymmdd; null for today
+     * @return bool
+     */
+    public static function holdsToday( array $span, $today = null ) {
+
+        $today = $today === null ? (int) date( 'Ymd' ) : (int) $today;
+
+        return (int) $span['start'] <= $today && $today < (int) $span['less_than'];
+    }
+
+    /**
+     * When a build that began at $built_at and took $msec makes the partition
+     * due again: NEXT_BUILD_FACTOR times the duration after it began, and no
+     * sooner than NEXT_BUILD_FLOOR. An unknown duration is the floor.
+     *
+     * @param int      $built_at microseconds
+     * @param int|null $msec     how long that build took
+     * @return int microseconds
+     */
+    public static function dueAt( $built_at, $msec ) {
+
+        $wait = max( self::NEXT_BUILD_FLOOR * 1000000, self::NEXT_BUILD_FACTOR * max( 0, (int) $msec ) * 1000 );
+
+        return (int) $built_at + $wait;
+    }
+
+    /**
+     * Whether a run at $now rebuilds a partition due at $due: never built, or
+     * no more than NEXT_BUILD_EARLY before it is due.
+     *
+     * @param int|null $due microseconds, from nextBuildDue()
+     * @param int      $now microseconds
+     * @return bool
+     */
+    public static function isDue( $due, $now ) {
+
+        return $due === null || (int) $now >= (int) $due - self::NEXT_BUILD_EARLY * 1000000;
+    }
+
+    /**
+     * When a routine run rebuilds this partition next, if it holds today
+     * (holdsToday()); null if it was never built, which is due now.
+     *
+     * @param Span $span from partitions()
+     * @return int|null microseconds
+     */
+    public function nextBuildDue( array $span ) {
+
+        $built_at = $this->builtAt( $span );
+
+        if ( $built_at === null ) {
+
+            return null;
+        }
+
+        return self::dueAt( $built_at, $this->buildMsec( $span, $built_at ) );
+    }
+
+    /**
+     * How long the build that published this partition took, if it was the
+     * last build of this cube; null otherwise.
+     *
+     * One record per Property, of its last build, matched on partition and
+     * built_at: a build of another partition since, or a build that recorded
+     * nothing, leaves the duration unknown, and dueAt() takes the floor.
+     *
+     * @param Span $span
+     * @param int  $built_at from builtAt()
+     * @return int|null milliseconds
+     */
+    public function buildMsec( array $span, $built_at ) {
+
+        $last = \OWA\Core\CoreAPI::getScopedSettingRow(
+            'property', $this->property_id, 'base', self::LAST_BUILD_SETTING );
+
+        if ( ! is_array( $last ) || ! isset( $last['partition'], $last['built_at'], $last['msec'] ) ) {
+
+            return null;
+        }
+
+        if ( (string) $last['partition'] !== (string) $span['name'] || (int) $last['built_at'] !== (int) $built_at ) {
+
+            return null;
+        }
+
+        return (int) $last['msec'];
+    }
+
+    /**
+     * Record a published build: its partition, built_at, and how long it took
+     * from built_at to the swap. One row per Property, replaced by each build.
+     *
+     * A failure is not the build's: the partition is published, and the next
+     * routine run sees an unknown duration and waits the floor.
+     *
+     * @param Span $span
+     * @param int  $built_at microseconds
+     * @param int  $usec     how long the build took
+     * @return void
+     */
+    protected function recordBuild( array $span, $built_at, $usec ) {
+
+        \OWA\Core\CoreAPI::setScopedSetting( 'property', $this->property_id, 'base', self::LAST_BUILD_SETTING, [
+            'partition' => (string) $span['name'],
+            'built_at'  => (int) $built_at,
+            'msec'      => (int) round( max( 0, (int) $usec ) / 1000 ),
+        ] );
     }
 
     /**
@@ -821,6 +997,8 @@ class Builder {
         $this->dropWorkingTables();
 
         $this->advanceLastSeen( $span );
+
+        $this->recordBuild( $span, $built_at, (int) round( microtime( true ) * 1000000 ) - $built_at );
 
         $result['ok']   = true;
         $result['rows'] = $built;
@@ -1210,14 +1388,14 @@ class Builder {
         if ( isset( $required[ Context::SESSION ] ) ) {
 
             $joins .= sprintf( ' JOIN (%s) %s ON %s.w_id = %s.id AND %s.w_yyyymmdd = %s.yyyymmdd',
-                $this->windowedRaw( $lookback, $ahead ), Context::SESSION,
+                $this->windowedRaw( $lookback, $ahead, $start, $end ), Context::SESSION,
                 Context::SESSION, Context::RAW, Context::SESSION, Context::RAW );
         }
 
         if ( isset( $required[ Context::PAGES ] ) ) {
 
             $joins .= sprintf( ' %s (%s) %s ON %s.pg_id = %s.id AND %s.pg_yyyymmdd = %s.yyyymmdd',
-                OWA_SQL_JOIN_LEFT_OUTER, $this->pagesRaw( $lookback, $ahead ), Context::PAGES,
+                OWA_SQL_JOIN_LEFT_OUTER, $this->pagesRaw( $lookback, $ahead, $start, $end ), Context::PAGES,
                 Context::PAGES, Context::RAW, Context::PAGES, Context::RAW );
         }
 
@@ -1267,13 +1445,18 @@ class Builder {
      * It selects the primary key and its own outputs and nothing else. The sort
      * is the cost of this statement, so the width of the rows entering it is
      * what the cost is made of -- selecting every raw column here was 412s at a
-     * million rows against 195s this way.
+     * million rows against 195s this way. For the same reason it reads only
+     * the sessions that have a row in the span (spanSessions()): the days
+     * around the span are read for the sessions running across its
+     * boundaries, not for their other traffic.
      *
-     * @param int $from yyyymmdd, inclusive
-     * @param int $to   yyyymmdd, exclusive
+     * @param int $from  yyyymmdd, inclusive: the span's start less LOOKBACK_DAYS
+     * @param int $to    yyyymmdd, exclusive: the span's end plus LOOKAHEAD_DAYS
+     * @param int $start yyyymmdd, inclusive: the span's start
+     * @param int $end   yyyymmdd, exclusive: the span's end
      * @return string
      */
-    protected function windowedRaw( $from, $to ) {
+    protected function windowedRaw( $from, $to, $start, $end ) {
 
         $columns = [ 'w.id AS w_id', 'w.yyyymmdd AS w_yyyymmdd' ];
 
@@ -1323,7 +1506,7 @@ class Builder {
 
         foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::materializedEventNames() as $name ) {
 
-            $materialized[] = "'" . \OWA\Core\CoreAPI::dbSingleton()->prepare( $name ) . "'";
+            $materialized[] = "'" . $this->db->prepare( $name ) . "'";
         }
 
         $not_materialized = $materialized
@@ -1383,7 +1566,7 @@ class Builder {
          * answer as the build before it.
          */
         return sprintf(
-            'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
+            'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
           . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, COALESCE(w.is_goal_event, 0), w.id '
           . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), '
@@ -1394,7 +1577,8 @@ class Builder {
             $this->tables['raw'],
             (int) $from,
             (int) $to,
-            $this->siteFilter( 'w' )
+            $this->siteFilter( 'w' ),
+            $this->spanSessions( 'w', $start, $end )
         );
     }
 
@@ -1411,25 +1595,29 @@ class Builder {
      * its path is: a page view with no path is still a page view, and must not
      * read as the session's entrance or exit.
      *
-     * Joined only when a step requires Context::PAGES.
+     * Joined only when a step requires Context::PAGES. Reads only the sessions
+     * that have a row in the span, as windowedRaw() does.
      *
-     * @param int $from yyyymmdd, inclusive
-     * @param int $to   yyyymmdd, exclusive
+     * @param int $from  yyyymmdd, inclusive: the span's start less LOOKBACK_DAYS
+     * @param int $to    yyyymmdd, exclusive: the span's end plus LOOKAHEAD_DAYS
+     * @param int $start yyyymmdd, inclusive: the span's start
+     * @param int $end   yyyymmdd, exclusive: the span's end
      * @return string
      */
-    protected function pagesRaw( $from, $to ) {
+    protected function pagesRaw( $from, $to, $start, $end ) {
 
         return sprintf(
             'SELECT p.id AS pg_id, p.yyyymmdd AS pg_yyyymmdd, '
           . 'LAG(p.page_path) OVER pages_w AS prev_path, LAG(1) OVER pages_w AS has_prev, '
           . 'LEAD(p.page_path) OVER pages_w AS next_path, LEAD(1) OVER pages_w AS has_next '
-          . "FROM %s p WHERE p.event_type = 'page_view' AND p.yyyymmdd >= %d AND p.yyyymmdd < %d%s "
+          . "FROM %s p WHERE p.event_type = 'page_view' AND p.yyyymmdd >= %d AND p.yyyymmdd < %d%s%s "
           . 'WINDOW pages_w AS (PARTITION BY p.site_id, p.visitor_id, p.session_id '
           . 'ORDER BY COALESCE(p.event_seq, 0), p.ts, p.id)',
             $this->tables['raw'],
             (int) $from,
             (int) $to,
-            $this->siteFilter( 'p' )
+            $this->siteFilter( 'p' ),
+            $this->spanSessions( 'p', $start, $end )
         );
     }
 

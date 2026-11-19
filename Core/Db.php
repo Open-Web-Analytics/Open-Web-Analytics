@@ -698,11 +698,16 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * @param  string|array{0: string, 1: string} $name a table, or [it, alias]
+     * $bindings are the values of a subselect's placeholders, in order. They
+     * are bound when the FROM clause is generated, so they take their place
+     * between the select list's and the WHERE clause's.
+     *
+     * @param  string|array{0: string, 1: string} $name a table or a subselect, or [it, alias]
      * @param  string $as
+     * @param  Bindings $bindings
      * @return void
      */
-    public function selectFrom($name, $as = '') {
+    public function selectFrom($name, $as = '', array $bindings = []) {
 
         if (is_array($name)) {
             $as = $name[1];
@@ -710,17 +715,18 @@ class Db extends \OWA\Core\Base {
         }
 
         $this->_sqlParams['query_type'] = 'select';
-        $this->_sqlParams['from'][$name] = ['name' => $name, 'as' => $as];
+        $this->_sqlParams['from'][$name] = ['name' => $name, 'as' => $as, 'bindings' => $bindings];
     }
 
     /**
      * @param  string|array{0: string, 1: string} $name
      * @param  string $as
+     * @param  Bindings $bindings
      * @return void
      */
-    public function from( $name, $as = '' ) {
+    public function from( $name, $as = '', array $bindings = [] ) {
 
-        $this->selectFrom( $name, $as );
+        $this->selectFrom( $name, $as, $bindings );
     }
 
     /**
@@ -1215,6 +1221,11 @@ class Db extends \OWA\Core\Base {
             foreach ($params as $k => $v) {
 
                 $from .= $v['name'];
+
+                foreach ( $v['bindings'] ?? [] as $value ) {
+
+                    $this->bindValue( $value );
+                }
 
                 // Add as
                 if (!empty($v['as'])):
@@ -1801,7 +1812,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Days of slack on the lower bound used to prune per-session queries.
      *
-     * See factLowerBound(). Sized empirically, not from a known mechanism.
+     * See factDateRange(). Sized empirically, not from a known mechanism.
      */
     const FACT_LOWER_BOUND_SLACK_DAYS = 30;
 

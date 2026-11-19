@@ -319,7 +319,7 @@ if ( ! defined( 'OWA_SQL_DIVISION' ) ) { define('OWA_SQL_DIVISION', '(%s / %s)')
 // holding a mix with nothing to reconcile them.
 //
 // A table that wants better says so per-entity rather than per-installation.
-// See Entity::getTableCharacterEncoding(): that is how v2 tables can be created
+// See Entity::setCharacterEncoding(): that is how v2 tables can be created
 // as utf8mb4 alongside v1 tables that stay as they are, in the same database.
 if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTER_ENCODING_UTF8', 'utf8'); }
 

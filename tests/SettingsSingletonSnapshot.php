@@ -52,6 +52,19 @@ trait SettingsSingletonSnapshot
         'is_dirty',
     ];
 
+    /**
+     * Private state, read and restored by reflection: the registry (a constant
+     * marks its key static there), which keys are pending or were looked up,
+     * and the OWA_ROLE_CAPABILITIES problems.
+     */
+    private static $snapshot_private_properties = [
+        'registry',
+        'pending',
+        'loaded',
+        'loaded_at_boot',
+        'role_capability_problems',
+    ];
+
     /** @var array|null the effective settings held INSIDE the config container */
     private $effective_snapshot = null;
 
@@ -63,6 +76,10 @@ trait SettingsSingletonSnapshot
 
         foreach ( self::$snapshot_properties as $prop ) {
             $this->settings_snapshot[ $prop ] = $c->$prop;
+        }
+
+        foreach ( self::$snapshot_private_properties as $prop ) {
+            $this->settings_snapshot[ $prop ] = ( new ReflectionProperty( $c, $prop ) )->getValue( $c );
         }
 
         // The one that is not a plain value. Copying the property only copies
@@ -83,6 +100,10 @@ trait SettingsSingletonSnapshot
             }
 
             $c->$prop = $this->settings_snapshot[ $prop ];
+        }
+
+        foreach ( self::$snapshot_private_properties as $prop ) {
+            ( new ReflectionProperty( $c, $prop ) )->setValue( $c, $this->settings_snapshot[ $prop ] );
         }
 
         if ( $c->config && $this->effective_snapshot !== null ) {

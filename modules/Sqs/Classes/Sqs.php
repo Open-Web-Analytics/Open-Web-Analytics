@@ -164,9 +164,13 @@ final class Sqs {
      */
     public static function region() {
 
-        if ( defined( 'OWA_SQS_REGION' ) && OWA_SQS_REGION ) {
+        // OWA_SQS_REGION is the setting's config_constant: defined, it is the setting.
+        $region   = (string) \OWA\Core\CoreAPI::getSetting( 'sqs', 'region' );
+        $governed = \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'sqs', 'region' ) !== '';
 
-            return (string) OWA_SQS_REGION;
+        if ( $governed && $region !== '' ) {
+
+            return $region;
         }
 
         $from_url = self::regionFromUrl( (string) self::configuredUrl() );
@@ -176,11 +180,9 @@ final class Sqs {
             return $from_url;
         }
 
-        $region = \OWA\Core\CoreAPI::getSetting( 'sqs', 'region' );
+        if ( $region !== '' ) {
 
-        if ( $region ) {
-
-            return (string) $region;
+            return $region;
         }
 
         return getenv( 'AWS_REGION' ) ?: ( getenv( 'AWS_DEFAULT_REGION' ) ?: null );

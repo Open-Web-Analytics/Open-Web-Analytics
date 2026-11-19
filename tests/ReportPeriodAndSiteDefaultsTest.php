@@ -235,7 +235,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        foreach ( [ 'garbage', 'all_time', 'last_hour' ] as $bad ) {
+        // gar"bage: the message quotes the value as sent; the banner escapes it.
+        foreach ( [ 'garbage', 'all_time', 'last_hour', 'gar"bage' ] as $bad ) {
 
             $data = (array) ( new \OWA\Module\Base\Controller\Report(
                 [ 'reportId' => 'pages', 'period' => $bad ] ) )->doAction();

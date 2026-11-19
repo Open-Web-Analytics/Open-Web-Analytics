@@ -2082,7 +2082,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Matched by name rather than per module because core cannot name the
       * modules: the directory-to-runtime-name mapping is lossy (see
-      * buildRegistry()). `name IN (...)` needs no module names at all, and is
+      * Module::settingsRegistry()). `name IN (...)` needs no module names at all, and is
       * exactly right -- these are eager wherever they occur, including for a
       * third-party module core has never heard of.
       *
@@ -3221,42 +3221,25 @@ namespace OWA\Module\Base\Classes;
     }
 
     /**
-     * sets and checks the cookie domain setting
+     * Sets base.cookie_domain, the domain of the cookies OWA's server sets
+     * (sign-in, report state): $domain, or the request's host, as given --
+     * a www. host keeps its www. Not set for a name with no dot, such as
+     * localhost, which a browser refuses as a cookie domain.
      *
      * @param mixed $domain
      * @return void
      */
     public function setCookieDomain ($domain = '') {
 
-        $explicit = false;
-
         if ( ! $domain ) {
             $domain = $_SERVER['HTTP_HOST'];
-            $explicit = true;
         }
 
         // strip port, add leading period etc.
         $domain = \OWA\Core\Lib::sanitizeCookieDomain($domain);
 
-        // Set the cookie domain only if the domain name is a Fully qualified domain name (FQDN)
-        // i.e. avoid attempts to set cookie domain for e.g. "localhost" as that is not valid
-
-        //check for two dots in the domain name
-        $twodots = substr_count($domain, '.');
-
-        if ( $twodots >= 2 ) {
-
-            // unless www.domain.com is passed explicitly
-            // strip the www from the domain.
-            if ( ! $explicit ) {
-                $part = substr( $domain, 0, 5 );
-                if ($part === '.www.') {
-                    //strip .www.
-                    $domain = substr( $domain, 5);
-                    // add back the leading period
-                    $domain = '.'.$domain;
-                }
-            }
+        // Two dots: the leading one sanitizeCookieDomain() adds, and one in the name.
+        if ( substr_count( $domain, '.' ) >= 2 ) {
 
             $this->set('base','cookie_domain', $domain);
             \OWA\Core\CoreAPI::debug("Setting cookie domain to $domain");
