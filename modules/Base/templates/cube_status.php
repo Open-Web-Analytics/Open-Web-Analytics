@@ -46,7 +46,7 @@ require_once __DIR__ . '/cube_status_badge.php';
         }
     ?>
     <tr>
-        <td><?php echo owa_cube_status_badge( $owa_cube['level'] ); ?></td>
+        <td><?php echo owa_cube_status_badge( $owa_cube['level'] ); /* trusted: escapes its text */ ?></td>
         <td>
             <?php $view->out( $owa_cube['name'] ); ?><br>
             <code><?php $view->out( $owa_cube['table'] ); ?></code>

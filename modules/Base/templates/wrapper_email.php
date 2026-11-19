@@ -1,4 +1,4 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 -- Open Web Analytics -------------------------------
 
-<?php echo $view->body;?>
+<?php echo $view->body; /* trusted: a rendered template */ ?>

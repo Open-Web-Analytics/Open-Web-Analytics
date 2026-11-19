@@ -90,7 +90,7 @@ final class MobileMarkupTest extends TestCase
 
     public function testTheLoginFormNamesWhatAPasswordManagerFills(): void
     {
-        $xp = $this->render( 'login_form.php', [ 'user_id' => '', 'go' => '' ] );
+        $xp = $this->render( 'login_form.php', [ 'user_id' => '', 'go' => '', 'login_nonce' => '' ] );
 
         $this->assertSame(
             [ 'autocomplete' => 'username', 'autocapitalize' => 'none', 'autocorrect' => 'off' ],

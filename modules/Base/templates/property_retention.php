@@ -12,7 +12,7 @@
         <?php echo $view->createNonceFormField( 'base.propertyRetentionUpdate' );?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
         <?php
-            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyRetention' ),
                 'property', (string) ( $view->property['id'] ?? '' ) );
         ?>

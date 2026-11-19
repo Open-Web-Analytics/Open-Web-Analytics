@@ -620,6 +620,13 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
+     * What isUser() checks a typed password against when no user has the
+     * name: a hash of a random string, at PASSWORD_DEFAULT's cost on PHP 8.2
+     * and 8.3, that nothing matches.
+     */
+    const NO_USER_HASH = '$2y$10$pn9y00Tf2hstPR75joZSc.UtQ8AUsBk9pJhtMQjTE8Uv9lhLQpohS';
+
+    /**
      * The values the old User::generateRandomPassword() gave an account created
      * without a password (a hash prefix). A login with one is refused whatever
      * the stored hash says; the account's owner sets a password through the
@@ -651,6 +658,13 @@ class Auth extends \OWA\Core\Base {
         $this->getUser();
 
         if ( $this->credentials['user_id'] !== $this->u->get('user_id') ) {
+
+            // A typed password is checked against a hash all the same, so an
+            // unknown user name answers in the time a wrong password does.
+            if ( isset( $this->credentials['new_password'] ) ) {
+
+                $this->passwordMatches( $this->credentials['new_password'], self::NO_USER_HASH );
+            }
 
             $this->_is_user = false;
             return false;
@@ -701,7 +715,7 @@ class Auth extends \OWA\Core\Base {
      * @param  string $stored
      * @return bool
      */
-    private function passwordMatches( $typed, $stored ) {
+    protected function passwordMatches( $typed, $stored ) {
 
         if ( ! is_string( $typed ) || $typed === '' || self::isLegacyGeneratedPassword( $typed ) ) {
 

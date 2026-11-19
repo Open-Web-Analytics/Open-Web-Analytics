@@ -29,6 +29,11 @@ final class SanitizeStripHtmlTest extends TestCase
         );
     }
 
+    public function testAListedTagRebuiltByAStripIsStripped(): void
+    {
+        $this->assertSame( 'x', Sanitize::stripHtml( '<scr<script>ipt>x', [ 'script' ] ) );
+    }
+
     public function testATagNameIsNotAPattern(): void
     {
         // A name with regex metacharacters matches itself literally, and does
@@ -83,6 +88,10 @@ final class SanitizeStripHtmlTest extends TestCase
             'a declaration'         => [ '<!DOCTYPE html>a', 'a' ],
             'a processing tag'      => [ 'a<?php echo 1; ?>b', 'ab' ],
             'a tag after a compare' => [ 'pageViews<5<script>x', 'pageViews<5x' ],
+            // Stripping the inner tag joins the text either side into a tag.
+            'tags rebuilt by a strip'  => [ '<<a>/title><<a>script>alert(1)<<a>/script>', 'alert(1)' ],
+            'a tag rebuilt unclosed'   => [ '<</a>img src=x onerror=alert(1)>', '' ],
+            'a tag nested twice'       => [ '<<<a>a>script>x', 'x' ],
         ];
     }
 }

@@ -62,7 +62,7 @@
                 <?php endforeach;?>
             </nav>
             <?php endif;?>
-            <?php echo $view->subview;?>
+            <?php echo $view->subview; /* trusted: a rendered template */ ?>
             </main>
             <?php echo \OWA\Core\View::FOOTER_SLOT; // the footer goes here, not across the nav ?>
             </div>

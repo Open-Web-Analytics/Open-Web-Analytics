@@ -276,8 +276,9 @@ OWA.kpiBox.prototype = {
              */
             var html = OWA.util.sprintf(
                 '<div id ="%s" class="owa_metricInfobox%s" data-metric="%s" data-ui="kpi:%s" style="--owa-kpi-min-width:%s;--owa-kpi-width:%s">',
-                item.dom_id, width === 'auto' ? '' : ' owa_metricInfoboxFixed', item.name,
-                OWA.util.escapeHtml( item.name ), this.options.minWidth, width );
+                OWA.util.escapeHtml( item.dom_id ), width === 'auto' ? '' : ' owa_metricInfoboxFixed',
+                OWA.util.escapeHtml( item.name ), OWA.util.escapeHtml( item.name ),
+                OWA.util.escapeHtml( this.options.minWidth ), OWA.util.escapeHtml( width ) );
             var description = metricDescription( resultSet, item.name );
 
             // A name with a description is the button that opens it

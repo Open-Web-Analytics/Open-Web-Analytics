@@ -19,13 +19,13 @@
 <meta name="theme-color" content="#ffffff">
 <?php if(!empty($view->css)): ?>
 <?php foreach ($view->css as $cssfile): ?>
-<LINK REL=StyleSheet HREF="<?php echo $cssfile['url'];?>" TYPE="text/css">
+<LINK REL=StyleSheet HREF="<?php $view->out( $cssfile['url'] );?>" TYPE="text/css">
 <?php endforeach; ?>
 <?php endif;?>
 
 <?php if(!empty($view->js)): ?>
 <?php foreach ($view->js as $jsfile): ?>
-<script src="<?php echo $jsfile['url'];?>"></script>
+<script src="<?php $view->out( $jsfile['url'] );?>"></script>
 <?php endforeach; ?>
 <?php endif;?>
 

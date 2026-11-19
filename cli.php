@@ -78,6 +78,11 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
             $params['cmd'], implode(', ', $undeclared)));
         $exit_code = 2;
     } else {
+        // Weak secrets do not stop a command (cmd=reset-secrets fixes them), but are said.
+        $warning = \OWA\Core\ServerRole::secretsWarning($params['cmd']);
+        if ($warning !== null) {
+            fwrite(STDERR, 'OWA: ' . $warning . "\n");
+        }
         $params['do'] = $cmd;
         echo $owa->handleRequest($params);
         $exit_code = \OWA\Core\Controller\Cli::$exit_code;
