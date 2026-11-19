@@ -139,4 +139,31 @@ final class TranslatedDataTest extends TestCase
         $this->assertSame('Ja', $rsm->booleanFormatter(1));
         $this->assertNull($rsm->numberFormatter(null));
     }
+
+    /** The label tables of goals, app passwords, comparisons and the environment check. */
+    public function testTheGoalAndSettingsTablesAreTranslatedWhereShown(): void
+    {
+        Strings::useTranslations([
+            'User agent'                                         => 'Benutzeragent',
+            'The tax on the purchase, in minor units of its currency.' => 'Die Steuer.',
+            'Exactly matching'                                   => 'Genau',
+            'Read only'                                          => 'Nur lesen',
+            'Previous year'                                      => 'Vorjahr',
+            'Compressing and reading session recordings.'        => 'Aufnahmen packen.',
+        ]);
+
+        $this->assertSame('Benutzeragent', \OWA\Module\Base\Classes\GoalVocabulary::label('raw_ua'));
+        $this->assertSame('Die Steuer.', \OWA\Module\Base\Classes\GoalVocabulary::description('tax'));
+        $this->assertSame('Genau', \OWA\Module\Base\Entity\GoalEventDefinition::operators()['exact']);
+        $this->assertSame('Nur lesen', \OWA\Module\Base\Classes\AppPasswords::scopes()['read']);
+
+        $period = new \OWA\Module\Base\Classes\TimePeriod();
+        $period->set('last_28_days');
+        $compares = array_column(\OWA\Core\ReportController::periodPickerConfig($period, [])['compares'], 'label', 'key');
+
+        $this->assertSame('Vorjahr', $compares['previous_year']);
+
+        $this->assertStringStartsWith('Aufnahmen packen.',
+            \OWA\Module\Base\Classes\EnvironmentCheck::extension('zlib', false)['msg']);
+    }
 }

@@ -16,7 +16,7 @@ class UsersResetPassword extends \OWA\Core\View\Mail {
         $this->t->set_template('wrapper_email.php');
         $this->body->set_template('users_reset_password_email.php');
         $this->body->set('key', $this->get('key'));
-        $this->setMailSubject('Your New OWA Password');
+        $this->setMailSubject( \OWA\Core\CoreAPI::t( 'Your New OWA Password' ) );
         $this->addMailToAddress($this->get('email_address'));
     }
 }

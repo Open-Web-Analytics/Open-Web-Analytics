@@ -315,7 +315,12 @@ class GoalVocabulary {
 
         $column = (string) $column;
 
-        return self::$registryDescriptions[ $column ] ?? self::DESCRIPTIONS[ $column ] ?? '';
+        if ( isset( self::$registryDescriptions[ $column ] ) ) {
+
+            return self::$registryDescriptions[ $column ];
+        }
+
+        return isset( self::DESCRIPTIONS[ $column ] ) ? \OWA\Core\Strings::translate( self::DESCRIPTIONS[ $column ] ) : '';
     }
 
     /**
@@ -330,7 +335,7 @@ class GoalVocabulary {
 
         if ( isset( self::LABELS[ $column ] ) ) {
 
-            return self::LABELS[ $column ];
+            return \OWA\Core\Strings::translate( self::LABELS[ $column ] );
         }
 
         return ucfirst( str_replace( '_', ' ', $column ) );
