@@ -141,7 +141,7 @@ describe('a report of computed rows (a module\'s list)', () => {
         $('#list-grid a').trigger('click');
 
         expect(window.open).toHaveBeenCalledWith('https://owa.test/play', 'A player',
-            'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes,height=600,width=800');
+            'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes,height=600,width=800,noopener');
         delete OWA.items.listConstraints;
     });
 

@@ -58,13 +58,25 @@ class ProfileDomains {
      * scheme://host[:port] of a url that is http or https and on one of the
      * domains; '' otherwise.
      *
+     * A url with a backslash or a control character is ''. A browser reads
+     * those differently from parse_url(): it takes a backslash for a slash
+     * and drops tabs and newlines, so the host it opens is not the one
+     * checked here.
+     *
      * @param  string   $url
      * @param  string[] $domains from of()
      * @return string
      */
     public static function originOf( $url, array $domains ) {
 
-        $parts  = parse_url( trim( (string) $url ) );
+        $url = trim( (string) $url );
+
+        if ( preg_match( '/[\\\\\x00-\x1f\x7f]/', $url ) ) {
+
+            return '';
+        }
+
+        $parts  = parse_url( $url );
         $scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
         $host   = strtolower( (string) ( $parts['host'] ?? '' ) );
 

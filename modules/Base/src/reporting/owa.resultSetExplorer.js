@@ -1425,8 +1425,11 @@ OWA.dataGrid.formatters = {
             }
         }
 
-        // A web page only: the URL is what a beacon claimed.
-        if ( ! data || ! data.url || ! data.overlay || ! /^https?:\/\//i.test( String( data.url ) ) ) {
+        // A web page only: the URL is what a beacon claimed. One with a
+        // backslash or a control character opens a host other than the one
+        // the server checked (ProfileDomains::originOf()).
+        if ( ! data || ! data.url || ! data.overlay || ! /^https?:\/\//i.test( String( data.url ) )
+             || /[\\\u0000-\u001f\u007f]/.test( String( data.url ) ) ) {
             return '';
         }
 

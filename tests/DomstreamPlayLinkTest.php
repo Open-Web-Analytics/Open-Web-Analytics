@@ -77,6 +77,8 @@ final class DomstreamPlayLinkTest extends TestCase
             'a host ending like it' => [ 'https://badexample.test/pricing' ],
             'the domain as a path'  => [ 'https://elsewhere.test/example.test' ],
             'the domain as a user'  => [ 'https://example.test@elsewhere.test/' ],
+            'a backslash before it' => [ 'https://elsewhere.test\\@example.test/' ],
+            'a tab in the host'     => [ "https://elsewhere.te\tst@example.test/" ],
         ];
     }
 
