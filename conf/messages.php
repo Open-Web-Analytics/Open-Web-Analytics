@@ -128,8 +128,10 @@ $_owa_messages = [
     // and reintroduce the same class of bug from the other end.
     3310 => ['headline' => 'Error', 'message' => 'Password is required.'],
     3312 => ['headline' => 'Error', 'message' => 'E-mail Address is required.'],
-    // Controller::secretsAction(): %s is the constants' names.
+    // Controller::secretsAction(): 3313 for the error log and the CLI, %s is
+    // the constants' names; 3314 for a web page or a REST response.
     3313 => ['headline' => 'Error', 'message' => 'OWA will not run until owa-config.php sets %s to at least 32 characters, not the owa-config-dist.php placeholder. Run php cli.php cmd=reset-secrets to write new values, or set each to 64 random hex characters (php -r "echo bin2hex(random_bytes(32));").'],
+    3314 => ['headline' => 'Error', 'message' => 'OWA\'s configuration needs attention. See OWA\'s error log, or run php cli.php cmd=reset-secrets on the server.'],
     3311 => ['headline' => 'Error', 'message' => 'These updates must be applied using the command line interface (CLI). Run <code>\'/path/to/php cli.php cmd=update\'</code> from your server\'s command shell to apply these updates. For more information on updating see the install/update page on the wiki.'],
 
     // Graph related
