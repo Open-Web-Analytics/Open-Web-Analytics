@@ -1634,10 +1634,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * A later page view of the first session refers from the site's own landing
-     * page. That referrer is not evidence of how the visitor arrived: a row
-     * written from it read as direct, and the tagged landing, arriving after it
-     * out of order, was ignored.
+     * Only the landing writes the acquisition. A later page view of the first
+     * session refers from the site's own landing page: a row written from it
+     * read as direct, and the tagged landing, arriving after it out of order,
+     * was ignored.
      */
     public function testANonLandingEventWithAnInternalReferrerWritesNoRow(): void
     {
@@ -1651,6 +1651,30 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
         $this->assertNull($rows['page_view']['referer_host'], 'the site is not its own referrer');
+
+        $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame(0, (int) $count['n']);
+    }
+
+    /**
+     * Nor does a later event with an external referrer, a visitor coming back
+     * mid-session from another site: that is not how they arrived.
+     */
+    public function testANonLandingEventWithAnExternalReferrerWritesNoRow(): void
+    {
+        $rows = $this->firePageView([
+            'page_url'               => 'https://owa-test-site/v2/third-page',
+            'page_location'          => 'https://owa-test-site/v2/third-page',
+            'HTTP_REFERER'           => 'https://www.example.net/forum/thread',
+            'is_new_session_start'   => false,
+            'is_new_visitor_created' => false,
+        ]);
+
+        $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
+        $this->assertSame('www.example.net', $rows['page_view']['referer_host']);
 
         $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',

@@ -1041,28 +1041,23 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * Insert-if-absent into the visitor store, for a visitor's first session.
+     * Insert-if-absent into the visitor store, from the landing of a visitor's
+     * first session.
      *
-     * ANY EVENT OF THAT SESSION MAY WRITE IT, not only the one that raised
-     * first_visit. A session cannot change its attribution part-way -- new tags
-     * start a new session -- so every event of it resolves the same
-     * acquisition, and whichever lands first writes the row while the rest are
-     * no-ops. Losing one beacon therefore does not cost the acquisition, and
-     * the failure mode stays `absent then present` rather than `wrong then
-     * corrected`.
+     * ONLY THE LANDING WRITES IT. The tags ride the landing beacon alone (the
+     * session's first event, event_seq 1), and a later event's referrer is the
+     * site's own page or a mid-session return, neither of which says how the
+     * visitor arrived. Written from a later event, the row read as direct and
+     * blocked the tagged landing when beacons arrived out of order. A landing
+     * that never arrives leaves no row, and the build stamps its sentinel.
      *
      * A VISITOR WITH NO KNOWN ACQUISITION GETS NO ROW. A placeholder would be
      * found present when the real first_visit arrived late on a queue drain and
-     * would block the real value permanently and silently; a build writes its
-     * sentinel from the acquisition being missing instead.
+     * would block the real value permanently and silently.
      *
-     * DIRECT IS KNOWN, AND ONLY THE LANDING CAN SAY IT. The tags ride the
-     * landing beacon alone, so a later event of the first session with no tags
-     * and no external referrer says nothing about how the visitor arrived -- the landing
-     * it followed may have been a tagged campaign, still in a queue. The landing
-     * itself arriving with neither is a direct visit, and it is written as one:
-     * an acquisition with nothing in it and acq_ts set, which the build reads as
-     * direct (Cube\SourceStep) rather than as the sentinel.
+     * A LANDING WITH NEITHER TAGS NOR A REFERRER IS DIRECT, and is written as
+     * one: an acquisition with nothing in it and acq_ts set, which the build
+     * reads as direct (Cube\SourceStep) rather than as the sentinel.
      *
      * @param object               $event
      * @param array<string, mixed> $row     the primary row, already built
@@ -1071,14 +1066,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function writeVisitorAcquisition( $event, $row, $landing = false ) {
 
-        /*
-         * prior_sessions == 0: ANY event of the first session may write this row,
-         * and the count rides every beacon, so losing one still leaves the rest able
-         * to write the acquisition.
-         */
-        $is_first_session = (string) $event->get( 'num_prior_sessions' ) === '0';
-
-        if ( ! $is_first_session ) {
+        if ( ! $landing || (string) $event->get( 'num_prior_sessions' ) !== '0' ) {
 
             return true;
         }
@@ -1092,21 +1080,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_referer_url'  => $row['referer_url'],
             'acq_referer_host' => $row['referer_host'],
         ];
-
-        /*
-         * Nothing to stamp and not the landing: no row. See above. The evidence
-         * is the tags and the referring host, not the referrer URL: a later
-         * page view's referrer is the site's own previous page, whose host
-         * deriveRefererHost() empties, and a row written from it would read as
-         * direct and block the tagged landing still on its way.
-         */
-        $evidence = array_diff_key( $acquisition, [ 'acq_referer_url' => true ] );
-
-        if ( ! $landing
-             && ! array_filter( $evidence, function ( $v ) { return $v !== null && $v !== ''; } ) ) {
-
-            return true;
-        }
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
 
