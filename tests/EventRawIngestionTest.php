@@ -1614,6 +1614,76 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A tagged landing with no referrer, as from an email client that sends
+     * none: the tags are the acquisition.
+     */
+    public function testATaggedLandingWithNoReferrerWritesItsTags(): void
+    {
+        $rows = $this->firePageView([
+            'HTTP_REFERER' => '',
+        ]);
+
+        $this->assertArrayHasKey('first_visit', $rows, 'the fixture is a landing');
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame('spring', $row['acq_campaign'] ?? null);
+        $this->assertNull($row['acq_referer_host']);
+    }
+
+    /**
+     * Only the landing writes the acquisition. A later page view of the first
+     * session refers from the site's own landing page: a row written from it
+     * read as direct, and the tagged landing, arriving after it out of order,
+     * was ignored.
+     */
+    public function testANonLandingEventWithAnInternalReferrerWritesNoRow(): void
+    {
+        $rows = $this->firePageView([
+            'page_url'               => 'https://owa-test-site/v2/second-page',
+            'page_location'          => 'https://owa-test-site/v2/second-page',
+            'HTTP_REFERER'           => 'https://owa-test-site/v2/landing',
+            'is_new_session_start'   => false,
+            'is_new_visitor_created' => false,
+        ]);
+
+        $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
+        $this->assertNull($rows['page_view']['referer_host'], 'the site is not its own referrer');
+
+        $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame(0, (int) $count['n']);
+    }
+
+    /**
+     * Nor does a later event with an external referrer, a visitor coming back
+     * mid-session from another site: that is not how they arrived.
+     */
+    public function testANonLandingEventWithAnExternalReferrerWritesNoRow(): void
+    {
+        $rows = $this->firePageView([
+            'page_url'               => 'https://owa-test-site/v2/third-page',
+            'page_location'          => 'https://owa-test-site/v2/third-page',
+            'HTTP_REFERER'           => 'https://www.example.net/forum/thread',
+            'is_new_session_start'   => false,
+            'is_new_visitor_created' => false,
+        ]);
+
+        $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
+        $this->assertSame('www.example.net', $rows['page_view']['referer_host']);
+
+        $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame(0, (int) $count['n']);
+    }
+
+    /**
      * An `eps_` property lands in params, by name, with the prefix stripped.
      *
      * The prefix is how the beacon says which scope a value belongs to, so this
