@@ -122,6 +122,8 @@ return [
         'configuration_id' => [ 'default' => '1', 'internal' => true ],
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
         'cookie_persistence' => [ 'config_constant' => 'OWA_COOKIE_PERSISTENCE', 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ],
+        // A Property's last cube build: partition, built_at and milliseconds (Cube\Builder::recordBuild()). No screen edits it.
+        'cube_last_build' => [ 'default' => [], 'storable' => true, 'internal' => true, 'scopes' => [ 'property' ] ],
         'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
         'data_dir' => [ 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [

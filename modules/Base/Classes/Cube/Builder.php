@@ -74,6 +74,36 @@ class Builder {
      */
     const LOOKAHEAD_DAYS = 1;
 
+    /**
+     * The shortest time, in seconds from when its last build began, before a
+     * routine run rebuilds today's partition again.
+     *
+     * Today's partition changes on every run, so a routine run rebuilds it
+     * when it is due (nextBuildDue()) rather than whenever it has changed.
+     * Past partitions, named ranges and catch-up are not spaced.
+     */
+    const NEXT_BUILD_FLOOR = 300;
+
+    /**
+     * ...and no sooner than this many times its last build's duration after
+     * that build began, so rebuilding today takes no more than about a tenth
+     * of the time.
+     */
+    const NEXT_BUILD_FACTOR = 10;
+
+    /**
+     * Seconds before it is due that a run still rebuilds today.
+     *
+     * The job runs every five minutes and a build begins some seconds into
+     * its run, so the next run starts a little less than NEXT_BUILD_FLOOR
+     * after the build began. Without this, a floor equal to the job's cadence
+     * would skip every other run.
+     */
+    const NEXT_BUILD_EARLY = 60;
+
+    /** The setting holding the last build's partition, built_at and duration (recordBuild()). */
+    const LAST_BUILD_SETTING = 'cube_last_build';
+
     /** Suffix of the staging table, built and dropped around each swap. */
     const STAGING_SUFFIX = '_rebuild';
 
@@ -537,6 +567,119 @@ class Builder {
     }
 
     /**
+     * Whether a partition holds today's date.
+     *
+     * @param Span     $span
+     * @param int|null $today yyyymmdd; null for today
+     * @return bool
+     */
+    public static function holdsToday( array $span, $today = null ) {
+
+        $today = $today === null ? (int) date( 'Ymd' ) : (int) $today;
+
+        return (int) $span['start'] <= $today && $today < (int) $span['less_than'];
+    }
+
+    /**
+     * When a build that began at $built_at and took $msec makes the partition
+     * due again: NEXT_BUILD_FACTOR times the duration after it began, and no
+     * sooner than NEXT_BUILD_FLOOR. An unknown duration is the floor.
+     *
+     * @param int      $built_at microseconds
+     * @param int|null $msec     how long that build took
+     * @return int microseconds
+     */
+    public static function dueAt( $built_at, $msec ) {
+
+        $wait = max( self::NEXT_BUILD_FLOOR * 1000000, self::NEXT_BUILD_FACTOR * max( 0, (int) $msec ) * 1000 );
+
+        return (int) $built_at + $wait;
+    }
+
+    /**
+     * Whether a run at $now rebuilds a partition due at $due: never built, or
+     * no more than NEXT_BUILD_EARLY before it is due.
+     *
+     * @param int|null $due microseconds, from nextBuildDue()
+     * @param int      $now microseconds
+     * @return bool
+     */
+    public static function isDue( $due, $now ) {
+
+        return $due === null || (int) $now >= (int) $due - self::NEXT_BUILD_EARLY * 1000000;
+    }
+
+    /**
+     * When a routine run rebuilds this partition next, if it holds today
+     * (holdsToday()); null if it was never built, which is due now.
+     *
+     * @param Span $span from partitions()
+     * @return int|null microseconds
+     */
+    public function nextBuildDue( array $span ) {
+
+        $built_at = $this->builtAt( $span );
+
+        if ( $built_at === null ) {
+
+            return null;
+        }
+
+        return self::dueAt( $built_at, $this->buildMsec( $span, $built_at ) );
+    }
+
+    /**
+     * How long the build that published this partition took, if it was the
+     * last build of this cube; null otherwise.
+     *
+     * One record per Property, of its last build, matched on partition and
+     * built_at: a build of another partition since, or a build that recorded
+     * nothing, leaves the duration unknown, and dueAt() takes the floor.
+     *
+     * @param Span $span
+     * @param int  $built_at from builtAt()
+     * @return int|null milliseconds
+     */
+    public function buildMsec( array $span, $built_at ) {
+
+        $last = \OWA\Core\CoreAPI::getScopedSettingRow(
+            'property', $this->property_id, 'base', self::LAST_BUILD_SETTING );
+
+        if ( ! is_array( $last ) || ! isset( $last['partition'], $last['built_at'], $last['msec'] ) ) {
+
+            return null;
+        }
+
+        if ( (string) $last['partition'] !== (string) $span['name'] || (int) $last['built_at'] !== (int) $built_at ) {
+
+            return null;
+        }
+
+        return (int) $last['msec'];
+    }
+
+    /**
+     * Record a published build: its partition, built_at, and how long it took
+     * from built_at to the swap. One row per Property, replaced by each build.
+     *
+     * A failure is not the build's: the partition is published, and the next
+     * routine run sees an unknown duration and waits the floor.
+     *
+     * @param Span $span
+     * @param int  $built_at microseconds
+     * @param int  $usec     how long the build took
+     * @return void
+     */
+    protected function recordBuild( array $span, $built_at, $usec ) {
+
+        \OWA\Core\CoreAPI::setScopedSetting( 'property', $this->property_id, 'base', self::LAST_BUILD_SETTING, [
+            'partition' => (string) $span['name'],
+            'built_at'  => (int) $built_at,
+            'msec'      => (int) round( max( 0, (int) $usec ) / 1000 ),
+        ] );
+    }
+
+    /**
      * What each step did on the last build.
      *
      * @return list<StepAccount>
@@ -854,6 +997,8 @@ class Builder {
         $this->dropWorkingTables();
 
         $this->advanceLastSeen( $span );
+
+        $this->recordBuild( $span, $built_at, (int) round( microtime( true ) * 1000000 ) - $built_at );
 
         $result['ok']   = true;
         $result['rows'] = $built;
