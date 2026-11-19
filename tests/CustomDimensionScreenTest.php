@@ -45,7 +45,7 @@ final class CustomDimensionScreenTest extends TestCase
         return $names;
     }
 
-    /** Every error message a validator was given. */
+    /** The error messages the controller's validations produce when run. */
     private function validationMessages( $controller ): string
     {
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
@@ -55,15 +55,9 @@ final class CustomDimensionScreenTest extends TestCase
             return '';
         }
 
-        $property = new \ReflectionProperty( $validator, 'validations' );
+        $validator->doValidations();
 
-        $messages = [];
-
-        foreach ( (array) $property->getValue( $validator ) as $validation ) {
-            $messages[] = $validation['conf']['errorMsg'] ?? '';
-        }
-
-        return implode( ' | ', $messages );
+        return implode( ' | ', (array) $validator->getErrorMsgs() );
     }
 
     public function testTheScreensAreRegisteredWhereTheNavPointsThem(): void
@@ -174,8 +168,11 @@ final class CustomDimensionScreenTest extends TestCase
         $controller->validate();
 
         $messages = $this->validationMessages( $controller );
+        $refusal  = \OWA\Module\Base\Classes\Cube\Dimensions::refusalFor(
+            (string) self::PROPERTY, ['key' => 'my.key', 'scope' => 'event', 'type' => ''] );
 
-        $this->assertNotSame( '', $messages );
+        $this->assertNotSame( '', $refusal, 'my.key must be refused, or this test shows nothing' );
+        $this->assertStringContainsString( $refusal, $messages );
         $this->assertStringNotContainsStringIgnoringCase( 'could not save', $messages );
     }
 

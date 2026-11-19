@@ -90,6 +90,29 @@ final class TimePeriodTest extends TestCase
         }
     }
 
+    /**
+     * set() refuses a period it has no dates for, with the message a request
+     * naming it gets, rather than handing Date '' for a timestamp.
+     */
+    public function testSetRefusesAnUnknownPeriod()
+    {
+        foreach (['all_time', 'garbage'] as $name) {
+            $tp = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+
+            try {
+                $tp->set($name);
+                $this->fail("set('$name') was accepted");
+            } catch (\InvalidArgumentException $e) {
+                $this->assertSame('"' . $name . '" is not a reporting period.', $e->getMessage());
+            }
+        }
+
+        $tp = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+        $tp->set('last_seven_days');
+
+        $this->assertSame('last_seven_days', $tp->get());
+    }
+
     /** A range with no dates falls back to today rather than to nothing. */
     public function testAnEmptyDateRangeCoversToday()
     {
