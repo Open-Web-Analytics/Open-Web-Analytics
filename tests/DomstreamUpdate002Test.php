@@ -39,7 +39,7 @@ final class DomstreamUpdate002Test extends TestCase
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->tableExists($table);
     }
 
-    public function testTheModuleRequiresThisSchema(): void
+    public function testTheModuleRequiresAtLeastThisSchema(): void
     {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $maps = $s->maps;
@@ -50,7 +50,7 @@ final class DomstreamUpdate002Test extends TestCase
             $s->maps = $maps;
         }
 
-        $this->assertSame($module->required_schema_version, $this->update->schema_version);
+        $this->assertGreaterThanOrEqual($this->update->schema_version, $module->required_schema_version);
     }
 
     public function testUpCreatesBothAndIsIdempotent(): void

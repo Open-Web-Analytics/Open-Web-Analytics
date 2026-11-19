@@ -402,18 +402,17 @@ final class ProfileSettingsScreenTest extends TestCase
         }
     }
 
-    /** The template and the save controller read one list. */
+    /**
+     * The template renders the group its controller saves. That the controller
+     * saves every fieldset of the group is testEachOfferedSettingIsSavedAtTheProfile.
+     */
     public function testTheTemplateRendersTheGroupItsControllerSaves(): void
     {
-        foreach ( [ 'modules/Base/templates/profile_settings.php',
-                         'modules/Base/Controller/SitesEditSettings.php' ] as $file ) {
+        $code = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/profile_settings.php' );
 
-            $code = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
-
-            $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'profile_observation'\s*\)#", $code, $file );
-            $this->assertStringNotContainsString( "registeredFieldSet( 'base.profileObservation' )", $code,
-                "$file names one fieldset of the group" );
-        }
+        $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'profile_observation'\s*\)#", $code );
+        $this->assertStringNotContainsString( "registeredFieldSet( 'base.profileObservation' )", $code,
+            'the template names one fieldset of the group' );
     }
 
     /**

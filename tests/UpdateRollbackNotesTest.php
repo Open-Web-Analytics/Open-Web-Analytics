@@ -35,10 +35,38 @@ final class UpdateRollbackNotesTest extends TestCase
 
     public function testTheRollbackSaysItBeforeRunningDown(): void
     {
-        $src = (string) file_get_contents( dirname( __DIR__ ) . '/Core/Update.php' );
+        $update = new class extends \OWA\Core\Update {
 
-        $this->assertLessThan( strpos( $src, '$ret = $this->down();' ),
-            strpos( $src, 'restores the schema but not' ),
-            'the warning comes before down() runs' );
+            /** @var list<string>|null the notices logged before down() ran */
+            public $before_down = null;
+
+            public $module_name = 'base';
+
+            public $schema_version = 77;
+
+            public $down_does_not_restore = 'the merged rows';
+
+            public function down() {
+
+                $this->before_down = $this->e->notices;
+
+                return false;
+            }
+        };
+
+        $update->c = new class {
+            public function get( $module, $name ) { return 77; }
+        };
+
+        $update->e = new class {
+            public $notices = [];
+            public function notice( $message ) { $this->notices[] = (string) $message; }
+            public function __call( $name, $args ) { return null; }
+        };
+
+        $this->assertFalse( $update->rollback() );
+
+        $this->assertSame( [ 'Rolling back update 77 restores the schema but not: the merged rows' ],
+            $update->before_down, 'the warning comes before down() runs' );
     }
 }

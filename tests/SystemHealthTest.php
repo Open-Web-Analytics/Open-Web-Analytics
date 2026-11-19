@@ -266,7 +266,8 @@ final class SystemHealthTest extends TestCase
     /** What the installation holds, and how long it keeps it; raw's size from the server's statistics, not a count. */
     public function testTheDataSectionCountsTheHierarchyAndEstimatesRaw(): void
     {
-        $data = SystemHealth::data();
+        $sql  = [];
+        $data = $this->queriesDuring(function () { return SystemHealth::data(); }, $sql);
 
         foreach (['Organizations', 'Properties', 'Profiles', 'Raw events', 'Retention', 'Fine partitions'] as $fact) {
             $this->assertArrayHasKey($fact, $data['facts']);
@@ -276,9 +277,16 @@ final class SystemHealthTest extends TestCase
         $this->assertGreaterThanOrEqual(count(\OWA\Module\Base\Classes\TrackerBundle::siteIds()),
             (int) $data['facts']['Profiles'], 'active Profiles include every live web one');
 
-        $source = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/SystemHealth.php');
-        $this->assertStringContainsString('->tableSize( $raw )', $source, 'raw is sized from the server\'s statistics');
-        $this->assertDoesNotMatchRegularExpression('/COUNT\(\*\)[^;]*\$raw/', $source, 'never counted');
+        $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
+
+        $this->assertNotEmpty($sql, 'the queries were not seen, so this test cannot tell');
+        $this->assertSame([], array_values(array_filter($sql, static function ($q) use ($raw) {
+            return stripos($q, 'COUNT(') !== false && strpos($q, $raw) !== false;
+        })), 'raw is never counted');
+
+        $this->assertNotSame([], array_filter($sql, static function ($q) use ($raw) {
+            return strpos($q, $raw) !== false;
+        }), 'raw is sized from the server\'s statistics, which names it');
 
         $size = \OWA\Core\CoreAPI::dbSingleton()->tableSize('owa_event_raw');
         $this->assertIsInt($size['rows']);
@@ -494,5 +502,41 @@ final class SystemHealthTest extends TestCase
         $this->assertStringContainsString('</span>Handeln</span>', owa_cube_status_badge('red'));
         $this->assertStringContainsString('</span>Achtung</span>', owa_cube_status_badge('yellow'));
         $this->assertStringContainsString('</span>Gut</span>', owa_cube_status_badge('green'));
+    }
+
+    /**
+     * Run $fn, collecting the SQL the database singleton logs while it runs.
+     *
+     * @param list<string> $sql
+     * @return mixed what $fn returns
+     */
+    private function queriesDuring(callable $fn, array &$sql)
+    {
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $was = $db->e;
+
+        $db->e = new class ($was, $sql) {
+            private $real;
+            private $sql;
+
+            public function __construct($real, array &$sql) { $this->real = $real; $this->sql = &$sql; }
+
+            public function debug($message, $context = null)
+            {
+                if (is_string($message) && strpos($message, 'Query: ') === 0) {
+                    $this->sql[] = substr($message, 7);
+                }
+
+                return $this->real->debug($message, $context);
+            }
+
+            public function __call($name, $args) { return $this->real->$name(...$args); }
+        };
+
+        try {
+            return $fn();
+        } finally {
+            $db->e = $was;
+        }
     }
 }

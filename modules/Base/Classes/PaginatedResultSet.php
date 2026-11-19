@@ -154,7 +154,7 @@ class PaginatedResultSet {
 
     /**
      * Why there is no data to query, when there is none: the Property's cube
-     * does not exist yet. Classes\Cube\Status::readiness(). Null otherwise.
+     * does not exist yet. Classes\Cube\Status::readinessOfProperty(). Null otherwise.
      *
      * Set instead of querying, so a client can tell "not ready" from a real
      * zero -- an empty result set alone cannot say which.
@@ -490,29 +490,6 @@ class PaginatedResultSet {
      */
     public function getResultsRows() {
         return $this->resultsRows;
-    }
-
-    /**
-     * @param  string $name
-     * @return list<mixed>|false each row's value for it; false with no rows
-     */
-    public function getSeries($name) {
-
-        $rows = $this->getDataRows();
-
-        if ($rows) {
-            $series = [];
-            foreach ($rows as $row) {
-                foreach($row as $item) {
-                    if ($item['name'] === $name) {
-                        $series[] = $item['value'];
-                    }
-                }
-            }
-            return $series;
-        } else {
-            return false;
-        }
     }
 
     /**

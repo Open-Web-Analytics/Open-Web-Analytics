@@ -86,6 +86,17 @@ class Dimensions {
     /** @var array<string, int> property id => measured capacity, for this request only */
     private static $capacity = [];
 
+    /**
+     * Forget what capacityFor() measured. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetCapacity() {
+
+        self::$capacity = [];
+    }
+
     /** The entity a custom dimension is registered against: the cube's. */
     const CUBE_ENTITY = 'base.event';
 

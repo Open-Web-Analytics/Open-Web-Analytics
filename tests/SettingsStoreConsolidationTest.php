@@ -312,21 +312,56 @@ final class SettingsStoreConsolidationTest extends TestCase
     /**
      * The rank is a CASE, not MySQL's FIELD().
      *
-     * FIELD() would read better and does not exist in SQLite or Postgres. The
-     * dialect layer is the reason this is worth pinning: a query written here
-     * in MySQL-only syntax is not refused, it just narrows what OWA runs on,
-     * and nothing else would notice.
+     * FIELD() would read better and does not exist in SQLite or Postgres. A
+     * query written here in MySQL-only syntax is not refused, it just narrows
+     * what OWA runs on, and nothing else would notice. So both chain queries
+     * are run on an in-memory SQLite connection, and must still rank the
+     * narrowest scope first.
      */
     public function testTheScopeRankIsWrittenPortably(): void
     {
-        $body = file_get_contents( __DIR__ . '/../Core/CoreAPI.php' );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $this->assertStringContainsString( 'CASE scope_type', $body,
-            'the rank is a CASE expression' );
+        if ( ! $db instanceof \OWA\Core\Db\Pdo ) {
+            $this->markTestSkipped( 'the configured driver is not a PDO one' );
+        }
 
-        $this->assertDoesNotMatchRegularExpression(
-            '/\bFIELD\s*\(\s*scope_type/i', $body,
-            'FIELD() is MySQL-only; the scope rank must not depend on it' );
+        $sqlite = new \PDO( 'sqlite::memory:', null, null, [ \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC ] );
+        $table  = static fn ( string $entity ): string => \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName();
+
+        $sqlite->exec( 'CREATE TABLE ' . $table( 'base.site' ) . ' (site_id TEXT, property_id TEXT)' );
+        $sqlite->exec( 'CREATE TABLE ' . $table( 'base.property' ) . ' (id TEXT, organization_id TEXT)' );
+        $sqlite->exec( 'CREATE TABLE ' . $table( 'base.setting' ) . ' (scope_type TEXT, scope_id TEXT, module TEXT, name TEXT, value TEXT)' );
+        $sqlite->exec( 'INSERT INTO ' . $table( 'base.site' ) . " VALUES ('owatest-site', 'owatest-property')" );
+        $sqlite->exec( 'INSERT INTO ' . $table( 'base.property' ) . " VALUES ('owatest-property', 'owatest-org')" );
+
+        $insert = $sqlite->prepare( 'INSERT INTO ' . $table( 'base.setting' ) . ' VALUES (?, ?, ?, ?, ?)' );
+
+        foreach ( [ 'organization' => 'owatest-org', 'profile' => 'owatest-site', 'property' => 'owatest-property' ] as $type => $id ) {
+            $insert->execute( [ $type, $id, self::MODULE, 'rank_probe', serialize( $type ) ] );
+        }
+
+        $saved = [ $db->connection, $db->connection_status ];
+        $db->connection        = $sqlite;
+        $db->connection_status = true;
+        \OWA\Core\CoreAPI::settingCacheFlush();
+
+        try {
+            $chain = [ [ 'type' => 'property', 'id' => 'owatest-property' ], [ 'type' => 'organization', 'id' => 'owatest-org' ] ];
+
+            $this->assertSame( 'property',
+                \OWA\Core\CoreAPI::settingRowsForChain( $chain )['effective'][ self::MODULE . '|rank_probe' ] ?? null,
+                'the chain query did not run on SQLite, or did not rank the narrowest scope first' );
+
+            // The one-query Profile walk, which getSetting() falls back from when it answers nothing.
+            $resolved = ( new ReflectionMethod( \OWA\Core\CoreAPI::class, 'resolveProfileChain' ) )->invoke( null, 'owatest-site' );
+
+            $this->assertSame( 'profile', $resolved['rows']['effective'][ self::MODULE . '|rank_probe' ] ?? null,
+                'the Profile query did not run on SQLite, or did not rank the narrowest scope first' );
+        } finally {
+            [ $db->connection, $db->connection_status ] = $saved;
+            \OWA\Core\CoreAPI::settingCacheFlush();
+        }
     }
 
     /**

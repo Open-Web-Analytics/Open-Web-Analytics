@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/PartitionFixtures.php';
 
 /**
  * The scheduler's own decisions: what it runs, what it refuses, what it records,
@@ -1528,6 +1529,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
             $name => ['command' => 'owa-test-lease-stub', 'schedule' => '* * * * *'],
         ]);
+        OwaTestLeaseStubCli::$job = $name;
 
         $ctrl = $this->runner();
         $jobs = $this->callProtected($ctrl, 'jobs');
@@ -1616,7 +1618,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         try {
             // Strip the lead, leaving a gap a rotate would have to rebuild.
             $db->query("ALTER TABLE $table REMOVE PARTITIONING");
-            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($table, \OWA\Core\Db::makePartitionRanges(
                 $keep[0]['start'],
                 date('Ymd', strtotime(end($keep)['less_than'] . ' -1 day')),
                 $granularity
@@ -1637,7 +1639,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         } finally {
             $db->query("ALTER TABLE $table REMOVE PARTITIONING");
-            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            owa_test_partition_table($table, \OWA\Core\Db::makePartitionRanges(
                 $spans[0]['start'],
                 date('Ymd', strtotime(end($spans)['less_than'] . ' -1 day')),
                 $granularity
@@ -1756,6 +1758,9 @@ class OwaTestLeaseStubCli extends \OWA\Core\Controller\Cli {
     /** @var int */
     public static $seen_expiry = 0;
 
+    /** @var string the job the test runs this as, whose lock it reads */
+    public static $job = '';
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
@@ -1770,18 +1775,11 @@ class OwaTestLeaseStubCli extends \OWA\Core\Controller\Cli {
 
     function action() {
 
-        $lock = \OWA\Core\CoreAPI::dbSingleton()->getJobLock( 'x' );
+        // The dispatcher names the lock after the job. The newest lock is not
+        // necessarily this one: others taken in the same second tie with it.
+        $lock = \OWA\Core\CoreAPI::dbSingleton()->getJobLock( self::$job );
 
-        // The dispatcher names the lock after the JOB, which this stub does not
-        // know -- so find the one held right now.
-        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(
-            'SELECT expires_at FROM owa_job_lock ORDER BY acquired_at DESC LIMIT 1'
-        );
-
-        foreach ( (array) $rows as $row ) {
-
-            self::$seen_expiry = (int) ( (array) $row )['expires_at'];
-        }
+        self::$seen_expiry = (int) ( $lock['expires_at'] ?? 0 );
     }
 }
 

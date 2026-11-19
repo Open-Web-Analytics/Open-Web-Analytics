@@ -97,17 +97,12 @@ final class UpdateDiscoveryTest extends TestCase
             }
         }
 
-        $src = file_get_contents(dirname(__DIR__) . '/modules/Base/Module.php');
-        $this->assertSame(
-            1,
-            preg_match('/required_schema_version\s*=\s*(\d+)/', $src, $m),
-            'could not read required_schema_version from Base/Module.php'
-        );
+        $required = (int) \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version;
 
         $this->assertGreaterThanOrEqual(
             $highest,
-            (int) $m[1],
-            "Base ships Update{$highest} but required_schema_version is {$m[1]}. "
+            $required,
+            "Base ships Update{$highest} but required_schema_version is {$required}. "
             . 'Module::update() skips updates above required_schema_version, so it would never run.'
         );
     }

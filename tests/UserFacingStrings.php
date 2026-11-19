@@ -474,21 +474,41 @@ final class UserFacingStrings
     const SINK_KEYS = [
         'errorMsg', 'error_msg', 'error', 'message', 'headline', 'msg', 'pattern_problem', 'status_msg',
         'title', 'page_title', 'legend', 'heading', 'anchortext', 'overview_label', 'proceed', 'hint', 'label',
+        'subject',
     ];
 
     /** Calls whose first argument is a message a person reads. */
-    const SINK_CALLS = ['refuse', 'seterrormessage', 'adderror', 'settitle', 'addrequesterror'];
+    const SINK_CALLS = ['refuse', 'seterrormessage', 'adderror', 'settitle', 'addrequesterror', 'setmailsubject'];
 
     /** set( '<key>', ... ): view values a person reads. */
-    const SINK_SET_KEYS = ['error_msg', 'status_msg', 'headline', 'page_title', 'title'];
+    const SINK_SET_KEYS = ['error_msg', 'status_msg', 'headline', 'page_title', 'title', 'subject'];
 
-    /** Calls whose argument (by 0-based position) is a nav label. */
-    const SINK_ARGUMENTS = ['addnavigationsubgroup' => 2, 'addnavigationlinkinsubgroup' => 2];
+    /**
+     * Calls whose arguments (by 0-based position) are a label or message: a
+     * nav label, a check's label and detail (EnvironmentCheck::check(),
+     * Cube\Status::check()), a System Health finding's label and detail.
+     */
+    const SINK_ARGUMENTS = [
+        'addnavigationsubgroup'       => [2],
+        'addnavigationlinkinsubgroup' => [2],
+        'check'                       => [1, 3],
+        'finding'                     => [1, 2],
+    ];
+
+    /** The same, for a call named with its class: EnvironmentCheck::check()'s name is its label. */
+    const QUALIFIED_SINK_ARGUMENTS = ['environmentcheck::check' => [0, 1, 3]];
+
+    /** Indexes whose assigned value is a message a person reads: $data['subject'] = ... */
+    const SINK_INDEX_KEYS = ['subject'];
+
+    /** Properties whose value is a message a person reads: $this->error = ... */
+    const SINK_PROPERTIES = ['error', 'error_msg', 'status_msg'];
 
     /**
      * String literals given to a message or label sink without t() or tn():
-     * the value of a SINK_KEYS key, the first argument of a SINK_CALLS call
-     * or of set() for a SINK_SET_KEYS key, a nav label (SINK_ARGUMENTS) and,
+     * the value of a SINK_KEYS key, a SINK_INDEX_KEYS or SINK_PROPERTIES
+     * assignment, the first argument of a SINK_CALLS call or of set() for a
+     * SINK_SET_KEYS key, a SINK_ARGUMENTS argument and,
      * in a settings.php ($settings), the description of a setting that has a
      * label. Within the value, a literal is bare when it is not inside a call
      * (a ternary's branches, `?:`) or is the format given to sprintf();
@@ -534,6 +554,20 @@ final class UserFacingStrings
                 continue;
             }
 
+            // $data['subject'] = '...'
+            if (is_array($t) && $t[0] === T_CONSTANT_ENCAPSED_STRING && $text($i - 1) === '[' && $text($i + 1) === ']'
+                && $text($i + 2) === '=' && in_array(substr($t[1], 1, -1), self::SINK_INDEX_KEYS, true)) {
+                $starts[$i + 3] = "[$t[1]] value";
+                continue;
+            }
+
+            // $this->error = '...'
+            if (is_array($t) && $t[0] === T_STRING && is_array($tokens[$i - 1] ?? null) && $tokens[$i - 1][0] === T_OBJECT_OPERATOR
+                && $text($i + 1) === '=' && in_array($t[1], self::SINK_PROPERTIES, true)) {
+                $starts[$i + 2] = "->$t[1] value";
+                continue;
+            }
+
             if (is_array($t) && $t[0] === T_STRING && $text($i + 1) === '(') {
                 $name = strtolower($t[1]);
 
@@ -543,10 +577,20 @@ final class UserFacingStrings
                     && in_array(substr($tokens[$i + 2][1], 1, -1), self::SINK_SET_KEYS, true) && $text($i + 3) === ',') {
                     $starts[$i + 4] = 'set( ' . $tokens[$i + 2][1] . ' ) value';
                 } elseif (isset(self::SINK_ARGUMENTS[$name])) {
-                    $at = self::argumentStart($tokens, $i + 1, self::SINK_ARGUMENTS[$name]);
+                    $positions = self::SINK_ARGUMENTS[$name];
+                    $class     = $text($i - 1) === '::' && is_array($tokens[$i - 2] ?? null)
+                        ? strtolower(substr((string) strrchr('\\' . $tokens[$i - 2][1], '\\'), 1)) : '';
 
-                    if ($at !== null) {
-                        $starts[$at] = $t[1] . '() label';
+                    if (isset(self::QUALIFIED_SINK_ARGUMENTS[$class . '::' . $name])) {
+                        $positions = self::QUALIFIED_SINK_ARGUMENTS[$class . '::' . $name];
+                    }
+
+                    foreach ($positions as $position) {
+                        $at = self::argumentStart($tokens, $i + 1, $position);
+
+                        if ($at !== null) {
+                            $starts[$at] = $t[1] . '() label';
+                        }
                     }
                 }
             }

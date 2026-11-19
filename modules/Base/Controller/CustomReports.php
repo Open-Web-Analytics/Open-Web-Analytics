@@ -4,14 +4,11 @@ namespace OWA\Module\Base\Controller;
 /**
  * The custom report roster.
  *
- * GATED ON view_site_list, which is the capability that means "any signed-in
- * user". Not edit_reports -- a reader who cannot author a report can still be
- * sent one, and the roster is where they find what they have. And not
- * view_reports either, which looks like the obvious choice and is wrong:
- * view_reports is listed in capabilitiesThatRequireSiteAccess, so it is only
- * satisfied against a particular site, and a request for the roster need name
- * none. Requiring it refused every non-admin with "No access to any site",
- * which is what the e2e suite caught.
+ * Gated on view_reports, held on the Property the request names, as every
+ * report screen is (ReportController, PropertyScopedAccess): a non-admin
+ * is refused a Property they have no Profile of, and a request that names no
+ * Property. Not edit_reports -- a reader who cannot author a report can still
+ * be sent one, and the roster is where they find what they have.
  *
  * It lists the reports of ONE PROPERTY, the one pre() resolved: a report
  * belongs to the Property it was made on, and is listed there alone.
@@ -29,7 +26,7 @@ class CustomReports extends \OWA\Core\ReportController {
     public function __construct( $params ) {
 
         parent::__construct( $params );
-        $this->setRequiredCapability( 'view_site_list' );
+        $this->setRequiredCapability( 'view_reports' );
     }
 
     public function action() {

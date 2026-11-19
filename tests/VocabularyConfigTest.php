@@ -119,16 +119,20 @@ final class VocabularyConfigTest extends TestCase
      * The FILE is the only place the cube's vocabulary is declared.
      *
      * A v1 registration inline in Module.php is residue, not a maintained path.
-     * So this asserts one direction only: a cube dimension or metric added the
-     * old way fails here.
+     * So Base, constructed, registers exactly the names its files declare: a
+     * cube dimension or metric added the old way fails here.
      */
     public function testTheCubesVocabularyIsDeclaredOnlyInTheFile(): void
     {
-        $this->assertStringNotContainsString(
-            "'base.event'",
-            (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php'),
-            'the cube\'s vocabulary belongs in config/dimensions.php and '
-          . 'config/metrics.php, not in a registration call');
+        $base = new \OWA\Module\Base\Module();
+
+        foreach (['dimensions' => $base->denormalizedDimensions, 'metrics' => (array) $base->metrics] as $kind => $registered) {
+
+            $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/config/' . $kind . '.php')[$kind];
+
+            $this->assertSame([], array_values(array_diff(array_keys($registered), array_keys($declared))),
+                'the cube\'s ' . $kind . ' belong in config/' . $kind . '.php, not in a registration call');
+        }
     }
 
     /** No file is not an error -- most modules have no vocabulary. */

@@ -191,29 +191,69 @@ class GoalVocabulary {
         'browser'      => 'browser_version',
     ];
 
-    /** Labels that do not survive being prettified from the column name. */
+    /**
+     * Every column columns() offers, as the builder's picker names it.
+     * GoalVocabularyTest checks that none is missing.
+     */
     const LABELS = [
-        'raw_ua'              => 'User agent',
-        'page_path'           => 'Page path',
-        'page_location'       => 'Page URL',
-        'referer_url'         => 'Referrer URL',
-        'referer_host'        => 'Referrer host',
-        'referer_query'       => 'Referrer query',
-        'tagged_source'       => 'Source (from the URL)',
-        'tagged_medium'       => 'Medium (from the URL)',
-        'tagged_campaign'     => 'Campaign (from the URL)',
-        'tagged_ad'           => 'Ad (from the URL)',
-        'tagged_search_terms' => 'Search terms (from the URL)',
-        'visitor_fsts'        => 'First seen at',
-        'session_start_ts'    => 'Session started at',
-        'os'                  => 'Operating system',
-        'ip_address'          => 'IP address',
-        'yyyymmdd'            => 'Date',
+        'raw_ua'                   => 'User agent',
+        'page_path'                => 'Page path',
+        'page_location'            => 'Page URL',
+        'referer_url'              => 'Referrer URL',
+        'referer_host'             => 'Referrer host',
+        'referer_query'            => 'Referrer query',
+        'tagged_source'            => 'Source (from the URL)',
+        'tagged_medium'            => 'Medium (from the URL)',
+        'tagged_campaign'          => 'Campaign (from the URL)',
+        'tagged_ad'                => 'Ad (from the URL)',
+        'tagged_search_terms'      => 'Search terms (from the URL)',
+        'os'                       => 'Operating system',
+        'ip_address'               => 'IP address',
         // Prettifying the column gives "Is outbound", which reads as a question
         // half-asked. The condition is on the click.
-        'is_outbound'         => 'Outbound click',
-        'engagement_msec'     => 'Engagement time (ms)',
-        'target_url'          => 'Target URL',
+        'is_outbound'              => 'Outbound click',
+        'engagement_msec'          => 'Engagement time (ms)',
+        'target_url'               => 'Target URL',
+        'browser_type'             => 'Browser type',
+        'browser_version'          => 'Browser version',
+        'city'                     => 'City',
+        'click_x'                  => 'Click x',
+        'click_y'                  => 'Click y',
+        'consent_state'            => 'Consent state',
+        'content_group'            => 'Content group',
+        'country'                  => 'Country',
+        'country_code'             => 'Country code',
+        'currency'                 => 'Currency',
+        'device_brand'             => 'Device brand',
+        'device_model'             => 'Device model',
+        'device_type'              => 'Device type',
+        'element_id'               => 'Element ID',
+        'element_tag'              => 'Element tag',
+        'file_extension'           => 'File extension',
+        'file_name'                => 'File name',
+        'host'                     => 'Host',
+        'language'                 => 'Language',
+        'os_version'               => 'Operating system version',
+        'page_height'              => 'Page height',
+        'page_query'               => 'Page query',
+        'page_title'               => 'Page title',
+        'page_width'               => 'Page width',
+        'prior_sessions'           => 'Prior sessions',
+        'prior_touch_ad'           => 'Prior touch ad',
+        'prior_touch_campaign'     => 'Prior touch campaign',
+        'prior_touch_medium'       => 'Prior touch medium',
+        'prior_touch_referer_host' => 'Prior touch referrer host',
+        'prior_touch_source'       => 'Prior touch source',
+        'region'                   => 'Region',
+        'revenue'                  => 'Revenue',
+        'screen_resolution'        => 'Screen resolution',
+        'scroll_depth'             => 'Scroll depth',
+        'search_term'              => 'Search term',
+        'shipping'                 => 'Shipping',
+        'target_host'              => 'Target host',
+        'tax'                      => 'Tax',
+        'transaction_id'           => 'Transaction ID',
+        'user_id'                  => 'User ID',
     ];
 
     /**
@@ -282,6 +322,17 @@ class GoalVocabulary {
     private static $registryDescriptions = null;
 
     /**
+     * Forget the descriptions description() read from the dimension registry.
+     * CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forgetDescriptions() {
+
+        self::$registryDescriptions = null;
+    }
+
+    /**
      * What a column holds, in a sentence, for the builder's picker.
      *
      * The report dimension that reads the same column says it already: a goal
@@ -315,7 +366,12 @@ class GoalVocabulary {
 
         $column = (string) $column;
 
-        return self::$registryDescriptions[ $column ] ?? self::DESCRIPTIONS[ $column ] ?? '';
+        if ( isset( self::$registryDescriptions[ $column ] ) ) {
+
+            return self::$registryDescriptions[ $column ];
+        }
+
+        return isset( self::DESCRIPTIONS[ $column ] ) ? \OWA\Core\Strings::translate( self::DESCRIPTIONS[ $column ] ) : '';
     }
 
     /**
@@ -330,8 +386,10 @@ class GoalVocabulary {
 
         if ( isset( self::LABELS[ $column ] ) ) {
 
-            return self::LABELS[ $column ];
+            return \OWA\Core\Strings::translate( self::LABELS[ $column ] );
         }
+
+        // A column a module added to the raw table: no label to translate.
 
         return ucfirst( str_replace( '_', ' ', $column ) );
     }

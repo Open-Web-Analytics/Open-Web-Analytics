@@ -38,13 +38,6 @@ class Location {
     public $longitude;
 
     /**
-     * Location of concrete class plugins
-     *
-     * @var mixed
-     */
-    public $plugin_dir;
-
-    /**
      * Constructor
      *
      * @return \OWA\Core\Location

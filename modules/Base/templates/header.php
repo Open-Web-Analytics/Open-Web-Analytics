@@ -190,9 +190,6 @@
         </div>
     </span>
     <div class="post-nav"></div>
-    <?php if (!empty($view->service_msg)): ?>
-    <div class="owa_headerServiceMsg"><?php echo $view->service_msg; ?></div>
-    <?php endif;?>
 
     <?php $view->headerActions(); ?>
 

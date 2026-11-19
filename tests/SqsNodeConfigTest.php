@@ -66,6 +66,15 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertSame('eu-central-1', $this->probe('region')['region']);
     }
 
+    /** OWA_SQS_REGION is the region setting's constant: the field is shown fixed, and the setting is its value. */
+    public function testOwaSqsRegionGovernsTheRegionSetting(): void
+    {
+        $r = $this->probe('region');
+
+        $this->assertSame('OWA_SQS_REGION', $r['region_governed']);
+        $this->assertSame('eu-central-1', $r['region_setting']);
+    }
+
     /** OWA_SQS_QUEUE_URL names the queue, and its dead-letter queue is the same URL with -dlq. */
     public function testTheQueueUrlConstantNamesTheQueue(): void
     {

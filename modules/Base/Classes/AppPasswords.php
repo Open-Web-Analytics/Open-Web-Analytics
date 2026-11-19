@@ -56,8 +56,8 @@ class AppPasswords {
     public static function scopes() {
 
         return [
-            self::SCOPE_READ => 'Read only',
-            self::SCOPE_FULL => 'Read and write',
+            self::SCOPE_READ => \OWA\Core\CoreAPI::t( 'Read only' ),
+            self::SCOPE_FULL => \OWA\Core\CoreAPI::t( 'Read and write' ),
         ];
     }
 

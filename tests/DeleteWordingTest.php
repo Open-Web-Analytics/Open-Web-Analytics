@@ -51,8 +51,42 @@ final class DeleteWordingTest extends TestCase
     /** The behaviour the wording describes: a Property's cube reads its archived Profiles too. */
     public function testAPropertyCubeReadsEveryProfileArchivedOrNot(): void
     {
-        $src = $this->source( 'modules/Base/Classes/Cube/Cubes.php' );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; this reads owa_site.' );
+        }
 
-        $this->assertStringContainsString( "'SELECT site_id FROM %s WHERE property_id = %s'", $src );
+        $property = '9' . random_int( 100000000, 999999999 );
+        $made     = [];
+
+        try {
+            foreach ( [ 'live' => null, 'archived' => time() ] as $which => $archived ) {
+
+                $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+                $id   = 'owatest-delete-wording-' . $which . '-' . $property;
+
+                $site->setProperties( [
+                    'id'            => $site->generateId( $id ),
+                    'site_id'       => $id,
+                    'name'          => 'owatest ' . $which,
+                    'property_id'   => $property,
+                    'archived_date' => $archived,
+                ] );
+
+                $this->assertTrue( $site->create() === true, "the $which Profile was not created" );
+                $made[] = $id;
+            }
+
+            $read = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $property );
+            sort( $read );
+            sort( $made );
+
+            $this->assertSame( $made, $read );
+        } finally {
+            $table = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
+
+            foreach ( $made as $id ) {
+                \OWA\Core\CoreAPI::dbSingleton()->query( "DELETE FROM $table WHERE site_id = ?", [ $id ] );
+            }
+        }
     }
 }

@@ -173,16 +173,4 @@ final class ProfileStreamTypeTest extends TestCase
             'A Profile was created against a Property that does not exist, so it would '
             . 'be parented to nothing.' );
     }
-
-    /** Only web Profiles can grant a CORS origin -- a bundle id is not a host. */
-    public function testOnlyWebProfilesContributeCorsOrigins(): void
-    {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/View/RestApi.php' );
-
-        $this->assertStringContainsString( "\$streamType !== 'web'", $src,
-            'An app Profile\'s identifier is parsed as a host for CORS matching.' );
-
-        $this->assertStringContainsString( "! empty( \$site['archived_date'] )", $src,
-            'An archived Profile still grants its origin, though it has stopped observing.' );
-    }
 }

@@ -41,7 +41,7 @@ class Module extends \OWA\Core\Module {
         $this->version = '2.0';
         $this->description = 'Records the pointer, scroll, clicks and key presses on a page, for playback.';
         $this->config_required = false;
-        $this->required_schema_version = 2;
+        $this->required_schema_version = 3;
 
         parent::__construct();
 
@@ -101,8 +101,6 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\ProcessEvent' );
         $this->registerAction( 'domstream.reportDomstreams',
             'OWA\\Module\\Domstream\\Controller\\ReportDomstreams' );
-        $this->registerAction( 'domstream.domstreamsRest',
-            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 
     public function _registerEntities() {

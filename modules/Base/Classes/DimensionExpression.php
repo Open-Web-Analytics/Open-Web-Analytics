@@ -121,7 +121,7 @@ class DimensionExpression {
         for ( $i = 1; $i < count( $parts ); $i++ ) {
 
             $terms[] = sprintf(
-                "IF(%%1\$s.%1\$s IS NULL OR %%1\$s.%1\$s = '', '', CONCAT(%2\$s, %%1\$s.%1\$s))",
+                "CASE WHEN %%1\$s.%1\$s IS NULL OR %%1\$s.%1\$s = '' THEN '' ELSE CONCAT(%2\$s, %%1\$s.%1\$s) END",
                 $parts[ $i ], self::literal( $separator[ $i - 1 ] ) );
         }
 

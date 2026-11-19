@@ -111,6 +111,9 @@ final class EventRawEntityTest extends TestCase
         $this->assertSame('id', $entity->getPrimaryKeyColumn());
         $this->assertSame('yyyymmdd', $entity->getPartitionColumn(),
             'Partitioning is what makes retention a metadata drop and prunes every query.');
+
+        // The day first, so a day's rows are contiguous (Update094).
+        $this->assertSame(['yyyymmdd', 'id'], $entity->getCompositePrimaryKey());
     }
 
     public function testTheMeasuredIndexes(): void
@@ -118,7 +121,8 @@ final class EventRawEntityTest extends TestCase
         $entity = $this->raw();
 
         $this->assertSame(
-            ['site_date' => ['site_id', 'yyyymmdd'],
+            // created_at, for Cube\Builder::isCurrent() (Update094).
+            ['site_date' => ['site_id', 'yyyymmdd', 'created_at'],
              'site_type_date' => ['site_id', 'event_type', 'yyyymmdd'],
              'site_transaction' => ['site_id', 'transaction_id'],
              // The realtime window, raw only (Update064).

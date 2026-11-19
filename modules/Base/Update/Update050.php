@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Update;
  * the order source are labels nobody adds up, so they stay params.
  *
  * MINOR UNITS, like revenue, because a float column sums to something nobody can
- * reconcile. V2Event::minorUnits() rounds before casting.
+ * reconcile. Currency::toMinorUnits() rounds before casting.
  *
  * NOT CLI-ONLY. Three columns on raw and the cube, as any release adding one.
  */

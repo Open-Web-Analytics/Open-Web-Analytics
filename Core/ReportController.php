@@ -155,7 +155,7 @@ class ReportController extends \OWA\Core\AdminController {
 
         foreach ( \OWA\Module\Base\Classes\TimePeriod::COMPARE_PERIODS as $key => $label ) {
 
-            $labels[] = [ 'key' => $key, 'label' => $label ];
+            $labels[] = [ 'key' => $key, 'label' => \OWA\Core\Strings::translate( $label ) ];
         }
 
         return [
@@ -239,7 +239,7 @@ class ReportController extends \OWA\Core\AdminController {
                     'stopOnError'     => true,
                     'errorMsg'        => sprintf(
                         \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ),
-                        htmlspecialchars( (string) $period, ENT_QUOTES ) ),
+                        (string) $period ),
                 ]
             );
         }
@@ -570,9 +570,14 @@ class ReportController extends \OWA\Core\AdminController {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
-        // The roster's own capability: an entry that leads to a screen the
-        // reader cannot open is worse than no entry.
-        if ( ! $user->isCapable( 'view_site_list' ) ) {
+        /*
+         * The roster's own capability, view_reports on this Property: an
+         * entry that leads to a screen the reader cannot open is worse than no
+         * entry. The registered entry is left, and the rail drops it on the
+         * same capability.
+         */
+        if ( ! $user->isAdmin()
+             && ! $user->isCapable( 'view_reports', $user->siteIdForProperty( $propertyId ) ) ) {
 
             return $nav;
         }
@@ -604,7 +609,7 @@ class ReportController extends \OWA\Core\AdminController {
             'ref'        => [ 'do' => 'base.customReports' ],
             'anchortext' => \OWA\Core\CoreAPI::t( 'Custom Reports' ),
             'order'      => 999,
-            'priviledge' => 'view_site_list',
+            'priviledge' => 'view_reports',
             'icon_class' => 'fa fa-th-list',
             // The rail's column lists the roster first, under this name.
             'overview_label' => \OWA\Core\CoreAPI::t( 'All reports' ),

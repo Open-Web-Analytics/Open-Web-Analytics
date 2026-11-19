@@ -81,15 +81,27 @@ class Auth extends \OWA\Core\Base {
      */
     public static function get_instance($plugin = '') {
 
-        static $auth;
+        if (!self::$instance) {
 
-        if (!$auth) {
-
-            $auth = new \OWA\Core\Auth();
+            self::$instance = new \OWA\Core\Auth();
 
         }
 
-        return $auth;
+        return self::$instance;
+    }
+
+    /** @var \OWA\Core\Auth|null get_instance() */
+    private static $instance = null;
+
+    /**
+     * Drop the instance get_instance() answers. CoreAPI::forgetSingletons()
+     * calls this.
+     *
+     * @return void
+     */
+    public static function forgetInstance() {
+
+        self::$instance = null;
     }
 
 

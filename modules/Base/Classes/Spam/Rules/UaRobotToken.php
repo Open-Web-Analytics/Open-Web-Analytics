@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
 /**
  * The user agent names a robot, a crawler or an HTTP library.
  *
- * The token list Browscap::robotRegexCheck() held, which logEvent() dropped a
+ * The token list 1.x's Browscap::robotRegexCheck() held, which logEvent() dropped a
  * beacon on unless log_robots was on. Five points, the default threshold, so
  * `normal` blocks what that check dropped.
  *

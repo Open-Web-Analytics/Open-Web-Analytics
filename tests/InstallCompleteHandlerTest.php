@@ -6,7 +6,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Base registers nothing for install_complete. Both installers raise the
- * event, for a module of its own to hear.
+ * event once the last step commits (InstallLastStepTest), for a module of its
+ * own to hear.
  */
 final class InstallCompleteHandlerTest extends TestCase
 {
@@ -54,19 +55,6 @@ final class InstallCompleteHandlerTest extends TestCase
         ( new \OWA\Module\Base\Classes\InstallManager() )->announceInstallComplete( 'owatest-admin', 'owatest-site' );
 
         $this->assertSame( [ [ 'u' => 'owatest-admin', 'site_id' => 'owatest-site' ] ], self::$heard );
-    }
-
-    /** The wizard and cmd=install both announce it once the last step is saved. */
-    public function testBothInstallersAnnounceIt(): void
-    {
-        foreach ( [ 'InstallBase', 'InstallCli' ] as $controller ) {
-
-            $src = (string) file_get_contents( __DIR__ . "/../modules/Base/Controller/$controller.php" );
-
-            $this->assertStringContainsString( '->announceInstallComplete(', $src, $controller );
-            $this->assertGreaterThan( strpos( $src, '->finishInstall(' ), strpos( $src, '->announceInstallComplete(' ),
-                "$controller announces after the last step" );
-        }
     }
 
     public function testBaseHasNoInstallCompleteHandler(): void

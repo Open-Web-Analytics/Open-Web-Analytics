@@ -162,9 +162,9 @@ final class ReportingReadinessTest extends TestCase
         $this->requireDatabase();
         Cubes::forgetExistence();
 
-        $this->assertNull(Status::readiness(self::READY_SITE));
+        $this->assertNull(Status::readinessOfProperty(self::READY_PROPERTY));
 
-        $waiting = Status::readiness(self::WAITING_SITE);
+        $waiting = Status::readinessOfProperty(self::WAITING_PROPERTY);
 
         $this->assertNotNull($waiting);
         $this->assertContains($waiting['state'], ['waiting', 'scheduler']);

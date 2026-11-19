@@ -11,7 +11,7 @@
 import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
-    pickDay, choosePreset, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart, placePanel,
+    pickDay, choosePreset, formatRange, formatDate, parseDateInput, weekStart, placePanel,
 } from '../../modules/Base/src/reporting/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
@@ -144,12 +144,6 @@ describe( 'state', () => {
         expect( parseDateInput( '2026-02-30' ) ).toBe( '' );
         expect( parseDateInput( 'next tuesday' ) ).toBe( '' );
         expect( parseDateInput( '' ) ).toBe( '' );
-    } );
-
-    test( 'dates convert to and from an <input type="date">', () => {
-        expect( toIso( '20261109' ) ).toBe( '2026-11-09' );
-        expect( fromIso( '2026-11-09' ) ).toBe( '20261109' );
-        expect( fromIso( '11/09/2026' ) ).toBe( '' );
     } );
 
     test( 'a range reads as one span', () => {

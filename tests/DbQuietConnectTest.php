@@ -91,13 +91,45 @@ final class DbQuietConnectTest extends TestCase
         $this->assertSame(['Could not connect to database.'], $alerts);
     }
 
+    /**
+     * isInstallComplete(), on an owa-config.php whose database does not
+     * connect, answers false and logs nothing. In a subprocess, as the
+     * database a boot connects to is named by constants.
+     */
     public function testTheInstallerAsksQuietly(): void
     {
-        $src = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/InstallManager.php');
-        $fn  = substr($src, (int) strpos($src, 'function isInstallComplete('));
-        $fn  = substr($fn, 0, (int) strpos($fn, "\n    }\n"));
+        $code = <<<'PHP'
+$_SERVER['HTTP_USER_AGENT'] = 'OWA quiet connect probe';
+// A port nothing listens on. The install's own owa-config.php defining these too warns, and the first value stands.
+foreach (['OWA_DB_HOST' => '127.0.0.1', 'OWA_DB_PORT' => '1', 'OWA_DB_NAME' => 'owa_none',
+          'OWA_DB_USER' => 'nobody', 'OWA_DB_PASSWORD' => 'nothing'] as $name => $value) {
+    define($name, $value);
+}
+set_error_handler(static function () { return true; });
+// Booted as install.php boots, which reads nothing from the database.
+require 'owa.php';
+define('OWA_INSTALLING', true);
+new owa(['request_type' => 'install']);
+// As when owa-config.php was read, which CI has none of.
+\OWA\Core\CoreAPI::configSingleton()->config_file_loaded = true;
+$e      = \OWA\Core\CoreAPI::errorSingleton();
+$stream = fopen('php://memory', 'w+');
+(new ReflectionProperty($e, 'sinks'))->setValue($e, [['path' => null, 'stream' => $stream]]);
+$answer = (new \OWA\Module\Base\Classes\InstallManager())->isInstallComplete();
+rewind($stream);
+echo 'PROBE ', json_encode(['answer' => $answer, 'log' => stream_get_contents($stream)]), "\n";
+PHP;
 
-        $this->assertStringContainsString('->canConnect()', $fn);
-        $this->assertStringNotContainsString('->connect()', $fn);
+        $proc = proc_open([PHP_BINARY, '-r', $code], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__));
+        $this->assertIsResource($proc);
+
+        $out = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+
+        $this->assertSame(1, preg_match('/^PROBE (.*)$/m', $out, $m), $out);
+
+        $this->assertSame(['answer' => false, 'log' => ''], json_decode($m[1], true));
     }
 }

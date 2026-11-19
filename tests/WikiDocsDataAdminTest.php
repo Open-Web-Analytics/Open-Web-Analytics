@@ -90,15 +90,6 @@ final class WikiDocsDataAdminTest extends TestCase
         }
     }
 
-    /** Auth reads the methods from the constant the section documents. */
-    public function testAuthReadsTheReadOnlyMethodsFromTheConstant(): void
-    {
-        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Auth.php' );
-
-        $this->assertStringContainsString( 'AppPasswords::READ_METHODS', $source );
-        $this->assertStringNotContainsString( "[ 'GET', 'HEAD' ]", $source );
-    }
-
     public function testTheCustomDimensionLimitsAreTheEnforcedOnes(): void
     {
         $md = self::section( 'custom-dimension-limits' );

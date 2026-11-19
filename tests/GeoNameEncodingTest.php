@@ -23,52 +23,52 @@ final class GeoNameEncodingTest extends TestCase
      */
 
     /**
-     * The source does not convert, and cannot regress to converting.
+     * A record as MaxMind\Db\Reader returns it, UTF-8 throughout, mapped by
+     * the reader. mapCityRecord() is private and takes the reader's array, so
+     * no reader package or database file is needed.
      *
-     * Read out of the file because mapCityRecord() is private and calling it
-     * needs a MaxMind record, which needs the reader package and a database
-     * file. What has to stay true is narrow enough to assert directly: no
-     * Latin-1 conversion is applied to a name on its way in.
+     * @return array<string, string|null>
      */
-    public function testTheGeolocationReaderDoesNotConvertNames(): void
+    private function mapped(): array
     {
-        $src = file_get_contents(
-            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Classes/Maxmind.php' );
+        $record = [
+            'city'         => [ 'names' => [ 'en' => ' München ' ] ],
+            'continent'    => [ 'code' => 'EU', 'names' => [ 'en' => 'Europa Ünion' ] ],
+            'subdivisions' => [ [ 'iso_code' => 'BW', 'names' => [ 'en' => 'Baden-Württemberg' ] ] ],
+            'country'      => [ 'iso_code' => 'de', 'names' => [ 'en' => 'Österreich' ] ],
+        ];
 
-        $this->assertNotEmpty( $src, 'the reader source has to be readable for this to mean anything' );
+        $reader = ( new ReflectionClass( \OWA\Module\MaxmindGeoip\Classes\Maxmind::class ) )->newInstanceWithoutConstructor();
+        $map    = new ReflectionMethod( $reader, 'mapCityRecord' );
 
-        $this->assertStringNotContainsString( 'latin1ToUtf8', $src,
-            'the Latin-1 conversion is back; MaxMind names are UTF-8 and this double-encodes them' );
-
-        // No conversion helper exists for a call site to reintroduce, and nothing
-        // else in the reader should be converting a name either.
-        $this->assertDoesNotMatchRegularExpression(
-            "/mb_convert_encoding\s*\(\s*\\\$?\w+\s*,\s*'UTF-8'\s*,\s*'ISO-8859-1'/", $src );
-        $this->assertDoesNotMatchRegularExpression(
-            "/iconv\s*\(\s*'ISO-8859-1'/", $src );
+        return $map->invoke( $reader, $record, [], 'en' );
     }
 
     /**
-     * The names really are read straight through.
-     *
-     * The assertion above says what is absent. This one says the six fields that
-     * carry a name are assigned from the record with nothing but trim and
-     * strtolower in the way, which is what "read straight through" means.
+     * The names are read straight through: each field that carries a name
+     * holds the record's UTF-8, trimmed and lowercased, and not converted
+     * from Latin-1 a second time ("München" stored as "MÃ¼nchen").
      */
+    public function testTheGeolocationReaderDoesNotConvertNames(): void
+    {
+        $map = $this->mapped();
+
+        $this->assertSame( 'münchen', $map['city'] );
+        $this->assertSame( 'baden-württemberg', $map['state'] );
+        $this->assertSame( 'Österreich', $map['country'] );
+    }
+
+    /** Every field that carries a name is assigned from the record. */
     public function testEveryNameFieldIsAssignedWithoutConversion(): void
     {
-        $src = file_get_contents(
-            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Classes/Maxmind.php' );
-
-        foreach ( [ 'city', 'continent', 'continent_code',
-                         'state', 'state_code', 'country' ] as $field ) {
-
-            $this->assertMatchesRegularExpression(
-                "/\\\$location_map\['" . preg_quote( $field, '/' )
-                    . "'\]\s*=\s*strtolower\(\s*trim\(/",
-                $src,
-                sprintf( '%s is no longer assigned directly from the record', $field )
-            );
-        }
+        $this->assertSame( [
+            'city'           => 'münchen',
+            'continent'      => 'eu',
+            'continent_code' => 'europa Ünion',
+            'state'          => 'baden-württemberg',
+            'state_code'     => 'bw',
+            'country'        => 'Österreich',
+            'country_code'   => 'DE',
+        ], $this->mapped() );
     }
 }
