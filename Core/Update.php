@@ -271,8 +271,8 @@ class Update extends \OWA\Core\Base {
      * column that LATER migrations add -- so the column exists before the
      * migration that adds it ever runs.
      *
-     * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
-     * come from the migration's own code rather than from a request.
+     * Asked of Db::listColumns() and compared exactly: a LIKE pattern would
+     * read the underscore in a column name as a wildcard.
      *
      * @param  object $entity     a table entity
      * @param  string $column
@@ -285,12 +285,7 @@ class Update extends \OWA\Core\Base {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $existing = (array) $db->get_results( sprintf(
-            "SHOW COLUMNS FROM %s LIKE '%s'",
-            $entity->getTableName(),
-            $column ) );
-
-        if ( $existing ) {
+        if ( in_array( $column, $db->listColumns( $entity->getTableName() ), true ) ) {
 
             return true;
         }
@@ -334,12 +329,7 @@ class Update extends \OWA\Core\Base {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $existing = (array) $db->get_results( sprintf(
-            "SHOW COLUMNS FROM %s LIKE '%s'",
-            $entity->getTableName(),
-            $column ) );
-
-        if ( ! $existing ) {
+        if ( ! in_array( $column, $db->listColumns( $entity->getTableName() ), true ) ) {
 
             return true;
         }

@@ -2519,7 +2519,7 @@ class ResultSetManager extends \OWA\Core\Base {
             $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
         }
 
-        return $parts ? sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) ) : null;
+        return $parts ? sprintf( OWA_SQL_GROUP_KEY, implode( ', ', $parts ) ) : null;
     }
 
     /**

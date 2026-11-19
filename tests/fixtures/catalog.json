@@ -1211,7 +1211,7 @@
             "base.event": {
                 "name": "attributedSourceMedium",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), IF(%1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '', '', CONCAT(' / ', %1$s.attributed_medium))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), CASE WHEN %1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '' THEN '' ELSE CONCAT(' / ', %1$s.attributed_medium) END), '')",
                 "family": "traffic source",
                 "label": "Attributed Source / Medium",
                 "description": "The attributed source and medium, as one value.",
@@ -1653,7 +1653,7 @@
             "base.event": {
                 "name": "firstSourceMedium",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), IF(%1$s.acq_medium IS NULL OR %1$s.acq_medium = '', '', CONCAT(' / ', %1$s.acq_medium))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), CASE WHEN %1$s.acq_medium IS NULL OR %1$s.acq_medium = '' THEN '' ELSE CONCAT(' / ', %1$s.acq_medium) END), '')",
                 "family": "traffic source",
                 "label": "First Source / Medium",
                 "description": "Where the user came from and how they arrived on the session that acquired them, as one value.",
@@ -1671,7 +1671,7 @@
             "base.event": {
                 "name": "fullPageUrl",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), IF(%1$s.page_path IS NULL OR %1$s.page_path = '', '', CONCAT('', %1$s.page_path)), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), CASE WHEN %1$s.page_path IS NULL OR %1$s.page_path = '' THEN '' ELSE CONCAT('', %1$s.page_path) END, CASE WHEN %1$s.page_query IS NULL OR %1$s.page_query = '' THEN '' ELSE CONCAT('?', %1$s.page_query) END), '')",
                 "family": "content",
                 "label": "Full Page URL",
                 "description": "The page's URL without its scheme: host, path and query string.",
@@ -1796,7 +1796,7 @@
             "base.event": {
                 "name": "landingPagePlusQuery",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), IF(%1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '', '', CONCAT('?', %1$s.landing_page_query))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), CASE WHEN %1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '' THEN '' ELSE CONCAT('?', %1$s.landing_page_query) END), '')",
                 "family": "content",
                 "label": "Landing Page + Query String",
                 "description": "The path of the session's first page with its query string.",
@@ -1922,7 +1922,7 @@
             "base.event": {
                 "name": "operatingSystemWithVersion",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), IF(%1$s.os_version IS NULL OR %1$s.os_version = '', '', CONCAT(' ', %1$s.os_version))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), CASE WHEN %1$s.os_version IS NULL OR %1$s.os_version = '' THEN '' ELSE CONCAT(' ', %1$s.os_version) END), '')",
                 "family": "device",
                 "label": "Operating System with Version",
                 "description": "The operating system and its version, as one value.",
@@ -2005,7 +2005,7 @@
             "base.event": {
                 "name": "pagePathPlusQuery",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), CASE WHEN %1$s.page_query IS NULL OR %1$s.page_query = '' THEN '' ELSE CONCAT('?', %1$s.page_query) END), '')",
                 "family": "content",
                 "label": "Page Path + Query String",
                 "description": "The path of the page with its query string, as it would be typed.",
@@ -2244,7 +2244,7 @@
             "base.event": {
                 "name": "sessionSourceMedium",
                 "entity": "base.event",
-                "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), IF(%1$s.medium IS NULL OR %1$s.medium = '', '', CONCAT(' / ', %1$s.medium))), '')",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), CASE WHEN %1$s.medium IS NULL OR %1$s.medium = '' THEN '' ELSE CONCAT(' / ', %1$s.medium) END), '')",
                 "family": "traffic source",
                 "label": "Source / Medium",
                 "description": "Where this session came from and how it arrived, as one value.",
@@ -2502,7 +2502,7 @@
         "attributedSourceMedium": {
             "name": "attributedSourceMedium",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), IF(%1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '', '', CONCAT(' / ', %1$s.attributed_medium))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), CASE WHEN %1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '' THEN '' ELSE CONCAT(' / ', %1$s.attributed_medium) END), '')",
             "family": "traffic source",
             "label": "Attributed Source / Medium",
             "description": "The attributed source and medium, as one value.",
@@ -2878,7 +2878,7 @@
         "firstSourceMedium": {
             "name": "firstSourceMedium",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), IF(%1$s.acq_medium IS NULL OR %1$s.acq_medium = '', '', CONCAT(' / ', %1$s.acq_medium))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), CASE WHEN %1$s.acq_medium IS NULL OR %1$s.acq_medium = '' THEN '' ELSE CONCAT(' / ', %1$s.acq_medium) END), '')",
             "family": "traffic source",
             "label": "First Source / Medium",
             "description": "Where the user came from and how they arrived on the session that acquired them, as one value.",
@@ -2894,7 +2894,7 @@
         "fullPageUrl": {
             "name": "fullPageUrl",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), IF(%1$s.page_path IS NULL OR %1$s.page_path = '', '', CONCAT('', %1$s.page_path)), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), CASE WHEN %1$s.page_path IS NULL OR %1$s.page_path = '' THEN '' ELSE CONCAT('', %1$s.page_path) END, CASE WHEN %1$s.page_query IS NULL OR %1$s.page_query = '' THEN '' ELSE CONCAT('?', %1$s.page_query) END), '')",
             "family": "content",
             "label": "Full Page URL",
             "description": "The page's URL without its scheme: host, path and query string.",
@@ -3001,7 +3001,7 @@
         "landingPagePlusQuery": {
             "name": "landingPagePlusQuery",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), IF(%1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '', '', CONCAT('?', %1$s.landing_page_query))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), CASE WHEN %1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '' THEN '' ELSE CONCAT('?', %1$s.landing_page_query) END), '')",
             "family": "content",
             "label": "Landing Page + Query String",
             "description": "The path of the session's first page with its query string.",
@@ -3109,7 +3109,7 @@
         "operatingSystemWithVersion": {
             "name": "operatingSystemWithVersion",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), IF(%1$s.os_version IS NULL OR %1$s.os_version = '', '', CONCAT(' ', %1$s.os_version))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), CASE WHEN %1$s.os_version IS NULL OR %1$s.os_version = '' THEN '' ELSE CONCAT(' ', %1$s.os_version) END), '')",
             "family": "device",
             "label": "Operating System with Version",
             "description": "The operating system and its version, as one value.",
@@ -3180,7 +3180,7 @@
         "pagePathPlusQuery": {
             "name": "pagePathPlusQuery",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), CASE WHEN %1$s.page_query IS NULL OR %1$s.page_query = '' THEN '' ELSE CONCAT('?', %1$s.page_query) END), '')",
             "family": "content",
             "label": "Page Path + Query String",
             "description": "The path of the page with its query string, as it would be typed.",
@@ -3383,7 +3383,7 @@
         "sessionSourceMedium": {
             "name": "sessionSourceMedium",
             "entity": "base.event",
-            "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), IF(%1$s.medium IS NULL OR %1$s.medium = '', '', CONCAT(' / ', %1$s.medium))), '')",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), CASE WHEN %1$s.medium IS NULL OR %1$s.medium = '' THEN '' ELSE CONCAT(' / ', %1$s.medium) END), '')",
             "family": "traffic source",
             "label": "Source / Medium",
             "description": "Where this session came from and how it arrived, as one value.",

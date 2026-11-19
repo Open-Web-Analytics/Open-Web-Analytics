@@ -50,6 +50,18 @@ final class SqlPortabilityLintTest extends TestCase {
         'JSON_VALUE('      => 'use OWA_SQL_JSON_VALUE / _SIGNED / _UNSIGNED / _DOUBLE',
         'JSON_EXTRACT('    => 'use OWA_SQL_JSON_VALUE -- and note JSON_UNQUOTE(JSON_EXTRACT()) '
                             . 'is NOT equivalent: it turns a stored JSON null into the string "null"',
+        ' REGEXP '         => 'use OWA_SQL_REGEXP / OWA_SQL_NOTREGEXP',
+        'CONCAT_WS('       => 'not in SQLite or standard SQL; put it behind a constant',
+        'VERSION()'        => 'server identification belongs in the dialect',
+        '@@'               => 'server variables belong in the dialect',
+        'SET SESSION'      => 'session settings belong in the dialect',
+        'SHOW COLUMNS'     => 'use Db::listColumns()',
+        'SHOW SESSION'     => 'server variables belong in the dialect',
+        // A regex, case-sensitive: needles that are words elsewhere.
+        '/(?<![A-Za-z_])IF\\(/' => 'MySQL\'s IF(); CASE WHEN is ANSI SQL and works in MySQL too',
+        '/\\bDELETE\\b(?:(?!\\bSELECT\\b).)*\\bLIMIT\\b/is' => 'PostgreSQL has no DELETE ... LIMIT; a batched delete belongs in the dialect',
+        '/\\bDELETE\\s+\\w+\\s+FROM\\b/i' => 'a multi-table DELETE is MySQL\'s; delete by key from one table',
+        '/\\bUPDATE\\s+%?\\S+\\s+\\w+\\s+JOIN\\b/i' => 'UPDATE ... JOIN is MySQL\'s; PostgreSQL writes UPDATE ... FROM',
     ];
 
     /**
@@ -76,6 +88,26 @@ final class SqlPortabilityLintTest extends TestCase {
         // information_schema and UNION SELECT here are patterns matched against
         // visitor URLs, not SQL: the spam rule that finds injection probes.
         'modules/Base/Classes/Spam/Rules/QueryAttackPayload.php',
+    ];
+
+    /**
+     * One construct in one file, allowed where it is the only spelling there is
+     * and the file says so. A file here is still linted for everything else.
+     */
+    private const EXEMPT_SITES = [
+        'modules/Base/Classes/Cube/Builder.php' => [
+            // readCommitted(): MySQL's isolation and binlog variables decide
+            // whether a build may run at READ COMMITTED.
+            'SET SESSION'  => 'the build\'s isolation switch, which reads MySQL\'s binlog settings',
+            'SHOW SESSION' => 'the build\'s isolation switch, which reads MySQL\'s binlog settings',
+            // advanceLastSeen()'s own docblock: one joined update, behind a
+            // constant when a second backend exists.
+            '/\\bUPDATE\\s+%?\\S+\\s+\\w+\\s+JOIN\\b/i' => 'advanceLastSeen(), one joined update',
+        ],
+        // Run only by Update066, on an upgrade from 1.x, which is MySQL.
+        'modules/Base/Classes/TouchBackfill.php' => [
+            '/\\bUPDATE\\s+%?\\S+\\s+\\w+\\s+JOIN\\b/i' => 'the 1.x upgrade\'s backfill',
+        ],
     ];
 
     /**
@@ -178,7 +210,11 @@ final class SqlPortabilityLintTest extends TestCase {
 
                 foreach ( self::MYSQL_ONLY as $needle => $why ) {
 
-                    if ( stripos( $literal, $needle ) !== false ) {
+                    $found = $needle[0] === '/'
+                        ? preg_match( $needle, $literal ) === 1
+                        : stripos( $literal, $needle ) !== false;
+
+                    if ( $found && ! isset( self::EXEMPT_SITES[ $relative ][ $needle ] ) ) {
 
                         $findings[] = sprintf( '%s: "%s" -- %s', $relative, $needle, $why );
                     }
@@ -215,6 +251,21 @@ final class SqlPortabilityLintTest extends TestCase {
                 $root . '/' . $relative,
                 sprintf( '%s is exempted from the SQL portability lint but no longer exists', $relative )
             );
+        }
+
+        foreach ( self::EXEMPT_SITES as $relative => $needles ) {
+
+            $literals = $this->stringLiterals( $root . '/' . $relative );
+
+            foreach ( array_keys( $needles ) as $needle ) {
+
+                $this->assertArrayHasKey( $needle, self::MYSQL_ONLY, "$relative exempts a pattern the lint does not have" );
+
+                $this->assertNotEmpty( array_filter( $literals, static function ( $literal ) use ( $needle ) {
+
+                    return $needle[0] === '/' ? preg_match( $needle, $literal ) === 1 : stripos( $literal, $needle ) !== false;
+                } ), sprintf( '%s is exempted for %s, which it no longer has', $relative, $needle ) );
+            }
         }
 
         foreach ( self::EXEMPT_DIRS as $relative ) {
