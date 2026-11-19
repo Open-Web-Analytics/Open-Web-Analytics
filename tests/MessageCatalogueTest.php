@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/bootstrap_owa.php';
+
 /**
  * Every status code in the catalogue means one thing.
  *
@@ -174,19 +176,21 @@ final class MessageCatalogueTest extends TestCase
     {
         $messages = $this->catalogue();
 
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('errorAction() resolves the current site');
+        }
+
         foreach (['SitesAdd', 'SitesEditSettings', 'UsersEdit'] as $name) {
 
-            $source = (string) file_get_contents(
-                __DIR__ . '/../modules/Base/Controller/' . $name . '.php');
+            $class      = '\\OWA\\Module\\Base\\Controller\\' . $name;
+            $controller = new $class([]);
+            $controller->errorAction();
 
-            // From errorAction() on: a code set elsewhere is not the form's.
-            $source = substr($source, (int) strpos($source, 'function errorAction'));
+            $code = $controller->data['error_code'] ?? null;
 
-            $this->assertTrue(
-                (bool) preg_match("/set\(\s*'error_code'\s*,\s*(\d+)/", $source, $m),
-                "$name sets no error code in errorAction()");
+            $this->assertNotNull($code, "$name sets no error code in errorAction()");
 
-            $message = $messages[(int) $m[1]]['message'] ?? '';
+            $message = $messages[(int) $code]['message'] ?? '';
 
             $this->assertStringNotContainsStringIgnoringCase('command line', $message,
                 "$name reports the CLI-updates message on a form error");
