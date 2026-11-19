@@ -1,17 +1,16 @@
 
 // OWA CONFIG SETTINGS
 
-OWA.config.main_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'main_url');?>";
-OWA.config.public_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url');?>";
-OWA.config.baseUrl = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url');?>";
-//OWA.config.js_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url').'js/';?>";
-OWA.config.images_url = "<?php echo \OWA\Core\CoreAPI::configSingleton()->assetsUrl();?>";
-OWA.config.log_url = "<?php echo \OWA\Core\CoreAPI::configSingleton()->trackingUrl() . 'log.php';?>";
-OWA.config.modules_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'modules_url');?>";
-OWA.config.api_endpoint = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');?>";
+OWA.config.main_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'main_url'), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.public_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.baseUrl = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.images_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::configSingleton()->assetsUrl(), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.log_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::configSingleton()->trackingUrl() . 'log.php', JSON_UNESCAPED_SLASHES );?>;
+OWA.config.modules_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'modules_url'), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.api_endpoint = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url'), JSON_UNESCAPED_SLASHES );?>;
 // 'ns' names cookies -- it must stay the wire namespace. OWA's own links carry no prefix.
-OWA.config.ns = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'ns');?>";
-OWA.config.link_template = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'link_template');?>";
+OWA.config.ns = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns'), JSON_UNESCAPED_SLASHES );?>;
+OWA.config.link_template = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'link_template'), JSON_UNESCAPED_SLASHES );?>;
 // The operators a constraints string is parsed with, in the server's order (OWA.dataGrid.operators()).
 OWA.config.constraint_operators = <?php echo \OWA\Core\Template::scriptJson( array_keys( \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS ) ); ?>;
 // The most rows one report request returns (OWA.dataGrid.maxRows()).

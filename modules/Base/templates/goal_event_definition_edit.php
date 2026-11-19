@@ -15,7 +15,7 @@
  */
 $owa_ke = (array) $view->goalEventDefinition;
 ?>
-<h1 class="panel_headline"><?php echo $view->headline;?></h1>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal events are custom events that are created when OWA observes a behavior pattern you specify. A goal event definition names them and says which events count: choose the event, then pick a property of it, how to compare it, and what to compare it to.' ) );?></div>
 

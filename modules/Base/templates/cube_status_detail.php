@@ -25,7 +25,7 @@ $owa_c = (array) $view->cube;
 <?php else: ?>
 
 <fieldset>
-    <legend><?php $view->out( $owa_c['name'] ); ?> <?php echo owa_cube_status_badge( $owa_c['level'] ); ?></legend>
+    <legend><?php $view->out( $owa_c['name'] ); ?> <?php echo owa_cube_status_badge( $owa_c['level'] ); /* trusted: escapes its text */ ?></legend>
 
     <div class="owa_panelIntro"><code><?php $view->out( $owa_c['table'] ); ?></code></div>
 
@@ -33,7 +33,7 @@ $owa_c = (array) $view->cube;
         <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Check' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Detail' ) ); ?></th></tr>
         <?php foreach ( $owa_c['checks'] as $owa_check ): ?>
         <tr>
-            <td><?php echo owa_cube_status_badge( $owa_check['level'] ); ?></td>
+            <td><?php echo owa_cube_status_badge( $owa_check['level'] ); /* trusted: escapes its text */ ?></td>
             <td><?php $view->out( $owa_check['label'] ); ?></td>
             <td><?php $view->out( $owa_check['detail'] ); ?></td>
         </tr>

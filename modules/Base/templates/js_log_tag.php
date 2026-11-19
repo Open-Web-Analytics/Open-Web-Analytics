@@ -82,19 +82,19 @@ var owa_assetsUrl = '<?php $view->out( $owa_assets_url ); ?>';
 <?php } ?>
 var owa_cmds = owa_cmds || [];
 <?php if ( isset($view->options) && $view->getValue('apiEndpoint', $view->options ) ) { ?>
-owa_cmds.push(['setApiEndpoint', '<?php echo $view->options['apiEndpoint'];?>']);
+owa_cmds.push(['setApiEndpoint', <?php echo \OWA\Core\Template::scriptJson( (string) $view->options['apiEndpoint'], JSON_UNESCAPED_SLASHES );?>]);
 <?php } ?>
-<?php foreach ( (array) ( $view->profile_cmds ?? [] ) as $line ) { $view->out( $line, false ); $view->out( "\n" ); } ?>
+<?php foreach ( (array) ( $view->profile_cmds ?? [] ) as $line ) { $view->out( $line, false ); /* trusted: JavaScript TrackerBundle::commandLines() JSON-encodes */ $view->out( "\n" ); } ?>
 <?php 
     if ( isset($view->options) && $view->getValue( 'cmds', $view->options ) ) {
-        $view->out($view->getValue( 'cmds', $view->options ), false );
+        $view->out($view->getValue( 'cmds', $view->options ), false ); // trusted: JavaScript the caller of getJsTrackerTag() wrote
         $view->out( "\n");
     }
 ?>
 <?php
 foreach ($view->cmds as $cmd) {
 
-    $view->out( $cmd , false);
+    $view->out( $cmd , false); // trusted: JavaScript a module adds (tracker_tag_cmds)
     $view->out( "\n");
 }
 ?>

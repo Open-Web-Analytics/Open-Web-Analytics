@@ -136,7 +136,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                          * never sees the glyph.
                          */
                         foreach ( $owa_titleMarks as $owa_mark ): ?><a
-                            class="owa_titleActionMark" href="<?php $view->out( $owa_mark['url'], false ); ?>"
+                            class="owa_titleActionMark" href="<?php $view->out( $owa_mark['url'] ); ?>"
                             title="<?php $view->out( $owa_mark['label'] ); ?>"
                             aria-label="<?php $view->out( $owa_mark['label'] ); ?>"><i class="<?php
                             /*
@@ -193,7 +193,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                         <a class="owa_button<?php
                             if ( ! empty( $owa_action['class'] ) ): ?> <?php
                                 $view->out( $owa_action['class'] ); endif; ?>"
-                           href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
+                           href="<?php $view->out( $owa_action['url'] ); ?>"><?php
                             if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
                                 $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
                             endif; ?><?php $view->out( $owa_action['label'] ); ?></a>
@@ -208,7 +208,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                     <?php endif; ?>
 
                     <div class="clear"></div>
-                    <?php echo $view->subview;?>
+                    <?php echo $view->subview; /* trusted: a rendered template */ ?>
 
                 </div>
                 </main>

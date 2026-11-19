@@ -472,6 +472,25 @@ final class CustomReportPropertyTest extends TestCase
         http_response_code(200);
     }
 
+    /** A report's name is its page title, printed escaped. */
+    public function testANameWithMarkupIsEscapedInTheTitle(): void
+    {
+        $name = 'Named </title><script>alert(1)</script>';
+        $id   = $this->store(self::P, $name);
+
+        ob_start();
+        $out = CoreAPI::runController(new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]));
+        $html = ob_get_clean() . (string) $out;
+
+        $this->assertSame(1, preg_match('~<title>(.*?)</title>~s', $html, $m), 'one <title>');
+        $this->assertStringContainsString($name, html_entity_decode($m[1], ENT_QUOTES));
+        $this->assertStringNotContainsString('<script>alert(1)', $html);
+    }
+
     /**
      * A link to a report keeps working: its id is unchanged, and one naming no
      * Property, or a Profile of the report's, opens it on its own.

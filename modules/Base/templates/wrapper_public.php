@@ -37,7 +37,7 @@
             <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
             <div class="owa_publicLogo">
                 <?php if ( $owa_logo ): ?>
-                    <img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics">
+                    <img src="<?php $view->out( $owa_logo ); ?>" alt="Open Web Analytics">
                 <?php else: ?>
                     <span class="owa_publicLogoText">Open Web Analytics</span>
                 <?php endif; ?>
@@ -45,8 +45,8 @@
 
             <div class="owa_publicMain">
                 <?php include($view->setTemplate('msgs.php'));?>
-                <?php if (isset($view->content)) { echo $view->content; }?>
-                <?php echo $view->body;?>
+                <?php if (isset($view->content)) { echo $view->content; /* trusted: a rendered template */ }?>
+                <?php echo $view->body; /* trusted: a rendered template */ ?>
             </div>
 
             <?php // No version: these screens are for visitors who are not signed in. ?>

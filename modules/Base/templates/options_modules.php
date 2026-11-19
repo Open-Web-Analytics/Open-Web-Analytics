@@ -19,12 +19,12 @@
 
     <TR>
         <TD>
-        <B><?php echo $v['display_name'];?></B><BR>
-        <?php echo $v['description'];?>
+        <B><?php $view->out( $v['display_name'] );?></B><BR>
+        <?php $view->out( $v['description'] );?>
         </TD>
-        <TD><?php echo $v['current_schema_version'];?></TD>
-        <TD><?php echo $v['required_schema_version'];?></TD>
-        <TD><?php echo $v['schema_uptodate'];?></TD>
+        <TD><?php $view->out( $v['current_schema_version'] );?></TD>
+        <TD><?php $view->out( $v['required_schema_version'] );?></TD>
+        <TD><?php $view->out( $v['schema_uptodate'] );?></TD>
         <TD class="">
         <?php if ($v['name'] != 'base'): ?>
         <?php if (! empty($v['activated_by'])): ?>

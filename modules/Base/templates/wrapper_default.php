@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>" xml:lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>">
 
     <head>
-        <title>Open Web Analytics - <?php echo $view->page_title ?? '';?></title>
+        <title>Open Web Analytics - <?php $view->out( $view->page_title ?? '' );?></title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <?php include($view->getTemplatePath('base','head.php'));?>
@@ -71,10 +71,11 @@
                 echo '</a>';
             }
 
-            echo $owa_header;
-            echo $owa_banners;
-            echo $owa_body;
-            echo $owa_footer;
+            // trusted: rendered templates, each escaping its own values.
+            echo $owa_header; // trusted: rendered template
+            echo $owa_banners; // trusted: rendered template
+            echo $owa_body; // trusted: rendered template
+            echo $owa_footer; // trusted: rendered template
         ?>
         </div>
     </body>

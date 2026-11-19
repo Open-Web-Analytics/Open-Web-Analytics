@@ -128,7 +128,7 @@ foreach ( $owa_steps as $owa_s ) {
         <div class="owa_funnelStepColumn" id="step_<?php $view->out($owa_step['step_number']);?>">
 
             <div class="owa_funnelBarArea">
-                <div class="owa_funnelBar" style="height:<?php $view->out($owa_h, false);?>%;" title="<?php $view->out($owa_count);?> <?php $view->out($owa_label);?>"></div>
+                <div class="owa_funnelBar" style="height:<?php $view->out($owa_h);?>%;" title="<?php $view->out($owa_count);?> <?php $view->out($owa_label);?>"></div>
             </div>
 
             <div class="owa_funnelStepNumber"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Step %s' ), $owa_step['step_number'] ) );?></div>
