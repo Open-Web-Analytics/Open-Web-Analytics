@@ -100,6 +100,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
     /** @var \OWA\Module\Base\Classes\ReportSegment|null */
     private $segment = null;
 
+    /** @var string[]|null the site's domain, from OverlayLauncher::domainOf() */
+    private $domains = null;
+
     function action() {
 
         $document_id = '';
@@ -399,15 +402,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             'domstream_guid'
         );
 
-        // The player is opened on the recorded page itself, and a fragment on
-        // that URL is where the overlay parameters ride. A page_url that
-        // already carries one would produce two.
-        $page_url = (string) $r['page_url'];
+        if ( $this->domains === null ) {
 
-        if ( strpos( $page_url, '#' ) !== false ) {
-
-            $parts    = explode( '#', $page_url );
-            $page_url = $parts[0];
+            $this->domains = OverlayLauncher::domainOf( (string) $this->getParam( 'siteId' ) );
         }
 
         return array(
@@ -420,10 +417,54 @@ class ReportDomstreams extends \OWA\Core\ReportController {
                 true,
                 'json'
             ) ), "\0" ),
-            'url'    => $page_url,
+            'url'    => self::playerUrl( $r['page_url'], $this->domains ),
             'width'  => (int) $r['page_width'],
             'height' => (int) $r['page_height'],
         );
+    }
+
+    /**
+     * The page the player opens a recording on, without its fragment: the
+     * overlay parameters ride in a fragment of their own.
+     *
+     * Only an http or https page on the site's domain or a subdomain of it is
+     * opened, because the overlay's data link travels in that page's fragment
+     * and any beacon can name any page_url. Anything else gives '', and the
+     * grid then shows no Play link.
+     *
+     * The host is read as a browser reads it. A browser treats a backslash as
+     * a slash, which parse_url() does not, so a url with one is refused, as is
+     * one with any character outside printable ASCII. A page's own location,
+     * which the tracker records, has neither.
+     *
+     * @param string   $page_url
+     * @param string[] $domains from OverlayLauncher::domainOf()
+     * @return string the url, or ''
+     */
+    public static function playerUrl( $page_url, array $domains ) {
+
+        $url = trim( (string) $page_url );
+
+        if ( $url === '' || preg_match( '/[^\x21-\x7e]|\\\\/', $url ) ) {
+
+            return '';
+        }
+
+        if ( strpos( $url, '#' ) !== false ) {
+
+            $url = explode( '#', $url )[0];
+        }
+
+        $parts = parse_url( $url );
+
+        if ( ! is_array( $parts )
+             || ! in_array( strtolower( (string) ( $parts['scheme'] ?? '' ) ), [ 'http', 'https' ], true )
+             || ! OverlayLauncher::isOnDomain( (string) ( $parts['host'] ?? '' ), $domains ) ) {
+
+            return '';
+        }
+
+        return $url;
     }
 
     /** Seconds as h:mm:ss, without pretending a duration is a time of day. */

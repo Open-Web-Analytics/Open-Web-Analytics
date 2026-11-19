@@ -173,7 +173,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * @param string $siteId
      * @return string[] none when the site has no domain
      */
-    private static function domainOf( $siteId ) {
+    public static function domainOf( $siteId ) {
 
         if ( $siteId === '' ) {
 
@@ -198,7 +198,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * @param string[] $domains from domainOf()
      * @return bool
      */
-    private static function isOnDomain( $host, array $domains ) {
+    public static function isOnDomain( $host, array $domains ) {
 
         $host = strtolower( $host );
 
