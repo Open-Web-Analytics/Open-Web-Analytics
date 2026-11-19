@@ -67,6 +67,7 @@ return [
     'mailer-from' => '',
     'mailer-fromName' => 'OWA Server',
     'mailer-host' => '',
+    'mailer-options' => [],
     'mailer-password' => '',
     'mailer-port' => '',
     'mailer-smtpAuth' => false,

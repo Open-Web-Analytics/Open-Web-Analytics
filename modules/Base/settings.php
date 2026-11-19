@@ -297,6 +297,7 @@ return [
         'mailer-from' => [ 'config_constant' => 'OWA_MAILER_FROM', 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ],
         'mailer-fromName' => [ 'config_constant' => 'OWA_MAILER_FROM_NAME', 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ],
         'mailer-host' => [ 'config_constant' => 'OWA_MAILER_HOST', 'default' => '', 'description' => 'The SMTP server host, used when mailer-use-smtp is on.' ],
+        'mailer-options' => [ 'config_constant' => 'OWA_MAILER_OPTIONS', 'default' => [], 'description' => 'Options for the SMTP connection\'s stream context, as an array (PHPMailer\'s SMTPOptions), such as [ \'ssl\' => [ \'cafile\' => \'/path/to/ca.pem\' ] ]. Used when mailer-use-smtp is on. None by default.' ],
         'mailer-password' => [ 'config_constant' => 'OWA_MAILER_PASSWORD', 'default' => '', 'description' => 'The password for the SMTP server, used with mailer-username.' ],
         'mailer-port' => [ 'config_constant' => 'OWA_MAILER_PORT', 'default' => '', 'description' => 'The SMTP server port. Empty uses the mail library\'s default.' ],
         'mailer-smtpAuth' => [ 'config_constant' => 'OWA_MAILER_SMTP_AUTH', 'default' => false, 'description' => 'Whether OWA authenticates to the SMTP server. Off by default.' ],
@@ -404,6 +405,7 @@ return [
          * catalogue complete enough for the read sweep to need no exceptions.
          */
         'main_url'            => [ 'internal' => true ],
+        'main_absolute_url'   => [ 'internal' => true ],
         'modules_url'         => [ 'internal' => true ],
         'rest_api_url'        => [ 'internal' => true ],
         'tracking_mode'       => [ 'internal' => true ],

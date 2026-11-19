@@ -193,7 +193,8 @@ final class SettingsDeclarationContractTest extends TestCase
     }
 
     /**
-     * Every setting the code READS is declared, on a module that has declared.
+     * Every setting the code READS is declared, on a module that has declared,
+     * and every base setting it sets.
      *
      * The other half of the persist sweep, and the half that actually bites.
      * Declaring takes a module out of the boot query's wholesale clause, so
@@ -225,12 +226,21 @@ final class SettingsDeclarationContractTest extends TestCase
                     continue;
                 }
 
-                if ( preg_match_all(
-                    "/getSetting\(\s*'([a-zA-Z_]+)'\s*,\s*'([a-zA-Z_.]+)'/",
-                    (string) file_get_contents( $file->getPathname() ), $m, PREG_SET_ORDER ) ) {
+                /*
+                 * Reads, and the keys code sets on base, which a template can
+                 * read from the config array without getSetting(). Keys may
+                 * hold a hyphen (mailer-options).
+                 */
+                $source = (string) file_get_contents( $file->getPathname() );
 
-                    foreach ( $m as $hit ) {
-                        $found[ $hit[1] . '|' . $hit[2] ] = true;
+                foreach ( [ "/getSetting\(\s*'([a-zA-Z_]+)'\s*,\s*'([a-zA-Z_.-]+)'/",
+                            "/(?:->|::)set(?:Setting)?\(\s*'(base)'\s*,\s*'([a-zA-Z_.-]+)'/" ] as $pattern ) {
+
+                    if ( preg_match_all( $pattern, $source, $m, PREG_SET_ORDER ) ) {
+
+                        foreach ( $m as $hit ) {
+                            $found[ $hit[1] . '|' . $hit[2] ] = true;
+                        }
                     }
                 }
             }
