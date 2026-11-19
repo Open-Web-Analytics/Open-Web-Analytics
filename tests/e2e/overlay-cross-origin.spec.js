@@ -162,14 +162,14 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         expect(call.status,
             `cross-origin overlay fetch failed (status ${call.status})\n`
             + `  console: ${JSON.stringify(consoleErrors)}`
-        ).toBe(201);
+        ).toBe(200);
         expect(call.length, 'the response body was empty').toBeGreaterThan(0);
 
         /*
          * The clicks actually came back.
          *
-         * A 201 with a non-empty envelope is NOT enough: an empty result set is
-         * also a 201 with a body, so the assertions above pass just as happily
+         * A 200 with a non-empty envelope is NOT enough: an empty result set is
+         * also a 200 with a body, so the assertions above pass just as happily
          * when the query matched nothing. That is not hypothetical here -- the
          * heatmap reaches clicks by JOINING to the document that owns the path,
          * so a fixture without a real document row would answer exactly that
@@ -257,7 +257,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
                     + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
             });
 
-            expect(fetches[0] && fetches[0].status, 'the heatmap\'s data request failed').toBe(201);
+            expect(fetches[0] && fetches[0].status, 'the heatmap\'s data request failed').toBe(200);
 
             const painted = (x, y) => page.evaluate(([px, py]) => {
                 const c = document.querySelector('#owa_heatmap');
@@ -303,9 +303,9 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         expect(call, 'the player issued no API request').toBeDefined();
         expect(call.status,
             `cross-origin player fetch failed (status ${call.status})\n  body: ${call.body}`
-        ).toBe(201);
+        ).toBe(200);
 
-        // A 201 is also what an unknown recording answers, with no samples.
+        // A 200 is also what an unknown recording answers, with no samples.
         expect(JSON.parse(call.body).data.samples,
             'the recording came back without its samples').toEqual(RECORDING);
 

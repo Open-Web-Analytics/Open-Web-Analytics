@@ -43,7 +43,9 @@ final class UsersRestControllerTest extends RestControllerTestCase
             []
         );
 
-        $this->assertNotSame(200, $resp['status'],
+        $this->assertSame('base.restApi', $resp['view'],
+            'A refused REST request is answered in the REST envelope.');
+        $this->assertSame(403, $resp['status'],
             'A viewer without edit_users must not receive the user roster.');
         $this->assertNull($resp['data'],
             'A non-capable user must not receive a roster payload.');

@@ -118,7 +118,7 @@ test.describe('every configured report renders in a browser', () => {
 
             expect(q.url, 'the pattern lost its anchors on the way')
                 .toContain('eventName=~^form_(start|submit)$');
-            // The REST endpoint answers a report query with 201.
+            // The REST endpoint answers a report query with 200.
             expect(q.response.ok(), q.url).toBe(true);
 
             const body = await q.response.json();
