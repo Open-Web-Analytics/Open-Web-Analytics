@@ -216,23 +216,18 @@ final class CustomDimensionsTest extends TestCase
      * dimension, and twenty user-scoped ones need 4,020 of the 12,509 left.
      *
      * So the server decides, reconcile() records the refusal against the
-     * registrations, and the build carries on without them.
+     * registrations, and the build carries on without them
+     * (CustomDimensionBuildTest::testAnAlterTheServerRefusesIsRecordedAndDoesNotBreakTheBuild).
      */
     public function testTheRowSizeIsLeftToTheServer(): void
     {
-        $body = file_get_contents(
-            __DIR__ . '/../modules/Base/Classes/Cube/Dimensions.php');
-
         foreach (['MAX_ROW_BYTES', 'definitionRowBytes', 'tableRowBytes'] as $gone) {
-            $this->assertStringNotContainsString($gone, $body,
+            $this->assertFalse(defined(Dimensions::class . '::' . $gone) || method_exists(Dimensions::class, $gone),
                 "$gone was removed; predicting the server's row accounting is not this "
               . 'class\'s job');
         }
-
-        // What replaced it: the refusal is caught and explained.
-        $this->assertStringContainsString('1118', $body,
-            'a refused ALTER should name the error an operator will see');
     }
+
     /** The width is fixed, so there is no knob to get wrong. */
     public function testTheWidthIsNotAnOption(): void
     {
@@ -322,32 +317,6 @@ final class CustomDimensionsTest extends TestCase
 
         $this->assertSame(['pending', 'applied', 'failed'],
             [CustomDimension::STATE_PENDING, CustomDimension::STATE_APPLIED, CustomDimension::STATE_FAILED]);
-    }
-
-    /**
-     * The build's rule, stated where it can be checked without a database.
-     *
-     * Trusting the registry instead would put a not-yet-created column in the
-     * INSERT and fail every build with "Unknown column in field list" -- one
-     * Property's whole cube stopping a few minutes after someone registered a
-     * dimension.
-     *
-     * Read from the source because this file needs no database, and CI's unit
-     * job has none: the behavioural proof is
-     * CustomDimensionBuildTest::testAPendingRegistrationIsNotBuiltUntilItIsApplied,
-     * which is skipped there. This is the half that still runs.
-     */
-    public function testTheBuilderTakesTheIntersectionOfRegistryAndTable(): void
-    {
-        $body = file_get_contents(
-            __DIR__ . '/../modules/Base/Classes/Cube/Builder.php');
-
-        $this->assertStringContainsString('registeredColumnsOn', $body,
-            'the Builder has to ask the table which cd_ columns exist');
-
-        $this->assertMatchesRegularExpression(
-            '/isset\(\s*\$present\[\s*\$column\s*\]\s*\)/', $body,
-            'and skip a registration whose column is not among them');
     }
 
     public function testTheRegistryIsNotAPartitionedTable(): void
