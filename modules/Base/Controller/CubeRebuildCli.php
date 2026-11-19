@@ -180,8 +180,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * A ROUTINE RUN is one given no dates: what the scheduler runs. Only it
          * catches up; a range an operator names is built exactly as named.
          */
-        $routine = $this->getParam( 'from' ) === null && $this->getParam( 'to' ) === null
-            && $this->getParam( 'days' ) === null;
+        $routine = $this->isRoutine();
 
         foreach ( $properties as $property_id ) {
 
@@ -245,6 +244,17 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * Whether this is the scheduled run: one given no dates.
+     *
+     * @return bool
+     */
+    protected function isRoutine() {
+
+        return $this->getParam( 'from' ) === null && $this->getParam( 'to' ) === null
+            && $this->getParam( 'days' ) === null;
+    }
+
+    /**
      * Whose cubes this run covers.
      *
      * EVERY EXISTING CUBE, PLUS EVERY PROPERTY WITH RAW ROWS IN THE RANGE.
@@ -283,8 +293,12 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             return [ $only ];
         }
 
+        /*
+         * The orphan count reads every raw row in the range, so it is asked
+         * for by a run given dates, not by the scheduled one.
+         */
         $collecting = \OWA\Module\Base\Classes\Cube\Cubes::collecting(
-            $range['from'], $range['to'] );
+            $range['from'], $range['to'], ! $this->isRoutine() );
 
         if ( $collecting['orphan_rows'] ) {
 

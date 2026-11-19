@@ -269,15 +269,39 @@ class Cubes {
      * deleted profile or a beacon quoting an id nothing issued, and both are
      * worth saying out loud once.
      *
-     * @param int $from yyyymmdd
-     * @param int $to   yyyymmdd, inclusive
-     * @return array{properties: list<string>, orphan_rows: int}
+     * Counting them reads every raw row in the range. Without $count_orphans
+     * nothing is counted, and each Profile is asked instead whether it has
+     * any row in the range: one probe of site_date per Profile per partition,
+     * which is what the scheduled run, every five minutes, asks.
+     *
+     * @param int  $from yyyymmdd
+     * @param int  $to   yyyymmdd, inclusive
+     * @param bool $count_orphans
+     * @return array{properties: list<string>, orphan_rows: int} orphan_rows 0 without $count_orphans
      */
-    public static function collecting( $from, $to ) {
+    public static function collecting( $from, $to, $count_orphans = true ) {
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();
         $raw  = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
+
+        if ( ! $count_orphans ) {
+
+            $properties = [];
+
+            foreach ( (array) $db->get_results( sprintf(
+                    "SELECT DISTINCT s.property_id AS property_id FROM %s s "
+                  . "WHERE s.property_id IS NOT NULL AND s.property_id <> '' AND s.property_id <> '0' "
+                  . 'AND EXISTS ( SELECT 1 FROM %s e WHERE e.site_id = s.site_id AND e.yyyymmdd >= %d AND e.yyyymmdd <= %d )',
+                    $site, $raw, (int) $from, (int) $to ) ) as $row ) {
+
+                $properties[] = (string) $row['property_id'];
+            }
+
+            sort( $properties, SORT_STRING );
+
+            return [ 'properties' => $properties, 'orphan_rows' => 0 ];
+        }
 
         $rows = (array) $db->get_results( sprintf(
             'SELECT s.property_id AS property_id, COUNT(*) AS n FROM %s e '
