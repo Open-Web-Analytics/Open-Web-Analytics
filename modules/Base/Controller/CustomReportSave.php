@@ -146,12 +146,11 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         $params = $this->params;
 
-        $params['do']                = 'base.customReportEdit';
-        $params['customReportError'] = $message;
+        $params['do'] = 'base.customReportEdit';
 
         $target = new CustomReportEdit( $params );
 
-        return $target->doAction();
+        return $target->refuseWith( $message )->doAction();
     }
 
     function errorAction() {

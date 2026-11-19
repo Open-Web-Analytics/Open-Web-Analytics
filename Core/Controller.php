@@ -57,6 +57,13 @@ class Controller extends \OWA\Core\Base {
     protected $accepts_overlay_token = false;
 
     /**
+     * Whether this controller runs only once owa-config.php has usable keys
+     * and salts (Settings::unusableSecretConstants()). The installer, which
+     * defines OWA_INSTALLING, and reset-secrets run without them.
+     */
+    protected $requires_secrets = true;
+
+    /**
      * The priviledge level required to access this controller
      *
      * @var string
@@ -163,6 +170,65 @@ class Controller extends \OWA\Core\Base {
 	    
     }
 	
+    /**
+     * The keys and salts in owa-config.php this install cannot run on.
+     *
+     * @return string[] constant names; none when no owa-config.php was read
+     */
+    protected function unusableSecrets() {
+
+        if ( ! $this->c->isConfigFileLoaded() ) {
+
+            return [];
+        }
+
+        return \OWA\Module\Base\Classes\Settings::unusableSecretConstants();
+    }
+
+    /**
+     * The answer when owa-config.php has an unusable key or salt.
+     *
+     * The constants are named in the error log and on the command line; a web
+     * page or REST response only says the configuration needs attention.
+     *
+     * @param string[] $constants from Settings::unusableSecretConstants()
+     * @return array
+     */
+    function secretsAction( array $constants ) {
+
+        $msg = $this->getMsg( 3313, [ 'message' => [ implode( ', ', $constants ) ] ] );
+
+        \OWA\Core\CoreAPI::error( $msg['message'] );
+
+        $this->data = [];
+
+        switch ( $this->getMode() ) {
+
+            case 'cli':
+
+                $this->setView( 'base.genericCli' );
+                $this->set( 'msgs', $msg['message'] );
+
+                break;
+
+            case 'rest_api':
+
+                $this->setView( 'base.restApi' );
+                $this->set( 'error_msg', $this->getMsg( 3314 ) );
+                http_response_code( 500 );
+
+                break;
+
+            default:
+
+                $this->setView( 'base.error' );
+                $this->set( 'error_msg', $this->getMsgAsString( 3314 ) );
+                http_response_code( 500 );
+        }
+
+        return $this->data;
+    }
+
 	function updateAction() {
 		
 		$error_msg = 'Cannot perform action. OWA Updates required.';
@@ -205,6 +271,17 @@ class Controller extends \OWA\Core\Base {
     function doAction() {
 
         \OWA\Core\CoreAPI::debug('Performing Action: '.get_class($this));
+
+        // Before authentication, which the keys and salts sign.
+        if ( $this->requires_secrets && ! defined( 'OWA_INSTALLING' ) ) {
+
+            $unusable = $this->unusableSecrets();
+
+            if ( $unusable ) {
+
+                return $this->secretsAction( $unusable );
+            }
+        }
 
         // check if the schema needs to be updated and force the update
         // not sure this should go here...

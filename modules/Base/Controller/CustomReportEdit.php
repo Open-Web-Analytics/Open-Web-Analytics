@@ -55,6 +55,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportEdit extends \OWA\Core\ReportController {
 
+    /** Why base.customReportSave refused the submission, or ''. */
+    private $refusal = '';
+
     function __construct( $params ) {
 
         parent::__construct( $params );
@@ -62,6 +65,19 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         // Authoring, not viewing. A reader who may open a shared report does
         // not necessarily get to build one.
         $this->setRequiredCapability( 'edit_reports' );
+    }
+
+    /**
+     * Redraw the form as refused, with the reason shown above it.
+     *
+     * @param string $message from base.customReportSave
+     * @return $this
+     */
+    public function refuseWith( $message ) {
+
+        $this->refusal = (string) $message;
+
+        return $this;
     }
 
     function action() {
@@ -119,10 +135,13 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * A REFUSED save comes back through here, carrying what the author
          * typed. Those win over the stored row -- redrawing the last saved
          * version would quietly discard the edit they are being asked to fix.
+         *
+         * The reason is handed over by base.customReportSave (refuseWith()),
+         * not read from the request, so a link cannot put text on this page.
          */
-        if ( $this->getParam( 'customReportError' ) ) {
+        if ( $this->refusal !== '' ) {
 
-            $this->set( 'custom_report_error', $this->getParam( 'customReportError' ) );
+            $this->set( 'custom_report_error', $this->refusal );
 
             $submitted = json_decode( (string) $this->getParam( 'customReportDefinition' ), true );
 
@@ -146,7 +165,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * reason the name and definition do.
          */
         $this->set( 'custom_report_is_shared',
-            $this->getParam( 'customReportError' )
+            $this->refusal !== ''
                 ? (bool) $this->getParam( 'isShared' )
                 : ( $report ? ! empty( $report['is_shared'] ) : false ) );
 

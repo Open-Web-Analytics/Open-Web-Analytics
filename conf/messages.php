@@ -81,6 +81,18 @@ $_owa_messages = [
     3011 => ['headline' => 'Error', 'message' => 'Could not update user profile.'],
     3012 => ['headline' => 'Error', 'message' => 'Could not connect the database. Check your settings and try again.'],
 
+    // base.myProfileSave refusals, shown on base.myProfile (MyProfileSave::REFUSALS).
+    3020 => ['headline' => 'Error', 'message' => 'That account no longer exists.'],
+    3021 => ['headline' => 'Error', 'message' => 'Changing the email address on your account is not something your role can do. Ask an administrator.'],
+    3022 => ['headline' => 'Error', 'message' => 'That is not your current password.'],
+    3023 => ['headline' => 'Error', 'message' => 'The password could not be changed.'],
+    3024 => ['headline' => 'Error', 'message' => 'That does not look like an email address.'],
+    3025 => ['headline' => 'Error', 'message' => 'Enter your current password to change it.'],
+    3026 => ['headline' => 'Error', 'message' => 'Enter the new password.'],
+    3027 => ['headline' => 'Error', 'message' => 'The new passwords do not match.'],
+    3028 => ['headline' => 'Error', 'message' => 'The new password must be at least %d characters.'],
+    3029 => ['headline' => 'Error', 'message' => 'Those details could not be saved.'],
+
     //sites management
     3200 => ['headline' => 'Error', 'message' => 'Please fill in all required fields.'],
     3201 => ['headline' => 'Success', 'message' => 'Site Profile Updated.'],
@@ -116,6 +128,10 @@ $_owa_messages = [
     // and reintroduce the same class of bug from the other end.
     3310 => ['headline' => 'Error', 'message' => 'Password is required.'],
     3312 => ['headline' => 'Error', 'message' => 'E-mail Address is required.'],
+    // Controller::secretsAction(): 3313 for the error log and the CLI, %s is
+    // the constants' names; 3314 for a web page or a REST response.
+    3313 => ['headline' => 'Error', 'message' => 'OWA will not run until owa-config.php sets %s to at least 32 characters, not the owa-config-dist.php placeholder. Run php cli.php cmd=reset-secrets to write new values, or set each to 64 random hex characters (php -r "echo bin2hex(random_bytes(32));").'],
+    3314 => ['headline' => 'Error', 'message' => 'OWA\'s configuration needs attention. See OWA\'s error log, or run php cli.php cmd=reset-secrets on the server.'],
     3311 => ['headline' => 'Error', 'message' => 'These updates must be applied using the command line interface (CLI). Run <code>\'/path/to/php cli.php cmd=update\'</code> from your server\'s command shell to apply these updates. For more information on updating see the install/update page on the wiki.'],
 
     // Graph related

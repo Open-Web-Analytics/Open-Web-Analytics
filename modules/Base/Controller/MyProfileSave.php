@@ -30,6 +30,21 @@ class MyProfileSave extends \OWA\Core\Controller {
     /** Shortest new password accepted, matching base.usersChangePassword. */
     const MIN_PASSWORD_LENGTH = 6;
 
+    /**
+     * The messages (conf/messages.php) a refused save shows on base.myProfile.
+     * They travel as codes in myProfileError, and that screen shows only these.
+     */
+    const REFUSALS = [ 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3027, 3028, 3029 ];
+
+    /** The code each validation in validate() is refused with. */
+    const VALIDATION_REFUSALS = [
+        'email_address'    => 3024,
+        'current_password' => 3025,
+        'new_password'     => 3026,
+        'password_match'   => 3027,
+        'password_length'  => 3028,
+    ];
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'view_site_list' );
@@ -104,7 +119,7 @@ class MyProfileSave extends \OWA\Core\Controller {
 
         if ( ! $entity->wasPersisted() ) {
 
-            return $this->refuse( 'That account no longer exists.' );
+            return $this->refuse( [ 3020 ] );
         }
 
         $entity->set( 'real_name', trim( (string) $this->getParam( 'real_name' ) ) );
@@ -134,9 +149,7 @@ class MyProfileSave extends \OWA\Core\Controller {
                  */
                 if ( ! $user->isCapable( 'edit_own_email' ) ) {
 
-                    return $this->refuse(
-                        'Changing the email address on your account is not something '
-                      . 'your role can do. Ask an administrator.' );
+                    return $this->refuse( [ 3021 ] );
                 }
 
                 $entity->set( 'email_address', $submitted_email );
@@ -151,9 +164,9 @@ class MyProfileSave extends \OWA\Core\Controller {
 
             $error = $this->changePassword( $entity, $user_id );
 
-            if ( $error !== '' ) {
+            if ( $error !== 0 ) {
 
-                return $this->refuse( $error );
+                return $this->refuse( [ $error ] );
             }
 
             /*
@@ -203,7 +216,7 @@ class MyProfileSave extends \OWA\Core\Controller {
      *
      * @param object $entity  the user row, already loaded
      * @param string $user_id
-     * @return string an error, or '' on success
+     * @return int a code from REFUSALS, or 0 on success
      */
     private function changePassword( $entity, $user_id ) {
 
@@ -216,7 +229,7 @@ class MyProfileSave extends \OWA\Core\Controller {
          */
         if ( ! password_verify( $current, (string) $entity->get( 'password' ) ) ) {
 
-            return 'That is not your current password.';
+            return 3022;
         }
 
         /*
@@ -232,10 +245,10 @@ class MyProfileSave extends \OWA\Core\Controller {
 
         if ( ! $updated ) {
 
-            return 'The password could not be changed.';
+            return 3023;
         }
 
-        return '';
+        return 0;
     }
 
     /**
@@ -244,10 +257,12 @@ class MyProfileSave extends \OWA\Core\Controller {
      * The name and address ride along under submitted_ names so the form
      * redraws them; the password fields deliberately do not, because carrying a
      * secret back would put it in the page source of the refusal.
+     *
+     * @param int[] $codes from REFUSALS
      */
-    private function refuse( $message ) {
+    private function refuse( array $codes ) {
 
-        $this->set( 'myProfileError', $message );
+        $this->set( 'myProfileError', implode( ',', $codes ) );
         $this->set( 'submitted_real_name', (string) $this->getParam( 'real_name' ) );
         $this->set( 'submitted_email_address', (string) $this->getParam( 'email_address' ) );
 
@@ -256,9 +271,9 @@ class MyProfileSave extends \OWA\Core\Controller {
 
     function errorAction() {
 
-        $messages = (array) $this->getValidationErrorMsgs();
+        $codes = array_values( array_intersect_key( self::VALIDATION_REFUSALS,
+            (array) $this->getValidationErrorMsgs() ) );
 
-        return $this->refuse( $messages ? implode( ' ', $messages )
-            : 'Those details could not be saved.' );
+        return $this->refuse( $codes ?: [ 3029 ] );
     }
 }

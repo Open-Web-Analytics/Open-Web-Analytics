@@ -75,9 +75,11 @@ class MyProfile extends \OWA\Core\Controller {
             }
         }
 
-        if ( $this->getParam( 'myProfileError' ) ) {
+        $refusal = $this->refusalText( (string) $this->getParam( 'myProfileError' ) );
 
-            $this->set( 'my_profile_error', (string) $this->getParam( 'myProfileError' ) );
+        if ( $refusal !== '' ) {
+
+            $this->set( 'my_profile_error', $refusal );
         }
 
         if ( $this->getParam( 'myProfileSaved' ) ) {
@@ -104,5 +106,33 @@ class MyProfile extends \OWA\Core\Controller {
 
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.myProfile' );
+    }
+
+    /**
+     * The messages for the codes base.myProfileSave refused with: a comma list
+     * of MyProfileSave::REFUSALS. Anything else is not shown.
+     *
+     * @param string $codes
+     * @return string
+     */
+    public function refusalText( $codes ) {
+
+        $text = [];
+
+        foreach ( explode( ',', $codes ) as $code ) {
+
+            $code = trim( $code );
+
+            if ( ! in_array( $code, array_map( 'strval', MyProfileSave::REFUSALS ), true ) ) {
+
+                continue;
+            }
+
+            $msg = $this->getMsg( (int) $code, [ 'message' => [ MyProfileSave::MIN_PASSWORD_LENGTH ] ] );
+
+            $text[] = (string) ( $msg['message'] ?? '' );
+        }
+
+        return implode( ' ', array_unique( $text ) );
     }
 }
