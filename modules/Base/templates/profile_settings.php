@@ -20,7 +20,7 @@
          */
         foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $owa_set ) {
 
-            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
                 $owa_set, 'profile', (string) ( $view->site['site_id'] ?? '' ), '',
                 is_array( $view->posted ?? null ) ? $view->posted : null );
         }

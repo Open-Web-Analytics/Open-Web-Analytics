@@ -472,6 +472,25 @@ final class CustomReportPropertyTest extends TestCase
         http_response_code(200);
     }
 
+    /** A report's name is its page title, printed escaped. */
+    public function testANameWithMarkupIsEscapedInTheTitle(): void
+    {
+        $name = 'Named </title><script>alert(1)</script>';
+        $id   = $this->store(self::P, $name);
+
+        ob_start();
+        $out = CoreAPI::runController(new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]));
+        $html = ob_get_clean() . (string) $out;
+
+        $this->assertSame(1, preg_match('~<title>(.*?)</title>~s', $html, $m), 'one <title>');
+        $this->assertStringContainsString($name, html_entity_decode($m[1], ENT_QUOTES));
+        $this->assertStringNotContainsString('<script>alert(1)', $html);
+    }
+
     /**
      * A link to a report keeps working: its id is unchanged, and one naming no
      * Property, or a Profile of the report's, opens it on its own.
@@ -491,6 +510,57 @@ final class CustomReportPropertyTest extends TestCase
             $this->assertSame($id, (string) ($data['custom_report_id'] ?? ''));
             $this->assertSame(self::P, (string) ($data['currentPropertyId'] ?? ''));
         }
+    }
+
+    /**
+     * A report stored with a widget value a save now refuses (an unknown key,
+     * a box width that is not a CSS length) still draws, without it.
+     */
+    public function testAReportStoredWithAValueASaveRefusesStillDraws(): void
+    {
+        $id = $this->store(self::P, 'Stored before the check');
+
+        $definition = $this->definition('Stored before the check');
+        $definition['widgets'][] = [
+            'type' => 'metric-boxes', 'id' => 'boxes', 'container' => 'boxes', 'query' => ['metrics' => 'pageViews'],
+            'boxWidth'   => '150px;background:url(https://example.com/owatest-box)',
+            'owatestKey' => 'owatest-unknown-value',
+        ];
+
+        CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET definition = ? WHERE id = ?', [json_encode($definition), $id]);
+
+        http_response_code(200);
+        ob_start();
+        $out = CoreAPI::runController(new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]));
+        $html = ob_get_clean() . (string) $out;
+
+        $this->assertSame(200, http_response_code());
+        $this->assertStringContainsString('Stored before the check', $html);
+
+        // The widgets it is drawn with.
+        ob_start();
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]))->doAction();
+        ob_end_clean();
+
+        $boxes = (array) ($data['widgets'][1] ?? []);
+        $this->assertSame('metric-boxes', $boxes['type'] ?? null);
+        $this->assertArrayNotHasKey('boxWidth', $boxes);
+        $this->assertArrayNotHasKey('owatestKey', $boxes);
+
+        $edit = (array) (new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do' => 'base.customReportEdit', 'customReportId' => $id, 'propertyId' => self::P,
+        ]))->doAction();
+
+        $this->assertArrayNotHasKey('boxWidth', $edit['custom_report_definition']['widgets'][1], 'the builder offers it without');
+        $this->assertArrayNotHasKey('owatestKey', $edit['custom_report_definition']['widgets'][1]);
     }
 
     /** Share or un-share a stored report, as its editor's switch does. */
@@ -613,6 +683,37 @@ final class CustomReportPropertyTest extends TestCase
 
         $this->assertSame($id, (string) ($own['custom_report_id'] ?? ''), 'no Property named: its own');
         $this->assertSame(self::P, (string) ($own['propertyId'] ?? ''));
+    }
+
+    /**
+     * The builder's reason for a refused save comes from base.customReportSave
+     * in-process; a request carrying one shows nothing and draws the stored
+     * report, not what the request typed.
+     */
+    public function testTheBuilderShowsNoReasonTheRequestCarries(): void
+    {
+        $id = $this->store(self::P, 'Stored name');
+
+        $data = (array) (new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do'                => 'base.customReportEdit',
+            'customReportId'    => $id,
+            'customReportError' => 'Typed into the URL',
+            'customReportName'  => 'Also from the URL',
+        ]))->doAction();
+
+        $this->assertSame('', (string) ($data['custom_report_error'] ?? ''));
+        $this->assertSame('Stored name', (string) ($data['custom_report_name'] ?? ''));
+
+        $refused = new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do'               => 'base.customReportEdit',
+            'customReportId'   => $id,
+            'customReportName' => 'As submitted',
+        ]);
+        $refused->refusedWith('Why it was refused.');
+        $data = (array) $refused->doAction();
+
+        $this->assertSame('Why it was refused.', (string) ($data['custom_report_error'] ?? ''));
+        $this->assertSame('As submitted', (string) ($data['custom_report_name'] ?? ''));
     }
 
     public function testAnEditFromAnotherPropertyIsRefusedAndChangesNothing(): void

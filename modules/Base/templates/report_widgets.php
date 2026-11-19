@@ -334,7 +334,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         $owa_breakdownQuery = [];
     }
 ?>
-    <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent" data-ui="widget:<?php $view->out( (string) ( $owa_w['id'] ?? 'widget' ) ); ?>">
+    <div class="<?php $view->out( \OWA\Core\ReportGrid::classesFor( $owa_w ) ); ?> owa_reportSectionContent" data-ui="widget:<?php $view->out( (string) ( $owa_w['id'] ?? 'widget' ) ); ?>">
 <?php
     /*
      * A widget's title is its name -- "Transaction Roster". Whether it is

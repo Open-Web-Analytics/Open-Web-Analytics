@@ -8,7 +8,7 @@
  * the storage. This lists what exists, and says so when that is nothing.
  */
 ?>
-<h1 class="panel_headline"><?php echo $view->headline;?></h1>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <div class="owa_panelIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the %s, so they count the same way in all of its Observation Profiles.' ), '<strong>' . $view->escape( (string) \OWA\Core\CoreAPI::t( 'Property' ) ) . '</strong>' ); ?></div>
 

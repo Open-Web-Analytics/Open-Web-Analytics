@@ -90,7 +90,7 @@
              */
             foreach ( [ 'base.propertyAttribution', 'base.propertyReporting' ] as $owa_set ) {
 
-                echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+                echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
                     \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( $owa_set ),
                     'property', (string) ( $view->property['id'] ?? '' ), '',
                     is_array( $view->posted ?? null ) ? $view->posted : null );
@@ -99,7 +99,7 @@
             // The tracking tag defaults for this Property's Profiles (PLAN 2.24.4).
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
-                echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+                echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
                     $set, 'property', (string) ( $view->property['id'] ?? '' ), '',
                     is_array( $view->posted ?? null ) ? $view->posted : null );
             }

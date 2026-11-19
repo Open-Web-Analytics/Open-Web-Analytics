@@ -15,6 +15,7 @@ class LoginForm extends \OWA\Core\View {
         $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Please login using the from below' ));
         $this->body->set('user_id', $this->get('user_id'));
         $this->body->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->get('go') ) );
+        $this->body->set('login_nonce', \OWA\Module\Base\Controller\Login::formNonce());
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }

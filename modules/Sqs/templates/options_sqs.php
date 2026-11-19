@@ -87,7 +87,7 @@
 <?php
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set );
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set ); // trusted: SettingsForm escapes what it prints
 }
 ?>
 

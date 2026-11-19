@@ -30,7 +30,7 @@
             <TD>
             <select id="owa_userRole" name="role">
                 <?php foreach ($view->roles as $role):?>
-                <option <?php if( isset( $view->user['role'] ) && $view->user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
+                <option <?php if( isset( $view->user['role'] ) && $view->user['role'] === $role): echo "SELECTED"; endif;?> value="<?php $view->out( $role );?>"><?php $view->out( $role );?></option>
                 <?php endforeach;?>
             </select>
             </TD>
@@ -47,7 +47,7 @@
             <TD>
                 <input type="hidden" name="id" value="<?php $view->out( $view->user['id'] ?? '' );?>">
                 <?php echo $view->createNonceFormField($view->action);?>
-                <input type="hidden" name="action" value="<?php echo $view->action;?>">
+                <input type="hidden" name="action" value="<?php $view->out( $view->action );?>">
                 <input class="owa-button" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save' ) );?>" name="save_button">
             </TD>
         </TR>

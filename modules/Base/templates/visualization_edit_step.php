@@ -37,7 +37,7 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
 <li class="owa_funnelStep">
     <button type="button" class="owa_builderMove" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Drag to move, or use the arrow keys' ) );?>"
             aria-label="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Move step %s' ), $owa_stepNo ) );?>"><i class="fas fa-grip-vertical" aria-hidden="true"></i></button>
-    <span class="owa_funnelStepNumber"><?php echo $owa_stepNo ?: '';?></span>
+    <span class="owa_funnelStepNumber"><?php $view->out( $owa_stepNo ?: '' );?></span>
 
     <div class="owa_funnelStepBody">
         <div class="owa_funnelStepSentence">
@@ -76,7 +76,7 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
             <li class="constraintRow owa_funnelCondition" data-saved-property="<?php $view->out( (string) ( $owa_cond['property'] ?? '' ) );?>">
                 <span class="constraintDimensionPicker">
                     <select class="dim-list owa_funnelConditionProperty"
-                            name="stepConditionProperty[<?php echo $owa_stepIndex;?>][]"
+                            name="stepConditionProperty[<?php echo (int) $owa_stepIndex;?>][]"
                             aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Property' ) );?>">
                     <?php foreach ( (array) ( $owa_step['properties'] ?? [] ) as $owa_prop ):?>
                         <option value="<?php $view->out( $owa_prop['name'] );?>"
@@ -87,7 +87,7 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
                 </span>
                 <span class="constraintOperatorPicker">
                     <select class="operator-list owa_funnelConditionOperator"
-                            name="stepConditionOperator[<?php echo $owa_stepIndex;?>][]"
+                            name="stepConditionOperator[<?php echo (int) $owa_stepIndex;?>][]"
                             aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Comparison' ) );?>">
                     <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::operators() as $owa_value => $owa_label ):?>
                         <option value="<?php $view->out( $owa_value );?>" <?php echo ( (string) ( $owa_cond['operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>><?php $view->out( $owa_label );?></option>
@@ -95,7 +95,7 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
                     </select>
                 </span>
                 <input class="constraintValueField owa_funnelConditionValue" type="text"
-                       name="stepConditionValue[<?php echo $owa_stepIndex;?>][]"
+                       name="stepConditionValue[<?php echo (int) $owa_stepIndex;?>][]"
                        aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) );?>"
                        value="<?php $view->out( (string) ( $owa_cond['value'] ?? '' ) );?>">
                 <button type="button" class="constraintAddButton"

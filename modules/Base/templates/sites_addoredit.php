@@ -133,7 +133,7 @@
     </table>
     <BR>
     <?php echo $view->createNonceFormField($view->action);?>
-    <input type="hidden" name="action" value="<?php $view->out( $view->action, false );?>">
+    <input type="hidden" name="action" value="<?php $view->out( $view->action );?>">
     <input class="owa-button" type="submit" name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Profile' ) ); ?>">
 
     </form>

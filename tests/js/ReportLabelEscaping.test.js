@@ -18,7 +18,7 @@ require('../../modules/Base/src/reporting/owa.filterpills.js');
 /**
  * A metric box's label and the filter pills' groups and dimensions are text: a
  * custom report's widget title or a dimension label holding markup is shown as
- * written, and adds no element.
+ * written, and adds no element. A box's width stays inside its attribute.
  */
 
 const MARKUP = 'Sales <img src=x data-probe="1"> & "returns"';
@@ -54,6 +54,19 @@ describe('a metric box', () => {
 
         expect(label.textContent).toBe('Title <b data-probe="1">bold</b>');
         expect(document.querySelector('[data-probe]')).toBeNull();
+    });
+
+    test('keeps a widget width given as text inside its style attribute', () => {
+        // A saved custom report's boxWidth arrives here as options.width.
+        const width = '150px" data-probe="1"><img data-probe="2" src="x';
+
+        draw({ width: width, minWidth: '1px"><b data-probe="3">' });
+
+        const box = document.querySelector('#w .owa_metricInfobox');
+
+        expect(document.querySelector('[data-probe]')).toBeNull();
+        expect(box.getAttribute('style')).toBe('--owa-kpi-min-width:1px"><b data-probe="3">;--owa-kpi-width:' + width);
+        expect(box.getAttribute('data-metric')).toBe('sessions');
     });
 
     test('shows an ordinary label once, not escaped twice', () => {

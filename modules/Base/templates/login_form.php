@@ -27,6 +27,7 @@
         ?>
         <input type="hidden" name="go" value="<?php $view->out( $view->go );?>">
         <input type="hidden" name="action" value="base.login">
+        <input type="hidden" name="nonce" value="<?php $view->out( $view->login_nonce );?>">
 
         <input class="owa-button owa_publicSubmit" type="submit"
                name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Login' ) ); ?>">

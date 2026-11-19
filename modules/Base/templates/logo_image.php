@@ -7,4 +7,4 @@
  */
 $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) );
 ?>
-<?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?>
+<?php if ( $owa_logo ): ?><img src="<?php $view->out( $owa_logo ); ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?>

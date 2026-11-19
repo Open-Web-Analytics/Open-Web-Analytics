@@ -16,5 +16,5 @@ if ( isset( $view->response_data ) ) {
     $_response['data'] = $view->response_data;
 }
 
-echo json_encode( $_response );
+echo json_encode( $_response ); // trusted: a JSON body (View\RestApi sends its type)
 ?>

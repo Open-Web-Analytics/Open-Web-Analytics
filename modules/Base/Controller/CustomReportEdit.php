@@ -43,6 +43,15 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         'fixed_dimension_extra', 'default_colspans', 'grid_columns', 'link_targets', 'more_targets',
     ];
 
+    /**
+     * Why base.customReportSave refused the submission it hands back; '' when
+     * the builder is opened. Set only in-process (refusedWith()), never from
+     * the request.
+     *
+     * @var string
+     */
+    private $refusal = '';
+
     public function __construct( $params ) {
 
         parent::__construct( $params );
@@ -63,6 +72,18 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
             $this->setParam( 'propertyId', $propertyId );
         }
+    }
+
+    /**
+     * Opens the builder on a refused save: $params are what was submitted,
+     * and $message is shown as the reason.
+     *
+     * @param  string $message why, already translated
+     * @return void
+     */
+    public function refusedWith( $message ) {
+
+        $this->refusal = (string) $message;
     }
 
     public function action() {
@@ -111,7 +132,9 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * no widgets and no report metric set -- so the first thing an author
          * does is choose what to build.
          */
-        $definition = $report ? (array) $report['definition'] : [];
+        // As it is drawn (CustomReports::drawable()): a widget value a save
+        // refuses is not offered back, so saving it again is accepted.
+        $definition = $report ? \OWA\Module\Base\Classes\CustomReports::drawable( (array) $report['definition'] ) : [];
 
         $name = $report ? $report['name'] : '';
 
@@ -120,9 +143,9 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * typed. Those win over the stored row -- redrawing the last saved
          * version would quietly discard the edit they are being asked to fix.
          */
-        if ( $this->getParam( 'customReportError' ) ) {
+        if ( $this->refusal !== '' ) {
 
-            $this->set( 'custom_report_error', $this->getParam( 'customReportError' ) );
+            $this->set( 'custom_report_error', $this->refusal );
 
             $submitted = json_decode( (string) $this->getParam( 'customReportDefinition' ), true );
 
@@ -146,7 +169,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * reason the name and definition do.
          */
         $this->set( 'custom_report_is_shared',
-            $this->getParam( 'customReportError' )
+            $this->refusal !== ''
                 ? (bool) $this->getParam( 'isShared' )
                 : ( $report ? ! empty( $report['is_shared'] ) : false ) );
 
