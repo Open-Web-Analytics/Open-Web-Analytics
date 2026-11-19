@@ -271,14 +271,6 @@ return [
         // Set by Update079 when it made saved funnel steps event steps, so its down()
         // can give each funnel back the definition it had.
         'funnel_steps_before_079' => [ 'default' => [], 'storable' => true, 'internal' => true ],
-        /*
-         * 1.x's goals, one map per Profile. Nothing in v2 reads or writes it:
-         * Update025 made the goals goal event definitions, and Update061 reads the Profile
-         * rows by SQL, in up() and in down(), for the funnels inside them. The
-         * Profile scope stays because those rows do (see
-         * SettingsRegistryTest::testNothingStoredAtAScopeBecomesUnwritableThere).
-         */
-        'goals' => [ 'storable' => true, 'scopes' => [ 'install', 'profile' ], 'internal' => true ],
         'install_complete' => [ 'storable' => true, 'autoload' => true, 'internal' => true ],
         'link_template' => [ 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ],
         'log_named_users' => [
@@ -438,6 +430,8 @@ return [
         'report_wrapper' => [ 'default' => 'wrapper_default.php', 'description' => 'The template that wraps OWA\'s admin and report pages. Default wrapper_default.php.' ],
         // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
         'retired_settings_before_085' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update092: the 1.x goal rows it deleted, for its down().
+        'retired_goals_before_092' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'cache_settings_before_086' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
