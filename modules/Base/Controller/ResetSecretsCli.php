@@ -25,6 +25,10 @@ namespace OWA\Module\Base\Controller;
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
 class ResetSecretsCli extends \OWA\Core\Controller\Cli {
+
+    /** It writes the keys and salts, so it runs while they are unusable. */
+    protected $requires_secrets = false;
+
     /**
      *  constructor.
      * @param $params
