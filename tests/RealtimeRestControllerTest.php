@@ -19,7 +19,7 @@ final class RealtimeRestControllerTest extends RestControllerTestCase
         $this->assertNotAuthenticated($resp, 'GET /realtime');
     }
 
-    public function testASiteIsRequired(): void
+    public function testAPropertyIsRequired(): void
     {
         $this->authenticateAs('admin');
 
@@ -27,6 +27,7 @@ final class RealtimeRestControllerTest extends RestControllerTestCase
 
         $this->assertSame(422, $resp['status']);
         $this->assertSame('base.restApi', $resp['view']);
+        $this->assertStringContainsString('Name the Property with propertyId', $resp['raw']);
     }
 
     /**

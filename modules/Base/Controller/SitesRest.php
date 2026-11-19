@@ -9,6 +9,9 @@ namespace OWA\Module\Base\Controller;
  */
 class SitesRest extends \OWA\Core\ReportController {
 
+    /** The roster is of every Profile the caller may see, not of one Property. */
+    protected $rest_needs_property = false;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );

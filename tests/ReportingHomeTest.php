@@ -100,7 +100,7 @@ final class ReportingHomeTest extends TestCase
             'Nothing records the Property, so reporting always resumes on the first one.' );
 
         $this->assertStringContainsString(
-            "if ( \$propertyId !== '' ) {\n\n            \\OWA\\Core\\CoreAPI::createCookie(", $src,
+            "if ( \$propertyId !== '' && \$this->remembersLastProperty() ) {\n\n            \\OWA\\Core\\CoreAPI::createCookie(", $src,
             'It would write an empty cookie on a report that resolved no Property.' );
     }
 

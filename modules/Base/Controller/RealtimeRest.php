@@ -7,7 +7,8 @@ namespace OWA\Module\Base\Controller;
  *   GET v1/realtime?propertyId=<property>                  every card
  *   GET v1/realtime?propertyId=<property>&visitorId=<id>   one visitor's events
  *
- * A siteId names its Property instead, as on every report route.
+ * A siteId names its Property instead, as on every report route. A request
+ * naming neither is refused (422, ReportController::isCurrentUserCapable()).
  *
  * A ReportController for its access checks -- view_reports on the Property
  * named -- and nothing else it offers: it reads no cube, so a Property whose
