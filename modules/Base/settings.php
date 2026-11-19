@@ -192,7 +192,6 @@ return [
                 . 'as event data is kept. Leave blank to keep as much as event data.' ),
         ],
         'currencyLocal' => [ 'default' => 'en_US', 'description' => 'The locale revenue is formatted with in reports, such as en_US.' ],
-        'db_force_new_connections' => [ 'default' => true ],
         'db_host' => [ 'default' => '', 'description' => 'The host name of the database server.' ],
         'db_make_persistant_connections' => [ 'default' => false, 'description' => 'Whether OWA opens persistent database connections that PHP reuses across requests. Off by default.' ],
         'db_name' => [ 'default' => '', 'description' => 'The name of the database OWA uses.' ],
@@ -303,7 +302,6 @@ return [
         'mailer-use-smtp' => [ 'default' => false, 'description' => 'Whether OWA sends e-mail through an SMTP server instead of PHP\'s mail(). Off by default.' ],
         'mailer-username' => [ 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
-        'modules' => [ 'default' => [ 'base' ] ],
         'nonce_expiration_period' => [ 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
         'notice_email' => [
             'default'  => '',

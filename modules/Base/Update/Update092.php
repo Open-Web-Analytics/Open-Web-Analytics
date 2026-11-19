@@ -2,12 +2,16 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Delete the stored rows of base.goals, 1.x's numbered goal slots.
+ * Delete the stored rows of three base settings nothing reads, which are no
+ * longer declared.
  *
- * 1.x kept one map per Profile; Update025 turned the goals into goal event
- * definitions and Update061 and Update081 read the Profile rows for the
- * funnels and goal values inside them. Nothing reads them after those, so the
- * rows go and base.goals is no longer declared.
+ *   goals                     1.x's numbered goal slots, one map per Profile.
+ *                             Update025 turned them into goal event definitions,
+ *                             and Update061 and Update081 read the Profile rows
+ *                             for the funnels and values inside them.
+ *   modules                   a list nothing reads.
+ *   db_force_new_connections  passed to the database driver as
+ *                             open_new_connection, which no driver reads.
  *
  * THE INVERSE. Before anything is deleted, the rows, every column, are kept in
  * the retired_goals_before_092 setting. down() puts them back and removes the
@@ -16,7 +20,7 @@ namespace OWA\Module\Base\Update;
  *
  * RAW SQL on owa_setting, as Update085.
  *
- * NOT CLI-ONLY. One row per Profile at most.
+ * NOT CLI-ONLY. One goals row per Profile at most.
  */
 class Update092 extends \OWA\Core\Update {
 
@@ -25,7 +29,7 @@ class Update092 extends \OWA\Core\Update {
     public $schema_version = 92;
 
     /** The base settings this deletes. */
-    const RETIRED = [ 'goals' ];
+    const RETIRED = [ 'goals', 'modules', 'db_force_new_connections' ];
 
     /** What up() deleted: { rows: id => row }. */
     const BEFORE = 'retired_goals_before_092';
@@ -75,7 +79,7 @@ class Update092 extends \OWA\Core\Update {
         // Kept before anything changes, so a run that stops part way can still be undone.
         if ( ! $this->writeRecord( serialize( $record ) ) ) {
 
-            $this->e->notice( sprintf( 'Keeping the 1.x goal rows in %s failed.', self::BEFORE ) );
+            $this->e->notice( sprintf( 'Keeping the retired settings in %s failed.', self::BEFORE ) );
 
             return false;
         }
@@ -83,12 +87,12 @@ class Update092 extends \OWA\Core\Update {
         if ( $db->query( sprintf( "DELETE FROM %s WHERE module = 'base' AND name IN ( %s )",
                 $table, self::placeholders() ), self::RETIRED ) === false ) {
 
-            $this->e->notice( 'Removing the 1.x goal rows failed.' );
+            $this->e->notice( 'Removing the retired settings failed.' );
 
             return false;
         }
 
-        $this->e->notice( sprintf( '1.x goals: %d %s removed.', count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ) ) );
+        $this->e->notice( sprintf( 'Retired settings: %d %s removed.', count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ) ) );
 
         return true;
     }

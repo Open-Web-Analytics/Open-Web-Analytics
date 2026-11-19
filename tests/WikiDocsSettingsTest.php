@@ -91,17 +91,16 @@ final class WikiDocsSettingsTest extends TestCase
         }
 
         // A registry that came back empty would pass the loop vacuously.
-        $this->assertGreaterThan( 100, $checked );
+        $this->assertGreaterThan( 90, $checked );
     }
 
     /**
      * Declared settings that nothing reads, so there is nothing true to say
-     * about them. Each is a candidate for removal; a description added to one
-     * fails the test below until it is taken off this list.
+     * about them. A setting here is retired by an update, not kept: Update092
+     * removed the last two, db_force_new_connections and modules. A
+     * description added to one fails the test below until it is taken off.
      */
-    private const UNREAD = [
-        'base|db_force_new_connections', 'base|modules',
-    ];
+    private const UNREAD = [];
 
     public function testEveryListedSettingHasADescriptionUnlessNothingReadsIt(): void
     {

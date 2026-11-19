@@ -235,7 +235,7 @@ class CoreAPI {
                 \OWA\Core\CoreAPI::getSetting('base','db_name'),
                 \OWA\Core\CoreAPI::getSetting('base','db_user'),
                 \OWA\Core\CoreAPI::getSetting('base','db_password'),
-                \OWA\Core\CoreAPI::getSetting('base','db_force_new_connections'),
+                true, // open_new_connection: no driver reads it
                 \OWA\Core\CoreAPI::getSetting('base','db_make_persistant_connections')
             );
 

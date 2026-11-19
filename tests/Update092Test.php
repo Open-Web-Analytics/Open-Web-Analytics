@@ -85,12 +85,14 @@ final class Update092Test extends TestCase
         $this->assertGreaterThanOrEqual(92, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
-    /** base.goals is declared by no module and read by no getSetting(); the record is declared. */
+    /** The retired settings are declared by no module and read by no getSetting(); the record is declared. */
     public function testTheDeclarations(): void
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $this->assertFalse($c->isRegistered('base', 'goals'));
+        foreach (Update092::RETIRED as $name) {
+            $this->assertFalse($c->isRegistered('base', $name), $name);
+        }
         $this->assertTrue($c->isRegistered('base', Update092::BEFORE));
 
         $readers = [];
@@ -100,8 +102,10 @@ final class Update092Test extends TestCase
                 continue;
             }
 
-            if (preg_match("/Setting\\(\\s*'base'\\s*,\\s*'goals'/", (string) file_get_contents((string) $file))) {
-                $readers[] = str_replace(\OWA\Core\Env::root() . '/', '', (string) $file);
+            foreach (Update092::RETIRED as $name) {
+                if (preg_match("/Setting\\(\\s*'base'\\s*,\\s*'" . $name . "'/", (string) file_get_contents((string) $file))) {
+                    $readers[] = $name . ' in ' . str_replace(\OWA\Core\Env::root() . '/', '', (string) $file);
+                }
             }
         }
 
@@ -122,7 +126,7 @@ final class Update092Test extends TestCase
         $this->assertSame($before, $this->rows());
     }
 
-    /** Every goals row goes, at every scope, others stay; down() is the exact inverse. */
+    /** Every retired row goes, at every scope, others stay; down() is the exact inverse. */
     public function testTheRetiredRowsGoAndComeBack(): void
     {
         $this->requireDb();
@@ -130,6 +134,8 @@ final class Update092Test extends TestCase
         $this->row('profile', 'abc', 'goals', [1 => ['goal_name' => 'Signup']], 5);
         $this->row('profile', 'def', 'goals', [], 6);
         $this->row('install', '1', 'goals', [], 7);
+        $this->row('install', '1', 'modules', ['base'], 8);
+        $this->row('install', '1', 'db_force_new_connections', true, 9);
         $this->row('install', '1', 'timezone', 'UTC');
         $this->row('profile', 'abc', 'goals', ['x'], 9, 'other_module');
         $before = $this->rows();
