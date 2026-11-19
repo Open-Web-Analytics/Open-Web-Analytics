@@ -1014,8 +1014,8 @@ abstract class Module {
             if ( ! $recorded ) {
 
                 /*
-                 * Freshness alone decides it: only base registers entities, so for every
-                 * other module the loop above never runs and this is already true. Omitting a
+                 * Freshness alone decides it: for a module that registers no entities the
+                 * loop above never runs and this is already true. Omitting a
                  * "requires schema 1" clause fails in the safe direction -- a version left
                  * unrecorded rather than one wrongly claimed current.
                  */
@@ -1223,9 +1223,6 @@ abstract class Module {
 
         if (empty($current_schema)) {
             $current_schema = 1;
-
-            if ($this->name === 'base') {
-            }
         }
 
         return $current_schema;
@@ -1348,33 +1345,31 @@ abstract class Module {
 
         $map = array_intersect_key( array_merge( $map, $params ), $map );
 
-        if ( ! isset( $map['name'] ) ) {
-            // throw exception
+        if ( (string) $map['name'] === '' || (string) $map['metric_type'] === '' ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'A metric definition is ignored: it names no %s.',
+                (string) $map['name'] === '' ? 'name' : 'metric_type' ) );
+
+            return;
         }
 
-        if ( ! isset( $map['label'] ) ) {
+        if ( (string) $map['label'] === '' ) {
+
             $map['label'] = $map['name'];
         }
 
-        if ( ! isset( $map['entity'] ) ) {
-            // throw exception
-        }
+        // Computed from other metrics (Metric::setMetricType()), so it reads no
+        // entity. Any other kind aggregates a column of one.
+        $calculated = in_array( $map['metric_type'], [ 'calculated', 'ratio', 'difference' ], true );
 
-        if ( ! isset( $map['metric_type'] ) ) {
-            // throw exception
-        }
+        if ( ! $calculated && ( (string) $map['entity'] === '' || (string) $map['column'] === '' ) ) {
 
-        if ( ! isset( $map['data_type'] ) ) {
-            // throw exception
-        }
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'The metric "%s" is ignored: a %s metric names the entity and the column it reads.',
+                $map['name'], $map['metric_type'] ) );
 
-        if ( isset( $map['metric_type'] )
-             && $map['metric_type'] != 'calculated'
-             && ! isset( $map['column'] ) )
-        {
-
-            // throw exception
-
+            return;
         }
 
         if ( $map['entity'] !== '' && $map['entity'] !== self::FACT_ENTITY ) {
@@ -1803,12 +1798,11 @@ abstract class Module {
      *
      * Example:
      *
-     *         'HTTP_USER_AGENT'    => array(
-     *            'default_value'        => array( '\\OWA\\Module\\Base\\Classes\\TrackingEventHelpers::userAgentDefault' ),
-     *            'required'            => true,
-     *            'data_type'            => 'string',
-     *            'filter'            => true
-     *        )
+     *         'HTTP_USER_AGENT' => [
+     *             'callbacks' => [ '\\OWA\\Module\\Base\\Classes\\TrackingEventHelpers::userAgentDefault' ],
+     *             'required'  => true,
+     *             'data_type' => 'string',
+     *         ]
      *
      *
      * The key of the array is the name the property
@@ -1900,8 +1894,8 @@ abstract class Module {
     /**
      * Abstract method for registering individual Filter Methods
      *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
+     * Called for every loaded module by Service::initializeFramework(), and
+     * redefined in a concrete module class.
      *
      * @return mixed unread: the constructor ignores it
      */

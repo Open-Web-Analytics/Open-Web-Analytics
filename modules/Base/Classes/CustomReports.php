@@ -462,6 +462,12 @@ class CustomReports {
             return $error;
         }
 
+        // Who may open a saved report is decided by mayView(), not by its definition.
+        if ( isset( $definition['capability'] ) ) {
+
+            return \OWA\Core\CoreAPI::t( 'A saved report cannot declare a capability.' );
+        }
+
         $widgets = isset( $definition['widgets'] ) ? (array) $definition['widgets'] : [];
 
         if ( ! $widgets ) {
@@ -594,9 +600,13 @@ class CustomReports {
 
             if ( count( $extra ) > self::FIXED_DIMENSION_EXTRA[ $type ] ) {
 
-                return sprintf(
-                    \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
-                    $where, $label, $fixed, count( $extra ) );
+                return self::FIXED_DIMENSION_EXTRA[ $type ] === 0
+                    ? sprintf(
+                        \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and no other dimension. This one names %d more.' ),
+                        $where, $label, $fixed, count( $extra ) )
+                    : sprintf(
+                        \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
+                        $where, $label, $fixed, count( $extra ) );
             }
 
             /*

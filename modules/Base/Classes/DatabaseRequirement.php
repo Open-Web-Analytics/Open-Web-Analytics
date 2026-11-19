@@ -73,9 +73,9 @@ class DatabaseRequirement {
 
         if ( ! preg_match( '/^(\d+)\.(\d+)\.(\d+)/', $version, $m ) ) {
 
-            return sprintf( 'OWA could not read the database server\'s version (%s). It needs MySQL %s '
-              . 'or later, or MariaDB %s or later.',
-                $version !== '' ? '"' . $version . '"' : 'nothing was returned',
+            return sprintf( \OWA\Core\CoreAPI::t( 'OWA could not read the database server\'s version (%s). It needs MySQL %s '
+              . 'or later, or MariaDB %s or later.' ),
+                $version !== '' ? '"' . $version . '"' : \OWA\Core\CoreAPI::t( 'nothing was returned' ),
                 self::MYSQL_MIN, self::shortVersion( self::MARIADB_MIN ) );
         }
 
@@ -84,14 +84,14 @@ class DatabaseRequirement {
         if ( stripos( $version, 'mariadb' ) !== false ) {
 
             return version_compare( $number, self::MARIADB_MIN, '>=' ) ? null : sprintf(
-                'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest '
-              . 'MariaDB release still supported -- or MySQL %s or later.',
+                \OWA\Core\CoreAPI::t( 'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest '
+              . 'MariaDB release still supported -- or MySQL %s or later.' ),
                 $number, self::shortVersion( self::MARIADB_MIN ), self::MYSQL_MIN );
         }
 
         return version_compare( $number, self::MYSQL_MIN, '>=' ) ? null : sprintf(
-            'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build '
-          . 'uses JSON_VALUE and window functions -- or MariaDB %s or later.',
+            \OWA\Core\CoreAPI::t( 'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build '
+          . 'uses JSON_VALUE and window functions -- or MariaDB %s or later.' ),
             $number, self::MYSQL_MIN, self::shortVersion( self::MARIADB_MIN ) );
     }
 

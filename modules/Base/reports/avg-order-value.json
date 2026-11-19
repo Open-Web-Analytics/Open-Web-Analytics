@@ -1,6 +1,7 @@
 {
     "title": "Average Order Value",
     "description": "Average revenue per transaction, by day, and by attributed channel.",
+    "capability": "view_reports_ecommerce",
     "metrics": "revenuePerTransaction",
     "widgets": [
         {

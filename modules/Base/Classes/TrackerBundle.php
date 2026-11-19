@@ -35,7 +35,11 @@ class TrackerBundle {
     /** The bundle format; part of the header, so a change republishes every bundle. */
     const FORMAT = 1;
 
-    /** Where bundles are written, under the root. */
+    /**
+     * Where bundles are written: tracker/ in the public directory (public_path,
+     * OWA_PUBLIC_PATH), which assetsUrl() serves. This is its path under the
+     * default public directory.
+     */
     const DIR = 'public/tracker/';
 
     /** The built tracker's directory, under the root. */
@@ -74,7 +78,16 @@ class TrackerBundle {
     /** @return string */
     private static function outDir() {
 
-        return self::$outDir ?? \OWA\Core\Env::root() . '/' . self::DIR;
+        if ( self::$outDir !== null ) {
+
+            return self::$outDir;
+        }
+
+        $public = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_path' );
+
+        $public = $public !== '' ? \OWA\Core\Env::withSlash( $public ) : \OWA\Core\Env::root() . '/public/';
+
+        return $public . substr( self::DIR, strlen( 'public/' ) );
     }
 
     /**
@@ -548,7 +561,8 @@ class TrackerBundle {
 
         $dir = dirname( $path );
 
-        if ( ! is_dir( $dir ) && ! @mkdir( $dir, 0755, true ) && ! is_dir( $dir ) ) {
+        // A settings save publishes from the web server, publish-trackers from the CLI.
+        if ( ! \OWA\Core\Lib::makeSharedDir( $dir ) ) {
 
             \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot create $dir." );
 

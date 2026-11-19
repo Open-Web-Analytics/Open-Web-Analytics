@@ -102,4 +102,35 @@ final class OwaLibTest extends TestCase
     {
         $this->assertSame('', Lib::buildRedirectQuery([], 'owa_'));
     }
+
+    /**
+     * A directory the web server and the CLI both write to is created 0775,
+     * parents included, whatever the umask.
+     */
+    public function testASharedDirectoryIsGroupWritable(): void
+    {
+        $root = sys_get_temp_dir() . '/owatest-shared-' . bin2hex(random_bytes(4));
+
+        $umask = umask(022);
+
+        try {
+            $this->assertTrue(Lib::makeSharedDir($root . '/a/b/'));
+            $this->assertTrue(Lib::makeSharedDir($root . '/a/b'), 'an existing directory');
+
+            foreach ([$root, $root . '/a', $root . '/a/b'] as $dir) {
+                clearstatcache();
+                $this->assertSame('0775', sprintf('%04o', fileperms($dir) & 0777), $dir);
+            }
+
+            file_put_contents($root . '/file', '');
+            $this->assertFalse(Lib::makeSharedDir($root . '/file/c'), 'a parent that is a file');
+
+        } finally {
+            umask($umask);
+            @unlink($root . '/file');
+            @rmdir($root . '/a/b');
+            @rmdir($root . '/a');
+            @rmdir($root);
+        }
+    }
 }

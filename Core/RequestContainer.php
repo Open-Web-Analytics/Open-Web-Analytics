@@ -168,8 +168,9 @@ class RequestContainer {
                 parse_str( trim(file_get_contents("php://input") ), $post_vars );
                 $params = array_merge( $_GET, $post_vars);
                 
-            } else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
-                
+            } else if ( $_SERVER['REQUEST_METHOD'] === 'GET' || $_SERVER['REQUEST_METHOD'] === 'HEAD' ) {
+
+                // HEAD is a GET without the body.
                 $params = $_GET;
                 
             } else if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {

@@ -275,34 +275,37 @@ class TimePeriod {
 
         if ( $start === '' && $end === '' ) {
 
-            return 'A date range needs a start date and an end date.';
+            return \OWA\Core\CoreAPI::t( 'A date range needs a start date and an end date.' );
         }
 
         if ( $start === '' ) {
 
-            return 'A date range needs a start date. An end date on its own does not describe a range.';
+            return \OWA\Core\CoreAPI::t( 'A date range needs a start date. An end date on its own does not describe a range.' );
         }
 
         if ( $end === '' ) {
 
-            return 'A date range needs an end date. A start date on its own does not describe a range.';
+            return \OWA\Core\CoreAPI::t( 'A date range needs an end date. A start date on its own does not describe a range.' );
         }
 
         // Both bounds are compared as yyyymmdd, where string order and
         // chronological order agree -- but only for eight digits. Anything else
         // would make the comparison below meaningless rather than false.
-        foreach ( [ 'start date' => $start, 'end date' => $end ] as $label => $value ) {
+        if ( ! preg_match( '/^\d{8}$/', $start ) ) {
 
-            if ( ! preg_match( '/^\d{8}$/', $value ) ) {
+            return sprintf( \OWA\Core\CoreAPI::t( 'The start date "%s" is not a date. Dates are yyyymmdd.' ),
+                htmlspecialchars( $start, ENT_QUOTES ) );
+        }
 
-                return sprintf( 'The %s "%s" is not a date. Dates are yyyymmdd.',
-                    $label, htmlspecialchars( $value, ENT_QUOTES ) );
-            }
+        if ( ! preg_match( '/^\d{8}$/', $end ) ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( 'The end date "%s" is not a date. Dates are yyyymmdd.' ),
+                htmlspecialchars( $end, ENT_QUOTES ) );
         }
 
         if ( $start > $end ) {
 
-            return sprintf( 'The start date (%s) is after the end date (%s).', $start, $end );
+            return sprintf( \OWA\Core\CoreAPI::t( 'The start date (%1$s) is after the end date (%2$s).' ), $start, $end );
         }
 
         return '';
@@ -333,12 +336,12 @@ class TimePeriod {
         if ( $compare !== '' && $compare !== 'date_range' ) {
 
             return in_array( $compare, self::getValidComparePeriods(), true ) ? ''
-                : sprintf( '"%s" is not a comparison.', htmlspecialchars( $compare, ENT_QUOTES ) );
+                : sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a comparison.' ), htmlspecialchars( $compare, ENT_QUOTES ) );
         }
 
         $error = self::getRangeError( [ 'period' => 'date_range', 'startDate' => $start, 'endDate' => $end ] );
 
-        return $error === '' ? '' : 'Compared to: ' . $error;
+        return $error === '' ? '' : sprintf( \OWA\Core\CoreAPI::t( 'Compared to: %s' ), $error );
     }
 
     /**

@@ -336,6 +336,53 @@ final class ArchiveNotDeleteTest extends TestCase
             'Archived Properties are still rendered in the site control.' );
     }
 
+    /**
+     * Deleting a Property takes down its Profiles' tracking bundles, as deleting
+     * one Profile does: a bundle left in place keeps every page that loads it
+     * sending beacons.
+     */
+    public function testDeletingAPropertyRemovesItsProfilesBundles(): void
+    {
+        $this->skipUnlessParented();
+
+        $out = sys_get_temp_dir() . '/owatest-bundles-' . getmypid() . '/';
+        $was = \OWA\Module\Base\Classes\TrackerBundle::$outDir;
+
+        @mkdir( $out, 0775, true );
+        file_put_contents( $out . $this->siteId . '.js', '/* owatest */' );
+
+        \OWA\Module\Base\Classes\TrackerBundle::$outDir = $out;
+
+        // Put back in tearDown: the Property and each of its live Profiles.
+        $this->archived[] = [ 'base.property', $this->propertyId ];
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'id, archived_date' );
+        $db->where( 'property_id', $this->propertyId );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( empty( $row['archived_date'] ) ) {
+
+                $this->archived[] = [ 'base.site', $row['id'] ];
+            }
+        }
+
+        try {
+            ( new \OWA\Module\Base\Controller\PropertyDelete( [ 'propertyId' => $this->propertyId ] ) )->action();
+
+            $this->assertFileDoesNotExist( $out . $this->siteId . '.js',
+                'The Profile was archived and its bundle is still served.' );
+
+        } finally {
+
+            \OWA\Module\Base\Classes\TrackerBundle::$outDir = $was;
+            @unlink( $out . $this->siteId . '.js' );
+            @rmdir( $out );
+        }
+    }
+
     /** Every listing has to agree, or an archived Profile reappears in one of them. */
     public function testEveryProfileListingExcludesArchived(): void
     {

@@ -290,7 +290,31 @@ final class ReportDefinitionFormatTest extends TestCase
             'deprecated with an empty message' => [
                 $base + [ 'deprecated' => [ 'message' => '' ] ],
                 'needs a "message"' ],
+
+            'capability is not a name' => [
+                $base + [ 'capability' => [ 'view_reports_ecommerce' ] ],
+                '"capability" must be a capability name' ],
         ];
+    }
+
+    /**
+     * A definition's `capability` is the one the reader needs; without one, a
+     * report needs view_reports.
+     */
+    public function testADeclaredCapabilityIsTheOneRequired(): void
+    {
+        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError(
+            $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) ) );
+
+        $declared = new \OWA\Core\ConfiguredReport( [] );
+        $declared->setDefinition( $this->base( [ 'capability' => 'view_reports_ecommerce' ] ) );
+
+        $this->assertSame( 'view_reports_ecommerce', $declared->getRequiredCapability() );
+
+        $plain = new \OWA\Core\ConfiguredReport( [] );
+        $plain->setDefinition( $this->base() );
+
+        $this->assertSame( 'view_reports', $plain->getRequiredCapability() );
     }
 
     /** A well-formed parameterised definition is not caught by any of that. */
@@ -650,6 +674,19 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertStringContainsString( $because, $error );
     }
 
+    /** Each type a definition may name is one the template draws, and the builder offers no other. */
+    public function testTheWidgetTypesAreTheOnesTheTemplateDraws(): void
+    {
+        $template = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/report_widgets.php');
+
+        foreach (\OWA\Core\ConfiguredReport::WIDGET_TYPES as $type) {
+            $this->assertStringContainsString("'$type'", $template, "$type is not drawn");
+        }
+
+        $this->assertSame([], array_diff(array_keys(\OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES),
+            \OWA\Core\ConfiguredReport::WIDGET_TYPES));
+    }
+
     public static function badLinkProvider(): array
     {
         return [
@@ -669,6 +706,10 @@ final class ReportDefinitionFormatTest extends TestCase
 
             'widget with no type' => [
                 [ 'links' => [] ], 'needs a "type"' ],
+
+            // An unknown type draws an empty frame.
+            'widget of an unknown type' => [
+                [ 'type' => 'sparkline' ], '"sparkline" is not a widget type' ],
         ];
     }
 

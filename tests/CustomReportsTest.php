@@ -1141,8 +1141,10 @@ final class CustomReportsTest extends TestCase
             'query' => ['metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'],
         ];
 
-        $this->assertStringContainsString('Trend card',
-            CustomReports::validate($definition));
+        $error = CustomReports::validate($definition);
+
+        $this->assertStringContainsString('Trend card', $error);
+        $this->assertStringContainsString('no other dimension', $error);
 
         // ...and the same query IS accepted on a full-width trend, so the
         // refusal is about the type rather than about the dimension.
@@ -1295,6 +1297,15 @@ final class CustomReportsTest extends TestCase
         $this->assertNotSame('', $error,
             'a definition that could name a view could point at any view in the tree');
         $this->assertStringContainsString('subview', $error);
+    }
+
+    /** Who may open a saved report is mayView()'s answer, not its definition's. */
+    public function testASavedReportCannotDeclareACapability(): void
+    {
+        $definition = $this->definition();
+        $definition['capability'] = 'install_schema';
+
+        $this->assertStringContainsString('capability', CustomReports::validate($definition));
     }
 
     public function testAnUnknownTopLevelKeyIsRefused(): void

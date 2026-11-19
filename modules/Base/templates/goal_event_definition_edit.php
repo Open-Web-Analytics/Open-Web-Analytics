@@ -9,18 +9,11 @@
  * .constraintValueField), because the pill styling is written against those
  * classes and naming a condition is the same act in both places.
  *
- * ONE row, no add button. The schema holds a single property/operator/value
- * triple, which is what v2 specifies (PLAN.html §7.14: an event type and a
- * condition). Whether several conditions can combine is a v2 question, and
- * rendering an add button that cannot be saved would answer it in the UI first.
+ * Any number of rows (data-owa-repeatable), each a property/operator/value
+ * condition stored as a goal_event_definition_condition, combined by the
+ * all/any choice (condition_match).
  */
 $owa_ke = (array) $view->goalEventDefinition;
-
-$owa_operators = [
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT  => 'Exactly Matching',
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_BEGINS => 'Begins With',
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX  => 'Matches Regex',
-];
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
@@ -247,7 +240,7 @@ $owa_operators = [
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition' ) );?></div>
     <div class="owa_dangerZoneBody">
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'It stops counting and is removed from reports. The events it has already counted are kept.' ) );?>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'It stops marking events as goals. Events it has already marked stay goals in reports.' ) );?>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDefinitionDelete');?>
@@ -258,7 +251,7 @@ $owa_operators = [
                name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Goal Event Definition' ) );?>"
                data-owa-confirm
                data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition?' ) );?>"
-               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops counting and leaves reports. Events already counted are kept.' ), $owa_ke['name'] ?? '' ) );?>"
+               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops marking events as goals. Events it has already marked stay goals in reports.' ), $owa_ke['name'] ?? '' ) );?>"
                data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete goal event definition' ) );?>">
     </form>
 </div>
