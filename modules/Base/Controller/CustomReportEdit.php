@@ -111,7 +111,9 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * no widgets and no report metric set -- so the first thing an author
          * does is choose what to build.
          */
-        $definition = $report ? (array) $report['definition'] : [];
+        // As it is drawn (CustomReports::drawable()): a widget value a save
+        // refuses is not offered back, so saving it again is accepted.
+        $definition = $report ? \OWA\Module\Base\Classes\CustomReports::drawable( (array) $report['definition'] ) : [];
 
         $name = $report ? $report['name'] : '';
 

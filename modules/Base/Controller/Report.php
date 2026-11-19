@@ -289,7 +289,9 @@ class Report extends \OWA\Core\AdminController {
             return $this->renderVisualization( $id, $report );
         }
 
-        $definition = (array) $report['definition'];
+        // Without a widget key or a box width a save refuses, so one saved
+        // before that still draws (CustomReports::drawable()).
+        $definition = \OWA\Module\Base\Classes\CustomReports::drawable( (array) $report['definition'] );
 
         // Against its own Property's dimensions, custom ones included.
         $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition, $property_id );

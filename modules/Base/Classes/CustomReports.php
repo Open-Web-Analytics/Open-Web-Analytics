@@ -132,7 +132,8 @@ class CustomReports {
 
     /**
      * The keys a saved report's widget may use: what the builder writes and
-     * report_widgets.php reads. Any other is refused (validate()).
+     * report_widgets.php reads. A save with any other is refused
+     * (widgetError()); a stored report is drawn without it (drawable()).
      */
     const WIDGET_KEYS = [
         'type', 'id', 'container', 'title', 'showTitle', 'query', 'colspan', 'rowspan',
@@ -524,19 +525,6 @@ class CustomReports {
                     $where, $type, implode( ', ', array_keys( self::WIDGET_TYPES ) ) );
             }
 
-            $unknown = array_values( array_diff( array_map( 'strval', array_keys( $widget ) ), self::WIDGET_KEYS ) );
-
-            if ( $unknown ) {
-
-                return sprintf( \OWA\Core\CoreAPI::t( '%1$s has unknown keys: %2$s. A widget may use %3$s.' ),
-                    $where, implode( ', ', $unknown ), implode( ', ', self::WIDGET_KEYS ) );
-            }
-
-            if ( isset( $widget['boxWidth'] ) && ! self::isBoxWidth( $widget['boxWidth'] ) ) {
-
-                return sprintf( \OWA\Core\CoreAPI::t( '%s has a box width that is not a CSS length such as 150px or 20%%.' ), $where );
-            }
-
             $error = self::validateQuery( $widget, $where, $has_report_metrics, $property_id );
 
             if ( $error !== '' ) {
@@ -567,6 +555,88 @@ class CustomReports {
         }
 
         return '';
+    }
+
+    /**
+     * Why a definition's widgets may not be saved: a key outside WIDGET_KEYS,
+     * or a boxWidth that is not a box width (isBoxWidth()); '' when they may.
+     * Asked on save only: a stored report is drawn without them (drawable()).
+     *
+     * @param  mixed $definition a decoded definition
+     * @return string
+     */
+    public static function widgetError( $definition ) {
+
+        foreach ( array_values( (array) ( is_array( $definition ) ? ( $definition['widgets'] ?? [] ) : [] ) ) as $i => $widget ) {
+
+            if ( ! is_array( $widget ) ) {
+
+                continue;
+            }
+
+            $where   = sprintf( \OWA\Core\CoreAPI::t( 'Widget %d' ), $i + 1 );
+            $unknown = array_values( array_diff( array_map( 'strval', array_keys( $widget ) ), self::WIDGET_KEYS ) );
+
+            if ( $unknown ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%1$s has unknown keys: %2$s. A widget may use %3$s.' ),
+                    $where, implode( ', ', $unknown ), implode( ', ', self::WIDGET_KEYS ) );
+            }
+
+            if ( isset( $widget['boxWidth'] ) && ! self::isBoxWidth( $widget['boxWidth'] ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%s has a box width that is not a CSS length such as 150px or 20%%.' ), $where );
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * A stored definition as it is drawn: each widget without a key outside
+     * WIDGET_KEYS or a boxWidth that is not a box width, so the default
+     * applies. A report saved before these were refused still draws; one
+     * debug line says what was dropped.
+     *
+     * @param  array<mixed> $definition
+     * @return array<mixed>
+     */
+    public static function drawable( array $definition ) {
+
+        if ( ! isset( $definition['widgets'] ) || ! is_array( $definition['widgets'] ) ) {
+
+            return $definition;
+        }
+
+        $dropped = [];
+
+        foreach ( $definition['widgets'] as $i => $widget ) {
+
+            if ( ! is_array( $widget ) ) {
+
+                continue;
+            }
+
+            foreach ( array_keys( $widget ) as $key ) {
+
+                $bad = ! in_array( (string) $key, self::WIDGET_KEYS, true )
+                    || ( $key === 'boxWidth' && ! self::isBoxWidth( $widget[ $key ] ) );
+
+                if ( $bad ) {
+
+                    $dropped[] = sprintf( '%s.%s', is_int( $i ) ? $i + 1 : $i, $key );
+                    unset( $definition['widgets'][ $i ][ $key ] );
+                }
+            }
+        }
+
+        if ( $dropped ) {
+
+            \OWA\Core\CoreAPI::debug( sprintf( 'Custom report "%s": drawn without widget values it may not carry: %s',
+                (string) ( $definition['title'] ?? '' ), implode( ', ', $dropped ) ) );
+        }
+
+        return $definition;
     }
 
     /**
@@ -2085,7 +2155,12 @@ class CustomReports {
 
         $definition = self::normalize( $definition );
 
-        $error = self::validate( $definition, $property_id );
+        $error = self::widgetError( $definition );
+
+        if ( $error === '' ) {
+
+            $error = self::validate( $definition, $property_id );
+        }
 
         if ( $error !== '' ) {
 

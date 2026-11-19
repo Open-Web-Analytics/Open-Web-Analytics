@@ -166,28 +166,48 @@ final class CustomReportsTest extends TestCase
         ];
     }
 
-    /** @dataProvider boxWidths */
+    /**
+     * A save refuses a box width that is not one; a stored one is drawn with
+     * the default instead.
+     *
+     * @dataProvider boxWidths
+     */
     public function testABoxWidthIsABoundedCssLength($width, bool $valid): void
     {
         $definition = $this->definition();
         $definition['widgets'][0]['boxWidth'] = $width;
 
-        $error = CustomReports::validate($definition);
+        $error = CustomReports::widgetError($definition);
+        $drawn = CustomReports::drawable($definition);
+
+        $this->assertSame('', CustomReports::validate($drawn), 'drawn');
 
         if ($valid) {
             $this->assertSame('', $error);
+            $this->assertSame($width, $drawn['widgets'][0]['boxWidth']);
         } else {
             $this->assertStringContainsString('Widget 1 has a box width that is not a CSS length', $error);
+            $this->assertArrayNotHasKey('boxWidth', $drawn['widgets'][0]);
         }
     }
 
-    public function testAnUnknownWidgetKeyIsRefused(): void
+    /** A save refuses an unknown widget key; a stored one is drawn without it. */
+    public function testAnUnknownWidgetKeyIsRefusedOnSaveAndDroppedOnDraw(): void
     {
         $definition = $this->definition();
         $definition['widgets'][1]['minWidth'] = '100px';
         $definition['widgets'][1]['onclick']  = 'x';
 
-        $this->assertStringStartsWith('Widget 2 has unknown keys: minWidth, onclick.', CustomReports::validate($definition));
+        $this->assertStringStartsWith('Widget 2 has unknown keys: minWidth, onclick.', CustomReports::widgetError($definition));
+
+        $refused = CustomReports::save(['name' => 'Unknown keys', 'definition' => $definition], self::AUTHOR, self::PROPERTY);
+        $this->assertFalse($refused['ok']);
+        $this->assertStringStartsWith('Widget 2 has unknown keys', $refused['error']);
+
+        $drawn = CustomReports::drawable($definition);
+        $this->assertSame($this->definition()['widgets'], $drawn['widgets']);
+        $this->assertSame('', CustomReports::validate($drawn), 'a stored one still draws');
+        $this->assertSame($this->definition(), CustomReports::drawable($this->definition()), 'a clean one is unchanged');
     }
 
     /**
