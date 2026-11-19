@@ -55,15 +55,16 @@ class TrackingEventHelpers {
      */
     public static function getInstance() {
 
-        static $o;
+        if ( ! self::$instance ) {
 
-        if ( ! $o ) {
-
-            $o = new \OWA\Module\Base\Classes\TrackingEventHelpers();
+            self::$instance = new \OWA\Module\Base\Classes\TrackingEventHelpers();
         }
 
-        return $o;
+        return self::$instance;
     }
+
+    /** @var TrackingEventHelpers|null getInstance() */
+    private static $instance = null;
 
     public function __construct() {
 
@@ -2261,6 +2262,27 @@ class TrackingEventHelpers {
         self::$campaignKeys = [];
         self::$landingTags  = [];
         self::$priorTouches = [];
+    }
+
+    /**
+     * forget(), and the memos of config files and the instance as well. The
+     * instance records which filters it has attached to the event dispatcher,
+     * so it goes with the dispatcher: CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forgetAll() {
+
+        self::forget();
+
+        self::$instance              = null;
+        self::$property_config       = null;
+        self::$property_descriptions = [];
+        self::$internal_properties   = [];
+        self::$memo                  = [];
+        self::$event_names           = null;
+        self::$event_config          = null;
+        self::$goal_trigger_names    = null;
     }
 
     /**

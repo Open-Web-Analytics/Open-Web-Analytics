@@ -143,12 +143,11 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
         $db       = \OWA\Core\CoreAPI::dbSingleton();
         $property = '9' . random_int(100000000, 999999999);
         $cube     = Cubes::tableFor($property);
-        $measured = new ReflectionProperty(Dimensions::class, 'capacity');
 
         $this->assertTrue((bool) $db->query(sprintf('CREATE TABLE %s LIKE %s', $cube, $this->table)));
 
         try {
-            $measured->setValue(null, []);
+            Dimensions::forgetCapacity();
             $this->assertGreaterThanOrEqual(self::USEFUL_MINIMUM, Dimensions::capacityFor($property));
 
             // Padded by asking: filler until the server refuses a single column.
@@ -168,10 +167,10 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
 
             $this->assertLessThan(400, $filler, 'the server should have refused before we ran out of patience');
 
-            $measured->setValue(null, []);
+            Dimensions::forgetCapacity();
             $this->assertSame(0, Dimensions::capacityFor($property), 'a full cube has room for none');
         } finally {
-            $measured->setValue(null, []);
+            Dimensions::forgetCapacity();
             $db->query(sprintf('DROP TABLE IF EXISTS %s', $cube));
             $db->query(sprintf('DROP TABLE IF EXISTS %s', $cube . Dimensions::CAPACITY_SUFFIX));
         }
