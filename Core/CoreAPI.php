@@ -1122,6 +1122,17 @@ class CoreAPI {
     }
 
     /**
+     * The roles a user account may have: every role but 'everyone', which is
+     * the role of a visitor who is not signed in (ServiceUser).
+     *
+     * @return list<int|string>
+     */
+    public static function getAssignableRoles() {
+
+        return array_values( array_diff( \OWA\Core\CoreAPI::getAllRoles(), [ 'everyone' ] ) );
+    }
+
+    /**
      * @param  mixed $role
      * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
      */
@@ -1557,12 +1568,9 @@ class CoreAPI {
      * @return string|null         e.g. 'OWA\Module\Base\Entity\CustomReport'
      */
     /*
-     * Public because resolution is now needed without instantiation.
-     * Entity::setProperties() asks which dimension a foreign key points at for
-     * every column of every fact row it writes; building an entity to answer
-     * that would mean constructing a dozen throwaway objects per event. Pure
-     * name-to-class lookup, no side effects, and entityFactory() is public
-     * already.
+     * Public: a name-to-class lookup with no side effects, for a caller that
+     * needs the class without building the entity. In core, entityFactory()
+     * is the only caller.
      */
     public static function namespacedEntityClass($entity_name) {
 
@@ -2997,22 +3005,15 @@ class CoreAPI {
             if ( \OWA\Core\Lib::keyExistsNotEmpty( 'module', $params ) && \OWA\Core\Lib::keyExistsNotEmpty( 'version', $params ) ) {
             
                 $route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
-                
-                if ( $route ) {
-                    
-                    // set the remainer of the rewritten rest params
-                    
-                    if ( $rest_params ) {
-                        
-                        // slice off the first three params which have already been set
-                        $rest_params = array_slice($rest_params, 3);
-                        
-                        foreach ( $rest_params as $k => $v) {
-                            
-                            $params[ $route['conf'][ 'params_order' ][$k] ] = $rest_params[ $k ];
-                        }
-                    }
-                    
+
+                // The path after module/version/route, named by the route's params_order.
+                $path_params = $route && $rest_params
+                    ? self::restPathParams( array_slice( $rest_params, 3 ), $route['conf']['params_order'] ?? [] )
+                    : [];
+
+                if ( $route && $path_params !== null ) {
+
+                    $params = array_merge( $params, $path_params );
                     $params['rest_route'] = $route;
                     $controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], '', $params );
                     return \OWA\Core\CoreAPI::runController( $controller );
@@ -3023,6 +3024,7 @@ class CoreAPI {
                     // same reason: this runs before the controller authenticates, so
                     // a distinct "no such route" reply would let an anonymous caller
                     // enumerate the API by watching which names answer differently.
+                    // A path with more segments than the route names is no route either.
                     \OWA\Core\CoreAPI::debug('No REST API route found');
                     return self::restError( 401 );
                 }
@@ -3072,6 +3074,42 @@ class CoreAPI {
     }
 
     /**
+     * The path segments after module/version/route, named by the route's
+     * params_order: the first segment is the first name's value, and so on.
+     * Empty segments at the end (a trailing slash) name nothing.
+     *
+     * @param  list<string> $segments
+     * @param  mixed        $params_order the route's list of names; anything else names none
+     * @return array<string, string>|null null when there are more segments than names
+     */
+    public static function restPathParams( array $segments, $params_order ) {
+
+        while ( $segments && end( $segments ) === '' ) {
+
+            array_pop( $segments );
+        }
+
+        $names = is_array( $params_order ) ? array_values( $params_order ) : [];
+
+        if ( count( $segments ) > count( $names ) ) {
+
+            return null;
+        }
+
+        $params = [];
+
+        foreach ( array_values( $segments ) as $i => $value ) {
+
+            $params[ (string) $names[ $i ] ] = $value;
+        }
+
+        return $params;
+    }
+
+    /**
+     * A HEAD request takes the GET route when the route registers no HEAD of
+     * its own: the same controller, and the server sends no body.
+     *
      * @param  string $request_method
      * @param  string $module
      * @param  string $version
@@ -3079,15 +3117,21 @@ class CoreAPI {
      * @return RestRoute|void nothing when an argument is empty or no route is registered
      */
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
-        
+
         if ( ! empty( $request_method )
             && ! empty( $version )
             && ! empty( $do )
             && ! empty( $module )
         ){
-            
+
             $service = \OWA\Core\CoreAPI::serviceSingleton();
             $route = $service->getRestApiRoute($module, $version, $do, $request_method );
+
+            if ( ! $route && $request_method === 'HEAD' ) {
+
+                $route = $service->getRestApiRoute( $module, $version, $do, 'GET' );
+            }
+
             \OWA\Core\CoreAPI::debug($route);
             return $route;
         }

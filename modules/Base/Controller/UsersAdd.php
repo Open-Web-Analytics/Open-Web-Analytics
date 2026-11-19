@@ -22,8 +22,12 @@ class UsersAdd extends \OWA\Core\AdminController {
         $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'  => true]);
         $this->addValidation('role', $this->getParam('role'), 'required', ['stopOnError'    => true]);
         
-        $roles = \OWA\Core\CoreAPI::getAllRoles();
-        $this->addValidation('role', $this->getParam('role'), 'inArray', ['possible_values' => $roles, 'stopOnError' => true] );
+        $roles = \OWA\Core\CoreAPI::getAssignableRoles();
+        $this->addValidation('role', $this->getParam('role'), 'inArray', [
+            'possible_values' => $roles,
+            'errorMsg'        => sprintf( \OWA\Core\CoreAPI::t( 'A user\'s role is one of: %s.' ), implode( ', ', $roles ) ),
+            'stopOnError'     => true,
+        ] );
         
         // Check for user with the same email address
         // this is needed or else the change password feature will not know which account
@@ -48,29 +52,29 @@ class UsersAdd extends \OWA\Core\AdminController {
 
     public function action() {
 
-        $userManager = new \OWA\Module\Base\Classes\UserManager();
+        $user_params = [ 'user_id'       => trim( (string) $this->getParam( 'user_id' ) ),
+                         'real_name'     => (string) $this->getParam( 'real_name' ),
+                         'role'          => $this->getParam( 'role' ),
+                         'email_address' => trim( (string) $this->getParam( 'email_address' ) ) ];
 
+        $u = $this->createUser( $user_params );
 
-        $user_params = [ 'user_id'         => trim($this->params['user_id']),
-                              'real_name'         => $this->params['real_name'],
-                              'role'            => $this->params['role'],
-                              'email_address'     => trim($this->params['email_address'])];
+        if ( ! $u ) {
 
-        $u = $userManager->createNewUser($user_params);
-        
-        $u_properties = [];
-        
-        if ( $u ) {
+            $this->set( 'validation_errors', [ 'user_id' => \OWA\Core\CoreAPI::t( 'The user was not added. The error log says why.' ) ] );
+            $this->errorAction();
 
-            $u_properties = [
-                
-                'user_id'   => $u->get('user_id'),
-                'email_address' => $u->get( 'email_address'),
-                'real_name'     =>  $u->get( 'real_name' ),
-                'role'          =>  $u->get('role')
-            ];
+            // Non-empty, so finishActionCall() does not go on to success().
+            return $this->data;
         }
-        
+
+        $u_properties = [
+            'user_id'       => $u->get( 'user_id' ),
+            'email_address' => $u->get( 'email_address' ),
+            'real_name'     => $u->get( 'real_name' ),
+            'role'          => $u->get( 'role' ),
+        ];
+
         // The invitation: its handler mails the new user the link that sets a
         // password (UserHandlers), and says on the event whether it was sent.
         $ed    = \OWA\Core\CoreAPI::getEventDispatch();
@@ -83,6 +87,15 @@ class UsersAdd extends \OWA\Core\AdminController {
         // For the CLI and REST controllers that extend this.
         $this->set( 'user', $u_properties + [ 'invitation_sent' => $sent ] );
         $this->set( 'invitation_sent', $sent );
+    }
+
+    /**
+     * @param  array<string, mixed> $user_params
+     * @return \OWA\Module\Base\Entity\User|false
+     */
+    protected function createUser( array $user_params ) {
+
+        return ( new \OWA\Module\Base\Classes\UserManager() )->createNewUser( $user_params );
     }
 
     public function success() {

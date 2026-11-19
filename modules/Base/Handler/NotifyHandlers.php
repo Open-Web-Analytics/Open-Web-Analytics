@@ -2,7 +2,8 @@
 namespace OWA\Module\Base\Handler;
 
 /**
- * Click Event Handler
+ * Sends the new-session announcement (base.notifyNewSession) when the
+ * Profile's announce_visitors and notice_email settings ask for one.
  */
 class NotifyHandlers extends \OWA\Core\Observer {
 

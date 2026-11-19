@@ -13,7 +13,7 @@ labels: bug
 
 **OWA Version**: x.y.z
 
-**PHP Version**: 7.x FPM
+**PHP Version**: 8.2.x FPM
 
 **Webserver**: Apache/Nginx
 

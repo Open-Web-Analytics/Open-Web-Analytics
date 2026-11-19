@@ -77,7 +77,7 @@ if ( ! defined( 'OWA_DTD_INDEX' ) ) { define('OWA_DTD_INDEX', 'KEY'); }
 if ( ! defined( 'OWA_DTD_AUTO_INCREMENT' ) ) { define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT'); }
 if ( ! defined( 'OWA_DTD_NOT_NULL' ) ) { define('OWA_DTD_NOT_NULL', 'NOT NULL'); }
 if ( ! defined( 'OWA_DTD_DEFAULT' ) ) { define('OWA_DTD_DEFAULT', 'DEFAULT %s'); }
-if ( ! defined( 'OWA_DTD_UNIQUE' ) ) { define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)'); }
+if ( ! defined( 'OWA_DTD_UNIQUE' ) ) { define('OWA_DTD_UNIQUE', 'UNIQUE'); }
 if ( ! defined( 'OWA_SQL_ADD_COLUMN' ) ) { define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s'); }
 if ( ! defined( 'OWA_SQL_DROP_COLUMN' ) ) { define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s'); }
 if ( ! defined( 'OWA_SQL_RENAME_COLUMN' ) ) { define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s'); }

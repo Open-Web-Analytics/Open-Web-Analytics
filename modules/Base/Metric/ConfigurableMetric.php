@@ -3,10 +3,9 @@
 namespace OWA\Module\Base\Metric;
 
 /**
- * Configurable Metric
- *
- * This metric produces a count of goal completions for a specific goal number
- * Goal number is passed into the object dynamicaly when the metric is created.
+ * A metric built from a definition (Module::registerMetricDefinition(),
+ * config/metrics.php): an aggregate of one column of an entity, or a ratio or
+ * difference of two other metrics.
  */
 
 class ConfigurableMetric extends \OWA\Core\Metric {

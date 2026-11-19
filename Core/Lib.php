@@ -735,6 +735,50 @@ class Lib {
     }
 
     /**
+     * Create a directory, and each missing parent, group-writable (0775)
+     * whatever the umask.
+     *
+     * For directories both the web server user and the account running cli.php
+     * write to: one created 0755 by either shuts the other out. The mode is set
+     * with chmod() because mkdir()'s is reduced by the umask, as
+     * Base\Classes\Error sets its log file's.
+     *
+     * @param  string $dir
+     * @return bool whether the directory exists afterwards
+     */
+    public static function makeSharedDir( $dir ) {
+
+        $dir = rtrim( (string) $dir, '/' );
+
+        if ( $dir === '' ) {
+
+            return false;
+        }
+
+        $missing = [];
+
+        for ( $d = $dir; $d !== '' && $d !== '.' && $d !== '/' && ! is_dir( $d ); $d = dirname( $d ) ) {
+
+            $missing[] = $d;
+        }
+
+        foreach ( array_reverse( $missing ) as $d ) {
+
+            if ( @mkdir( $d, 0775 ) ) {
+
+                @chmod( $d, 0775 );
+
+            } elseif ( ! is_dir( $d ) ) {
+
+                // Not made, and not made by a concurrent request either.
+                return false;
+            }
+        }
+
+        return is_dir( $dir );
+    }
+
+    /**
      * Lists all files in a Directory
      *
      * @param  string $start_dir

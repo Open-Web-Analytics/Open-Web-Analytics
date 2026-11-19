@@ -124,7 +124,7 @@ return [
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
         'cookie_persistence' => [ 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ],
         'cube_rebuild_window_days' => [ 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
-        'data_dir' => [ 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data, and by default its caches. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
+        'data_dir' => [ 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [
             'default'  => 90,
             'storable' => true,

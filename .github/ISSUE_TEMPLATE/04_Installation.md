@@ -12,7 +12,7 @@ labels: Installation
 
 **Affected Version(s)**: x.y.z
 
-**PHP Version**: 7.x FPM
+**PHP Version**: 8.2.x FPM
 
 **Webserver**: Apache/Nginx
 
@@ -23,7 +23,6 @@ labels: Installation
 <!-- Please write the version behind your installation type if you are using an plugin -->
 
 - [ ] Wordpress x.y.z
-- [ ] Mediawiki x.y.z
 - [ ] Standalone
 
 **Description**  

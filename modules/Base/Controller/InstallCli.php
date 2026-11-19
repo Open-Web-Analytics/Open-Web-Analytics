@@ -91,6 +91,8 @@ class InstallCli extends \OWA\Core\Controller\Cli {
                     return $this->fail('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
                 }
 
+                $im->announceInstallComplete( $this->getParam('user_id'), $site_id );
+
                 \OWA\Core\CoreAPI::notice('Install Completed.');
 
                 // Without the scheduler no report shows anything: say so where

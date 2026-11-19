@@ -15,6 +15,25 @@ final class DatabaseRequirementTest extends TestCase
     protected function tearDown(): void
     {
         DatabaseRequirement::assume(null);
+        \OWA\Core\Strings::useTranslations(null);
+    }
+
+    /** The installer form shows these, so each is in the locale in use. */
+    public function testTheRefusalsAreTranslated(): void
+    {
+        \OWA\Core\Strings::useTranslations([
+            'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest '
+          . 'MariaDB release still supported -- or MySQL %s or later.' => 'MariaDB %s: zu alt (%s, %s).',
+            'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build '
+          . 'uses JSON_VALUE and window functions -- or MariaDB %s or later.' => 'MySQL %s: zu alt (%s, %s).',
+            'OWA could not read the database server\'s version (%s). It needs MySQL %s '
+          . 'or later, or MariaDB %s or later.' => 'Version unlesbar (%s; %s, %s).',
+            'nothing was returned' => 'leer',
+        ]);
+
+        $this->assertSame('MariaDB 10.6.18: zu alt (10.11, 8.0.21).', DatabaseRequirement::problemFor('10.6.18-MariaDB'));
+        $this->assertSame('MySQL 5.7.44: zu alt (8.0.21, 10.11).', DatabaseRequirement::problemFor('5.7.44-log'));
+        $this->assertSame('Version unlesbar (leer; 8.0.21, 10.11).', DatabaseRequirement::problemFor(''));
     }
 
     /** @return array VERSION() string => accepted? */
