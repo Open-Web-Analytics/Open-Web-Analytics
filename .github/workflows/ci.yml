@@ -57,8 +57,26 @@ jobs:
         if: matrix.php == '8.2'
         run: composer run-script cs
 
+      # php-cgi prints a response's headers, which the CLI SAPI keeps none of.
+      # The tests of what OWA writes in a header run under it
+      # (tests/RunsUnderPhpCgi.php, LogEndpointTest) and skip without it.
+      - name: Install php-cgi
+        run: |
+          if [ ! -x "/usr/bin/php-cgi${{ matrix.php }}" ]; then
+            sudo apt-get install -y --no-install-recommends "php${{ matrix.php }}-cgi"
+          fi
+          sudo update-alternatives --set php-cgi "/usr/bin/php-cgi${{ matrix.php }}"
+          php-cgi -v | head -1
+          php-cgi -v | grep -q "^PHP ${{ matrix.php }}\."
+
       - name: Unit tests (PHPUnit)
         run: composer run-script test
+
+      # Shows the php-cgi tests ran: a skip for want of php-cgi fails the job.
+      - name: The header tests ran under php-cgi
+        run: |
+          vendor/bin/phpunit --no-progress --display-skipped $(grep -lE 'php-cgi|RunsUnderPhpCgi' tests/*Test.php) | tee php-cgi-tests.log
+          if grep -q 'php-cgi is not installed' php-cgi-tests.log; then exit 1; fi
 
   js:
     name: Tracker JS tests (Jest)
@@ -170,6 +188,18 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+
+      # php-cgi prints a response's headers, which the CLI SAPI keeps none of.
+      # The tests of what OWA writes in a header run under it
+      # (tests/RunsUnderPhpCgi.php, LogEndpointTest) and skip without it.
+      - name: Install php-cgi
+        run: |
+          if [ ! -x "/usr/bin/php-cgi${{ matrix.php }}" ]; then
+            sudo apt-get install -y --no-install-recommends "php${{ matrix.php }}-cgi"
+          fi
+          sudo update-alternatives --set php-cgi "/usr/bin/php-cgi${{ matrix.php }}"
+          php-cgi -v | head -1
+          php-cgi -v | grep -q "^PHP ${{ matrix.php }}\."
 
       # Reuses the self-hosted e2e harness: it writes a scratch owa-config.php
       # and runs the real CLI installer. No web server and no Playwright -- the
