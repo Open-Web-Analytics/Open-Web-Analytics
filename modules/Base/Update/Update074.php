@@ -19,6 +19,8 @@ class Update074 extends \OWA\Core\Update {
 
     public $schema_version = 74;
 
+    public $down_does_not_restore = 'the remote_host values: the column comes back empty.';
+
     /**
      * @param  bool $force
      * @return bool
