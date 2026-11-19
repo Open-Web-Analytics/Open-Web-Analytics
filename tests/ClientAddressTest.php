@@ -27,7 +27,8 @@ final class ClientAddressTest extends TestCase
     /** The request's server params, as the request container holds them. */
     private function request(array $server): void
     {
-        \OWA\Core\CoreAPI::serviceSingleton()->request->server = $server + $this->server;
+        // (array): a run without owa-config.php has no server params at all.
+        \OWA\Core\CoreAPI::serviceSingleton()->request->server = $server + (array) $this->server;
     }
 
     /** @return array<string, array{string, string, list<string>, string}> */
