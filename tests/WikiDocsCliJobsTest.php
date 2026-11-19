@@ -275,14 +275,6 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         foreach ($keys as $key => $meaning) {
             $this->assertStringContainsString("| `$key` | " . owa_wiki_cell($meaning) . ' |', $md, "$key is not in the table");
         }
-
-        // The method reads the constant rather than its own list of keys.
-        $method = new ReflectionMethod(\OWA\Module\Base\Classes\Service::class, 'applyConfiguredJobs');
-        $source = implode('', array_slice(file($method->getFileName()), $method->getStartLine() - 1,
-            $method->getEndLine() - $method->getStartLine() + 1));
-
-        $this->assertStringContainsString('self::SCHEDULED_JOB_KEYS', $source);
-        $this->assertStringContainsString('self::NEVER_SCHEDULE[', $source);
     }
 
     public function testEveryRefusedCommandIsInTheTableAndIsARealCommand(): void

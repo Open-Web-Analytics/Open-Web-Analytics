@@ -289,13 +289,57 @@ final class SiteListContractTest extends TestCase
      */
     public function testTheAddAndGrantRoutesEmitPublicPropertiesOnly(): void
     {
-        $root = dirname( __DIR__ ) . '/modules/Base/Controller/';
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'creates a Profile' );
+        }
 
-        $add = (string) file_get_contents( $root . 'SitesAdd.php' );
-        $this->assertStringContainsString( "\$this->set( 'site', \$site ? \$site->getPublicProperties() : [] );", $add );
+        $controller = new \OWA\Module\Base\Controller\SitesAdd( [
+            'domain'     => 'site-list-contract.example.test',
+            'name'       => 'Site list contract ' . uniqid(),
+            'streamType' => 'web',
+        ] );
+        $controller->action();
 
-        $grant = (string) file_get_contents( $root . 'SiteAddAllowedUserRest.php' );
-        $this->assertStringContainsString( "'site'          => \$s->getPublicProperties(),", $grant );
-        $this->assertStringContainsString( "'allowed_user'  => \$u->getPublicProperties()", $grant );
+        $site = (array) ( ( new \ReflectionProperty( \OWA\Core\Controller::class, 'data' ) )->getValue( $controller )['site'] ?? [] );
+
+        try {
+            $this->assertNotEmpty( $site['site_id'] ?? '', 'The Profile was not created.' );
+
+            $entity = \OWA\Module\Base\Entity\Site::forSiteId( $site['site_id'] );
+
+            $this->assertSame( $entity->getPublicProperties(), $site );
+
+            foreach ( [ 'archived_date', 'stream_type', 'app_id' ] as $private ) {
+                $this->assertArrayNotHasKey( $private, $site );
+            }
+
+            $user_id = 'site-list-contract-' . substr( md5( uniqid( '', true ) ), 0, 8 ) . '@owatest.example.com';
+            $user    = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+            $user->createNewUser( $user_id, 'viewer', 'x' . $user_id, $user_id, 'OWA Test viewer' );
+            $user->load( $user_id, 'user_id' );
+
+            $grant = new \OWA\Module\Base\Controller\SiteAddAllowedUserRest(
+                [ 'siteId' => $site['site_id'], 'user_id' => $user_id ] );
+            $grant->action();
+
+            $response = (array) ( $grant->data['response'] ?? [] );
+
+            $this->assertSame( $entity->getPublicProperties(), $response['site'] ?? null );
+            $this->assertSame( $user->getPublicProperties(), $response['allowed_user'] ?? null );
+
+            foreach ( [ 'password', 'temp_passkey', 'session_epoch' ] as $private ) {
+                $this->assertArrayNotHasKey( $private, $response['allowed_user'] );
+            }
+        } finally {
+            if ( ! empty( $user ) && $user->get( 'id' ) ) {
+                \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->delete( $user->get( 'id' ), 'user_id' );
+                \OWA\Core\CoreAPI::entityFactory( 'base.user' )->delete( $user->get( 'id' ), 'id' );
+            }
+
+            if ( ! empty( $site['id'] ) ) {
+                \OWA\Core\CoreAPI::entityFactory( 'base.site' )->delete( $site['id'], 'id' );
+                \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $site['property_id'], 'id' );
+            }
+        }
     }
 }

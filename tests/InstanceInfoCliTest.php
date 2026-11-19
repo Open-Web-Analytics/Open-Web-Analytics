@@ -78,31 +78,12 @@ final class InstanceInfoCliTest extends TestCase
         }
     }
 
-    /**
-     * The installer must not keep its own copy of those checks. If it grows one
-     * back, the two drift and nobody notices -- nobody runs the installer on a
-     * working instance, or the diagnostic on a fresh one.
-     */
-    public function testTheInstallerReadsTheSharedEnvironmentChecks(): void
-    {
-        $source = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallCheckEnv.php');
-
-        $this->assertStringContainsString('EnvironmentCheck::all(', $source,
-            'the installer must ask EnvironmentCheck rather than rebuild the list');
-
-        $this->assertStringNotContainsString('extension_loaded(', $source,
-            'the installer is testing extensions itself again');
-
-        $this->assertStringNotContainsString("vendorDir()", $source,
-            'the installer is testing for vendor/ itself again');
-    }
-
     public function testTheCommandIsRegistered(): void
     {
-        $source = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php');
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
 
-        $this->assertStringContainsString("registerCliCommand('instance-info'", $source);
+        $this->assertSame('base.instanceInfoCli', $s->getCliCommandClass('instance-info'));
     }
 
     /**
@@ -253,20 +234,26 @@ final class InstanceInfoCliTest extends TestCase
      * schemaless modules would be saying they are expected to have no version,
      * which is not what install() does.
      *
-     * Asserted against the source because the state does not exist on a healthy
-     * install -- every active module here and on both production installs has a
-     * recorded version -- so there is nothing to render and nothing to observe.
+     * maxmind_geoip owns no tables, so the warning is shown for it too.
      */
     public function testAMissingSchemaVersionIsAWarningForEveryModule(): void
     {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstanceInfoCli.php');
+        $config  = \OWA\Core\CoreAPI::configSingleton();
+        $active  = $config->get('maxmind_geoip', 'is_active');
+        $version = $config->get('maxmind_geoip', 'schema_version');
 
-        $this->assertStringContainsString('active, but never installed', $src);
+        try {
+            $config->set('maxmind_geoip', 'is_active', true);
+            $config->set('maxmind_geoip', 'schema_version', '');
 
-        $this->assertStringNotContainsString('hasSchema', $src,
-            'the warning must not be gated on whether the module owns tables: '
-          . 'install() records a version for a schemaless module too');
+            $report = implode("\n", (array) $this->invokePrivate('schema'));
+
+        } finally {
+            $config->set('maxmind_geoip', 'is_active', $active);
+            $config->set('maxmind_geoip', 'schema_version', $version);
+        }
+
+        $this->assertMatchesRegularExpression('/^.*  maxmind_geoip\b.*active, but never installed/m', $report);
     }
 
     /**
@@ -287,25 +274,56 @@ final class InstanceInfoCliTest extends TestCase
     }
 
     /**
-     * It reports; it does not change anything. Asserted against the source
-     * because the destructive case cannot be exercised safely.
+     * It reports; it does not change anything: the whole report runs no
+     * statement that writes, on the connection it reads through.
+     *
+     * Needs a database.
      */
     public function testItOnlyReads(): void
     {
-        $source = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/InstanceInfoCli.php');
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database to report on');
+        }
 
-        /*
-         * Match SQL STATEMENTS, not words. A plain search for "UPDATE " fails
-         * on the string 'UPDATE REQUIRED' that the schema section prints, which
-         * would be a test that has to be weakened the first time it is right
-         * about nothing.
-         */
-        $writes = '/\b(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM'
-                . '|DROP\s+(TABLE|DATABASE)|ALTER\s+TABLE|TRUNCATE\s+(TABLE\s+)?\w)/i';
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $this->assertDoesNotMatchRegularExpression($writes, $source,
-            'instance-info must only ever read');
+        $writes = static function () use ($db): array {
+            $counted = [];
+
+            foreach ((array) $db->get_results("SHOW SESSION STATUS LIKE 'Com\\_%'") as $row) {
+                $row = array_values((array) $row);
+
+                if (preg_match('/^Com_(insert|update|delete|replace|truncate|load|(create|drop|alter|rename)_(table|db|index|view))/', (string) $row[0])) {
+                    $counted[(string) $row[0]] = (int) $row[1];
+                }
+            }
+
+            return $counted;
+        };
+
+        $cli = new class extends \OWA\Module\Base\Controller\InstanceInfoCli {
+            /** @var list<string> */
+            public $lines = [];
+
+            public function __construct()
+            {
+                \OWA\Core\Base::__construct();
+                $this->params = [];
+            }
+
+            protected function write($lines)
+            {
+                $this->lines = (array) $lines;
+            }
+        };
+
+        $before = $writes();
+        $this->assertNotEmpty($before, 'the server reports no statement counters');
+
+        $cli->action();
+
+        $this->assertNotEmpty($cli->lines);
+        $this->assertSame($before, $writes(), 'instance-info must only ever read');
     }
 
     /** A private method of the command, on an instance whose constructor never ran. */

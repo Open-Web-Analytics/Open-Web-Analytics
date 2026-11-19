@@ -155,4 +155,20 @@ final class CorsOriginMatchTest extends TestCase
     {
         $this->assertNull($this->match('https://example.com', []));
     }
+
+    /** Only live web Profiles grant an origin -- a bundle id is not a host. */
+    public function testOnlyWebProfilesContributeCorsOrigins(): void
+    {
+        $origin = 'https://com.example.app';
+        $match  = static fn(array $site) => \OWA\Core\View\RestApi::matchAllowedOrigin($origin, [$site + ['domain' => 'com.example.app']]);
+
+        $this->assertSame($origin, $match(['stream_type' => 'web']));
+        $this->assertSame($origin, $match([]), 'a Profile that predates stream_type is a website');
+
+        $this->assertNull($match(['stream_type' => 'app']),
+            'An app Profile\'s identifier is parsed as a host for CORS matching.');
+
+        $this->assertNull($match(['stream_type' => 'web', 'archived_date' => '2026-01-01 00:00:00']),
+            'An archived Profile still grants its origin, though it has stopped observing.');
+    }
 }

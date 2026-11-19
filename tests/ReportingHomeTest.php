@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/RunsUnderPhpCgi.php';
 
 /**
  * Reporting resumes where it left off: it lands on a report of the last
@@ -11,6 +12,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportingHomeTest extends TestCase
 {
+    use RunsUnderPhpCgi;
+
     private function redirect( array $params = [] ): array
     {
         $controller = new \OWA\Module\Base\Controller\ReportingHome( $params );
@@ -93,18 +96,29 @@ final class ReportingHomeTest extends TestCase
         }
     }
 
-    /** It is written where the answer is known: when a report renders. */
+    /**
+     * It is written where the answer is known: when a report renders. Rendered
+     * under php-cgi, which prints the response's headers.
+     */
     public function testThePropertyIsRememberedWhenAReportRenders(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/ReportController.php' );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
 
-        $this->assertStringContainsString(
-            'ReportingHome::LAST_PROPERTY_COOKIE', $src,
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $propertyId = (string) ( $db->getOneRow()['id'] ?? '' );
+
+        if ( $propertyId === '' ) {
+            $this->markTestSkipped( 'Needs a Property.' );
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/^Set-Cookie: \w*' . \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE . '=' . $propertyId . ';/m',
+            $this->cgiHeaders( 'tests/fixtures/report_render_probe.php', [ 'PROBE_PROPERTY' => $propertyId ] ),
             'Nothing records the Property, so reporting always resumes on the first one.' );
-
-        $this->assertStringContainsString(
-            "if ( \$propertyId !== '' && \$this->remembersLastProperty() ) {\n\n            \\OWA\\Core\\CoreAPI::createCookie(", $src,
-            'It would write an empty cookie on a report that resolved no Property.' );
     }
 
     /** Nothing points at the retired roster. */

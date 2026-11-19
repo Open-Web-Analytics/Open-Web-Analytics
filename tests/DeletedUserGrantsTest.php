@@ -174,10 +174,26 @@ final class DeletedUserGrantsTest extends TestCase
      */
     public function testTheAssignedUsersCacheIsCleared(): void
     {
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/UserManager.php' );
+        $rowId = $this->makeGrantedUser();
 
-        $this->assertStringContainsString( 'forgetAssignedUsers()', $src,
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->load( $this->siteId );
+
+        $assigned = function () use ( $site ): array {
+
+            return array_map( static function ( $user ) {
+
+                return (string) $user->get( 'id' );
+            }, $site->getAssignedUsers() );
+        };
+
+        // Read once, so the site's list is cached for the rest of the request.
+        \OWA\Module\Base\Entity\Site::forgetAssignedUsers();
+        $this->assertContains( $rowId, $assigned() );
+
+        \OWA\Core\CoreAPI::supportClassFactory( 'base', 'userManager' )->deleteUser( $this->userId );
+
+        $this->assertNotContains( $rowId, $assigned(),
             'A deleted user can still appear in a site\'s assigned-users list for the '
             . 'rest of the request.' );
     }

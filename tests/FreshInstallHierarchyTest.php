@@ -357,12 +357,14 @@ final class FreshInstallHierarchyTest extends TestCase
                 \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_KEY ),
             'The two keys collide, so this test cannot tell them apart.' );
 
-        $src = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/SiteManager.php' );
-
-        $this->assertStringNotContainsString(
-            'generateId( self::DEFAULT_ORGANIZATION_NAME )', $src,
+        // A database OWA did not name carries no id, so the default is minted.
+        $this->assertSame(
+            (string) $organization->generateId( \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_KEY ),
+            (string) \OWA\Module\Base\Classes\SiteManager::newOrganizationId( 'owatest' ),
             'The id is still derived from the name.' );
 
+        // One OWA named carries the Organization's id.
+        $this->assertSame( '7000000000000001', (string) \OWA\Module\Base\Classes\SiteManager::newOrganizationId(
+            \OWA\Module\Base\Classes\InstallDatabase::nameFor( '7000000000000001' ) ) );
     }
 }
