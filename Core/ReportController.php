@@ -155,7 +155,7 @@ class ReportController extends \OWA\Core\AdminController {
 
         foreach ( \OWA\Module\Base\Classes\TimePeriod::COMPARE_PERIODS as $key => $label ) {
 
-            $labels[] = [ 'key' => $key, 'label' => $label ];
+            $labels[] = [ 'key' => $key, 'label' => \OWA\Core\Strings::translate( $label ) ];
         }
 
         return [

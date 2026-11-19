@@ -60,13 +60,13 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     public static function operators() {
 
         return [
-            self::MATCH_EXACT    => 'Exactly matching',
-            self::MATCH_NOT      => 'Not matching',
-            self::MATCH_CONTAINS => 'Contains',
-            self::MATCH_BEGINS   => 'Begins with',
-            self::MATCH_REGEX    => 'Matches regex',
-            self::MATCH_GT       => 'Greater than',
-            self::MATCH_LT       => 'Less than',
+            self::MATCH_EXACT    => \OWA\Core\CoreAPI::t( 'Exactly matching' ),
+            self::MATCH_NOT      => \OWA\Core\CoreAPI::t( 'Not matching' ),
+            self::MATCH_CONTAINS => \OWA\Core\CoreAPI::t( 'Contains' ),
+            self::MATCH_BEGINS   => \OWA\Core\CoreAPI::t( 'Begins with' ),
+            self::MATCH_REGEX    => \OWA\Core\CoreAPI::t( 'Matches regex' ),
+            self::MATCH_GT       => \OWA\Core\CoreAPI::t( 'Greater than' ),
+            self::MATCH_LT       => \OWA\Core\CoreAPI::t( 'Less than' ),
         ];
     }
 

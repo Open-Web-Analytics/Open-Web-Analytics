@@ -327,6 +327,19 @@ final class GoalVocabularyTest extends TestCase
         return $out;
     }
 
+    /**
+     * Every column the picker offers has a label of its own, which the
+     * catalogue carries. The prettified column name is English only.
+     */
+    public function testEveryOfferedColumnHasALabel(): void
+    {
+        $this->assertSame( [], array_values( array_diff( Vocab::columns(), array_keys( Vocab::LABELS ) ) ),
+            'columns offered with no entry in GoalVocabulary::LABELS' );
+
+        $this->assertSame( [], array_values( array_diff( array_keys( Vocab::LABELS ), Vocab::columns() ) ),
+            'GoalVocabulary::LABELS names a column the picker does not offer' );
+    }
+
     /** @return string[] */
     private function rawColumns(): array
     {

@@ -91,6 +91,10 @@ class Strings {
         'CustomReports::VISUALIZATION_TYPES',
         'CustomReports::VISUALIZATION_TYPE_HINTS',
         'ServerRole::RETIRED_CONSTANTS',
+        'GoalVocabulary::LABELS',
+        'GoalVocabulary::DESCRIPTIONS',
+        'TimePeriod::COMPARE_PERIODS',
+        'EnvironmentCheck::REQUIRED_EXTENSIONS',
     ];
 
     /** gettext's context separator. */
@@ -772,8 +776,8 @@ class Strings {
 
     /**
      * The values of the VALUE_TABLES constants a PHP file's class declares:
-     * a string constant's literal, or each string literal that is an array
-     * element's value.
+     * a string constant's literal, or each array element's value that is a
+     * string literal or literals joined with `.`.
      *
      * @param  string        $source
      * @param  string[]|null $tables  VALUE_TABLES when null
@@ -818,13 +822,21 @@ class Strings {
             for ( $j = $open + 1; $j < $close; $j++ ) {
 
                 $before = $tokens[ $j - 1 ][1];
-                $after  = $tokens[ $j + 1 ][1] ?? null;
 
-                if ( $tokens[ $j ][0] === 's' && ( $before === '=>' || $before === ',' || $j === $open + 1 )
-                    && $after !== '=>' ) {
+                if ( $tokens[ $j ][0] !== 's' || ! ( $before === '=>' || $before === ',' || $j === $open + 1 ) ) {
 
-                    $out[] = [ 'line' => $tokens[ $j ][2], 'function' => 'value table', 'text' => $tokens[ $j ][1], 'plural' => null, 'context' => '' ];
+                    continue;
                 }
+
+                // A value written as literals joined with `.` is one string.
+                list( $text, $end ) = self::literal( $tokens, $j, '.' );
+
+                if ( ( $tokens[ $end ][1] ?? null ) !== '=>' ) {
+
+                    $out[] = [ 'line' => $tokens[ $j ][2], 'function' => 'value table', 'text' => $text, 'plural' => null, 'context' => '' ];
+                }
+
+                $j = $end - 1;
             }
         }
 

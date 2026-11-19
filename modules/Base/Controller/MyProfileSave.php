@@ -199,7 +199,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
          */
         if ( ! password_verify( $current, (string) $entity->get( 'password' ) ) ) {
 
-            return 'That is not your current password.';
+            return \OWA\Core\CoreAPI::t( 'That is not your current password.' );
         }
 
         /*
@@ -215,7 +215,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
         if ( ! $updated ) {
 
-            return 'The password could not be changed.';
+            return \OWA\Core\CoreAPI::t( 'The password could not be changed.' );
         }
 
         return '';
