@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/SettingsSingletonSnapshot.php';
 
 /**
  * One source for the config file's path.
@@ -14,41 +15,84 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * that writes one config and reads another looks like a config that "did not
  * save", with nothing in the logs.
  *
- * They agree by construction now, and this keeps them agreeing: the check is on
- * the SOURCE, because a test that merely compared two paths would pass the day
- * someone hardcodes the same default in a fourth place.
+ * They agree by construction now, and this keeps them agreeing: with the
+ * setting pointed somewhere else, all three follow it.
  */
 final class ConfigFilePathTest extends TestCase
 {
-    private function settingsSource(): string
+    use SettingsSingletonSnapshot;
+
+    /** @var list<string> */
+    private $files = [];
+
+    protected function setUp(): void
     {
-        return (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php' );
+        $this->snapshotSettings();
     }
 
-    public function testTheSettingIsWhatTheLoaderAndTheInstallerBothRead(): void
+    protected function tearDown(): void
     {
-        $src = $this->settingsSource();
+        $this->restoreSettings();
 
-        // The three call sites that decide WHICH file, all reading the setting.
-        $this->assertSame( 3, preg_match_all(
-            "/\\\$this->get\(\s*'base'\s*,\s*'config_file'\s*\)/", $src ),
-            'isConfigFilePresent(), loadConfigFile() and createConfigFile() must '
-            . 'each take the path from the setting, not build it' );
+        foreach ($this->files as $file) {
+            @unlink($file);
+        }
     }
 
-    public function testNothingInSettingsBuildsThePathItself(): void
+    private function elsewhere(): string
     {
-        $src = $this->settingsSource();
+        $file = sys_get_temp_dir() . '/owa-config-path-' . bin2hex(random_bytes(6)) . '.php';
+        $this->files[] = $file;
 
-        // Strip comments first: this file discusses owa-config.php constantly,
-        // and a naive scan would match the prose rather than the code.
-        $code = preg_replace( '~/\*.*?\*/|//[^\n]*~s', '', $src );
+        return $file;
+    }
 
-        $this->assertSame( 1, preg_match_all(
-            "~Env::root\(\)\s*\.\s*'/owa-config\.php'~", $code ),
-            'only the `config_file` default may name the file; every other use '
-            . 'must go through the setting' );
+    /** isConfigFilePresent() and createConfigFile() take the path from the setting. */
+    public function testTheInstallerWritesTheFileTheSettingNames(): void
+    {
+        $c    = $this->settings();
+        $file = $this->elsewhere();
+        $c->set('base', 'config_file', $file);
+
+        $this->assertFalse($c->isConfigFilePresent());
+
+        $this->assertTrue($c->createConfigFile([
+            'db_type' => 'mysql', 'db_name' => 'owatest', 'db_user' => 'owatest', 'db_password' => 'owatest',
+            'db_host' => '127.0.0.1', 'db_port' => '3306', 'public_url' => 'https://owa.example.test/',
+        ]));
+
+        $this->assertFileExists($file);
+        $this->assertTrue($c->isConfigFilePresent());
+    }
+
+    /** loadConfigFile() includes the file the setting names. */
+    public function testTheLoaderReadsTheFileTheSettingNames(): void
+    {
+        $c        = $this->settings();
+        $file     = $this->elsewhere();
+        $constant = 'CONFIG_PATH_PROBE_' . strtoupper(bin2hex(random_bytes(4)));
+
+        file_put_contents($file, "<?php\ndefine('$constant', true);\n");
+        $c->set('base', 'config_file', $file);
+
+        // What loading a file records about it, put back afterwards.
+        $state = [];
+        $was   = [];
+
+        foreach (['config_file_checked', 'config_file_problems'] as $prop) {
+            $state[$prop] = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $prop);
+            $was[$prop]   = $state[$prop]->getValue($c);
+        }
+
+        try {
+            (new ReflectionMethod(\OWA\Module\Base\Classes\Settings::class, 'loadConfigFile'))->invoke($c);
+        } finally {
+            foreach ($state as $prop => $property) {
+                $property->setValue($c, $was[$prop]);
+            }
+        }
+
+        $this->assertTrue(defined($constant));
     }
 
     /** The default is still the file a normal install actually uses. */
@@ -62,7 +106,7 @@ final class ConfigFilePathTest extends TestCase
     /**
      * The file the setting names is the file that was actually loaded.
      *
-     * Source scanning proves the call sites read the setting; this proves the
+     * The tests above prove the three read the setting; this proves the
      * setting names the file whose contents are in effect. Without it a wrong
      * default would satisfy every check above.
      */
@@ -74,8 +118,8 @@ final class ConfigFilePathTest extends TestCase
 
             // CI runs configless -- an install with no config file is a valid
             // state (the wizard has not run yet), and there are no constants to
-            // trace back to a file that is not there. The three checks above
-            // still run, because they read the source rather than the install.
+            // trace back to a file that is not there. The checks above still
+            // run, against files of their own.
             $this->markTestSkipped( 'no config file on this install' );
         }
 

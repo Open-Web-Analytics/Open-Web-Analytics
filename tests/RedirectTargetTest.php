@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/RunsUnderPhpCgi.php';
+
 /**
  * Redirect targets resolve within the installation.
  *
@@ -12,6 +14,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class RedirectTargetTest extends TestCase
 {
+    use RunsUnderPhpCgi;
+
     private const BASE = 'https://owa.example.test/owa/';
 
     public static function setUpBeforeClass(): void
@@ -102,29 +106,17 @@ final class RedirectTargetTest extends TestCase
     /**
      * The cases above exercise the resolver directly, so they stay green even if
      * redirectBrowser() stops calling it -- which is the failure that would
-     * actually matter. It emits headers, so it cannot be invoked under PHPUnit;
-     * assert on the source instead.
-     *
-     * Single-quoted needle: a double-quoted one containing $url would interpolate
-     * to something that is not in the file, and the assertion would pass whatever
-     * the source said.
+     * actually matter. It emits headers, so it is run under php-cgi.
      */
     public function testRedirectBrowserResolvesItsTarget()
     {
-        $source = (string) file_get_contents(__DIR__ . '/../Core/Lib.php');
+        $this->assertMatchesRegularExpression('#^Location: https://owa\.example\.test/owa/\r?$#m',
+            $this->cgiHeaders('tests/fixtures/redirect_browser_probe.php', ['PROBE_URL' => 'https://elsewhere.example.com/phish']),
+            'redirectBrowser() must resolve its target before emitting the Location header');
 
-        $this->assertMatchesRegularExpression(
-            // Up to the body's brace, not the first ')': a default of array()
-            // in the signature has one of its own.
-            '/function redirectBrowser\s*\([^{]*\{[^}]*resolveRedirectUrl/s',
-            $source,
-            'redirectBrowser() must resolve its target before emitting the Location header'
-        );
-
-        $this->assertDoesNotMatchRegularExpression(
-            '/header\s*\(\s*.Location: .\s*\.\s*\$url\s*\)/',
-            $source,
-            'the raw target must not reach the Location header'
-        );
+        $this->assertMatchesRegularExpression('#^Location: https://owa\.example\.test/owa/index\.php\?owa_do=base\.reportDashboard\r?$#m',
+            $this->cgiHeaders('tests/fixtures/redirect_browser_probe.php',
+                ['PROBE_URL' => 'https://owa.example.test/owa/index.php?owa_do=base.reportDashboard']),
+            'a target within the installation is kept');
     }
 }

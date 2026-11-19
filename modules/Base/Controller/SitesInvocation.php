@@ -30,7 +30,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
         /*
          * Is the tag set up? Answered here, where the tag is, rather than on
          * every report: whether data is ARRIVING is this screen's question, and
-         * whether reporting is READY is the reports' (Cube\Status::readiness()).
+         * whether reporting is READY is the reports' (Cube\Status::readinessOfProperty()).
          */
         $this->set( 'last_event', self::lastEventReceived( $site_id ?: $owa_site_id ) );
     }

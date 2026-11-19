@@ -141,15 +141,12 @@ final class EdgePrivacyGatesTest extends TestCase
 
         \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
 
-        $event = TrackerIngest::event($queued[0]);
-        TrackingEventHelpers::gateVisitorPii($event);
+        $process = new \OWA\Module\Base\Controller\ProcessEvent(['event' => TrackerIngest::event($queued[0])]);
+        $process->pre();
 
         foreach (array_keys(self::IDENTITY) as $name) {
-            $this->assertArrayNotHasKey($name, $event->getProperties(), $name);
+            $this->assertArrayNotHasKey($name, $process->event->getProperties(), $name);
         }
-
-        $source = file_get_contents(dirname(__DIR__) . '/modules/Base/Controller/ProcessEvent.php');
-        $this->assertStringContainsString('TrackingEventHelpers::gateVisitorPii( $this->event )', $source);
     }
 
     /** The 1.x migration maps user_name to user_id, and the setting decides it there too. */

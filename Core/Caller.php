@@ -309,13 +309,4 @@ class Caller extends \OWA\Core\Base {
         }
     }
 
-    
-    /**
-     * @return false
-     */
-    public function restInPeace() {
-    
-        return false;
-    }
-    
 }

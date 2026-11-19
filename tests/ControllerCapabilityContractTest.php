@@ -177,13 +177,10 @@ final class ControllerCapabilityContractTest extends TestCase
             . 'link on the anonymous notice page carries a nonce that can never verify.'
         );
 
-        $source = (string) file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApply.php'
-        );
+        require_once __DIR__ . '/bootstrap_owa.php';
 
-        $this->assertStringNotContainsString(
-            'setNonceRequired',
-            $source,
+        $this->assertFalse(
+            (new \OWA\Module\Base\Controller\UpdatesApply([]))->is_nonce_required,
             'base.updatesApply must not require a nonce: the notice page it is reached '
             . 'from renders anonymously, so the nonce is minted without a user_id and '
             . 'cannot verify afterwards.'

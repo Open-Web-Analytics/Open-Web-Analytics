@@ -546,8 +546,8 @@ class JobQueue {
 
             do {
 
-                $db->query( sprintf( 'DELETE FROM %s WHERE status = ? AND finished_at < ? LIMIT %d',
-                    self::table(), self::PRUNE_BATCH ), [ $status, self::now() - $keep ] );
+                $db->query( sprintf( OWA_SQL_DELETE_LIMIT, self::table(), 'status = ? AND finished_at < ?',
+                    self::PRUNE_BATCH ), [ $status, self::now() - $keep ] );
 
                 $n = (int) $db->getAffectedRows();
                 $removed += $n;

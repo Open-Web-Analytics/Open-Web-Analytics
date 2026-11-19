@@ -45,7 +45,7 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
         // Row size has nothing to do with how rows are divided up, and an
         // ALTER across seventy-odd partitions is a rebuild of each. Dropping
         // them takes this file from a minute and a half to a few seconds.
-        \OWA\Core\CoreAPI::dbSingleton()->removePartitioning($this->table);
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('ALTER TABLE %s REMOVE PARTITIONING', $this->table));
     }
 
     protected function tearDown(): void
@@ -131,20 +131,48 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
           . 'The server said: %s', $n, $db->lastQueryError()));
     }
 
-    /** The outer cap is what a person is promised; the server may allow less. */
+    /**
+     * The outer cap is what a person is promised; the server may allow less,
+     * and capacityFor() answers what it allows: on a cube padded until the
+     * server refuses one more column, none, not the cap.
+     */
     public function testTheCapIsAnOuterBoundAndTheBudgetIsMeasured(): void
     {
         $this->assertSame(20, Dimensions::MAX_PER_PROPERTY);
 
-        $body = file_get_contents(
-            __DIR__ . '/../modules/Base/Classes/Cube/Dimensions.php');
+        $db       = \OWA\Core\CoreAPI::dbSingleton();
+        $property = '9' . random_int(100000000, 999999999);
+        $cube     = Cubes::tableFor($property);
 
-        $this->assertStringContainsString('capacityFor', $body,
-            'the budget is asked of the server rather than calculated');
+        $this->assertTrue((bool) $db->query(sprintf('CREATE TABLE %s LIKE %s', $cube, $this->table)));
 
-        foreach (['MAX_ROW_BYTES', 'definitionRowBytes', 'tableRowBytes'] as $gone) {
-            $this->assertStringNotContainsString($gone, $body,
-                "$gone was removed: it modelled the wrong limit");
+        try {
+            Dimensions::forgetCapacity();
+            $this->assertGreaterThanOrEqual(self::USEFUL_MINIMUM, Dimensions::capacityFor($property));
+
+            // Padded by asking: filler until the server refuses a single column.
+            $filler = 0;
+            for ($batch = 32; $batch >= 1 && $filler < 400; ) {
+                $add = [];
+                for ($i = 0; $i < $batch; $i++) {
+                    $add['filler' . ($filler + $i)] = 'VARCHAR(64) NULL';
+                }
+
+                if ($db->alterColumnsRebuilding($cube, $add)) {
+                    $filler += $batch;
+                } else {
+                    $batch = intdiv($batch, 2);
+                }
+            }
+
+            $this->assertLessThan(400, $filler, 'the server should have refused before we ran out of patience');
+
+            Dimensions::forgetCapacity();
+            $this->assertSame(0, Dimensions::capacityFor($property), 'a full cube has room for none');
+        } finally {
+            Dimensions::forgetCapacity();
+            $db->query(sprintf('DROP TABLE IF EXISTS %s', $cube));
+            $db->query(sprintf('DROP TABLE IF EXISTS %s', $cube . Dimensions::CAPACITY_SUFFIX));
         }
     }
 }

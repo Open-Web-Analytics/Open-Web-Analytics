@@ -6,6 +6,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 use OWA\Module\Base\Classes\V2Event;
+use OWA\Module\Base\Controller\GoalEventDefinitionEdit;
 
 /**
  * Which properties an event of a given name may carry.
@@ -243,12 +244,47 @@ final class EventPropertyRegistryTest extends TestCase
             array_values(array_diff(Helpers::eventNames(), Helpers::goalTriggerEventNames())),
             'every other first-class event is still a trigger');
 
-        foreach (['GoalEventDefinitionEdit', 'GoalEventDefinitionSave'] as $controller) {
-            $source = (string) file_get_contents(\OWA\Core\Env::root() . "/modules/Base/Controller/$controller.php");
+        // The picker's vocabulary, which both goal screens draw.
+        $this->assertNotContains('exception', array_keys(GoalEventDefinitionEdit::vocabulary()));
+        $this->assertContains('page_view', array_keys(GoalEventDefinitionEdit::vocabulary()));
 
-            $this->assertStringNotContainsString('TrackingEventHelpers::eventNames()', $source,
-                "$controller offers or accepts a trigger from the full event list");
-            $this->assertStringContainsString('TrackingEventHelpers::goalTriggerEventNames()', $source);
+        // The save refuses it.
+        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave(['triggerEvent' => 'exception',
+            'conditionProperty' => ['page_path'], 'conditionOperator' => ['exact'], 'conditionValue' => ['/x']]);
+        $save->validate();
+
+        $this->assertNotSame([], $this->errorsOn($save, 'triggerEvent'), 'the save accepts an exception trigger');
+
+        if (!owa_test_db_available()) {
+            return;
         }
+
+        // The trigger lists both screens offer: the edit form, and the save's refused form.
+        $edit = new GoalEventDefinitionEdit([]);
+        $edit->action();
+        $save->errorAction();
+
+        foreach (['GoalEventDefinitionEdit' => $edit, 'GoalEventDefinitionSave' => $save] as $name => $controller) {
+            $this->assertNotContains('exception', $controller->data['triggerEvents'],
+                "$name offers a trigger from the full event list");
+            $this->assertSame(Helpers::goalTriggerEventNames(), $controller->data['triggerEvents'], $name);
+        }
+    }
+
+    /** @return list<string> the error messages validate() registered against a field */
+    private function errorsOn(\OWA\Core\Controller $controller, string $field): array
+    {
+        $validator = (new \ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($controller);
+        $messages  = [];
+
+        foreach ((array) (new \ReflectionProperty($validator, 'validations'))->getValue($validator) as $validation) {
+            $message = $validation['obj']->conf['errorMsg'] ?? '';
+
+            if ($validation['name'] === $field && is_string($message) && $message !== '') {
+                $messages[] = $message;
+            }
+        }
+
+        return $messages;
     }
 }

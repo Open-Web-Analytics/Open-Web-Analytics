@@ -59,20 +59,19 @@ final class DbBindingAlignmentTest extends TestCase
          * would have shifted every parameter after the gap -- silently, and
          * exactly like the failure this test is named for.
          *
-         * Asserted against the source, because the binding happens inside a
-         * try block against a live connection and cannot be observed otherwise.
+         * The transport is the driver's own; the connection is an in-memory
+         * SQLite one, so the bindings are observed without a server.
          */
-        $source = file_get_contents( \OWA\Core\Env::root() . '/Core/Db/Pdo.php' );
+        $db = new \OWA\Core\Db\PdoMysql( 'db.example.com', 3306, 'owatest', 'owatest', 'owatest' );
+        $db->connection = new \PDO( 'sqlite::memory:', null, null, [ \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC ] );
+        $db->connection_status = true;
 
-        $this->assertMatchesRegularExpression(
-            '/\$statement->bindValue\(\s*\$position/', $source,
+        $this->assertSame(
+            [ 'a' => 'first', 'b' => 'second' ],
+            $db->get_row( 'SELECT ? AS a, ? AS b', [ 3 => 'first', 7 => 'second' ] ),
             'The driver must bind to a running position. Binding to the array key is correct '
             . 'only while the bindings array is contiguous, and a gap would put every later '
             . 'value in the wrong column.' );
-
-        $this->assertDoesNotMatchRegularExpression(
-            '/\$statement->bindValue\(\s*\$\w+\s*\+\s*1/', $source,
-            'The driver is binding by array key again.' );
     }
 
     public function testEveryRealQueryStillRuns(): void

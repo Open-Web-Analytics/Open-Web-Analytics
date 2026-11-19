@@ -108,14 +108,7 @@ class Mysql extends \OWA\Core\Db {
             // declared -- so these must not be allowed to drift apart.
             $encoding = $this->connectionCharacterEncoding();
 
-            if (function_exists('mysqli_set_charset')) {
-
-                mysqli_set_charset($this->connection, $encoding );
-
-            } else {
-
-                $this->query( sprintf( "SET NAMES '%s'", $encoding ) );
-            }
+            mysqli_set_charset($this->connection, $encoding );
 
             // Session sql_mode. Historically a hardcoded "" here, which disables
             // strict mode; now sourced from the dialect so it can be raised per

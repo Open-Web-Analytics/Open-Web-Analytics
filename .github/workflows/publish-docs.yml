@@ -31,19 +31,19 @@ jobs:
 
     steps:
       - name: Checkout the released code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.2'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Production dependencies only. The generator reads the registries, which
       # need the autoloader but no database -- it pre-defines OWA_DB_TYPE so it

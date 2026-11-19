@@ -74,10 +74,19 @@ final class Update034Test extends TestCase
         $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('base', 'use_32bit_hash_before_v2'));
     }
 
-    /** Base\Module::update() asks for the step before the updates run. */
+    /**
+     * Base\Module::update() asks for the step before the updates run.
+     *
+     * Read from the method's source: the order is observable only by applying
+     * the real updates after 34 to a database at schema 34, which no test
+     * environment has (the upgrade cycle starts below 34, where Update034 runs
+     * the step itself).
+     */
     public function testTheModuleUpdateRunsTheStepBeforeTheUpdates(): void
     {
-        $src = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php');
+        $m   = new \ReflectionMethod(\OWA\Module\Base\Module::class, 'update');
+        $src = implode('', array_slice((array) file((string) $m->getFileName()), $m->getStartLine() - 1,
+            $m->getEndLine() - $m->getStartLine() + 1));
 
         $step = strpos($src, 'self::widenIdsAt( $recorded )');
         $this->assertNotFalse($step);

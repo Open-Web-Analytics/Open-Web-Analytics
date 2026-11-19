@@ -18,8 +18,10 @@ final class RetentionPagesTest extends TestCase
         'base.optionsRetentionUpdate'  => \OWA\Module\Base\Controller\OptionsRetentionUpdate::class,
         'base.propertyRetention'       => \OWA\Module\Base\Controller\PropertyRetention::class,
         'base.propertyRetentionUpdate' => \OWA\Module\Base\Controller\PropertyRetentionUpdate::class,
-        'base.retentionPreviewRest'    => \OWA\Module\Base\Controller\RetentionPreviewRest::class,
     ];
+
+    /** Reached by its REST route only (v1/retentionPreview). */
+    const PREVIEW = \OWA\Module\Base\Controller\RetentionPreviewRest::class;
 
     public function testEveryActionAndTheRouteAreRegistered(): void
     {
@@ -29,14 +31,15 @@ final class RetentionPagesTest extends TestCase
             $this->assertArrayHasKey( $action, $actions, "$action is linked to but not registered" );
         }
 
-        $this->assertNotEmpty( \OWA\Core\CoreAPI::serviceSingleton()->getRestApiRoute( 'base', 'v1', 'retentionPreview', 'GET' ),
+        $this->assertSame( self::PREVIEW,
+            \OWA\Core\CoreAPI::serviceSingleton()->getRestApiRoute( 'base', 'v1', 'retentionPreview', 'GET' )['class_name'] ?? null,
             'GET v1/retentionPreview is what the confirmation asks' );
     }
 
     /** Retention is an install administrator's, even where it is set per Property. */
     public function testEveryScreenNeedsEditSettings(): void
     {
-        foreach ( self::ACTIONS as $action => $class ) {
+        foreach ( self::ACTIONS + [ 'v1/retentionPreview' => self::PREVIEW ] as $action => $class ) {
             $this->assertSame( 'edit_settings', ( new $class( [] ) )->getRequiredCapability(), $action );
         }
 

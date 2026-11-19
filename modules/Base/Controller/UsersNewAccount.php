@@ -18,7 +18,7 @@ class UsersNewAccount extends \OWA\Core\Controller {
         $data['user_id']= $event->get('user_id');
         $data['email_address']= $event->get('email_address');
         $data['temp_passkey'] = $event->get('temp_passkey');
-        $data['subject'] = 'OWA User Account Setup';
+        $data['subject'] = \OWA\Core\CoreAPI::t( 'OWA User Account Setup' );
         $data['view'] = 'base.usersNewAccount';
         $data['view_method'] = 'email';
         $data['name'] = $event->get('real_name');

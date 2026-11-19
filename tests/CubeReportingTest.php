@@ -294,6 +294,92 @@ final class CubeReportingTest extends TestCase
             'while still naming different tables -- which is the point');
     }
 
+    /** Both of a query's statements run under the report time limit. */
+    public function testTheTotalsAndTheRowsAreBothBounded(): void
+    {
+        $rsm   = $this->manager('eventCount', 'eventName');
+        $proxy = new class ($rsm->db) {
+            public $inner;
+            public $inLimit = false;
+            /** @var list<array{string, bool}> */
+            public $reads = [];
+
+            public function __construct($inner)
+            {
+                $this->inner = $inner;
+            }
+
+            public function __call($name, $args)
+            {
+                return $this->inner->$name(...$args);
+            }
+
+            public function __get($name)
+            {
+                return $this->inner->$name;
+            }
+
+            public function withSelectTimeLimit($seconds, callable $fn)
+            {
+                $this->inLimit = true;
+
+                try {
+                    return $this->inner->withSelectTimeLimit($seconds, $fn);
+                } finally {
+                    $this->inLimit = false;
+                }
+            }
+
+            public function getOneRow()
+            {
+                $this->reads[] = ['getOneRow', $this->inLimit];
+
+                return $this->inner->getOneRow();
+            }
+
+            public function getAllRows()
+            {
+                $this->reads[] = ['getAllRows', $this->inLimit];
+
+                return $this->inner->getAllRows();
+            }
+        };
+
+        $rsm->db = $proxy;
+        $rs      = $rsm->getResults();
+
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value']);
+        $this->assertSame([['getOneRow', true], ['getAllRows', true]], $proxy->reads);
+    }
+
+    /** Rows past the page are counted for the pager and not formatted. */
+    public function testOnlyThePagesRowsAreFormatted(): void
+    {
+        $rsm = new class extends \OWA\Module\Base\Classes\ResultSetManager {
+            public $formatted = 0;
+
+            public function applyMetaDataToSingleResultRow($row)
+            {
+                $this->formatted++;
+
+                return parent::applyMetaDataToSingleResultRow($row);
+            }
+        };
+
+        $rsm->metrics = $rsm->metricsStringToArray('eventCount');
+        $rsm->setDimensions($rsm->dimensionsStringToArray('eventName'));
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(1);
+
+        $rs = $rsm->getResults();
+
+        $this->assertGreaterThan(1, (int) $rs->resultsTotal, 'the fixture has more than one event name');
+        $this->assertCount(1, (array) $rs->resultsRows);
+        $this->assertSame(2, $rsm->formatted, 'the totals and the one row on the page');
+        $this->assertTrue((bool) $rs->more);
+    }
+
     /**
      * End to end: the numbers a query returns are the ones in the table.
      */
@@ -1208,6 +1294,33 @@ final class CubeReportingTest extends TestCase
 
         $this->assertStringNotContainsString('pageViewsPerSession', $column,
             'sorting by the alias would sort on a column the query does not select');
+    }
+
+    /**
+     * A segment selects the rows the report reads. Its conditions are bound
+     * values in a subselect, and the statement that embeds it binds them.
+     * Three rows of the fixture are on /two: two page views and the click.
+     */
+    public function testASegmentReportReadsOnlyTheSegmentsRows(): void
+    {
+        $rsm = $this->manager('eventCount', 'eventName');
+        $rsm->setSegment('dynamic::pagePath==/two');
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+        $this->assertSame(3, (int) $rs->aggregates['eventCount']['value']);
+
+        $byName = [];
+
+        foreach ((array) $rs->resultsRows as $row) {
+
+            $byName[$row['eventName']['value']] = (int) $row['eventCount']['value'];
+        }
+
+        ksort($byName);
+
+        $this->assertSame(['click' => 1, 'page_view' => 2], $byName);
     }
 
     /** The site-to-Property lookup, which is what the binding rests on. */

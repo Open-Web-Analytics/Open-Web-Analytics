@@ -22,7 +22,7 @@ class NotifyNewSession extends \OWA\Core\Controller {
             'base', 'notice_email', 'profile', $site->get( 'site_id' ) ) );
         $this->set( 'session', $event->getProperties() );
         
-        $this->set( 'subject', sprintf('OWA: New Visit to %s', $site->get( 'domain' ) ) );
+        $this->set( 'subject', sprintf( \OWA\Core\CoreAPI::t( 'OWA: New Visit to %s' ), $site->get( 'domain' ) ) );
         $this->setView( 'base.notifyNewSession' );
     }
 }

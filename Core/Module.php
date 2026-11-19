@@ -494,13 +494,12 @@ abstract class Module {
         /*
          * DELIBERATELY NO DEFAULTS. Only eagerness.
          *
-         * A registered default lands in default_config, and
-         * pruneRedundantPersistedSettings() drops any stored value equal to
-         * its default -- so declaring `is_active => false` would let the prune
-         * delete a module's stored is_active row, and declaring
-         * `schema_version => 0` would do the same to a module sitting at
-         * version 0. Both make a module look uninstalled and re-run its
-         * updates. These two keys carry database STATE, not configuration, and
+         * A registered default lands in default_config, and persistSetting()
+         * drops any stored value equal to its default -- so declaring
+         * `is_active => false` would let it delete a module's stored is_active
+         * row, and declaring `schema_version => 0` would do the same to a
+         * module sitting at version 0. Both make a module look uninstalled and
+         * re-run its updates. These two keys carry database STATE, not configuration, and
          * nothing may treat them as restating a default.
          */
         return [
@@ -551,11 +550,9 @@ abstract class Module {
      */
     public static function settingsRegistry() {
 
-        static $registry = null;
+        if ( self::$settings_registry !== null ) {
 
-        if ( $registry !== null ) {
-
-            return $registry;
+            return self::$settings_registry;
         }
 
         $fields     = [];
@@ -617,7 +614,22 @@ abstract class Module {
             }
         }
 
-        return $registry = [ 'fields' => $fields, 'declared' => $declared, 'activation' => $activation ];
+        return self::$settings_registry = [ 'fields' => $fields, 'declared' => $declared, 'activation' => $activation ];
+    }
+
+    /** @var array{fields: array<string, array<mixed>>, declared: array<string, true>, activation: array<string, ActivationDeclaration>}|null settingsRegistry(), read once per process */
+    private static $settings_registry = null;
+
+    /**
+     * Forget the settings registry, so the next settingsRegistry() reads the
+     * modules' settings.php files again. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetSettingsRegistry() {
+
+        self::$settings_registry = null;
     }
 
     /**
@@ -1471,7 +1483,7 @@ abstract class Module {
         foreach ( (array) $declaration['dimensions'] as $name => $d ) {
 
             /*
-             * A dimension is a COLUMN or an EXPRESSION, and there are now two
+             * A dimension is a COLUMN or an EXPRESSION, and there are two
              * kinds of expression: several columns joined (`parts`) and one
              * component of a date (`datePart`). What they share is the only
              * thing the reporting seam needs to know -- the emitted SQL carries
@@ -1750,6 +1762,230 @@ abstract class Module {
         // on the same minute -- which is the collision the spread exists to
         // avoid, just moved from between installs to within one.
         return $seed . '|' . $job;
+    }
+
+    /**
+     * One of this module's registration lists: what `config/<name>.php` returns.
+     *
+     * A module opts in by calling the matching *FromConfig() method from its
+     * register*() hook, so registration stays explicit: nothing is registered
+     * because a file or a class exists. The file is included on each call, so
+     * a t() call in it translates in the locale in use when the hook runs.
+     *
+     * @param  string $name the file's base name
+     * @return array<mixed> the list; empty, with a notice, when the file is missing or returns no array
+     */
+    protected function registrationConfig( $name ) {
+
+        $file = $this->path . 'config' . DIRECTORY_SEPARATOR . $name . '.php';
+
+        if ( ! is_file( $file ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%s does not exist; registering nothing from it.', $file ) );
+
+            return [];
+        }
+
+        // A static closure, so the file cannot reach $this.
+        $config = ( static function ( $path ) {
+
+            return include $path;
+        } )( $file );
+
+        if ( ! is_array( $config ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%s must return an array; registering nothing from it.', $file ) );
+
+            return [];
+        }
+
+        return $config;
+    }
+
+    /**
+     * registerAction() for each entry of `config/<file>.php`: action name => controller class.
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerActionsFromConfig( $file = 'actions' ) {
+
+        foreach ( $this->registrationConfig( $file ) as $action => $class ) {
+
+            $this->registerAction( (string) $action, (string) $class );
+        }
+    }
+
+    /**
+     * registerCliCommand() for each entry of `config/<file>.php`: command => action name.
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerCliCommandsFromConfig( $file = 'cli_commands' ) {
+
+        foreach ( $this->registrationConfig( $file ) as $command => $action ) {
+
+            $this->registerCliCommand( (string) $command, (string) $action );
+        }
+    }
+
+    /**
+     * registerRestApiRoute() for each route of `config/<file>.php`: version =>
+     * route => HTTP method => [ 'class' => controller, 'conf' => the route's configuration ].
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerRestApiRoutesFromConfig( $file = 'rest_routes' ) {
+
+        foreach ( $this->registrationConfig( $file ) as $version => $routes ) {
+
+            foreach ( (array) $routes as $route => $methods ) {
+
+                foreach ( (array) $methods as $method => $r ) {
+
+                    $this->registerRestApiRoute( (string) $version, (string) $route, (string) $method,
+                        (string) $r['class'], (array) ( $r['conf'] ?? [] ) );
+                }
+            }
+        }
+    }
+
+    /**
+     * registerJob() for each entry of `config/<file>.php`: job name =>
+     * [ 'command', 'schedule', 'params', 'description' ].
+     *
+     * `schedule` is a cron expression, an @alias or 'off', or one derived per
+     * install and per job from jobSeed(): [ 'spread' => 'daily' ],
+     * [ 'spread' => 'weekly' ] or [ 'spread' => 'minutely', 'interval' => 15 ].
+     * A job without a command, or with a spread not named here, is not
+     * registered.
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerJobsFromConfig( $file = 'jobs' ) {
+
+        foreach ( $this->registrationConfig( $file ) as $name => $job ) {
+
+            $name     = (string) $name;
+            $schedule = $job['schedule'] ?? null;
+
+            if ( is_array( $schedule ) ) {
+
+                $seed = $this->jobSeed( $name );
+
+                switch ( $schedule['spread'] ?? null ) {
+
+                    case 'daily':
+                        $schedule = \OWA\Core\Cron::dailySpreadFor( $seed );
+                        break;
+
+                    case 'weekly':
+                        $schedule = \OWA\Core\Cron::weeklySpreadFor( $seed );
+                        break;
+
+                    case 'minutely':
+                        $schedule = \OWA\Core\Cron::minutelySpreadFor( $seed, (int) ( $schedule['interval'] ?? 15 ) );
+                        break;
+
+                    default:
+                        $schedule = null;
+                }
+            }
+
+            if ( empty( $job['command'] ) || ! is_string( $schedule ) || $schedule === '' ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'Job %s in %s needs a command and a schedule; not registering it.', $name, $file ) );
+
+                continue;
+            }
+
+            $this->registerJob( $name, (string) $job['command'], $schedule,
+                (array) ( $job['params'] ?? [] ), (string) ( $job['description'] ?? '' ) );
+        }
+    }
+
+    /**
+     * registerSettingsPage() for each of `config/<file>.php`'s `pages`, then
+     * registerSettingsFieldSet() for each of its `fieldsets`.
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerAdminPanelsFromConfig( $file = 'admin_panels' ) {
+
+        $config = $this->registrationConfig( $file );
+
+        foreach ( (array) ( $config['pages'] ?? [] ) as $page ) {
+
+            $this->registerSettingsPage( $page );
+        }
+
+        foreach ( (array) ( $config['fieldsets'] ?? [] ) as $set ) {
+
+            $this->registerSettingsFieldSet( $set );
+        }
+    }
+
+    /**
+     * registerSettingsFieldSet() for each entry of `config/<file>.php`.
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerSettingsFieldSetsFromConfig( $file ) {
+
+        foreach ( $this->registrationConfig( $file ) as $set ) {
+
+            $this->registerSettingsFieldSet( $set );
+        }
+    }
+
+    /**
+     * Report nav from `config/<file>.php`: nav group => subgroup name => item.
+     *
+     * Each item is added with addNavigationSubGroup(), then each of its
+     * `links` with addNavigationLinkInSubGroup(). An item or link names a
+     * report id in `report` (reportRef()) or its link params in `ref`, gives
+     * `anchortext`, and optionally `order` and `priviledge` (default
+     * view_reports); an item optionally `icon_class` (default DEFAULT_NAV_ICON).
+     *
+     * @param  string $file
+     * @return void
+     */
+    protected function registerNavigationFromConfig( $file = 'navigation' ) {
+
+        foreach ( $this->registrationConfig( $file ) as $group => $subgroups ) {
+
+            foreach ( (array) $subgroups as $name => $item ) {
+
+                $this->addNavigationSubGroup( (string) $name, $this->navigationConfigRef( $item ),
+                    (string) $item['anchortext'], $item['order'] ?? null,
+                    $item['priviledge'] ?? 'view_reports', (string) $group,
+                    $item['icon_class'] ?? self::DEFAULT_NAV_ICON );
+
+                foreach ( (array) ( $item['links'] ?? [] ) as $link ) {
+
+                    $this->addNavigationLinkInSubGroup( (string) $name, $this->navigationConfigRef( $link ),
+                        (string) $link['anchortext'], $link['order'] ?? null,
+                        $link['priviledge'] ?? 'view_reports', (string) $group );
+                }
+            }
+        }
+    }
+
+    /**
+     * A nav config entry's link: reportRef() of its `report`, else its `ref`.
+     *
+     * @param  array<string, mixed> $entry
+     * @return string|array<string, string>
+     */
+    private function navigationConfigRef( array $entry ) {
+
+        return isset( $entry['report'] ) ? $this->reportRef( (string) $entry['report'] ) : $entry['ref'];
     }
 
     /**

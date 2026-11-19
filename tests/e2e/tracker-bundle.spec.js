@@ -210,7 +210,7 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
         const sw = () => setting().getByRole('switch');
         const gotoTag = async () => {
             await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });
-            await page.locator('details[id="base.trackingPrivacy"] > summary').click();
+            await page.getByText('Privacy signals', { exact: true }).click();
         };
         const saveTag = () => Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),

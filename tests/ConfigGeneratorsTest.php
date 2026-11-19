@@ -10,13 +10,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * (Core\ConfigFile): constants only, no $this.
  *
  * The writers:
- * - the installer (Settings::createConfigFile());
+ * - the installer (Settings::createConfigFile()), whose file is read back in
+ *   ConfigFileConstantsTest::testTheInstallerWritesAFileWithoutThis;
  * - the e2e harnesses (selfhost_harness.php, used by the upgrade cycle and
  *   the isolation sweep; install_harness.php writecli, used by
  *   scratch_db_run.sh).
  *
- * Each builds the file from owa-config-dist.php plus string literals of its
- * own. So the template must pass, and no literal in a writer may hold $this.
+ * The harnesses build the file from owa-config-dist.php plus string literals
+ * of their own. So the template must pass, and no literal in a harness may
+ * hold $this.
  * The CI workflows and tests/tools scripts write no config lines of their own;
  * they are checked for $this too.
  */
@@ -24,9 +26,8 @@ final class ConfigGeneratorsTest extends TestCase
 {
     private const ROOT = __DIR__ . '/..';
 
-    /** The writers, and the template each reads. */
+    /** The harnesses that write one, from the template. */
     private const WRITERS = [
-        'modules/Base/Classes/Settings.php',
         'tests/e2e/selfhost_harness.php',
         'tests/e2e/install_harness.php',
     ];

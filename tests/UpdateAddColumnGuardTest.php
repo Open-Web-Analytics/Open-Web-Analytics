@@ -326,4 +326,43 @@ final class UpdateAddColumnGuardTest extends TestCase
             $db->query( "DROP TABLE IF EXISTS $table" );
         }
     }
+
+    /**
+     * An underscore in a column name is a character, not a LIKE wildcard: a
+     * table with axb does not have a_b, and has none to drop.
+     */
+    public function testAnUnderscoreInAColumnNameIsNotAWildcard(): void
+    {
+        require_once __DIR__ . '/bootstrap_owa.php';
+
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'asks the server which columns the table has' );
+        }
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = 'owa_test_like_' . bin2hex( random_bytes( 3 ) );
+
+        $entity = new class( $table ) {
+            private $t;
+            public function __construct( $t ) { $this->t = $t; }
+            public function getTableName() { return $this->t; }
+            public function dropColumn( $c ) { return \OWA\Core\CoreAPI::dbSingleton()->dropColumn( $this->t, $c ); }
+        };
+
+        $update = new \OWA\Core\Update();
+        $add    = new ReflectionMethod( $update, 'addColumnIfMissing' );
+        $drop   = new ReflectionMethod( $update, 'dropColumnIfPresent' );
+
+        try {
+            $db->query( "CREATE TABLE $table (id INT NOT NULL PRIMARY KEY, axb INT NULL)" );
+
+            $this->assertTrue( $drop->invoke( $update, $entity, 'a_b' ), 'there is no a_b to drop' );
+            $this->assertSame( [ 'id', 'axb' ], $db->listColumns( $table ) );
+
+            $this->assertTrue( $add->invoke( $update, $entity, 'a_b', 'INT NULL' ) );
+            $this->assertSame( [ 'id', 'axb', 'a_b' ], $db->listColumns( $table ), 'a_b was added' );
+        } finally {
+            $db->query( "DROP TABLE IF EXISTS $table" );
+        }
+    }
 }

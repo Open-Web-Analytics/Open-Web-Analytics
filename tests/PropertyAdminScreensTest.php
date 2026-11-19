@@ -229,19 +229,38 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testAnEditDoesNotWriteThePropertyKind(): void
     {
-        $body = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyEdit.php' );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'saves a Property' );
+        }
 
-        $edit = substr( $body, (int) strpos( $body, 'if ( $propertyId ) {' ) );
-        $edit = substr( $edit, 0, (int) strpos( $edit, '} else {' ) );
+        $add = new \OWA\Module\Base\Controller\PropertyEdit( [
+            'name' => 'Kind probe ' . uniqid(), 'propertyType' => 'app', 'domain' => '' ] );
+        $add->action();
 
-        $this->assertStringNotContainsString( "set( 'property_type'", $edit,
-            'The edit branch writes property_type, so renaming an app Property can turn it into '
-            . 'a web one.' );
+        $id = (string) ( $this->data( $add )['propertyId'] ?? '' );
 
-        $this->assertStringContainsString( "set( 'property_type'", $body,
-            'Nothing writes property_type at all, so every new Property is created without a '
-            . 'kind.' );
+        try {
+            $this->assertSame( \OWA\Module\Base\Entity\Property::TYPE_APP, $this->storedKind( $id ),
+                'Nothing writes property_type on an add, so every new Property is created without a kind.' );
+
+            ( new \OWA\Module\Base\Controller\PropertyEdit( [
+                'propertyId' => $id, 'name' => 'Kind probe renamed', 'propertyType' => 'web',
+                'domain' => 'kind-probe.example.test' ] ) )->action();
+
+            $this->assertSame( \OWA\Module\Base\Entity\Property::TYPE_APP, $this->storedKind( $id ),
+                'The edit writes property_type, so renaming an app Property can turn it into a web one.' );
+        } finally {
+            \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE id = ?',
+                \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() ), [ $id ] );
+        }
+    }
+
+    private function storedKind( string $propertyId ): ?string
+    {
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT property_type FROM %s WHERE id = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() ), [ $propertyId ] );
+
+        return $row['property_type'] ?? null;
     }
 
     /**
@@ -1048,12 +1067,28 @@ final class PropertyAdminScreensTest extends TestCase
 
         $this->assertStringNotContainsString( 'breadcrumb', $wrapper );
 
-        $view = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/View/OptionsHierarchy.php' );
+        // A screen that sets only siteId and propertyId still hands the column both.
+        $data = [ 'siteId' => 'owatest-site', 'propertyId' => '7000000000000001' ];
+        $view = \OWA\Core\CoreAPI::viewFactory( 'base.optionsHierarchy' );
+        $view->setData( $data );
+        $view->render( $data );
 
-        $this->assertStringNotContainsString( 'hierarchy_tier', $view );
-        $this->assertStringContainsString(
-            "foreach ( [ 'siteId', 'propertyId' ] as \$key )", $view,
-            'A screen that sets only siteId or propertyId would leave the column without its Property.' );
+        $params = (array) $view->body->get( 'params' );
+
+        foreach ( $data as $key => $value ) {
+            $this->assertSame( $value, $params[ $key ] ?? null,
+                'A screen that sets only siteId or propertyId would leave the column without its Property.' );
+        }
+
+        $this->assertFalse( $view->body->get( 'hierarchy_tier' ) );
+
+        // And params a screen sets win.
+        $data += [ 'params' => [ 'siteId' => 'owatest-other', 'propertyId' => '7000000000000002' ] ];
+        $view = \OWA\Core\CoreAPI::viewFactory( 'base.optionsHierarchy' );
+        $view->setData( $data );
+        $view->render( $data );
+
+        $this->assertSame( $data['params'], (array) $view->body->get( 'params' ) );
     }
 
     /** One description per screen. */
@@ -1187,14 +1222,34 @@ final class PropertyAdminScreensTest extends TestCase
             ( (array) $data->getValue( $controller ) )['propertyId'] ?? null,
             'The add form arrived carrying an id, so it would edit something.' );
 
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyEdit.php' );
+        $add = new \OWA\Module\Base\Controller\PropertyEdit( [ 'name' => 'New', 'propertyType' => 'web',
+            'domain' => 'new.example.test' ] );
+        $add->validate();
 
-        $this->assertStringContainsString(
-            "if ( \$this->getParam( 'propertyId' ) ) {", $src,
+        $this->assertNotContains( 'propertyId', $this->validatedNames( $add ),
             'entityExists runs unconditionally, so a create can never validate.' );
 
-        $this->assertStringContainsString(
-            "ensureOrganization()", $src,
+        $edit = new \OWA\Module\Base\Controller\PropertyEdit( [ 'propertyId' => '7000000000000001', 'name' => 'Old',
+            'propertyType' => 'web', 'domain' => 'old.example.test' ] );
+        $edit->validate();
+
+        $this->assertContains( 'propertyId', $this->validatedNames( $edit ), 'an edit names a Property that exists' );
+
+        if ( ! owa_test_db_available() ) {
+            return;
+        }
+
+        $add->action();
+
+        $id  = (string) ( $this->data( $add )['propertyId'] ?? '' );
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT organization_id FROM %s WHERE id = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() ), [ $id ] );
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE id = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() ), [ $id ] );
+
+        $this->assertSame( (string) ( new \OWA\Module\Base\Classes\SiteManager() )->ensureOrganization(),
+            (string) ( $row['organization_id'] ?? '' ),
             'A new Property with no Organization would sit outside the hierarchy.' );
     }
     /**

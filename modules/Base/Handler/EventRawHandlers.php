@@ -587,17 +587,18 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Has this beacon already been written?
      *
+     * Looked for only in the partitions its own yyyymmdd can be in
+     * (Entity::existsWithin()). A redelivered beacon derives the same id and
+     * the same yyyymmdd, so its row is inside that range, and a new beacon --
+     * nearly every one -- costs one pruned lookup.
+     *
      * @param array<string, mixed> $row
      * @return bool
      */
     protected function alreadyIngested( $row ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
-
-        $entity->load( $row['id'], 'id',
+        return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->existsWithin( 'id', $row['id'],
             \OWA\Core\Db::factDateConstraint( $row['yyyymmdd'] ) );
-
-        return (bool) $entity->wasPersisted();
     }
 
     /**

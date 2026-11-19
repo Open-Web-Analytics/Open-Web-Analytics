@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/CapturesLog.php';
 
 use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Controller\CubeRebuildCli;
@@ -21,6 +22,8 @@ use OWA\Module\Base\Controller\CubeRebuildCli;
  */
 final class CubeFirstBuildBackfillTest extends TestCase
 {
+    use CapturesLog;
+
     /** Collected 40 days ago and today; no cube until a build makes one. */
     const PROPERTY = 7780000000000001;
     const SITE     = 'cube-backfill-fixture';
@@ -36,6 +39,9 @@ final class CubeFirstBuildBackfillTest extends TestCase
     /** Has never collected anything. */
     const EMPTY_PROPERTY = 7780000000000003;
     const EMPTY_SITE     = 'cube-backfill-empty';
+
+    /** Raw rows today under a site id no Profile has. */
+    const ORPHAN_SITE = 'cube-backfill-orphan';
 
     const VISITOR = 8890000000000001;
 
@@ -89,6 +95,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
         self::seedRaw(self::SITE, (int) date('Ymd'), 2);
         self::seedRaw(self::CUBED_SITE, self::$old_day, 3);
         self::seedRaw(self::OLD_ONLY_SITE, self::$old_day, 5);
+        self::seedRaw(self::ORPHAN_SITE, (int) date('Ymd'), 6);
 
         if (!Cubes::create(self::CUBED_PROPERTY)) {
             throw new \RuntimeException('creating the cubed Property\'s cube failed');
@@ -115,7 +122,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ([self::SITE, self::CUBED_SITE, self::EMPTY_SITE, self::OLD_ONLY_SITE] as $site) {
+        foreach ([self::SITE, self::CUBED_SITE, self::EMPTY_SITE, self::OLD_ONLY_SITE, self::ORPHAN_SITE] as $site) {
             foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
                 $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
                     \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
@@ -200,6 +207,32 @@ final class CubeFirstBuildBackfillTest extends TestCase
         $this->assertContains((string) self::OLD_ONLY_PROPERTY, $awaiting);
         $this->assertNotContains((string) self::CUBED_PROPERTY, $awaiting, 'it has a cube');
         $this->assertNotContains((string) self::EMPTY_PROPERTY, $awaiting, 'it has collected nothing');
+    }
+
+    /**
+     * The scheduled run finds the collecting Properties by probing each
+     * Profile, and counts no orphan rows; that count reads every raw row in
+     * the range, and only a run given dates asks for it.
+     */
+    public function testTheScheduledRunProbesAndADatedRunCountsOrphans(): void
+    {
+        $range = ['from' => (int) date('Ymd', strtotime('-1 day')), 'to' => (int) date('Ymd')];
+
+        $counted = Cubes::collecting($range['from'], $range['to']);
+        $probed  = Cubes::collecting($range['from'], $range['to'], false);
+
+        $this->assertGreaterThan(0, $counted['orphan_rows'], 'the fixture has an orphan row today');
+        $this->assertContains((string) self::PROPERTY, $probed['properties']);
+        $this->assertSame($counted['properties'], $probed['properties']);
+        $this->assertSame(0, $probed['orphan_rows']);
+
+        $method = new ReflectionMethod(CubeRebuildCli::class, 'resolveProperties');
+
+        $routine = $this->logDuring(fn () => $method->invoke($this->cli([]), $range));
+        $dated   = $this->logDuring(fn () => $method->invoke($this->cli(['days' => '2']), $range));
+
+        $this->assertStringNotContainsString('no Property claims', $routine);
+        $this->assertStringContainsString('no Property claims', $dated);
     }
 
     /**

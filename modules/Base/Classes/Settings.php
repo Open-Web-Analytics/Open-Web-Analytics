@@ -25,9 +25,6 @@ namespace OWA\Module\Base\Classes;
      /** @var array<mixed> module => key => the value stored install-wide */
      public $db_settings = [];
 
-     /** @var mixed nothing sets it */
-     public $fetched_from_db;
-
      /** @var bool|null whether a setting changed since the last save */
      public $is_dirty;
 
@@ -192,11 +189,9 @@ namespace OWA\Module\Base\Classes;
      public function setTimezone() {
 
          // set default timezone while surpressing any warning
-        if ( function_exists( 'date_default_timezone_set' ) ) {
-            $level = error_reporting( 0 );
-            date_default_timezone_set( $this->get( 'base', 'timezone' ) );
-            error_reporting( $level );
-        }
+         $level = error_reporting( 0 );
+         date_default_timezone_set( $this->get( 'base', 'timezone' ) );
+         error_reporting( $level );
      }
 
      /**
@@ -773,8 +768,7 @@ namespace OWA\Module\Base\Classes;
       * blob out of owa_configuration; the merge below is unchanged, only where
       * the overrides come from.
       *
-      * Which store is read is decided by legacyBlobIsAuthoritative(), the same
-      * way round as save() decides where to write.
+      * Which store is read is decided by readStoreOfRecord().
       *
       * @param int|string $id  retained for callers; the install scope has one id
       * @return void
@@ -783,9 +777,7 @@ namespace OWA\Module\Base\Classes;
 
         $this->config_id = $id;
 
-        $db_settings = $this->legacyBlobIsAuthoritative()
-            ? $this->readLegacyConfigurationBlob()
-            : $this->readInstallSettings();
+        $db_settings = $this->readStoreOfRecord();
 
         if (!empty($db_settings)) {
 
@@ -880,10 +872,67 @@ namespace OWA\Module\Base\Classes;
         $this->store_ready = true;
      }
 
+     /** The schema from which install settings are rows: Update043's. */
+     const SETTING_ROWS_SCHEMA = 43;
+
+     /**
+      * The install settings, from whichever store holds them.
+      *
+      * The rows are read first. Update043 unpacks the blob into rows, drops
+      * owa_configuration, and only then is schema 43 saved, into the rows. So
+      * rows holding a base schema_version of 43 or later settle it without
+      * legacyBlobIsAuthoritative(), whose table lookup would otherwise run on
+      * every request. Otherwise -- no rows, or rows of an Update043 that
+      * stopped part way -- the table decides, as save() does.
+      *
+      * @return array<mixed> module => key => value
+      */
+     protected function readStoreOfRecord() {
+
+        $rows = null;
+
+        if ( $this->legacy_blob_present === null ) {
+
+            $rows = $this->readInstallSettings();
+
+            if ( self::rowsAreTheStore( $rows ) ) {
+
+                $this->legacy_blob_present = false;
+
+                return $rows;
+            }
+        }
+
+        if ( $this->legacyBlobIsAuthoritative() ) {
+
+            return $this->readLegacyConfigurationBlob();
+        }
+
+        return $rows ?? $this->readInstallSettings();
+     }
+
+     /**
+      * Whether install rows read at boot show Update043 complete: a base
+      * schema_version of SETTING_ROWS_SCHEMA or later. See readStoreOfRecord().
+      *
+      * @param  array<mixed> $rows module => key => value
+      * @return bool
+      */
+     protected static function rowsAreTheStore( array $rows ) {
+
+        $version = $rows['base']['schema_version'] ?? null;
+
+        return is_numeric( $version ) && (int) $version >= self::SETTING_ROWS_SCHEMA;
+     }
+
      /**
       * Every install-scope setting, as [module][key] => value.
       *
       * ONE query: rows would otherwise cost a query each.
+      *
+      * Every key boot asked for is resolved by it, a key with no row as much
+      * as one with a row, so no later read of an eager key without a row
+      * sends resolveAllPending() to the database.
       *
       * @return array<mixed> module => key => value
       */
@@ -901,7 +950,21 @@ namespace OWA\Module\Base\Classes;
             $this->eagerPredicate( $params ),
             $this->constantExclusion( $params ) );
 
+        $errors = $db->queryErrorCount();
+
         $rows = (array) $db->get_results( $sql, $params );
+
+        if ( $db->queryErrorCount() === $errors ) {
+
+            foreach ( $this->eagerSettings() as $module => $keys ) {
+
+                foreach ( $keys as $key ) {
+
+                    $this->loaded[ $module . '|' . $key ] = true;
+                    unset( $this->pending[ $module . '|' . $key ] );
+                }
+            }
+        }
 
         $settings = [];
 
@@ -949,7 +1012,8 @@ namespace OWA\Module\Base\Classes;
       * Memoised: a request that saves twice should not ask twice, and the
       * table cannot appear or vanish under a running request that is not
       * itself the migration. The migration calls settingStoreRecheck() when it
-      * is.
+      * is. readStoreOfRecord() answers false without asking when the rows
+      * hold schema 43 or later.
       *
       * @return bool
       */
@@ -1135,10 +1199,9 @@ namespace OWA\Module\Base\Classes;
      /**
       * Write the install-wide settings back, one row per key.
       *
-      * The stored set is made to MATCH db_settings. Both places that drop a key
-      * -- persistSetting()'s default-equivalence prune and
-      * pruneRedundantPersistedSettings() -- unset it from db_settings and rely
-      * on the deletes here.
+      * The stored set is made to MATCH db_settings. persistSetting() drops a
+      * key that restates its default by unsetting it from db_settings, and
+      * relies on the deletes here.
       *
       * When load() never ran, the stored rows are merged UNDER db_settings and
       * nothing is deleted: a process that never read the settings does not know
@@ -2082,7 +2145,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Matched by name rather than per module because core cannot name the
       * modules: the directory-to-runtime-name mapping is lossy (see
-      * buildRegistry()). `name IN (...)` needs no module names at all, and is
+      * Module::settingsRegistry()). `name IN (...)` needs no module names at all, and is
       * exactly right -- these are eager wherever they occur, including for a
       * third-party module core has never heard of.
       *
@@ -2805,51 +2868,6 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Drop persisted settings that merely restate the current code default.
-      *
-      * An old config GUI wrote the whole settings array rather than just changed
-      * fields, so installs hold values identical to the default of the day,
-      * pinned forever. Each one is a latent bug that surfaces the moment that
-      * default changes.
-      *
-      * Removing them is behaviour-preserving by definition: get() falls back to
-      * the very default the stored value duplicates. Keys with no code default
-      * (schema_version, install_complete) cannot match and are never touched.
-      *
-      * Caller is responsible for save().
-      *
-      * @return list<string> the "module.key" entries removed
-      */
-     public function pruneRedundantPersistedSettings() {
-
-         $removed = [];
-
-         foreach ( $this->db_settings as $module => $values ) {
-
-             if ( ! is_array( $values ) ) {
-                 continue;
-             }
-
-             foreach ( $values as $key => $value ) {
-
-                 if ( ! array_key_exists( $module, $this->default_config )
-                      || ! array_key_exists( $key, $this->default_config[ $module ] ) ) {
-                     continue;
-                 }
-
-                 if ( self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
-
-                     unset( $this->db_settings[ $module ][ $key ] );
-                     $removed[] = $module . '.' . $key;
-                     $this->markDirty();
-                 }
-             }
-         }
-
-         return $removed;
-     }
-
-     /**
       * Replaces all values of a particular module's configuration
       * @todo: search to see where else this is used. If unused then make it for use in persist only.
       *
@@ -3221,42 +3239,25 @@ namespace OWA\Module\Base\Classes;
     }
 
     /**
-     * sets and checks the cookie domain setting
+     * Sets base.cookie_domain, the domain of the cookies OWA's server sets
+     * (sign-in, report state): $domain, or the request's host, as given --
+     * a www. host keeps its www. Not set for a name with no dot, such as
+     * localhost, which a browser refuses as a cookie domain.
      *
      * @param mixed $domain
      * @return void
      */
     public function setCookieDomain ($domain = '') {
 
-        $explicit = false;
-
         if ( ! $domain ) {
             $domain = $_SERVER['HTTP_HOST'];
-            $explicit = true;
         }
 
         // strip port, add leading period etc.
         $domain = \OWA\Core\Lib::sanitizeCookieDomain($domain);
 
-        // Set the cookie domain only if the domain name is a Fully qualified domain name (FQDN)
-        // i.e. avoid attempts to set cookie domain for e.g. "localhost" as that is not valid
-
-        //check for two dots in the domain name
-        $twodots = substr_count($domain, '.');
-
-        if ( $twodots >= 2 ) {
-
-            // unless www.domain.com is passed explicitly
-            // strip the www from the domain.
-            if ( ! $explicit ) {
-                $part = substr( $domain, 0, 5 );
-                if ($part === '.www.') {
-                    //strip .www.
-                    $domain = substr( $domain, 5);
-                    // add back the leading period
-                    $domain = '.'.$domain;
-                }
-            }
+        // Two dots: the leading one sanitizeCookieDomain() adds, and one in the name.
+        if ( substr_count( $domain, '.' ) >= 2 ) {
 
             $this->set('base','cookie_domain', $domain);
             \OWA\Core\CoreAPI::debug("Setting cookie domain to $domain");

@@ -1200,20 +1200,6 @@ class ResultSetManager extends \OWA\Core\Base {
     /**
      * @return list<string>
      */
-    public function getMetricNamesFromSegment() {
-
-        if ( isset($this->segment['metrics'] ) ) {
-
-            return array_keys($this->segment['metrics']);
-        } else {
-
-            return [];
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
     public function getDimensionNamesFromSegment() {
 
         if ( isset( $this->segment['dimensions'] ) ) {
@@ -2416,7 +2402,8 @@ class ResultSetManager extends \OWA\Core\Base {
         // generates from clause or a subselect if segment is specified
         if ( $this->segment ) {
             
-            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $this->db->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
         
         } else {
         
@@ -2441,8 +2428,11 @@ class ResultSetManager extends \OWA\Core\Base {
             $this->db->selectColumn( sprintf( 'MAX(%s.built_at)', $bm->getTableAlias() ), 'owa_as_of' );
         }
 
-        // generate aggregate results
-        $results = $this->db->getOneRow();
+        // Bounded as the rows are: the same filter and period shape this query.
+        $db      = $this->db;
+        $results = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db ) {
+            return $db->getOneRow();
+        } );
 
         if ( $as_of && is_array( $results ) && array_key_exists( 'owa_as_of', $results ) ) {
 
@@ -2515,7 +2505,7 @@ class ResultSetManager extends \OWA\Core\Base {
             $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
         }
 
-        return $parts ? sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) ) : null;
+        return $parts ? sprintf( OWA_SQL_GROUP_KEY, implode( ', ', $parts ) ) : null;
     }
 
     /**
@@ -2602,7 +2592,8 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( $this->segment ) {
 
-            $inner->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $inner->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
 
         } else {
 
@@ -2752,10 +2743,10 @@ class ResultSetManager extends \OWA\Core\Base {
 
         /*
          * A query by anything but a trend's axis that names no page size gets
-         * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
-         * which limits by the period -- one row a day, a sound bound only for a
-         * query BY day -- so a breakdown over the last seven days stopped at
-         * six rows, and said there were no more.
+         * DEFAULT_RESULTS_PER_PAGE, and pages. Without it the date range below
+         * would limit by the period -- one row a day, a sound bound only for a
+         * query BY day -- and a breakdown over the last seven days would stop
+         * at six rows and say there were no more.
          */
         if ( ! $this->getLimit() && ! $this->isByDate() ) {
 
@@ -2774,7 +2765,8 @@ class ResultSetManager extends \OWA\Core\Base {
         // set from table
         if ( $this->segment ) {
             
-            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            [ $segment_sql, $segment_bindings ] = $this->segmentQuery( $bm );
+            $this->db->selectFrom( $segment_sql, $bm->getTableAlias(), $segment_bindings );
             
         } else {
             
@@ -2970,10 +2962,17 @@ class ResultSetManager extends \OWA\Core\Base {
                 // controllers sets a sort, so no shipped report ever took the
                 // unsorted path. Found by reporting-facets.spec.js, which asks
                 // for a breakdown without one.
-                $dresults = $this->computeDimensionalRows( $bm );
+                $dresults = (array) $this->computeDimensionalRows( $bm );
 
-                // paginate the results
-                $dresults = $this->applyMetaDataToResults( $dresults );
+                /*
+                 * The read-ahead is counted, not shown: generate() keeps the
+                 * first getLimit() rows, so only those are formatted.
+                 */
+                $per      = (int) $this->getLimit();
+                $dresults = $per > 0
+                    ? array_merge( $this->applyMetaDataToResults( array_slice( $dresults, 0, $per ) ),
+                        array_slice( $dresults, $per ) )
+                    : $this->applyMetaDataToResults( $dresults );
 
                 // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [
@@ -3006,10 +3005,24 @@ class ResultSetManager extends \OWA\Core\Base {
     }
     
     /**
+     * The segment's subselect without its bound values: segmentQuery() returns
+     * both, and a statement that embeds this text has to bind them.
+     *
      * @param  \OWA\Core\Entity $base_entity
-     * @return string|void the segment's subselect, in parentheses; nothing without a segment
+     * @return string|null the segment's subselect, in parentheses; null without a segment
      */
     public function generateSegmentQuery( $base_entity ) {
+
+        return $this->segmentQuery( $base_entity )[0];
+    }
+
+    /**
+     * @param  \OWA\Core\Entity $base_entity
+     * @return array{0: string|null, 1: list<scalar|null>} the segment's subselect, in
+     *         parentheses, and the values of its placeholders in order; [null, []]
+     *         without a segment
+     */
+    public function segmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
         $segment_entity = $this->entityFor($base_entity->getName());
@@ -3041,9 +3054,12 @@ class ResultSetManager extends \OWA\Core\Base {
                 }
             }
 
-            return sprintf('(%s)', $db->generateSelectQuerySql() );
+            $sql = $db->generateSelectQuerySql();
+
+            return [ sprintf('(%s)', $sql ), $db->getBindings() ];
         }
 
+        return [ null, [] ];
     }
 
     /**
