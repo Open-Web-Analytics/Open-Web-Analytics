@@ -6,6 +6,9 @@ namespace OWA\Module\Base\Controller;
  */
 
 class NotifyNewSession extends \OWA\Core\Controller {
+
+    /** Run by its handler through performAction(), never by a request. */
+    const IN_PROCESS_ONLY = true;
         
     public function action() {
         

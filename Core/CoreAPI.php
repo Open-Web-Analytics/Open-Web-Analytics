@@ -2096,6 +2096,22 @@ class CoreAPI {
     }
     
     /**
+     * Whether an action's controller is run only in-process, by performAction()
+     * from a handler or another controller (Controller::IN_PROCESS_ONLY).
+     *
+     * @param mixed $action
+     * @return bool
+     */
+    public static function isInProcessOnlyAction( $action ) {
+
+        $map   = is_string( $action ) && $action !== '' ? \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', $action ) : null;
+        $class = is_array( $map ) ? (string) ( $map['class_name'] ?? '' ) : '';
+
+        return $class !== '' && class_exists( $class ) && defined( $class . '::IN_PROCESS_ONLY' )
+            && constant( $class . '::IN_PROCESS_ONLY' ) === true;
+    }
+
+    /**
      * Whether a name has an action name's shape: <module>.<action>, each a bare
      * identifier.
      *
@@ -2940,6 +2956,13 @@ class CoreAPI {
         }
         
         $init = true;
+
+        // A request does not reach an action only code runs (Controller::IN_PROCESS_ONLY).
+        if ( self::isInProcessOnlyAction( $action ) ) {
+
+            return self::actionNotResolved( $action, 404 );
+        }
+
         \OWA\Core\CoreAPI::debug('About to perform action: '.$action);
         return \OWA\Core\CoreAPI::performAction($action, $params);
 
