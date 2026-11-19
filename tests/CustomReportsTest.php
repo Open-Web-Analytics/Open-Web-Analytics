@@ -145,6 +145,95 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('', CustomReports::validate($this->definition()));
     }
 
+    /** @return array<string, array{mixed, bool}> */
+    public static function boxWidths(): array
+    {
+        return [
+            'pixels'              => ['150px', true],
+            'a percentage'        => ['20%', true],
+            'a decimal'           => ['12.5em', true],
+            'rem, vw, vh'         => ['10rem', true],
+            'the largest'         => ['2000px', true],
+            'past the bound'      => ['2001px', false],
+            'past 100%'           => ['101%', false],
+            'zero'                => ['0px', false],
+            'no unit'             => ['150', false],
+            'another unit'        => ['3cm', false],
+            'a declaration after' => ['150px;background:url(https://example.com/x)', false],
+            'an expression'       => ['calc(100% - 1px)', false],
+            'a number'            => [150, false],
+            'a trailing newline'  => ["150px\n", false],
+        ];
+    }
+
+    /**
+     * A save refuses a box width that is not one; a stored one is drawn with
+     * the default instead.
+     *
+     * @dataProvider boxWidths
+     */
+    public function testABoxWidthIsABoundedCssLength($width, bool $valid): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][0]['boxWidth'] = $width;
+
+        $error = CustomReports::widgetError($definition);
+        $drawn = CustomReports::drawable($definition);
+
+        $this->assertSame('', CustomReports::validate($drawn), 'drawn');
+
+        if ($valid) {
+            $this->assertSame('', $error);
+            $this->assertSame($width, $drawn['widgets'][0]['boxWidth']);
+        } else {
+            $this->assertStringContainsString('Widget 1 has a box width that is not a CSS length', $error);
+            $this->assertArrayNotHasKey('boxWidth', $drawn['widgets'][0]);
+        }
+    }
+
+    /** A save refuses an unknown widget key; a stored one is drawn without it. */
+    public function testAnUnknownWidgetKeyIsRefusedOnSaveAndDroppedOnDraw(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['minWidth'] = '100px';
+        $definition['widgets'][1]['onclick']  = 'x';
+
+        $this->assertStringStartsWith('Widget 2 has unknown keys: minWidth, onclick.', CustomReports::widgetError($definition));
+
+        $refused = CustomReports::save(['name' => 'Unknown keys', 'definition' => $definition], self::AUTHOR, self::PROPERTY);
+        $this->assertFalse($refused['ok']);
+        $this->assertStringStartsWith('Widget 2 has unknown keys', $refused['error']);
+
+        $drawn = CustomReports::drawable($definition);
+        $this->assertSame($this->definition()['widgets'], $drawn['widgets']);
+        $this->assertSame('', CustomReports::validate($drawn), 'a stored one still draws');
+        $this->assertSame($this->definition(), CustomReports::drawable($this->definition()), 'a clean one is unchanged');
+    }
+
+    /**
+     * The allowed keys are every key the renderer reads of a widget, and every
+     * key a shipped report's widgets use, so a copy of one is accepted.
+     */
+    public function testTheWidgetKeysAreWhatTheRendererAndShippedReportsUse(): void
+    {
+        $root = dirname(__DIR__);
+
+        preg_match_all("/\\$(?:owa_w|widget)\\[ *'([a-zA-Z_]+)' *\\]/",
+            (string) file_get_contents($root . '/modules/Base/templates/report_widgets.php')
+            . (string) file_get_contents($root . '/Core/ReportGrid.php'), $m);
+
+        $used = $m[1];
+
+        foreach (glob($root . '/modules/*/reports/*.json') as $file) {
+            foreach ((array) (json_decode((string) file_get_contents($file), true)['widgets'] ?? []) as $widget) {
+                $used = array_merge($used, array_keys((array) $widget));
+            }
+        }
+
+        $this->assertNotEmpty($used);
+        $this->assertSame([], array_values(array_diff(array_unique($used), CustomReports::WIDGET_KEYS)));
+    }
+
     /**
      * The registry check, which is the one that matters.
      *

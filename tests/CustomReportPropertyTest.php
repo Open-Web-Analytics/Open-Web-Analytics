@@ -512,6 +512,57 @@ final class CustomReportPropertyTest extends TestCase
         }
     }
 
+    /**
+     * A report stored with a widget value a save now refuses (an unknown key,
+     * a box width that is not a CSS length) still draws, without it.
+     */
+    public function testAReportStoredWithAValueASaveRefusesStillDraws(): void
+    {
+        $id = $this->store(self::P, 'Stored before the check');
+
+        $definition = $this->definition('Stored before the check');
+        $definition['widgets'][] = [
+            'type' => 'metric-boxes', 'id' => 'boxes', 'container' => 'boxes', 'query' => ['metrics' => 'pageViews'],
+            'boxWidth'   => '150px;background:url(https://example.com/owatest-box)',
+            'owatestKey' => 'owatest-unknown-value',
+        ];
+
+        CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET definition = ? WHERE id = ?', [json_encode($definition), $id]);
+
+        http_response_code(200);
+        ob_start();
+        $out = CoreAPI::runController(new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]));
+        $html = ob_get_clean() . (string) $out;
+
+        $this->assertSame(200, http_response_code());
+        $this->assertStringContainsString('Stored before the check', $html);
+
+        // The widgets it is drawn with.
+        ob_start();
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]))->doAction();
+        ob_end_clean();
+
+        $boxes = (array) ($data['widgets'][1] ?? []);
+        $this->assertSame('metric-boxes', $boxes['type'] ?? null);
+        $this->assertArrayNotHasKey('boxWidth', $boxes);
+        $this->assertArrayNotHasKey('owatestKey', $boxes);
+
+        $edit = (array) (new \OWA\Module\Base\Controller\CustomReportEdit([
+            'do' => 'base.customReportEdit', 'customReportId' => $id, 'propertyId' => self::P,
+        ]))->doAction();
+
+        $this->assertArrayNotHasKey('boxWidth', $edit['custom_report_definition']['widgets'][1], 'the builder offers it without');
+        $this->assertArrayNotHasKey('owatestKey', $edit['custom_report_definition']['widgets'][1]);
+    }
+
     /** Share or un-share a stored report, as its editor's switch does. */
     private function share(string $id, bool $shared): void
     {
