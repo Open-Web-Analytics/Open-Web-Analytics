@@ -7,10 +7,8 @@ use OWA\Module\Base\Classes\NotificationManager;
 /**
  * GET v1/notifications -- what this user has not dismissed.
  *
- * The badge in the header renders its COUNT server-side, because it is on every
- * page and a request per page load to learn a small number would be worse than
- * the query. The list behind the badge is fetched here, once, when
- * someone actually opens it.
+ * The header's bell (owa.header.js) fetches this once per page load and
+ * counts the unread rows for its badge; the page renders no count of its own.
  *
  * Audience comes from the SESSION. There is no user parameter to pass, so
  * asking for someone else's notifications is not a request that can be

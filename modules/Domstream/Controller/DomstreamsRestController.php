@@ -92,7 +92,7 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
 
     public function success() {
 
-        $this->restResponse( 201, 'response' );
+        $this->restResponse( 200, 'response' );
     }
 
     public function errorAction() {

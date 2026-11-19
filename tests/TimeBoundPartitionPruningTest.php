@@ -59,6 +59,38 @@ final class TimeBoundPartitionPruningTest extends TestCase
             'a time bound produced no date bound, so the query cannot prune partitions');
     }
 
+    /**
+     * The time bound reaches the query, on the cube's `ts` in microseconds.
+     * `timestamp` is no dimension, and applyConstraint() applied nothing for it.
+     */
+    public function testTheTimeBoundIsAppliedToTheCubesClock(): void
+    {
+        $start = mktime(10, 0, 0, 3, 14, 2026);
+        $end   = mktime(10, 30, 0, 3, 14, 2026);
+
+        $constraint = $this->rsmForTimeRange($start, $end)->getConstraints()['timestamp'];
+
+        $db = new class {
+            public $wheres = [];
+            public function where($name, $value, $operator = '=', $key = null)
+            {
+                $this->wheres[] = [$name, $value, $operator];
+            }
+        };
+        $entity = new class {
+            public function getTableAlias()
+            {
+                return 'event';
+            }
+        };
+
+        (new \OWA\Module\Base\Classes\ResultSetManager)->applyConstraint($constraint, $db, $entity);
+
+        $this->assertSame(
+            [['event.ts', ['start' => $start * 1000000, 'end' => $end * 1000000 + 999999], 'BETWEEN']],
+            $db->wheres);
+    }
+
     /** Closed at BOTH ends -- an open bound still reads every later partition. */
     public function testTheDateBoundIsClosed(): void
     {

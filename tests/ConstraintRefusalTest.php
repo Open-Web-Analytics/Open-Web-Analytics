@@ -103,6 +103,60 @@ final class ConstraintRefusalTest extends TestCase
     }
 
     /**
+     * "(not set)" is an empty test, which only a dimension has. Applied at
+     * query time it was dropped, and the query ran without it.
+     */
+    public function testNotSetOnAMetricIsRefused(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setConstraints($rsm->constraintsStringToArray('pageViews==(not set)'));
+
+        $this->assertTrue($rsm->hasRequestErrors());
+        $this->assertNotContains('pageViews', $this->appliedNames($rsm));
+    }
+
+    /** A calculated metric has no aggregate to test, so it is refused, not dropped. */
+    public function testAConstraintOnACalculatedMetricIsRefused(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setConstraints($rsm->constraintsStringToArray('pageViewsPerSession>2'));
+
+        $this->assertTrue($rsm->hasRequestErrors());
+        $this->assertSame(['"pageViewsPerSession" is calculated from other metrics, so it cannot be constrained on.'],
+            $rsm->request_errors);
+        $this->assertNotContains('pageViewsPerSession', $this->appliedNames($rsm));
+    }
+
+    /** A segment's query selects on dimensions only; a metric condition in it is refused. */
+    public function testAMetricInASegmentIsRefused(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setSegment('dynamic::sessionMedium==direct,pageViews>5');
+
+        $this->assertTrue($rsm->hasRequestErrors());
+        $this->assertSame(['sessionMedium'], $rsm->getDimensionNamesFromSegment());
+    }
+
+    /** A saved segment is not implemented: refused rather than run over everybody. */
+    public function testASavedSegmentIsRefused(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setSegment('id::7');
+
+        $this->assertTrue($rsm->hasRequestErrors());
+        $this->assertNull($rsm->getSegment());
+    }
+
+    public function testADimensionSegmentIsAccepted(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setSegment('dynamic::sessionMedium==direct');
+
+        $this->assertFalse($rsm->hasRequestErrors());
+        $this->assertSame(['sessionMedium'], $rsm->getDimensionNamesFromSegment());
+    }
+
+    /**
      * The case this file was written for: a name that resolves to nothing.
      */
     public function testAnUnknownConstraintNameIsRefused(): void

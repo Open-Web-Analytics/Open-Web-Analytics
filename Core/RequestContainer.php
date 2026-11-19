@@ -37,7 +37,7 @@ class RequestContainer {
     /** @var array<mixed> the request's params, cleaned, as named on the request */
     public $request = [];
 
-    /** @var array<mixed> the request's server variables */
+    /** @var array<mixed>|null the request's server variables */
     public $server;
 
     /** @var string */
@@ -377,7 +377,8 @@ class RequestContainer {
      */
     public function getServerParam($name) {
 
-        if (array_key_exists($name, $this->server)) {
+        // Null on a request built without $_SERVER, as a CLI one can be.
+        if (is_array($this->server) && array_key_exists($name, $this->server)) {
             return $this->server[$name];
         } else {
             return false;
