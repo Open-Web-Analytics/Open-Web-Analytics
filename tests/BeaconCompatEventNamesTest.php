@@ -73,10 +73,11 @@ final class BeaconCompatEventNamesTest extends TestCase
     /**
      * v1 spellings with no rename are not event names at all: the dot fails
      * the custom-name pattern, so they are refused rather than stored.
+     * track.action is reshaped instead (BeaconCompatActionTest).
      */
     public function testAnUnrenamedV1SpellingIsRefused(): void
     {
-        foreach (['dom.stream', 'base.feed_request', 'track.action', 'dom.keypress'] as $old) {
+        foreach (['dom.stream', 'base.feed_request', 'dom.keypress'] as $old) {
             $this->assertSame($old, Compat::eventName($old), "$old has no rename");
             $this->assertFalse(\OWA\Core\CoreAPI::isTrackingEventType($old), "$old must be refused");
         }

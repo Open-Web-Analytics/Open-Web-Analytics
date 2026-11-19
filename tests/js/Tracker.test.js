@@ -23,55 +23,49 @@ describe('OWATracker event assembly', () => {
     });
 
     /**
-     * trackAction sends the action under the event name and parameters an
-     * upgrade gives a migrated 1.x action, so live and migrated actions are
-     * one event with one set of properties.
+     * trackAction sends 1.x's track.action with 1.x's property names, for the
+     * server's beacon compat layer to reshape into the custom event a migrated
+     * 1.x action is. The reshaping rule lives on the server only.
      */
-    test('trackAction sends the action name as the event, with the migrated parameter names', () => {
-        tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
+    test('trackAction sends a track.action event with the 1.x property names', () => {
+        tracker.trackAction('signup', 'Newsletter Opt In', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('newsletter_opt_in');
-        expect(e.get('eps_group')).toBe('signup');
-        expect(e.get('eps_label')).toBe('footer form');
-        expect(e.get('epn_value')).toBe(10);
-
-        // The name did not change, so it is not repeated.
-        expect(e.get('eps_action_name')).toBeUndefined();
-        expect(e.get('eps_action_group')).toBeUndefined();
-        expect(e.get('epn_numeric_value')).toBeUndefined();
+        expect(e.get('event_type')).toBe('track.action');
+        expect(e.get('action_group')).toBe('signup');
+        expect(e.get('action_name')).toBe('Newsletter Opt In');
+        expect(e.get('action_label')).toBe('footer form');
+        expect(e.get('numeric_value')).toBe(10);
     });
 
-    /** A 1.x name with a space is reshaped as the migration reshapes it, and kept. */
-    test('trackAction reshapes a 1.x action name and keeps the original', () => {
-        tracker.trackAction('cooking', 'Recipe Print', 'Italian Chicken Soup', '1');
-        tracker.trackAction('group', 'page_view', 'label', 1);
+    /** Absent arguments are not sent. */
+    test('trackAction leaves out the arguments it was not given', () => {
+        tracker.trackAction('group', 'Recipe Print');
 
-        expect(captured).toHaveLength(2);
-        expect(captured[0].get('event_type')).toBe('recipe_print');
-        expect(captured[0].get('eps_action_name')).toBe('Recipe Print');
-        expect(captured[0].get('epn_value')).toBe(1);
-        expect(captured[1].get('event_type')).toBe('action_page_view');
-        expect(captured[1].get('eps_action_name')).toBe('page_view');
+        const e = captured[0];
+        expect(e.get('action_label')).toBeUndefined();
+        expect(e.get('numeric_value')).toBeUndefined();
     });
 
-    /** A name with nothing left to send is refused. */
-    test('trackAction refuses a name with no letters or digits', () => {
-        tracker.trackAction('group', '!!!', 'label', 1);
-        tracker.trackAction('group', '', 'label', 1);
+    /**
+     * On the wire, as BeaconCompatActionTest.php feeds it to the server: the
+     * same fixture holds both sides.
+     */
+    test('trackAction puts on the wire what the server reshapes', () => {
+        const fixture = require('../fixtures/track_action_beacon.json');
+        const t = new OWATracker({ cookie_domain_set: true });
+        t.setSiteId('track-action-site');
 
-        expect(captured).toHaveLength(0);
-    });
+        let wire = null;
+        t.logEvent = (properties) => { wire = t.prepareRequestData(properties); };
 
-    /** The same table the PHP migration is held to (ActionEventNameTest.php). */
-    test('actionEventName gives the names the migration gives', () => {
-        const table = require('../fixtures/action_event_names.json');
+        t.trackAction('cooking', 'Recipe Print', 'Italian Chicken Soup', 1);
 
-        expect(table.names.length).toBeGreaterThan(0);
+        expect(wire).not.toBeNull();
 
-        for (const [action, event] of table.names) {
-            expect([action, OWATracker.actionEventName(action)]).toEqual([action, event]);
+        for (const [key, value] of Object.entries(fixture.wire)) {
+            expect([key, wire[key]]).toEqual([key, value]);
         }
     });
 

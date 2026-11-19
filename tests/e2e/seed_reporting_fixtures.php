@@ -1865,10 +1865,8 @@ function clickTotals(string $key): array
  * Actions, fired as the custom events a site sends: the event is named by the
  * action, and its group, label and value are its parameters.
  *
- * They were fired as track.action, v1's one type for every action. That name
- * has no current equivalent and the edge refuses it, so none was stored -- and
- * the date-split spec, which counts the visit these events make, came up one
- * day short.
+ * A track.action, v1's one type for every action, is reshaped into the same
+ * custom event at the edge (conf/beacon_compat.php, event_reshapes).
  *
  * @return array
  */

@@ -1,0 +1,17 @@
+{
+    "_comment": "What the tracker's trackAction('cooking', 'Recipe Print', 'Italian Chicken Soup', 1) puts on the wire, and what the server stores for it. tests/js/Tracker.test.js holds the tracker to `wire`; BeaconCompatActionTest.php feeds `wire` through the beacon endpoint's steps and holds the result to `stored`.",
+    "wire": {
+        "e_t": "track.action",
+        "action_group": "cooking",
+        "action_name": "Recipe Print",
+        "action_label": "Italian Chicken Soup",
+        "numeric_value": 1
+    },
+    "stored": {
+        "event_type": "recipe_print",
+        "eps_group": "cooking",
+        "eps_label": "Italian Chicken Soup",
+        "epn_value": 1,
+        "eps_action_name": "Recipe Print"
+    }
+}

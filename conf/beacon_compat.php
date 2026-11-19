@@ -43,19 +43,39 @@ return [
      * the first step of CoreAPI::logEvent() and of a queue drain, so the
      * admission gate, the dispatch name and the processor router only ever see
      * a current name. A name not listed passes through untouched -- every name
-     * the current tracker sends. Any other v1 spelling (dom.stream,
-     * base.feed_request, track.action) is not a legal event name and is refused.
+     * the current tracker sends. track.action is reshaped (event_reshapes,
+     * below). Any other v1 spelling (dom.stream, base.feed_request) is not a
+     * legal event name and is refused.
      */
     'event_names' => [
         'base.page_request'     => 'page_view',
         'dom.click'             => 'click',
         'ecommerce.transaction' => 'purchase',
-        /*
-         * No rename for track.action. An event name is a name, and the group, label
-         * and value are parameters describing it, so there is no custom_event to
-         * rename TO. A cached tracker's track.action is not a legal custom event name
-         * (the dot fails the pattern) and is not first-class, so it is refused.
-         */
+    ],
+
+    /*
+     * ---- APPLIED FROM HERE ------------------------------------------------
+     *
+     * Event types that become another event AND other properties, by a
+     * function. Applied by Beacon\Compat at the same point as event_names.
+     *
+     *   reads  the properties the function is given, which the beacon
+     *          endpoint admits for that reason (Compat::bridgedNames())
+     *   by     the function: reads => value in, [ event_type, properties ] out,
+     *          or null to leave the event as it is
+     *
+     * track.action: 1.x's one event type for every action, sent by a cached
+     * 1.x tag, the PHP SDK's trackAction() and the tracker's deprecated
+     * trackAction(). It becomes the custom event the upgrade makes from the
+     * same 1.x action (ActionMigrator::customEvent()), so live and migrated
+     * actions are one event. A name that leaves nothing stays track.action and
+     * is refused.
+     */
+    'event_reshapes' => [
+        'track.action' => [
+            'reads' => \OWA\Module\Base\Classes\Migration\ActionMigrator::V1_PROPERTIES,
+            'by'    => [ \OWA\Module\Base\Classes\Migration\ActionMigrator::class, 'customEvent' ],
+        ],
     ],
 
     /*
