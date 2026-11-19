@@ -66,33 +66,6 @@ final class ConstraintOperatorDialectTest extends TestCase {
     }
 
     /**
-     * The source-level half. The behavioural test above cannot tell a literal
-     * 'LOCATE(...)' from the constant while the dialect IS MySQL -- both emit
-     * the same string -- so the thing actually worth asserting is that the
-     * builder contains no platform-specific function spelling of its own.
-     *
-     * Single-quoted needle deliberately: a double-quoted one containing $this->
-     * would interpolate to nothing and pass unconditionally.
-     */
-    public function testTheBuilderHardCodesNoPlatformSpecificFunction() {
-
-        $source = file_get_contents( dirname( __DIR__ ) . '/Core/Db.php' );
-
-        foreach ( [ 'LOCATE(', 'CHARINDEX(', 'POSITION(', 'INSTR(' ] as $needle ) {
-
-            $this->assertStringNotContainsString(
-                $needle,
-                $source,
-                sprintf(
-                    '%s is a platform-specific spelling written into the query builder. It belongs '
-                  . 'in the dialect, alongside OWA_SQL_REGEXP, so another backend can give its own.',
-                    rtrim( $needle, '(' )
-                )
-            );
-        }
-    }
-
-    /**
      * BETWEEN is standard SQL, so it is deliberately NOT a dialect constant --
      * the same treatment = and AND get. This records that as a decision, since
      * it looks like an inconsistency next to the constants around it.

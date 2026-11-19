@@ -23,6 +23,7 @@ use OWA\Module\Base\Classes\Cube\Dimensions;
 final class CustomDimensionScreenTest extends TestCase
 {
     const PROPERTY = 7772000000000001;
+    const PROPERTY_WITH_CUBE = 7772000000000002;
 
     private function validatedNames( $controller ): array
     {
@@ -44,7 +45,7 @@ final class CustomDimensionScreenTest extends TestCase
         return $names;
     }
 
-    /** Every error message a validator was given. */
+    /** The error messages the controller's validations produce when run. */
     private function validationMessages( $controller ): string
     {
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
@@ -54,15 +55,9 @@ final class CustomDimensionScreenTest extends TestCase
             return '';
         }
 
-        $property = new \ReflectionProperty( $validator, 'validations' );
+        $validator->doValidations();
 
-        $messages = [];
-
-        foreach ( (array) $property->getValue( $validator ) as $validation ) {
-            $messages[] = $validation['conf']['errorMsg'] ?? '';
-        }
-
-        return implode( ' | ', $messages );
+        return implode( ' | ', (array) $validator->getErrorMsgs() );
     }
 
     public function testTheScreensAreRegisteredWhereTheNavPointsThem(): void
@@ -86,12 +81,24 @@ final class CustomDimensionScreenTest extends TestCase
      */
     public function testTheNavOffersItUnderProperty(): void
     {
-        $source = file_get_contents( __DIR__ . '/../Core/Controller.php' );
+        $nav = ( new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' ) )
+            ->invoke( new \OWA\Module\Base\Controller\CustomDimensions( [] ), '', self::PROPERTY );
 
-        $property = substr( $source, strpos( $source, "\$nav['Property']" ) );
-        $property = substr( $property, 0, strpos( $property, "\$nav['Observation Profile']" ) );
+        $groups = [];
 
-        $this->assertStringContainsString( 'base.customDimensions', $property,
+        foreach ( $nav as $group => $entries ) {
+
+            foreach ( (array) $entries as $entry ) {
+
+                if ( ( $entry['do'] ?? '' ) === 'base.customDimensions' ) {
+
+                    $groups[] = $group;
+                    $this->assertSame( [ 'propertyId' => self::PROPERTY ], $entry['params'] );
+                }
+            }
+        }
+
+        $this->assertSame( [ 'Property' ], $groups,
             'the entry belongs in the Property group, beside goal events' );
     }
 
@@ -161,8 +168,11 @@ final class CustomDimensionScreenTest extends TestCase
         $controller->validate();
 
         $messages = $this->validationMessages( $controller );
+        $refusal  = \OWA\Module\Base\Classes\Cube\Dimensions::refusalFor(
+            (string) self::PROPERTY, ['key' => 'my.key', 'scope' => 'event', 'type' => ''] );
 
-        $this->assertNotSame( '', $messages );
+        $this->assertNotSame( '', $refusal, 'my.key must be refused, or this test shows nothing' );
+        $this->assertStringContainsString( $refusal, $messages );
         $this->assertStringNotContainsStringIgnoringCase( 'could not save', $messages );
     }
 
@@ -174,14 +184,48 @@ final class CustomDimensionScreenTest extends TestCase
      */
     public function testTheScreenDelegatesTheRulesRatherThanRepeatingThem(): void
     {
-        $body = file_get_contents(
-            __DIR__ . '/../modules/Base/Controller/CustomDimensionSave.php' );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the rules are asked of a cube that exists' );
+        }
 
-        $this->assertStringContainsString( 'Dimensions::refusalFor', $body );
+        $property = self::PROPERTY_WITH_CUBE;
+        $db       = \OWA\Core\CoreAPI::dbSingleton();
 
-        // The pattern itself must live in one place only.
-        $this->assertStringNotContainsString( 'A-Za-z0-9_', $body,
-            'the name pattern belongs to Dimensions, not to the screen' );
+        $this->assertTrue( Cubes::create( $property ), 'creating the fixture cube failed' );
+        Cubes::forgetExistence();
+
+        try {
+            foreach ( [
+                [ 'dimensionKey' => 'my.key', 'scope' => 'event' ],
+                [ 'dimensionKey' => '1plan', 'scope' => 'event' ],
+                [ 'dimensionKey' => str_repeat( 'a', 41 ), 'scope' => 'event' ],
+                [ 'dimensionKey' => 'plan', 'scope' => 'nowhere' ],
+                [ 'dimensionKey' => 'plan', 'scope' => 'event', 'dataType' => 'colour' ],
+                [ 'dimensionKey' => 'plan', 'scope' => 'event' ],
+            ] as $params ) {
+
+                $refusal = Dimensions::refusalFor( (string) $property, [
+                    'key'   => $params['dimensionKey'],
+                    'scope' => $params['scope'],
+                    'type'  => $params['dataType'] ?? '',
+                ] );
+
+                $controller = new \OWA\Module\Base\Controller\CustomDimensionSave(
+                    [ 'propertyId' => (string) $property ] + $params );
+
+                $controller->validate();
+
+                $v = ( new \ReflectionProperty( \OWA\Core\Controller::class, 'v' ) )->getValue( $controller );
+                $v->doValidations();
+
+                $this->assertSame( $refusal === '' ? [] : [ 'dimensionKey' => $refusal ],
+                    (array) $v->getErrorMsgs(),
+                    'the screen refuses ' . var_export( $params, true ) . ' differently from the registrar' );
+            }
+        } finally {
+            $db->query( sprintf( 'DROP TABLE IF EXISTS %s', Cubes::tableFor( $property ) ) );
+            Cubes::forgetExistence();
+        }
     }
 
     /**
@@ -245,11 +289,30 @@ final class CustomDimensionScreenTest extends TestCase
      */
     public function testTheRoomShownIsTheMeasuredBudget(): void
     {
-        $body = file_get_contents(
-            __DIR__ . '/../modules/Base/Controller/CustomDimensions.php' );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the room is measured on a cube that exists' );
+        }
 
-        $this->assertStringContainsString( 'capacityFor', $body,
-            'the screen must ask what fits rather than print the cap' );
+        $property = self::PROPERTY_WITH_CUBE;
+        $measured = new \ReflectionProperty( Dimensions::class, 'capacity' );
+        $was      = $measured->getValue();
+
+        $this->assertTrue( Cubes::create( $property ), 'creating the fixture cube failed' );
+        Cubes::forgetExistence();
+
+        try {
+            // What this server takes, as capacityFor() measured it: fewer than the cap.
+            $measured->setValue( null, [ (string) $property => 7 ] + (array) $was );
+
+            $state = \OWA\Module\Base\Controller\CustomDimensions::cubeState( (string) $property );
+
+            $this->assertSame( 7, $state['capacity'], 'the screen must ask what fits rather than print the cap' );
+            $this->assertSame( Dimensions::MAX_PER_PROPERTY, $state['cap'] );
+        } finally {
+            $measured->setValue( null, $was );
+            \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s', Cubes::tableFor( $property ) ) );
+            Cubes::forgetExistence();
+        }
 
         $template = file_get_contents(
             __DIR__ . '/../modules/Base/templates/custom_dimensions.php' );

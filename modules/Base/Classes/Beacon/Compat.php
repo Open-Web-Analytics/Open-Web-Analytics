@@ -33,6 +33,19 @@ class Compat {
     private static $event_reshapes = null;
 
     /**
+     * Forget the index, read once per process, so the next call reads
+     * conf/beacon_compat.php again. CoreAPI::forgetSingletons() calls this.
+     *
+     * @return void
+     */
+    public static function forget() {
+
+        self::$renames        = null;
+        self::$event_names    = null;
+        self::$event_reshapes = null;
+    }
+
+    /**
      * The event names an older tracker sent, and what each is now.
      *
      * The ONE place v1 event names live. Everything after Compat::apply() --

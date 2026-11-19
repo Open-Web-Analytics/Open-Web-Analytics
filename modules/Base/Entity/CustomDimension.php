@@ -218,9 +218,4 @@ class CustomDimension extends \OWA\Core\Entity {
         return [ self::TYPE_STRING, self::TYPE_INTEGER, self::TYPE_DECIMAL ];
     }
 
-    /** @return string[] */
-    public static function states() {
-
-        return [ self::STATE_PENDING, self::STATE_APPLIED, self::STATE_FAILED ];
-    }
 }

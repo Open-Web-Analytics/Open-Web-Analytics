@@ -105,7 +105,7 @@ class Heatmap {
      */
     showControlPanel() {
 
-        var panel = OverlayDom.element( 'div', { id: 'owa_overlay' }, [
+        var panel = OverlayDom.element( 'div', { id: 'owa_overlay', 'data-ui': 'overlay:panel' }, [
             OverlayDom.element( 'div', { id: 'owa_overlay_logo' } )
         ] );
 
@@ -117,7 +117,7 @@ class Heatmap {
         } );
 
         panel.appendChild( toggle );
-        panel.appendChild( OverlayDom.element( 'div', { id: 'owa_overlay_stats', hidden: true } ) );
+        panel.appendChild( OverlayDom.element( 'div', { id: 'owa_overlay_stats', 'data-ui': 'overlay:stats', hidden: true } ) );
         document.body.appendChild( panel );
 
         OverlayDom.onActivate( toggle, () => this.toggleStats() );

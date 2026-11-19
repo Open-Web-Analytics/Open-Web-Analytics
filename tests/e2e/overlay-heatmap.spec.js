@@ -85,24 +85,24 @@ test.describe('heatmap overlay renders on the tracker path', () => {
     test('the tracker builds the overlay panel from the URL anchor: the logo and Stats', async ({ page }) => {
         // The dynamic import of Heatmap.js is async, so wait on the element
         // rather than asserting synchronously.
-        await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('[data-ui="overlay:panel"]')).toBeVisible({ timeout: 20_000 });
 
         await expect(page.locator('#owa_overlay_logo')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay').getByRole('button')).toHaveCount(1);
+        await expect(page.locator('[data-ui="overlay:panel"]').getByRole('button')).toHaveCount(1);
 
         const stats = page.getByRole('button', { name: 'Stats' });
         await expect(stats).toHaveAttribute('aria-expanded', 'false');
-        await expect(page.locator('#owa_overlay_stats')).toBeHidden();
+        await expect(page.locator('[data-ui="overlay:stats"]')).toBeHidden();
 
         await stats.click();
         await expect(stats).toHaveAttribute('aria-expanded', 'true');
-        await expect(page.locator('#owa_overlay_stats')).toBeVisible();
+        await expect(page.locator('[data-ui="overlay:stats"]')).toBeVisible();
         await expect(page.getByRole('rowheader').first()).toHaveText('Clicks');
 
         // From the keyboard too.
         await stats.focus();
         await page.keyboard.press('Enter');
-        await expect(page.locator('#owa_overlay_stats')).toBeHidden();
+        await expect(page.locator('[data-ui="overlay:stats"]')).toBeHidden();
     });
 
     test('the heatmap canvas element is created', async ({ page }) => {
@@ -119,7 +119,7 @@ test.describe('heatmap overlay renders on the tracker path', () => {
     });
 
     test('the overlay renders without uncaught page errors', async ({ page }) => {
-        await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('[data-ui="overlay:panel"]')).toBeVisible({ timeout: 20_000 });
         // Give any microtasks from the dynamic import a beat to surface errors.
         await page.waitForTimeout(500);
         expect(pageErrors, 'overlay bootstrap threw:\n' + pageErrors.join('\n')).toEqual([]);
@@ -133,7 +133,7 @@ test.describe('heatmap overlay renders on the tracker path', () => {
         // modules/base/ path silently 403s -- caught here, not by the DOM tests.
         // The fetch is recorded in beforeEach (listener attached before navigation); wait
         // for the overlay to build, then assert on what was fetched.
-        await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('[data-ui="overlay:panel"]')).toBeVisible({ timeout: 20_000 });
         await expect.poll(() => overlayCssResponses.length, { timeout: 20_000 })
             .toBeGreaterThan(0);
         const cssResp = overlayCssResponses[0];

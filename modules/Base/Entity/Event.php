@@ -62,8 +62,10 @@ class Event extends EventRaw {
 
     public function __construct() {
 
-        // Raw's 54 columns, its primary key, its indexes and its partition
-        // column, in that order.
+        // Raw's columns, its primary key, its indexes and its partition
+        // column, in that order. The key is raw's (yyyymmdd, id), so a report
+        // reading a range of days of a monthly partition reads contiguous
+        // rows. In a daily partition the two orders are the same.
         parent::__construct();
 
         /*
@@ -84,6 +86,9 @@ class Event extends EventRaw {
          * cube column costs every cube a full rebuild to add (2.7.3).
          */
         unset( $this->properties['created_at'] );
+
+        // And so site_date without it.
+        $this->addCompositeIndex( 'site_date', [ 'site_id', 'yyyymmdd' ] );
 
         // NOR PRIOR_TOUCH_*. Evidence for attributed_* below, which is the
         // cube's reading of it (PLAN 2.29).

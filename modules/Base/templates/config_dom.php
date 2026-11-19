@@ -2,12 +2,10 @@
 // OWA CONFIG SETTINGS
 
 OWA.config.main_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'main_url'), JSON_UNESCAPED_SLASHES );?>;
-OWA.config.public_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), JSON_UNESCAPED_SLASHES );?>;
 OWA.config.baseUrl = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), JSON_UNESCAPED_SLASHES );?>;
 OWA.config.images_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::configSingleton()->assetsUrl(), JSON_UNESCAPED_SLASHES );?>;
-OWA.config.log_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::configSingleton()->trackingUrl() . 'log.php', JSON_UNESCAPED_SLASHES );?>;
-OWA.config.modules_url = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'modules_url'), JSON_UNESCAPED_SLASHES );?>;
-OWA.config.api_endpoint = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url'), JSON_UNESCAPED_SLASHES );?>;
+// Read by OWA.getApiEndpoint().
+OWA.config.rest_api_endpoint = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url'), JSON_UNESCAPED_SLASHES );?>;
 // 'ns' names cookies -- it must stay the wire namespace. OWA's own links carry no prefix.
 OWA.config.ns = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns'), JSON_UNESCAPED_SLASHES );?>;
 OWA.config.link_template = <?php echo \OWA\Core\Template::scriptJson( (string) \OWA\Core\CoreAPI::getSetting('base', 'link_template'), JSON_UNESCAPED_SLASHES );?>;

@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
  * OWA\Module\<Module>\Controller\<Action> -- that class_exists() hands to the
  * autoloader, which maps it onto a file path.
  *
- * These assert the positive match in moduleFactory(), which requires each half
+ * These assert the positive match in CoreAPI::moduleClass(), which requires each half
  * to be a bare identifier.
  *
  * The cases below are simply strings that are not bare identifiers -- quotes,

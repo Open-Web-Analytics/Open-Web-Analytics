@@ -49,20 +49,6 @@ class Sanitize {
         return htmlentities($string, $quotes, $encoding);
     }
 
-    
-    /**
-     * Strip Whitespace
-     *
-     * @param     string     $input  String to strip
-     * @return    string             whitespace sanitized input
-     * @access    public
-     */
-    public static function stripWhitespace( $input ) {
-
-        $output = preg_replace( '/[\n\r\t]+/', '', $input );
-        return preg_replace( '/\s{2,}/', ' ', $output );
-    }
-
     /**
      * Strip IMG html tags
      *
@@ -164,12 +150,14 @@ class Sanitize {
     }
 
     /**
+     * A non-breaking space (U+00A0) becomes a space.
+     *
      * @param  string $input
      * @return string
      */
     public static function removeHiddenSpaces( $input = '' ) {
 
-        return str_replace( chr( 0xCA ), '', str_replace( ' ', ' ', $input ) );
+        return str_replace( "\u{00A0}", ' ', $input );
     }
 
     /**
@@ -182,6 +170,8 @@ class Sanitize {
     }
 
     /**
+     * Changes nothing: each backslash it matches is replaced with a backslash.
+     *
      * @param  string $input
      * @return string|null null when the pattern fails
      */
@@ -200,6 +190,8 @@ class Sanitize {
     }
 
     /**
+     * Unescapes: `\$` becomes `$`.
+     *
      * @param  string $input
      * @return string
      */
@@ -211,13 +203,13 @@ class Sanitize {
     /**
      * Sanitizes for safe input. Takes an array of options:
      *
-     * - hidden_spaces - removes any non space whitespace characters
+     * - hidden_spaces - a non-breaking space becomes a space (removeHiddenSpaces())
      * - escape_html - Encode any html entities.
-     * - dollar - Escape `$` with `\$`
+     * - dollar - `\$` becomes `$` (escapeDollarSigns())
      * - carriage - Remove `\r`
-     * - unicode
-     * - backslash -
-     * - remove_html - Strip HTML with strip_tags.
+     * - unicode - `&amp;#N;` becomes `&#N;` (escapeUnicode())
+     * - backslash - changes nothing (escapeBackslash())
+     * - remove_html - Strip tags (stripAllTags()).
      *
      * `encode` is accepted and not read.
      *
@@ -342,31 +334,6 @@ class Sanitize {
     }
 
     /**
-     * @param  string $str
-     * @return string
-     */
-    public static function cleanFilename( $str ) {
-
-        $str = str_replace("http://", "", $str);
-        $str = str_replace("/", "", $str);
-        $str = str_replace("\\", "", $str);
-        $str = str_replace("../", "", $str);
-        $str = str_replace("..", "", $str);
-        $str = str_replace("?", "", $str);
-        $str = str_replace("%00", "", $str);
-
-        if (strpos($str, '%00')) {
-            $str = '';
-        }
-
-        if ($str == null) {
-            $str = '';
-        }
-
-        return $str;
-    }
-
-    /**
      * @param  mixed $url
      * @return string|void nothing for a value cleanInput() leaves empty
      */
@@ -448,29 +415,6 @@ class Sanitize {
          }
 
          return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, [] );
-    }
-
-    /**
-     * @param  mixed $md5
-     * @return string the hash, or '' for anything that is not one
-     */
-    public static function cleanMd5( $md5 ) {
-
-        $valid = false;
-
-        if ( ! empty( $md5 ) && preg_match( '/^[a-f0-9]{32}$/', $md5 ) ) {
-
-            $valid = true;
-        }
-
-        if ( $valid ) {
-
-            return $md5;
-        } else {
-
-            \OWA\Core\CoreAPI::debug("This is not a valid MD5: ".$md5 );
-            return "";
-        }
     }
 
     /**

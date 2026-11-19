@@ -19,6 +19,20 @@ require_once __DIR__ . '/IngestionTestCase.php';
  */
 final class LandingUrlCampaignParseTest extends IngestionTestCase
 {
+    /** The site every case parses for, but the one that compares two. */
+    private const SITE = 'landing-parse-site';
+
+    /**
+     * The parse and the key map are memoised per site, and the cases change
+     * the key map in memory, where no scoped write clears the memos.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        \OWA\Module\Base\Classes\TrackingEventHelpers::forget();
+    }
+
     private function ns(): string
     {
         $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
@@ -92,7 +106,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         try {
             $event = $this->event([
-                'site_id'       => 'ad-type-override-site',
+                'site_id'       => self::SITE,
                 'page_location' => 'https://example.test/p?src=partner&adtype=display&x=1&'
                     . $this->ns() . 'medium=email',
             ]);
@@ -115,7 +129,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
-        $event = $this->event(['site_id' => 'ad-type-query-site',
+        $event = $this->event(['site_id' => self::SITE,
             'page_location' => 'https://example.test/p?' . $this->ns() . 'ad_type=display&page_id=7']);
 
         $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
@@ -212,7 +226,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         ]);
 
         $event = $this->event([
-            'site_id'     => 'utm-keys-site',
+            'site_id'     => self::SITE,
             'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
                 . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1'
                 . '&' . $this->ns() . 'source=ignored',
@@ -279,7 +293,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         ]);
 
         $event = $this->event([
-            'site_id'     => 'partial-keys-site',
+            'site_id'     => self::SITE,
             'page_location' => 'https://example.test/p?utm_source=newsletter&' . $ns . 'medium=email',
         ]);
 
@@ -300,7 +314,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('base', 'campaignUtmParams'));
 
         $event = $this->event([
-            'site_id'       => 'utm-default-site',
+            'site_id'       => self::SITE,
             'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
                 . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1',
         ]);
@@ -321,7 +335,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
         $event = $this->event([
-            'site_id'       => 'utm-both-site',
+            'site_id'       => self::SITE,
             'page_location' => 'https://example.test/p?utm_source=from_utm&' . $ns . 'source=from_owa'
                 . '&utm_medium=email',
         ]);
@@ -345,7 +359,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $url = 'https://example.test/p?utm_source=newsletter&utm_medium=email&utm_campaign=spring'
             . '&utm_term=shoes&utm_content=banner1&' . $ns . 'source=feed&page_id=7';
 
-        $event = $this->event(['site_id' => 'utm-query-site', 'page_location' => $url]);
+        $event = $this->event(['site_id' => self::SITE, 'page_location' => $url]);
 
         $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
         $this->assertSame($url, $event->get('page_location'), 'the URL itself is untouched');
@@ -363,7 +377,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $c->set('base', 'campaignUtmParams', false);
 
         try {
-            $event = $this->event(['site_id' => 'utm-query-off-site',
+            $event = $this->event(['site_id' => self::SITE,
                 'page_location' => 'https://example.test/p?utm_source=newsletter&page_id=7']);
 
             $this->assertSame('utm_source=newsletter&page_id=7', $H::derivePageQuery(null, $event));
@@ -382,7 +396,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $c->set('base', 'campaignKeys', ['source' => 'src']);
 
         try {
-            $event = $this->event(['site_id' => 'utm-query-named-site',
+            $event = $this->event(['site_id' => self::SITE,
                 'page_location' => 'https://example.test/p?src=partner&page_id=7']);
 
             $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
@@ -403,7 +417,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         try {
             $event = $this->event([
-                'site_id'       => 'utm-off-site',
+                'site_id'       => self::SITE,
                 'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email',
             ]);
 
@@ -426,7 +440,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
         $event = $this->event([
-            'site_id'       => 'click-id-site-' . $param,
+            'site_id'       => self::SITE,
             'page_location' => 'https://example.test/p?' . $param . '=Cj0KCQjw',
         ]);
 
@@ -454,7 +468,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
         $event = $this->event([
-            'site_id'       => 'click-id-tagged-site',
+            'site_id'       => self::SITE,
             'page_location' => 'https://example.test/p?utm_campaign=spring&gclid=Cj0KCQjw',
         ]);
 
@@ -468,7 +482,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
         $event = $this->event([
-            'site_id'       => 'click-id-empty-site',
+            'site_id'       => self::SITE,
             'page_location' => 'https://example.test/p?gclid=',
         ]);
 

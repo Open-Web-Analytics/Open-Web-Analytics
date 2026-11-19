@@ -179,6 +179,32 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertFalse($su->isCapable('view_reports', self::OTHER), 'a Profile of another Property');
     }
 
+    /** The granted Profiles are one query however many there are, and a missing one keeps its place. */
+    public function testTheGrantedProfilesAreReadTogether(): void
+    {
+        [$user, $id] = $this->viewer([self::ONE, self::TWO, self::ARCHIVED, self::OTHER]);
+
+        // A grant naming a Profile row that is gone.
+        \OWA\Core\CoreAPI::dbSingleton()->query('INSERT INTO owa_site_user (user_id, site_id) VALUES (?, ?)', [$id, 1]);
+
+        $su     = new \OWA\Module\Base\Classes\ServiceUser();
+        $method = new ReflectionMethod($su, 'loadAssignedSites');
+        $p      = new ReflectionProperty($su, 'user');
+        $p->setValue($su, $user);
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $before = $db->num_queries;
+        $method->invoke($su);
+
+        $this->assertSame(3, $db->num_queries - $before, 'the grants, their Profiles, and the siblings');
+
+        $sites = array_keys($su->getAssignedSites());
+        sort($sites);
+
+        $this->assertSame(['', self::ONE, self::OTHER, self::TWO], $sites,
+            'the archived Profile is left out, and the missing one is an empty Site as a load gave');
+    }
+
     public function testAPropertysCapabilitiesAreCheckedAgainstAProfileTheUserMaySee(): void
     {
         [$user] = $this->viewer([self::TWO]);
@@ -213,10 +239,9 @@ final class PropertyScopedReportingTest extends TestCase
     }
 
     /**
-     * The custom report and funnel lists require view_site_list, which is not
-     * held per site. Checked against "a Profile of the Property the reader may
-     * see" -- none, for another Property -- it passed anyway, and a viewer of
-     * one Property listed another's reports by naming its id.
+     * The custom report and funnel lists are refused for a Property the
+     * reader has no Profile of, whatever the capability: a viewer of one
+     * Property cannot list another's reports by naming its id.
      */
     public function testTheReportListsAreRefusedForAPropertyTheReaderCannotSee(): void
     {

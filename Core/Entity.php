@@ -442,18 +442,7 @@ class Entity {
 
         return null;
     }
-    
-    /**
-     * @deprecated setProperties()
-     *
-     * @param  array<string, mixed> $values column => value
-     * @return void
-     */
-    public function setValues($values) {
-        
-        $this->setProperties($values);
-    }
-    
+
     /**
      * @param  string $name
      * @param  bool   $filter
@@ -886,9 +875,10 @@ class Entity {
      * is a hint: if nothing is found with it, the query is repeated without it
      * before reporting a miss.
      *
-     * That retry is here rather than at the call sites on purpose. A miss on a
-     * session lookup is not a slow path, it is a duplicate session, so the
-     * safety cannot depend on every caller remembering to fall back.
+     * That retry is here rather than at the call sites on purpose: a caller
+     * whose constraint is only a guess cannot be relied on to fall back.
+     * existsWithin() is the lookup without the retry, for a constraint that
+     * is exact.
      *
      * The cache key deliberately ignores $constraints: the answer is the same
      * row either way, so a bounded and an unbounded lookup share an entry.
@@ -941,6 +931,59 @@ class Entity {
                 $this->addToCache($col);
             }
         }
+    }
+
+    /**
+     * Whether a row with this column value exists within the constraints.
+     *
+     * One query, and the constraints bound it: unlike getByColumn(), a miss
+     * under them is not repeated without them. For a caller whose constraint
+     * is derived from the same input as the value, such as a raw row's
+     * yyyymmdd and its id, where a miss is the usual answer and the repeat
+     * would read every partition of the table.
+     *
+     * Not answered from the entity cache, and adds nothing to it.
+     *
+     * @param  string            $col
+     * @param  int|string        $value
+     * @param  ColumnConstraints $constraints
+     * @return bool
+     * @throws \Exception when $col or $value is empty
+     */
+    public function existsWithin( $col, $value, $constraints = [] ) {
+
+        if ( ! $col ) {
+            throw new \Exception( 'No column name passed.' );
+        }
+
+        if ( ! $value ) {
+            throw new \Exception( 'No value passed.' );
+        }
+
+        return (bool) $this->fetchColumnWithin( $col, $value, $constraints );
+    }
+
+    /**
+     * $col of one row by column value, narrowed. See existsWithin().
+     *
+     * @param  string            $col
+     * @param  int|string        $value
+     * @param  ColumnConstraints $constraints
+     * @return array<string, scalar|null> $col => value; empty when no row
+     */
+    protected function fetchColumnWithin( $col, $value, $constraints = [] ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $this->getTableName() );
+        $db->selectColumn( $col );
+        $db->where( $col, $value );
+
+        foreach ( $constraints as $name => $constraint ) {
+
+            $db->where( $name, $constraint['value'], $constraint['operator'] );
+        }
+
+        return (array) $db->getOneRow();
     }
 
     /**
@@ -1288,7 +1331,8 @@ class Entity {
      * Partition this entity's table by range on a column.
      *
      * The column has to be part of every unique key, so declaring it also makes
-     * the primary key composite -- see Db::createTable().
+     * the primary key composite: (primary key column, this column), or the key
+     * setCompositePrimaryKey() declares. See Db::createTable().
      *
      * @param  string $column
      * @return void
@@ -1343,8 +1387,12 @@ class Entity {
      * For a table whose rows are identified by what they count, such as
      * owa_spam_block's (day, Profile, rule), where a derived id column would
      * be a second spelling of the same three values. Db::createTable() emits
-     * it at table level; no column may also call DbColumn::setPrimaryKey().
-     * Not for a partitioned table, whose key createTable() builds itself.
+     * it at table level, in place of any column's DbColumn::setPrimaryKey().
+     *
+     * A partitioned table that declares none is keyed on its primary key
+     * column followed by the partition column. One that declares one must
+     * include the partition column in it, as owa_event_raw's (yyyymmdd, id)
+     * does. getPrimaryKeyColumn() still names the column a row is loaded by.
      *
      * @param  list<string> $columns
      * @return void

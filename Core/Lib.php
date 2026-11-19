@@ -245,10 +245,9 @@ class Lib {
          * The directory says exactly where the class lives, so this needs
          * nothing registered anywhere.
          *
-         * Only when the caller passed its parts. moduleFactory() hands the
-         * whole mangled name in as $class_name with an empty prefix, so the
-         * candidate comes out as nonsense and class_exists() says no.
-         * moduleFactory does its own convention lookup for that reason.
+         * Only when the caller passed its parts. A whole built name passed as
+         * $class_name with an empty prefix gives no candidate, and falls
+         * through to the name as given.
          */
         $nsClass = self::conventionalClass($class_dir, $class_prefix, $class_name, $class_suffix);
 
@@ -868,12 +867,7 @@ class Lib {
      */
     public static function encryptPassword($password) {
 
-        // check function exists to support older PHP
-        if ( function_exists('password_hash') ) {
-            return password_hash( $password, PASSWORD_DEFAULT );
-        } else {
-            return self::encryptOldPassword($password);
-        }
+        return password_hash( $password, PASSWORD_DEFAULT );
     }
 
     /**
@@ -965,15 +959,6 @@ class Lib {
             $mime = $content_types[$type];
             header('Content-type: '.$mime);
         }
-    }
-
-    /**
-     * @param  int|float|numeric-string $string major units
-     * @return int|float minor units
-     */
-    public static function prepareCurrencyValue($string) {
-
-        return $string * 100;
     }
 
     /**
@@ -1171,16 +1156,6 @@ class Lib {
     }
 
     /**
-     * @param  int|numeric-string $number
-     * @param  int $char_length
-     * @return string
-     */
-    public static function zeroFill( $number, $char_length ) {
-
-        return str_pad( strval( (int) $number ), $char_length, "0", STR_PAD_LEFT );
-    }
-
-    /**
      * A new random id: a positive integer, as a string of digits.
      *
      * 63 bits, so it fits a signed BIGINT. $narrow gives 32 bits, the width of
@@ -1192,16 +1167,6 @@ class Lib {
     public static function randomId( $narrow = false ) {
 
         return (string) random_int( 1, $narrow ? 0xFFFFFFFF : PHP_INT_MAX );
-    }
-
-    /**
-     * @deprecated use randomId()
-     * @param  string $seed unused
-     * @return string
-     */
-    public static function generateRandomUid( $seed = '' ) {
-
-        return self::randomId();
     }
 
     /**

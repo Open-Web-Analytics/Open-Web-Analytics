@@ -246,9 +246,12 @@ class ReportSegment {
         if ( count( $ids ) > self::LIMIT ) {
 
             $this->error = sprintf(
-                'This segment selects more than %s %ss. Narrow it -- a report drawn from '
-                . 'part of them would look complete and cover a fraction of the people in it.',
-                number_format( self::LIMIT ), $scope
+                $scope === 'session'
+                    ? \OWA\Core\CoreAPI::t( 'This segment selects more than %s sessions. Narrow it -- a report drawn from '
+                        . 'part of them would look complete and cover a fraction of the people in it.' )
+                    : \OWA\Core\CoreAPI::t( 'This segment selects more than %s visitors. Narrow it -- a report drawn from '
+                        . 'part of them would look complete and cover a fraction of the people in it.' ),
+                number_format( self::LIMIT )
             );
 
             return [];

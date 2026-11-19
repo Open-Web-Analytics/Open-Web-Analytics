@@ -52,6 +52,13 @@ class Site extends \OWA\Core\Entity {
         $this->properties['id']->setPrimaryKey();
         $this->properties['site_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+
+        /*
+         * Every beacon finds its Profile by site_id, which id is derived from
+         * (generateId()), so one site_id names one row. Update093 adds this
+         * to an existing table, as a plain index where the rows break that.
+         */
+        $this->addUniqueIndex( self::SITE_ID_INDEX, [ 'site_id' ] );
         $this->properties['domain'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['domain']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['name'] = new \OWA\Module\Base\Classes\DbColumn;
@@ -122,6 +129,9 @@ class Site extends \OWA\Core\Entity {
         $this->properties['app_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['app_id']->setDataType(OWA_DTD_VARCHAR255);
     }
+
+    /** The index on site_id. */
+    const SITE_ID_INDEX = 'site_id_lookup';
 
     /** Web is the default, and what every Profile migrated from 1.x is. */
     const STREAM_WEB = 'web';
@@ -315,9 +325,8 @@ class Site extends \OWA\Core\Entity {
      * Applies a form submission to this site's grants as a delta.
      *
      * Only users the form rendered can be affected, and only rows that
-     * actually change are written -- unlike updateAssignedUserIds(), which
-     * deletes every grant for the site before reinserting the survivors, so
-     * the common edit passes through a state where nobody has access at all.
+     * actually change are written, so an edit never passes through a state
+     * where nobody has access.
      *
      * @param    array<int|string>    $rendered    user ids the form offered
      * @param    array<int|string>    $checked    user ids the operator ticked
@@ -360,37 +369,6 @@ class Site extends \OWA\Core\Entity {
 
         return $changes;
     }
-
-    /**
-     * Replaces the whole grant set for this site.
-     *
-     * Prefer applyAssignedUserChanges(): this deletes every grant before
-     * reinserting, so a caller that computes the set wrongly -- or a form that
-     * submits nothing -- removes everyone.
-     *
-     * @param array<int|string> $userIds
-     * @return void
-     */
-    public function updateAssignedUserIds(array $userIds) {
-         if (!$this->get('id')) {
-             throw new \Exception('no site data loaded!');
-         }
-         $db = \OWA\Core\CoreAPI::dbSingleton();
-         $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
-         $db->where( 'site_id', $this->get('id') );
-         $ret = $db->executeQuery();
-
-         foreach ($userIds as $id) {
-             $relation = \OWA\Core\CoreAPI::entityFactory('base.site_user');
-            $relation->set( 'user_id', intval ($id ) );
-            $relation->set( 'site_id', $this->get('id') );
-            $relation->save();
-         }
-
-         unset ( self::$cachedAssignedUsers[$this->get('id')] );
-
-    }
-
 
     /**
      * Returns collection of owa_user entities that are allowed for current user

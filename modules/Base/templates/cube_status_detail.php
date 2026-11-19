@@ -67,7 +67,14 @@ $owa_c = (array) $view->cube;
             <td><code><?php $view->out( $owa_day['partition'] ); ?></code></td>
             <td><?php $view->out( $owa_day['built_at']
                 ? \OWA\Module\Base\Classes\JobStatus::readable( intdiv( (int) $owa_day['built_at'], 1000000 ) )
-                : \OWA\Core\CoreAPI::t( 'never' ) ); ?></td>
+                : \OWA\Core\CoreAPI::t( 'never' ) ); ?>
+                <?php if ( ! empty( $owa_day['next_build'] ) ): ?>
+                    <br><?php $view->out( (int) $owa_day['next_build'] > time() * 1000000
+                        ? sprintf( \OWA\Core\CoreAPI::t( 'Next build due %s' ),
+                            \OWA\Module\Base\Classes\JobStatus::readable( intdiv( (int) $owa_day['next_build'], 1000000 ) ) )
+                        : \OWA\Core\CoreAPI::t( 'Next build at the next scheduled run' ) ); ?>
+                <?php endif; ?>
+            </td>
             <td><?php
                 /* A day with nothing on either side has nothing to settle. */
                 if ( ! $owa_day['raw'] && ! $owa_day['cube'] && ! $owa_day['built_at'] ) {

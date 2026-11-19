@@ -150,7 +150,8 @@ class Cron {
     }
 
     /**
-     * How far back nextDueSince() will look for an unsatisfied occurrence.
+     * How many days previousMatch() walks back, and nextAfter() forward, for an
+     * occurrence.
      *
      * A job that has not run in years should still run once, but walking minute
      * by minute back to 1970 to discover that is pointless: the answer is the

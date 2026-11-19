@@ -154,25 +154,59 @@ final class ServerOwnedPropertyTest extends TestCase
         }
     }
 
+    /**
+     * log.php passes the request through the gate: run it with a beacon that
+     * also names server-owned properties, and read the event it builds at
+     * Ingest::REQUEST_POST. The listener exits there, so nothing is stored.
+     */
     public function testLogPhpUsesTheFilter(): void
     {
-        /*
-         * Read from the file because log.php is an endpoint, not a class: it
-         * runs on a real request and cannot be exercised here. Without this,
-         * the filter could be removed from the one place that needs it while
-         * every test above still passed.
-         */
-        $source = file_get_contents( \OWA\Core\Env::root() . '/log.php' );
+        $dir = sys_get_temp_dir() . '/owa_log_gate_' . getmypid() . '_' . bin2hex( random_bytes( 4 ) );
+        $this->assertTrue( mkdir( $dir, 0700, true ) );
 
-        /*
-         * admitRequestParams(): the gate is an allowlist. A server-computed
-         * property is not client-settable, so it is not admitted -- and neither is
-         * any name nobody registered.
-         */
-        $this->assertStringContainsString( 'admitRequestParams', $source );
+        $record  = $dir . '/event.json';
+        $prepend = $dir . '/prepend.php';
 
-        $this->assertStringNotContainsString(
-            '$event->setProperties($service->request->getAllOwaParams());', $source,
-            'log.php is copying every request parameter onto the event again.' );
+        // A filter listener by name: EventDispatch::filter() logs its name.
+        file_put_contents( $prepend, <<<'PHP'
+<?php
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_GET = [
+    'owa_e_t' => 'page_view', 'owa_page_url' => 'https://www.example.com/a', 'owa_eps_plan' => 'gold',
+    'owa_browser' => 'ludhiana', 'owa_is_robot' => '1', 'owa_ip_address' => '198.51.100.7',
+];
+function owa_test_built_event( $event ) {
+    file_put_contents( getenv( 'OWA_LOG_TEST_RECORD' ), json_encode( $event->getProperties() ) );
+    exit( 0 );
+}
+// Called once the response has ended, before OWA boots.
+function fastcgi_finish_request() {
+    \OWA\Core\CoreAPI::registerFilter( \OWA\Module\Base\Classes\Ingest::REQUEST_POST, 'owa_test_built_event' );
+    return true;
+}
+PHP
+        );
+
+        try {
+            exec( 'OWA_LOG_TEST_RECORD=' . escapeshellarg( $record ) . ' ' . escapeshellarg( PHP_BINARY )
+                . ' -d ' . escapeshellarg( 'auto_prepend_file=' . $prepend )
+                . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/log.php' ) . ' > /dev/null 2>&1' );
+
+            $this->assertFileExists( $record, 'log.php built no event' );
+            $properties = (array) json_decode( (string) file_get_contents( $record ), true );
+        } finally {
+            @unlink( $record );
+            @unlink( $prepend );
+            @rmdir( $dir );
+        }
+
+        $this->assertSame( 'https://www.example.com/a', $properties['page_url'] ?? null );
+        $this->assertSame( 'gold', $properties['eps_plan'] ?? null, 'a custom property is admitted' );
+
+        foreach ( [ 'browser', 'is_robot', 'ip_address' ] as $name ) {
+
+            $this->assertArrayNotHasKey( $name, $properties,
+                "log.php let the request set $name, which the server computes." );
+        }
     }
 }

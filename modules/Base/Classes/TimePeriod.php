@@ -294,13 +294,13 @@ class TimePeriod {
         if ( ! preg_match( '/^\d{8}$/', $start ) ) {
 
             return sprintf( \OWA\Core\CoreAPI::t( 'The start date "%s" is not a date. Dates are yyyymmdd.' ),
-                htmlspecialchars( $start, ENT_QUOTES ) );
+                $start );
         }
 
         if ( ! preg_match( '/^\d{8}$/', $end ) ) {
 
             return sprintf( \OWA\Core\CoreAPI::t( 'The end date "%s" is not a date. Dates are yyyymmdd.' ),
-                htmlspecialchars( $end, ENT_QUOTES ) );
+                $end );
         }
 
         if ( $start > $end ) {
@@ -336,7 +336,7 @@ class TimePeriod {
         if ( $compare !== '' && $compare !== 'date_range' ) {
 
             return in_array( $compare, self::getValidComparePeriods(), true ) ? ''
-                : sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a comparison.' ), htmlspecialchars( $compare, ENT_QUOTES ) );
+                : sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a comparison.' ), $compare );
         }
 
         $error = self::getRangeError( [ 'period' => 'date_range', 'startDate' => $start, 'endDate' => $end ] );
@@ -692,6 +692,15 @@ class TimePeriod {
                 $end = mktime(23, 59, 59, $month, $day, $year);
                 break;
 
+            /*
+             * A period with no dates, refused as ReportController and
+             * ReportsRest refuse a request naming it. set() reaches here
+             * unchecked; setFromMap() has already put the default in its place.
+             */
+            default:
+
+                throw new \InvalidArgumentException( sprintf(
+                    \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ), (string) $this->period ) );
         }
 
         $this->startDate->set($start, 'timestamp');

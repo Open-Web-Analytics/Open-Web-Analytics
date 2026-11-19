@@ -13,9 +13,6 @@ class RequestContainer {
     /** @var list<string>|null the CLI's argv; null on a web request */
     public $cli_args;
 
-    /** @var bool|null true on an HTTPS request, else unset */
-    public $is_https;
-
     /**
      * The request's params by their un-namespaced names.
      *
@@ -308,11 +305,6 @@ class RequestContainer {
 
         // translate certain request variables that are reserved in javascript
         $this->owa_params = \OWA\Core\Lib::rekeyArray($this->owa_params, array_flip(\OWA\Core\CoreAPI::getSetting('base', 'reserved_words')));
-
-        // set https flag
-        if( \OWA\Core\Lib::isHttps() ) {
-            $this->is_https = true;
-        }
     }
 
     /**

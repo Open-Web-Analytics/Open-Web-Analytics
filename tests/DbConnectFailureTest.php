@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  *   PHP Fatal error: Uncaught Error: mysqli object is not fully initialized
  *
  * but log "Could not connect to database" and move on. Three things are
- * pinned below:
+ * tested below, on a driver pointed at a port nothing listens on:
  *
  *  1. mysqli_init() returns an object whether or not the subsequent connect
  *     succeeds, so `! $this->connection` is not the test of failure.
@@ -25,150 +25,122 @@ use PHPUnit\Framework\TestCase;
  */
 final class DbConnectFailureTest extends TestCase
 {
-    private function source(): string
+    public static function setUpBeforeClass(): void
     {
-        return (string) file_get_contents(dirname(__DIR__) . '/Core/Db/Mysql.php');
+        require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    private function method(string $name): string
+    /** @var list<string> alerts the driver logged */
+    private array $alerts = [];
+
+    /** @var list<string> PHP warnings raised while the driver ran */
+    private array $warnings = [];
+
+    /** A mysqli driver pointed at a port nothing listens on, logging into $this->alerts. */
+    private function refused(): \OWA\Core\Db\Mysql
     {
-        $src   = $this->source();
-        $start = strpos($src, 'function ' . $name . '(');
-        $this->assertNotFalse($start, $name . '() must exist');
+        if (!extension_loaded('mysqli')) {
+            $this->markTestSkipped('mysqli is not loaded');
+        }
 
-        $body = substr($src, $start);
-        $end  = strpos($body, "\n    }\n");
+        $db = new \OWA\Core\Db\Mysql('127.0.0.1', 1, 'owa_none', 'nobody', 'nothing');
 
-        $this->assertNotFalse($end, $name . '() must be a complete method');
+        $alerts = &$this->alerts;
+        $db->e  = new class($alerts) {
+            private $alerts;
+            public function __construct(array &$alerts) { $this->alerts = &$alerts; }
+            public function alert($message) { $this->alerts[] = (string) $message; }
+            public function __call($name, $args) { return null; }
+        };
 
-        return substr($body, 0, $end + 6);
+        return $db;
     }
 
     /**
-     * The connect result decides, not the truthiness of the handle.
+     * Runs $fn, collecting PHP warnings rather than failing on them: the
+     * refused connect raises mysqli_real_connect()'s own.
      */
-    public function testTheConnectResultIsWhatDecidesSuccess(): void
+    private function collectingWarnings(callable $fn)
     {
-        $connect = $this->method('connect');
+        set_error_handler(function (int $no, string $msg) {
+            $this->warnings[] = $msg;
+            return true;
+        });
 
-        $this->assertMatchesRegularExpression(
-            '/\$\w+\s*=\s*mysqli_real_connect\(/',
-            $connect,
-            'the return value of mysqli_real_connect() must be captured, since the handle is '
-          . 'truthy either way'
-        );
+        try {
+            return $fn();
+        } finally {
+            restore_error_handler();
+        }
     }
 
     /**
-     * Nothing may touch the handle between a failed connect and the return.
+     * A refused connect answers false and leaves no handle behind.
      *
-     * This is the assertion that actually prevents the fatal: charset selection
-     * on an unconnected handle is what raised, and any future statement added
-     * in that gap would raise the same way.
+     * mysqli_init() returns an object whether or not the connect succeeds, so
+     * the handle is truthy either way; and any mysqli call on a handle that
+     * never connected raises an Error, which would end the test here.
      */
-    public function testAFailedConnectTouchesTheHandleNoFurther(): void
+    public function testARefusedConnectAnswersFalseAndReleasesTheHandle(): void
     {
-        $connect = $this->method('connect');
+        $db = $this->refused();
 
-        $call  = strpos($connect, 'mysqli_real_connect(');
-        $guard = strpos($connect, 'if ( ! $connected )');
+        $this->assertFalse($this->collectingWarnings(fn () => $db->connect()));
 
-        $this->assertNotFalse($guard, 'the failure must be handled explicitly');
-        $this->assertGreaterThan($call, $guard, 'and handled after the attempt');
-
-        // Between the guard and its return, the only permitted operations are
-        // releasing the handle, recording the status, and reporting.
-        $branch = substr($connect, $guard, strpos($connect, 'return false;', $guard) - $guard);
-
-        $this->assertStringNotContainsString('mysqli_', $branch,
-            'a handle that never connected must not be handed to any mysqli call');
-
-        $this->assertStringContainsString('$this->connection = null', $branch,
+        $this->assertNull($db->connection,
             'the dead handle must be released so later code cannot mistake it for a connection');
+        $this->assertFalse($db->connection_status, 'and the status must say so');
+        $this->assertSame(['Could not connect to database.'], $this->alerts);
 
-        $this->assertStringContainsString('$this->connection_status = false', $branch,
-            'and the status must say so');
+        foreach ($this->warnings as $warning) {
+            $this->assertStringStartsWith('mysqli_real_connect()', $warning,
+                'a handle that never connected must not be handed to any other mysqli call');
+        }
     }
 
     /**
-     * query() must not run against a connection it failed to obtain.
-     *
-     * Releasing the handle in connect() moves the failure rather than fixing it
-     * unless query() stops as well: every mysqli_* call in query() would then
-     * be handed null.
+     * query() must not run against a connection it failed to obtain, and the
+     * accessors above it degrade on the falsy result.
      */
-    public function testQueryStopsWhenTheConnectionCouldNotBeObtained(): void
+    public function testQueriesDegradeWhenTheConnectionCouldNotBeObtained(): void
     {
-        $query = $this->method('query');
+        $db = $this->refused();
 
-        $this->assertMatchesRegularExpression(
-            '/\$\w+\s*=\s*\$this->connect\(\)/',
-            $query,
-            'query() must observe whether its reconnect succeeded'
-        );
-
-        $reconnect = strpos($query, '$this->connect()');
-        $first_use = strpos($query, 'mysqli_query(');
-
-        $this->assertNotFalse($first_use);
-
-        $guard = strpos($query, 'if ( ! $connected )', $reconnect);
-
-        $this->assertNotFalse($guard, 'a failed reconnect must be handled');
-        $this->assertLessThan($first_use, $guard,
-            'and handled before the connection is used');
+        $this->collectingWarnings(function () use ($db) {
+            $this->assertFalse($db->query('SELECT 1'));
+            $this->assertEmpty($db->get_results('SELECT 1'));
+            $this->assertNull($db->get_row('SELECT 1'));
+        });
     }
 
     /**
-     * A failure must be sticky within the connection object.
+     * A failure is sticky within the connection object.
      *
-     * Releasing the dead handle is what stops it being mistaken for a
-     * connection, but it also makes `! $this->connection` true again -- so
-     * without this, every query re-dials a database that is down and every
-     * attempt raises its own warning: one per query instead of one per
-     * request, which failOnWarning rejects.
+     * Releasing the dead handle makes `! $this->connection` true again, so
+     * without the latch every query re-dials a database that is down: one
+     * warning and one alert per query instead of one per request.
      */
     public function testAFailedConnectIsNotRetriedOnEveryQuery(): void
     {
-        $src     = $this->source();
-        $connect = $this->method('connect');
+        $db = $this->refused();
 
-        $this->assertStringContainsString('protected $connect_failed', $src,
-            'a failed connect must be remembered');
+        $this->collectingWarnings(fn () => $db->connect());
+        $warned = count($this->warnings);
 
-        $guard = strpos($connect, 'if ( $this->connect_failed )');
-        $init  = strpos($connect, 'mysqli_init()');
+        $this->collectingWarnings(function () use ($db) {
+            $db->query('SELECT 1');
+            $db->get_row('SELECT 1');
+            $db->connect();
+        });
 
-        $this->assertNotFalse($guard, 'connect() must refuse to re-dial after a failure');
-        $this->assertNotFalse($init);
-        $this->assertLessThan($init, $guard,
-            'and refuse before opening another handle, not after');
+        $this->assertSame(['Could not connect to database.'], $this->alerts, 'connect() re-dialled after a failure');
+        $this->assertCount($warned, $this->warnings, 'connect() re-dialled after a failure');
 
-        // The refusal has to be recorded where the failure is detected.
-        $this->assertStringContainsString('$this->connect_failed = true', $connect,
-            'the failure path must set the flag');
+        // ...and an explicit close clears it, so a deliberate reconnect works.
+        $db->close();
+        $this->collectingWarnings(fn () => $db->connect());
 
-        // ...and cleared by an explicit close, so a deliberate reconnect works.
-        $this->assertStringContainsString('$this->connect_failed    = false', $this->method('close'),
-            'close() must clear it, so an explicit reconnect is still possible');
-    }
-
-    /**
-     * The accessors above query() already degrade on a falsy result, which is
-     * what makes returning false safe rather than merely quieter. Pinned
-     * because returning false depends on it: if either started assuming a result
-     * object, a connection failure would fatal again one layer up.
-     */
-    public function testTheAccessorsAboveQueryTolerateAFalsyResult(): void
-    {
-        $this->assertStringContainsString('if (!$this->new_result) {', $this->method('get_results'),
-            'get_results() must return early when the query produced nothing');
-
-        $this->assertMatchesRegularExpression(
-            '/if\s*\(\s*!\s*\$result\s*\|\|/',
-            $this->method('get_row'),
-            'get_row() must return early when the query produced nothing'
-        );
+        $this->assertCount(2, $this->alerts, 'close() must clear the latch, so an explicit reconnect is still possible');
     }
 
     /**

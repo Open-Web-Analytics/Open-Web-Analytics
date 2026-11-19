@@ -25,11 +25,7 @@
 
 <?php if(!empty($view->js)): ?>
 <?php foreach ($view->js as $jsfile): ?>
-<?php if ($jsfile['ie_only']):?>
- <!--[if IE]><script src="<?php $view->out( $jsfile['url'] );?>"></script><![endif]-->
-<?php else: ?>
 <script src="<?php $view->out( $jsfile['url'] );?>"></script>
-<?php endif;?>
 <?php endforeach; ?>
 <?php endif;?>
 

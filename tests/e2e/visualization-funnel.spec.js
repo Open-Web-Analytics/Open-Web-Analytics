@@ -75,7 +75,7 @@ async function openFunnel(page, extra = '') {
 
 /** Each stage's count, in step order. */
 async function stepCounts(page) {
-    return (await page.locator('.funnelStepCount').allTextContents()).map((c) => parseInt(c.trim(), 10));
+    return (await page.locator('[data-ui="funnel:step-count"]').allTextContents()).map((c) => parseInt(c.trim(), 10));
 }
 
 /** The funnel drawn with a given counting scope. */
@@ -389,7 +389,7 @@ test.describe('visualization: funnel', () => {
         const boxes = {};
 
         for (const [name, control] of Object.entries({
-            scope:  page.locator('#funnelScopeSwitch .buttons'),
+            scope:  page.getByRole('radiogroup', { name: 'Counting:' }).getByText('Visitors', { exact: true }),
             filter: filterPills(page).getByRole('button', { name: 'Filter', exact: true }),
         })) {
             const box = await control.first().boundingBox();
@@ -498,6 +498,6 @@ test.describe('visualization: funnel', () => {
 
         // Computed rows, so the grid must not offer controls that would
         // re-query a result set URL that does not exist.
-        await expect(page.locator('#funnel-steps-grid').getByRole('button', { name: /filter/i })).toHaveCount(0);
+        await expect(page.locator('[data-ui="funnel:steps"]').getByRole('button', { name: /filter/i })).toHaveCount(0);
     });
 });

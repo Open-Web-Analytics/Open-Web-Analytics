@@ -77,4 +77,17 @@ final class AssetVersionTest extends TestCase
 
         $this->assertStringEndsWith( '?version=9.9', $view->css['base/css/sample.css']['url'] );
     }
+
+    /** A script flagged IE-only is not emitted: only IE read the conditional comment it went in. */
+    public function testAnIeOnlyScriptIsNotEmitted(): void
+    {
+        $view = new \OWA\Core\View();
+        $view->setJs( 'everyone', 'base/js/everyone.js', '1' );
+        $view->setJs( 'old-ie', 'base/js/old-ie.js', '1', [], true );
+
+        $urls = array_column( $view->js, 'url' );
+
+        $this->assertCount( 1, $urls );
+        $this->assertStringContainsString( 'everyone.js', $urls[0] );
+    }
 }

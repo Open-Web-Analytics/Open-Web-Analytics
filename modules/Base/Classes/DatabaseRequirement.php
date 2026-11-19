@@ -35,9 +35,7 @@ class DatabaseRequirement {
             return self::problemFor( self::$assumed );
         }
 
-        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( 'SELECT VERSION() AS version' );
-
-        return self::problemFor( is_array( $row ) ? (string) ( $row['version'] ?? '' ) : '' );
+        return self::problemFor( \OWA\Core\CoreAPI::dbSingleton()->serverVersion() );
     }
 
     /** @var string|null a VERSION() string to answer with instead of the server's */

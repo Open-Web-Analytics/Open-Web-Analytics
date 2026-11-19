@@ -46,8 +46,8 @@ const PUBLIC_PATHS = [
     'public/base/css/owa.reporting-css-combined.css',
     // Images under public/ -- both the copied CSS url() deps AND the server-side
     // makeImageLink images (report icons/logos) now resolve here via images_url.
-    'public/base/i/funnel_flow.png',
-    'public/base/i/user_icon_small.gif',
+    'public/base/i/owa-app-icon-180.png',
+    'public/base/i/world-110m.svg',
     // The two legacy tracker ENTRY points stay reachable -- neither has a physical
     // file; .htaccess 301s both to public/base/dist/owa.tracker.js. Old embed codes
     // in the wild point at one or the other. The tracker pins its own publicPath to
@@ -67,7 +67,7 @@ const DENIED_PATHS = [
     // Module-tree images are not served -- makeImageLink resolves against public/
     // (images_url = assets_url), so the source-tree copy is denied like the rest of
     // modules/.
-    'modules/base/i/user_icon_small.gif',
+    'modules/base/i/owa-app-icon-180.png',
     // The tracker pins its publicPath to public/, so it never requests its async
     // chunks from the module tree; they are denied. (Only
     // modules/base/dist/owa.tracker.js is reachable there, as a 301 entry point.)

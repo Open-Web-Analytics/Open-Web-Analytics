@@ -222,7 +222,7 @@ describe( 'the compared tooltip', () => {
             byBrowser( [ [ '20261102', 'Chrome', 6 ] ], [ [ '20261102', 'Chrome', 3, '20261026' ] ] ) ).series;
         chart.dataseries.forEach( ( s ) => { s.color = '#1874CD'; } );
 
-        document.body.innerHTML = chart.comparedTooltip( day( '20261102' ) );
+        document.body.innerHTML = chart.pointTooltip( day( '20261102' ) );
 
         expect( document.querySelector( '.owa_chartTipHead' ).textContent ).toMatch( / vs / );
         // Each line: its value, the compared day's, the change.
@@ -261,12 +261,6 @@ describe( 'the compared tooltip', () => {
         test( 'wider than either side, it is held inside the window', () => {
             expect( OWA.areaChart.besidePointer( { x: 500, y: 300 }, 600, 150, view ).left ).toBe( 8 );
         } );
-    } );
-
-    test( 'nothing compared, no compared tooltip', () => {
-        const chart = new OWA.areaChart();
-        chart.dataseries = [ { label: 'Visits', data: [ [ 1, 2 ] ] } ];
-        expect( chart.comparedTooltip( 1 ) ).toBeNull();
     } );
 } );
 

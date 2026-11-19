@@ -60,13 +60,13 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     public static function operators() {
 
         return [
-            self::MATCH_EXACT    => 'Exactly matching',
-            self::MATCH_NOT      => 'Not matching',
-            self::MATCH_CONTAINS => 'Contains',
-            self::MATCH_BEGINS   => 'Begins with',
-            self::MATCH_REGEX    => 'Matches regex',
-            self::MATCH_GT       => 'Greater than',
-            self::MATCH_LT       => 'Less than',
+            self::MATCH_EXACT    => \OWA\Core\CoreAPI::t( 'Exactly matching' ),
+            self::MATCH_NOT      => \OWA\Core\CoreAPI::t( 'Not matching' ),
+            self::MATCH_CONTAINS => \OWA\Core\CoreAPI::t( 'Contains' ),
+            self::MATCH_BEGINS   => \OWA\Core\CoreAPI::t( 'Begins with' ),
+            self::MATCH_REGEX    => \OWA\Core\CoreAPI::t( 'Matches regex' ),
+            self::MATCH_GT       => \OWA\Core\CoreAPI::t( 'Greater than' ),
+            self::MATCH_LT       => \OWA\Core\CoreAPI::t( 'Less than' ),
         ];
     }
 
@@ -533,14 +533,12 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      */
     public static function propertyFor( $site_id ) {
 
-        static $cache = [];
-
         if ( ! $site_id ) {
 
             return null;
         }
 
-        if ( ! array_key_exists( $site_id, $cache ) ) {
+        if ( ! array_key_exists( $site_id, self::$property_of_site ) ) {
 
             /*
              * Read the column, not the entity.
@@ -562,10 +560,24 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
             $row = $db->getOneRow();
 
-            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
+            self::$property_of_site[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
         }
 
-        return $cache[ $site_id ];
+        return self::$property_of_site[ $site_id ];
+    }
+
+    /** @var array<string, string|null> site id => its Property, as propertyFor() read it */
+    private static $property_of_site = [];
+
+    /**
+     * Forget what propertyFor() has read. CoreAPI::forgetSingletons() calls
+     * this.
+     *
+     * @return void
+     */
+    public static function forgetProperties() {
+
+        self::$property_of_site = [];
     }
 
     /** Once per session (1.x's only behaviour) or once per event. */
@@ -651,6 +663,61 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         }
 
         return $conditions;
+    }
+
+    /**
+     * The conditions of several definitions, in one query: id => the
+     * definition's conditions, as loadConditions() gives them. A definition
+     * with none maps to an empty list.
+     *
+     * The definitions are on the names the first one is on.
+     *
+     * @param  list<GoalEventDefinition> $definitions
+     * @return array<string, list<GoalEventDefinitionCondition>>
+     */
+    public static function loadConditionsOf( array $definitions ) {
+
+        $out = [];
+
+        foreach ( $definitions as $definition ) {
+
+            if ( $definition->get( 'id' ) ) {
+
+                $out[ (string) $definition->get( 'id' ) ] = [];
+            }
+        }
+
+        if ( ! $out ) {
+
+            return $out;
+        }
+
+        $first  = reset( $definitions );
+        $entity = $first->conditionEntity();
+        $column = $first->conditionColumn();
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $entity->getTableName() );
+        $db->selectColumn( '*' );
+        $db->where( $column, array_map( 'strval', array_keys( $out ) ), 'in' );
+        $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $id = (string) $row[ $column ];
+
+            if ( ! isset( $out[ $id ] ) ) {
+
+                continue;
+            }
+
+            $condition = $first->conditionEntity();
+            $condition->setProperties( $row );
+
+            $out[ $id ][] = $condition;
+        }
+
+        return $out;
     }
 
     /**
