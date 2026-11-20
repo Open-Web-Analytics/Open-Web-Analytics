@@ -152,6 +152,15 @@ abstract class Module {
     public $update_awaiting = '';
 
     /**
+     * Called by update() after each update it applies. Returning false stops
+     * update() before the next one, and update() returns false. cmd=update sets
+     * it to renew its lease.
+     *
+     * @var callable|null
+     */
+    public $after_each_update = null;
+
+    /**
      * Event Processors Map, event type => processor action
      *
      * @var array<string, string>
@@ -1082,8 +1091,9 @@ abstract class Module {
      */
     public function update() {
 
-        // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
-        $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
+        // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment);
+        // a module with no Update directory has none
+        $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false) ?: [];
 
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
@@ -1132,6 +1142,11 @@ abstract class Module {
 
             if ($ret == true) {
                 \OWA\Core\CoreAPI::notice("Update Succeeded");
+
+                if ( $this->after_each_update && ! call_user_func( $this->after_each_update ) ) {
+
+                    return false;
+                }
             } elseif ( $obj->awaiting !== '' ) {
                 // Stopped for the operator, not failed: see Update::$awaiting.
                 $this->update_awaiting = $obj->awaiting;
