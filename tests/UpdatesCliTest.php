@@ -39,6 +39,12 @@ final class UpdateGuardProbe extends \OWA\Core\Update
     }
 }
 
+/** Runs of cmd=update's bare apply-everything path, counted by the test's subclass. */
+final class UpdatesCliPendingCount
+{
+    public static int $runs = 0;
+}
+
 /**
  * The CLI update path: `php cli.php cmd=update [listpending|apply=|rollback=]`
  *
@@ -106,14 +112,28 @@ final class UpdatesCliTest extends CliControllerTestCase
 
     /**
      * cmd=update rollback=<module>.<sequence>, run on the probe, and what it
-     * logged. Built without the constructor's OWA_UPDATING define, which a
-     * second construction in one process would repeat.
+     * logged.
      *
      * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
      */
     private function rollBack(UpdateGuardProbe $probe): array
     {
-        $cli = new class(['rollback' => 'base.' . $probe->schema_version], $probe)
+        return $this->runCli(['rollback' => 'base.' . $probe->schema_version], $probe);
+    }
+
+    /**
+     * cmd=update with $params, and what it logged. apply= and rollback= reach
+     * $probe; the bare command counts its runs in UpdatesCliPendingCount
+     * instead of applying the install's pending updates. Built without the
+     * constructor's OWA_UPDATING define, which a second construction in one
+     * process would repeat.
+     *
+     * @param array<string, mixed> $params
+     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     */
+    private function runCli(array $params, UpdateGuardProbe $probe): array
+    {
+        $cli = new class($params, $probe)
             extends \OWA\Module\Base\Controller\UpdatesApplyCli {
             private $probe;
 
@@ -127,6 +147,13 @@ final class UpdatesCliTest extends CliControllerTestCase
             {
                 return $this->probe;
             }
+
+            protected function applyPending()
+            {
+                UpdatesCliPendingCount::$runs++;
+
+                return null;
+            }
         };
 
         $log = $this->logDuring(static function () use ($cli) {
@@ -134,6 +161,122 @@ final class UpdatesCliTest extends CliControllerTestCase
         });
 
         return [$cli, $log];
+    }
+
+    /**
+     * The arguments, and the probe's sequence relative to the schema: rollback=
+     * one ahead runs down() and leaves schema_version alone; apply= --force at
+     * the current sequence runs up() and writes back the same schema_version.
+     *
+     * @return array<string, array{0: array<string, mixed>, 1: int}>
+     */
+    public static function changingRuns(): array
+    {
+        return [
+            'cmd=update'           => [[], 1],
+            'cmd=update apply='    => [['apply' => 'base.next', 'force' => true], 0],
+            'cmd=update rollback=' => [['rollback' => 'base.next'], 1],
+        ];
+    }
+
+    private function heldLease(): \OWA\Module\Base\Classes\JobLease
+    {
+        $held = new \OWA\Module\Base\Classes\JobLease(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+        $this->assertTrue($held->acquire(60), 'the test could not take the lease first');
+
+        return $held;
+    }
+
+    /** Whether the lease is free, left free. */
+    private function leaseIsFree(): bool
+    {
+        $probe = new \OWA\Module\Base\Classes\JobLease(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+
+        if (! $probe->acquire(60)) {
+            return false;
+        }
+
+        $probe->release();
+
+        return true;
+    }
+
+    /**
+     * While base.updatesApply's lease is held, by a web request or another
+     * cmd=update, a run that would change the schema applies nothing and exits 1.
+     *
+     * @dataProvider changingRuns
+     * @param array<string, mixed> $params
+     * @param int                  $ahead
+     */
+    public function testARunThatChangesTheSchemaRefusesWhileTheLeaseIsHeld(array $params, int $ahead): void
+    {
+        UpdatesCliPendingCount::$runs = 0;
+        $held = $this->heldLease();
+
+        try {
+            list($cli, $log) = $this->runCli($params, $this->makeProbe($this->currentSchemaVersion() + $ahead));
+        } finally {
+            $held->release();
+        }
+
+        $this->assertFalse(UpdateGuardProbe::$upCalled, 'apply= ran while the lease was held');
+        $this->assertFalse(UpdateGuardProbe::$downCalled, 'rollback= ran while the lease was held');
+        $this->assertSame(0, UpdatesCliPendingCount::$runs, 'cmd=update applied updates while the lease was held');
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertStringContainsString('Updates are already being applied by another run.', $log);
+        $this->assertStringContainsString('job=updates-apply', $log);
+    }
+
+    /**
+     * Once it finishes, the next run, web or CLI, can take the lease.
+     *
+     * @dataProvider changingRuns
+     * @param array<string, mixed> $params
+     * @param int                  $ahead
+     */
+    public function testARunThatChangesTheSchemaReleasesTheLease(array $params, int $ahead): void
+    {
+        UpdatesCliPendingCount::$runs = 0;
+        $this->assertTrue($this->leaseIsFree(), 'the lease was held before the test');
+
+        $current = $this->currentSchemaVersion();
+
+        list($cli) = $this->runCli($params, $this->makeProbe($current + $ahead));
+
+        $this->assertSame($current, $this->currentSchemaVersion());
+        $this->assertTrue(
+            UpdateGuardProbe::$upCalled || UpdateGuardProbe::$downCalled || UpdatesCliPendingCount::$runs === 1,
+            'the run did not reach the update'
+        );
+        $this->assertTrue($this->leaseIsFree(), 'cmd=update kept the lease after it finished');
+    }
+
+    /** A run that fails part way lets go too. */
+    public function testAFailedRollbackReleasesTheLease(): void
+    {
+        UpdateGuardProbe::$downShouldFail = true;
+
+        list($cli) = $this->rollBack($this->makeProbe($this->currentSchemaVersion() + 1));
+
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertTrue($this->leaseIsFree(), 'a failed rollback kept the lease');
+    }
+
+    /** listpending changes nothing, so a held lease does not stop it. */
+    public function testListPendingRunsWhileTheLeaseIsHeld(): void
+    {
+        $held = $this->heldLease();
+
+        try {
+            list($cli, $log) = $this->runCli(['listpending' => true], $this->makeProbe($this->currentSchemaVersion() + 1));
+        } finally {
+            $held->release();
+        }
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
+        $this->assertStringNotContainsString('already being applied', $log);
     }
 
     /** The only rollback interface OWA has: `cmd=update rollback=base.UpdateNNN`. */

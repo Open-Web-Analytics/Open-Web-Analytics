@@ -1684,6 +1684,7 @@ return [
     'Updates' => 'Updates',
     'Updates applied.' => 'Updates applied.',
     'Updates are already being applied' => 'Updates are already being applied',
+    'Updates are already being applied by another run. If none is running, cmd=schedule-run --force-release job=%s frees the lock.' => 'Updates are already being applied by another run. If none is running, cmd=schedule-run --force-release job=%s frees the lock.',
     'Updating' => 'Updating',
     'Use an existing database for this install' => 'Use an existing database for this install',
     'User Acquisition' => 'User Acquisition',

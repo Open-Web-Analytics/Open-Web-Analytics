@@ -28,26 +28,57 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         parent::__construct($params);
     }
 
+    /**
+     * apply=, rollback= and the bare command take base.updatesApply's lease, so
+     * no two runs, from the web or from here, change the schema at once.
+     * listpending changes nothing and takes none.
+     */
     public function action() {
-        
-        // fetch list of modules that require updates
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        
+
         if ($this->isParam('listpending')) {
-            
+
             return $this->listPendingUpdates();
         }
-        
-        if ($this->getParam('apply')) {
-            
-            return $this->apply($this->get('apply'));
+
+        $lock = new \OWA\Module\Base\Classes\JobLease( UpdatesApply::LOCK );
+
+        if ( ! $lock->acquire( UpdatesApply::LOCK_SECONDS ) ) {
+
+            return $this->fail( sprintf(
+                \OWA\Core\CoreAPI::t( 'Updates are already being applied by another run. If none is running, cmd=schedule-run --force-release job=%s frees the lock.' ),
+                UpdatesApply::LOCK
+            ) );
         }
-        
-        if ($this->getParam('rollback')) {
-            
-            return $this->rollback($this->get('rollback'));
+
+        try {
+
+            if ($this->getParam('apply')) {
+
+                return $this->apply($this->get('apply'));
+            }
+
+            if ($this->getParam('rollback')) {
+
+                return $this->rollback($this->get('rollback'));
+            }
+
+            return $this->applyPending();
+
+        } finally {
+
+            $lock->release();
         }
-        
+    }
+
+    /**
+     * Apply every module's pending updates, in order.
+     *
+     * @return null action() returns it
+     */
+    protected function applyPending() {
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
         $modules = $s->getModulesNeedingUpdates();
         
         // foreach do update in order
@@ -81,8 +112,8 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         } else {
             \OWA\Core\CoreAPI::notice("There are no modules with pending updates to apply.");
         }
-    
-    
+
+        return null;
     }
     
     /**
