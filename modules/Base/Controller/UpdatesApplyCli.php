@@ -23,6 +23,12 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         ];
     }
     
+    /** @var \OWA\Module\Base\Classes\JobLease|null the lease this run holds */
+    protected $update_lease = null;
+
+    /** @var bool whether a renewal found the lease taken by another run */
+    protected $lease_lost = false;
+
     public function __construct($params) {
         define('OWA_UPDATING', true);
         parent::__construct($params);
@@ -30,8 +36,9 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
 
     /**
      * apply=, rollback= and the bare command take base.updatesApply's lease, so
-     * no two runs, from the web or from here, change the schema at once.
-     * listpending changes nothing and takes none.
+     * no two runs, from the web or from here, change the schema at once. The
+     * bare command renews it between updates (renewLease()). listpending
+     * changes nothing and takes none.
      */
     public function action() {
 
@@ -50,6 +57,8 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
             ) );
         }
 
+        $this->update_lease = $lock;
+
         try {
 
             if ($this->getParam('apply')) {
@@ -67,7 +76,33 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         } finally {
 
             $lock->release();
+            $this->update_lease = null;
         }
+    }
+
+    /**
+     * Renew the lease, so a run of many updates never outlives it. Called after
+     * each update a module applies and between modules.
+     *
+     * @return bool false when another run has taken the lease over
+     */
+    protected function renewLease() {
+
+        if ( ! $this->update_lease ) {
+
+            return true;
+        }
+
+        $this->heartbeat();
+
+        if ( $this->update_lease->refresh( UpdatesApply::LOCK_SECONDS ) ) {
+
+            return true;
+        }
+
+        $this->lease_lost = true;
+
+        return false;
     }
 
     /**
@@ -84,10 +119,46 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         // foreach do update in order
         if (!empty($modules)) {
             $error = false;
-            
+            $first = true;
+            $lost  = \OWA\Core\CoreAPI::t( 'Stopped before the next update: another run has taken over the updates lock. cmd=update listpending shows what is left.' );
+
             foreach ($modules as $k => $v) {
-            
-                $ret = $s->modules[$v]->update();
+
+                if ( ! $first && ! $this->renewLease() ) {
+
+                    return $this->fail( $lost );
+                }
+
+                $first  = false;
+                $module = $s->modules[$v];
+
+                // A module that is not a Core\Module may not have the hook.
+                $hooked = property_exists( $module, 'after_each_update' );
+
+                if ( $hooked ) {
+
+                    $module->after_each_update = function () {
+
+                        return $this->renewLease();
+                    };
+                }
+
+                try {
+
+                    $ret = $module->update();
+
+                } finally {
+
+                    if ( $hooked ) {
+
+                        $module->after_each_update = null;
+                    }
+                }
+
+                if ( $this->lease_lost ) {
+
+                    return $this->fail( $lost );
+                }
 
                 if ($ret != true):
                     $awaiting = (string) $s->modules[$v]->update_awaiting;

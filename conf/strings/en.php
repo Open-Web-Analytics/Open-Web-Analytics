@@ -1327,6 +1327,7 @@ return [
     'Step moved to position %1$s of %2$s.' => 'Step moved to position %1$s of %2$s.',
     'Steps' => 'Steps',
     'Stopped at %s: %s. The next scheduled build resumes there; it is retried at every run.' => 'Stopped at %s: %s. The next scheduled build resumes there; it is retried at every run.',
+    'Stopped before the next update: another run has taken over the updates lock. cmd=update listpending shows what is left.' => 'Stopped before the next update: another run has taken over the updates lock. cmd=update listpending shows what is left.',
     'Strict' => 'Strict',
     'Success' => 'Success',
     'Summary' => 'Summary',

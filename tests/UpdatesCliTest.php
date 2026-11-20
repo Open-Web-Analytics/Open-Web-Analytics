@@ -45,15 +45,52 @@ final class UpdatesCliPendingCount
     public static int $runs = 0;
 }
 
+/** A module, applying the updates it is handed through Core\Module::update(). */
+final class UpdatesCliProbeModule extends \OWA\Core\Module
+{
+    /** @param list<callable> $steps one per update, run as it applies */
+    public static function with(string $name, array $steps): self
+    {
+        $m = (new ReflectionClass(self::class))->newInstanceWithoutConstructor();
+        $m->name = $name;
+
+        foreach ($steps as $i => $step) {
+            $m->updates[$i + 1] = new UpdatesCliStepProbe($step);
+        }
+
+        return $m;
+    }
+}
+
+/** An update that runs a callable and succeeds. */
+final class UpdatesCliStepProbe
+{
+    public $awaiting = '';
+
+    /** @var callable */
+    private $step;
+
+    public function __construct(callable $step)
+    {
+        $this->step = $step;
+    }
+
+    public function apply()
+    {
+        ($this->step)();
+
+        return true;
+    }
+}
+
 /**
  * The CLI update path: `php cli.php cmd=update [listpending|apply=|rollback=]`
  *
- * This path matters more than it looks. base.updatesApply (web) is gated on the
- * edit_modules capability, so if a future update ever breaks authentication
- * itself -- new code querying a column an old schema lacks -- the web route
- * cannot complete. The CLI is the documented escape hatch, and updates
- * 005/006/007/010 already REQUIRE it via isCliModeRequired(). If the CLI
- * command stops being wired up, an operator in that state has no way out.
+ * base.updatesApply (web) has no capability check, so a signed-out admin can
+ * apply updates from the browser. Updates that cannot run over the web --
+ * 005/006/007/010 say so through isCliModeRequired() -- run only from here,
+ * so if this command stops being wired up an install that needs one cannot
+ * be upgraded.
  *
  * The sequencing guards in Core\Update are tested through a probe subclass:
  * a guard that fails open would otherwise run real migrations against whatever
@@ -277,6 +314,165 @@ final class UpdatesCliTest extends CliControllerTestCase
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
         $this->assertStringNotContainsString('already being applied', $log);
+    }
+
+    /**
+     * The bare cmd=update over $modules, name => module, in place of the
+     * install's pending updates, and what it logged.
+     *
+     * @param array<string, object> $modules
+     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     */
+    private function runPending(array $modules): array
+    {
+        $s       = \OWA\Core\CoreAPI::serviceSingleton();
+        $pending = $s->modules_needing_updates;
+
+        $cli = new class([]) extends \OWA\Module\Base\Controller\UpdatesApplyCli {
+            public function __construct($params)
+            {
+                \OWA\Core\Controller\Cli::__construct($params);
+            }
+        };
+
+        try {
+            $s->modules_needing_updates = array_keys($modules);
+
+            foreach ($modules as $name => $module) {
+                $s->modules[$name] = $module;
+            }
+
+            $log = $this->logDuring(static function () use ($cli) {
+                $cli->action();
+            });
+        } finally {
+            $s->modules_needing_updates = $pending;
+
+            foreach (array_keys($modules) as $name) {
+                unset($s->modules[$name]);
+            }
+        }
+
+        return [$cli, $log];
+    }
+
+    /** The lease's row, as the database holds it. */
+    private static function leaseRow(): array
+    {
+        return (array) \OWA\Core\CoreAPI::dbSingleton()->getJobLock(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+    }
+
+    /**
+     * A run of several updates renews the lease after each update and between
+     * modules. Each update brings the expiry down to a minute away, standing in
+     * for the time it took; the next update finds it an hour away again.
+     */
+    public function testARunOfSeveralUpdatesRenewsTheLease(): void
+    {
+        $seen = [];
+
+        $step = static function () use (&$seen) {
+            $row    = self::leaseRow();
+            $seen[] = (int) $row['expires_at'] - time();
+
+            \OWA\Core\CoreAPI::dbSingleton()->refreshJobLock(
+                \OWA\Module\Base\Controller\UpdatesApply::LOCK, $row['owner'], time() + 60);
+        };
+
+        list($cli) = $this->runPending([
+            'owatestupdates_a' => UpdatesCliProbeModule::with('owatestupdates_a', [$step, $step]),
+            'owatestupdates_b' => UpdatesCliProbeModule::with('owatestupdates_b', [$step]),
+        ]);
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertCount(3, $seen);
+
+        foreach ($seen as $i => $left) {
+            $this->assertGreaterThan(
+                3000,
+                $left,
+                sprintf('update %d found the lease %ds from expiry: not renewed', $i + 1, $left)
+            );
+        }
+
+        $this->assertTrue($this->leaseIsFree(), 'cmd=update kept the lease after it finished');
+    }
+
+    /**
+     * When another run has taken the lease, cmd=update stops before the next
+     * update, fails, and leaves the other run's lease alone.
+     */
+    public function testARunStopsWhenAnotherRunHasTakenTheLease(): void
+    {
+        $ran   = 0;
+        $thief = new \OWA\Module\Base\Classes\JobLease(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+
+        $steal = static function () use (&$ran, $thief) {
+            $ran++;
+            $row = self::leaseRow();
+            \OWA\Core\CoreAPI::dbSingleton()->releaseJobLock(\OWA\Module\Base\Controller\UpdatesApply::LOCK, $row['owner']);
+            $thief->acquire(60);
+        };
+        $count = static function () use (&$ran) {
+            $ran++;
+        };
+
+        try {
+            list($cli, $log) = $this->runPending([
+                'owatestupdates_a' => UpdatesCliProbeModule::with('owatestupdates_a', [$steal, $count]),
+                'owatestupdates_b' => UpdatesCliProbeModule::with('owatestupdates_b', [$count]),
+            ]);
+
+            $this->assertSame($thief->getOwner(), self::leaseRow()['owner'] ?? null, 'the other run lost its lease');
+        } finally {
+            $thief->release();
+        }
+
+        $this->assertSame(1, $ran, 'an update ran after the lease was taken');
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertStringContainsString('another run has taken over the updates lock', $log);
+    }
+
+    /**
+     * Between modules too: a module without the hook (not a Core\Module) that
+     * loses the lease stops the run before the next module.
+     */
+    public function testARunChecksTheLeaseBetweenModules(): void
+    {
+        $thief = new \OWA\Module\Base\Classes\JobLease(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+        $next  = UpdatesCliProbeModule::with('owatestupdates_b', [static function () {
+            throw new \LogicException('the next module ran after the lease was taken');
+        }]);
+
+        $stealing = new class($thief) {
+            public $update_awaiting = '';
+
+            private $thief;
+
+            public function __construct($thief)
+            {
+                $this->thief = $thief;
+            }
+
+            public function update()
+            {
+                $row = (array) \OWA\Core\CoreAPI::dbSingleton()->getJobLock(\OWA\Module\Base\Controller\UpdatesApply::LOCK);
+                \OWA\Core\CoreAPI::dbSingleton()->releaseJobLock(\OWA\Module\Base\Controller\UpdatesApply::LOCK, $row['owner']);
+                $this->thief->acquire(60);
+
+                return true;
+            }
+        };
+
+        try {
+            list($cli, $log) = $this->runPending(['owatestupdates_a' => $stealing, 'owatestupdates_b' => $next]);
+        } finally {
+            $thief->release();
+        }
+
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertStringContainsString('another run has taken over the updates lock', $log);
     }
 
     /** The only rollback interface OWA has: `cmd=update rollback=base.UpdateNNN`. */
