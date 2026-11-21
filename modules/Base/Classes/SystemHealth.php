@@ -648,7 +648,43 @@ class SystemHealth {
 
         $findings[] = self::noticeEmail();
 
+        $backup = self::backupDir();
+
+        if ( $backup ) {
+
+            $findings[] = $backup;
+        }
+
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
+    }
+
+    /**
+     * Where cmd=backup writes, when OWA_BACKUP_DIR is set: red when that is
+     * inside a directory the web server serves. Asked here as well as by the
+     * command, because only a web request knows the web root. Whether it is
+     * writable is the command's question: the web server is not who writes.
+     *
+     * @return Finding|null nothing when no directory is set
+     */
+    public static function backupDir() {
+
+        $dir = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'backup_dir' );
+
+        if ( $dir === '' ) {
+
+            return null;
+        }
+
+        $label   = \OWA\Core\CoreAPI::t( 'Backup directory' );
+        $problem = \OWA\Module\Base\Classes\Backup::dirProblem( $dir, \OWA\Module\Base\Classes\Backup::servedDirs(), false );
+
+        if ( $problem !== null ) {
+
+            return self::finding( 'red', $label, sprintf( \OWA\Core\CoreAPI::t(
+                '%s is not usable for backups: it does not exist, or it is inside a directory the web server can serve. Set OWA_BACKUP_DIR to a directory outside the web root.' ), $dir ) );
+        }
+
+        return self::finding( 'green', $label, $dir );
     }
 
     /**

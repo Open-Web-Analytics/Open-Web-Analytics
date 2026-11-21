@@ -79,6 +79,7 @@ return [
     'base.serverCheckCli'               => 'OWA\\Module\\Base\\Controller\\ServerCheckCli',
     'base.versionInfoCli'               => 'OWA\\Module\\Base\\Controller\\VersionInfoCli',
     'base.releaseManifestCli'           => 'OWA\\Module\\Base\\Controller\\ReleaseManifestCli',
+    'base.backupCli'                    => 'OWA\\Module\\Base\\Controller\\BackupCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',
     'base.partitionReorganizeCli'       => 'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',
     'base.partitionRotateCli'           => 'OWA\\Module\\Base\\Controller\\PartitionRotateCli',
