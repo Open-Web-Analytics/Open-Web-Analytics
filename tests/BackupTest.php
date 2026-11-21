@@ -15,8 +15,11 @@ use OWA\Module\Base\Classes\TableInventory;
  */
 final class BackupTest extends CliControllerTestCase
 {
+    /** Rows per streamed page here, so the fixtures cross pages without being large. */
+    private const PAGE = 100;
+
     /** Rows in the paged fixtures: more than one page, not a whole number of them. */
-    private const ROWS = Backup::PAGE * 2 + 37;
+    private const ROWS = self::PAGE * 2 + 37;
 
     private string $prefix = '';
 
@@ -94,6 +97,8 @@ final class BackupTest extends CliControllerTestCase
         $this->load($done['file']);
 
         $this->assertSame($before, $this->checksums($tables));
+        $this->assertSame('9223372036854775807', (string) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT MAX(id) AS m FROM ' . $this->prefix . 'event_raw')['m'], 'BIGINT keys exact');
     }
 
     public function testEachScopeDumpsItsGroup(): void
@@ -194,8 +199,11 @@ final class BackupTest extends CliControllerTestCase
     /** nokey stands in for an owned table with no primary key, which no entity has today. */
     private function backup(): Backup
     {
-        return new Backup(\OWA\Core\CoreAPI::dbSingleton(), $this->prefix,
+        $b = new Backup(\OWA\Core\CoreAPI::dbSingleton(), $this->prefix,
             TableInventory::owned() + ['nokey' => Backup::APPLICATION]);
+        $b->page = self::PAGE;
+
+        return $b;
     }
 
     private function command(array $params): \OWA\Module\Base\Controller\BackupCli
@@ -239,8 +247,11 @@ final class BackupTest extends CliControllerTestCase
             $raw = [];
             $nokey = [];
             for ($i = 0; $i < self::ROWS; $i++) {
-                // Two days, so paging crosses from one key prefix to the next.
-                $raw[]   = sprintf("(%d, %d, %s)", $i % 2 ? 20260515 : 20260701, 1000 - $i, $i % 5 ? "'v$i'" : 'NULL');
+                // Two days, so paging crosses from one key prefix to the next; ids
+                // at the top of BIGINT, where a key compared as a double would
+                // skip or repeat rows.
+                $raw[]   = sprintf("(%d, %s, %s)", $i % 2 ? 20260515 : 20260701, '92233720368547' . (75807 - $i),
+                    $i % 5 ? "'v$i'" : 'NULL');
                 $nokey[] = sprintf("(%d, 'b%d')", $i % 7, $i);
             }
             $this->exec("INSERT INTO {$p}event_raw VALUES " . implode(',', $raw));

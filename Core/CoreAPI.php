@@ -232,9 +232,15 @@ class CoreAPI {
     }
 
     /**
+     * A new connection object, connected on first use. dbSingleton() is the
+     * one OWA shares; a caller that needs a connection of its own (cmd=backup
+     * streams rows on one) asks here, with $persistent false so PDO does not
+     * hand back the shared persistent connection.
+     *
+     * @param  bool|null $persistent null: the db_make_persistant_connections setting
      * @return \OWA\Core\Db|void nothing when the storage engine could not be set up
      */
-    public static function dbFactory() {
+    public static function dbFactory( $persistent = null ) {
 
         $db_type = \OWA\Core\CoreAPI::getSetting('base', 'db_type');
         $ret = \OWA\Core\CoreAPI::setupStorageEngine($db_type);
@@ -266,7 +272,7 @@ class CoreAPI {
                 \OWA\Core\CoreAPI::getSetting('base','db_user'),
                 \OWA\Core\CoreAPI::getSetting('base','db_password'),
                 true, // open_new_connection: no driver reads it
-                \OWA\Core\CoreAPI::getSetting('base','db_make_persistant_connections')
+                $persistent ?? \OWA\Core\CoreAPI::getSetting('base','db_make_persistant_connections')
             );
 
             return $db;

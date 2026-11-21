@@ -641,18 +641,21 @@ trait MysqlDialect
     }
 
     /**
-     * The columns an INSERT can write, in order, each with whether its values
-     * are bytes rather than text. A generated column cannot be written and is
-     * left out; DEFAULT_GENERATED (a CURRENT_TIMESTAMP default) is an ordinary
-     * column.
+     * The columns an INSERT can write, in order, each with how its values are
+     * written: 'binary' (bytes, as a hex literal), 'integer' (an integer
+     * literal: a quoted one is compared as a double, which cannot hold a
+     * BIGINT key exactly) or 'text'. A generated column cannot be written and
+     * is left out; DEFAULT_GENERATED (a CURRENT_TIMESTAMP default) is an
+     * ordinary column.
      *
      * @param string $table_name
-     * @return array<string, bool> column => binary
+     * @return array<string, string> column => binary, integer or text
      */
     public function copyableColumns( $table_name ) {
 
         $columns = [];
         $binary  = [ 'binary', 'varbinary', 'tinyblob', 'blob', 'mediumblob', 'longblob', 'bit' ];
+        $integer = [ 'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint' ];
 
         foreach ( (array) $this->get_results( 'SELECT COLUMN_NAME AS c, DATA_TYPE AS d, EXTRA AS e FROM information_schema.COLUMNS'
                 . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION', [ (string) $table_name ] ) as $row ) {
@@ -664,7 +667,10 @@ trait MysqlDialect
                 continue;
             }
 
-            $columns[ (string) $row['c'] ] = in_array( strtolower( (string) $row['d'] ), $binary, true );
+            $type = strtolower( (string) $row['d'] );
+
+            $columns[ (string) $row['c'] ] = in_array( $type, $binary, true ) ? 'binary'
+                : ( in_array( $type, $integer, true ) ? 'integer' : 'text' );
         }
 
         return $columns;

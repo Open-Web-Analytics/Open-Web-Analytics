@@ -23,13 +23,17 @@ namespace OWA\Module\Base\Classes;
  * users and their credentials), and renamed when complete, so a file with the
  * final name is a whole one.
  *
- * READS. Application tables are read in one consistent snapshot, so they agree
- * with each other. Data tables are read outside a transaction, a page at a
- * time in primary key order: a snapshot open for the length of an
+ * READS, on a connection of its own (CoreAPI::dbFactory()), a page of PAGE
+ * rows at a time in primary key order, each page one unbuffered SELECT: the
+ * rows stream from the server and are never held in PHP. Application tables
+ * are read in one consistent snapshot, so they agree with each other. Data
+ * tables are read outside a transaction: a snapshot open for the length of an
  * owa_event_raw dump would hold its metadata lock that long, and a partition
  * change queued behind it would stop ingest. So the data dump holds each row
  * once, as it was when its page was read, and rows tracked while it runs may
- * or may not be in it.
+ * or may not be in it. Integer keys and values are written as integer
+ * literals: a quoted one is compared as a double, which cannot hold a BIGINT
+ * key exactly.
  */
 class Backup {
 
@@ -47,8 +51,14 @@ class Backup {
     /** The file's format, in its header. */
     const FORMAT = 1;
 
-    /** Rows read per SELECT. */
-    const PAGE = 1000;
+    /**
+     * Rows streamed per SELECT. Large enough that round trips do not dominate,
+     * small enough that a page holds the table's metadata lock for a second
+     * or two (1.7 s for owa_event_raw on a db.t4g.small): a partition change
+     * waiting on a lock held for the whole dump would stop ingest queued
+     * behind it.
+     */
+    const PAGE = 50000;
 
     /** An INSERT is ended once its text is this long. */
     const INSERT_BYTES = 1048576;
@@ -56,11 +66,14 @@ class Backup {
     /** The last line of a complete file. */
     const COMPLETE = '-- Backup complete.';
 
-    /** @var \OWA\Core\Db */
-    private $db;
-
     /** @var TableInventory */
     private $inventory;
+
+    /** @var \OWA\Core\Db|null the connection the rows are read on, opened by write() */
+    private $reader = null;
+
+    /** @var int rows per SELECT; a test sets fewer */
+    public $page = self::PAGE;
 
     /** @var callable(string): void|null told each table as it is done */
     public $progress = null;
@@ -72,7 +85,6 @@ class Backup {
      */
     public function __construct( $db, $prefix = \OWA\Core\Entity::TABLE_PREFIX, $owned = null ) {
 
-        $this->db        = $db;
         $this->inventory = new TableInventory( $db, $prefix, $owned );
     }
 
@@ -196,6 +208,16 @@ class Backup {
 
         try {
 
+            // A connection of its own: an unbuffered SELECT leaves its
+            // connection unusable until every row is read, and the snapshot
+            // has to be on the connection that reads.
+            $this->reader = \OWA\Core\CoreAPI::dbFactory( false ) ?: null;
+
+            if ( ! $this->reader || ! $this->reader->connect() ) {
+
+                throw new \RuntimeException( 'Could not open a second database connection to read the tables on.' );
+            }
+
             $tables = [];
 
             foreach ( self::SCOPES[ $scope ] as $group ) {
@@ -203,11 +225,11 @@ class Backup {
                 $tables = array_merge( $tables, $groups[ $group ] );
             }
 
-            $preamble = $this->db->dumpPreamble();
+            $preamble = $this->reader->dumpPreamble();
 
             $this->put( $gz, $this->header( $scope, $tables, $about ) . $preamble['before'] . "\n" );
 
-            $this->db->withDumpSession( function () use ( $gz, $groups, $scope, &$counts ) {
+            $this->reader->withDumpSession( function () use ( $gz, $groups, $scope, &$counts ) {
 
                 foreach ( self::SCOPES[ $scope ] as $group ) {
 
@@ -226,7 +248,7 @@ class Backup {
 
                     if ( $group === self::APPLICATION ) {
 
-                        $this->db->withConsistentSnapshot( $dump );
+                        $this->reader->withConsistentSnapshot( $dump );
 
                     } else {
 
@@ -267,6 +289,14 @@ class Backup {
             @unlink( $part );
 
             throw $e instanceof \RuntimeException ? $e : new \RuntimeException( $e->getMessage(), 0, $e );
+
+        } finally {
+
+            if ( $this->reader ) {
+
+                $this->reader->close();
+                $this->reader = null;
+            }
         }
 
         return [ 'file' => $file, 'tables' => $counts ];
@@ -347,7 +377,12 @@ class Backup {
     }
 
     /**
-     * One table's CREATE TABLE and rows.
+     * One table's CREATE TABLE and rows, read on $this->reader.
+     *
+     * Rows are streamed, a page at a time in primary key order: each page is
+     * one unbuffered SELECT, so the rows are never held in memory and the
+     * table's metadata lock is held only while that page is read, not for
+     * the whole dump.
      *
      * @param  resource $gz
      * @param  string   $table
@@ -355,7 +390,8 @@ class Backup {
      */
     private function dumpTable( $gz, $table ) {
 
-        $create = $this->db->createTableStatement( $table );
+        $db     = $this->reader;
+        $create = $db->createTableStatement( $table );
 
         if ( $create === null ) {
 
@@ -364,40 +400,35 @@ class Backup {
 
         $this->put( $gz, sprintf( "-- %s\n%s;\n", $table, $create ) );
 
-        $columns = $this->db->copyableColumns( $table );
-        $key     = $this->db->primaryKeyColumns( $table );
+        $columns = $db->copyableColumns( $table );
+        $key     = $db->primaryKeyColumns( $table );
 
         if ( ! $columns ) {
 
             throw new \RuntimeException( sprintf( 'Could not read the columns of %s.', $table ) );
         }
 
-        $names   = implode( ', ', array_map( static fn ( $c ) => '`' . $c . '`', array_keys( $columns ) ) );
-        $insert  = sprintf( 'INSERT INTO `%s` (%s) VALUES ', $table, $names );
-        $rows    = 0;
-        $after   = null;
-        $offset  = 0;
-        $tuples  = '';
+        $names  = implode( ', ', array_map( static fn ( $c ) => '`' . $c . '`', array_keys( $columns ) ) );
+        $order  = implode( ', ', array_map( static fn ( $c ) => '`' . $c . '`', $key ?: array_keys( $columns ) ) );
+        $insert = sprintf( 'INSERT INTO `%s` (%s) VALUES ', $table, $names );
+        $rows   = 0;
+        $after  = null;
+        $offset = 0;
+        $tuples = '';
 
         do {
 
-            [ $where, $bindings ] = $key && $after !== null ? $this->after( $key, $after ) : [ '', [] ];
+            $sql = sprintf( 'SELECT %s FROM `%s`%s ORDER BY %s LIMIT %d%s', $names, $table,
+                $key && $after !== null ? $this->after( $key, $after, $columns ) : '', $order,
+                $this->page, $key ? '' : ' OFFSET ' . $offset );
 
-            $errors = $this->db->queryErrorCount();
-            $page   = $this->db->get_results( sprintf( 'SELECT %s FROM `%s`%s ORDER BY %s LIMIT %d%s', $names, $table, $where,
-                implode( ', ', array_map( static fn ( $c ) => '`' . $c . '`', $key ?: array_keys( $columns ) ) ),
-                self::PAGE, $key ? '' : ' OFFSET ' . $offset ), $bindings );
+            $errors = $db->queryErrorCount();
+            $read   = 0;
 
-            if ( $this->db->queryErrorCount() !== $errors ) {
+            foreach ( $db->get_unbuffered_iterator( $sql ) as $row ) {
 
-                throw new \RuntimeException( sprintf( 'Reading %s failed: %s', $table, $this->db->lastQueryError() ) );
-            }
-
-            foreach ( (array) $page as $row ) {
-
-                $row     = (array) $row;
                 $tuples .= ( $tuples === '' ? '' : ',' ) . $this->tuple( $row, $columns );
-                $rows++;
+                $read++;
 
                 if ( strlen( $tuples ) >= self::INSERT_BYTES ) {
 
@@ -411,9 +442,15 @@ class Backup {
                 }
             }
 
-            $offset += self::PAGE;
+            if ( $db->queryErrorCount() !== $errors ) {
 
-        } while ( count( (array) $page ) === self::PAGE );
+                throw new \RuntimeException( sprintf( 'Reading %s failed: %s', $table, $db->lastQueryError() ) );
+            }
+
+            $rows   += $read;
+            $offset += $this->page;
+
+        } while ( $read === $this->page );
 
         if ( $tuples !== '' ) {
 
@@ -429,14 +466,14 @@ class Backup {
      * The rows after $last in key order, spelled out rather than as a row
      * comparison, which not every server reads as a range on the key.
      *
-     * @param  list<string>      $key
-     * @param  list<string|null> $last
-     * @return array{0: string, 1: list<string|null>}
+     * @param  list<string>          $key
+     * @param  list<string|null>     $last
+     * @param  array<string, string> $columns as copyableColumns() describes them
+     * @return string the WHERE clause
      */
-    private function after( array $key, array $last ) {
+    private function after( array $key, array $last, array $columns ) {
 
-        $or       = [];
-        $bindings = [];
+        $or = [];
 
         foreach ( $key as $i => $column ) {
 
@@ -444,48 +481,63 @@ class Backup {
 
             for ( $j = 0; $j < $i; $j++ ) {
 
-                $and[]      = sprintf( '`%s` = ?', $key[ $j ] );
-                $bindings[] = $last[ $j ];
+                $and[] = sprintf( '`%s` = %s', $key[ $j ], $this->literal( $last[ $j ], $columns[ $key[ $j ] ] ?? 'text' ) );
             }
 
-            $and[]      = sprintf( '`%s` > ?', $column );
-            $bindings[] = $last[ $i ];
-            $or[]       = '(' . implode( ' AND ', $and ) . ')';
+            $and[] = sprintf( '`%s` > %s', $column, $this->literal( $last[ $i ], $columns[ $column ] ?? 'text' ) );
+            $or[]  = '(' . implode( ' AND ', $and ) . ')';
         }
 
-        return [ ' WHERE ' . implode( ' OR ', $or ), $bindings ];
+        return ' WHERE ' . implode( ' OR ', $or );
     }
 
     /**
      * One row as a VALUES tuple.
      *
-     * @param  array<string, mixed> $row
-     * @param  array<string, bool>  $columns
+     * @param  array<string, mixed>  $row
+     * @param  array<string, string> $columns
      * @return string
      */
     private function tuple( array $row, array $columns ) {
 
         $values = [];
 
-        foreach ( $columns as $column => $binary ) {
+        foreach ( $columns as $column => $kind ) {
 
-            $v = $row[ $column ] ?? null;
-
-            if ( $v === null ) {
-
-                $values[] = 'NULL';
-
-            } elseif ( $binary ) {
-
-                $values[] = $v === '' ? "''" : '0x' . bin2hex( (string) $v );
-
-            } else {
-
-                $values[] = "'" . $this->db->prepare( (string) $v ) . "'";
-            }
+            $values[] = $this->literal( $row[ $column ] ?? null, $kind );
         }
 
         return '(' . implode( ',', $values ) . ')';
+    }
+
+    /**
+     * A value as SQL: NULL, a hex literal for bytes, a bare integer for an
+     * integer column, otherwise a quoted string escaped by the connection.
+     *
+     * @param  mixed  $v
+     * @param  string $kind binary, integer or text
+     * @return string
+     */
+    private function literal( $v, $kind ) {
+
+        if ( $v === null ) {
+
+            return 'NULL';
+        }
+
+        $v = (string) $v;
+
+        if ( $kind === 'binary' ) {
+
+            return $v === '' ? "''" : '0x' . bin2hex( $v );
+        }
+
+        if ( $kind === 'integer' && preg_match( '/^-?[0-9]+$/', $v ) ) {
+
+            return $v;
+        }
+
+        return "'" . $this->reader->prepare( $v ) . "'";
     }
 
     /**

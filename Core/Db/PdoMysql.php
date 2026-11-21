@@ -37,6 +37,50 @@ class PdoMysql extends Pdo
 {
     use MysqlDialect;
 
+    /**
+     * The rows streamed from the server, with MySQL's buffered-query mode off
+     * for the one statement: see Db::get_unbuffered_iterator().
+     *
+     * @param  string $sql
+     * @return \Generator<int, array<string, string|null>, mixed, void>
+     */
+    public function get_unbuffered_iterator( $sql ) {
+
+        if ( ! $this->connection_status && ! $this->connect() ) {
+
+            return;
+        }
+
+        $this->e->debug( sprintf( 'Query (unbuffered): %s', $sql ) );
+        $this->num_queries++;
+
+        $statement = null;
+        $this->connection->setAttribute( \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false );
+
+        try {
+
+            $statement = $this->connection->query( $sql );
+
+            while ( $row = $statement->fetch( \PDO::FETCH_ASSOC ) ) {
+
+                yield $row;
+            }
+
+        } catch ( \Throwable $e ) {
+
+            $this->logQueryError( $e->getMessage(), $sql );
+
+        } finally {
+
+            if ( $statement instanceof \PDOStatement ) {
+
+                $statement->closeCursor();
+            }
+
+            $this->connection->setAttribute( \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true );
+        }
+    }
+
     protected function dsn() {
 
         // charset in the DSN, not a later SET NAMES: PDO uses it for quote() as

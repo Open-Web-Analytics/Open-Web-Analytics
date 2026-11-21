@@ -273,6 +273,52 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * The rows streamed from the server (MYSQLI_USE_RESULT): see
+     * Db::get_unbuffered_iterator(). An error while reading is checked once
+     * the rows stop, since mysqli_fetch_assoc() answers null for it as for
+     * the end.
+     *
+     * @param  string $sql
+     * @return \Generator<int, Row, mixed, void>
+     */
+    public function get_unbuffered_iterator( $sql ) {
+
+        if ( ! $this->connection_status && ! $this->connect() ) {
+
+            return;
+        }
+
+        $this->e->debug( sprintf( 'Query (unbuffered): %s', $sql ) );
+        $this->num_queries++;
+
+        $result = @mysqli_query( $this->connection, $sql, MYSQLI_USE_RESULT );
+
+        if ( ! $result instanceof \mysqli_result ) {
+
+            $this->logQueryError( sprintf( '(%s) %s', mysqli_errno( $this->connection ), mysqli_error( $this->connection ) ), $sql );
+
+            return;
+        }
+
+        try {
+
+            while ( $row = mysqli_fetch_assoc( $result ) ) {
+
+                yield $this->stringifyRow( $row );
+            }
+
+            if ( mysqli_errno( $this->connection ) ) {
+
+                $this->logQueryError( sprintf( '(%s) %s', mysqli_errno( $this->connection ), mysqli_error( $this->connection ) ), $sql );
+            }
+
+        } finally {
+
+            mysqli_free_result( $result );
+        }
+    }
+
+    /**
      * Fetch result set array
      *
      * Null, not an empty array, when there is nothing to return -- no rows, or

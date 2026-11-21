@@ -1585,6 +1585,25 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * A SELECT's rows streamed from the server rather than held, one at a
+     * time. The connection can run nothing else until the rows are read, so
+     * a caller gives it a connection of its own (CoreAPI::dbFactory()). A
+     * failure, at the start or part way, is a refused statement
+     * (queryErrorCount()). A driver without streaming buffers, as
+     * get_result_iterator() does.
+     *
+     * @param string $sql with its values written in; nothing is bound
+     * @return \Generator<int, array<string, string|null>, mixed, void>
+     */
+    public function get_unbuffered_iterator( $sql ) {
+
+        foreach ( $this->get_result_iterator( $sql ) as $row ) {
+
+            yield $row;
+        }
+    }
+
+    /**
      * The base tables whose names start with $prefix. None, without
      * introspection; the dialect overrides it (cmd=backup).
      *
@@ -1597,11 +1616,11 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * The columns an INSERT can write, column => whether binary. None, without
-     * introspection.
+     * The columns an INSERT can write, column => binary, integer or text. None,
+     * without introspection.
      *
      * @param string $table_name
-     * @return array<string, bool>
+     * @return array<string, string>
      */
     public function copyableColumns( $table_name ) {
 
