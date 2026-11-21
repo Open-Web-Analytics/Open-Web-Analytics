@@ -85,6 +85,8 @@ class NotificationsRest extends \OWA\Core\AdminController {
                 // bold and stop counting towards the badge.
                 'read'         => ! empty( $row['read'] ),
                 'type'         => ( $row['type'] ?? '' ) ?: NotificationManager::TYPE_GENERAL,
+                // info, warning, security or critical; '' on a release announcement.
+                'severity'     => (string) ( $row['severity'] ?? '' ),
                 'title'        => $row['title'],
                 // Read, not computed: the column holds it. Falls back to deriving one
                 // for a row with no excerpt stored, so it shows something rather than a

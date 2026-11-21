@@ -646,6 +646,52 @@ class SystemHealth {
             $findings[] = self::finding( 'yellow', $constant, \OWA\Core\Strings::translate( $notice ) );
         }
 
+        $findings[] = self::noticeEmail();
+
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
+    }
+
+    /**
+     * Can admin notices be e-mailed, and was the last one.
+     *
+     * The mailer always has a transport (PHP's mail() unless SMTP is set), so
+     * whether mail is configured cannot be asked of it. What can be known is
+     * whether there is anyone to send to, and what happened to the latest
+     * notice that asked for an e-mail (NotificationManager::notify()), which
+     * is never retried.
+     *
+     * @return Finding
+     */
+    public static function noticeEmail() {
+
+        $label      = \OWA\Core\CoreAPI::t( 'Admin notice e-mail' );
+        $recipients = NotificationManager::adminRecipients();
+
+        if ( ! $recipients ) {
+
+            return self::finding( 'yellow', $label, \OWA\Core\CoreAPI::t(
+                'Admin notices cannot be e-mailed: no admin user has an e-mail address and Admin Notice E-mail Address is empty.' ) );
+        }
+
+        $last = NotificationManager::lastEmailedNotice();
+
+        if ( $last && (string) $last['email_status'] === NotificationManager::EMAIL_FAILED ) {
+
+            return self::finding( 'red', $label, sprintf( \OWA\Core\CoreAPI::t(
+                'The last admin notice, "%1$s" on %2$s, was not e-mailed: the mailer refused it. The OWA error log says why. It is still in the notifications bell.' ),
+                (string) $last['title'], date( 'Y-m-d H:i', (int) $last['created_at'] ) ) );
+        }
+
+        $to = count( $recipients ) === 1
+            ? \OWA\Core\CoreAPI::t( 'Sent to 1 address.' )
+            : sprintf( \OWA\Core\CoreAPI::t( 'Sent to %d addresses.' ), count( $recipients ) );
+
+        if ( $last && (string) $last['email_status'] === NotificationManager::EMAIL_SENT ) {
+
+            return self::finding( 'green', $label, $to . ' ' . sprintf( \OWA\Core\CoreAPI::t( 'The last one, "%1$s", was sent on %2$s.' ),
+                (string) $last['title'], date( 'Y-m-d H:i', (int) $last['emailed_at'] ) ) );
+        }
+
+        return self::finding( 'green', $label, $to );
     }
 }

@@ -27,6 +27,10 @@ export const BELL_SELECTOR = '[data-ui="header:notifications"]';
 // An icon per TYPE. Unknown types get a neutral bell rather than nothing.
 const ICONS = { release: 'fa-box', general: 'fa-bell' };
 
+// A notice's SEVERITY, when it has one above info, wins over its type's icon
+// and colours the icon's circle (is-<severity>).
+const SEVERITY_ICONS = { warning: 'fa-exclamation-triangle', security: 'fa-shield-alt', critical: 'fa-exclamation-circle' };
+
 /**
  * "3d ago" rather than a date, the way a notification list reads, in the
  * locale's own words where the browser has Intl.RelativeTimeFormat. A real
@@ -163,8 +167,10 @@ export function startNotifications( bell ) {
             var icon  = document.createElement( 'span' );
             var glyph = document.createElement( 'i' );
 
-            icon.className = 'owa_notificationIcon';
-            glyph.className = 'fas ' + ( ICONS[ n.type ] || ICONS.general );
+            var severe = SEVERITY_ICONS[ n.severity ];
+
+            icon.className = 'owa_notificationIcon' + ( severe ? ' is-' + n.severity : '' );
+            glyph.className = 'fas ' + ( severe || ICONS[ n.type ] || ICONS.general );
             glyph.setAttribute( 'aria-hidden', 'true' );
             icon.appendChild( glyph );
             row.appendChild( icon );

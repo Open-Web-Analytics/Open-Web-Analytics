@@ -315,7 +315,11 @@ final class SystemHealthTest extends TestCase
         }
     }
 
-    /** The installation section: versions, and exactly the installer's environment checks. */
+    /**
+     * The installation section: versions, exactly the installer's environment
+     * checks, the retired constants still set, and whether admin notices can
+     * be e-mailed.
+     */
     public function testTheInstallationIsItsVersionsAndTheInstallersChecks(): void
     {
         $install = SystemHealth::installation();
@@ -324,8 +328,10 @@ final class SystemHealthTest extends TestCase
         $this->assertSame((string) \OWA\Core\Env::version(), $install['facts']['OWA']);
 
         $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all((string) \OWA\Core\CoreAPI::getSetting('base', 'config_file'));
-        $this->assertSame(array_column($checks, 'name'), array_column($install['findings'], 'label'),
-            'the same list the installer and cmd=instance-info read');
+        $this->assertSame(
+            array_merge(array_column($checks, 'name'), array_keys(\OWA\Core\ServerRole::upgradeNotices()), ['Admin notice e-mail']),
+            array_column($install['findings'], 'label'),
+            'the same checks the installer and cmd=instance-info read, then the retired constants, then notice mail');
     }
 
     public function testTheInstallationNamesTheServerRole(): void
