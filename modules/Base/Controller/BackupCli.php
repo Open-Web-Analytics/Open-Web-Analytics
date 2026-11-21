@@ -4,19 +4,21 @@ namespace OWA\Module\Base\Controller;
 use OWA\Module\Base\Classes\Backup;
 
 /**
- * Dump OWA's tables to a gzipped SQL file (Classes\Backup).
+ * Dump the tables this version uses to a gzipped SQL file (Classes\Backup).
  *
- *   php cli.php cmd=backup scope=application    every table but tracking's and the cubes
+ *   php cli.php cmd=backup scope=application    configuration, users, Properties, goals, settings
  *   php cli.php cmd=backup scope=data           the tables tracking writes
  *   php cli.php cmd=backup scope=all            both
  *   ... dir=/var/backups/owa                    in place of OWA_BACKUP_DIR
  *
  * The cubes are never dumped: cmd=cube-rebuild makes them from owa_event_raw.
- * The directory must be outside the web root (Backup::dirProblem()). OWA
- * never applies the file; its header says how to restore it.
+ * Nor are tables nothing owns any more (cmd=tables-cleanup, cmd=v1-drop). The
+ * directory must be outside the web root (Backup::dirProblem()). OWA never
+ * applies the file; its header says how to restore it.
  *
- * Runs while schema updates are pending, since that is when a backup is
- * taken: after new code is in place and before cmd=update.
+ * v2 only: refused until the 1.x migration has run, since before it the
+ * tables are 1.x's. Runs while later updates are pending, since that is when
+ * a backup is taken: after new code is in place and before cmd=update.
  */
 class BackupCli extends \OWA\Core\Controller\Cli {
 
@@ -24,9 +26,9 @@ class BackupCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Writes OWA\'s tables to a gzipped SQL file, mode 0600, for restoring outside OWA. The cubes are never included; cmd=cube-rebuild rebuilds them.',
+            'description' => 'Writes the tables this version of OWA uses to a gzipped SQL file, mode 0600, for restoring outside OWA. The cubes are never included (cmd=cube-rebuild rebuilds them), nor are old tables nothing uses (cmd=tables-cleanup). Refused before the 1.x migration has run.',
             'arguments'   => [
-                'scope=<application|data|all>' => 'application: every table but the ones tracking writes and the cubes. data: the tables tracking writes, as each module\'s entities declare them, and any 1.x tracking tables. all: both.',
+                'scope=<application|data|all>' => 'The tables this version uses, as each module\'s entities declare them. application: configuration, users, Properties, goals, settings, notices, jobs. data: the tables tracking writes. all: both.',
                 'dir=<path>'                   => 'The directory to write to, outside the web root. Defaults to OWA_BACKUP_DIR.',
             ],
         ];
@@ -55,6 +57,14 @@ class BackupCli extends \OWA\Core\Controller\Cli {
         if ( ! isset( Backup::SCOPES[ $scope ] ) ) {
 
             return $this->usageError( sprintf( 'scope= is one of %s.', implode( ', ', array_keys( Backup::SCOPES ) ) ) );
+        }
+
+        $schema = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
+
+        if ( $schema < V1DropCli::MIGRATED_SCHEMA ) {
+
+            return $this->refuse( sprintf( 'This installation\'s tables are still 1.x (schema %d; the 1.x migration completes at %d).'
+                . ' Back it up with mysqldump.', $schema, V1DropCli::MIGRATED_SCHEMA ) );
         }
 
         $dir = (string) ( $this->getParam( 'dir' ) ?: \OWA\Core\CoreAPI::getSetting( 'base', 'backup_dir' ) );

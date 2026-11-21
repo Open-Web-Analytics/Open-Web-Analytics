@@ -3,10 +3,12 @@
 require_once __DIR__ . '/CliControllerTestCase.php';
 
 use OWA\Module\Base\Classes\Backup;
+use OWA\Module\Base\Classes\TableInventory;
 
 /**
- * cmd=backup (Classes\Backup): which tables each scope dumps, that the file
- * loads back to the same rows, and where it may be written.
+ * cmd=backup (Classes\Backup): which tables each scope dumps -- only those the
+ * running code owns -- that the file loads back to the same rows, and where
+ * it may be written.
  *
  * Against fixture tables under a prefix of their own, so the installation's
  * tables are never dumped or dropped.
@@ -42,16 +44,16 @@ final class BackupTest extends CliControllerTestCase
     /** Each entity declares its group; every module's are asked, active or not. */
     public function testEachEntityDeclaresItsGroup(): void
     {
-        $groups = Backup::entityGroups();
+        $owned = TableInventory::owned();
 
         $this->assertSame(['domstream_chunk', 'domstream_payload', 'event_raw', 'visitor_acquisition'],
-            array_keys(array_filter($groups, static fn ($g) => $g === Backup::DATA)),
+            array_keys(array_filter($owned, static fn ($g) => $g === Backup::DATA)),
             'the tables tracking writes; a change here is a change to what scope=data holds');
 
-        $this->assertArrayHasKey('site', $groups);
-        $this->assertSame(Backup::APPLICATION, $groups['user']);
+        $this->assertSame(Backup::APPLICATION, $owned['site']);
+        $this->assertSame(Backup::APPLICATION, $owned['user']);
 
-        foreach ($groups as $table => $group) {
+        foreach ($owned as $table => $group) {
             $this->assertContains($group, [Backup::APPLICATION, Backup::DATA], $table);
         }
     }
@@ -62,21 +64,15 @@ final class BackupTest extends CliControllerTestCase
         $this->assertSame(\OWA\Core\Entity::BACKUP_APPLICATION, (new \OWA\Module\Base\Entity\Site())->getBackupGroup(), 'the default');
     }
 
-    public function testATableNoEntityOwnsIsApplicationUnlessItIs1x(): void
-    {
-        $this->assertSame(Backup::DATA, Backup::groupOf('request'));
-        $this->assertSame(Backup::DATA, Backup::groupOf('location_dim'));
-        $this->assertSame(Backup::APPLICATION, Backup::groupOf('setting_update070'));
-    }
-
-    public function testTheGroupsLeaveOutTheCubes(): void
+    /** Only what the code owns: no cube, no 1.x table, nothing a removed module left. */
+    public function testOnlyTheTablesInUseAreDumped(): void
     {
         $p = $this->prefix;
 
         $this->assertSame([
             'application' => [$p . 'nokey', $p . 'site'],
-            'data'        => [$p . 'event_raw', $p . 'request'],
-        ], $this->backup()->tables(), 'request is a 1.x tracking table; event_7 and its _rebuild are a cube');
+            'data'        => [$p . 'event_raw'],
+        ], $this->backup()->tables(), 'request is 1.x, gone is nobody\'s, event_7 and its _rebuild are a cube');
     }
 
     /** Dumped, dropped and loaded back: the same rows, to the checksum. */
@@ -111,6 +107,8 @@ final class BackupTest extends CliControllerTestCase
         $this->assertStringContainsString('CREATE TABLE `' . $this->prefix . 'event_raw`', $data);
         $this->assertStringNotContainsString('`' . $this->prefix . 'site`', $data);
         $this->assertStringNotContainsString('event_7', $app . $data, 'never a cube');
+        $this->assertStringNotContainsString($this->prefix . 'request', $app . $data, 'never 1.x');
+        $this->assertStringNotContainsString($this->prefix . 'gone', $app . $data, 'never a table nothing owns');
         $this->assertDoesNotMatchRegularExpression('/^DROP TABLE/m', $app . $data);
     }
 
@@ -149,7 +147,29 @@ final class BackupTest extends CliControllerTestCase
         $cli = $this->command(['scope' => 'application', 'dir' => $this->dir]);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
-        $this->assertCount(1, glob($this->dir . '/owa-*-application.sql.gz'));
+        $files = glob($this->dir . '/owa-*-application.sql.gz');
+        $this->assertCount(1, $files);
+
+        $sql = gzdecode((string) file_get_contents($files[0]));
+        $this->assertStringContainsString('CREATE TABLE `' . $this->prefix . 'site`', $sql);
+        $this->assertStringNotContainsString('`' . $this->prefix . 'nokey`', $sql, 'owned by no entity of the code');
+    }
+
+    /** v2 only: before the 1.x migration the tables are 1.x's. */
+    public function testItIsRefusedBeforeTheMigration(): void
+    {
+        $schema = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', \OWA\Module\Base\Controller\V1DropCli::MIGRATED_SCHEMA - 1);
+            $cli = $this->command(['scope' => 'all', 'dir' => $this->dir]);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $schema);
+        }
+
+        $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
+        $this->assertStringContainsString('mysqldump', $cli->getCliOutcome()['message']);
+        $this->assertSame([], glob($this->dir . '/*'));
     }
 
     public function testTheCommandRefusesABadScopeOrDirectory(): void
@@ -171,9 +191,11 @@ final class BackupTest extends CliControllerTestCase
         $this->assertFalse((new \OWA\Module\Base\Controller\BackupCli(['scope' => 'all']))->needsCurrentSchema());
     }
 
+    /** nokey stands in for an owned table with no primary key, which no entity has today. */
     private function backup(): Backup
     {
-        return new Backup(\OWA\Core\CoreAPI::dbSingleton(), $this->prefix);
+        return new Backup(\OWA\Core\CoreAPI::dbSingleton(), $this->prefix,
+            TableInventory::owned() + ['nokey' => Backup::APPLICATION]);
     }
 
     private function command(array $params): \OWA\Module\Base\Controller\BackupCli
@@ -228,6 +250,7 @@ final class BackupTest extends CliControllerTestCase
             $this->exec("INSERT INTO {$p}request VALUES (1), (2)");
             $this->exec("CREATE TABLE {$p}event_7 (id BIGINT PRIMARY KEY)");
             $this->exec("CREATE TABLE {$p}event_7_rebuild (id BIGINT PRIMARY KEY)");
+            $this->exec("CREATE TABLE {$p}gone (id BIGINT PRIMARY KEY)");
         } finally {
             $db->query(sprintf("SET SESSION sql_mode = '%s'", $db->prepare($mode)));
         }
@@ -237,7 +260,7 @@ final class BackupTest extends CliControllerTestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach (['site', 'event_raw', 'nokey', 'request', 'event_7', 'event_7_rebuild'] as $t) {
+        foreach (['site', 'event_raw', 'nokey', 'request', 'event_7', 'event_7_rebuild', 'gone'] as $t) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $this->prefix, $t));
         }
     }

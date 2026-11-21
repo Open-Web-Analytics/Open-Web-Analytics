@@ -4,17 +4,16 @@ namespace OWA\Module\Base\Classes;
 /**
  * A SQL dump of OWA's tables, written by OWA itself (cmd=backup).
  *
- * TWO GROUPS, declared by each entity (Entity::getBackupGroup()). Data is
- * what tracking writes on every visit: owa_event_raw, owa_visitor_acquisition,
- * and any module's own tracking table, such as page recordings. Application
- * is the rest: configuration, users, Properties and Profiles, goals, settings,
- * notices, the job queue. The entities are those of every module present,
- * active or not, since a deactivated module's tables are still there.
+ * ONLY THE TABLES THE RUNNING CODE USES: those an entity of a module present
+ * owns (TableInventory), in two groups each entity declares
+ * (Entity::getBackupGroup()). Data is what tracking writes on every visit:
+ * owa_event_raw, owa_visitor_acquisition, and any module's own tracking table,
+ * such as page recordings. Application is the rest: configuration, users,
+ * Properties and Profiles, goals, settings, notices, the job queue.
  *
- * A table no entity owns is application, except the 1.x tracking tables an
- * upgraded installation may keep (Migration\V1Tables), which are data. The
- * cubes are in neither; they are rebuilt from owa_event_raw (cmd=cube-rebuild),
- * and so are their build tables, which are named after them.
+ * Not dumped: the cubes, rebuilt from owa_event_raw (cmd=cube-rebuild); 1.x
+ * tables and any other table nothing owns any more, which cmd=tables-cleanup
+ * and cmd=v1-drop remove.
  *
  * THE FILE is plain SQL, gzipped: a header saying what it holds and how to
  * restore it, then each table's SHOW CREATE TABLE and batched INSERTs, then a
@@ -60,101 +59,33 @@ class Backup {
     /** @var \OWA\Core\Db */
     private $db;
 
-    /** @var string */
-    private $prefix;
-
-    /** @var array<string, string>|null unprefixed table => group, from the entities */
-    private static $entity_groups = null;
+    /** @var TableInventory */
+    private $inventory;
 
     /** @var callable(string): void|null told each table as it is done */
     public $progress = null;
 
     /**
-     * @param \OWA\Core\Db $db
-     * @param string       $prefix the tables' prefix; a test names its own
+     * @param \OWA\Core\Db               $db
+     * @param string                     $prefix the tables' prefix; a test names its own
+     * @param array<string, string>|null $owned  in place of TableInventory::owned(), for a test
      */
-    public function __construct( $db, $prefix = \OWA\Core\Entity::TABLE_PREFIX ) {
+    public function __construct( $db, $prefix = \OWA\Core\Entity::TABLE_PREFIX, $owned = null ) {
 
-        $this->db     = $db;
-        $this->prefix = (string) $prefix;
+        $this->db        = $db;
+        $this->inventory = new TableInventory( $db, $prefix, $owned );
     }
 
     /**
-     * The group an unprefixed table is in.
-     *
-     * @param  string $table
-     * @return string APPLICATION or DATA
-     */
-    public static function groupOf( $table ) {
-
-        $groups = self::entityGroups();
-
-        if ( isset( $groups[ $table ] ) ) {
-
-            return $groups[ $table ];
-        }
-
-        return in_array( $table, Migration\V1Tables::all(), true ) ? self::DATA : self::APPLICATION;
-    }
-
-    /**
-     * Every module's entities' tables, unprefixed, with the group each
-     * declares. A module is asked whether it is active or not: one built for
-     * the question when boot did not load it.
-     *
-     * @return array<string, string>
-     */
-    public static function entityGroups() {
-
-        if ( self::$entity_groups !== null ) {
-
-            return self::$entity_groups;
-        }
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $groups  = [];
-
-        foreach ( array_keys( \OWA\Core\VersionInfo::modules() ) as $name ) {
-
-            $class  = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $name ) . '\\Module';
-            $module = $service->getModule( $name ) ?: new $class();
-
-            foreach ( $module->getEntities() as $entity ) {
-
-                $e     = \OWA\Core\CoreAPI::entityFactory( $name . '.' . $entity );
-                $table = substr( $e->getTableName(), strlen( \OWA\Core\Entity::TABLE_PREFIX ) );
-
-                $groups[ $table ] = $e->getBackupGroup() === self::DATA ? self::DATA : self::APPLICATION;
-            }
-        }
-
-        ksort( $groups );
-
-        return self::$entity_groups = $groups;
-    }
-
-    /**
-     * The tables present, by group, with their prefix, sorted. Cubes and their
-     * build tables are left out.
+     * The tables present that the running code uses, by group, sorted.
      *
      * @return array{application: list<string>, data: list<string>}
      */
     public function tables() {
 
-        $groups = [ self::APPLICATION => [], self::DATA => [] ];
-        $cube   = '/^' . preg_quote( $this->prefix . Cube\Cubes::PREFIX, '/' ) . '[0-9]+/';
+        $all = $this->inventory->classify();
 
-        foreach ( $this->db->listTables( $this->prefix ) as $name ) {
-
-            if ( preg_match( $cube, $name ) ) {
-
-                continue;
-            }
-
-            $groups[ self::groupOf( substr( $name, strlen( $this->prefix ) ) ) ][] = $name;
-        }
-
-        return $groups;
+        return [ self::APPLICATION => $all[ self::APPLICATION ], self::DATA => $all[ self::DATA ] ];
     }
 
     /**
