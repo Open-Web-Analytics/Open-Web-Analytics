@@ -126,7 +126,7 @@ class NotificationManager {
      *
      * Pure, so the limits are testable without a database.
      *
-     * @param Item $item from a from*() transform
+     * @param array<string, mixed> $item an Item from a from*() transform, or a notify() notice: title, body and url are read
      * @return array{title:string, body:string, url:string}
      */
     public static function storable( array $item ) {
