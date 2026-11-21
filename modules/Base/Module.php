@@ -7,20 +7,26 @@ namespace OWA\Module\Base;
 
 class Module extends \OWA\Core\Module {
 
+    /*
+     * Declared, not set in the constructor, so cmd=version-info reads both
+     * without constructing the module (Core\VersionInfo).
+     */
+    public $name = 'base';
+
+    public $required_schema_version = 95;
+
     /**
      * Constructor
      *
      */
     public function __construct() {
 
-        $this->name = 'base';
         $this->display_name = 'Open Web Analytics';
         $this->group = 'Base';
         $this->author = 'Peter Adams';
         $this->version = '11';
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 95;
         parent::__construct();
     }
 

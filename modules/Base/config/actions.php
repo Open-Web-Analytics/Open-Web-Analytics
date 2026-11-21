@@ -77,6 +77,8 @@ return [
     'base.scheduleStatusCli'            => 'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',
     'base.instanceInfoCli'              => 'OWA\\Module\\Base\\Controller\\InstanceInfoCli',
     'base.serverCheckCli'               => 'OWA\\Module\\Base\\Controller\\ServerCheckCli',
+    'base.versionInfoCli'               => 'OWA\\Module\\Base\\Controller\\VersionInfoCli',
+    'base.releaseManifestCli'           => 'OWA\\Module\\Base\\Controller\\ReleaseManifestCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',
     'base.partitionReorganizeCli'       => 'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',
     'base.partitionRotateCli'           => 'OWA\\Module\\Base\\Controller\\PartitionRotateCli',

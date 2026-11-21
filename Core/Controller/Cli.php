@@ -48,6 +48,41 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /**
+     * Whether this command needs OWA booted: settings, the database, modules.
+     *
+     * Every command does but one that answers from the code alone, such as
+     * cmd=version-info, which the build runs in a checkout with no
+     * owa-config.php. cli.php asks before `new owa()` (Core\CliWithoutBoot),
+     * and a command answering false runs as runWithoutBoot() instead: never
+     * constructed, on any server role, with or without its module active.
+     * Such a command must be declared in its module's config/cli_commands.php;
+     * one registered in code is only found after boot.
+     *
+     * Static, like serverRoles(): asked before the controller is built.
+     *
+     * @return bool
+     */
+    public static function needsBoot() {
+
+        return true;
+    }
+
+    /**
+     * Run without OWA booted, for a command whose needsBoot() is false: the
+     * parsed arguments in, plain output to STDOUT and STDERR, an exit code
+     * out (0 done, 1 failed, 2 the command line is wrong).
+     *
+     * @param  array<string, mixed> $params the parsed command line, cmd included
+     * @return int
+     */
+    public static function runWithoutBoot( array $params ) {
+
+        fwrite( STDERR, sprintf( "cmd=%s needs OWA booted.\n", (string) ( $params['cmd'] ?? '' ) ) );
+
+        return 1;
+    }
+
+    /**
      * What the command does and the arguments it reads.
      *
      * The wiki's CLI reference is generated from this

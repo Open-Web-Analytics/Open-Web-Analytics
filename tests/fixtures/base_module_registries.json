@@ -204,6 +204,12 @@
         "base.serverCheckCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\ServerCheckCli"
         },
+        "base.versionInfoCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\VersionInfoCli"
+        },
+        "base.releaseManifestCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ReleaseManifestCli"
+        },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
         },
@@ -366,6 +372,8 @@
     },
     "cli_commands": {
         "update": "base.updatesApplyCli",
+        "version-info": "base.versionInfoCli",
+        "release-manifest": "base.releaseManifestCli",
         "strings-extract": "base.stringsExtractCli",
         "v1-drop": "base.v1DropCli",
         "fetch-notifications": "base.notificationsFetchCli",
