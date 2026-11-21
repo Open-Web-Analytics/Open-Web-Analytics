@@ -15,31 +15,16 @@ namespace OWA\Module\Base\Classes;
  * the caller: a check that cannot say how to fix itself is a check that gets
  * reported as "failed" and no more.
  *
+ * The requirements themselves -- the PHP floor, the extensions, the 64-bit
+ * build -- are in Core\Requirements; this class checks this server against
+ * them.
+ *
  * @phpstan-type Check array{name: string, value: string, passed: bool, msg: string, requires: string}
  */
 class EnvironmentCheck {
 
     /**
-     * The lowest PHP this release runs on. The same number composer.json requires.
-     */
-    const MIN_PHP_VERSION = '8.2';
-
-    /**
-     * Extensions OWA cannot run without, and what each is for.
-     *
-     * Checked because the alternative is finding out later and worse: with no
-     * database driver the installer takes a full page of connection details and
-     * then fails on connect, which reads as "my credentials are wrong".
-     */
-    const REQUIRED_EXTENSIONS = [
-        'json'     => 'Encoding stored report definitions and API responses.',
-        'mbstring' => 'Handling non-ASCII page titles, URLs and search terms.',
-        'pcre'     => 'Matching URLs, goal conditions and constraint values.',
-        'zlib'     => 'Compressing and reading session recordings.',
-    ];
-
-    /**
-     * The check for one of REQUIRED_EXTENSIONS.
+     * The check for one of Core\Requirements::PHP_EXTENSIONS.
      *
      * @param string $extension
      * @param bool   $loaded
@@ -52,7 +37,7 @@ class EnvironmentCheck {
             $loaded ? \OWA\Core\CoreAPI::t( 'loaded' ) : \OWA\Core\CoreAPI::t( 'missing' ),
             $loaded,
             sprintf( \OWA\Core\CoreAPI::t( '%1$s Install the %2$s extension and restart PHP.' ),
-                \OWA\Core\Strings::translate( self::REQUIRED_EXTENSIONS[ $extension ] ?? '' ), $extension ),
+                \OWA\Core\Strings::translate( \OWA\Core\Requirements::PHP_EXTENSIONS[ $extension ] ?? '' ), $extension ),
             sprintf( '`%s` is loaded.', $extension ) );
     }
 
@@ -93,10 +78,10 @@ class EnvironmentCheck {
         $checks[] = self::check(
             \OWA\Core\CoreAPI::t( 'PHP version' ),
             phpversion(),
-            version_compare( phpversion(), self::MIN_PHP_VERSION, '>=' ),
+            version_compare( phpversion(), \OWA\Core\Requirements::PHP_MIN, '>=' ),
             sprintf( \OWA\Core\CoreAPI::t( 'OWA needs PHP %s or newer. Ask your host to upgrade, or point '
-                   . 'this virtual host at a newer PHP.' ), self::MIN_PHP_VERSION ),
-            sprintf( 'PHP is %s or later.', self::MIN_PHP_VERSION ) );
+                   . 'this virtual host at a newer PHP.' ), \OWA\Core\Requirements::PHP_MIN ),
+            sprintf( 'PHP is %s or later.', \OWA\Core\Requirements::PHP_MIN ) );
 
         $checks[] = self::integerSize( PHP_INT_SIZE );
 
@@ -106,7 +91,7 @@ class EnvironmentCheck {
             function_exists( 'mysqli_stmt_get_result' ),
             defined( 'OWA_DB_TYPE' ) ? (string) OWA_DB_TYPE : 'mysql' );
 
-        foreach ( array_keys( self::REQUIRED_EXTENSIONS ) as $extension ) {
+        foreach ( array_keys( \OWA\Core\Requirements::PHP_EXTENSIONS ) as $extension ) {
 
             $checks[] = self::extension( $extension, extension_loaded( $extension ) );
         }
@@ -194,7 +179,7 @@ class EnvironmentCheck {
         return self::check(
             \OWA\Core\CoreAPI::t( '64-bit PHP' ),
             sprintf( \OWA\Core\CoreAPI::t( '%d-bit' ), (int) $int_size * 8 ),
-            (int) $int_size === 8,
+            (int) $int_size === \OWA\Core\Requirements::PHP_INT_SIZE,
             \OWA\Core\CoreAPI::t( 'OWA needs a 64-bit build of PHP. Install a 64-bit PHP and point this virtual host at it.' ),
             'PHP is a 64-bit build.' );
     }

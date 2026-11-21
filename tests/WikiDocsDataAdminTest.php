@@ -39,7 +39,7 @@ final class WikiDocsDataAdminTest extends TestCase
                 "{$check['name']} is not in the table" );
         }
 
-        $this->assertStringContainsString( EnvironmentCheck::MIN_PHP_VERSION, $md );
+        $this->assertStringContainsString( \OWA\Core\Requirements::PHP_MIN, $md );
     }
 
     /** A check's 'requires' is the same whether it passes or fails. */
@@ -53,9 +53,9 @@ final class WikiDocsDataAdminTest extends TestCase
     {
         $md = self::section( 'php-extensions' );
 
-        $this->assertNotEmpty( EnvironmentCheck::REQUIRED_EXTENSIONS );
+        $this->assertNotEmpty( \OWA\Core\Requirements::PHP_EXTENSIONS );
 
-        foreach ( EnvironmentCheck::REQUIRED_EXTENSIONS as $extension => $what_for ) {
+        foreach ( \OWA\Core\Requirements::PHP_EXTENSIONS as $extension => $what_for ) {
             $this->assertStringContainsString( "| `$extension` | " . owa_wiki_cell( $what_for ) . ' |', $md, "$extension is not in the table" );
         }
     }
@@ -64,12 +64,12 @@ final class WikiDocsDataAdminTest extends TestCase
     {
         $md = self::section( 'database-servers' );
 
-        $this->assertMatchesRegularExpression( '/^\| MySQL\b.* \| ' . preg_quote( DatabaseRequirement::MYSQL_MIN, '/' ) . ' \|$/m', $md );
-        $this->assertMatchesRegularExpression( '/^\| MariaDB \| ' . preg_quote( preg_replace( '/\.0$/', '', DatabaseRequirement::MARIADB_MIN ), '/' ) . ' \|$/m', $md );
+        $this->assertMatchesRegularExpression( '/^\| MySQL\b.* \| ' . preg_quote( \OWA\Core\Requirements::MYSQL_MIN, '/' ) . ' \|$/m', $md );
+        $this->assertMatchesRegularExpression( '/^\| MariaDB \| ' . preg_quote( preg_replace( '/\.0$/', '', \OWA\Core\Requirements::MARIADB_MIN ), '/' ) . ' \|$/m', $md );
 
         // The trimmed MariaDB floor is the one problemFor() holds a server to.
-        $this->assertNull( DatabaseRequirement::problemFor( DatabaseRequirement::MARIADB_MIN . '-MariaDB' ) );
-        $this->assertNull( DatabaseRequirement::problemFor( DatabaseRequirement::MYSQL_MIN ) );
+        $this->assertNull( DatabaseRequirement::problemFor( \OWA\Core\Requirements::MARIADB_MIN . '-MariaDB' ) );
+        $this->assertNull( DatabaseRequirement::problemFor( \OWA\Core\Requirements::MYSQL_MIN ) );
     }
 
     public function testEveryAppPasswordAccessLevelIsInTheTable(): void

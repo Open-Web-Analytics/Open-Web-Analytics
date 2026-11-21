@@ -90,11 +90,11 @@ class Strings {
         'CustomReports::MORE_LABEL',
         'CustomReports::VISUALIZATION_TYPES',
         'CustomReports::VISUALIZATION_TYPE_HINTS',
-        'ServerRole::RETIRED_CONSTANTS',
+        'Requirements::RETIRED_CONSTANTS',
         'GoalVocabulary::LABELS',
         'GoalVocabulary::DESCRIPTIONS',
         'TimePeriod::COMPARE_PERIODS',
-        'EnvironmentCheck::REQUIRED_EXTENSIONS',
+        'Requirements::PHP_EXTENSIONS',
     ];
 
     /** gettext's context separator. */
