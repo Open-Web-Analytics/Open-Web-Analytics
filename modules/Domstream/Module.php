@@ -21,6 +21,14 @@ namespace OWA\Module\Domstream;
  */
 class Module extends \OWA\Core\Module {
 
+    /*
+     * Declared, not set in the constructor, so cmd=version-info reads both
+     * without constructing the module (Core\VersionInfo).
+     */
+    public $name = 'domstream';
+
+    public $required_schema_version = 3;
+
     /** The event name the recorder sends: dispatched as tracking.domstream. */
     const EVENT_NAME = 'domstream';
 
@@ -34,14 +42,12 @@ class Module extends \OWA\Core\Module {
 
     public function __construct() {
 
-        $this->name = 'domstream';
         $this->display_name = 'Domstream';
         $this->group = 'logging';
         $this->author = 'Peter Adams';
         $this->version = '2.0';
         $this->description = 'Records the pointer, scroll, clicks and key presses on a page, for playback.';
         $this->config_required = false;
-        $this->required_schema_version = 3;
 
         parent::__construct();
 

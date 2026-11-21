@@ -12,7 +12,8 @@
     "test:e2e:teardown": "php tests/e2e/seed_reporting_fixtures.php teardown",
     "test:e2e:install:doctor": "php tests/e2e/install_harness.php doctor",
     "test:e2e:selfhost:doctor": "php tests/e2e/selfhost_harness.php doctor",
-    "build": "webpack-cli --mode production",
+    "build": "webpack-cli --mode production && npm run version-info",
+    "version-info": "php cli.php cmd=version-info --file=release.json",
     "start": "webpack-cli --mode development --watch"
   },
   "repository": {

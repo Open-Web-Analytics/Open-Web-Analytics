@@ -40,6 +40,25 @@ if (empty($params['cmd'])) {
     exit(2);
 }
 
+// A command that answers from the code alone runs here, and OWA is never
+// booted: no owa-config.php, no database, any server role
+// (Controller\Cli::needsBoot(), Core\CliWithoutBoot). Every other command
+// carries on below.
+$without_boot = \OWA\Core\CliWithoutBoot::commandClass((string) $params['cmd']);
+
+if ($without_boot) {
+
+    $undeclared = \OWA\Core\Controller\Cli::undeclaredArguments($without_boot, $params);
+
+    if ($undeclared) {
+        fwrite(STDERR, sprintf("cmd=%s does not take %s. Nothing was done.\n",
+            $params['cmd'], implode(', ', $undeclared)));
+        exit(2);
+    }
+
+    exit((int) $without_boot::runWithoutBoot($params));
+}
+
 // Initialize owa
 $config = [
 

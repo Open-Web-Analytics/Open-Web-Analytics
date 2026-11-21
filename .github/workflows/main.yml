@@ -86,6 +86,21 @@ jobs:
     - name: Generate Release Tarball
       run: |
         tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./webpack.public-htaccess.js' --exclude='./modules/Base/src' --exclude='./modules/Domstream/src' --exclude='./node_modules' --exclude='./.build' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./.php-cs-fixer.dist.php' --exclude='./.php-cs-fixer.cache' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright*.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
+    # manifest.json: every file in the tarball with its SHA-256, size and mode
+    # (Core\ReleaseManifest), written by the release's own code from the
+    # unpacked tarball, so it lists exactly what ships, and added to it. A
+    # release check verifies a staged release against it. release.json is in
+    # the tarball already: npm run build wrote it.
+    - name: Add manifest.json to the tarball
+      run: |
+        test -s release.json
+        dir="$(mktemp -d)"
+        tar -xpf "./owa_${{ env.VERSION }}_packaged.tar" -C "$dir"
+        test -s "$dir/release.json"
+        php "$dir/cli.php" cmd=release-manifest --file="$dir/manifest.json"
+        tar -rpf "./owa_${{ env.VERSION }}_packaged.tar" -C "$dir" ./manifest.json
+        tar -tf "./owa_${{ env.VERSION }}_packaged.tar" | grep -qx './manifest.json'
+        rm -rf "$dir"
     # A draft release of the release branch, with the tarball attached. The tag
     # is created when the draft is published.
     - name: Create Draft Github Release

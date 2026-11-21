@@ -7,6 +7,14 @@ namespace OWA\Module\MaxmindGeoip;
 
 class Module extends \OWA\Core\Module {
 
+    /*
+     * Declared, not set in the constructor, so cmd=version-info reads both
+     * without constructing the module (Core\VersionInfo).
+     */
+    public $name = 'maxmind_geoip';
+
+    public $required_schema_version = 1;
+
     /**
      * The lookup the geolocation filter calls on the maxmind class, by the
      * lookup_method setting: getLocation or getLocationFromWebService.
@@ -17,14 +25,12 @@ class Module extends \OWA\Core\Module {
 
     public function __construct() {
 
-        $this->name = 'maxmind_geoip';
         $this->display_name = 'Maxmind GeoIP';
         $this->group = 'geoip';
         $this->author = 'Peter Adams';
         $this->version = '1.0';
         $this->description = 'Performs Maxmind Geo-IP lookups.';
         $this->config_required = false;
-        $this->required_schema_version = 1;
 
         $mode = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'lookup_method');
 

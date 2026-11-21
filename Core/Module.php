@@ -1085,31 +1085,56 @@ abstract class Module {
     }
 
     /**
+     * A module's schema updates, sequence => class, in order: the ones
+     * update() applies, and the list cmd=version-info publishes
+     * (Core\VersionInfo). Static and boot-free, so both read the same list.
+     *
+     * Update files are PSR-4 class files in the module's Update directory:
+     * UpdateNNN.php holds class UpdateNNN, and the sequence is the NNN
+     * ((int) 'Update011' is 0, so the digits are taken explicitly). Any other
+     * file there is not an update and is skipped rather than mis-sequenced.
+     *
+     * @param  string $name the module's name, such as base or maxmind_geoip
+     * @return array<int, class-string> sequence => fully qualified class name
+     */
+    public static function updateClasses( $name ) {
+
+        $dir   = \OWA\Core\Lib::moduleDirName( $name );
+        $files = \OWA\Core\Lib::listDir( \OWA\Core\Env::modulesDir() . $dir . '/Update', false ) ?: [];
+        $out   = [];
+
+        foreach ( $files as $file ) {
+
+            $basename = substr( $file['name'], 0, -4 );
+
+            if ( substr( $file['name'], -4 ) !== '.php' || ! preg_match( '/^Update(\d+)$/', $basename, $m ) ) {
+
+                continue;
+            }
+
+            /** @var class-string $class */
+            $class = '\\OWA\\Module\\' . $dir . '\\Update\\' . $basename;
+
+            $out[ (int) $m[1] ] = $class;
+        }
+
+        ksort( $out, SORT_NUMERIC );
+
+        return $out;
+    }
+
+    /**
      * Checks for and applies schema upgrades for the module
      *
      * @return bool
      */
     public function update() {
 
-        // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment);
-        // a module with no Update directory has none
-        $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false) ?: [];
-
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
-        // extract sequence
-        foreach ($files as $k => $v) {
-            // Update files are PSR-4 class files: UpdateNNN.php, holding class
-            // UpdateNNN. The sequence is the NNN: (int) 'Update011' is 0, so the digits
-            // are taken explicitly.
-            $classname = substr($v['name'], 0, -4);
+        foreach ( self::updateClasses( $this->name ) as $seq => $class ) {
 
-            if ( ! preg_match( '/^Update(\d+)$/', $classname, $seq_match ) ) {
-                // Not an update class file; ignore rather than mis-sequence it.
-                continue;
-            }
-
-            $seq = (int) $seq_match[1];
+            $classname = substr( $class, strrpos( $class, '\\' ) + 1 );
 
             if ($seq > $current_schema_version) {
 

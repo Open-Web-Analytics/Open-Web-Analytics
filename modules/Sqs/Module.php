@@ -31,16 +31,22 @@ namespace OWA\Module\Sqs;
  */
 class Module extends \OWA\Core\Module {
 
+    /*
+     * Declared, not set in the constructor, so cmd=version-info reads both
+     * without constructing the module (Core\VersionInfo).
+     */
+    public $name = 'sqs';
+
+    public $required_schema_version = 1;
+
     public function __construct() {
 
-        $this->name = 'sqs';
         $this->display_name = 'AWS SQS Tracking Intake';
         $this->group = 'logging';
         $this->author = 'Peter Adams';
         $this->version = '2.0';
         $this->description = 'Queues incoming beacons on AWS SQS, for a central install to drain.';
         $this->config_required = false;
-        $this->required_schema_version = 1;
 
         $this->registerImplementation( 'event_queue_types', 'sqs',
             \OWA\Module\Sqs\Classes\SqsQueue::class );
