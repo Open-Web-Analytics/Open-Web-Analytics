@@ -244,7 +244,7 @@ final class ServerRoleTest extends TestCase
     {
         $dist = (string) file_get_contents(__DIR__ . '/../owa-config-dist.php');
 
-        foreach (ServerRole::SECRET_CONSTANTS as $constant) {
+        foreach (\OWA\Core\Requirements::SECRET_CONSTANTS as $constant) {
             $this->assertSame(1, preg_match("/define\\('$constant', '([^']*)'\\)/", $dist, $m), $constant);
             $this->assertSame([$constant], ServerRole::weakSecrets([$constant => $m[1]]), $constant);
         }

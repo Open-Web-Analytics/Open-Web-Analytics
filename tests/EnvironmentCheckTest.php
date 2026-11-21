@@ -50,7 +50,7 @@ final class EnvironmentCheckTest extends TestCase
 
     public function testZlibIsARequiredExtension(): void
     {
-        $this->assertArrayHasKey('zlib', EnvironmentCheck::REQUIRED_EXTENSIONS);
+        $this->assertArrayHasKey('zlib', \OWA\Core\Requirements::PHP_EXTENSIONS);
         $this->assertSame(extension_loaded('zlib'), self::named('PHP extension: zlib')['passed']);
     }
 

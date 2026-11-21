@@ -55,48 +55,12 @@ final class ServerRole {
     /** The roles without a database. */
     const WITHOUT_DATABASE = [ self::COLLECTOR ];
 
-    /** What a role with a database needs in owa-config.php. */
-    const DATABASE_CONSTANTS = [
-        'OWA_DB_NAME', 'OWA_DB_HOST', 'OWA_DB_USER', 'OWA_DB_PASSWORD',
-        'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT',
-    ];
-
-    /**
-     * The keys nonces, overlay tokens, session cookies and application
-     * passwords are signed with. Each must be a random string of at least
-     * SECRET_MIN_LENGTH characters: not empty, and not owa-config-dist.php's
-     * example value.
+    /*
+     * What owa-config.php is held to -- the constants a role with a database
+     * needs, the secrets' rules, the retired constants -- is
+     * Core\Requirements' (DATABASE_CONSTANTS, URL_CONSTANTS, SECRET_*,
+     * RETIRED_CONSTANTS). This class applies it to a role.
      */
-    const SECRET_CONSTANTS = [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ];
-
-    /** The shortest secret accepted. The installer writes 64 characters. */
-    const SECRET_MIN_LENGTH = 32;
-
-    /** owa-config-dist.php's example values of SECRET_CONSTANTS. */
-    const SECRET_PLACEHOLDERS = [ 'yournoncekeygoeshere', 'yournoncesaltgoeshere', 'yourauthkeygoeshere', 'yourauthsaltgoeshere' ];
-
-    /**
-     * What a role with a database also needs, not empty: absolute links,
-     * mail, the published tracking bundles and signed REST requests are built
-     * from it. A collector builds none of them.
-     */
-    const URL_CONSTANTS = [ 'OWA_PUBLIC_URL' ];
-
-    /**
-     * Retired constants, and what replaces them. Each notice says whether
-     * the 1.x name is still read (Settings::applyConfigConstants()).
-     */
-    const RETIRED_CONSTANTS = [
-        'OWA_QUEUE_EVENTS'              => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',
-        'OWA_USE_STATIC_CONFIG_ONLY'    => 'The 1.x switch, still read: stored settings are not read at boot. Set OWA_SERVER_ROLE instead, collector for a server that only receives beacons.',
-        'OWA_QUEUE_TRACKER_INGEST'      => 'No longer read. Use OWA_QUEUE_TRACKING_EVENTS.',
-        'OWA_TRACKER_INGEST_QUEUE_TYPE' => 'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.',
-        'OWA_TRACKER_INGEST_DRAIN'      => 'No longer read. The servers whose role runs the scheduler drain the queue.',
-        'OWA_SCHEDULER_ENABLED'         => 'No longer read. The role decides: full and worker run the scheduler.',
-        'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
-        'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
-        'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
-    ];
 
     /** @var string[] */
     private $roles = [];
@@ -295,9 +259,9 @@ final class ServerRole {
 
         if ( $this->hasDatabase() ) {
 
-            $missing = array_values( array_diff( self::DATABASE_CONSTANTS, array_keys( $defined ) ) );
+            $missing = array_values( array_diff( Requirements::DATABASE_CONSTANTS, array_keys( $defined ) ) );
 
-            foreach ( self::URL_CONSTANTS as $constant ) {
+            foreach ( Requirements::URL_CONSTANTS as $constant ) {
 
                 if ( (string) ( $defined[ $constant ] ?? '' ) === '' ) {
 
@@ -411,7 +375,7 @@ final class ServerRole {
 
         return sprintf(
             CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
-            implode( ', ', $weak ), self::SECRET_MIN_LENGTH );
+            implode( ', ', $weak ), Requirements::SECRET_MIN_LENGTH );
     }
 
     /**
@@ -447,7 +411,7 @@ final class ServerRole {
 
         $weak = [];
 
-        foreach ( self::SECRET_CONSTANTS as $constant ) {
+        foreach ( Requirements::SECRET_CONSTANTS as $constant ) {
 
             if ( ! array_key_exists( $constant, $defined ) ) {
 
@@ -456,7 +420,7 @@ final class ServerRole {
 
             $value = is_scalar( $defined[ $constant ] ) ? (string) $defined[ $constant ] : '';
 
-            if ( strlen( $value ) < self::SECRET_MIN_LENGTH || in_array( $value, self::SECRET_PLACEHOLDERS, true ) ) {
+            if ( strlen( $value ) < Requirements::SECRET_MIN_LENGTH || in_array( $value, Requirements::SECRET_PLACEHOLDERS, true ) ) {
 
                 $weak[] = $constant;
             }
@@ -512,7 +476,7 @@ final class ServerRole {
      */
     public static function upgradeNotices( $defined = null ) {
 
-        return array_intersect_key( self::RETIRED_CONSTANTS, $defined ?? self::definedConstants() );
+        return array_intersect_key( Requirements::RETIRED_CONSTANTS, $defined ?? self::definedConstants() );
     }
 
     // ---------------------------------------------------------------------

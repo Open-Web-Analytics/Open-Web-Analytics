@@ -399,7 +399,7 @@ final class InstanceInfoCliTest extends TestCase
             \OWA\Module\Base\Classes\DatabaseRequirement::assume(null);
         }
 
-        $this->assertStringContainsString(\OWA\Module\Base\Classes\DatabaseRequirement::MYSQL_MIN, $old);
+        $this->assertStringContainsString(\OWA\Core\Requirements::MYSQL_MIN, $old);
         $this->assertStringContainsString('MariaDB 10.11', $old);
         $this->assertStringNotContainsString('MySQL 5.7 or later', $old);
 
