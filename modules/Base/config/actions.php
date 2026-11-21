@@ -81,6 +81,7 @@ return [
     'base.releaseManifestCli'           => 'OWA\\Module\\Base\\Controller\\ReleaseManifestCli',
     'base.backupCli'                    => 'OWA\\Module\\Base\\Controller\\BackupCli',
     'base.tablesCleanupCli'             => 'OWA\\Module\\Base\\Controller\\TablesCleanupCli',
+    'base.releaseCheckCli'              => 'OWA\\Module\\Base\\Controller\\ReleaseCheckCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',
     'base.partitionReorganizeCli'       => 'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',
     'base.partitionRotateCli'           => 'OWA\\Module\\Base\\Controller\\PartitionRotateCli',

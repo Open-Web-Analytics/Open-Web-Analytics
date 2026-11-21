@@ -216,6 +216,9 @@
         "base.tablesCleanupCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\TablesCleanupCli"
         },
+        "base.releaseCheckCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\ReleaseCheckCli"
+        },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
         },
@@ -384,6 +387,7 @@
         "v1-drop": "base.v1DropCli",
         "backup": "base.backupCli",
         "tables-cleanup": "base.tablesCleanupCli",
+        "release-check": "base.releaseCheckCli",
         "fetch-notifications": "base.notificationsFetchCli",
         "update-ua-regexes": "base.updateUaRegexesCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",

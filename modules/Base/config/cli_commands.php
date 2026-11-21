@@ -15,6 +15,7 @@ return [
     'v1-drop'                     => 'base.v1DropCli',
     'backup'                      => 'base.backupCli',
     'tables-cleanup'              => 'base.tablesCleanupCli',
+    'release-check'               => 'base.releaseCheckCli',
     'fetch-notifications'         => 'base.notificationsFetchCli',
     'update-ua-regexes'           => 'base.updateUaRegexesCli',
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',

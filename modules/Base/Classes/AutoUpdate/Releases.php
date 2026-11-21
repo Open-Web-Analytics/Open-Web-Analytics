@@ -1,0 +1,205 @@
+<?php
+namespace OWA\Module\Base\Classes\AutoUpdate;
+
+/**
+ * OWA's releases on GitHub, and the one an installation updates to.
+ *
+ * ONE API CALL lists the releases with their assets (auto_update_releases_url).
+ * The asset a release ships is owa_<version>_packaged.tar (ASSET), with its
+ * SHA-256 in the asset's digest; a SHA256SUMS asset (SUMS_ASSET) is the
+ * fallback for a release without one. Tag, asset name and digest are a frozen
+ * contract: an installed release finds the next one by them.
+ *
+ * @phpstan-type Release array{version: string, step: string, url: string, asset_url: string, size: int, sha256: string|null, sums_url: string|null}
+ */
+class Releases {
+
+    /** The tarball's name; %s is the version. */
+    const ASSET = 'owa_%s_packaged.tar';
+
+    /** Lines of "<sha256>  <asset name>", for a release whose asset has no digest. */
+    const SUMS_ASSET = 'SHA256SUMS';
+
+    /** Seconds the listing may take. */
+    const TIMEOUT = 20;
+
+    /**
+     * Tests only: answers get() in place of the network, given its arguments.
+     *
+     * @var (callable(string, int, string|null): string)|null
+     */
+    public static $fetcher = null;
+
+    /**
+     * The release to update to: not a draft or a pre-release, in the same
+     * major version (a major release is never automatic), higher than
+     * $installed, a step $level allows (PATCH: patches only; MINOR: patches and
+     * minors), and shipping the tarball. The highest version wins, whatever
+     * order or date GitHub lists them in.
+     *
+     * @param  array<int, mixed> $releases decoded from the listing
+     * @param  string            $installed
+     * @param  string            $level     Version::PATCH or Version::MINOR
+     * @return Release|null
+     */
+    public static function choose( array $releases, $installed, $level ) {
+
+        $best = null;
+
+        foreach ( $releases as $r ) {
+
+            $r = is_array( $r ) ? $r : [];
+
+            if ( ! empty( $r['draft'] ) || ! empty( $r['prerelease'] ) ) {
+
+                continue;
+            }
+
+            $version = (string) ( $r['tag_name'] ?? '' );
+
+            if ( Version::parse( $version ) === null ) {
+
+                continue;
+            }
+
+            $step = Version::step( $installed, $version );
+
+            if ( $step === null || $step === Version::MAJOR || ( $step === Version::MINOR && $level !== Version::MINOR ) ) {
+
+                continue;
+            }
+
+            $release = self::describe( $r, $version, $step );
+
+            if ( $release && ( $best === null || Version::compare( $version, $best['version'] ) > 0 ) ) {
+
+                $best = $release;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * @param  array<string, mixed> $r
+     * @param  string               $version
+     * @param  string               $step
+     * @return Release|null null when it does not ship the tarball
+     */
+    private static function describe( array $r, $version, $step ) {
+
+        $tarball = null;
+        $sums    = null;
+
+        foreach ( (array) ( $r['assets'] ?? [] ) as $asset ) {
+
+            $asset = is_array( $asset ) ? $asset : [];
+            $name  = (string) ( $asset['name'] ?? '' );
+
+            if ( $name === sprintf( self::ASSET, $version ) ) {
+
+                $tarball = $asset;
+
+            } elseif ( $name === self::SUMS_ASSET ) {
+
+                $sums = (string) ( $asset['browser_download_url'] ?? '' );
+            }
+        }
+
+        $url = (string) ( $tarball['browser_download_url'] ?? '' );
+
+        if ( ! $tarball || ! str_starts_with( $url, 'https://' ) ) {
+
+            return null;
+        }
+
+        $digest = (string) ( $tarball['digest'] ?? '' );
+
+        return [
+            'version'   => $version,
+            'step'      => $step,
+            'url'       => (string) ( $r['html_url'] ?? '' ),
+            'asset_url' => $url,
+            'size'      => (int) ( $tarball['size'] ?? 0 ),
+            'sha256'    => preg_match( '/^sha256:([0-9a-f]{64})$/', $digest, $m ) ? $m[1] : null,
+            'sums_url'  => $sums !== '' && str_starts_with( (string) $sums, 'https://' ) ? $sums : null,
+        ];
+    }
+
+    /**
+     * The SHA-256 SHA256SUMS gives for $name, or null.
+     *
+     * @param  string $sums
+     * @param  string $name
+     * @return string|null
+     */
+    public static function sumFor( $sums, $name ) {
+
+        foreach ( preg_split( '/\r?\n/', (string) $sums ) ?: [] as $line ) {
+
+            if ( preg_match( '/^([0-9a-f]{64}) [ *](\S+)$/', trim( $line ), $m ) && ( $m[2] === $name || $m[2] === './' . $name ) ) {
+
+                return $m[1];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The decoded listing.
+     *
+     * @param  string $url
+     * @return array<int, mixed>
+     * @throws \RuntimeException when it cannot be fetched or read
+     */
+    public static function fetch( $url ) {
+
+        $body = self::get( $url, self::TIMEOUT );
+        $list = json_decode( $body, true );
+
+        if ( ! is_array( $list ) || ( $list !== [] && ! array_is_list( $list ) ) ) {
+
+            throw new \RuntimeException( sprintf( '%s did not answer with a list of releases.', $url ) );
+        }
+
+        return $list;
+    }
+
+    /**
+     * A GET's body, or a RuntimeException saying why there is none.
+     *
+     * @param  string      $url
+     * @param  int         $timeout seconds
+     * @param  string|null $sink    a file to stream the body into instead
+     * @return string the body; '' when sunk to a file
+     */
+    public static function get( $url, $timeout, $sink = null ) {
+
+        if ( self::$fetcher !== null ) {
+
+            return ( self::$fetcher )( $url, $timeout, $sink );
+        }
+
+        $client = new \GuzzleHttp\Client( [ 'timeout' => $timeout, 'connect_timeout' => 10 ] );
+
+        try {
+
+            $response = $client->request( 'GET', $url, array_filter( [
+                'headers'         => [
+                    'User-Agent' => (string) \OWA\Core\CoreAPI::getSetting( 'base', 'owa_user_agent' ),
+                    'Accept'     => 'application/vnd.github+json, application/octet-stream;q=0.9, */*;q=0.1',
+                ],
+                'allow_redirects' => [ 'max' => 5, 'protocols' => [ 'https' ] ],
+                'http_errors'     => true,
+                'sink'            => $sink,
+            ], static fn ( $v ) => $v !== null ) );
+
+        } catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
+
+            throw new \RuntimeException( sprintf( 'Fetching %s failed: %s', $url, $e->getMessage() ), 0, $e );
+        }
+
+        return $sink === null ? (string) $response->getBody() : '';
+    }
+}

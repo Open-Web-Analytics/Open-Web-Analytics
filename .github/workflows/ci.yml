@@ -81,6 +81,16 @@ jobs:
       - name: Unit tests (PHPUnit)
         run: composer run-script test
 
+      # The release check against the real GitHub releases: tags, the tarball
+      # asset's name and digest, and a download that matches it. Once, not per
+      # PHP version: runners share the API's rate limit.
+      - name: Release listing (network)
+        if: matrix.php == '8.2'
+        env:
+          OWA_TEST_NETWORK: '1'
+          GITHUB_TOKEN: ${{ github.token }}
+        run: vendor/bin/phpunit tests/ReleaseListingNetworkTest.php
+
       # Shows the php-cgi tests ran: a skip for want of php-cgi fails the job.
       - name: The header tests ran under php-cgi
         run: |
