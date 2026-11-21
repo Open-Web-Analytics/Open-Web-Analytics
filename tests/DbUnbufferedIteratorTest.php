@@ -14,7 +14,8 @@ final class DbUnbufferedIteratorTest extends TestCase
 {
     private string $table = '';
 
-    private $saved_type;
+    /** @var array{0: mixed}|null db_type as it was, once setUp() got that far */
+    private ?array $saved_type = null;
 
     protected function setUp(): void
     {
@@ -22,7 +23,7 @@ final class DbUnbufferedIteratorTest extends TestCase
             $this->markTestSkipped('needs a database');
         }
 
-        $this->saved_type = \OWA\Core\CoreAPI::getSetting('base', 'db_type');
+        $this->saved_type = [\OWA\Core\CoreAPI::getSetting('base', 'db_type')];
         $this->table      = 'owa_zzunbuf_' . getmypid();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -30,9 +31,14 @@ final class DbUnbufferedIteratorTest extends TestCase
         $db->query(sprintf("INSERT INTO %s VALUES (9223372036854775807, 'top'), (1, NULL), (2, 'two')", $this->table));
     }
 
+    /** Runs after a skip in setUp() too: it restores only what setUp() saved. */
     protected function tearDown(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'db_type', $this->saved_type);
+        if ($this->saved_type === null) {
+            return;
+        }
+
+        \OWA\Core\CoreAPI::setSetting('base', 'db_type', $this->saved_type[0]);
         \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . $this->table);
     }
 
