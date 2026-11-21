@@ -9,6 +9,9 @@ namespace OWA\Module\Domstream\Entity;
  */
 class DomstreamPayload extends \OWA\Core\Entity {
 
+    /** Written by tracking (Classes\Backup). */
+    protected $backup_group = self::BACKUP_DATA;
+
     public function __construct() {
 
         $this->setTableName( 'domstream_payload' );

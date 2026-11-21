@@ -334,6 +334,31 @@ final class SystemHealthTest extends TestCase
             'the same checks the installer and cmd=instance-info read, then the retired constants, then notice mail');
     }
 
+    /** OWA_BACKUP_DIR, when set: red inside what the web server serves, whoever can write it. */
+    public function testTheBackupDirectoryIsShownWhenSet(): void
+    {
+        $saved = \OWA\Core\CoreAPI::getSetting('base', 'backup_dir');
+        $dir   = sys_get_temp_dir() . '/owa-health-backup-' . getmypid();
+        mkdir($dir, 0500);
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'backup_dir', '');
+            $this->assertNull(SystemHealth::backupDir());
+
+            \OWA\Core\CoreAPI::setSetting('base', 'backup_dir', \OWA\Core\Env::root() . '/owa-data');
+            $this->assertSame('red', SystemHealth::backupDir()['level']);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'backup_dir', $dir);
+            $this->assertSame(['green', $dir], [SystemHealth::backupDir()['level'], SystemHealth::backupDir()['detail']],
+                'not writable here, which is the command\'s question');
+
+            $this->assertContains('Backup directory', array_column(SystemHealth::installation()['findings'], 'label'));
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'backup_dir', $saved);
+            rmdir($dir);
+        }
+    }
+
     public function testTheInstallationNamesTheServerRole(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
