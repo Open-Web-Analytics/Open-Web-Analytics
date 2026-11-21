@@ -63,11 +63,9 @@ function owa_wiki_module_overrides() {
 
     $out = [];
 
-    foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
-
-        if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m ) ) {
-            $out[ $m[1] ] = [ 'is_active' => true ];
-        }
+    // Each module's declared name, read without constructing it (Core\VersionInfo).
+    foreach ( array_keys( \OWA\Core\VersionInfo::modules() ) as $name ) {
+        $out[ $name ] = [ 'is_active' => true ];
     }
 
     return $out;
