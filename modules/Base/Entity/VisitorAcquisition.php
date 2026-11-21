@@ -39,6 +39,9 @@ namespace OWA\Module\Base\Entity;
  */
 class VisitorAcquisition extends \OWA\Core\Entity {
 
+    /** Written by tracking (Classes\Backup). */
+    protected $backup_group = self::BACKUP_DATA;
+
     /** The unique index on visitor_id, by the name an update can drop. */
     const VISITOR_INDEX = 'visitor_id_unique';
 

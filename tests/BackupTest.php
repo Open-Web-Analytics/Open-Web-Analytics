@@ -39,41 +39,34 @@ final class BackupTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** Every entity's table is in a group on purpose: a new one fails here until it is placed. */
-    public function testEveryEntityTableIsClassified(): void
+    /** Each entity declares its group; every module's are asked, active or not. */
+    public function testEachEntityDeclaresItsGroup(): void
     {
-        $data = [];
-        $application = [];
+        $groups = Backup::entityGroups();
 
-        foreach (glob(dirname(__DIR__) . '/modules/*/Entity/*.php') as $file) {
-            $name = basename($file, '.php');
+        $this->assertSame(['domstream_chunk', 'domstream_payload', 'event_raw', 'visitor_acquisition'],
+            array_keys(array_filter($groups, static fn ($g) => $g === Backup::DATA)),
+            'the tables tracking writes; a change here is a change to what scope=data holds');
 
-            // index.php guards the directory; Event is a cube, named per Property.
-            if ($name === 'index' || $name === 'Event') {
-                continue;
-            }
+        $this->assertArrayHasKey('site', $groups);
+        $this->assertSame(Backup::APPLICATION, $groups['user']);
 
-            $class  = '\\OWA\\Module\\' . basename(dirname($file, 2)) . '\\Entity\\' . $name;
-            $table  = substr((new $class())->getTableName(), strlen(\OWA\Core\Entity::TABLE_PREFIX));
-
-            if (Backup::isDataTable($table)) {
-                $data[] = $table;
-            } else {
-                $application[] = $table;
-            }
+        foreach ($groups as $table => $group) {
+            $this->assertContains($group, [Backup::APPLICATION, Backup::DATA], $table);
         }
+    }
 
-        sort($data);
-        sort($application);
+    public function testAnEntityDeclaresDataByItsProperty(): void
+    {
+        $this->assertSame(\OWA\Core\Entity::BACKUP_DATA, (new \OWA\Module\Base\Entity\EventRaw())->getBackupGroup());
+        $this->assertSame(\OWA\Core\Entity::BACKUP_APPLICATION, (new \OWA\Module\Base\Entity\Site())->getBackupGroup(), 'the default');
+    }
 
-        $this->assertSame(['domstream_chunk', 'domstream_payload', 'event_raw', 'visitor_acquisition'], $data);
-        $this->assertSame([
-            'app_password', 'configuration', 'custom_dimension', 'custom_report', 'custom_report_favorite',
-            'goal_event_definition', 'goal_event_definition_condition', 'job_lock', 'job_queue',
-            'migration_day_visitor', 'migration_progress', 'migration_tally', 'notification',
-            'notification_state', 'organization', 'property', 'scheduled_job', 'setting', 'site',
-            'site_user', 'spam_block', 'user',
-        ], $application, 'a new entity: add its table to Backup::DATA_TABLES if tracking writes it, then here');
+    public function testATableNoEntityOwnsIsApplicationUnlessItIs1x(): void
+    {
+        $this->assertSame(Backup::DATA, Backup::groupOf('request'));
+        $this->assertSame(Backup::DATA, Backup::groupOf('location_dim'));
+        $this->assertSame(Backup::APPLICATION, Backup::groupOf('setting_update070'));
     }
 
     public function testTheGroupsLeaveOutTheCubes(): void

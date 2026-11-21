@@ -625,6 +625,148 @@ trait MysqlDialect
     }
 
     /**
+     * The base tables whose names start with $prefix, sorted. Views are left out.
+     *
+     * @param string $prefix
+     * @return list<string>
+     */
+    public function listTables( $prefix ) {
+
+        $like = str_replace( [ '\\', '_', '%' ], [ '\\\\', '\\_', '\\%' ], (string) $prefix ) . '%';
+
+        return array_values( array_map( static fn ( $row ) => (string) array_change_key_case( (array) $row )['t'],
+            (array) $this->get_results( "SELECT TABLE_NAME AS t FROM information_schema.TABLES"
+                . " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME LIKE ?"
+                . ' ORDER BY TABLE_NAME', [ $like ] ) ) );
+    }
+
+    /**
+     * The columns an INSERT can write, in order, each with whether its values
+     * are bytes rather than text. A generated column cannot be written and is
+     * left out; DEFAULT_GENERATED (a CURRENT_TIMESTAMP default) is an ordinary
+     * column.
+     *
+     * @param string $table_name
+     * @return array<string, bool> column => binary
+     */
+    public function copyableColumns( $table_name ) {
+
+        $columns = [];
+        $binary  = [ 'binary', 'varbinary', 'tinyblob', 'blob', 'mediumblob', 'longblob', 'bit' ];
+
+        foreach ( (array) $this->get_results( 'SELECT COLUMN_NAME AS c, DATA_TYPE AS d, EXTRA AS e FROM information_schema.COLUMNS'
+                . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION', [ (string) $table_name ] ) as $row ) {
+
+            $row = array_change_key_case( (array) $row );
+
+            if ( preg_match( '/\b(VIRTUAL|STORED|PERSISTENT) GENERATED\b/i', (string) $row['e'] ) ) {
+
+                continue;
+            }
+
+            $columns[ (string) $row['c'] ] = in_array( strtolower( (string) $row['d'] ), $binary, true );
+        }
+
+        return $columns;
+    }
+
+    /**
+     * @param string $table_name
+     * @return list<string> the primary key's columns in order, [] when it has none
+     */
+    public function primaryKeyColumns( $table_name ) {
+
+        return array_values( array_map( static fn ( $row ) => (string) array_change_key_case( (array) $row )['c'],
+            (array) $this->get_results( "SELECT COLUMN_NAME AS c FROM information_schema.KEY_COLUMN_USAGE"
+                . " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'"
+                . ' ORDER BY ORDINAL_POSITION', [ (string) $table_name ] ) ) );
+    }
+
+    /**
+     * The statement that creates a table as it is now.
+     *
+     * @param string $table_name
+     * @return string|null
+     */
+    public function createTableStatement( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return null;
+        }
+
+        $create = array_values( (array) $this->get_row( sprintf( 'SHOW CREATE TABLE `%s`', $table_name ) ) )[1] ?? null;
+
+        return is_string( $create ) && $create !== '' ? $create : null;
+    }
+
+    /**
+     * Run $fn with the session in UTC, so TIMESTAMP columns read as UTC, and
+     * put the session's own time zone back after.
+     *
+     * @param callable $fn
+     * @return mixed $fn's result
+     */
+    public function withDumpSession( callable $fn ) {
+
+        $zone = (string) ( (array) $this->get_row( 'SELECT @@session.time_zone AS z' ) )['z'];
+
+        $this->query( "SET time_zone = '+00:00'" );
+
+        try {
+
+            return $fn();
+
+        } finally {
+
+            if ( preg_match( '#^[A-Za-z0-9_+:/-]+$#', $zone ) ) {
+
+                $this->query( sprintf( "SET time_zone = '%s'", $zone ) );
+            }
+        }
+    }
+
+    /**
+     * Run $fn inside one read-only, repeatable-read snapshot, so every table
+     * it reads agrees with the others.
+     *
+     * @param callable $fn
+     * @return mixed $fn's result
+     */
+    public function withConsistentSnapshot( callable $fn ) {
+
+        $this->query( 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ' );
+        $this->query( 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY' );
+
+        try {
+
+            return $fn();
+
+        } finally {
+
+            $this->query( 'COMMIT' );
+        }
+    }
+
+    /**
+     * What a dump written under withDumpSession() sets before its statements,
+     * and after them, for whoever loads it.
+     *
+     * @return array{before: string, after: string}
+     */
+    public function dumpPreamble() {
+
+        $cs = (string) ( (array) $this->get_row( 'SELECT @@character_set_connection AS cs' ) )['cs'];
+
+        return [
+            'before' => sprintf( "SET NAMES %s;\n", preg_match( '/^[a-z0-9_]+$/', $cs ) ? $cs : $this->connectionCharacterEncoding() )
+                . "SET FOREIGN_KEY_CHECKS = 0;\nSET UNIQUE_CHECKS = 0;\n"
+                . "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\nSET time_zone = '+00:00';\n",
+            'after'  => "SET FOREIGN_KEY_CHECKS = 1;\nSET UNIQUE_CHECKS = 1;\n",
+        ];
+    }
+
+    /**
      * Row count and date range within one partition.
      *
      * Reads the partition itself rather than information_schema, because

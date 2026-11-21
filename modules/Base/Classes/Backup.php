@@ -4,17 +4,17 @@ namespace OWA\Module\Base\Classes;
 /**
  * A SQL dump of OWA's tables, written by OWA itself (cmd=backup).
  *
- * TWO GROUPS. Data is what tracking writes: the tables ingest fills on every
- * visit (DATA_TABLES) and, while an upgraded installation keeps them, the 1.x
- * tracking tables (Migration\V1Tables). Application is every other OWA
- * table: configuration, users, Properties and Profiles, goals, settings,
- * notices, the job queue. The cubes are in neither; they are rebuilt from
- * owa_event_raw (cmd=cube-rebuild), and so are their build tables, which are
- * named after them.
+ * TWO GROUPS, declared by each entity (Entity::getBackupGroup()). Data is
+ * what tracking writes on every visit: owa_event_raw, owa_visitor_acquisition,
+ * and any module's own tracking table, such as page recordings. Application
+ * is the rest: configuration, users, Properties and Profiles, goals, settings,
+ * notices, the job queue. The entities are those of every module present,
+ * active or not, since a deactivated module's tables are still there.
  *
- * A table no group names is application. A module's own tracking table has
- * to be added to DATA_TABLES; BackupTest lists every entity's table so a new
- * one is classified when it is added.
+ * A table no entity owns is application, except the 1.x tracking tables an
+ * upgraded installation may keep (Migration\V1Tables), which are data. The
+ * cubes are in neither; they are rebuilt from owa_event_raw (cmd=cube-rebuild),
+ * and so are their build tables, which are named after them.
  *
  * THE FILE is plain SQL, gzipped: a header saying what it holds and how to
  * restore it, then each table's SHOW CREATE TABLE and batched INSERTs, then a
@@ -34,8 +34,8 @@ namespace OWA\Module\Base\Classes;
  */
 class Backup {
 
-    const APPLICATION = 'application';
-    const DATA        = 'data';
+    const APPLICATION = \OWA\Core\Entity::BACKUP_APPLICATION;
+    const DATA        = \OWA\Core\Entity::BACKUP_DATA;
     const ALL         = 'all';
 
     /** The scope= values, and the groups each dumps. */
@@ -43,14 +43,6 @@ class Backup {
         self::APPLICATION => [ self::APPLICATION ],
         self::DATA        => [ self::DATA ],
         self::ALL         => [ self::APPLICATION, self::DATA ],
-    ];
-
-    /** The tables tracking writes on every visit, unprefixed. */
-    const DATA_TABLES = [
-        'event_raw',
-        'visitor_acquisition',
-        'domstream_chunk',
-        'domstream_payload',
     ];
 
     /** The file's format, in its header. */
@@ -65,14 +57,14 @@ class Backup {
     /** The last line of a complete file. */
     const COMPLETE = '-- Backup complete.';
 
-    /** Column types written as hexadecimal literals. */
-    const BINARY_TYPES = [ 'binary', 'varbinary', 'tinyblob', 'blob', 'mediumblob', 'longblob', 'bit' ];
-
     /** @var \OWA\Core\Db */
     private $db;
 
     /** @var string */
     private $prefix;
+
+    /** @var array<string, string>|null unprefixed table => group, from the entities */
+    private static $entity_groups = null;
 
     /** @var callable(string): void|null told each table as it is done */
     public $progress = null;
@@ -88,15 +80,57 @@ class Backup {
     }
 
     /**
-     * Whether an unprefixed table is in the data group.
+     * The group an unprefixed table is in.
      *
      * @param  string $table
-     * @return bool
+     * @return string APPLICATION or DATA
      */
-    public static function isDataTable( $table ) {
+    public static function groupOf( $table ) {
 
-        return in_array( $table, self::DATA_TABLES, true )
-            || in_array( $table, Migration\V1Tables::all(), true );
+        $groups = self::entityGroups();
+
+        if ( isset( $groups[ $table ] ) ) {
+
+            return $groups[ $table ];
+        }
+
+        return in_array( $table, Migration\V1Tables::all(), true ) ? self::DATA : self::APPLICATION;
+    }
+
+    /**
+     * Every module's entities' tables, unprefixed, with the group each
+     * declares. A module is asked whether it is active or not: one built for
+     * the question when boot did not load it.
+     *
+     * @return array<string, string>
+     */
+    public static function entityGroups() {
+
+        if ( self::$entity_groups !== null ) {
+
+            return self::$entity_groups;
+        }
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $groups  = [];
+
+        foreach ( array_keys( \OWA\Core\VersionInfo::modules() ) as $name ) {
+
+            $class  = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $name ) . '\\Module';
+            $module = $service->getModule( $name ) ?: new $class();
+
+            foreach ( $module->getEntities() as $entity ) {
+
+                $e     = \OWA\Core\CoreAPI::entityFactory( $name . '.' . $entity );
+                $table = substr( $e->getTableName(), strlen( \OWA\Core\Entity::TABLE_PREFIX ) );
+
+                $groups[ $table ] = $e->getBackupGroup() === self::DATA ? self::DATA : self::APPLICATION;
+            }
+        }
+
+        ksort( $groups );
+
+        return self::$entity_groups = $groups;
     }
 
     /**
@@ -108,21 +142,16 @@ class Backup {
     public function tables() {
 
         $groups = [ self::APPLICATION => [], self::DATA => [] ];
-        $like   = str_replace( [ '\\', '_', '%' ], [ '\\\\', '\\_', '\\%' ], $this->prefix ) . '%';
         $cube   = '/^' . preg_quote( $this->prefix . Cube\Cubes::PREFIX, '/' ) . '[0-9]+/';
 
-        foreach ( (array) $this->db->get_results( "SELECT TABLE_NAME AS t FROM information_schema.TABLES"
-                . " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME LIKE ?"
-                . " ORDER BY TABLE_NAME", [ $like ] ) as $row ) {
-
-            $name = (string) array_change_key_case( (array) $row )['t'];
+        foreach ( $this->db->listTables( $this->prefix ) as $name ) {
 
             if ( preg_match( $cube, $name ) ) {
 
                 continue;
             }
 
-            $groups[ self::isDataTable( substr( $name, strlen( $this->prefix ) ) ) ? self::DATA : self::APPLICATION ][] = $name;
+            $groups[ self::groupOf( substr( $name, strlen( $this->prefix ) ) ) ][] = $name;
         }
 
         return $groups;
@@ -232,9 +261,6 @@ class Backup {
             throw new \RuntimeException( 'PHP\'s zlib extension is needed to write a backup.' );
         }
 
-        $zone = (string) ( (array) $this->db->get_row( 'SELECT @@session.time_zone AS z' ) )['z'];
-        $this->db->query( "SET time_zone = '+00:00'" );
-
         $counts = [];
 
         try {
@@ -246,40 +272,39 @@ class Backup {
                 $tables = array_merge( $tables, $groups[ $group ] );
             }
 
-            $this->put( $gz, $this->header( $scope, $tables, $about ) );
+            $preamble = $this->db->dumpPreamble();
 
-            foreach ( self::SCOPES[ $scope ] as $group ) {
+            $this->put( $gz, $this->header( $scope, $tables, $about ) . $preamble['before'] . "\n" );
 
-                $snapshot = $group === self::APPLICATION;
+            $this->db->withDumpSession( function () use ( $gz, $groups, $scope, &$counts ) {
 
-                if ( $snapshot ) {
+                foreach ( self::SCOPES[ $scope ] as $group ) {
 
-                    $this->db->query( 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ' );
-                    $this->db->query( 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY' );
-                }
+                    $dump = function () use ( $gz, $groups, $group, &$counts ) {
 
-                try {
+                        foreach ( $groups[ $group ] as $table ) {
 
-                    foreach ( $groups[ $group ] as $table ) {
+                            $counts[ $table ] = $this->dumpTable( $gz, $table );
 
-                        $counts[ $table ] = $this->dumpTable( $gz, $table );
+                            if ( $this->progress ) {
 
-                        if ( $this->progress ) {
-
-                            ( $this->progress )( sprintf( '%-40s %12s rows', $table, number_format( $counts[ $table ] ) ) );
+                                ( $this->progress )( sprintf( '%-40s %12s rows', $table, number_format( $counts[ $table ] ) ) );
+                            }
                         }
-                    }
+                    };
 
-                } finally {
+                    if ( $group === self::APPLICATION ) {
 
-                    if ( $snapshot ) {
+                        $this->db->withConsistentSnapshot( $dump );
 
-                        $this->db->query( 'COMMIT' );
+                    } else {
+
+                        $dump();
                     }
                 }
-            }
+            } );
 
-            $this->put( $gz, "SET FOREIGN_KEY_CHECKS = 1;\nSET UNIQUE_CHECKS = 1;\n"
+            $this->put( $gz, $preamble['after']
                 . sprintf( "%s %d tables, %d rows.\n", self::COMPLETE, count( $counts ), array_sum( $counts ) ) );
 
             if ( ! fclose( $gz ) ) {
@@ -311,13 +336,6 @@ class Backup {
             @unlink( $part );
 
             throw $e instanceof \RuntimeException ? $e : new \RuntimeException( $e->getMessage(), 0, $e );
-
-        } finally {
-
-            if ( preg_match( '#^[A-Za-z0-9_+:/-]+$#', $zone ) ) {
-
-                $this->db->query( sprintf( "SET time_zone = '%s'", $zone ) );
-            }
         }
 
         return [ 'file' => $file, 'tables' => $counts ];
@@ -362,8 +380,7 @@ class Backup {
     }
 
     /**
-     * What the file holds and how it is restored, as SQL comments, then the
-     * session settings the INSERTs need.
+     * What the file holds and how it is restored, as SQL comments.
      *
      * @param  string               $scope
      * @param  list<string>         $tables
@@ -395,18 +412,7 @@ class Backup {
         $lines[] = '  3. php cli.php cmd=cube-rebuild from=<first day of data>';
         $lines[] = '  4. php cli.php cmd=publish-trackers';
 
-        return '-- ' . implode( "\n-- ", $lines ) . "\n\n"
-            . sprintf( "SET NAMES %s;\n", $this->charset() )
-            . "SET FOREIGN_KEY_CHECKS = 0;\nSET UNIQUE_CHECKS = 0;\n"
-            . "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\nSET time_zone = '+00:00';\n\n";
-    }
-
-    /** @return string the connection's character set, which the values were read in */
-    private function charset() {
-
-        $cs = (string) ( (array) $this->db->get_row( 'SELECT @@character_set_connection AS cs' ) )['cs'];
-
-        return preg_match( '/^[a-z0-9_]+$/', $cs ) ? $cs : 'utf8mb4';
+        return '-- ' . implode( "\n-- ", $lines ) . "\n\n";
     }
 
     /**
@@ -418,17 +424,23 @@ class Backup {
      */
     private function dumpTable( $gz, $table ) {
 
-        $create = array_values( (array) $this->db->get_row( sprintf( 'SHOW CREATE TABLE `%s`', $table ) ) )[1] ?? null;
+        $create = $this->db->createTableStatement( $table );
 
-        if ( ! is_string( $create ) || $create === '' ) {
+        if ( $create === null ) {
 
             throw new \RuntimeException( sprintf( 'Could not read the definition of %s.', $table ) );
         }
 
         $this->put( $gz, sprintf( "-- %s\n%s;\n", $table, $create ) );
 
-        $columns = $this->columns( $table );
-        $key     = $this->primaryKey( $table );
+        $columns = $this->db->copyableColumns( $table );
+        $key     = $this->db->primaryKeyColumns( $table );
+
+        if ( ! $columns ) {
+
+            throw new \RuntimeException( sprintf( 'Could not read the columns of %s.', $table ) );
+        }
+
         $names   = implode( ', ', array_map( static fn ( $c ) => '`' . $c . '`', array_keys( $columns ) ) );
         $insert  = sprintf( 'INSERT INTO `%s` (%s) VALUES ', $table, $names );
         $rows    = 0;
@@ -480,51 +492,6 @@ class Backup {
         $this->put( $gz, "\n" );
 
         return $rows;
-    }
-
-    /**
-     * The columns an INSERT writes, name => whether binary. A generated column
-     * cannot be written and is left out; DEFAULT_GENERATED (a CURRENT_TIMESTAMP
-     * default) is an ordinary column.
-     *
-     * @param  string $table
-     * @return array<string, bool>
-     */
-    private function columns( $table ) {
-
-        $columns = [];
-
-        foreach ( (array) $this->db->get_results( 'SELECT COLUMN_NAME AS c, DATA_TYPE AS d, EXTRA AS e FROM information_schema.COLUMNS'
-                . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION', [ $table ] ) as $row ) {
-
-            $row = array_change_key_case( (array) $row );
-
-            if ( preg_match( '/\b(VIRTUAL|STORED|PERSISTENT) GENERATED\b/i', (string) $row['e'] ) ) {
-
-                continue;
-            }
-
-            $columns[ (string) $row['c'] ] = in_array( strtolower( (string) $row['d'] ), self::BINARY_TYPES, true );
-        }
-
-        if ( ! $columns ) {
-
-            throw new \RuntimeException( sprintf( 'Could not read the columns of %s.', $table ) );
-        }
-
-        return $columns;
-    }
-
-    /**
-     * @param  string $table
-     * @return list<string> the primary key's columns in order, [] when it has none
-     */
-    private function primaryKey( $table ) {
-
-        return array_values( array_map( static fn ( $row ) => (string) array_change_key_case( (array) $row )['c'],
-            (array) $this->db->get_results( "SELECT COLUMN_NAME AS c FROM information_schema.KEY_COLUMN_USAGE"
-                . " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'"
-                . ' ORDER BY ORDINAL_POSITION', [ $table ] ) ) );
     }
 
     /**
