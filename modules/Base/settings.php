@@ -81,6 +81,20 @@ return [
                 \OWA\Core\CoreAPI::t( 'Anonymizes the IP addresses of visitors by removing the last octet '
                 . 'from their IP address.' ),
         ],
+        'admin_notice_email' => [
+            'config_constant' => 'OWA_ADMIN_NOTICE_EMAIL',
+            'default'  => '',
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'text',
+            'label'    => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'Where notices for OWA\'s administrators are e-mailed, such as an update that installed '
+                . 'or failed. Separate several with commas. Empty sends them to every admin user\'s address.' ),
+            // As notice_email: read where nobody sees an error, so checked on save.
+            'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.' ),
+        ],
         'app_passwords_enabled' => [
             'default'  => true,
             'storable' => true,

@@ -76,6 +76,29 @@ describe('the bell', () => {
         expect(document.getElementById('owa_notificationBadge').hidden).toBe(false);
     });
 
+    test('a severity above info draws its own icon and colour; a release keeps its type\'s', async () => {
+        global.fetch = jest.fn(() => answer({ data: { notifications: [
+            { id: 1, title: 'Update failed', read: false, type: 'general', severity: 'critical' },
+            { id: 2, title: 'Security release', read: false, type: 'general', severity: 'security' },
+            { id: 3, title: 'OWA 2.0', read: false, type: 'release', severity: '' },
+            { id: 4, title: 'Installed', read: false, type: 'general', severity: 'info' },
+        ] } }));
+
+        startNotifications(bellMarkup());
+        await flush();
+
+        const icons = [...document.querySelectorAll('.owa_notificationIcon')];
+        expect(icons.map((i) => i.className)).toEqual([
+            'owa_notificationIcon is-critical',
+            'owa_notificationIcon is-security',
+            'owa_notificationIcon',
+            'owa_notificationIcon',
+        ]);
+        expect(icons.map((i) => i.querySelector('i').className)).toEqual([
+            'fas fa-exclamation-circle', 'fas fa-shield-alt', 'fas fa-box', 'fas fa-bell',
+        ]);
+    });
+
     test('a row clicked is marked read, here and on the server, and the badge goes', async () => {
         global.fetch = jest.fn(() => answer({ data: { notifications: [{ id: 7, title: 'New', read: false }] } }));
 

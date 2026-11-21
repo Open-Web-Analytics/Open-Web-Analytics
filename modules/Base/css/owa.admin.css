@@ -386,6 +386,18 @@
     font-size: 0.9375rem;
 }
 
+/* A notice's severity: amber for warning and security, red for critical. */
+.owa .owa_notificationIcon.is-warning,
+.owa .owa_notificationIcon.is-security {
+    background: #fff4e0;
+    color: #a15c00;
+}
+
+.owa .owa_notificationIcon.is-critical {
+    background: #fde8e8;
+    color: #b3261e;
+}
+
 .owa .owa_notificationIcon i {
     /* The glyph is what gets centred, so it must not carry its own metrics. */
     line-height: 1;

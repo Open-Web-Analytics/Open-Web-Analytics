@@ -121,5 +121,23 @@ class Notification extends \OWA\Core\Entity {
         // answerable, and because ordering by it would jumble a first fetch.
         $created_at = new \OWA\Module\Base\Classes\DbColumn( 'created_at', OWA_DTD_INT );
         $this->setProperty($created_at);
+
+        // info, warning, security or critical (NotificationManager::SEVERITIES);
+        // empty on a release announcement. Drives the bell's icon.
+        $severity = new \OWA\Module\Base\Classes\DbColumn( 'severity', OWA_DTD_VARCHAR255 );
+        $this->setProperty($severity);
+
+        /*
+         * What happened to the admin e-mail, written once by the process that
+         * raised the notification (NotificationManager::notify()): empty when
+         * none was asked for, else one of NotificationManager::EMAIL_*. Never
+         * retried, so this is a record, not a queue.
+         */
+        $email_status = new \OWA\Module\Base\Classes\DbColumn( 'email_status', OWA_DTD_VARCHAR255 );
+        $this->setProperty($email_status);
+
+        // When that e-mail was attempted; 0 when none was.
+        $emailed_at = new \OWA\Module\Base\Classes\DbColumn( 'emailed_at', OWA_DTD_INT );
+        $this->setProperty($emailed_at);
     }
 }

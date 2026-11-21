@@ -41,6 +41,32 @@ class NotificationManager {
     const TYPE_GENERAL = 'general';
 
     /**
+     * How much a notice matters, lowest first. Drives the bell's icon; a
+     * notice with none, or one not listed, is info.
+     */
+    const SEVERITIES = [ 'info', 'warning', 'security', 'critical' ];
+
+    /**
+     * What happened to a notice's admin e-mail (the email_status column).
+     * notify() writes it once and never retries: a failed send stays in the
+     * bell, and System Health shows the latest outcome.
+     */
+    const EMAIL_SENT          = 'sent';
+    const EMAIL_FAILED        = 'failed';
+    const EMAIL_NO_RECIPIENTS = 'no_recipients';
+
+    /** Asked for from a page request, which never sends mail (notify()). */
+    const EMAIL_NOT_FROM_WEB  = 'not_sent_from_web';
+
+    /**
+     * Makes the mailer notify() sends with. TESTS ONLY: null builds a
+     * Classes\Mailer.
+     *
+     * @var (callable(): object)|null
+     */
+    public static $mailerFactory = null;
+
+    /**
      * Words kept in the excerpt shown under a headline.
      *
      * The panel shows a headline and a hint of the body, the way any social
@@ -100,7 +126,7 @@ class NotificationManager {
      *
      * Pure, so the limits are testable without a database.
      *
-     * @param Item $item from a from*() transform
+     * @param array<string, mixed> $item an Item from a from*() transform, or a notify() notice: title, body and url are read
      * @return array{title:string, body:string, url:string}
      */
     public static function storable( array $item ) {
@@ -315,6 +341,200 @@ class NotificationManager {
         }
 
         return $created;
+    }
+
+    /**
+     * Raise one notice for every admin: store it, and e-mail it at once.
+     *
+     * For what OWA itself has to say (an update that installed or failed),
+     * not a feed: none of record()'s first-fetch limit or watermark, which
+     * would drop a notice older than the newest stored one. A notice already
+     * stored under its source and source_key is not stored or e-mailed again,
+     * so a caller may raise the same one on every run.
+     *
+     * THE MAIL GOES FROM THIS PROCESS, never a page request, and is never
+     * retried. Notices are raised from CLI runs, and a scheduler job sending
+     * them later would be stopped exactly when one matters: the scheduler
+     * stops while the schema is behind (Controller::pendingUpdateStopsAction()).
+     * The outcome is written on the row (email_status, emailed_at). The row's
+     * id derives from source and source_key, so of two runs raising one
+     * notice only the one whose insert succeeds sends it.
+     *
+     * Recipients are read at sending (adminRecipients()), not stored.
+     *
+     * @param array{source: string, source_key: string, title: string, body?: string, url?: string, severity?: string, email?: bool} $notice
+     *        title and body already translated; body is plain text
+     * @return bool whether it was stored, false when already stored or not written
+     */
+    public static function notify( array $notice ) {
+
+        $source = (string) ( $notice['source'] ?? '' );
+        $key    = (string) ( $notice['source_key'] ?? '' );
+
+        if ( $source === '' || $key === '' || self::exists( $source, $key, '' ) ) {
+
+            return false;
+        }
+
+        $severity = (string) ( $notice['severity'] ?? '' );
+        $severity = in_array( $severity, self::SEVERITIES, true ) ? $severity : 'info';
+        $stored   = self::storable( $notice );
+        $now      = time();
+
+        $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
+
+        $n->set( 'id', $n->generateId( $source . $key ) );
+        $n->set( 'source', $source );
+        $n->set( 'source_key', $key );
+        $n->set( 'type', self::TYPE_GENERAL );
+        $n->set( 'user_id', '' );
+        $n->set( 'title', $stored['title'] );
+        $n->set( 'body', $stored['body'] );
+        $n->set( 'excerpt', self::excerpt( $notice['body'] ?? '' ) );
+        $n->set( 'url', $stored['url'] );
+        $n->set( 'published_at', $now );
+        $n->set( 'created_at', $now );
+        $n->set( 'severity', $severity );
+        $n->set( 'email_status', '' );
+        $n->set( 'emailed_at', 0 );
+
+        if ( ! $n->create() ) {
+
+            return false;
+        }
+
+        if ( empty( $notice['email'] ) ) {
+
+            return true;
+        }
+
+        $status = \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI )
+            ? self::emailAdmins( $stored['title'], $stored['body'], $stored['url'] )
+            : self::EMAIL_NOT_FROM_WEB;
+
+        $n->set( 'email_status', $status );
+        $n->set( 'emailed_at', $status === self::EMAIL_NOT_FROM_WEB ? 0 : time() );
+        $n->update();
+
+        return true;
+    }
+
+    /**
+     * Where admin notices go: admin_notice_email, or every admin user's
+     * address when it is empty. Read each time, so a changed address applies
+     * to the next notice.
+     *
+     * @return list<string>
+     */
+    public static function adminRecipients() {
+
+        $configured = trim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'admin_notice_email' ) );
+
+        if ( $configured !== '' ) {
+
+            return array_values( array_unique( array_filter( array_map( 'trim', explode( ',', $configured ) ),
+                static fn ( $address ) => $address !== '' ) ) );
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
+        $db->selectColumn( 'email_address' );
+        $db->where( 'role', \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE );
+
+        $out = [];
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $address = trim( (string) ( $row['email_address'] ?? '' ) );
+
+            if ( $address !== '' && ! in_array( $address, $out, true ) ) {
+
+                $out[] = $address;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Send one notice to the admins, as plain text with an HTML copy.
+     *
+     * @param  string $title
+     * @param  string $body plain text
+     * @param  string $url  https only (storable()), or ''
+     * @return string one of the EMAIL_* outcomes
+     */
+    private static function emailAdmins( $title, $body, $url ) {
+
+        $recipients = self::adminRecipients();
+
+        if ( ! $recipients ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( "Admin notice '%s' not e-mailed: no admin has an e-mail address and admin_notice_email is empty.", $title ) );
+
+            return self::EMAIL_NO_RECIPIENTS;
+        }
+
+        $mailer = self::$mailerFactory ? ( self::$mailerFactory )() : new Mailer();
+
+        $added = 0;
+
+        foreach ( $recipients as $address ) {
+
+            if ( $mailer->addAddress( $address ) ) {
+
+                $added++;
+            }
+        }
+
+        if ( ! $added ) {
+
+            return self::EMAIL_NO_RECIPIENTS;
+        }
+
+        $install = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' );
+
+        $lines = [ $title, '', $body ];
+
+        if ( $url !== '' ) {
+
+            $lines[] = '';
+            $lines[] = $url;
+        }
+
+        $lines[] = '';
+        $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'Sent by Open Web Analytics at %s.' ), $install );
+
+        $text = implode( "\n", $lines );
+
+        $mailer->setSubject( sprintf( \OWA\Core\CoreAPI::t( 'OWA: %s' ), $title ) );
+        $mailer->setAltBody( $text );
+        $mailer->setHtmlBody( nl2br( htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' ) ) );
+
+        return $mailer->sendMail() ? self::EMAIL_SENT : self::EMAIL_FAILED;
+    }
+
+    /**
+     * The latest notice that asked for an e-mail, or null: what System Health
+     * reports of notice mail.
+     *
+     * @return Row|null
+     */
+    public static function lastEmailedNotice() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->getTableName() );
+        $db->selectColumn( '*' );
+        // whereSql(): where() drops an empty value, so "not empty" cannot be said with it.
+        $db->whereSql( 'email_asked', "email_status IS NOT NULL AND email_status <> ''" );
+        $db->orderBy( 'created_at', 'DESC' );
+        $db->limit( 1 );
+
+        $row = $db->getOneRow();
+
+        return $row ?: null;
     }
 
     /**

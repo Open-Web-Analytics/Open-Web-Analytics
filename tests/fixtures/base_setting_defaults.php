@@ -10,6 +10,7 @@
 
 return [
     'action_url' => '',
+    'admin_notice_email' => '',
     'announce_visitors' => false,
     'anonymize_ips' => false,
     'app_passwords_enabled' => true,
