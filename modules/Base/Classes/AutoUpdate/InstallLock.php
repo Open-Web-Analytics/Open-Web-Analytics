@@ -70,8 +70,8 @@ class InstallLock {
     }
 
     /**
-     * The installer, between steps, whichever kind of lock it holds: a
-     * marker stays fresh; for a flock() it does nothing.
+     * The installer, between steps, whichever kind of lock it holds: the
+     * lock's time says the install is still moving, and a marker stays fresh.
      *
      * @return void
      */

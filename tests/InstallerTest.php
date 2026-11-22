@@ -280,7 +280,7 @@ final class InstallerTest extends TestCase
         touch($this->data . '/updating', time() - 100);
         $this->u['touchLock']($hold);
         clearstatcache();
-        $this->assertLessThan(time() - 50, filemtime($this->data . '/updating'), 'for a flock() touchLock does nothing: the time stays the claim\'s');
+        $this->assertGreaterThan(time() - 50, filemtime($this->data . '/updating'), 'touchLock dates a flock() too: the install is still moving');
 
         $this->u['unlock']($hold);
         $this->assertFalse($this->u['isLocked']($this->data));

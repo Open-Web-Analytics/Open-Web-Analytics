@@ -173,7 +173,8 @@ return [
      * lock_stale seconds. The holder touches it between steps (touchLock),
      * but not during one statement: a schema update running longer leaves it
      * stale, and a second attempt may start, which the updates-apply job
-     * lease stops at its schema updates. A flock() is never stale.
+     * lease stops at its schema updates. A flock() is never stale; touchLock
+     * dates it all the same, so its time says the install is still moving.
      * Windows never says another process holds it, and has flock(), so it
      * always uses flock().
      */
@@ -225,7 +226,7 @@ return [
 
         if ( flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
 
-            // The lock file's time is the claim's: a lock held two hours is hung.
+            // updating's time is the holder's last step (touchLock), from the claim on.
             @touch( $file );
 
             return [ 'handle' => $h, 'file' => $file, 'marker' => null, 'token' => null ];
@@ -299,11 +300,15 @@ return [
     },
 
     /*
-     * The holder calls this as it goes, whichever kind of lock it holds: it
-     * keeps a marker from going stale. A flock() is never stale, so for one
-     * it does nothing, and updating's time stays the claim's.
+     * The holder calls this as it goes, whichever kind of lock it holds.
+     * updating's time is then the holder's last step, so a lock held and not
+     * touched for long is an install stuck in one step (its claim time is
+     * install.json's claimed_at). For a marker it also keeps it from going
+     * stale.
      */
     'touchLock' => static function ( array $hold ) {
+
+        @touch( (string) $hold['file'] );
 
         if ( $hold['marker'] !== null ) {
 
