@@ -765,7 +765,7 @@ $scenarios = [
         check( envVersion( $site ) === FROM, 'it installed itself' );
 
         // By hand, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install version=' . TO );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install' );
         check( $code === 0, "self-update-install exited $code:\n$out" );
         installed( $site, $ca, TO );
     },
@@ -868,7 +868,7 @@ $scenarios = [
         }
 
         // Fixed: install it now, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install version=' . TO );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install' );
         check( $code === 0, "self-update-install exited $code:\n$out" );
         installed( $site, $ca, TO );
     },
