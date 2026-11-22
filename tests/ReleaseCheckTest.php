@@ -290,14 +290,20 @@ final class ReleaseCheckTest extends TestCase
         $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'its install still retries from it');
     }
 
-    public function testInstalledVersionsAreClearedAndStagedJsonRepaired(): void
+    /**
+     * staged.json naming a staging that is gone is removed. One naming what is
+     * installed, by hand outside the installer, stays with its staging for the
+     * hand-off to delete at its window (InstallerTest).
+     */
+    public function testStagedJsonIsRepaired(): void
     {
         $this->check(['2.0.1']);
 
         $result = $this->check([], ['installed' => '2.0.1']);
         $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
-        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.0.1'));
-        $this->assertNull($this->staging()->staged());
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'the release check deletes no staging of an installed version');
+        $this->assertSame('2.0.1', $this->staging()->staged()['version']);
+        $this->staging()->removeStaged();
 
         $this->check(['2.0.2']);
         Staging::remove($this->staging()->dir('2.0.2'));
@@ -427,7 +433,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(ReleaseCheck::STAGED, $this->check(['2.1.0'])['outcome'], 'once run by hand there is nothing manual left');
     }
 
-    /** By hand: staged and judged, staged.json untouched; the clean-up takes it once it is not newer than what is installed. */
+    /** By hand: staged and judged, staged.json untouched. Its staging is the installer's to delete, once a release at least as new is installed. */
     public function testAReleaseIsStagedByHand(): void
     {
         $result = $this->hand('2.0.1', ['2.0.1', '2.0.2']);
@@ -439,7 +445,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame([], $this->notices, 'the operator is reading the output');
 
         $this->check([], ['installed' => '2.0.2']);
-        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.0.1'), 'a downgrade is staged and installed back to back');
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'the release check deletes no staging of an installed version');
     }
 
     public function testAnOlderReleaseByHandListsTheRollbacksFirst(): void

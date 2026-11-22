@@ -34,7 +34,8 @@ use OWA\Core\CoreAPI;
  *      A release it pointed at before is deleted unless an unfinished
  *      install uses it.
  *
- * Every run first deletes stagings for versions already installed. Writes to
+ * Stagings of versions already installed are the installer's to delete
+ * (Finish::cleanup(), updater.php `dropSuperseded`). Writes to
  * staged.json and deletions happen holding the install lock, taken without
  * waiting; when an install holds it, the run changes nothing.
  *
@@ -159,11 +160,6 @@ class ReleaseCheck {
         if ( Version::parse( $installed ) === null ) {
 
             return $this->end( self::UNKNOWN, null, sprintf( 'This installation\'s version, %s, is not a release version.', $installed ), $dry_run );
-        }
-
-        if ( ! $dry_run && ! $this->clearInstalled( $installed ) ) {
-
-            return $this->busy();
         }
 
         // An install that failed and was restored left only the old release
@@ -752,43 +748,9 @@ class ReleaseCheck {
     }
 
     /**
-     * Delete the stagings of versions already installed, and staged.json if
-     * it names one: what an interrupted clean-up after an install leaves, and
-     * a staging made by hand of a version not newer than this one.
-     *
-     * @param  string $installed
-     * @return bool false when an install holds the lock
-     */
-    private function clearInstalled( $installed ) {
-
-        // Not an unfinished install's: its staging is the installer's.
-        $done = array_values( array_filter( $this->staging->versions(), fn ( $v ) => Version::compare( $v, $installed ) <= 0
-            && ! $this->staging->hasInstall( $v ) ) );
-        $named = (string) ( $this->staging->staged()['version'] ?? '' );
-
-        if ( ! $done && ( $named === '' || Version::compare( $named, $installed ) > 0 ) ) {
-
-            return true;
-        }
-
-        return InstallLock::tryExclusive( function () use ( $done, $named, $installed ) {
-
-            foreach ( $done as $v ) {
-
-                Staging::remove( $this->staging->dir( $v ) );
-                $this->lines[] = sprintf( 'Deleted the staging of %s, which is installed.', $v );
-            }
-
-            if ( $named !== '' && Version::compare( $named, $installed ) <= 0 ) {
-
-                $this->staging->removeStaged();
-            }
-        } );
-    }
-
-    /**
-     * When no release is chosen: keep staged.json only if it names a staged
-     * release newer than this one.
+     * When no release is chosen: keep staged.json while the release it names
+     * is staged. One naming an installed version is the hand-off's to delete,
+     * at its window (updater.php `dropSuperseded`).
      *
      * @param  string $outcome
      * @param  string $why
