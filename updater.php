@@ -159,6 +159,282 @@ return [
         return count( $found ) === 1 ? (string) $found[0] : null;
     },
 
+    /*
+     * The install lock, owa-data/updating. It exists while a process holds it:
+     * an install for all of its attempt, or Step 1 while it writes staged.json
+     * or deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
+     * since ..."). Whoever finds it held stops and tries again on a later run:
+     * every other CLI run, Step 1, an install, cmd=update by hand, and the
+     * entry points.
+     *
+     * Taken by creating it, which only one process can do (link() of a file
+     * made and flocked under a temporary name, which fails when updating
+     * exists), and given up by deleting it. A holder that dies leaves it
+     * behind, and whether one has is told two ways:
+     *  - flock(): the holder flocks it while it runs, and the kernel lets go
+     *    when it ends, however it ends. A file nobody flocks is left over.
+     *  - where the filesystem has no flock() (it fails without saying another
+     *    process holds it; Windows never says, and has flock()): a file not
+     *    touched for lock_stale seconds is left over. The holder touches it
+     *    between steps (touchLock), not during one statement: a schema update
+     *    running longer lets a second attempt start, which the updates-apply
+     *    job lease stops at its schema updates.
+     * touchLock dates it in both, so its time is the holder's last step.
+     *
+     * A left-over file is taken over by flocking it, if it is still the file
+     * named updating (the same inode), and writing the new holder's line into
+     * it: it is never missing, so no third process can slip in. Without
+     * flock() nothing does that atomically: it is moved aside and deleted,
+     * and the taker stops if what moved was another process's (put back
+     * with link()). The taker then reads the file again a second later and
+     * stops if its line is gone, which a third process taking it in that
+     * instant would do.
+     */
+    'lock_stale' => 600,
+
+    /* 'free' (no file), 'held', or 'left' (its holder is gone). */
+    'lockState' => static function ( $file, $no_flock = false ) {
+
+        clearstatcache( true, $file );
+        $h = @fopen( $file, 'r' );
+
+        if ( $h === false ) {
+
+            return file_exists( $file ) ? 'held' : 'free';
+        }
+
+        // Asked shared, so two runs asking at once never take each other for a holder.
+        $would_block = 0;
+        $free        = ! $no_flock && flock( $h, LOCK_SH | LOCK_NB, $would_block );
+
+        if ( $free ) {
+
+            flock( $h, LOCK_UN );
+        }
+
+        fclose( $h );
+
+        if ( $free ) {
+
+            return 'left';
+        }
+
+        if ( ! $no_flock && ( $would_block || PHP_OS_FAMILY === 'Windows' ) ) {
+
+            return 'held';
+        }
+
+        $time = @filemtime( $file );
+
+        return $time !== false && time() - $time < ( require __FILE__ )['lock_stale'] ? 'held' : 'left';
+    },
+
+    'isLocked' => static function ( $data ) {
+
+        return ( require __FILE__ )['lockState']( rtrim( (string) $data, '/' ) . '/updating' ) === 'held';
+    },
+
+    /*
+     * The lock, or null when another process holds it. $who goes in the file
+     * for the operator: "install", "release check". $no_flock: as where the
+     * filesystem has none (a test's).
+     */
+    'tryLock' => static function ( $data, $who = 'install', $no_flock = false ) {
+
+        $u    = require __FILE__;
+        $file = rtrim( (string) $data, '/' ) . '/updating';
+
+        switch ( $u['lockState']( $file, $no_flock ) ) {
+
+            case 'held':
+
+                return null;
+
+            case 'left':
+
+                $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+                $h    = @fopen( $file, 'r+' );
+
+                if ( $h !== false ) {
+
+                    $would_block = 0;
+
+                    if ( ! $no_flock && flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
+
+                        // Taken, if what it flocked is still the file named updating:
+                        // another process may have replaced it in between.
+                        clearstatcache( true, $file );
+                        $mine = @stat( $file );
+                        $held = fstat( $h );
+
+                        if ( $mine !== false && $held !== false && $mine['ino'] === $held['ino'] && $mine['dev'] === $held['dev'] ) {
+
+                            ftruncate( $h, 0 );
+                            rewind( $h );
+                            fwrite( $h, $line );
+                            fflush( $h );
+                            @touch( $file );
+
+                            return [ 'handle' => $h, 'file' => $file, 'line' => $line ];
+                        }
+
+                        flock( $h, LOCK_UN );
+                        fclose( $h );
+
+                        return null;
+                    }
+
+                    fclose( $h );
+
+                    if ( ! $no_flock && ( $would_block || PHP_OS_FAMILY === 'Windows' ) ) {
+
+                        return null;
+                    }
+
+                    // No flock() here: nothing can take a stale file over atomically.
+                    // Moved aside and deleted; put back with link() only, never
+                    // over a file another process made meanwhile.
+                    $old   = @file_get_contents( $file );
+                    $aside = $file . '.left-' . bin2hex( random_bytes( 8 ) );
+
+                    if ( @rename( $file, $aside ) ) {
+
+                        // What moved is another process's new lock: give it back and stop.
+                        if ( @file_get_contents( $aside ) !== $old ) {
+
+                            @link( $aside, $file );
+                            @unlink( $aside );
+
+                            return null;
+                        }
+
+                        @unlink( $aside );
+                    }
+
+                    $stale = true;
+
+                } elseif ( file_exists( $file ) ) {
+
+                    return null;
+                }
+        }
+
+        $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+        $tmp  = $file . '.new-' . bin2hex( random_bytes( 8 ) );
+        $h    = @fopen( $tmp, 'x+' );
+
+        if ( $h === false ) {
+
+            return null;
+        }
+
+        fwrite( $h, $line );
+        fflush( $h );
+
+        // A new file: refused only where the filesystem has no flock().
+        $flocked = ! $no_flock && flock( $h, LOCK_EX | LOCK_NB );
+        $placed  = @link( $tmp, $file );
+        @unlink( $tmp );
+
+        // No hard links here: made in place, and flocked straight after.
+        if ( ! $placed && ! file_exists( $file ) ) {
+
+            fclose( $h );
+            $h = @fopen( $file, 'x+' );
+
+            if ( $h === false ) {
+
+                return null;
+            }
+
+            fwrite( $h, $line );
+            fflush( $h );
+            $flocked = ! $no_flock && flock( $h, LOCK_EX | LOCK_NB );
+            $placed  = true;
+        }
+
+        if ( ! $placed || ! $flocked ) {
+
+            fclose( $h );
+        }
+
+        if ( ! $placed ) {
+
+            return null;
+        }
+
+        $hold = [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line ];
+
+        // A stale file taken over without flock(): another process moving
+        // files in the same instant could have lost this one. Asked again a
+        // moment later; gone means it is another's, left as it is.
+        if ( ! empty( $stale ) && ! $u['stillMine']( $hold, 1 ) ) {
+
+            return null;
+        }
+
+        return $hold;
+    },
+
+    /* Whether the lock file still holds this holder's line, $wait seconds on. */
+    'stillMine' => static function ( array $hold, $wait = 0 ) {
+
+        if ( $wait > 0 ) {
+
+            sleep( (int) $wait );
+        }
+
+        return @file_get_contents( (string) $hold['file'] ) === $hold['line'];
+    },
+
+    /*
+     * Delete the file, if it is still this holder's, then let the flock go:
+     * the other way round, another process would find it unflocked in between
+     * and take it over. Windows cannot delete a file held open, nor read one
+     * it has locked, so there it lets go first.
+     */
+    'unlock' => static function ( array $hold ) {
+
+        $file = (string) $hold['file'];
+        $h    = $hold['handle'];
+
+        if ( $h !== null && PHP_OS_FAMILY !== 'Windows' ) {
+
+            if ( @file_get_contents( $file ) === $hold['line'] ) {
+
+                @unlink( $file );
+            }
+
+            flock( $h, LOCK_UN );
+            fclose( $h );
+
+            return;
+        }
+
+        if ( $h !== null ) {
+
+            flock( $h, LOCK_UN );
+            fclose( $h );
+        }
+
+        if ( @file_get_contents( $file ) === $hold['line'] ) {
+
+            @unlink( $file );
+        }
+    },
+
+    /*
+     * The holder calls this between steps, whichever way it holds the lock:
+     * the file's time is then its last step, so a lock held and not touched
+     * for long is an install stuck in one step (its claim is the file's line,
+     * and install.json's claimed_at). Without flock() it keeps the file from
+     * going stale.
+     */
+    'touchLock' => static function ( array $hold ) {
+
+        @touch( (string) $hold['file'] );
+    },
+
     'backoff' => static function ( $attempts ) {
 
         return [ 1 => 60, 2 => 180, 3 => 600, 4 => 900, 5 => 7200, 6 => 86400 ][ (int) $attempts ] ?? 604800;
@@ -256,19 +532,9 @@ return [
             return null;
         }
 
-        $lock  = $config['data'] . '/updating';
+        $data  = $config['data'];
         $quiet = in_array( 'cmd=schedule-run', $argv, true );
-        $h     = @fopen( $lock, 'c' );
-
-        if ( $h === false ) {
-
-            return null;
-        }
-
-        // Held: an install (or cmd=update) is running. Every other run waits.
-        if ( ! flock( $h, LOCK_SH | LOCK_NB ) ) {
-
-            fclose( $h );
+        $busy  = static function () use ( $quiet ) {
 
             if ( ! $quiet ) {
 
@@ -276,77 +542,98 @@ return [
             }
 
             return $quiet ? 0 : 75;
+        };
+
+        // Locked: an install is running, or Step 1 is writing. Every other run waits.
+        if ( $u['isLocked']( $data ) ) {
+
+            return $busy();
         }
 
-        flock( $h, LOCK_UN );
+        // What to install: a version, or the exit code to end with. Decided
+        // once without the lock, so a run with nothing due never takes it,
+        // and again holding it, since Step 1 may have changed things between.
+        $decide = static function () use ( $u, $dir, $only ) {
 
-        $now     = time();
-        $current = json_decode( (string) @file_get_contents( $dir . '/install/install.json' ), true );
-        $current = is_array( $current ) ? $current : null;
-
-        if ( $only !== null ) {
-
-            // An unfinished install comes first: it is the one to carry on with.
-            $unfinished = (string) ( $current['version'] ?? $only );
-
-            if ( $unfinished !== $only ) {
-
-                fwrite( STDERR, sprintf( "An install of OWA %s is unfinished; run cmd=self-update-install version=%s first.\n", $unfinished, $unfinished ) );
-                fclose( $h );
-
-                return 1;
-            }
-
-            $version = $only;
-
-        } else {
-
-            $version = $u['due']( $dir, $now );
-        }
-
-        if ( $version === null ) {
-
-            fclose( $h );
-
-            return null;
-        }
-
-        $gone    = ! is_dir( $dir . '/' . $version . '/release' );
-        $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
-
-        if ( $problem !== null ) {
-
-            fclose( $h );
+            $current = json_decode( (string) @file_get_contents( $dir . '/install/install.json' ), true );
+            $current = is_array( $current ) ? $current : null;
 
             if ( $only !== null ) {
 
-                fwrite( STDERR, $problem . "\n" );
+                // An unfinished install comes first: it is the one to carry on with.
+                $unfinished = (string) ( $current['version'] ?? $only );
 
-                return 1;
+                if ( $unfinished !== $only ) {
+
+                    fwrite( STDERR, sprintf( "An install of OWA %s is unfinished; run cmd=self-update-install version=%s first.\n", $unfinished, $unfinished ) );
+
+                    return 1;
+                }
+
+                $version = $only;
+
+            } else {
+
+                $version = $u['due']( $dir, time() );
             }
 
-            return null;
+            if ( $version === null ) {
+
+                return null;
+            }
+
+            $gone    = ! is_dir( $dir . '/' . $version . '/release' );
+            $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
+
+            if ( $problem !== null ) {
+
+                if ( $only !== null ) {
+
+                    fwrite( STDERR, $problem . "\n" );
+
+                    return 1;
+                }
+
+                return null;
+            }
+
+            return [ $version, $gone ];
+        };
+
+        $due = $decide();
+
+        if ( ! is_array( $due ) ) {
+
+            return $due;
         }
 
-        if ( ! flock( $h, LOCK_EX | LOCK_NB ) ) {
+        $hold = $u['tryLock']( $data, sprintf( 'install %s', $due[0] ) );
 
-            fclose( $h );
+        if ( $hold === null ) {
 
-            return $quiet ? 0 : 75;
+            return $busy();
         }
 
-        // The lock file's time is the claim's: a lock held two hours is hung.
-        @touch( $lock );
+        $due = $decide();
+
+        if ( ! is_array( $due ) ) {
+
+            $u['unlock']( $hold );
+
+            return $due;
+        }
+
+        [ $version, $gone ] = $due;
 
         $context = [
             'root'    => $root,
             'updates' => $dir,
-            'data'    => $config['data'],
+            'data'    => $data,
             'public'  => $config['public'],
             'version' => $version,
             'manual'  => $only !== null,
-            'now'     => $now,
-            'lock'    => $h,
+            'now'     => time(),
+            'lock'    => $hold,
         ];
 
         // An unfinished install whose staging is gone cannot go on: undo it,
@@ -354,19 +641,17 @@ return [
         if ( $gone ) {
 
             $u['undo']( $context, 'Its staging is gone, so it was undone; it is staged and installed again.' );
-            flock( $h, LOCK_UN );
-            fclose( $h );
+            $u['unlock']( $hold );
 
             return null;
         }
 
         $code = ( require $dir . '/' . $version . '/release/updater.php' )['install']( $context );
 
-        if ( $code === null ) {
-
-            flock( $h, LOCK_UN );
-            fclose( $h );
-        }
+        // Done, however it ended. A process that dies, or exit()s from inside
+        // the install (the 24-hour stop), leaves the file for the next
+        // process to take over, once the kernel has let its flock go.
+        $u['unlock']( $hold );
 
         return $code;
     },
@@ -791,6 +1076,11 @@ return [
         }
 
         $record( [ 'copied' => true ] );
+
+        if ( isset( $c['lock'] ) && is_array( $c['lock'] ) ) {
+
+            $u['touchLock']( $c['lock'] );
+        }
 
         // Step 4, in the new code. Nothing of OWA is loaded in this process,
         // so this is the new release as a fresh process would see it.

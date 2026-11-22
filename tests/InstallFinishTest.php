@@ -80,7 +80,7 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertSame([], $raised, 'nothing failed yet');
     }
 
-    /** cmd=update takes the install lock: refused while an install holds it; the installer itself runs it. */
+    /** cmd=update by hand waits for an install and takes no lock of its own; the installer itself runs it. */
     public function testCmdUpdateWaitsForAnInstall(): void
     {
         $h = fopen(InstallLock::$path, 'c');
@@ -105,8 +105,8 @@ final class InstallFinishTest extends CliControllerTestCase
 
         InstallLock::$held_here = false;
         $this->updates([]);
-        $this->assertFalse(InstallLock::$held_here, 'released when it is done');
-        $this->assertFalse(InstallLock::isHeld());
+        $this->assertFalse(InstallLock::$held_here, 'a hand run never counts as the installer');
+        $this->assertFalse(InstallLock::isHeld(), 'and leaves no lock behind');
     }
 
     private function updates(array $params): \OWA\Module\Base\Controller\UpdatesApplyCli

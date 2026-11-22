@@ -2,15 +2,13 @@
 namespace OWA\Module\Base\Classes\AutoUpdate;
 
 /**
- * owa-data/updating: the install lock, and the maintenance signal.
+ * owa-data/updating, the install lock, for booted code: updater.php's
+ * isLocked, tryLock, unlock and touchLock, which say how it works.
  *
- * A permanent empty file. The installer (Steps 2-4) holds an exclusive flock
- * on it for an attempt, and cmd=update while it applies updates; entry points
- * that find it held serve maintenance, and every other CLI run exits
- * (updater.php `handoff`).
- * Step 1: release check takes it only for the moment it writes staged.json
- * or deletes a staging, non-blocking, and leaves everything as it is when it
- * is held: an install is running, and Step 1 does not change what it reads.
+ * It exists while one process holds it, and its line says who: an install
+ * for all of its attempt, or Step 1: release check while it writes
+ * staged.json or deletes a staging. Whoever finds it held stops and tries
+ * again on a later run, cmd=update by hand included.
  */
 class InstallLock {
 
@@ -20,13 +18,15 @@ class InstallLock {
     public static $path = null;
 
     /**
-     * Whether this process holds the lock: the installer (updater.php took
-     * it before OWA loaded), or cmd=update while it applies updates. Read by
-     * cmd=update so it does not try to take it twice.
+     * Whether this process holds the lock: the installer (updater.php took it
+     * before OWA loaded). Read by cmd=update, which runs inside the install.
      *
      * @var bool
      */
     public static $held_here = false;
+
+    /** @var array<string, mixed>|null the installer's hold, which it touches as it goes */
+    public static $hold = null;
 
     /** @return string */
     public static function path() {
@@ -34,75 +34,52 @@ class InstallLock {
         return self::$path ?? \OWA\Core\Env::dataDir() . self::FILE;
     }
 
-    /**
-     * Whether an install holds the lock now, asked as an entry point asks: a
-     * shared lock, not waited for and let go at once, which never looks like
-     * an install to anyone else.
-     *
-     * @return bool
-     */
+    /** @return bool whether another process holds the lock now */
     public static function isHeld() {
 
-        $h = @fopen( self::path(), 'c' );
-
-        if ( $h === false ) {
-
-            return false;
-        }
-
-        try {
-
-            $free = flock( $h, LOCK_SH | LOCK_NB );
-
-            if ( $free ) {
-
-                flock( $h, LOCK_UN );
-            }
-
-            return ! $free;
-
-        } finally {
-
-            fclose( $h );
-        }
+        return (bool) Staging::updater()['isLocked']( dirname( self::path() ) );
     }
 
     /**
      * Run $fn holding the lock, if it is free now.
      *
      * @param  callable $fn
+     * @param  string   $who what the lock file says holds it
      * @return bool false when the lock is held and $fn did not run
      */
-    public static function tryExclusive( callable $fn ) {
+    public static function tryExclusive( callable $fn, $who = 'release check' ) {
 
-        $h = @fopen( self::path(), 'c' );
+        $u    = Staging::updater();
+        $hold = $u['tryLock']( dirname( self::path() ), $who );
 
-        if ( $h === false ) {
+        if ( $hold === null ) {
 
-            throw new \RuntimeException( sprintf( 'Could not open %s.', self::path() ) );
+            return false;
         }
 
         try {
 
-            if ( ! flock( $h, LOCK_EX | LOCK_NB ) ) {
+            $fn();
 
-                return false;
-            }
-
-            try {
-
-                $fn();
-
-                return true;
-
-            } finally {
-
-                flock( $h, LOCK_UN );
-            }
+            return true;
 
         } finally {
 
-            fclose( $h );
+            $u['unlock']( $hold );
+        }
+    }
+
+    /**
+     * The installer, between steps: the lock file's time says the install is
+     * still moving, and where there is no flock() it keeps it from going stale.
+     *
+     * @return void
+     */
+    public static function touch() {
+
+        if ( self::$hold !== null ) {
+
+            Staging::updater()['touchLock']( self::$hold );
         }
     }
 }
