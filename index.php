@@ -1,5 +1,11 @@
 <?php
 
+// Automatic updates: while an install (or Step 1, writing) holds the lock, a
+// 503 maintenance page, before any OWA file loads (updater.php).
+if ((require __DIR__ . '/updater.php')['serveMaintenance'](__DIR__)) {
+    exit;
+}
+
 require_once(__DIR__ . '/owa.php');
 
 /**

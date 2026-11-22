@@ -24,12 +24,33 @@ final class TrackerIngestTest extends TestCase
     /** @var array<string,mixed> settings to restore */
     private array $saved = [];
 
+    /** @var array<string,mixed> each module's stored schema version, to restore */
+    private array $schemas = [];
+
     protected function setUp(): void
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
         foreach (['queue_tracking_events', 'server_role', 'raw_retention_months'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+        }
+
+        // A schema behind queues every beacon: each module's is made current,
+        // since without a database (CI's PHPUnit job) none is stored.
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ((fn () => $this->modules)->call(\OWA\Core\CoreAPI::serviceSingleton()) as $name => $module) {
+            $this->schemas[$name] = $c->get($name, 'schema_version');
+            $c->set($name, 'schema_version', (int) $module->required_schema_version);
+        }
+
+        // A schema behind queues every beacon: each module's is made current,
+        // since without a database (CI's PHPUnit job) none is stored.
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ((fn () => $this->modules)->call(\OWA\Core\CoreAPI::serviceSingleton()) as $name => $module) {
+            $this->schemas[$name] = $c->get($name, 'schema_version');
+            $c->set($name, 'schema_version', (int) $module->required_schema_version);
         }
 
         IntakeTestProcessor::$outcome = 'ok';
@@ -45,6 +66,14 @@ final class TrackerIngestTest extends TestCase
     {
         foreach ($this->saved as $key => $value) {
             \OWA\Core\CoreAPI::setSetting('base', $key, $value);
+        }
+
+        foreach ($this->schemas as $name => $version) {
+            \OWA\Core\CoreAPI::configSingleton()->set($name, 'schema_version', $version);
+        }
+
+        foreach ($this->schemas as $name => $version) {
+            \OWA\Core\CoreAPI::configSingleton()->set($name, 'schema_version', $version);
         }
 
         TrackerIngest::$queue   = null;
@@ -134,6 +163,27 @@ final class TrackerIngestTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
         $this->assertTrue(TrackerIngest::isQueued(), 'a collector has no database to write a beacon to');
+    }
+
+    /** New code must not write against an old schema: while it is behind, every beacon waits for the drain, which waits too. */
+    public function testASchemaBehindQueues(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
+
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $was  = $c->get('base', 'schema_version');
+
+        try {
+            $this->assertFalse(TrackerIngest::isQueued());
+            $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+            $this->assertTrue(TrackerIngest::isQueued(), 'the schema is behind');
+        } finally {
+            $c->set('base', 'schema_version', $was);
+        }
+
+        $this->assertFalse(TrackerIngest::isQueued());
     }
 
     public function testTheDefaultIsNotQueued(): void
