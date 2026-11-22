@@ -81,11 +81,11 @@ class ScheduleRunCli extends SchedulerCli {
             if ( ! $jobs ) {
 
                 return $this->refuse(
-                    'Schema updates are pending, so no job can run. Apply them with cmd=update.'
+                    'Schema updates are pending, so no job can run. Apply them with cmd=core-update-schema.'
                 );
             }
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Schema updates are pending: running only %s. Apply them with cmd=update.',
+            \OWA\Core\CoreAPI::notice( sprintf( 'Schema updates are pending: running only %s. Apply them with cmd=core-update-schema.',
                 implode( ', ', array_keys( $jobs ) ) ) );
         }
 
@@ -109,7 +109,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( $only && $pending && isset( $all[ $only ] ) && ! isset( $jobs[ $only ] ) ) {
 
-            return $this->refuse( sprintf( 'Schema updates are pending, so %s cannot run. Apply them with cmd=update.', $only ) );
+            return $this->refuse( sprintf( 'Schema updates are pending, so %s cannot run. Apply them with cmd=core-update-schema.', $only ) );
         }
 
         if ( $only && ! isset( $jobs[ $only ] ) ) {

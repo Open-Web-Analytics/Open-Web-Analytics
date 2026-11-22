@@ -39,7 +39,7 @@ final class UpdateGuardProbe extends \OWA\Core\Update
     }
 }
 
-/** Runs of cmd=update's bare apply-everything path, counted by the test's subclass. */
+/** Runs of cmd=core-update-schema's bare apply-everything path, counted by the test's subclass. */
 final class UpdatesCliPendingCount
 {
     public static int $runs = 0;
@@ -84,7 +84,7 @@ final class UpdatesCliStepProbe
 }
 
 /**
- * The CLI update path: `php cli.php cmd=update [listpending|apply=|rollback=]`
+ * The CLI update path: `php cli.php cmd=core-update-schema [listpending|apply=|rollback=]`
  *
  * base.updatesApply (web) has no capability check, so a signed-out admin can
  * apply updates from the browser. Updates that cannot run over the web --
@@ -127,8 +127,8 @@ final class UpdatesCliTest extends CliControllerTestCase
     public function testUpdateCommandIsRegistered(): void
     {
         $this->assertSame(
-            'base.updatesApplyCli',
-            $this->commandClass('update'),
+            'base.coreUpdateSchemaCli',
+            $this->commandClass('core-update-schema'),
             'The `update` CLI command is the only way to apply updates when the '
             . 'web path is unavailable. It must stay registered.'
         );
@@ -141,17 +141,17 @@ final class UpdatesCliTest extends CliControllerTestCase
         // ever stops extending that base it becomes web-reachable with no gate
         // at all.
         $this->assertTrue(
-            is_subclass_of(\OWA\Module\Base\Controller\UpdatesApplyCli::class, \OWA\Core\Controller\Cli::class),
-            'UpdatesApplyCli must extend Core\\Controller\\Cli -- that base is '
+            is_subclass_of(\OWA\Module\Base\Controller\CoreUpdateSchemaCli::class, \OWA\Core\Controller\Cli::class),
+            'CoreUpdateSchemaCli must extend Core\\Controller\\Cli -- that base is '
             . 'what confines it to the command line.'
         );
     }
 
     /**
-     * cmd=update rollback=<module>.<sequence>, run on the probe, and what it
+     * cmd=core-update-schema rollback=<module>.<sequence>, run on the probe, and what it
      * logged.
      *
-     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     * @return array{0: \OWA\Module\Base\Controller\CoreUpdateSchemaCli, 1: string}
      */
     private function rollBack(UpdateGuardProbe $probe): array
     {
@@ -159,19 +159,19 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * cmd=update with $params, and what it logged. apply= and rollback= reach
+     * cmd=core-update-schema with $params, and what it logged. apply= and rollback= reach
      * $probe; the bare command counts its runs in UpdatesCliPendingCount
      * instead of applying the install's pending updates. Built without the
      * constructor's OWA_UPDATING define, which a second construction in one
      * process would repeat.
      *
      * @param array<string, mixed> $params
-     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     * @return array{0: \OWA\Module\Base\Controller\CoreUpdateSchemaCli, 1: string}
      */
     private function runCli(array $params, UpdateGuardProbe $probe): array
     {
         $cli = new class($params, $probe)
-            extends \OWA\Module\Base\Controller\UpdatesApplyCli {
+            extends \OWA\Module\Base\Controller\CoreUpdateSchemaCli {
             private $probe;
 
             public function __construct($params, $probe)
@@ -210,9 +210,9 @@ final class UpdatesCliTest extends CliControllerTestCase
     public static function changingRuns(): array
     {
         return [
-            'cmd=update'           => [[], 1],
-            'cmd=update apply='    => [['apply' => 'base.next', 'force' => true], 0],
-            'cmd=update rollback=' => [['rollback' => 'base.next'], 1],
+            'cmd=core-update-schema'           => [[], 1],
+            'cmd=core-update-schema apply='    => [['apply' => 'base.next', 'force' => true], 0],
+            'cmd=core-update-schema rollback=' => [['rollback' => 'base.next'], 1],
         ];
     }
 
@@ -240,7 +240,7 @@ final class UpdatesCliTest extends CliControllerTestCase
 
     /**
      * While base.updatesApply's lease is held, by a web request or another
-     * cmd=update, a run that would change the schema applies nothing and exits 1.
+     * cmd=core-update-schema, a run that would change the schema applies nothing and exits 1.
      *
      * @dataProvider changingRuns
      * @param array<string, mixed> $params
@@ -259,7 +259,7 @@ final class UpdatesCliTest extends CliControllerTestCase
 
         $this->assertFalse(UpdateGuardProbe::$upCalled, 'apply= ran while the lease was held');
         $this->assertFalse(UpdateGuardProbe::$downCalled, 'rollback= ran while the lease was held');
-        $this->assertSame(0, UpdatesCliPendingCount::$runs, 'cmd=update applied updates while the lease was held');
+        $this->assertSame(0, UpdatesCliPendingCount::$runs, 'cmd=core-update-schema applied updates while the lease was held');
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
         $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
         $this->assertStringContainsString('Updates are already being applied by another run.', $log);
@@ -287,7 +287,7 @@ final class UpdatesCliTest extends CliControllerTestCase
             UpdateGuardProbe::$upCalled || UpdateGuardProbe::$downCalled || UpdatesCliPendingCount::$runs === 1,
             'the run did not reach the update'
         );
-        $this->assertTrue($this->leaseIsFree(), 'cmd=update kept the lease after it finished');
+        $this->assertTrue($this->leaseIsFree(), 'cmd=core-update-schema kept the lease after it finished');
     }
 
     /** A run that fails part way lets go too. */
@@ -317,18 +317,18 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * The bare cmd=update over $modules, name => module, in place of the
+     * The bare cmd=core-update-schema over $modules, name => module, in place of the
      * install's pending updates, and what it logged.
      *
      * @param array<string, object> $modules
-     * @return array{0: \OWA\Module\Base\Controller\UpdatesApplyCli, 1: string}
+     * @return array{0: \OWA\Module\Base\Controller\CoreUpdateSchemaCli, 1: string}
      */
     private function runPending(array $modules): array
     {
         $s       = \OWA\Core\CoreAPI::serviceSingleton();
         $pending = $s->modules_needing_updates;
 
-        $cli = new class([]) extends \OWA\Module\Base\Controller\UpdatesApplyCli {
+        $cli = new class([]) extends \OWA\Module\Base\Controller\CoreUpdateSchemaCli {
             public function __construct($params)
             {
                 \OWA\Core\Controller\Cli::__construct($params);
@@ -395,11 +395,11 @@ final class UpdatesCliTest extends CliControllerTestCase
             );
         }
 
-        $this->assertTrue($this->leaseIsFree(), 'cmd=update kept the lease after it finished');
+        $this->assertTrue($this->leaseIsFree(), 'cmd=core-update-schema kept the lease after it finished');
     }
 
     /**
-     * When another run has taken the lease, cmd=update stops before the next
+     * When another run has taken the lease, cmd=core-update-schema stops before the next
      * update, fails, and leaves the other run's lease alone.
      */
     public function testARunStopsWhenAnotherRunHasTakenTheLease(): void
@@ -475,7 +475,7 @@ final class UpdatesCliTest extends CliControllerTestCase
         $this->assertStringContainsString('another run has taken over the updates lock', $log);
     }
 
-    /** The only rollback interface OWA has: `cmd=update rollback=base.UpdateNNN`. */
+    /** The only rollback interface OWA has: `cmd=core-update-schema rollback=base.UpdateNNN`. */
     public function testRollbackIsReachableFromTheCli(): void
     {
         list($cli, $log) = $this->rollBack($this->makeProbe($this->currentSchemaVersion() + 1));
@@ -491,7 +491,7 @@ final class UpdatesCliTest extends CliControllerTestCase
      * The CLI's apply= and rollback= arguments are written by a human, who
      * writes the sequence number the update is known by; Module::getUpdates()
      * passes the PSR-4 class basename it read off disk. Both forms resolve. The
-     * bare `cmd=update` path does not go through here, so it cannot catch a form
+     * bare `cmd=core-update-schema` path does not go through here, so it cannot catch a form
      * that fails.
      */
     public function testAnUpdateResolvesByBareSequenceAsWellAsByClassName(): void
@@ -502,7 +502,7 @@ final class UpdatesCliTest extends CliControllerTestCase
         $this->assertSame(
             get_class($byClass),
             get_class($bySequence),
-            'cmd=update rollback=base.34 must load the update, not a legacy filename'
+            'cmd=core-update-schema rollback=base.34 must load the update, not a legacy filename'
         );
 
         $this->assertSame(34, (int) $bySequence->schema_version);
@@ -601,7 +601,7 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * rollback() must report refusal, not success, so UpdatesApplyCli does not
+     * rollback() must report refusal, not success, so CoreUpdateSchemaCli does not
      * print "Rollback completed." when nothing ran.
      */
     public function testRollbackReturnsFalseWhenItRefuses(): void

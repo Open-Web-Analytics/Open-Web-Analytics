@@ -50,7 +50,7 @@
  * scratch one; --force overrides, and should not be used.
  *
  * RUN IN PHASES, in separate processes, because the middle one has to be the
- * REAL command. `php cli.php cmd=update` is what an operator types;
+ * REAL command. `php cli.php cmd=core-update-schema` is what an operator types;
  * reimplementing the walk here would be testing this
  * file's idea of an upgrade instead of the one that ships. Separate processes
  * also mean the verify phase reads the schema version off a cold boot rather
@@ -59,7 +59,7 @@
  * Usage:  bash tests/tools/upgrade_cycle_run.sh      <- provisions, runs all three
  *
  *         php tests/tools/upgrade_cycle.php down   [--force] [--verbose]
- *         php cli.php cmd=update
+ *         php cli.php cmd=core-update-schema
  *         php tests/tools/upgrade_cycle.php verify [--force] [--verbose]
  */
 
@@ -82,7 +82,7 @@ if ( ! in_array( $phase, [ 'down', 'verify' ], true ) ) {
 /**
  * What the down phase hands to the verify phase.
  *
- * A file rather than a return value because `php cli.php cmd=update` runs
+ * A file rather than a return value because `php cli.php cmd=core-update-schema` runs
  * between them, in its own process, deliberately.
  */
 define( 'OWA_UPGRADE_CYCLE_STATE', sys_get_temp_dir() . '/owa_upgrade_cycle.json' );
@@ -266,7 +266,7 @@ if ( $phase === 'down' ) {
 }
 
 /* ======================================================================
- * PHASE 2: verify -- `php cli.php cmd=update` has run in between
+ * PHASE 2: verify -- `php cli.php cmd=core-update-schema` has run in between
  * ==================================================================== */
 
 $state = @json_decode( (string) @file_get_contents( OWA_UPGRADE_CYCLE_STATE ), true );
@@ -376,7 +376,7 @@ if ( $reached !== $installed ) {
 
     $fail[] = sprintf(
         "The upgrade stopped at schema %d instead of %d.\n"
-      . "  THIS IS THE LIVE FAILURE, REPRODUCED. Read the `cli.php cmd=update` output\n"
+      . "  THIS IS THE LIVE FAILURE, REPRODUCED. Read the `cli.php cmd=core-update-schema` output\n"
       . "  above for the update that stopped and the statement it was refused on. An\n"
       . "  install left here refuses every request with \"OWA Updates required\".",
         $reached, $installed );
@@ -486,7 +486,7 @@ if ( $fail ) {
     exit( 1 );
 }
 
-$note( sprintf( "\nOK: %d update(s) rolled back, re-applied by cli.php cmd=update, and\n"
+$note( sprintf( "\nOK: %d update(s) rolled back, re-applied by cli.php cmd=core-update-schema, and\n"
     . 'applied again on top of themselves. The schema is identical to the install.',
     count( $rolled ) ) );
 

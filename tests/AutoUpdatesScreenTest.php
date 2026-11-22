@@ -46,7 +46,7 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
     public function testAStagingThatDoesNotInstallItselfSaysSo(): void
     {
         $hand = $this->state($this->staged(['by_hand' => true, 'automatic' => false, 'staged_at' => self::NOW - 3600]));
-        $this->assertSame('2.1.0 was staged by hand. It installs only with: php cli.php cmd=self-update-install', $hand['lines'][2]);
+        $this->assertSame('2.1.0 was staged by hand. It installs only with: php cli.php cmd=core-update-install', $hand['lines'][2]);
         $this->assertSame('The release check leaves it alone until ' . gmdate('Y-m-d H:i', self::NOW - 3600 + ReleaseCheck::HAND_HOLD) . ' UTC.', $hand['lines'][3]);
         $this->assertSame(['check', 'cancel'], $hand['actions']);
 
@@ -93,17 +93,17 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
 
         $ids    = fn (): array => array_column(JobQueue::listJobs(null, 500), 'id');
         $before = $ids();
-        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'release-check'));
+        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'core-update-check'));
         $was    = $checks();
 
         try {
             $this->assertSame(3314, $data('check')['status_code']);
             $this->assertSame(3314, $data('check')['status_code'], 'clicked twice: still one job');
-            $this->assertTrue(JobQueue::isQueued('release-check', 'updates-screen:check'));
+            $this->assertTrue(JobQueue::isQueued('core-update-check', 'updates-screen:check'));
             $this->assertSame($was + 1, $checks());
 
             $this->assertSame(3314, $data('now')['status_code']);
-            $this->assertTrue(JobQueue::isQueued('self-update-now', 'updates-screen:now'));
+            $this->assertTrue(JobQueue::isQueued('core-update-ignore-window', 'updates-screen:now'));
 
             $this->assertSame(3315, $data('delete-everything')['error_code']);
         } finally {

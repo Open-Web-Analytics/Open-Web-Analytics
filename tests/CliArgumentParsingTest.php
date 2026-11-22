@@ -34,8 +34,8 @@ final class CliArgumentParsingTest extends TestCase
         );
 
         $this->assertSame(
-            ['cmd' => 'update', 'listpending' => true, 'force' => true],
-            $this->parse(['cmd=update', '--listpending', '--force'])
+            ['cmd' => 'core-update-schema', 'listpending' => true, 'force' => true],
+            $this->parse(['cmd=core-update-schema', '--listpending', '--force'])
         );
     }
 
@@ -61,7 +61,7 @@ final class CliArgumentParsingTest extends TestCase
     {
         foreach ([['--force'], ['--force=1'], ['force=1']] as $spelling) {
 
-            $parsed = $this->parse(array_merge(['cmd=update'], $spelling));
+            $parsed = $this->parse(array_merge(['cmd=core-update-schema'], $spelling));
 
             $this->assertArrayHasKey('force', $parsed, implode(' ', $spelling) . ' should set force');
             $this->assertArrayNotHasKey('--force', $parsed, 'the dashes must not survive into the name');
@@ -86,7 +86,7 @@ final class CliArgumentParsingTest extends TestCase
     {
         foreach (['bogus', '-x', '--', '=novalue'] as $bad) {
 
-            $result = $this->parse(['cmd=update', $bad]);
+            $result = $this->parse(['cmd=core-update-schema', $bad]);
 
             $this->assertIsString($result, var_export($bad, true) . ' should be refused');
             $this->assertStringContainsString('key=value', $result, 'the message should name the accepted forms');

@@ -10,7 +10,7 @@ use OWA\Module\Base\Classes\AutoUpdate\Staging;
 /**
  * Step 4: finish, the parts that run without a fresh process: the clean-up
  * after a successful install, the notices a failing one raises, and
- * cmd=update keeping out of an install's way.
+ * cmd=core-update-schema keeping out of an install's way.
  */
 final class InstallFinishTest extends CliControllerTestCase
 {
@@ -95,11 +95,11 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertStringContainsString('the installed release runs as before', $bodies[0], 'undone: the old release runs');
         $this->assertStringNotContainsString('tracking is queued', $bodies[0]);
         $this->assertStringContainsString('tracking is queued and reports wait', $bodies[1], 'booted: the schema is behind');
-        $this->assertStringContainsString('php cli.php cmd=self-update-install', $bodies[2]);
-        $this->assertStringNotContainsString('cmd=update;', $bodies[2], 'cmd=update cannot finish an install that was undone');
+        $this->assertStringContainsString('php cli.php cmd=core-update-install', $bodies[2]);
+        $this->assertStringNotContainsString('cmd=core-update-schema;', $bodies[2], 'cmd=core-update-schema cannot finish an install that was undone');
     }
 
-    /** cmd=update by hand waits for an install and takes no lock of its own; the installer itself runs it. */
+    /** cmd=core-update-schema by hand waits for an install and takes no lock of its own; the installer itself runs it. */
     public function testCmdUpdateWaitsForAnInstall(): void
     {
         $h = fopen(InstallLock::$path, 'c');
@@ -128,10 +128,10 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertFalse(InstallLock::isHeld(), 'and leaves no lock behind');
     }
 
-    private function updates(array $params): \OWA\Module\Base\Controller\UpdatesApplyCli
+    private function updates(array $params): \OWA\Module\Base\Controller\CoreUpdateSchemaCli
     {
         // Built without its constructor, which defines OWA_UPDATING for the rest of the process.
-        $cli = (new ReflectionClass(\OWA\Module\Base\Controller\UpdatesApplyCli::class))->newInstanceWithoutConstructor();
+        $cli = (new ReflectionClass(\OWA\Module\Base\Controller\CoreUpdateSchemaCli::class))->newInstanceWithoutConstructor();
         (new ReflectionMethod(\OWA\Core\Controller\Cli::class, '__construct'))->invoke($cli, $params);
 
         ob_start();

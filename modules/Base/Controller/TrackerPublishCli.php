@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Controller;
  *
  * What starts it (PLAN 2.30.7): a Profile's save publishes that Profile at
  * once; a change above one Profile queues one run of this on the job queue;
- * cmd=update republishes what a new release changed. Run it by hand after
+ * cmd=core-update-schema republishes what a new release changed. Run it by hand after
  * anything none of those see -- a config-file constant such as
  * OWA_PUBLIC_URL, a rebuilt tracker on a development checkout. A bundle is
  * current when its first line matches what it would be written with now, so
@@ -26,7 +26,7 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Publishes the Profiles\' tracking bundles that are not current. Saves and cmd=update publish on their own; run it after a change neither sees, such as a config-file constant.',
+            'description' => 'Publishes the Profiles\' tracking bundles that are not current. Saves and cmd=core-update-schema publish on their own; run it after a change neither sees, such as a config-file constant.',
             'arguments'   => [
                 'force=1'   => 'Publish every bundle, current or not.',
                 'site=<id>' => 'Publish only this Profile\'s bundle.',

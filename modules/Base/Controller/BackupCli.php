@@ -18,7 +18,7 @@ use OWA\Module\Base\Classes\Backup;
  *
  * v2 only: refused until the 1.x migration has run, since before it the
  * tables are 1.x's. Runs while later updates are pending, since that is when
- * a backup is taken: after new code is in place and before cmd=update.
+ * a backup is taken: after new code is in place and before cmd=core-update-schema.
  */
 class BackupCli extends \OWA\Core\Controller\Cli {
 

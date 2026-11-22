@@ -298,7 +298,7 @@ final class SqlPortabilityLintTest extends TestCase {
 
         $this->assertArrayHasKey( 'modules/Domstream/Controller/ProcessEvent.php', $files );
         $this->assertArrayHasKey( 'modules/Domstream/Entity/DomstreamChunk.php', $files );
-        $this->assertArrayHasKey( 'modules/Base/Controller/UpdatesApplyCli.php', $files );
+        $this->assertArrayHasKey( 'modules/Base/Controller/CoreUpdateSchemaCli.php', $files );
         $this->assertArrayHasKey( 'Core/Update.php', $files );
 
         $this->assertNotEmpty( glob( dirname( __DIR__ ) . '/modules/*/Update', GLOB_ONLYDIR ),

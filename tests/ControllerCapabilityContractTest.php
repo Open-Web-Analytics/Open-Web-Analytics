@@ -86,7 +86,7 @@ final class ControllerCapabilityContractTest extends TestCase
         // CLI-only. Core\Controller\Cli::__construct() exits unless
         // request_type === 'cli', so these are not web-reachable.
         'InstallCli',
-        'UpdatesApplyCli',
+        'CoreUpdateSchemaCli',
         // Publishes Profiles' tracking bundles; the scheduler and the shell only.
         'TrackerPublishCli',
         // Writes the English string catalogue from the code; the shell only.
@@ -95,7 +95,7 @@ final class ControllerCapabilityContractTest extends TestCase
         // OWA boots, so there is no user.
         'VersionInfoCli',
         // Installs before OWA loads (updater.php); the class only declares the command.
-        'SelfUpdateInstallCli',
+        'CoreUpdateInstallCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',

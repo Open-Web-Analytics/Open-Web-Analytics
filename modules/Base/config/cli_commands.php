@@ -7,21 +7,21 @@
  * registerCliCommand(). The action must be in config/actions.php.
  */
 return [
-    'update'                      => 'base.updatesApplyCli',
+    'core-update-schema'          => 'base.coreUpdateSchemaCli',
     // Runs without OWA booted (Controller\Cli::needsBoot()).
     'version-info'                => 'base.versionInfoCli',
     'strings-extract'             => 'base.stringsExtractCli',
     'v1-drop'                     => 'base.v1DropCli',
     'backup'                      => 'base.backupCli',
     'tables-cleanup'              => 'base.tablesCleanupCli',
-    'release-check'               => 'base.releaseCheckCli',
-    'self-update'                 => 'base.selfUpdateCli',
-    'self-update-stage'           => 'base.selfUpdateStageCli',
-    'self-update-cancel'          => 'base.selfUpdateCancelCli',
-    'self-update-now'             => 'base.selfUpdateNowCli',
+    'core-update-check'           => 'base.coreUpdateCheckCli',
+    'core-update-status'          => 'base.coreUpdateStatusCli',
+    'core-update-stage'           => 'base.coreUpdateStageCli',
+    'core-update-unstage'         => 'base.coreUpdateUnstageCli',
+    'core-update-ignore-window'   => 'base.coreUpdateIgnoreWindowCli',
     // Run by cli.php before OWA loads (updater.php), like the two above it run without boot.
-    'self-update-install'         => 'base.selfUpdateInstallCli',
-    'update-ua-regexes'           => 'base.updateUaRegexesCli',
+    'core-update-install'         => 'base.coreUpdateInstallCli',
+    'ua-update-definitions'       => 'base.uaUpdateDefinitionsCli',
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',
     'tracker-ingest-replay'       => 'base.trackerIngestReplayCli',
     'tracker-ingest-provision'    => 'base.trackerIngestProvisionCli',

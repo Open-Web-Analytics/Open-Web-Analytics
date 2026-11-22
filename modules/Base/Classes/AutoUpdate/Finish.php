@@ -10,7 +10,7 @@ use OWA\Core\CoreAPI;
  *
  * Boot, and record booted: true in install.json before anything changes the
  * schema (a failure before it is restored by the updater; one after it is
- * not). Then cmd=update (the schema updates, each recording its version as
+ * not). Then cmd=core-update-schema (the schema updates, each recording its version as
  * it completes, then the tracker bundles), cmd=publish-trackers (a release can
  * change a setting's default with nothing to update), the success notice, a
  * release check of its own as a self-test, and the clean-up. A failure after
@@ -18,8 +18,8 @@ use OWA\Core\CoreAPI;
  * retry_after from the claim, and raises the notice the attempt calls for.
  *
  * The process holds the install lock throughout (InstallLock::$held_here,
- * and the hold in InstallLock::$hold, which cmd=update touches between
- * updates), so cmd=update knows it runs inside the install.
+ * and the hold in InstallLock::$hold, which cmd=core-update-schema touches between
+ * updates), so cmd=core-update-schema knows it runs inside the install.
  */
 class Finish {
 
@@ -45,11 +45,11 @@ class Finish {
 
         try {
 
-            $update = self::command( '\\OWA\\Module\\Base\\Controller\\UpdatesApplyCli' );
+            $update = self::command( '\\OWA\\Module\\Base\\Controller\\CoreUpdateSchemaCli' );
 
             if ( $update['outcome'] !== 'ok' || CoreAPI::isSchemaUpdateRequired() ) {
 
-                throw new \RuntimeException( sprintf( 'cmd=update did not complete: %s', $update['message'] ?: 'schema updates are still pending' ) );
+                throw new \RuntimeException( sprintf( 'cmd=core-update-schema did not complete: %s', $update['message'] ?: 'schema updates are still pending' ) );
             }
 
             InstallLock::touch();

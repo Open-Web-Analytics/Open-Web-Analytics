@@ -14,7 +14,7 @@ final class CliWithoutBootTest extends TestCase
 {
     private const WITHOUT_BOOT = [
         'version-info'     => \OWA\Module\Base\Controller\VersionInfoCli::class,
-        'self-update-install' => \OWA\Module\Base\Controller\SelfUpdateInstallCli::class,
+        'core-update-install' => \OWA\Module\Base\Controller\CoreUpdateInstallCli::class,
     ];
 
     public function testTheTwoCommandsResolveFromTheFilesAlone(): void
@@ -23,7 +23,7 @@ final class CliWithoutBootTest extends TestCase
             $this->assertSame($class, CliWithoutBoot::commandClass($command));
         }
 
-        $this->assertNull(CliWithoutBoot::commandClass('update'), 'a command that boots');
+        $this->assertNull(CliWithoutBoot::commandClass('core-update-schema'), 'a command that boots');
         $this->assertNull(CliWithoutBoot::commandClass('no-such-command'), 'boot says it does not exist');
     }
 

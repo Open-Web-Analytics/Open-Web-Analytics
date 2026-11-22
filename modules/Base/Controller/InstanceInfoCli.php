@@ -263,7 +263,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
                 sprintf( '%s (schema %s)',
                     $current ? 'up to date' : 'UPDATE REQUIRED',
                     $stored ? (string) $stored : 'not recorded' ),
-                "Run 'php cli.php cmd=update'. Until you do, the job scheduler "
+                "Run 'php cli.php cmd=core-update-schema'. Until you do, the job scheduler "
               . 'refuses every job.' );
 
             /*
@@ -300,7 +300,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
                 $pending ? self::FAIL : self::OK,
                 'Modules',
                 $pending ? 'UPDATE REQUIRED' : 'up to date',
-                "Run 'php cli.php cmd=update'." );
+                "Run 'php cli.php cmd=core-update-schema'." );
         }
 
         return $rows;
@@ -432,14 +432,14 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
                 $age > 180 ? self::WARN : self::OK,
                 'User-agent patterns',
                 sprintf( 'updated %s (%d day%s ago)', date( 'Y-m-d', filemtime( $file ) ), $age, $age === 1 ? '' : 's' ),
-                "Run 'php cli.php cmd=update-ua-regexes'. Stale patterns do not error -- "
+                "Run 'php cli.php cmd=ua-update-definitions'. Stale patterns do not error -- "
               . 'new browsers and crawlers are just counted as something else.' );
 
         } else {
 
             $rows[] = $this->row( self::WARN, 'User-agent patterns',
                 'never updated (using the bundled copy)',
-                "Run 'php cli.php cmd=update-ua-regexes'. The bundled patterns are as old "
+                "Run 'php cli.php cmd=ua-update-definitions'. The bundled patterns are as old "
               . "as the PHP library's last release, so updating the dependency does not help." );
         }
 
@@ -711,7 +711,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         if ( ! file_exists( $file ) ) {
 
             return $this->row( self::WARN, 'GeoIP database', 'not downloaded',
-                "Run 'php cli.php cmd=update-geoip-db'. Needs a MaxMind licence key." );
+                "Run 'php cli.php cmd=geoip-update-db'. Needs a MaxMind licence key." );
         }
 
         $age = (int) floor( ( time() - filemtime( $file ) ) / 86400 );
@@ -720,7 +720,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             $age > 60 ? self::WARN : self::OK,
             'GeoIP database',
             sprintf( 'updated %s (%d day%s ago)', date( 'Y-m-d', filemtime( $file ) ), $age, $age === 1 ? '' : 's' ),
-            "Run 'php cli.php cmd=update-geoip-db'. A stale database does not fail; it "
+            "Run 'php cli.php cmd=geoip-update-db'. A stale database does not fail; it "
           . 'answers, and the reports look normal.' );
     }
 

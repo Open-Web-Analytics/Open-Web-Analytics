@@ -129,6 +129,13 @@ class Cli extends \OWA\Core\AdminController {
     /** Arguments every command accepts, beside those its usage() declares. */
     const GLOBAL_ARGUMENTS = [ 'cmd' ];
 
+    /** 1.x's names for commands 2.0 renamed, and their names now: cli.php says which, and runs nothing. */
+    const RENAMED = [
+        'update'            => 'core-update-schema',
+        'update-ua-regexes' => 'ua-update-definitions',
+        'update-geoip-db'   => 'geoip-update-db',
+    ];
+
     /** @var bool whether a failure of this command sets cli.php's exit code */
     protected $exit_on_failure = true;
 

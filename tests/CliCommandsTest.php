@@ -47,6 +47,29 @@ final class CliCommandsTest extends CliControllerTestCase
     }
 
     /**
+     * 1.x's names for the renamed commands are free, so cli.php can say what
+     * they are now; each new name is one a module registers, active here or
+     * not (geoip-update-db is MaxmindGeoip's).
+     */
+    public function testTheRenamedCommandsPointAtRegisteredOnes(): void
+    {
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+
+        $sources = '';
+
+        foreach (array_merge(glob(\OWA\Core\Env::root() . '/modules/*/config/cli_commands.php'), glob(\OWA\Core\Env::root() . '/modules/*/Module.php')) as $file) {
+            $sources .= file_get_contents($file);
+        }
+
+        foreach (\OWA\Core\Controller\Cli::RENAMED as $old => $new) {
+            $this->assertEmpty($s->getCliCommandClass($old), "$old is still a command");
+            $this->assertMatchesRegularExpression('/[\'"]' . preg_quote($new, '/') . '[\'"]\s*(=>|,)/', $sources, "no module registers $new");
+            $this->assertDoesNotMatchRegularExpression('/[\'"]' . preg_quote($old, '/') . '[\'"]\s*(=>|,)/', $sources, "a module still registers $old");
+        }
+    }
+
+    /**
      * cmd name => module.class string it must map to (module.php:537-552).
      *
      * @return array<string, array{0:string,1:string}>
@@ -54,7 +77,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public static function commandRegistryProvider(): array
     {
         return [
-            'update'                     => ['update',                     'base.updatesApplyCli'],
+            'core-update-schema'         => ['core-update-schema',         'base.coreUpdateSchemaCli'],
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
             'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
             'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
@@ -515,7 +538,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public function testUpdateListPendingRunsReadOnly(): void
     {
         $result = $this->runCommand(
-            \OWA\Module\Base\Controller\UpdatesApplyCli::class,
+            \OWA\Module\Base\Controller\CoreUpdateSchemaCli::class,
             'updatesApplyCli.php',
             ['listpending' => '']
         );

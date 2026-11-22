@@ -1892,7 +1892,7 @@ namespace OWA\Module\Base\Classes;
       * NOT ON EVERY REQUEST. load() runs on every tracking beacon, and OWA's
       * error log is not rotated, so a line per request per module is a
       * log-growth problem rather than a message. Limited to the contexts where
-      * somebody is reading: the CLI -- so `cmd=update` and the cron jobs show
+      * somebody is reading: the CLI -- so `cmd=core-update-schema` and the cron jobs show
       * it -- and development mode, which is this project's existing signal for
       * verbose output.
       *

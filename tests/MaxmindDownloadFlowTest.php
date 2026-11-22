@@ -106,7 +106,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $dir     = $this->dir;
 
         $controller = new class( $fixture, $dir, $options )
-            extends \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli {
+            extends \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli {
 
             public $downloads = 0;
             public $head_requests = 0;
@@ -411,7 +411,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $this->assertSame( 'failed', $retry->outcomeIs() );
         $this->assertTrue( $retry->said( 'did not install' ) );
 
-        touch( $this->marker(), time() - \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::RETRY_DOWNLOAD_AFTER - 1 );
+        touch( $this->marker(), time() - \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::RETRY_DOWNLOAD_AFTER - 1 );
 
         $next_day = $this->scheduled();
         $next_day->action();
@@ -508,7 +508,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
     private function installDatabase( $found, $destination ) {
 
         $m = new ReflectionMethod(
-            \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class, 'installDatabase' );
+            \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::class, 'installDatabase' );
 
         return $m->invoke( $this->controller(), $found, $destination );
     }

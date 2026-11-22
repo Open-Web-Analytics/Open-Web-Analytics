@@ -76,7 +76,7 @@ class Browscap extends \OWA\Core\Base {
      *
      *   1. the `ua-regexes` setting, for an installation that keeps the file
      *      somewhere of its own choosing
-     *   2. owa-data/ua-parser/regexes.php, where cmd=update-ua-regexes puts it
+     *   2. owa-data/ua-parser/regexes.php, where cmd=ua-update-definitions puts it
      *   3. nothing, meaning the copy bundled with the library
      *
      * The second is the point. The bundled copy is only as new as the PHP

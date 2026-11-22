@@ -247,7 +247,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *   prune-tracker-ingest-archive  daily            deletes archived intake batches older than
  *                                                  raw_retention_months; nothing when unset
  *   prune-job-queue               daily            removes finished queued jobs
- *   release-check                 every 6 hours    stores new release notifications; stages the
+ *   core-update-check                 every 6 hours    stores new release notifications; stages the
  *                                                  release automatic updates install
  *   refresh-geoip-db              weekly           downloads a newer GeoIP database;
  *                                                  while the Maxmind GeoIP module is active
@@ -362,7 +362,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * once a week and downloads a newer database when there is one. To download it
  * at once:
  *
- *      php cli.php cmd=update-geoip-db
+ *      php cli.php cmd=geoip-update-db
  *
  * IP ranges move between countries and cities continuously, and a stale file
  * does not fail -- it answers, wrongly, and the reports look normal.

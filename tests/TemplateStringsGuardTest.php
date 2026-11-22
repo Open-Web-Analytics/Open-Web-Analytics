@@ -112,7 +112,7 @@ final class TemplateStringsGuardTest extends TestCase
             'an attribute through t()'    => ['<a title="<?php $view->out( \OWA\Core\CoreAPI::t( \'Edit\' ) ); ?>"></a>'],
             'outMarkup() with markup'     => ['<p><?php $view->outMarkup( \OWA\Core\CoreAPI::t( \'Send it in the %s header.\' ), \'<code>Authorization</code>\' ); ?></p>'],
             'script and style'            => ["<script>var x = 'Some text';</script><style>.a:after { content: 'More'; }</style>"],
-            'code and pre'                => ['<pre>php cli.php cmd=update</pre><code>owa-config.php</code>'],
+            'code and pre'                => ['<pre>php cli.php cmd=core-update-schema</pre><code>owa-config.php</code>'],
             'a comment and a doctype'     => ["<!DOCTYPE html>\n<!-- Some note -->"],
             'entities and numbers'        => ['<span>&nbsp;&mdash; 12 &hellip; 3.5</span>'],
             'the product name'            => ['<span>Open Web Analytics</span><b>OWA</b>'],

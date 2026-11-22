@@ -244,7 +244,7 @@ class Service extends \OWA\Core\Base {
      */
     const NEVER_SCHEDULE = [
         'install'       => 'Re-runs schema installation.',
-        'update'        => 'Changes the schema underneath the running process.',
+        'core-update-schema' => 'Changes the schema underneath the running process.',
         'reset-secrets' => 'Rewrites owa-config.php.',
     ];
 

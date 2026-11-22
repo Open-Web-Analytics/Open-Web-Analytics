@@ -168,7 +168,7 @@ final class StringGuidTest extends TestCase
     }
 
     /**
-     * The gap this exists for: new files are on disk, cmd=update has NOT run,
+     * The gap this exists for: new files are on disk, cmd=core-update-schema has NOT run,
      * and log.php is still ingesting. Without the schema check such an
      * installation would derive wide ids against crc32 history and then revert
      * once the update finally ran, duplicating every dimension touched in

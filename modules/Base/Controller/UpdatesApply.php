@@ -28,7 +28,7 @@ class UpdatesApply extends \OWA\Core\Controller {
      * make. Weighed against an upgrade path that cannot be completed from the
      * browser, that is the better trade.
      *
-     * `php cli.php cmd=update` (base.updatesApplyCli) remains the route for
+     * `php cli.php cmd=core-update-schema` (base.coreUpdateSchemaCli) remains the route for
      * updates that cannot run over the web; updates 005/006/007/010 require it.
      *
      * ONE AT A TIME. Anyone can request this, and a reload during a slow update

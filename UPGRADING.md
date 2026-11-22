@@ -24,7 +24,7 @@ site owners with local template overrides, and anyone maintaining a custom theme
 2.0 writes each event to `owa_event_raw`, which its first update creates. A
 tracking request that arrives after the 2.0 code is in place and before that
 update has run is dropped, and is not kept to retry. The update takes seconds:
-run `php cli.php cmd=update` straight after deploying. Queueing on 1.x does not
+run `php cli.php cmd=core-update-schema` straight after deploying. Queueing on 1.x does not
 cover the window, since 2.0 does not read 1.x's queue.
 
 ### A 1.x site that queues beacons
@@ -49,7 +49,7 @@ way back say what it is.
 ### A release with a new tracker is applied as an update
 
 A release that changes the tracker now asks for its update to be applied --
-`php cli.php cmd=update`, or Apply on the update notice in the admin screens --
+`php cli.php cmd=core-update-schema`, or Apply on the update notice in the admin screens --
 even when it changes no schema. That update publishes the Profiles' tracking
 bundles that are stale or missing: in the run from the command line, or as a job
 for the scheduler's next minute when applied from the screen. A release that

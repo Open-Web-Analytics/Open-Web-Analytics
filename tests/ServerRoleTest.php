@@ -334,7 +334,7 @@ final class ServerRoleTest extends TestCase
         yield 'add-site'             => ['add-site',             ['full', 'worker', 'console']];
         yield 'schedule-status'      => ['schedule-status',      ['full', 'worker', 'console']];
         yield 'schedule-run'         => ['schedule-run',         ['full', 'worker']];
-        yield 'update'               => ['update',               ['full', 'worker']];
+        yield 'core-update-schema'   => ['core-update-schema',   ['full', 'worker']];
     }
 
     /** @dataProvider marks */

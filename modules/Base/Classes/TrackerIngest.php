@@ -74,9 +74,9 @@ class TrackerIngest {
      * queue_tracking_events (OWA_QUEUE_TRACKING_EVENTS), always on a
      * collector, which has no database to write them to, and while the schema
      * is behind (after a failed schema update, during an install's, or between
-     * a deploy's files and its cmd=update), when new code would write against
+     * a deploy's files and its cmd=core-update-schema), when new code would write against
      * the old schema. The drain waits for the same condition, so the backlog
-     * is ingested once cmd=update completes.
+     * is ingested once cmd=core-update-schema completes.
      *
      * @return bool
      */

@@ -24,7 +24,7 @@
  * documentation could show which one OWA_SCHEDULED_JOBS keys on. It keys on
  * the name.
  *
- * NOT registering update-ua-regexes here, deliberately.
+ * NOT registering ua-update-definitions here, deliberately.
  *
  * It would fit -- the patterns go stale on their own and monthly is roughly how
  * often uap-core changes -- but it makes an outbound HTTP request to a third
@@ -34,11 +34,11 @@
  * must not turn anything else on.
  *
  * An installation that wants it adds it to OWA_SCHEDULED_JOBS, or runs
- * cli.php cmd=update-ua-regexes from its own cron.
+ * cli.php cmd=ua-update-definitions from its own cron.
  *
  * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes its
  * own -- a Profile's at once, anything wider as a queued publish-trackers job
- * -- and a new release is applied with cmd=update, which republishes what it
+ * -- and a new release is applied with cmd=core-update-schema, which republishes what it
  * changed (Base\Module::update()).
  */
 return [
@@ -62,7 +62,7 @@ return [
      * NOT '@daily'. That is midnight exactly, and several OWA installs commonly
      * share one database server -- so every one of them would start a run, and
      * possibly a REORGANIZE that rewrites rows, at the same instant. Same
-     * reasoning as release-check below, for a local reason rather than a
+     * reasoning as core-update-check below, for a local reason rather than a
      * remote one.
      */
     'rotate-partitions' => [
@@ -191,8 +191,8 @@ return [
      * The one job that runs while schema updates are pending: the release
      * that fixes a failed one is what it stages.
      */
-    'release-check' => [
-        'command'     => 'release-check',
+    'core-update-check' => [
+        'command'     => 'core-update-check',
         'schedule'    => [ 'spread' => 'hourly', 'interval' => 6 ],
         'params'      => [],
         'description' => 'Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.',

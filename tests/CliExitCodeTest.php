@@ -179,7 +179,7 @@ final class CliExitCodeTest extends CliControllerTestCase
 
     public function testAnUpdateIsNamedModuleDotSequence(): void
     {
-        $U = \OWA\Module\Base\Controller\UpdatesApplyCli::class;
+        $U = \OWA\Module\Base\Controller\CoreUpdateSchemaCli::class;
 
         $this->assertSame(['base', '86'], $U::parseUpdateName('base.86'));
         $this->assertNull($U::parseUpdateName('base'));
@@ -191,7 +191,7 @@ final class CliExitCodeTest extends CliControllerTestCase
      * An update that stops for the operator leaves the run incomplete: exit 1,
      * with the message saying what to do.
      *
-     * In its own process: UpdatesApplyCli defines OWA_UPDATING, which would
+     * In its own process: CoreUpdateSchemaCli defines OWA_UPDATING, which would
      * turn off the pending-update check for every later test here.
      */
     public function testAnUpdatePausedForTheOperatorExits1(): void
@@ -206,7 +206,7 @@ $s->modules['owatestpause'] = new class {
     public $update_awaiting = '';
     public function update() { $this->update_awaiting = 'a choice from the operator'; return false; }
 };
-$cli = new \OWA\Module\Base\Controller\UpdatesApplyCli(array());
+$cli = new \OWA\Module\Base\Controller\CoreUpdateSchemaCli(array());
 ob_start();
 $cli->action();
 ob_end_clean();
@@ -222,7 +222,7 @@ PHP;
 
         $this->assertSame('failed', $result['outcome']);
         $this->assertSame(Cli::EXIT_FAILED, $result['exit']);
-        $this->assertSame('Updates paused: one needs a choice from the operator. Do what it says above, then run cmd=update again.',
+        $this->assertSame('Updates paused: one needs a choice from the operator. Do what it says above, then run cmd=core-update-schema again.',
             $result['message']);
     }
 
@@ -242,7 +242,7 @@ $s->modules['owatestfail'] = new class {
     public $update_awaiting = '';
     public function update() { return false; }
 };
-$cli = new \OWA\Module\Base\Controller\UpdatesApplyCli(array());
+$cli = new \OWA\Module\Base\Controller\CoreUpdateSchemaCli(array());
 ob_start();
 $cli->action();
 ob_end_clean();

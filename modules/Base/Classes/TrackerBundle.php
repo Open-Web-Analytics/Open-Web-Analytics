@@ -736,7 +736,7 @@ class TrackerBundle {
      *
      * Before the job queue exists -- an install mid-upgrade -- there is
      * nothing to queue on. Nothing runs publish-trackers on a schedule, so
-     * the bundles wait for cmd=update or cmd=publish-trackers.
+     * the bundles wait for cmd=core-update-schema or cmd=publish-trackers.
      *
      * @return string|false the job's id
      */

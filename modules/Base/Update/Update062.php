@@ -10,9 +10,9 @@ namespace OWA\Module\Base\Update;
  *
  * HOW MUCH HISTORY IS AN EXPLICIT CHOICE, passed to the update command:
  *
- *   php cli.php cmd=update since=2years     what is newer than a cutoff
- *   php cli.php cmd=update since=20240101
- *   php cli.php cmd=update --all            everything
+ *   php cli.php cmd=core-update-schema since=2years     what is newer than a cutoff
+ *   php cli.php cmd=core-update-schema since=20240101
+ *   php cli.php cmd=core-update-schema --all            everything
  *
  * Without one it prints v1's volume per site and year and fails, which leaves
  * the update pending. Rows older than the cutoff stay in v1's tables until the
@@ -133,8 +133,8 @@ class Update062 extends \OWA\Core\Update {
 
         if ( (bool) $raw_since === $all ) {
 
-            $this->e->notice( 'Choose how much history to migrate: cmd=update since=<yyyymmdd, or a period'
-                . ' such as 2years or 18m>, or cmd=update --all. Rows older than the cutoff stay in the v1'
+            $this->e->notice( 'Choose how much history to migrate: cmd=core-update-schema since=<yyyymmdd, or a period'
+                . ' such as 2years or 18m>, or cmd=core-update-schema --all. Rows older than the cutoff stay in the v1'
                 . ' tables until they are dropped.' );
 
             $this->awaiting = 'a choice of how much history to migrate';
@@ -255,7 +255,7 @@ class Update062 extends \OWA\Core\Update {
 
         if ( ! $ok ) {
 
-            $this->e->notice( 'The migration is left pending. Run cmd=update again with the same cutoff to'
+            $this->e->notice( 'The migration is left pending. Run cmd=core-update-schema again with the same cutoff to'
                 . ' write what is missing; a difference that remains after that is a fault to report.' );
         }
 

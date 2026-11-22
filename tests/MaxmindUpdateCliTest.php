@@ -37,7 +37,7 @@ final class MaxmindUpdateCliTest extends TestCase {
     public function testTheModuleRegistersTheCommand(): void {
 
         $this->assertArrayHasKey(
-            'update-geoip-db',
+            'geoip-update-db',
             $this->commandsFor( 'maxmind_geoip' ),
             'the module must offer the command when it is active'
         );
@@ -50,7 +50,7 @@ final class MaxmindUpdateCliTest extends TestCase {
     public function testBaseDoesNotRegisterIt(): void {
 
         $this->assertArrayNotHasKey(
-            'update-geoip-db',
+            'geoip-update-db',
             $this->commandsFor( 'base' ),
             'registering this in Base would offer it to installations with no GeoIP module'
         );
@@ -74,7 +74,7 @@ final class MaxmindUpdateCliTest extends TestCase {
 
         $job = $jobs['refresh-geoip-db'];
 
-        $this->assertSame( 'update-geoip-db', $job['command'] );
+        $this->assertSame( 'geoip-update-db', $job['command'] );
         $this->assertSame( [ 'scheduled' => 1 ], $job['params'] );
         $this->assertSame( 'maxmind_geoip', $job['module'] );
         $this->assertMatchesRegularExpression( '/^\d+ \d+ \* \* [0-6]$/', $job['schedule'],
@@ -87,7 +87,7 @@ final class MaxmindUpdateCliTest extends TestCase {
     public function testTheCommandRunsOnTheSchedulerRoles(): void {
 
         $this->assertSame( \OWA\Core\ServerRole::SCHEDULER,
-            \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::serverRoles() );
+            \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::serverRoles() );
     }
 
     /**
@@ -100,21 +100,21 @@ final class MaxmindUpdateCliTest extends TestCase {
     public function testTheActionResolvesToItsClass(): void {
 
         $this->assertSame(
-            \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class,
+            \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::class,
             ( \OWA\Core\CoreAPI::serviceSingleton()
-                ->getMapValue( 'actions', 'maxmind_geoip.updateGeoipDbCli' )['class_name'] ?? null )
+                ->getMapValue( 'actions', 'maxmind_geoip.geoipUpdateDbCli' )['class_name'] ?? null )
         );
     }
 
     private function command() {
 
-        return ( new ReflectionClass( \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class ) )
+        return ( new ReflectionClass( \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::class ) )
             ->newInstanceWithoutConstructor();
     }
 
     private function invoke( $method, ...$args ) {
 
-        $m = new ReflectionMethod( \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class, $method );
+        $m = new ReflectionMethod( \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::class, $method );
 
         return $m->invoke( $this->command(), ...$args );
     }
@@ -172,7 +172,7 @@ final class MaxmindUpdateCliTest extends TestCase {
      * Scheduling it while the module is inactive is refused, with a reason.
      *
      * OWA_SCHEDULED_JOBS can name any command, and command registration is
-     * what this module gates. So an installation that schedules update-geoip-db
+     * what this module gates. So an installation that schedules geoip-update-db
      * without activating the module would otherwise get a job listed as healthy
      * with a next-due time that failed silently at dispatch every time it fired.
      *
@@ -184,7 +184,7 @@ final class MaxmindUpdateCliTest extends TestCase {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
-        $resolved = $service->getCliCommandClass( 'update-geoip-db' );
+        $resolved = $service->getCliCommandClass( 'geoip-update-db' );
 
         if ( $resolved ) {
             $this->markTestSkipped( 'the maxmind_geoip module is active on this installation' );

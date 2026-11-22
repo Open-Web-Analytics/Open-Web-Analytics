@@ -5,7 +5,7 @@ namespace OWA\Module\Base\Controller;
  * Updates Application Controller
  */
 
-class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
+class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
@@ -47,7 +47,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
             return $this->listPendingUpdates();
         }
 
-        // An install runs the schema updates itself: cmd=update by hand waits
+        // An install runs the schema updates itself: cmd=core-update-schema by hand waits
         // for it, as every other CLI run does. Inside the install (Step 4:
         // finish) this process holds the lock.
         if ( ! \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here
@@ -130,7 +130,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         if (!empty($modules)) {
             $error = false;
             $first = true;
-            $lost  = \OWA\Core\CoreAPI::t( 'Stopped before the next update: another run has taken over the updates lock. cmd=update --listpending shows what is left.' );
+            $lost  = \OWA\Core\CoreAPI::t( 'Stopped before the next update: another run has taken over the updates lock. cmd=core-update-schema --listpending shows what is left.' );
 
             foreach ($modules as $k => $v) {
 
@@ -182,7 +182,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
                 // An update needs the operator first, and has said what. The
                 // run did not complete, so it is a failure: exit code 1.
                 $this->fail( sprintf(
-                    'Updates paused: one needs %s. Do what it says above, then run cmd=update again.', $awaiting ) );
+                    'Updates paused: one needs %s. Do what it says above, then run cmd=core-update-schema again.', $awaiting ) );
             } elseif ($error === true) {
                 $this->fail( $this->getMsg( 3307 )['message'] );
             } else {

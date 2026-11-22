@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  * So the bundled patterns are as old as the library's last release however new
  * the library is, and bumping the composer constraint does not help: there is
- * nothing newer to bump to. cmd=update-ua-regexes replaces them.
+ * nothing newer to bump to. cmd=ua-update-definitions replaces them.
  *
  * It writes to owa-data/ua-parser/, outside the source tree, which survives an
  * upgrade -- the same arrangement the Maxmind module uses for its database, for
@@ -119,9 +119,9 @@ final class UaRegexesFileTest extends TestCase {
         $property = new ReflectionProperty( $module, 'cli_commands' );
 
         $this->assertArrayHasKey(
-            'update-ua-regexes',
+            'ua-update-definitions',
             (array) $property->getValue( $module ),
-            'the command must be reachable as cli.php cmd=update-ua-regexes'
+            'the command must be reachable as cli.php cmd=ua-update-definitions'
         );
     }
 
@@ -135,9 +135,9 @@ final class UaRegexesFileTest extends TestCase {
     public function testTheCommandResolvesToItsClass(): void {
 
         $this->assertSame(
-            \OWA\Module\Base\Controller\UpdateUaRegexesCli::class,
+            \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class,
             ( \OWA\Core\CoreAPI::serviceSingleton()
-                ->getMapValue( 'actions', 'base.updateUaRegexesCli' )['class_name'] ?? null ),
+                ->getMapValue( 'actions', 'base.uaUpdateDefinitionsCli' )['class_name'] ?? null ),
             'the action name must resolve, or the command 404s when it is run'
         );
     }
@@ -165,13 +165,13 @@ final class UaRegexesFileTest extends TestCase {
         // Without the constructor: the CLI controller base exits unless the
         // process was started by cli.php, and this method does not depend on
         // any of that.
-        return ( new ReflectionClass( \OWA\Module\Base\Controller\UpdateUaRegexesCli::class ) )
+        return ( new ReflectionClass( \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class ) )
             ->newInstanceWithoutConstructor();
     }
 
     private function whyNotWritable( $dir ) {
 
-        $m = new ReflectionMethod( \OWA\Module\Base\Controller\UpdateUaRegexesCli::class, 'whyNotWritable' );
+        $m = new ReflectionMethod( \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class, 'whyNotWritable' );
 
         return $m->invoke( $this->command(), $dir );
     }

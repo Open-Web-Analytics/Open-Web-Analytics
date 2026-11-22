@@ -91,7 +91,7 @@ PHP
 
     private function controller() {
 
-        return new class extends \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli {
+        return new class extends \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli {
 
             public function __construct() {}
 

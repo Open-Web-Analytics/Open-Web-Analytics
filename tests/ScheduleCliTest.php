@@ -258,7 +258,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
             $run = $runner([]);
             $run->action();
-            $this->assertSame(['release-check'], $run->considered);
+            $this->assertSame(['core-update-check'], $run->considered);
             $this->assertFalse($run->drained);
 
             $prune = $runner(['prune-orphans' => true]);
@@ -326,13 +326,13 @@ final class ScheduleCliTest extends CliControllerTestCase
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
         // News panel stopped calling api.github.com during page renders, and
-        // release-check replaced it, making the same call for the bell and
+        // core-update-check replaced it, making the same call for the bell and
         // for automatic updates,
         // rebuild-cube joined them once it could refuse cheaply on an install
         // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
-        // (No bundle job: saves publish their own and cmd=update republishes
+        // (No bundle job: saves publish their own and cmd=core-update-schema republishes
         // what a release changed, PLAN 2.30.7.) prune-job-queue deletes
         // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
@@ -341,7 +341,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         // prune-tracker-ingest-archive holds the intake's archived batches to
         // raw_retention_months, and deletes nothing while that is unset.
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'release-check'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'core-update-check'],
             array_keys($jobs)
         );
     }
@@ -362,7 +362,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
     /**
      * No bundle job ships (PLAN 2.30.7): a save publishes its own, and a
-     * release is applied with cmd=update, which republishes what it changed.
+     * release is applied with cmd=core-update-schema, which republishes what it changed.
      * publish-trackers stays a command, and the job queue runs it for a
      * change above one Profile.
      */
@@ -449,7 +449,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /**
      * No default job may fire at midnight.
      *
-     * release-check calls a THIRD PARTY. A fixed every-six-hours expression
+     * core-update-check calls a THIRD PARTY. A fixed every-six-hours expression
      * would have every install call it at the same instants, and most servers keep UTC so
      * timezones would not spread it either. Each install derives its own
      * minute and hours from something stable about itself.
@@ -458,8 +458,8 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertNotSame('0 */6 * * *', $jobs['release-check']['schedule']);
-        $this->assertMatchesRegularExpression('/^\d{1,2} \d{1,2},\d{1,2},\d{1,2},\d{1,2} \* \* \*$/', $jobs['release-check']['schedule'], 'four times a day');
+        $this->assertNotSame('0 */6 * * *', $jobs['core-update-check']['schedule']);
+        $this->assertMatchesRegularExpression('/^\d{1,2} \d{1,2},\d{1,2},\d{1,2},\d{1,2} \* \* \*$/', $jobs['core-update-check']['schedule'], 'four times a day');
     }
 
     /** Every six hours, at a minute and hour offset the install keeps. */
@@ -498,7 +498,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             $this->assertFalse((new $class([]))->needsCurrentSchema(), "$name runs while updates are pending, so $class must not need them applied");
         }
 
-        $this->assertSame(['release-check'], $while);
+        $this->assertSame(['core-update-check'], $while);
     }
 
     /** Every registered job must name a real command and parse. */
@@ -664,7 +664,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testDangerousCommandsAreRefusedEvenFromConfig()
     {
-        foreach (['install', 'update', 'reset-secrets'] as $command) {
+        foreach (['install', 'core-update-schema', 'reset-secrets'] as $command) {
             $jobs = $this->jobsWith(['harmless-sounding' => ['command' => $command, 'schedule' => '@daily']]);
 
             $this->assertArrayNotHasKey('harmless-sounding', $jobs, "$command must never be schedulable");
