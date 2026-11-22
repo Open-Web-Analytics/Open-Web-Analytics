@@ -23,9 +23,6 @@ class Template extends TemplateEngine {
     public $config;
 
     /** @var string */
-    public $module_local_template_dir;
-
-    /** @var string */
     public $module_template_dir;
 
     /** @var \OWA\Module\Base\Classes\Error */
@@ -79,9 +76,6 @@ class Template extends TemplateEngine {
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
         $this->module_template_dir = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/templates/';
 
-        // set module local template override dir
-        $this->module_local_template_dir = $this->module_template_dir.'local'.'/';
-
         return;
     }
 
@@ -98,12 +92,7 @@ class Template extends TemplateEngine {
             \OWA\Core\CoreAPI::error('No template file was specified.');
             return false;
         } else {
-            // check module's local modification template Directory
-            if (file_exists($this->module_local_template_dir.$file)) {
-                $fullfile = $this->module_local_template_dir.$file;
-
-            // check module's template directory
-            } elseif(file_exists($this->module_template_dir.$file)) {
+            if (file_exists($this->module_template_dir.$file)) {
                 $fullfile = $this->module_template_dir.$file;
 
             // throw error
@@ -142,12 +131,7 @@ class Template extends TemplateEngine {
                 return false;
             }
 
-            // check module's local modification template Directory
-            if (file_exists($this->module_local_template_dir.$file)):
-                $this->file = $this->module_local_template_dir.$file;
-
-            // check module's template directory
-            elseif(file_exists($this->module_template_dir.$file)):
+            if (file_exists($this->module_template_dir.$file)):
                 $this->file = $this->module_template_dir.$file;
 
             // throw error

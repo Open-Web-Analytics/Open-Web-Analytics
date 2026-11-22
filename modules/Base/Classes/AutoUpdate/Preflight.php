@@ -11,8 +11,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * environment -- the web server's PHP among it -- is taken as it was when OWA
  * was installed: requirements change only in major releases, which are never
  * automatic. install() judges what copying the release needs: the staging
- * owned by this user and writable by no one else, every file the release
- * ships writable where it lands, and room for it.
+ * owned by this user and writable by no one else, every directory the
+ * release writes in writable, and room for it and its backup.
  *
  * Each returns its problems as sentences, [] when there are none. Pure where
  * it can be: requirements() is given the environment, environment() reads it.
@@ -182,8 +182,11 @@ class Preflight {
             }
         }
 
-        $bytes      = 0;
-        $unwritable = [];
+        // Each file is written beside its target and renamed over it, and
+        // what the release does not ship is unlinked: the directories must be
+        // writable, whatever the files' own modes.
+        $bytes = 0;
+        $dirs  = [];
 
         $release = rtrim( (string) $release, '/' );
         $files   = is_dir( $release )
@@ -198,37 +201,91 @@ class Preflight {
                 continue;
             }
 
-            $path   = substr( (string) $file, strlen( $release ) + 1 );
             $bytes += (int) $info->getSize();
-            $target = $root . '/' . $path;
+            $dir    = dirname( $root . '/' . substr( (string) $file, strlen( $release ) + 1 ) );
 
-            while ( ! file_exists( $target ) && $target !== $root ) {
+            while ( ! is_dir( $dir ) && $dir !== $root && $dir !== dirname( $dir ) ) {
 
-                $target = dirname( $target );
+                $dir = dirname( $dir );
             }
 
-            if ( ! is_writable( $target ) ) {
-
-                $unwritable[] = (string) $path;
-            }
+            $dirs[ $dir ] = true;
         }
+
+        $unwritable = array_values( array_filter( array_keys( $dirs ), static fn ( $dir ) => ! is_writable( $dir ) ) );
 
         if ( $unwritable ) {
 
-            $problems[] = sprintf( \OWA\Core\CoreAPI::t( '%1$d of the files the release replaces or adds cannot be written by the user the scheduler runs as, such as %2$s.' ),
-                count( $unwritable ), $unwritable[0] );
+            $problems[] = sprintf( \OWA\Core\CoreAPI::t( '%1$d of the directories the release writes in cannot be written by the user the scheduler runs as, such as %2$s.' ),
+                count( $unwritable ), self::named( $unwritable[0], $root ) );
         }
 
-        // Room for the backup of every file it replaces, at most the release's size, and the new files beside them.
-        $free = @disk_free_space( $root );
-        $need = (int) ( $bytes * 2 );
+        // The new files go beside the old in the OWA directory; the backup of
+        // what they replace, at most the release's size, in the updates directory.
+        $need = [];
 
-        if ( $free !== false && $free < $need ) {
+        foreach ( [ $root, dirname( (string) $staging ) ] as $path ) {
 
-            $problems[] = sprintf( \OWA\Core\CoreAPI::t( 'Installing it needs about %1$d MB free on the disk holding OWA; %2$d MB are.' ),
-                (int) ceil( $need / 1048576 ), (int) floor( $free / 1048576 ) );
+            $stat = @stat( $path );
+            $disk = $stat === false ? $path : (string) $stat['dev'];
+            $need[ $disk ] = [ 'path' => $path, 'bytes' => ( $need[ $disk ]['bytes'] ?? 0 ) + $bytes ];
+        }
+
+        foreach ( $need as $n ) {
+
+            $free = @disk_free_space( $n['path'] );
+
+            if ( $free !== false && $free < $n['bytes'] ) {
+
+                $problems[] = sprintf( \OWA\Core\CoreAPI::t( 'Installing it needs about %1$d MB free on the disk holding %2$s; %3$d MB are.' ),
+                    (int) ceil( $n['bytes'] / 1048576 ), $n['path'], (int) floor( $free / 1048576 ) );
+            }
         }
 
         return $problems;
+    }
+
+    /**
+     * The directories of OWA's code this process cannot write, relative to
+     * $root ('' for the OWA directory itself): what an automatic update
+     * writes in, asked where the installer runs (cmd=install). The
+     * installation's own directories are left out: owa-data/, the data
+     * directory and the tracking bundles.
+     *
+     * @param  string       $root
+     * @param  list<string> $own  more of the installation's own directories
+     * @return list<string>
+     */
+    public static function unwritableCode( $root, array $own = [] ) {
+
+        $root = rtrim( (string) $root, '/' );
+        $own  = array_map( static fn ( $d ) => rtrim( (string) $d, '/' ), array_merge( [ $root . '/owa-data', $root . '/public/tracker' ], $own ) );
+        $out  = is_writable( $root ) ? [] : [ '' ];
+
+        $dirs = new \RecursiveIteratorIterator(
+            new \RecursiveCallbackFilterIterator(
+                new \RecursiveDirectoryIterator( $root, \FilesystemIterator::SKIP_DOTS ),
+                static fn ( \SplFileInfo $f ) => $f->isDir() && ! $f->isLink() && ! in_array( (string) $f->getPathname(), $own, true ) ),
+            \RecursiveIteratorIterator::SELF_FIRST );
+
+        foreach ( $dirs as $path => $info ) {
+
+            if ( ! is_writable( (string) $path ) ) {
+
+                $out[] = substr( (string) $path, strlen( $root ) + 1 );
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  string $dir
+     * @param  string $root
+     * @return string
+     */
+    private static function named( $dir, $root ) {
+
+        return $dir === $root ? \OWA\Core\CoreAPI::t( 'the OWA directory' ) : substr( $dir, strlen( $root ) + 1 ) . '/';
     }
 }

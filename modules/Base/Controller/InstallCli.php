@@ -111,6 +111,17 @@ class InstallCli extends \OWA\Core\Controller\Cli {
                     . 'or reports stay empty: ' . \OWA\Module\Base\Classes\SchedulerHealth::cronLine());
                 \OWA\Core\CoreAPI::notice('Then check it with: php cli.php cmd=schedule-status');
 
+                // Automatic updates write OWA's code as the cron user, usually
+                // this one: say now if it cannot, not at the first release.
+                $root = \OWA\Core\Env::root();
+
+                if ( \OWA\Module\Base\Classes\AutoUpdate\Vcs::checkout( $root ) === null
+                        && ( $dirs = \OWA\Module\Base\Classes\AutoUpdate\Preflight::unwritableCode( $root, [ \OWA\Core\Env::dataDir() ] ) ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( 'Automatic updates run as the cron user and write OWA\'s code. This user cannot write %d of its directories, such as %s. '
+                        . 'Give them to the user the cron entry runs as.', count( $dirs ), $dirs[0] === '' ? 'the OWA directory' : $dirs[0] . '/' ) );
+                }
+
             // schema was not installed successfully
             } else {
                 return $this->fail('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');

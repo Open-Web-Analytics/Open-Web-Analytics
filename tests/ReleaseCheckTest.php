@@ -713,9 +713,42 @@ final class ReleaseCheckTest extends TestCase
             implode("\n", Preflight::install($staging, $release, $root)), 'the staging is what runs');
         chmod($staging, 0700);
 
+        // A file is renamed over, so its own mode does not matter; its directory's does.
         chmod($root . '/cli.php', 0444);
-        $this->assertStringContainsString('1 of the files the release replaces or adds cannot be written',
+        $this->assertSame([], Preflight::install($staging, $release, $root), 'a read-only file in a writable directory is replaced');
+
+        mkdir($root . '/new', 0755);
+        chmod($root . '/new', 0555);
+        $this->assertStringContainsString('1 of the directories the release writes in cannot be written by the user the scheduler runs as, such as new/.',
+            implode("\n", Preflight::install($staging, $release, $root)), 'new/dir/ is created in new/');
+        chmod($root . '/new', 0755);
+
+        chmod($root, 0555);
+        $this->assertStringContainsString('1 of the directories the release writes in cannot be written by the user the scheduler runs as, such as the OWA directory.',
             implode("\n", Preflight::install($staging, $release, $root)));
+        chmod($root, 0755);
+    }
+
+    public function testTheCodeTheInstallerCannotWrite(): void
+    {
+        $root = $this->tmp . '/owa';
+        mkdir($root . '/Core', 0755, true);
+        mkdir($root . '/owa-data/logs', 0755, true);
+        mkdir($root . '/public/tracker', 0755, true);
+
+        $this->assertSame([], Preflight::unwritableCode($root));
+
+        chmod($root . '/Core', 0555);
+        chmod($root . '/owa-data', 0555);
+        chmod($root . '/public/tracker', 0555);
+
+        try {
+            $this->assertSame(['Core'], Preflight::unwritableCode($root), 'the installation\'s own directories are not code');
+        } finally {
+            chmod($root . '/Core', 0755);
+            chmod($root . '/owa-data', 0755);
+            chmod($root . '/public/tracker', 0755);
+        }
     }
 
     // ---------------------------------------------------------------------
