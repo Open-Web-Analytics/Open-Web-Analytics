@@ -40,7 +40,10 @@ class InstallNotices {
         }
 
         $retry = gmdate( 'Y-m-d H:i', (int) ( $install['retry_after'] ?? 0 ) ) . ' UTC';
-        $body  = $error . "\n\n" . sprintf( CoreAPI::t( 'Automatic updates try again after %s. Until the install succeeds, tracking is queued and reports wait. To try now: php cli.php cmd=self-update-install version=%s' ), $retry, $v );
+        // Before the new release booted the old one was put back, and runs as before.
+        $body  = $error . "\n\n" . sprintf( empty( $install['booted'] )
+            ? CoreAPI::t( 'Automatic updates try again after %s; the installed release runs as before until then. To try now: php cli.php cmd=self-update-install version=%s' )
+            : CoreAPI::t( 'Automatic updates try again after %s. Until the install succeeds, tracking is queued and reports wait. To try now: php cli.php cmd=self-update-install version=%s' ), $retry, $v );
 
         if ( $attempts < self::WEEKLY_FROM ) {
 
@@ -52,7 +55,7 @@ class InstallNotices {
         $key = $attempts === self::WEEKLY_FROM ? 'install_stuck:' . $v : sprintf( 'install_stuck:%s:%d', $v, $attempts );
 
         $notify( self::notice( $key, 'critical', sprintf( CoreAPI::t( 'OWA %s still has not installed' ), $v ),
-            $body . "\n\n" . CoreAPI::t( 'It is tried once a week from now on. Fix the cause and run php cli.php cmd=update; a newer release still installs as usual.' ) ) );
+            $body . "\n\n" . CoreAPI::t( 'It is tried once a week from now on. Fix the cause and run the command above; a newer release still installs as usual.' ) ) );
     }
 
     /**
