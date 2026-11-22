@@ -71,7 +71,8 @@ final class InstallerTest extends TestCase
     public function testTheUpdatesDirectoryIsFoundNotGuessed(): void
     {
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $this->updates);
-        $this->assertSame('0700', sprintf('%04o', fileperms($this->updates) & 0777));
+        $this->assertSame('0711', sprintf('%04o', fileperms($this->updates) & 0777), 'others open a name they know, list nothing');
+        $this->assertSame('0700', sprintf('%04o', fileperms($this->updates . '/versions') & 0777), 'nothing that holds code is readable');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data), 'found again, never derived');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data, true), 'created once');
 
@@ -104,7 +105,7 @@ final class InstallerTest extends TestCase
         $this->stage('2.0.1');
 
         $this->assertSame(99, $this->handoff(), 'no fatal: the run boots normally - ' . $this->out);
-        $this->assertFileDoesNotExist($this->updates . '/install/install.json', 'and installs nothing');
+        $this->assertFileDoesNotExist($this->updates . '/install.json', 'and installs nothing');
         $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
         $this->assertStringContainsString('owa-config.php uses OWA\\Core\\Env.', $this->out, 'by hand, it says why');
 
@@ -180,9 +181,9 @@ final class InstallerTest extends TestCase
         $install = $this->install();
         $this->assertSame(['installing', '2.0.1', 1, true, true], [$install['state'], $install['version'], $install['attempts'], $install['copied'], $install['booted']]);
         $this->assertEqualsWithDelta($this->now + 60, $install['retry_after'], 5, 'set at the claim, so a process that dies retries a minute later');
-        $this->assertSame('old cli', file_get_contents($this->updates . '/install/backup/cli.php'));
-        $this->assertSame('a file 2.0.1 no longer has', file_get_contents($this->updates . '/install/backup/modules/Base/Retired.php'), 'what it deleted is backed up too');
-        $this->assertFileDoesNotExist($this->updates . '/install/backup/same.php', 'an unchanged file is not touched');
+        $this->assertSame('old cli', file_get_contents($this->updates . '/backup/cli.php'));
+        $this->assertSame('a file 2.0.1 no longer has', file_get_contents($this->updates . '/backup/modules/Base/Retired.php'), 'what it deleted is backed up too');
+        $this->assertFileDoesNotExist($this->updates . '/backup/same.php', 'an unchanged file is not touched');
     }
 
     /** A copy error is undone at once, counted, and the old release boots; what it added waits for the next copy. */
@@ -203,6 +204,8 @@ final class InstallerTest extends TestCase
         $this->assertStringContainsString('Could not write modules/Locked/New.php', $install['error']);
         $this->assertStringContainsString('The previous release was put back', $install['error']);
         $this->assertFileDoesNotExist($this->data . '/updating', 'a failed attempt lets the lock go too');
+        $this->assertSame('0644', sprintf('%04o', fileperms($this->updates . '/install.json') & 0777), 'readable by the Updates screen');
+        $this->assertSame('0700', sprintf('%04o', fileperms($this->updates . '/backup') & 0777), 'the originals: not readable');
 
         $this->assertSame(99, $this->handoff(), 'not due again until its retry_after');
 
@@ -232,8 +235,8 @@ final class InstallerTest extends TestCase
     /** An unfinished install whose staging is gone is undone; the old release runs and Step 1 stages it again. */
     public function testAnUnfinishedInstallWithoutItsStagingIsUndone(): void
     {
-        mkdir($this->updates . '/install/backup', 0700, true);
-        file_put_contents($this->updates . '/install/backup/cli.php', 'old cli');
+        mkdir($this->updates . '/backup', 0700, true);
+        file_put_contents($this->updates . '/backup/cli.php', 'old cli');
         file_put_contents($this->root . '/cli.php', 'half copied');
         $this->unfinished('2.0.1', 0);
 
@@ -245,11 +248,11 @@ final class InstallerTest extends TestCase
     public function testNothingRunsFromAStagingOthersCanWrite(): void
     {
         $this->stage('2.0.1');
-        chmod($this->updates . '/2.0.1', 0770);
+        chmod($this->updates . '/versions/2.0.1', 0770);
         $this->assertSame(99, $this->handoff());
 
-        chmod($this->updates . '/2.0.1', 0700);
-        chmod($this->updates . '/2.0.1/release/updater.php', 0666);
+        chmod($this->updates . '/versions/2.0.1', 0700);
+        chmod($this->updates . '/versions/2.0.1/release/updater.php', 0666);
         $this->assertSame(99, $this->handoff());
         $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
     }
@@ -455,7 +458,7 @@ final class InstallerTest extends TestCase
 
         try {
             $this->assertSame(0, $this->handoff());
-            $this->assertFileDoesNotExist($this->updates . '/install/install.json', 'nothing claimed');
+            $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
         } finally {
             $this->u['unlock']($hold);
         }
@@ -512,10 +515,10 @@ final class InstallerTest extends TestCase
      */
     private function handoff(array $argv = ['cmd=schedule-run'], int $later = 0): int
     {
-        if ($later && is_file($this->updates . '/install/install.json')) {
+        if ($later && is_file($this->updates . '/install.json')) {
             $i = $this->install();
             $i['retry_after'] -= $later;
-            file_put_contents($this->updates . '/install/install.json', json_encode($i));
+            file_put_contents($this->updates . '/install.json', json_encode($i));
         }
 
         $script = sprintf('$h = (require %s)["handoff"]; $r = $h(%s, %s); exit($r === null ? 99 : $r);',
@@ -530,7 +533,7 @@ final class InstallerTest extends TestCase
     /** A staged release, as Step 1 leaves it, and staged.json pointing at it (unless $point is false). */
     private function stage(string $v, ?array $window = null, bool $point = true, array $extra = [], ?string $owa = null): void
     {
-        $dir = $this->updates . "/$v";
+        $dir = $this->updates . "/versions/$v";
         exec('rm -rf ' . escapeshellarg($dir));
         mkdir($dir . '/release', 0700, true);
 
@@ -558,8 +561,7 @@ final class InstallerTest extends TestCase
 
     private function unfinished(string $v, int $retry_after, int $attempts = 1): void
     {
-        @mkdir($this->updates . '/install', 0700);
-        file_put_contents($this->updates . '/install/install.json', json_encode([
+        file_put_contents($this->updates . '/install.json', json_encode([
             'state' => 'installing', 'version' => $v, 'attempts' => $attempts, 'retry_after' => $retry_after, 'error' => 'before',
         ]));
     }
@@ -574,6 +576,6 @@ final class InstallerTest extends TestCase
 
     private function install(): array
     {
-        return json_decode((string) file_get_contents($this->updates . '/install/install.json'), true);
+        return json_decode((string) file_get_contents($this->updates . '/install.json'), true);
     }
 }

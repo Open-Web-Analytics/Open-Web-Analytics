@@ -11,7 +11,7 @@
  *               check that the staging is the scheduler user's alone, and run
  *               that release's `install`.
  *   install     Step 3. The STAGED release's copy, in the same process. Claim
- *               install/install.json, back up and copy the release over the
+ *               install.json, back up and copy the release over the
  *               OWA directory (cli.php last), delete what it does not ship,
  *               check every file, then boot the new OWA and run Step 4
  *               (Classes\AutoUpdate\Finish::run()).
@@ -19,6 +19,16 @@
  *               name so the web cannot guess it, found by looking for it,
  *               never derived. Booted OWA reads it through the same closure
  *               (the updates_dir setting); Step 1 creates it.
+ *
+ *     updates-<id>/          0711  others open a name they know, list nothing
+ *       staged.json          0644  Step 1's: the release to install, and when
+ *       install.json         0644  the installer's, while an install is unfinished
+ *       versions/            0700  the staged releases: <version>/release/
+ *       backup/              0700  the originals, while an install is unfinished
+ *
+ *   The two JSON files are readable by the web user, under any arrangement
+ *   of users and groups, for the Updates screen; nothing that holds code is,
+ *   so none can be run over HTTP. Only the owner writes any of it.
  *
  * The staged release is its own list of files: there is no manifest. It was
  * proved by the tarball's SHA-256 against GitHub's digest (Step 1), and the
@@ -38,7 +48,7 @@
  * (1, 3 and 10 minutes, 15 minutes, 2 hours, a day, then weekly), so a
  * process that dies retries soon and an install that keeps dying slows
  * down. A copy error, or a new release that does not boot, is undone at once
- * from install/backup/, the originals of every file replaced or deleted, each
+ * from backup/, the originals of every file replaced or deleted, each
  * backed up once. The files the copy added stay until the next attempt's
  * copy, which ships them or deletes them. Once the new OWA has booted
  * (install.json booted: true) nothing is undone.
@@ -128,8 +138,8 @@ return [
     /*
      * The updates directory, or null: none, or more than one (System Health
      * says so, and nothing installs). With $create, Step 1 makes it when
-     * there is none: mode 0700, a name mkdir() refuses to reuse, and looked
-     * for again after, so it is the only one.
+     * there is none: mode 0711 with versions/ 0700, a name mkdir() refuses
+     * to reuse, and looked for again after, so it is the only one.
      */
     'updatesDir' => static function ( $data, $create = false ) {
 
@@ -148,12 +158,14 @@ return [
 
         $dir = rtrim( (string) $data, '/' ) . '/updates-' . bin2hex( random_bytes( 16 ) );
 
-        if ( ! @mkdir( $dir, 0700 ) ) {
+        if ( ! @mkdir( $dir, 0711 ) ) {
 
             return null;
         }
 
-        @chmod( $dir, 0700 );
+        @chmod( $dir, 0711 );
+        @mkdir( $dir . '/versions', 0700 );
+        @chmod( $dir . '/versions', 0700 );
         $found = $u['updatesDirs']( $data );
 
         return count( $found ) === 1 ? (string) $found[0] : null;
@@ -681,7 +693,7 @@ return [
         // and again holding it, since Step 1 may have changed things between.
         $decide = static function () use ( $u, $dir, $only ) {
 
-            $current = json_decode( (string) @file_get_contents( $dir . '/install/install.json' ), true );
+            $current = json_decode( (string) @file_get_contents( $dir . '/install.json' ), true );
             $current = is_array( $current ) ? $current : null;
 
             if ( $only !== null ) {
@@ -708,7 +720,7 @@ return [
                 return null;
             }
 
-            $gone    = ! is_dir( $dir . '/' . $version . '/release' );
+            $gone    = ! is_dir( $dir . '/versions/' . $version . '/release' );
             $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
 
             if ( $problem !== null ) {
@@ -775,7 +787,7 @@ return [
             return null;
         }
 
-        $code = ( require $dir . '/' . $version . '/release/updater.php' )['install']( $context );
+        $code = ( require $dir . '/versions/' . $version . '/release/updater.php' )['install']( $context );
 
         // Done, however it ended. A process that dies, or exit()s from inside
         // the install (the 24-hour stop), leaves the file for the next
@@ -787,7 +799,7 @@ return [
 
     /*
      * Which version is due, or null: the unfinished install
-     * (install/install.json) once past its retry_after, whatever the window,
+     * (install.json) once past its retry_after, whatever the window,
      * and nothing new while one waits; else the release staged.json points
      * at, inside its window.
      */
@@ -800,7 +812,7 @@ return [
             return is_array( $data ) ? $data : null;
         };
 
-        $install = $read( $dir . '/install/install.json' );
+        $install = $read( $dir . '/install.json' );
 
         if ( $install !== null ) {
 
@@ -812,7 +824,7 @@ return [
         $staged  = $read( $dir . '/staged.json' );
         $version = (string) ( $staged['version'] ?? '' );
 
-        if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) || ! is_dir( $dir . '/' . $version . '/release' ) ) {
+        if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) || ! is_dir( $dir . '/versions/' . $version . '/release' ) ) {
 
             return null;
         }
@@ -868,7 +880,7 @@ return [
 
         $uid = posix_geteuid();
 
-        foreach ( [ $dir, $dir . '/' . $version, $dir . '/' . $version . '/release/updater.php' ] as $path ) {
+        foreach ( [ $dir, $dir . '/versions', $dir . '/versions/' . $version, $dir . '/versions/' . $version . '/release/updater.php' ] as $path ) {
 
             clearstatcache( true, $path );
 
@@ -887,7 +899,7 @@ return [
     },
 
     /*
-     * Put back every file in install/backup/ and record why: the old release
+     * Put back every file in backup/ and record why: the old release
      * runs until the retry.
      *
      * @return list<string> the files that could not be put back
@@ -900,8 +912,8 @@ return [
             ( require __FILE__ )['setLockPhase']( $c['lock'], 'copying' );
         }
 
-        $backup = $c['updates'] . '/install/backup';
-        $state  = $c['updates'] . '/install/install.json';
+        $backup = $c['updates'] . '/backup';
+        $state  = $c['updates'] . '/install.json';
         $failed = [];
 
         if ( is_dir( $backup ) ) {
@@ -936,7 +948,7 @@ return [
             $install['error']  = $why . ( $failed ? sprintf( ' Putting back %d file(s) failed, such as %s.', count( $failed ), $failed[0] ) : ' The previous release was put back.' );
             $tmp = $state . '.tmp' . getmypid();
             file_put_contents( $tmp, json_encode( $install, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
-            chmod( $tmp, 0600 );
+            chmod( $tmp, 0644 );
             rename( $tmp, $state );
         }
 
@@ -951,15 +963,14 @@ return [
 
         $u       = require __FILE__;
         $root    = rtrim( (string) $c['root'], '/' );
-        $release = $c['updates'] . '/' . $c['version'] . '/release';
-        $dir     = $c['updates'] . '/install';
-        $state   = $dir . '/install.json';
-        $backup  = $dir . '/backup';
+        $release = $c['updates'] . '/versions/' . $c['version'] . '/release';
+        $state   = $c['updates'] . '/install.json';
+        $backup  = $c['updates'] . '/backup';
         $write   = static function ( $file, array $data ) {
 
             $tmp = $file . '.tmp' . getmypid();
             file_put_contents( $tmp, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
-            chmod( $tmp, 0600 );
+            chmod( $tmp, 0644 );
             rename( $tmp, $file );
         };
         $sha     = static fn ( $file ) => is_file( $file ) && ! is_link( $file ) ? (string) hash_file( 'sha256', $file ) : '';
@@ -973,11 +984,6 @@ return [
 
                 return 1;
             }
-        }
-
-        if ( ! is_dir( $dir ) ) {
-
-            mkdir( $dir, 0700 );
         }
 
         $previous = json_decode( (string) @file_get_contents( $state ), true );
