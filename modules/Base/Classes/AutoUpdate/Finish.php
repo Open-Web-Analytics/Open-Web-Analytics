@@ -37,7 +37,8 @@ class Finish {
         $record( [ 'booted' => true ] );
 
         $v       = (string) $c['version'];
-        $staging = new Staging( (string) $c['updates'] );
+        $staging = new Staging( (string) $c['updates'], (string) $c['data'] );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'updates_dir', (string) $c['updates'] );
         $notify  = static fn ( array $n ) => \OWA\Module\Base\Classes\NotificationManager::notify( $n );
 
         try {
@@ -127,10 +128,10 @@ class Finish {
     }
 
     /**
-     * After a successful install: staged.json if it names exactly this
-     * version, the stagings of installs it superseded (below it, holding an
-     * install.json), and its own staging last, updater.php with it. Nothing
-     * else: Step 1 deletes what it replaces, and a staging made by hand stays.
+     * After a successful install: install/ (its install.json and backup/), its
+     * own staging, updater.php with it, and staged.json if it names exactly
+     * this version. Nothing else: Step 1 deletes the stagings it replaces and
+     * those not newer than what is installed.
      *
      * @param  Staging $staging
      * @param  string  $v
@@ -143,14 +144,7 @@ class Finish {
             $staging->removeStaged();
         }
 
-        foreach ( $staging->versions() as $other ) {
-
-            if ( Version::compare( $other, $v ) < 0 && $staging->hasInstall( $other ) ) {
-
-                Staging::remove( $staging->dir( $other ) );
-            }
-        }
-
+        Staging::remove( $staging->root() . '/' . Staging::INSTALL );
         Staging::remove( $staging->dir( $v ) );
     }
 }

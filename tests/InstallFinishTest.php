@@ -34,25 +34,25 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** Its own staging, installs it superseded, staged.json only if it names it; never a hand staging or a newer one. */
+    /** install/, its own staging and staged.json if it names it; never a newer or another staging. */
     public function testTheCleanUp(): void
     {
         $s = new Staging($this->tmp . '/updates');
 
-        foreach (['2.0.1' => true, '2.0.2' => false, '2.0.3' => true, '2.0.4' => false] as $v => $claimed) {
-            mkdir($s->dir($v), 0700);
-            if ($claimed) {
-                file_put_contents($s->dir($v) . '/install.json', '{"state":"installing"}');
-            }
+        foreach (['2.0.2', '2.0.3', '2.0.4'] as $v) {
+            mkdir($s->dir($v) . '/release', 0700, true);
         }
+        mkdir($this->tmp . '/updates/install/backup', 0700, true);
+        file_put_contents($this->tmp . '/updates/install/install.json', '{"state":"installing","version":"2.0.3"}');
 
-        $s->writeStaged('2.0.4', null);
+        $s->writeStaged('2.0.4', null, str_repeat('a', 64));
         Finish::cleanup($s, '2.0.3');
 
-        $this->assertSame(['2.0.2', '2.0.4'], $s->versions(), '2.0.1 was superseded; 2.0.2 is someone\'s staging, 2.0.4 newer');
+        $this->assertSame(['2.0.2', '2.0.4'], $s->versions(), 'others are Step 1\'s to clear');
+        $this->assertDirectoryDoesNotExist($this->tmp . '/updates/install');
         $this->assertSame('2.0.4', $s->staged()['version']);
 
-        $s->writeStaged('2.0.4', null);
+        $s->writeStaged('2.0.4', null, str_repeat('a', 64));
         Finish::cleanup($s, '2.0.4');
         $this->assertNull($s->staged());
     }
@@ -64,16 +64,16 @@ final class InstallFinishTest extends CliControllerTestCase
         $notify = function (array $n) use (&$raised) { $raised[$n['source_key']] = $n['severity']; };
         $install = ['state' => 'installing', 'version' => '2.0.3', 'error' => 'the database went away', 'retry_after' => 1800000000];
 
-        foreach ([1, 2, 3, 4, 5, 6] as $attempts) {
+        foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9] as $attempts) {
             InstallNotices::forInstall(['attempts' => $attempts] + $install, $notify);
         }
 
         $this->assertSame([
             'install_failed:2.0.3'  => 'warning',
             'install_stuck:2.0.3'   => 'critical',
-            'install_stuck:2.0.3:5' => 'critical',
-            'install_stuck:2.0.3:6' => 'critical',
-        ], $raised);
+            'install_stuck:2.0.3:8' => 'critical',
+            'install_stuck:2.0.3:9' => 'critical',
+        ], $raised, 'the weekly back-off starts at the seventh failed attempt');
 
         $raised = [];
         InstallNotices::forInstall(['attempts' => 1, 'error' => null] + $install, $notify);

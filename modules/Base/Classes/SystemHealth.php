@@ -648,6 +648,13 @@ class SystemHealth {
 
         $findings[] = self::noticeEmail();
 
+        $updates = self::updatesDirs();
+
+        if ( $updates ) {
+
+            $findings[] = $updates;
+        }
+
         $backup = self::backupDir();
 
         if ( $backup ) {
@@ -656,6 +663,27 @@ class SystemHealth {
         }
 
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
+    }
+
+    /**
+     * More than one automatic updates directory (owa-data/updates-<id>/):
+     * which is the real one is not guessed, so nothing installs until all but
+     * one are removed.
+     *
+     * @return Finding|null nothing when there is one or none
+     */
+    public static function updatesDirs() {
+
+        $dirs = \OWA\Module\Base\Classes\AutoUpdate\Staging::updater()['updatesDirs']( \OWA\Core\Env::dataDir() );
+
+        if ( count( $dirs ) < 2 ) {
+
+            return null;
+        }
+
+        return self::finding( 'red', \OWA\Core\CoreAPI::t( 'Automatic updates' ), sprintf( \OWA\Core\CoreAPI::t(
+            'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.' ),
+            count( $dirs ), implode( ', ', array_map( 'basename', $dirs ) ) ) );
     }
 
     /**

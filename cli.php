@@ -78,6 +78,10 @@ $config = [
 
 $owa = new owa( $config );
 
+// A failed install leaves its error in its install.json; the notices it calls
+// for are raised once each, by whichever booted run comes next.
+\OWA\Module\Base\Classes\AutoUpdate\InstallNotices::fromDisk();
+
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // An admin with no user_id. A login name here would reach nonces,

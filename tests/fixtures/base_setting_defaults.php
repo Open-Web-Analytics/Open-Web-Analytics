@@ -129,6 +129,7 @@ return [
     'tracking_url' => '',
     'trusted_proxies' => [],
     'ua-regexes' => '',
+    'updates_dir' => '',
     'use_32bit_hash' => false,
     'use_32bit_hash_before_v2' => false,
     'user_id_illegal_chars' => [ ' ', ';', '\'', '"', '|', ')', '(' ],

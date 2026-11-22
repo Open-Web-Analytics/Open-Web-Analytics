@@ -78,7 +78,6 @@ return [
     'base.instanceInfoCli'              => 'OWA\\Module\\Base\\Controller\\InstanceInfoCli',
     'base.serverCheckCli'               => 'OWA\\Module\\Base\\Controller\\ServerCheckCli',
     'base.versionInfoCli'               => 'OWA\\Module\\Base\\Controller\\VersionInfoCli',
-    'base.releaseManifestCli'           => 'OWA\\Module\\Base\\Controller\\ReleaseManifestCli',
     'base.backupCli'                    => 'OWA\\Module\\Base\\Controller\\BackupCli',
     'base.tablesCleanupCli'             => 'OWA\\Module\\Base\\Controller\\TablesCleanupCli',
     'base.releaseCheckCli'              => 'OWA\\Module\\Base\\Controller\\ReleaseCheckCli',

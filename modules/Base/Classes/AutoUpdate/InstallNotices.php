@@ -9,17 +9,19 @@ use OWA\Core\CoreAPI;
  *
  *   install_failed:<v>          warning, at the first failed attempt
  *   install_stuck:<v>           critical, when the weekly back-off starts
- *                               (the fourth failed attempt)
+ *                               (the seventh failed attempt)
  *   install_stuck:<v>:<n>       a reminder at each weekly attempt after that
  *
- * Raised by Step 4: finish when the new release booted and failed, and by
- * Step 1: release check for what it finds on disk: a copy error or a release
- * that did not boot, restored, leaves only the old release to say so.
+ * Raised by Step 4: finish when the new release booted and failed, and for
+ * what is on disk by every booted CLI run (fromDisk(), from cli.php) and by
+ * Step 1: release check. An undone copy error leaves the old release to say
+ * so straight after, in the same run; a release that did not boot, at the
+ * next run, a minute later.
  */
 class InstallNotices {
 
-    /** The failed attempt at which the back-off becomes weekly. */
-    const WEEKLY_FROM = 4;
+    /** The failed attempt at which the back-off becomes weekly (updater.php `backoff`). */
+    const WEEKLY_FROM = 7;
 
     /**
      * @param  array<string, mixed>       $install install.json
@@ -51,6 +53,29 @@ class InstallNotices {
 
         $notify( self::notice( $key, 'critical', sprintf( CoreAPI::t( 'OWA %s still has not installed' ), $v ),
             $body . "\n\n" . CoreAPI::t( 'It is tried once a week from now on. Fix the cause and run php cli.php cmd=update; a newer release still installs as usual.' ) ) );
+    }
+
+    /**
+     * The notices the unfinished install on disk calls for, if there is one:
+     * one is_file() when there is not.
+     *
+     * @return void
+     */
+    public static function fromDisk() {
+
+        try {
+
+            $install = ( new Staging() )->install();
+
+            if ( $install ) {
+
+                self::forInstall( $install, static fn ( array $n ) => \OWA\Module\Base\Classes\NotificationManager::notify( $n ) );
+            }
+
+        } catch ( \Throwable $e ) {
+
+            CoreAPI::debug( 'Install notices: ' . $e->getMessage() );
+        }
     }
 
     /**

@@ -146,12 +146,12 @@ class Preflight {
     /**
      * What copying the release over $root needs.
      *
-     * @param  string               $staging  the release's <version>/
-     * @param  array<string, mixed> $manifest the release's manifest.json
-     * @param  string               $root     the OWA directory
+     * @param  string $staging the release's <version>/
+     * @param  string $release its release/, whose files are the ones copied
+     * @param  string $root    the OWA directory
      * @return list<string>
      */
-    public static function install( $staging, array $manifest, $root ) {
+    public static function install( $staging, $release, $root ) {
 
         $root     = rtrim( (string) $root, '/' );
         $problems = [];
@@ -185,9 +185,21 @@ class Preflight {
         $bytes      = 0;
         $unwritable = [];
 
-        foreach ( (array) ( $manifest['files'] ?? [] ) as $path => $entry ) {
+        $release = rtrim( (string) $release, '/' );
+        $files   = is_dir( $release )
+            ? new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $release, \FilesystemIterator::SKIP_DOTS ) )
+            : [];
 
-            $bytes += (int) ( $entry['size'] ?? 0 );
+        foreach ( $files as $file => $info ) {
+
+            /** @var \SplFileInfo $info */
+            if ( ! $info->isFile() ) {
+
+                continue;
+            }
+
+            $path   = substr( (string) $file, strlen( $release ) + 1 );
+            $bytes += (int) $info->getSize();
             $target = $root . '/' . $path;
 
             while ( ! file_exists( $target ) && $target !== $root ) {

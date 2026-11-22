@@ -8,9 +8,8 @@
  */
 return [
     'update'                      => 'base.updatesApplyCli',
-    // These two run without OWA booted (Controller\Cli::needsBoot()).
+    // Runs without OWA booted (Controller\Cli::needsBoot()).
     'version-info'                => 'base.versionInfoCli',
-    'release-manifest'            => 'base.releaseManifestCli',
     'strings-extract'             => 'base.stringsExtractCli',
     'v1-drop'                     => 'base.v1DropCli',
     'backup'                      => 'base.backupCli',
