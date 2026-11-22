@@ -1945,6 +1945,7 @@ return [
     'of these match:' => 'of these match:',
     'optional' => 'optional',
     'or' => 'or',
+    'owa-config.php uses %s. It is read before OWA loads, so this installation cannot install a release itself. Use plain values there, or install by hand.' => 'owa-config.php uses %s. It is read before OWA loads, so this installation cannot install a release itself. Use plain values there, or install by hand.',
     'present' => 'present',
     'present, not readable' => 'present, not readable',
     'report_name is not supported. Ask for metrics and dimensions instead.' => 'report_name is not supported. Ask for metrics and dimensions instead.',

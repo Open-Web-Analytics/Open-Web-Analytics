@@ -101,7 +101,7 @@ return [
         'auto_update_level' => [ 'config_constant' => 'OWA_AUTO_UPDATE_LEVEL', 'default' => 'minor', 'description' => 'Which releases install automatically: patch (x.y.Z only) or minor (x.Y.z and patches).' ],
         'auto_update_patch_immediately' => [ 'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', 'default' => true, 'description' => 'Whether a patch release installs as soon as it is staged rather than in the window.' ],
         'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from.' ],
-        'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found when first needed (Classes\\AutoUpdate\\Staging::locate()). Never stored.' ],
+        'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found by looking for it when first needed. Never stored.' ],
         'auto_update_window' => [ 'config_constant' => 'OWA_AUTO_UPDATE_WINDOW', 'default' => '02:00-06:00', 'description' => 'The time an automatic update may start in, HH:MM-HH:MM in the installation\'s timezone. Empty: any time.' ],
         'app_passwords_enabled' => [
             'default'  => true,

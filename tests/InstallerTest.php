@@ -93,6 +93,25 @@ final class InstallerTest extends TestCase
         $this->assertSame('NULL', $out, 'a file using $this is refused, not run');
     }
 
+    /** A config naming an OWA class would fatal before OWA loads, or load the old class into the new release's process. */
+    public function testAConfigNamingAnOwaClassIsRefused(): void
+    {
+        foreach (["define('X', \\OWA\\Core\\Env::root());", "use OWA\\Core\\Env;\ndefine('X', Env::root());"] as $line) {
+            file_put_contents($this->root . '/owa-config.php', "<?php\n" . $line . "\n");
+            $this->assertNotNull($this->u['configRefused']($this->root), $line);
+        }
+
+        $this->stage('2.0.1');
+
+        $this->assertSame(99, $this->handoff(), 'no fatal: the run boots normally - ' . $this->out);
+        $this->assertFileDoesNotExist($this->updates . '/install/install.json', 'and installs nothing');
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
+        $this->assertStringContainsString('owa-config.php uses OWA\\Core\\Env.', $this->out, 'by hand, it says why');
+
+        file_put_contents($this->root . '/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '{$this->data}/');\n// \\OWA\\Core\\Env in a comment\n");
+        $this->assertNull($this->u['configRefused']($this->root), 'a comment is not code');
+    }
+
     public function testTheBackOff(): void
     {
         $this->assertSame([60, 180, 600, 900, 7200, 86400, 604800, 604800], array_map($this->u['backoff'], [1, 2, 3, 4, 5, 6, 7, 12]));

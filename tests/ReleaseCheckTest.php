@@ -532,6 +532,13 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('This installation has no updater.php', implode("\n", $this->check(['2.0.1'])['problems']));
     }
 
+    public function testAConfigNamingAnOwaClassStopsInstalls(): void
+    {
+        file_put_contents($this->tmp . '/owa/owa-config.php', "<?php\ndefine('X', \\OWA\\Core\\Env::root());\n");
+
+        $this->assertStringContainsString('owa-config.php uses \\OWA\\Core\\Env.', implode("\n", $this->check(['2.0.1'])['problems']));
+    }
+
     public function testAReleaseWithoutAnUpdaterCannotInstallItself(): void
     {
         $result = $this->check(['2.0.1'], [], null, fn ($dir) => null, false, true);

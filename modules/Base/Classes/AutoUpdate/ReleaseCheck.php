@@ -689,6 +689,10 @@ class ReleaseCheck {
         if ( ! is_file( $this->root . '/updater.php' ) ) {
 
             $problems[] = CoreAPI::t( 'This installation has no updater.php, so it cannot install a release itself. Install it by hand.' );
+
+        } elseif ( ( $why = Staging::updater()['configRefused']( $this->root ) ) !== null ) {
+
+            $problems[] = sprintf( CoreAPI::t( 'owa-config.php uses %s. It is read before OWA loads, so this installation cannot install a release itself. Use plain values there, or install by hand.' ), $why );
         }
 
         return $problems;

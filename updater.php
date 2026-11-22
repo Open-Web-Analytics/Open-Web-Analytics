@@ -50,9 +50,47 @@ return [
     'retired_modules' => [ 'FileCache', 'Hello', 'MemcachedCache', 'RemoteQueue' ],
 
     /*
+     * What stops owa-config.php being included before OWA loads: $this, or
+     * an OWA class's name as written; null when nothing does. Boot refuses
+     * $this too. An OWA class would fail here, where none is loaded, or load
+     * the installed release's class into the process that then requires the
+     * new release.
+     */
+    'configRefused' => static function ( $root ) {
+
+        $file = rtrim( (string) $root, '/' ) . '/owa-config.php';
+
+        if ( ! is_file( $file ) ) {
+
+            return null;
+        }
+
+        foreach ( (array) @token_get_all( (string) file_get_contents( $file ) ) as $token ) {
+
+            if ( ! is_array( $token ) ) {
+
+                continue;
+            }
+
+            if ( $token[0] === T_VARIABLE && $token[1] === '$this' ) {
+
+                return '$this';
+            }
+
+            if ( ( $token[0] === T_NAME_FULLY_QUALIFIED || $token[0] === T_NAME_QUALIFIED )
+                    && stripos( ltrim( $token[1], '\\' ), 'OWA\\' ) === 0 ) {
+
+                return $token[1];
+            }
+        }
+
+        return null;
+    },
+
+    /*
      * owa-config.php, included as boot includes it (include_once, from a
-     * static closure), so boot finds it done. A file that uses $this is not
-     * run: boot refuses it with a message, and so does this.
+     * static closure), so boot finds it done; null when configRefused says
+     * it cannot be.
      *
      * @return array{data: string, public: string}|null null when it cannot be read
      */
@@ -63,12 +101,9 @@ return [
 
         if ( is_file( $file ) ) {
 
-            foreach ( (array) @token_get_all( (string) file_get_contents( $file ) ) as $token ) {
+            if ( ( require __FILE__ )['configRefused']( $root ) !== null ) {
 
-                if ( is_array( $token ) && $token[0] === T_VARIABLE && $token[1] === '$this' ) {
-
-                    return null;
-                }
+                return null;
             }
 
             ( static function ( $__owa_config_file ) {
@@ -199,7 +234,15 @@ return [
         }
 
         $config = $u['config']( $root );
-        $dir    = $config === null ? null : $u['updatesDir']( $config['data'] );
+
+        if ( $config === null && $only !== null ) {
+
+            fwrite( STDERR, sprintf( "owa-config.php uses %s. It is read before OWA loads: use plain values there, or install by hand.\n", $u['configRefused']( $root ) ) );
+
+            return 1;
+        }
+
+        $dir = $config === null ? null : $u['updatesDir']( $config['data'] );
 
         if ( $dir === null ) {
 
