@@ -276,8 +276,11 @@ final class InstallerTest extends TestCase
         $this->assertFalse($this->u['isLocked']($this->data));
         $this->assertFileDoesNotExist($file, 'asking creates nothing');
 
-        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+        $umask = umask(077);
+        $hold  = $this->u['tryLock']($this->data, 'install 2.0.1');
+        umask($umask);
         $this->assertNotNull($hold);
+        $this->assertSame('0644', sprintf('%04o', fileperms($file) & 0777), 'the web user reads it, whatever the umask');
         $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, token [0-9a-f]{16}\n$/',
             (string) file_get_contents($file), 'the operator can read who holds it');
 

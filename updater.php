@@ -342,6 +342,9 @@ return [
             return null;
         }
 
+        // Read before OWA loads by the web user (its phase), whatever the umask.
+        @chmod( $tmp, 0644 );
+
         fwrite( $h, $line );
         fflush( $h );
 
@@ -360,6 +363,8 @@ return [
 
                 return null;
             }
+
+            @chmod( $file, 0644 );
 
             fwrite( $h, $line );
             fflush( $h );
