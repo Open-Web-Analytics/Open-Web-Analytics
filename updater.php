@@ -185,9 +185,10 @@ return [
      * named updating (the same inode), and writing the new holder's line into
      * it: it is never missing, so no third process can slip in. Without
      * flock() nothing does that atomically: it is moved aside and deleted,
-     * and put back with link() if what moved was another process's, which
-     * leaves one case open, two processes finding the same stale file at
-     * once.
+     * and the taker stops if what moved was another process's (put back
+     * with link()). The taker then reads the file again a second later and
+     * stops if its line is gone, which a third process taking it in that
+     * instant would do.
      */
     'lock_stale' => 600,
 
@@ -235,14 +236,15 @@ return [
 
     /*
      * The lock, or null when another process holds it. $who goes in the file
-     * for the operator: "install", "release check".
+     * for the operator: "install", "release check". $no_flock: as where the
+     * filesystem has none (a test's).
      */
-    'tryLock' => static function ( $data, $who = 'install' ) {
+    'tryLock' => static function ( $data, $who = 'install', $no_flock = false ) {
 
         $u    = require __FILE__;
         $file = rtrim( (string) $data, '/' ) . '/updating';
 
-        switch ( $u['lockState']( $file ) ) {
+        switch ( $u['lockState']( $file, $no_flock ) ) {
 
             case 'held':
 
@@ -257,7 +259,7 @@ return [
 
                     $would_block = 0;
 
-                    if ( flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
+                    if ( ! $no_flock && flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
 
                         // Taken, if what it flocked is still the file named updating:
                         // another process may have replaced it in between.
@@ -284,7 +286,7 @@ return [
 
                     fclose( $h );
 
-                    if ( $would_block || PHP_OS_FAMILY === 'Windows' ) {
+                    if ( ! $no_flock && ( $would_block || PHP_OS_FAMILY === 'Windows' ) ) {
 
                         return null;
                     }
@@ -297,13 +299,19 @@ return [
 
                     if ( @rename( $file, $aside ) ) {
 
+                        // What moved is another process's new lock: give it back and stop.
                         if ( @file_get_contents( $aside ) !== $old ) {
 
                             @link( $aside, $file );
+                            @unlink( $aside );
+
+                            return null;
                         }
 
                         @unlink( $aside );
                     }
+
+                    $stale = true;
 
                 } elseif ( file_exists( $file ) ) {
 
@@ -324,7 +332,7 @@ return [
         fflush( $h );
 
         // A new file: refused only where the filesystem has no flock().
-        $flocked = flock( $h, LOCK_EX | LOCK_NB );
+        $flocked = ! $no_flock && flock( $h, LOCK_EX | LOCK_NB );
         $placed  = @link( $tmp, $file );
         @unlink( $tmp );
 
@@ -341,7 +349,7 @@ return [
 
             fwrite( $h, $line );
             fflush( $h );
-            $flocked = flock( $h, LOCK_EX | LOCK_NB );
+            $flocked = ! $no_flock && flock( $h, LOCK_EX | LOCK_NB );
             $placed  = true;
         }
 
@@ -350,7 +358,33 @@ return [
             fclose( $h );
         }
 
-        return $placed ? [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line ] : null;
+        if ( ! $placed ) {
+
+            return null;
+        }
+
+        $hold = [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line ];
+
+        // A stale file taken over without flock(): another process moving
+        // files in the same instant could have lost this one. Asked again a
+        // moment later; gone means it is another's, left as it is.
+        if ( ! empty( $stale ) && ! $u['stillMine']( $hold, 1 ) ) {
+
+            return null;
+        }
+
+        return $hold;
+    },
+
+    /* Whether the lock file still holds this holder's line, $wait seconds on. */
+    'stillMine' => static function ( array $hold, $wait = 0 ) {
+
+        if ( $wait > 0 ) {
+
+            sleep( (int) $wait );
+        }
+
+        return @file_get_contents( (string) $hold['file'] ) === $hold['line'];
     },
 
     /*

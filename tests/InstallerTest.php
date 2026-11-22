@@ -320,6 +320,38 @@ final class InstallerTest extends TestCase
         $this->assertSame([], glob($this->data . '/updating*'));
     }
 
+    /** Without flock(): taken by creating it, held while it is fresh, a stale one taken over and asked again a second later. */
+    public function testTheLockWithoutFlock(): void
+    {
+        $file = $this->data . '/updating';
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1', true);
+        $this->assertNotNull($hold);
+        $this->assertNull($hold['handle'], 'nothing flocked');
+        $this->assertNull($this->u['tryLock']($this->data, 'release check', true), 'held while it is fresh');
+
+        touch($file, time() - 601);
+        $started = microtime(true);
+        $next    = $this->u['tryLock']($this->data, 'release check', true);
+        $this->assertNotNull($next, 'a stale one is taken over');
+        $this->assertGreaterThanOrEqual(1.0, microtime(true) - $started, 'and asked again a second later');
+        $this->assertStringStartsWith('release check, pid ', (string) file_get_contents($file));
+
+        $this->u['unlock']($hold);
+        $this->assertFileExists($file, 'the old holder does not delete its successor\'s');
+        $this->u['unlock']($next);
+        $this->assertSame([], glob($file . '*'), 'nothing left, nothing aside');
+    }
+
+    /** The second look: a holder whose line has gone from the file no longer holds the lock. */
+    public function testStillMine(): void
+    {
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1', true);
+        $this->assertTrue($this->u['stillMine']($hold));
+
+        file_put_contents($this->data . '/updating', "release check, pid 1, since 2026-11-22 10:00:00 UTC, 0000000000000000\n");
+        $this->assertFalse($this->u['stillMine']($hold), 'another process took it');
+    }
+
     /** Where the filesystem has no flock(), the file's age says whether its holder is gone: 10 minutes. */
     public function testWithoutFlockTheFilesAgeSays(): void
     {
