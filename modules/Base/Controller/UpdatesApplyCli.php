@@ -47,6 +47,34 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
             return $this->listPendingUpdates();
         }
 
+        // The install lock too, so an operator's schema update and an
+        // automatic install never overlap, unless this process is the
+        // installer (Step 4: finish), which holds it already.
+        if ( ! \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here ) {
+
+            $result = null;
+            $ran    = \OWA\Module\Base\Classes\AutoUpdate\InstallLock::tryExclusive( function () use ( &$result ) {
+
+                \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here = true;
+
+                try {
+
+                    $result = $this->action();
+
+                } finally {
+
+                    \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here = false;
+                }
+            } );
+
+            if ( ! $ran ) {
+
+                return $this->fail( \OWA\Core\CoreAPI::t( 'An automatic update is being installed; it runs the schema updates itself. Try again once it has finished.' ) );
+            }
+
+            return $result;
+        }
+
         $lock = new \OWA\Module\Base\Classes\JobLease( UpdatesApply::LOCK );
 
         if ( ! $lock->acquire( UpdatesApply::LOCK_SECONDS ) ) {

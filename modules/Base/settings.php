@@ -97,6 +97,7 @@ return [
         ],
         'auto_update' => [ 'config_constant' => 'OWA_AUTO_UPDATE', 'default' => true, 'description' => 'Whether OWA installs its own patch and minor releases (cmd=release-check stages them). Never on a version control checkout, and never a major release.' ],
         'auto_update_days' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DAYS', 'default' => '', 'description' => 'The days an automatic update may start on, such as sat,sun. Empty: any day.' ],
+        'auto_update_email_success' => [ 'config_constant' => 'OWA_AUTO_UPDATE_EMAIL_SUCCESS', 'default' => true, 'description' => 'Whether the admins are e-mailed when an automatic update installs. A failure is always e-mailed.' ],
         'auto_update_level' => [ 'config_constant' => 'OWA_AUTO_UPDATE_LEVEL', 'default' => 'minor', 'description' => 'Which releases install automatically: patch (x.y.Z only) or minor (x.Y.z and patches).' ],
         'auto_update_patch_immediately' => [ 'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', 'default' => true, 'description' => 'Whether a patch release installs as soon as it is staged rather than in the window.' ],
         'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from.' ],

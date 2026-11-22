@@ -228,6 +228,9 @@
         "base.selfUpdateCancelCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli"
         },
+        "base.selfUpdateInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateInstallCli"
+        },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
         },
@@ -397,6 +400,7 @@
         "self-update": "base.selfUpdateCli",
         "self-update-stage": "base.selfUpdateStageCli",
         "self-update-cancel": "base.selfUpdateCancelCli",
+        "self-update-install": "base.selfUpdateInstallCli",
         "update-ua-regexes": "base.updateUaRegexesCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",

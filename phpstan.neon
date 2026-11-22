@@ -24,6 +24,7 @@ parameters:
         - log.php
         - index.php
         - cli.php
+        - updater.php
         - install.php
         - blank.php
     excludePaths:

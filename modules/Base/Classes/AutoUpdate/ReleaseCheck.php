@@ -112,6 +112,7 @@ class ReleaseCheck {
                 return $v === null || $v === '' || $v === false ? null : (int) $v;
             },
             'now'       => time(),
+            'data_dir'  => \OWA\Core\Env::dataDir(),
         ];
         $this->root = (string) $this->context['root'];
     }
@@ -161,6 +162,21 @@ class ReleaseCheck {
         if ( ! $dry_run && ! $this->clearInstalled( $installed ) ) {
 
             return $this->busy();
+        }
+
+        // An install that failed and was restored left only the old release
+        // to say so; the notices are raised once each (InstallNotices).
+        if ( ! $dry_run ) {
+
+            foreach ( $this->staging->versions() as $v ) {
+
+                $install = $this->staging->readJson( $this->staging->dir( $v ) . '/' . Staging::INSTALL );
+
+                if ( $install ) {
+
+                    InstallNotices::forInstall( $install, $this->context['notify'] );
+                }
+            }
         }
 
         if ( ! $this->context['enabled'] ) {
@@ -627,7 +643,44 @@ class ReleaseCheck {
         $manifest = (array) $this->staging->readJson( $this->staging->releaseDir( $v ) . '/' . \OWA\Core\ReleaseManifest::FILE );
         $env      = $this->context['env'] ?? Preflight::environment( $req );
 
-        return array_merge( Preflight::requirements( $req, $env ), Preflight::install( $this->staging->dir( $v ), $manifest, $this->root ) );
+        return array_merge( Preflight::requirements( $req, $env ), Preflight::install( $this->staging->dir( $v ), $manifest, $this->root ),
+            $this->handoffProblems( $manifest ) );
+    }
+
+    /**
+     * What would stop Step 2: hand-off finding and running the release: the
+     * installed release's updater.php (it runs before OWA loads), which has
+     * to find the same owa-data/ as the booted OWA, and the release's own.
+     *
+     * @param  array<string, mixed> $manifest the staged release's
+     * @return list<string>
+     */
+    private function handoffProblems( array $manifest ) {
+
+        $problems = [];
+
+        if ( ! isset( $manifest['files']['updater.php'] ) ) {
+
+            $problems[] = CoreAPI::t( 'The release has no updater.php, so it cannot install itself. Install it by hand.' );
+        }
+
+        $installed = $this->root . '/updater.php';
+
+        if ( ! is_file( $installed ) ) {
+
+            return array_merge( $problems, [ CoreAPI::t( 'This installation has no updater.php, so it cannot install a release itself. Install it by hand.' ) ] );
+        }
+
+        $found = (string) ( ( require $installed )['dataDir'] )( $this->root );
+        $uses  = rtrim( (string) $this->context['data_dir'], '/' ) . '/';
+
+        if ( realpath( $found ) !== realpath( $uses ) && $found !== $uses ) {
+
+            $problems[] = sprintf( CoreAPI::t( 'Before OWA loads, the installer looks for owa-data/ at %1$s, but OWA uses %2$s. Write OWA_DATA_DIR in owa-config.php as a plain string, define(\'OWA_DATA_DIR\', \'/path/\');, or install updates by hand.' ),
+                $found, $uses );
+        }
+
+        return $problems;
     }
 
     /**

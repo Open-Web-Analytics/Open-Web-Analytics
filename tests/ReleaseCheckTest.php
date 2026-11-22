@@ -48,6 +48,9 @@ final class ReleaseCheckTest extends TestCase
         mkdir($this->tmp . '/owa', 0755, true);
         mkdir($this->tmp . '/data', 0755, true);
         file_put_contents($this->tmp . '/owa/cli.php', 'installed');
+        // The installed release's updater.php, which finds owa-data/ from owa-config.php before OWA loads.
+        copy(dirname(__DIR__) . '/updater.php', $this->tmp . '/owa/updater.php');
+        file_put_contents($this->tmp . '/owa/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '" . $this->tmp . "/data/');\n");
 
         InstallLock::$path = $this->tmp . '/data/updating';
         $this->served      = [];
@@ -491,6 +494,29 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('It needs PHP 8.2 or later', $lines);
     }
 
+    /** Before OWA loads the installer finds owa-data/ by itself; where it would not find this one, nothing installs automatically. */
+    public function testTheHandoffMustFindTheSameDataDirectory(): void
+    {
+        $this->assertSame(ReleaseCheck::STAGED, $this->check(['2.0.1'])['outcome']);
+
+        file_put_contents($this->tmp . '/owa/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', getenv('DATA'));\n");
+        $result = $this->check(['2.0.1']);
+
+        $this->assertSame(ReleaseCheck::UNMET, $result['outcome']);
+        $this->assertStringContainsString('the installer looks for owa-data/ at ' . $this->tmp . '/owa/owa-data/', implode("\n", $result['problems']));
+
+        unlink($this->tmp . '/owa/updater.php');
+        $this->assertStringContainsString('This installation has no updater.php', implode("\n", $this->check(['2.0.1'])['problems']));
+    }
+
+    public function testAReleaseWithoutAnUpdaterCannotInstallItself(): void
+    {
+        $result = $this->check(['2.0.1'], [], null, fn ($dir) => null, false, true);
+
+        $this->assertSame(ReleaseCheck::UNMET, $result['outcome']);
+        $this->assertStringContainsString('The release has no updater.php', implode("\n", $result['problems']));
+    }
+
     public function testADryRunWritesNothing(): void
     {
         $result = $this->check(['2.0.1'], [], null, null, true);
@@ -557,14 +583,14 @@ final class ReleaseCheckTest extends TestCase
      *
      * @param list<string>|null $versions released, null for a listing that fails
      */
-    private function check(?array $versions, array $context = [], ?callable $edit = null, ?callable $tamper = null, bool $dry = false): array
+    private function check(?array $versions, array $context = [], ?callable $edit = null, ?callable $tamper = null, bool $dry = false, bool $noUpdater = false): array
     {
         $list = null;
 
         if ($versions !== null) {
             $list = [];
             foreach ($versions as $v) {
-                $tar = $this->build($v, $tamper);
+                $tar = $this->build($v, $tamper, $noUpdater);
                 $this->served["https://example.test/$v.tar"] = $tar;
                 $r = $this->listed($v, 'https://example.test/' . $v . '.tar', hash_file('sha256', $tar));
                 $list[] = $edit ? $edit($r) : $r;
@@ -594,6 +620,7 @@ final class ReleaseCheckTest extends TestCase
             'raised_at' => fn ($key) => $this->raised[$key] ?? null,
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
+            'data_dir'  => $this->tmp . '/data/',
         ]);
 
         if ($versions === null) {
@@ -622,11 +649,12 @@ final class ReleaseCheckTest extends TestCase
             'notify'    => function (array $n) { $this->notices[$n['source_key']] = $n; },
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
+            'data_dir'  => $this->tmp . '/data/',
         ]))->stageByHand($version);
     }
 
     /** A release tarball as the packager makes it: release.json and manifest.json inside, members ./... */
-    private function build(string $v, ?callable $tamper): string
+    private function build(string $v, ?callable $tamper, bool $noUpdater = false): string
     {
         $dir = $this->tmp . "/build-$v";
         $tar = $this->tmp . "/owa_{$v}_packaged.tar";
@@ -637,6 +665,9 @@ final class ReleaseCheckTest extends TestCase
 
         mkdir($dir . '/modules/Base', 0755, true);
         file_put_contents($dir . '/cli.php', 'new cli');
+        if (!$noUpdater) {
+            copy(dirname(__DIR__) . '/updater.php', $dir . '/updater.php');
+        }
         file_put_contents($dir . '/modules/Base/Module.php', "<?php // $v");
         file_put_contents($dir . '/release.json', json_encode(($this->releaseJson[$v] ?? []) + ['format' => 1, 'version' => $v,
             'requirements' => \OWA\Core\Requirements::toArray(), 'modules' => ['base' => 95], 'updates' => []]));

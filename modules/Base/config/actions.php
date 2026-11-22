@@ -85,6 +85,7 @@ return [
     'base.selfUpdateCli'                => 'OWA\\Module\\Base\\Controller\\SelfUpdateCli',
     'base.selfUpdateStageCli'           => 'OWA\\Module\\Base\\Controller\\SelfUpdateStageCli',
     'base.selfUpdateCancelCli'          => 'OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli',
+    'base.selfUpdateInstallCli'         => 'OWA\\Module\\Base\\Controller\\SelfUpdateInstallCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',
     'base.partitionReorganizeCli'       => 'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',
     'base.partitionRotateCli'           => 'OWA\\Module\\Base\\Controller\\PartitionRotateCli',

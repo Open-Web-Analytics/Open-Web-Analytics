@@ -22,6 +22,17 @@ if (!OWA_CLI)
     exit();
 }
 
+// Automatic updates, Step 2: hand-off (updater.php). Before any OWA file
+// loads: an install that is due, or cmd=self-update-install, runs here in
+// this process and ends it; otherwise nothing happens and OWA boots.
+$owa_handoff = (require __DIR__ . '/updater.php')['handoff'](__DIR__, (array) ($_SERVER['argv'] ?? []));
+
+if ($owa_handoff !== null) {
+    exit((int) $owa_handoff);
+}
+
+unset($owa_handoff);
+
 require_once(__DIR__ . '/owa.php');
 
 // Parse the command line. See Lib::parseCliArgs() for the accepted forms.

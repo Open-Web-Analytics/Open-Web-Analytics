@@ -15,6 +15,7 @@ final class CliWithoutBootTest extends TestCase
     private const WITHOUT_BOOT = [
         'version-info'     => \OWA\Module\Base\Controller\VersionInfoCli::class,
         'release-manifest' => \OWA\Module\Base\Controller\ReleaseManifestCli::class,
+        'self-update-install' => \OWA\Module\Base\Controller\SelfUpdateInstallCli::class,
     ];
 
     public function testTheTwoCommandsResolveFromTheFilesAlone(): void
@@ -27,7 +28,7 @@ final class CliWithoutBootTest extends TestCase
         $this->assertNull(CliWithoutBoot::commandClass('no-such-command'), 'boot says it does not exist');
     }
 
-    /** Every registered command boots but those two, and boot's registry agrees with the files. */
+    /** Every registered command boots but those, and boot's registry agrees with the files. */
     public function testEveryOtherCommandBoots(): void
     {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
