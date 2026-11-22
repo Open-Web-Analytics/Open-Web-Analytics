@@ -187,9 +187,11 @@ class ReleaseCheck {
         $level   = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
         $release = Releases::choose( $list, $installed, $level );
 
+        // Nothing the settings choose now: a staged.json naming what they chose
+        // before (a minor, now patch only; a release since installed) goes.
         if ( $release === null ) {
 
-            return $this->repair( self::CURRENT, sprintf( 'No release newer than %s for automatic %s updates.', $installed,
+            return $this->end( self::CURRENT, null, sprintf( 'No release newer than %s for automatic %s updates.', $installed,
                 $level === Version::PATCH ? 'patch' : 'patch and minor' ), $dry_run );
         }
 
@@ -268,10 +270,21 @@ class ReleaseCheck {
             return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it is staged but will not install itself.', $v ) );
         }
 
+        // staged.json names what the settings choose now, with the window they
+        // give now: a window changed since it was written is written again.
         $window = $this->window( $release['step'] );
-        $wrote  = InstallLock::tryExclusive( function () use ( $v, $window, $before, $sha ) {
+        $same   = ( $before['version'] ?? null ) === $v;
+        $wrote  = InstallLock::tryExclusive( function () use ( $v, $window, $before, $sha, $same ) {
 
-            if ( ( $before['version'] ?? null ) === $v ) {
+            if ( $same && ( $before['window'] ?? null ) == $window ) {
+
+                return;
+            }
+
+            if ( $same ) {
+
+                $this->staging->writeStaged( $v, $window, $sha );
+                $this->lines[] = sprintf( 'The window for %s is now %s.', $v, self::describeWindow( $window ) );
 
                 return;
             }
@@ -292,7 +305,7 @@ class ReleaseCheck {
             return $this->busy();
         }
 
-        if ( ( $before['version'] ?? null ) === $v ) {
+        if ( $same ) {
 
             return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged, as it was.', $v ) );
         }
@@ -750,9 +763,8 @@ class ReleaseCheck {
     }
 
     /**
-     * When no release is chosen: keep staged.json while the release it names
-     * is staged. One naming an installed version is the hand-off's to delete,
-     * at its window (updater.php `dropSuperseded`).
+     * When GitHub cannot be reached, so nothing can be chosen: keep
+     * staged.json while the release it names is staged.
      *
      * @param  string $outcome
      * @param  string $why

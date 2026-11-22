@@ -291,9 +291,10 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /**
-     * staged.json naming a staging that is gone is removed. One naming what is
-     * installed, by hand outside the installer, stays with its staging for the
-     * hand-off to delete at its window (InstallerTest).
+     * staged.json names what the settings choose now, or nothing: one naming
+     * what is installed (by hand, outside the installer) goes, its staging
+     * staying for the installer to delete. One naming a staging that is gone
+     * goes even when GitHub cannot be reached.
      */
     public function testStagedJsonIsRepaired(): void
     {
@@ -301,9 +302,8 @@ final class ReleaseCheckTest extends TestCase
 
         $result = $this->check([], ['installed' => '2.0.1']);
         $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
+        $this->assertNull($this->staging()->staged(), 'nothing is chosen now');
         $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'the release check deletes no staging of an installed version');
-        $this->assertSame('2.0.1', $this->staging()->staged()['version']);
-        $this->staging()->removeStaged();
 
         $this->check(['2.0.2']);
         Staging::remove($this->staging()->dir('2.0.2'));
@@ -326,6 +326,30 @@ final class ReleaseCheckTest extends TestCase
         $again = $this->staging()->staged();
         $this->assertSame('03:00', $again['window']['start'], 'not the window it was first staged with');
         $this->assertSame(hash_file('sha256', $this->served['https://example.test/2.1.0.tar']), $again['sha256']);
+    }
+
+    /** A window changed in the settings is written into staged.json at the next run; the release is not downloaded again. */
+    public function testAChangedWindowRewritesStagedJson(): void
+    {
+        $this->check(['2.1.0']);
+        $sha = $this->staging()->staged()['sha256'];
+
+        $result = $this->check(['2.1.0'], ['window' => '03:00-05:00']);
+
+        $this->assertStringContainsString('The window for 2.1.0 is now between 03:00 and 05:00', implode("\n", $result['lines']));
+        $this->assertStringNotContainsString('Downloaded', implode("\n", $result['lines']));
+        $this->assertSame('03:00', $this->staging()->staged()['window']['start']);
+        $this->assertSame($sha, $this->staging()->staged()['sha256']);
+    }
+
+    /** A minor staged for tonight, then automatic updates set to patch only: staged.json goes, so it does not install. */
+    public function testALevelThatNoLongerChoosesItRemovesStagedJson(): void
+    {
+        $this->check(['2.1.0']);
+        $this->assertSame('2.1.0', $this->staging()->staged()['version']);
+
+        $this->assertSame(ReleaseCheck::CURRENT, $this->check(['2.1.0'], ['level' => 'patch'])['outcome']);
+        $this->assertNull($this->staging()->staged());
     }
 
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
