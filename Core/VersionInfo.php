@@ -10,15 +10,15 @@ namespace OWA\Core;
  *
  * BOOT-FREE. No settings, no database, no CoreAPI, and no module is
  * constructed: a module's name and required_schema_version are read as its
- * class's declared defaults, and an update's lossiness as its declared
- * $down_does_not_restore, by reflection. The updates are the ones
+ * class's declared defaults, and whether an update must be installed by hand
+ * as its declared $manual_install, by reflection. The updates are the ones
  * Module::updateClasses() finds, the list Module::update() applies.
  *
  * A module that sets its name or schema only in its constructor (an older
  * third-party one) is listed without a schema.
  *
  * @phpstan-import-type RequirementsArray from Requirements
- * @phpstan-type UpdateInfo array{module: string, sequence: int, lossy: bool, does_not_restore: string}
+ * @phpstan-type UpdateInfo array{module: string, sequence: int, manual_install: string}
  * @phpstan-type VersionInfoArray array{format: int, version: string, branch: string|null, requirements: RequirementsArray, modules: array<string, int|null>, updates: list<UpdateInfo>}
  */
 class VersionInfo {
@@ -43,15 +43,14 @@ class VersionInfo {
                     continue;
                 }
 
-                $reason = class_exists( $class )
-                    ? (string) ( ( new \ReflectionClass( $class ) )->getDefaultProperties()['down_does_not_restore'] ?? '' )
+                $manual = class_exists( $class )
+                    ? (string) ( ( new \ReflectionClass( $class ) )->getDefaultProperties()['manual_install'] ?? '' )
                     : '';
 
                 $updates[] = [
-                    'module'           => $name,
-                    'sequence'         => $sequence,
-                    'lossy'            => $reason !== '',
-                    'does_not_restore' => $reason,
+                    'module'         => $name,
+                    'sequence'       => $sequence,
+                    'manual_install' => $manual,
                 ];
             }
         }

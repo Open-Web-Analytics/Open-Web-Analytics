@@ -13,7 +13,9 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
  * release that can be installed here, for the installer.
  *
  * Runs while updates are pending: a release that fixes a failed update is
- * the one to stage. Full server role only.
+ * the one to stage. The scheduler runs it every six hours as release-check,
+ * on any server that runs the scheduler: the bell's release feed comes from
+ * its listing, and only a full server stages.
  */
 class ReleaseCheckCli extends \OWA\Core\Controller\Cli {
 
@@ -21,17 +23,11 @@ class ReleaseCheckCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Finds the release this installation updates to automatically, downloads and verifies it, checks that it can be installed here, and stages it for the installer. Installs nothing.',
+            'description' => 'Stores new OWA releases as notifications, then finds the release this installation updates to automatically, downloads and verifies it, checks that it can be installed here, and stages it for the installer. Installs nothing. Runs on the scheduler every six hours as release-check.',
             'arguments'   => [
                 '--dry-run' => 'Only say which release that is: nothing is downloaded or written.',
             ],
         ];
-    }
-
-    /** See \OWA\Core\Controller\Cli::serverRoles(). */
-    public static function serverRoles() {
-
-        return [ \OWA\Core\ServerRole::FULL ];
     }
 
     public function __construct( $params ) {

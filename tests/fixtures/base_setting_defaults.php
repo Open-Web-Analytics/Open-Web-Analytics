@@ -86,7 +86,6 @@ return [
     'nonce_expiration_period' => 7200,
     'notice_email' => '',
     'ns' => 'owa_',
-    'owa_news_url' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
     'owa_user_agent' => 'Open Web Analytics Bot ' . \OWA\Core\Env::version(),
     'partition_detail_months' => 36,
     'partition_max_partitions' => 0,

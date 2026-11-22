@@ -181,6 +181,23 @@ class Update extends \OWA\Core\Base {
     public $down_does_not_restore = '';
 
     /**
+     * Why this update must be installed by hand, and the backup to take first,
+     * in a sentence or two; empty for one that may install itself. A release
+     * with such an update among those an installation would run is staged and
+     * announced, never installed automatically (Step 1: release check reads it
+     * from release.json). Never set in a patch release.
+     *
+     * For example: 'It rewrites every event's browser value. Back up the data
+     * tables first: php cli.php cmd=backup scope=data'.
+     *
+     * Declared as a default, not set in the constructor: release.json reads it
+     * without constructing the update (Core\VersionInfo).
+     *
+     * @var string
+     */
+    public $manual_install = '';
+
+    /**
      * Rollsback an update
      *
      * Returns true ONLY when down() ran and succeeded. Refusing an

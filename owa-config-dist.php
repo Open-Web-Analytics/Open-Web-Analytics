@@ -247,7 +247,8 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *   prune-tracker-ingest-archive  daily            deletes archived intake batches older than
  *                                                  raw_retention_months; nothing when unset
  *   prune-job-queue               daily            removes finished queued jobs
- *   fetch-notifications           daily            fetches OWA's update notices
+ *   release-check                 every 6 hours    stores new release notifications; stages the
+ *                                                  release automatic updates install
  *   refresh-geoip-db              weekly           downloads a newer GeoIP database;
  *                                                  while the Maxmind GeoIP module is active
  *

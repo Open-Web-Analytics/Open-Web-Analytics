@@ -24,6 +24,39 @@ class InstallLock {
     }
 
     /**
+     * Whether an install holds the lock now, asked as an entry point asks: a
+     * shared lock, not waited for and let go at once, which never looks like
+     * an install to anyone else.
+     *
+     * @return bool
+     */
+    public static function isHeld() {
+
+        $h = @fopen( self::path(), 'c' );
+
+        if ( $h === false ) {
+
+            return false;
+        }
+
+        try {
+
+            $free = flock( $h, LOCK_SH | LOCK_NB );
+
+            if ( $free ) {
+
+                flock( $h, LOCK_UN );
+            }
+
+            return ! $free;
+
+        } finally {
+
+            fclose( $h );
+        }
+    }
+
+    /**
      * Run $fn holding the lock, if it is free now.
      *
      * @param  callable $fn

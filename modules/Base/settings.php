@@ -396,7 +396,6 @@ return [
                 . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
                 . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.' ),
         ],
-        'owa_news_url' => [ 'config_constant' => 'OWA_NEWS_URL', 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5', 'description' => 'The URL fetch-notifications reads OWA release notifications from.' ],
         'owa_user_agent' => [ 'config_constant' => 'OWA_USER_AGENT', 'default' => 'Open Web Analytics Bot master', 'description' => 'The User-Agent header OWA sends on its own outbound HTTP requests.' ],
         'partition_detail_months' => [ 'config_constant' => 'OWA_PARTITION_DETAIL_MONTHS', 'default' => 36, 'description' => 'How many recent months of a partitioned table keep their fine-grained partitions before partition-rotate may merge older ones. Default 36.' ],
         'partition_max_partitions' => [ 'config_constant' => 'OWA_PARTITION_MAX_PARTITIONS', 'default' => 0, 'description' => 'The most partitions partition-rotate lets one table hold. 0 uses the built-in ceiling of 400.' ],

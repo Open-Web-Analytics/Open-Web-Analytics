@@ -219,6 +219,15 @@
         "base.releaseCheckCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\ReleaseCheckCli"
         },
+        "base.selfUpdateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCli"
+        },
+        "base.selfUpdateStageCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateStageCli"
+        },
+        "base.selfUpdateCancelCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli"
+        },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
         },
@@ -324,9 +333,6 @@
         "base.reportRealtime": {
             "class_name": "OWA\\Module\\Base\\Controller\\ReportRealtime"
         },
-        "base.notificationsFetchCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\NotificationsFetchCli"
-        },
         "base.updatesApplyCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\UpdatesApplyCli"
         },
@@ -388,7 +394,9 @@
         "backup": "base.backupCli",
         "tables-cleanup": "base.tablesCleanupCli",
         "release-check": "base.releaseCheckCli",
-        "fetch-notifications": "base.notificationsFetchCli",
+        "self-update": "base.selfUpdateCli",
+        "self-update-stage": "base.selfUpdateStageCli",
+        "self-update-cancel": "base.selfUpdateCancelCli",
         "update-ua-regexes": "base.updateUaRegexesCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",
@@ -515,7 +523,8 @@
             "params": [],
             "description": "Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods so the tables stay within the server's open-file limit. Deletes nothing unless told to keep less history (raw_retention_months, and cube_retention_months per Property).",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "drain-tracker-ingest": {
             "name": "drain-tracker-ingest",
@@ -526,7 +535,8 @@
             },
             "description": "Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue refused and the file queue kept. A minute with nothing waiting costs a few file checks.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "replay-tracker-ingest": {
             "name": "replay-tracker-ingest",
@@ -537,7 +547,8 @@
             },
             "description": "Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed during an outage longer than the retries gets ingested after all. One already replayed is kept for cmd=tracker-ingest-replay: in the file queue until it is replayed, in AWS SQS for the queue's fourteen-day retention, after which SQS deletes it. One older than raw_retention_months is deleted instead.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "prune-tracker-ingest-archive": {
             "name": "prune-tracker-ingest-archive",
@@ -548,7 +559,8 @@
             },
             "description": "Deletes the tracking intake's archived batch files older than raw_retention_months, the window event data is kept for. Deletes nothing when that is not set.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "prune-job-queue": {
             "name": "prune-job-queue",
@@ -557,7 +569,8 @@
             "params": [],
             "description": "Deletes finished one-off jobs from the job queue: done ones after 7 days, failed ones after 30.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "rebuild-cube": {
             "name": "rebuild-cube",
@@ -566,7 +579,8 @@
             "params": [],
             "description": "Builds each Property's reporting cube from new events, so reports are at most a few minutes behind. Skips the days that have not changed.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
         "apply-custom-dimensions": {
             "name": "apply-custom-dimensions",
@@ -575,16 +589,18 @@
             "params": [],
             "description": "Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one rebuilds the table, which is too slow for the request that registered it. With nothing pending it is one quick read.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": false
         },
-        "fetch-notifications": {
-            "name": "fetch-notifications",
-            "command": "fetch-notifications",
-            "schedule": "39 22 * * *",
+        "release-check": {
+            "name": "release-check",
+            "command": "release-check",
+            "schedule": "35 0,6,12,18 * * *",
             "params": [],
-            "description": "Fetches OWA's release announcements for the notifications bell, once a day.",
+            "description": "Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.",
             "module": "base",
-            "source": "code"
+            "source": "code",
+            "while_updates_pending": true
         }
     },
     "admin_panels": {

@@ -62,7 +62,7 @@ return [
      * NOT '@daily'. That is midnight exactly, and several OWA installs commonly
      * share one database server -- so every one of them would start a run, and
      * possibly a REORGANIZE that rewrites rows, at the same instant. Same
-     * reasoning as fetch-notifications below, for a local reason rather than a
+     * reasoning as release-check below, for a local reason rather than a
      * remote one.
      */
     'rotate-partitions' => [
@@ -181,20 +181,21 @@ return [
     ],
 
     /*
-     * Daily is the right cadence for release announcements: they are not
-     * urgent, and the endpoint is rate limited per IP. Nothing renders from the
-     * network, so a missed run costs a day's freshness.
+     * Step 1 of automatic updates, and the notifications bell's release feed:
+     * one GitHub listing every six hours (Classes\AutoUpdate\ReleaseCheck).
+     * It took over from fetch-notifications, which made the same call daily.
      *
-     * NOT '@daily'. That is `0 0 * * *` -- midnight exactly -- so every install
-     * running this job would call api.github.com at the same instant, and most
-     * servers keep UTC, so timezones would not even spread it. GitHub cannot
-     * tell that from an attack. Each install derives its own minute and hour
-     * instead, and keeps it (Core\Module::jobSeed()).
+     * Spread by the hour as fetch-notifications was by the day: every install
+     * calling api.github.com at the same instant cannot be told from an attack.
+     *
+     * The one job that runs while schema updates are pending: the release
+     * that fixes a failed one is what it stages.
      */
-    'fetch-notifications' => [
-        'command'     => 'fetch-notifications',
-        'schedule'    => [ 'spread' => 'daily' ],
+    'release-check' => [
+        'command'     => 'release-check',
+        'schedule'    => [ 'spread' => 'hourly', 'interval' => 6 ],
         'params'      => [],
-        'description' => 'Fetches OWA\'s release announcements for the notifications bell, once a day.',
+        'description' => 'Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.',
+        'while_updates_pending' => true,
     ],
 ];

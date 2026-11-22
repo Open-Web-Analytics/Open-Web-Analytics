@@ -111,6 +111,33 @@ class Cron {
     }
 
     /**
+     * Every N hours, at a minute and an hour offset this install keeps.
+     *
+     * For a job that calls a third party more than once a day: the release
+     * check asks GitHub every six hours. Seeded as dailySpreadFor() is, and
+     * for its reason: installs must not all ask at the same instant.
+     *
+     * @param string $seed  something stable and install-specific
+     * @param int    $hours hours between runs; must divide 24
+     * @return string a five-field cron expression
+     */
+    public static function hourlySpreadFor( $seed, $hours = 6 ) {
+
+        $hours = max( 1, min( 24, (int) $hours ) );
+
+        if ( 24 % $hours !== 0 ) {
+
+            $hours = 6;
+        }
+
+        $digest = md5( (string) $seed );
+        $minute = hexdec( substr( $digest, 0, 6 ) ) % 60;
+        $offset = hexdec( substr( $digest, 6, 6 ) ) % $hours;
+
+        return sprintf( '%d %s * * *', $minute, implode( ',', range( $offset, 23, $hours ) ) );
+    }
+
+    /**
      * Every N minutes, at an offset this install keeps.
      *
      * The frequent counterpart of dailySpreadFor(), and spread for the local
