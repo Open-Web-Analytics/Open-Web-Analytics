@@ -562,10 +562,10 @@ return [
 
         $code = ( require $dir . '/' . $version . '/release/updater.php' )['install']( $context );
 
-        if ( $code === null ) {
-
-            $u['unlock']( $hold );
-        }
+        // Done, however it ended. A process that dies, or exit()s from inside
+        // the install (the 24-hour stop), leaves the file for the next
+        // process to take over, once the kernel has let its flock go.
+        $u['unlock']( $hold );
 
         return $code;
     },

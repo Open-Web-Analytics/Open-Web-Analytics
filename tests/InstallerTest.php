@@ -167,6 +167,7 @@ final class InstallerTest extends TestCase
         $this->assertSame('new module', file_get_contents($this->root . '/modules/Base/Module.php'));
         $this->assertSame('added', file_get_contents($this->root . '/modules/Base/Added.php'));
         $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'), 'Step 4 ran, in the new code');
+        $this->assertFileDoesNotExist($this->data . '/updating', 'the lock is let go when the install is done');
 
         foreach (['modules/Base/Retired.php', 'modules/Hello', 'public/base/old.js', 'notes.txt'] as $gone) {
             $this->assertFileDoesNotExist($this->root . '/' . $gone, "$gone is not shipped and not the installation's");
@@ -201,6 +202,7 @@ final class InstallerTest extends TestCase
         $this->assertSame([1, false, false], [$install['attempts'], $install['copied'], $install['booted']]);
         $this->assertStringContainsString('Could not write modules/Locked/New.php', $install['error']);
         $this->assertStringContainsString('The previous release was put back', $install['error']);
+        $this->assertFileDoesNotExist($this->data . '/updating', 'a failed attempt lets the lock go too');
 
         $this->assertSame(99, $this->handoff(), 'not due again until its retry_after');
 
@@ -224,6 +226,7 @@ final class InstallerTest extends TestCase
         $install = $this->install();
         $this->assertStringContainsString('stopped before it booted: Uncaught Error: this release does not boot', $install['error']);
         $this->assertFalse($install['copied']);
+        $this->assertFalse($this->u['isLocked']($this->data), 'a process that died holds nothing: its file is left over');
     }
 
     /** An unfinished install whose staging is gone is undone; the old release runs and Step 1 stages it again. */
