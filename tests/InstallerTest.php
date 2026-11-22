@@ -307,8 +307,12 @@ final class InstallerTest extends TestCase
         $this->assertSame('left', $this->u['lockState']($file));
         $this->assertFalse($this->u['isLocked']($this->data));
 
-        $hold = $this->u['tryLock']($this->data, 'release check');
+        $inode = fileinode($file);
+        $hold  = $this->u['tryLock']($this->data, 'release check');
         $this->assertNotNull($hold);
+        $this->assertNotNull($hold['handle'], 'flocked');
+        clearstatcache();
+        $this->assertSame($inode, fileinode($file), 'taken over in place: updating is never missing');
         $this->assertNotSame($left, file_get_contents($file));
         $this->assertStringStartsWith('release check, pid ', (string) file_get_contents($file));
 

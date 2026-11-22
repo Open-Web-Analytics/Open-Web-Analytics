@@ -179,9 +179,15 @@ return [
      *    between steps (touchLock), not during one statement: a schema update
      *    running longer lets a second attempt start, which the updates-apply
      *    job lease stops at its schema updates.
-     * touchLock dates it in both, so its time is the holder's last step. A
-     * left-over file is moved aside, and put back if what moved was not it,
-     * before the lock is taken.
+     * touchLock dates it in both, so its time is the holder's last step.
+     *
+     * A left-over file is taken over by flocking it, if it is still the file
+     * named updating (the same inode), and writing the new holder's line into
+     * it: it is never missing, so no third process can slip in. Without
+     * flock() nothing does that atomically: it is moved aside and deleted,
+     * and put back with link() if what moved was another process's, which
+     * leaves one case open, two processes finding the same stale file at
+     * once.
      */
     'lock_stale' => 600,
 
@@ -244,18 +250,64 @@ return [
 
             case 'left':
 
-                $old   = @file_get_contents( $file );
-                $aside = $file . '.left-' . bin2hex( random_bytes( 8 ) );
+                $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+                $h    = @fopen( $file, 'r+' );
 
-                if ( @rename( $file, $aside ) ) {
+                if ( $h !== false ) {
 
-                    // Another process took it over first: what moved is its lock. Put it back.
-                    if ( @file_get_contents( $aside ) !== $old ) {
+                    $would_block = 0;
 
-                        @link( $aside, $file ) || @rename( $aside, $file );
+                    if ( flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
+
+                        // Taken, if what it flocked is still the file named updating:
+                        // another process may have replaced it in between.
+                        clearstatcache( true, $file );
+                        $mine = @stat( $file );
+                        $held = fstat( $h );
+
+                        if ( $mine !== false && $held !== false && $mine['ino'] === $held['ino'] && $mine['dev'] === $held['dev'] ) {
+
+                            ftruncate( $h, 0 );
+                            rewind( $h );
+                            fwrite( $h, $line );
+                            fflush( $h );
+                            @touch( $file );
+
+                            return [ 'handle' => $h, 'file' => $file, 'line' => $line ];
+                        }
+
+                        flock( $h, LOCK_UN );
+                        fclose( $h );
+
+                        return null;
                     }
 
-                    @unlink( $aside );
+                    fclose( $h );
+
+                    if ( $would_block || PHP_OS_FAMILY === 'Windows' ) {
+
+                        return null;
+                    }
+
+                    // No flock() here: nothing can take a stale file over atomically.
+                    // Moved aside and deleted; put back with link() only, never
+                    // over a file another process made meanwhile.
+                    $old   = @file_get_contents( $file );
+                    $aside = $file . '.left-' . bin2hex( random_bytes( 8 ) );
+
+                    if ( @rename( $file, $aside ) ) {
+
+                        if ( @file_get_contents( $aside ) !== $old ) {
+
+                            @link( $aside, $file );
+                        }
+
+                        @unlink( $aside );
+                    }
+
+                } elseif ( file_exists( $file ) ) {
+
+                    return null;
                 }
         }
 
