@@ -19,7 +19,7 @@ class CoreUpdateStageCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Downloads one release in place of the staged one, checks it against its SHA-256, and checks it can be installed here, whatever the automatic update settings say. It is not scheduled: install it with cmd=core-update-install. The release check leaves it alone for 24 hours. For an older release, prints the rollback commands to run first.',
+            'description' => 'Downloads one release in place of the staged one, checks its SHA-256 and its signature, and checks it can be installed here, whatever the automatic update settings say. It is not scheduled: install it with cmd=core-update-install. The release check leaves it alone for 24 hours. For an older release, prints the rollback commands to run first.',
             'arguments'   => [
                 'version=<x.y.z>' => 'The release to stage, in this major version.',
             ],
