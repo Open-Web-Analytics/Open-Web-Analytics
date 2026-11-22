@@ -215,6 +215,26 @@ final class InstallerTest extends TestCase
         $this->assertSame('new cli', file_get_contents($this->root . '/cli.php'));
     }
 
+    /** A file the copy backed up and then could not replace is unchanged: nothing to put back, and the undo says the release was. */
+    public function testAFileTheCopyCouldNotReplaceIsNotPutBack(): void
+    {
+        $this->tree($this->root, ['modules/Locked/Old.php' => 'old']);
+        $this->stage('2.0.1', null, true, ['modules/Locked/Old.php' => 'new']);
+        chmod($this->root . '/modules/Locked', 0555);
+
+        try {
+            $this->assertSame(99, $this->handoff(), $this->out);
+        } finally {
+            chmod($this->root . '/modules/Locked', 0755);
+        }
+
+        $this->assertSame('old', file_get_contents($this->root . '/modules/Locked/Old.php'));
+        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
+        $error = $this->install()['error'];
+        $this->assertStringContainsString('Could not write modules/Locked/Old.php', $error);
+        $this->assertStringContainsString('The previous release was put back', $error, 'nothing failed to go back');
+    }
+
     /** A release that does not boot is undone from the shutdown: no schema can have changed. */
     public function testAReleaseThatDoesNotBootIsUndone(): void
     {

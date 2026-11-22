@@ -1037,6 +1037,15 @@ return [
                 $rel    = substr( (string) $path, strlen( $backup ) + 1 );
                 $target = rtrim( $c['root'], '/' ) . '/' . $rel;
 
+                // Backed up, then not changed: the copy failed on this file.
+                // Writing it back would only fail the same way, in a
+                // directory that is not writable.
+                if ( is_file( $target ) && ! is_link( $target ) && hash_file( 'sha256', $target ) === hash_file( 'sha256', (string) $path )
+                        && ( fileperms( $target ) & 0777 ) === ( fileperms( (string) $path ) & 0777 ) ) {
+
+                    continue;
+                }
+
                 @mkdir( dirname( $target ), 0755, true );
 
                 if ( ! @copy( (string) $path, $target . '.owa-undo' ) || ! @chmod( $target . '.owa-undo', fileperms( (string) $path ) & 0777 )

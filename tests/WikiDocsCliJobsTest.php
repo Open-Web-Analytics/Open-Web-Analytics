@@ -112,6 +112,19 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         }
     }
 
+    /** As documented, with a placeholder value where it names one, each argument is one cli.php accepts. */
+    public function testEveryDocumentedArgumentParses(): void
+    {
+        foreach ($this->registeredCommands() as $command => $class) {
+
+            foreach (array_keys($class::usage()['arguments']) as $arg) {
+
+                $parsed = \OWA\Core\Lib::parseCliArgs(['cli.php', preg_replace('/=<[^>]*>|=\S+$/', '=x', $arg)]);
+                $this->assertIsArray($parsed, "cmd=$command documents $arg, which cli.php refuses: " . (is_string($parsed) ? $parsed : ''));
+            }
+        }
+    }
+
     public function testACommandWithNoArgumentsSaysSo(): void
     {
         $this->assertSame([], \OWA\Module\Base\Controller\ServerCheckCli::usage()['arguments']);

@@ -689,6 +689,13 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('OWA_DB_HOST defined', implode("\n", $bad));
         $this->assertStringContainsString('OWA_NONCE_KEY to be at least 32', implode("\n", $bad));
         $this->assertSame(['The release does not say what it requires.'], Preflight::requirements([], $env));
+
+        // Judged as boot judges them: a database user without a password is a database user.
+        $this->assertSame([], Preflight::requirements($req, ['constants' => ['OWA_DB_PASSWORD' => ''] + $env['constants']] + $env));
+        $this->assertStringContainsString('OWA_PUBLIC_URL defined',
+            implode("\n", Preflight::requirements($req, ['constants' => ['OWA_PUBLIC_URL' => ''] + $env['constants']] + $env)));
+        $this->assertStringContainsString('OWA_AUTH_KEY to be at least 32',
+            implode("\n", Preflight::requirements($req, ['constants' => ['OWA_AUTH_KEY' => ''] + $env['constants']] + $env)));
     }
 
     public function testInstallConditions(): void
