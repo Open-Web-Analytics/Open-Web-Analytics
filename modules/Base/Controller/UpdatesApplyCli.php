@@ -13,7 +13,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Applies pending schema updates for every module, in order. When an update needs a choice from the operator, it stops and says what to run.',
             'arguments'   => [
-                'listpending'                  => 'List the modules with pending updates, and apply nothing.',
+                '--listpending'                => 'List the modules with pending updates, and apply nothing.',
                 'apply=<module>.<sequence>'    => 'Apply one update.',
                 'rollback=<module>.<sequence>' => 'Roll back one update.',
                 '--force'                      => 'With apply=: apply out of sequence.',
@@ -130,7 +130,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         if (!empty($modules)) {
             $error = false;
             $first = true;
-            $lost  = \OWA\Core\CoreAPI::t( 'Stopped before the next update: another run has taken over the updates lock. cmd=update listpending shows what is left.' );
+            $lost  = \OWA\Core\CoreAPI::t( 'Stopped before the next update: another run has taken over the updates lock. cmd=update --listpending shows what is left.' );
 
             foreach ($modules as $k => $v) {
 
