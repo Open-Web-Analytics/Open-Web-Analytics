@@ -46,15 +46,26 @@ final class CliCommandsTest extends CliControllerTestCase
             "CLI command '{$cmd}' should resolve to {$expectedClass} through the service registry.");
     }
 
-    /** 1.x's names for the renamed commands are free, so cli.php can say what they are now; the new names are registered. */
+    /**
+     * 1.x's names for the renamed commands are free, so cli.php can say what
+     * they are now; each new name is one a module registers, active here or
+     * not (geoip-update-db is MaxmindGeoip's).
+     */
     public function testTheRenamedCommandsPointAtRegisteredOnes(): void
     {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->loadCliCommands();
 
+        $sources = '';
+
+        foreach (array_merge(glob(\OWA\Core\Env::root() . '/modules/*/config/cli_commands.php'), glob(\OWA\Core\Env::root() . '/modules/*/Module.php')) as $file) {
+            $sources .= file_get_contents($file);
+        }
+
         foreach (\OWA\Core\Controller\Cli::RENAMED as $old => $new) {
             $this->assertEmpty($s->getCliCommandClass($old), "$old is still a command");
-            $this->assertNotEmpty($s->getCliCommandClass($new), "$new is not a command");
+            $this->assertMatchesRegularExpression('/[\'"]' . preg_quote($new, '/') . '[\'"]\s*(=>|,)/', $sources, "no module registers $new");
+            $this->assertDoesNotMatchRegularExpression('/[\'"]' . preg_quote($old, '/') . '[\'"]\s*(=>|,)/', $sources, "a module still registers $old");
         }
     }
 
