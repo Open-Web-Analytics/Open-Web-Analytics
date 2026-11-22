@@ -662,6 +662,13 @@ class SystemHealth {
             $findings[] = $backup;
         }
 
+        $writable = self::writableCode();
+
+        if ( $writable ) {
+
+            $findings[] = $writable;
+        }
+
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
     }
 
@@ -684,6 +691,51 @@ class SystemHealth {
         return self::finding( 'red', \OWA\Core\CoreAPI::t( 'Automatic updates' ), sprintf( \OWA\Core\CoreAPI::t(
             'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.' ),
             count( $dirs ), implode( ', ', array_map( 'basename', $dirs ) ) ) );
+    }
+
+    /**
+     * Whether the web server can change OWA's code: yellow when this process,
+     * the web user on the System Health screen, can write the OWA directory
+     * itself (it could then replace any file in it, owa.php and index.php
+     * among them), owa.php, Core/ or modules/, and is not their owner. Then whatever compromises PHP can
+     * change OWA. OWA never changes an installation's file modes (FTP and
+     * shared hosts differ, and group write can be deliberate); it says so
+     * here. Nothing when this process owns them, as where PHP runs as the
+     * account (there is nothing to tighten), or without the posix extension.
+     *
+     * @param  string|null $root a test's; else the installation's
+     * @param  int|null    $uid  who asks; else this process
+     * @return Finding|null
+     */
+    public static function writableCode( $root = null, $uid = null ) {
+
+        if ( $uid === null && ! function_exists( 'posix_geteuid' ) ) {
+
+            return null;
+        }
+
+        $root     = rtrim( (string) ( $root ?? \OWA\Core\Env::root() ), '/' );
+        $uid      = $uid ?? posix_geteuid();
+        $writable = [];
+
+        foreach ( [ '', 'owa.php', 'Core', 'modules' ] as $path ) {
+
+            $full = $path === '' ? $root : $root . '/' . $path;
+
+            if ( file_exists( $full ) && @fileowner( $full ) !== $uid && is_writable( $full ) ) {
+
+                $writable[] = $path === '' ? \OWA\Core\CoreAPI::t( 'the OWA directory' ) : $path . ( is_dir( $full ) ? '/' : '' );
+            }
+        }
+
+        if ( ! $writable ) {
+
+            return null;
+        }
+
+        return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'OWA\'s files' ), sprintf( \OWA\Core\CoreAPI::t(
+            'The web server can change OWA\'s code (%s), so whatever compromises PHP can change OWA. Remove group and world write from OWA\'s files and directories, keeping them writable by the user the scheduler runs as, who installs updates.' ),
+            implode( ', ', $writable ) ) );
     }
 
     /**
