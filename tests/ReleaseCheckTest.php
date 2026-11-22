@@ -188,8 +188,9 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame('new cli', file_get_contents($staging->releaseDir('2.1.0') . '/cli.php'));
         $this->assertSame(['release'], array_values(array_diff(scandir($staging->dir('2.1.0')), ['.', '..'])), 'the tarball is gone once unpacked');
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $staging->root(), 'a name the web cannot guess');
-        $this->assertSame('0700', sprintf('%04o', fileperms($staging->root()) & 0777));
-        $this->assertSame('0600', sprintf('%04o', fileperms($staging->root() . '/staged.json') & 0777));
+        $this->assertSame('0711', sprintf('%04o', fileperms($staging->root()) & 0777));
+        $this->assertSame('0700', sprintf('%04o', fileperms($staging->root() . '/versions') & 0777), 'the staged releases: not readable');
+        $this->assertSame('0644', sprintf('%04o', fileperms($staging->root() . '/staged.json') & 0777), 'readable by the Updates screen');
 
         $again = $this->check(['2.1.0'], ['level' => 'minor']);
         $this->assertSame(ReleaseCheck::STAGED, $again['outcome']);
@@ -486,7 +487,7 @@ final class ReleaseCheckTest extends TestCase
         $this->unfinished('2.0.1');
         $this->assertSame(ReleaseCheck::CLAIMED, $c()->cancel('2.0.1')['outcome'], 'its tree may be half copied');
         $this->assertDirectoryExists($this->staging()->dir('2.0.1'));
-        Staging::remove($this->staging()->root() . '/install');
+        @unlink($this->staging()->root() . '/install.json');
 
         $h = fopen(InstallLock::$path, 'c');
         flock($h, LOCK_EX);
@@ -611,12 +612,10 @@ final class ReleaseCheckTest extends TestCase
         return new Staging(null, $this->tmp . '/data');
     }
 
-    /** An install of $v claimed and unfinished: install/install.json naming it. */
+    /** An install of $v claimed and unfinished: install.json naming it. */
     private function unfinished(string $v): void
     {
-        $dir = $this->staging()->root() . '/install';
-        @mkdir($dir, 0700);
-        file_put_contents($dir . '/install.json', json_encode(['state' => 'installing', 'version' => $v, 'attempts' => 1, 'retry_after' => 0]));
+        file_put_contents($this->staging()->root() . '/install.json', json_encode(['state' => 'installing', 'version' => $v, 'attempts' => 1, 'retry_after' => 0]));
     }
 
     /**

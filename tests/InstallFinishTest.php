@@ -34,7 +34,7 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** install/, its own staging and staged.json if it names it; never a newer or another staging. */
+    /** install.json and backup/, its own staging and staged.json if it names it; never a newer or another staging. */
     public function testTheCleanUp(): void
     {
         $s = new Staging($this->tmp . '/updates');
@@ -42,14 +42,15 @@ final class InstallFinishTest extends CliControllerTestCase
         foreach (['2.0.2', '2.0.3', '2.0.4'] as $v) {
             mkdir($s->dir($v) . '/release', 0700, true);
         }
-        mkdir($this->tmp . '/updates/install/backup', 0700, true);
-        file_put_contents($this->tmp . '/updates/install/install.json', '{"state":"installing","version":"2.0.3"}');
+        mkdir($this->tmp . '/updates/backup', 0700, true);
+        file_put_contents($this->tmp . '/updates/install.json', '{"state":"installing","version":"2.0.3"}');
 
         $s->writeStaged('2.0.4', null, str_repeat('a', 64));
         Finish::cleanup($s, '2.0.3');
 
         $this->assertSame(['2.0.2', '2.0.4'], $s->versions(), 'others are Step 1\'s to clear');
-        $this->assertDirectoryDoesNotExist($this->tmp . '/updates/install');
+        $this->assertFileDoesNotExist($this->tmp . '/updates/install.json');
+        $this->assertDirectoryDoesNotExist($this->tmp . '/updates/backup');
         $this->assertSame('2.0.4', $s->staged()['version']);
 
         $s->writeStaged('2.0.4', null, str_repeat('a', 64));

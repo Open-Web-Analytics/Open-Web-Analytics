@@ -17,7 +17,7 @@ use OWA\Core\CoreAPI;
  *   3. When the listing failed, or names nothing newer (Releases::choose()),
  *      staged.json is only repaired: removed when it names a staging that is
  *      gone.
- *   4. A staging an unfinished install uses (install/install.json) is the
+ *   4. A staging an unfinished install uses (install.json) is the
  *      installer's: left as it is.
  *   5. Downloaded, checked against its SHA-256 and unpacked once
  *      (Staging::stage()), and again if GitHub's digest for it changes (the

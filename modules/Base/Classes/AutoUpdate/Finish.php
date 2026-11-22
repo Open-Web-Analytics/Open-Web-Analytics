@@ -132,8 +132,7 @@ class Finish {
     }
 
     /**
-     * After a successful install: install/ (its install.json and backup/), its
-     * own staging, updater.php with it, and staged.json if it names exactly
+     * After a successful install: install.json and backup/, its own staging, updater.php with it, and staged.json if it names exactly
      * this version. Nothing else: Step 1 deletes the stagings it replaces and
      * those not newer than what is installed.
      *
@@ -148,7 +147,8 @@ class Finish {
             $staging->removeStaged();
         }
 
-        Staging::remove( $staging->root() . '/' . Staging::INSTALL );
+        Staging::remove( $staging->root() . '/' . Staging::BACKUP );
+        @unlink( $staging->root() . '/' . Staging::INSTALL );
         Staging::remove( $staging->dir( $v ) );
     }
 }

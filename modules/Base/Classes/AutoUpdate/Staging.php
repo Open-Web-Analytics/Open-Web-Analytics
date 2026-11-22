@@ -8,25 +8,31 @@ use OWA\Core\CoreAPI;
  * web cannot guess it, found by looking for it (updater.php `updatesDir`)
  * and kept in the updates_dir setting for the rest of the process.
  *
- *   updates-<id>/                0700
- *     staged.json                Step 1's only: {format, version, window, sha256, staged_at}
- *     <version>/release/         a staged release: the tarball unpacked, there
+ *   updates-<id>/                0711: others open a name they know, list nothing
+ *     staged.json                0644, Step 1's only: {format, version, window, sha256, staged_at}
+ *     install.json               0644, the installer's, while an install is unfinished:
+ *                                {version, attempts, retry_after, copied, booted, error}
+ *     versions/                  0700
+ *       <version>/release/       a staged release: the tarball unpacked, there
  *                                only once its SHA-256 matched GitHub's digest
- *     install/                   the installer's, while an install is unfinished
- *       install.json             {version, attempts, retry_after, copied, booted, error}
- *       backup/                  the originals of every file replaced or deleted
+ *     backup/                    0700, the installer's: the originals of every
+ *                                file replaced or deleted
  *
- * Step 1 writes staged.json and <version>/; the installer writes install/.
- * Every JSON file is written to a temporary name and renamed into place,
- * mode 0600.
+ * Step 1 writes staged.json and versions/; the installer writes install.json
+ * and backup/. The two JSON files are readable by the web user, under any
+ * arrangement of users and groups, for the Updates screen; nothing that holds
+ * code is. Every JSON file is written to a temporary name and renamed into
+ * place.
  *
  * @phpstan-import-type Release from Releases
  */
 class Staging {
 
-    const STAGED  = 'staged.json';
-    const INSTALL = 'install';
-    const RELEASE = 'release';
+    const STAGED   = 'staged.json';
+    const INSTALL  = 'install.json';
+    const BACKUP   = 'backup';
+    const VERSIONS = 'versions';
+    const RELEASE  = 'release';
 
     /** staged.json's format: raised only when a field changes meaning or goes. */
     const FORMAT = 1;
@@ -120,7 +126,8 @@ class Staging {
         // A directory named outright is made where it was named, never in OWA's data directory.
         if ( $this->named ) {
 
-            if ( ! @mkdir( $this->root, 0700, true ) && ! is_dir( $this->root ) ) {
+            if ( ( ! @mkdir( $this->root, 0711, true ) && ! is_dir( $this->root ) )
+                    || ( ! @mkdir( $this->root . '/' . self::VERSIONS, 0700 ) && ! is_dir( $this->root . '/' . self::VERSIONS ) ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $this->root ) );
             }
@@ -145,7 +152,7 @@ class Staging {
      */
     public function dir( $version ) {
 
-        return $this->root . '/' . $version;
+        return $this->root . '/' . self::VERSIONS . '/' . $version;
     }
 
     /**
@@ -171,7 +178,7 @@ class Staging {
 
         $versions = [];
 
-        foreach ( (array) glob( $this->root . '/*', GLOB_ONLYDIR ) as $dir ) {
+        foreach ( (array) glob( $this->root . '/' . self::VERSIONS . '/*', GLOB_ONLYDIR ) as $dir ) {
 
             $v = basename( (string) $dir );
 
@@ -232,10 +239,10 @@ class Staging {
         return $this->root !== '' && ( $this->releaseInfo( $version )['version'] ?? null ) === $version;
     }
 
-    /** @return array<string, mixed>|null install/install.json: the unfinished install */
+    /** @return array<string, mixed>|null install.json: the unfinished install */
     public function install() {
 
-        return $this->root === '' ? null : $this->readJson( $this->root . '/' . self::INSTALL . '/install.json' );
+        return $this->root === '' ? null : $this->readJson( $this->root . '/' . self::INSTALL );
     }
 
     /**
@@ -286,7 +293,7 @@ class Staging {
 
         try {
 
-            if ( ! @mkdir( $dir, 0700 ) ) {
+            if ( ! @mkdir( $dir, 0700, true ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $dir ) );
             }
@@ -395,7 +402,8 @@ class Staging {
             throw new \RuntimeException( sprintf( 'Could not write %s.', $path ) );
         }
 
-        chmod( $tmp, 0600 );
+        // Readable by the web user (the Updates screen); written by the owner alone.
+        chmod( $tmp, 0644 );
 
         if ( ! rename( $tmp, $path ) ) {
 
