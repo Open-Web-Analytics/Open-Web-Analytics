@@ -17,8 +17,9 @@ use OWA\Core\CoreAPI;
  * boot records its error in install.json, which already holds the attempt and
  * retry_after from the claim, and raises the notice the attempt calls for.
  *
- * The process holds the install lock throughout (InstallLock::$held_here),
- * so cmd=update does not try to take it again.
+ * The process holds the install lock throughout (InstallLock::$held_here,
+ * and the hold in InstallLock::$hold, which cmd=update touches between
+ * updates), so cmd=update knows it runs inside the install.
  */
 class Finish {
 
@@ -29,6 +30,7 @@ class Finish {
     public static function run( array $c ) {
 
         InstallLock::$held_here = true;
+        InstallLock::$hold      = isset( $c['lock'] ) && is_array( $c['lock'] ) ? $c['lock'] : null;
 
         $record = $c['record'];
         $owa    = new \owa( [ 'request_type' => 'cli' ] );
@@ -50,7 +52,9 @@ class Finish {
                 throw new \RuntimeException( sprintf( 'cmd=update did not complete: %s', $update['message'] ?: 'schema updates are still pending' ) );
             }
 
+            InstallLock::touch();
             $publish = self::command( '\\OWA\\Module\\Base\\Controller\\TrackerPublishCli' );
+            InstallLock::touch();
 
             $notify( [
                 'source'     => ReleaseCheck::SOURCE,
