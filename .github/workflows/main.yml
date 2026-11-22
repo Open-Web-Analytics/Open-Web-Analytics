@@ -63,36 +63,11 @@ jobs:
       run: |
         npm ci
         npm run build
-    # Generate a release tarball excluding files that are not needed in a distro.
-    #
-    # NOTE: these are exact paths rather than globs, with one deliberate exception
-    # noted below. tar's --exclude wildcards match slashes, so a tidier
-    # './modules/*/src' would exclude more than it looks like -- any module's src,
-    # not just the one meant. modules/Base/src and modules/Domstream/src are the
-    # unbuilt source; webpack compiles both into public/base/dist.
-    #
-    # The exception is './playwright*.config.js'. Listing the configs by exact name
-    # silently missed playwright.install-nostash.config.js, which therefore shipped
-    # in the 1.13.0 tarball; the glob covers the next config added too. Because '*'
-    # matches slashes this would also catch a *.config.js under a directory named
-    # playwright-something -- the only one is ./playwright-report, which is build
-    # output and excluded in its own right anyway.
-    #
-    # This previously also had to protect a MaxMind reader bundled under
-    # modules/MaxmindGeoip/includes/, which composer classmapped and which
-    # therefore had to ship. That library is a composer dependency now, so it
-    # arrives in vendor/ like everything else and no longer constrains this
-    # list.
+    # Generate the release tarball, and check it holds what an installed
+    # release needs to install it. The exclusions are in the script, which the
+    # automatic-update end-to-end test packs its releases with too.
     - name: Generate Release Tarball
-      run: |
-        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./webpack.public-htaccess.js' --exclude='./modules/Base/src' --exclude='./modules/Domstream/src' --exclude='./node_modules' --exclude='./.build' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./.php-cs-fixer.dist.php' --exclude='./.php-cs-fixer.cache' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright*.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
-    # What an installed release relies on to install this one: release.json,
-    # which npm run build wrote, and updater.php. The tarball's SHA-256, which
-    # GitHub records as the asset's digest, is the only proof it needs.
-    - name: Check the tarball holds release.json and updater.php
-      run: |
-        tar -tf "./owa_${{ env.VERSION }}_packaged.tar" | grep -qx './release.json'
-        tar -tf "./owa_${{ env.VERSION }}_packaged.tar" | grep -qx './updater.php'
+      run: bash .github/scripts/release-tarball.sh "${{ env.VERSION }}"
     # A draft release of the release branch, with the tarball attached. The tag
     # is created when the draft is published.
     - name: Create Draft Github Release

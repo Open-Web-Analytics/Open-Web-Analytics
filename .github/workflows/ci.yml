@@ -359,6 +359,64 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  self-update:
+    name: Automatic updates, end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Real release packages built from this commit by the Release Packager's
+    # own script, a real install of the first, and the next served from a
+    # GitHub-shaped listing over HTTPS on 127.0.0.1 with a CA made for the
+    # run. release-check and schedule-run do the rest, as an installation's
+    # cron entry would. See tests/tools/self_update_e2e.php.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: owa-e2e-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -powa-e2e-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      OWA_E2E_DB_HOST: 127.0.0.1
+      OWA_E2E_DB_PORT: '3306'
+      OWA_E2E_DB_USER: root
+      # A password, as nearly every installation has: an empty one is refused
+      # by the release check's preflight though boot accepts it.
+      OWA_E2E_DB_PASSWORD: owa-e2e-root
+      OWA_E2E_DB_NAME: owa_self_update_scratch
+      OWA_E2E_DB_TYPE: mysql
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, json, mysqli, pdo_mysql, gd, posix
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Stage, install and recover
+        run: php tests/tools/self_update_e2e.php
+
   e2e:
     name: E2E (self-hosted, php -S + ${{ matrix.db_name }})
     runs-on: ubuntu-latest

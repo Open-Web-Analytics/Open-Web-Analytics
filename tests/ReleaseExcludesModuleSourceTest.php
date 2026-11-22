@@ -15,7 +15,7 @@ final class ReleaseExcludesModuleSourceTest extends TestCase
 {
     public function testEveryModuleSourceDirectoryIsExcluded(): void
     {
-        $workflow = (string) file_get_contents(\OWA\Core\Env::root() . '/.github/workflows/main.yml');
+        $workflow = (string) file_get_contents(\OWA\Core\Env::root() . '/.github/scripts/release-tarball.sh');
 
         $dirs = glob(\OWA\Core\Env::root() . '/modules/*/src', GLOB_ONLYDIR);
 

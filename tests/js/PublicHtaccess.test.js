@@ -57,9 +57,11 @@ describe('public/.htaccess', () => {
 
     test('the release tarball keeps public/ and leaves the build helper out', () => {
         const workflow = fs.readFileSync(path.join(ROOT, '.github/workflows/main.yml'), 'utf8');
+        const tarball  = fs.readFileSync(path.join(ROOT, '.github/scripts/release-tarball.sh'), 'utf8');
 
-        expect(workflow).not.toMatch(/--exclude='\.\/public/);
-        expect(workflow).toMatch(/--exclude='\.\/webpack\.public-htaccess\.js'/);
+        expect(tarball).not.toMatch(/--exclude='\.\/public/);
+        expect(tarball).toMatch(/--exclude='\.\/webpack\.public-htaccess\.js'/);
         expect(workflow).toMatch(/npm run build/);
+        expect(workflow).toMatch(/bash \.github\/scripts\/release-tarball\.sh/);
     });
 });

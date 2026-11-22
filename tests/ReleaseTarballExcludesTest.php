@@ -5,7 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * Every root-level tooling file is kept out of the release tarball.
  *
- * The exclude list in .github/workflows/main.yml must cover every root-level
+ * The exclude list in .github/scripts/release-tarball.sh, which the Release
+ * Packager (.github/workflows/main.yml) runs, must cover every root-level
  * tooling file, or a config file added to the repository root ships to users.
  *
  * This asserts the list covers what is in the tree now, rather than that it
@@ -44,23 +45,16 @@ final class ReleaseTarballExcludesTest extends TestCase {
      */
     private function excludes(): array {
 
-        $yml = (string) file_get_contents( $this->root() . '/.github/workflows/main.yml' );
+        $this->assertStringContainsString( 'bash .github/scripts/release-tarball.sh',
+            (string) file_get_contents( $this->root() . '/.github/workflows/main.yml' ),
+            'the Release Packager must still pack the tarball with the script' );
 
-        $line = '';
+        $script = (string) file_get_contents( $this->root() . '/.github/scripts/release-tarball.sh' );
 
-        foreach ( preg_split( '/\R/', $yml ) as $candidate ) {
-
-            if ( strpos( $candidate, 'tar --directory' ) !== false ) {
-
-                $line = $candidate;
-                break;
-            }
-        }
-
-        $this->assertNotSame( '', $line,
+        $this->assertStringContainsString( 'tar --directory', $script,
             'the packaging step must still be a tar command this test can read' );
 
-        preg_match_all( "/--exclude='([^']+)'/", $line, $matches );
+        preg_match_all( "/--exclude='([^']+)'/", $script, $matches );
 
         $this->assertNotEmpty( $matches[1],
             'the packaging step must still carry an exclude list' );
@@ -104,7 +98,7 @@ final class ReleaseTarballExcludesTest extends TestCase {
             }
 
             $this->assertTrue( $covered,
-                "$member would ship in the release tarball; add it to the exclude list in .github/workflows/main.yml" );
+                "$member would ship in the release tarball; add it to the exclude list in .github/scripts/release-tarball.sh" );
         }
     }
 
