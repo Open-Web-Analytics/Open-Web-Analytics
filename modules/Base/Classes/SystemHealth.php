@@ -702,6 +702,8 @@ class SystemHealth {
      * shared hosts differ, and group write can be deliberate); it says so
      * here. Nothing when this process owns them, as where PHP runs as the
      * account (there is nothing to tighten), or without the posix extension.
+     * Group write alone is no finding: the web server writes through it only
+     * when it is in the files' group.
      *
      * @param  string|null $root a test's; else the installation's
      * @param  int|null    $uid  who asks; else this process
@@ -734,7 +736,7 @@ class SystemHealth {
         }
 
         return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'OWA\'s files' ), sprintf( \OWA\Core\CoreAPI::t(
-            'The web server can change OWA\'s code (%s), so whatever compromises PHP can change OWA. Remove group and world write from OWA\'s files and directories, keeping them writable by the user the scheduler runs as, who installs updates.' ),
+            'The web server can change OWA\'s code (%s), so whatever compromises PHP can change OWA. Remove world write from OWA\'s files and directories, and either remove group write or take the web server user out of their group. Keep them writable by the user the scheduler runs as, who installs updates.' ),
             implode( ', ', $writable ) ) );
     }
 
