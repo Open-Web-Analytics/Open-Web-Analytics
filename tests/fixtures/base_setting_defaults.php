@@ -20,6 +20,7 @@ return [
     'async_log_dir' => '',
     'attribution_lookback_days' => 90,
     'autoload_indexes_before_093' => [],
+    'backup_dir' => '',
     'base_url' => '',
     'cache_settings_before_086' => [],
     'campaignKeys' => [],

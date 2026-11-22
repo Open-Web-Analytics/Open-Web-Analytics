@@ -13,6 +13,8 @@ return [
     'release-manifest'            => 'base.releaseManifestCli',
     'strings-extract'             => 'base.stringsExtractCli',
     'v1-drop'                     => 'base.v1DropCli',
+    'backup'                      => 'base.backupCli',
+    'tables-cleanup'              => 'base.tablesCleanupCli',
     'fetch-notifications'         => 'base.notificationsFetchCli',
     'update-ua-regexes'           => 'base.updateUaRegexesCli',
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',

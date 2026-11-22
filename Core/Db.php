@@ -1585,6 +1585,99 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * A SELECT's rows streamed from the server rather than held, one at a
+     * time. The connection can run nothing else until the rows are read, so
+     * a caller gives it a connection of its own (CoreAPI::dbFactory()). A
+     * failure, at the start or part way, is a refused statement
+     * (queryErrorCount()). A driver without streaming buffers, as
+     * get_result_iterator() does.
+     *
+     * @param string $sql with its values written in; nothing is bound
+     * @return \Generator<int, array<string, string|null>, mixed, void>
+     */
+    public function get_unbuffered_iterator( $sql ) {
+
+        foreach ( $this->get_result_iterator( $sql ) as $row ) {
+
+            yield $row;
+        }
+    }
+
+    /**
+     * The base tables whose names start with $prefix. None, without
+     * introspection; the dialect overrides it (cmd=backup).
+     *
+     * @param string $prefix
+     * @return list<string>
+     */
+    public function listTables( $prefix ) {
+
+        return [];
+    }
+
+    /**
+     * The columns an INSERT can write, column => binary, integer or text. None,
+     * without introspection.
+     *
+     * @param string $table_name
+     * @return array<string, string>
+     */
+    public function copyableColumns( $table_name ) {
+
+        return [];
+    }
+
+    /**
+     * @param string $table_name
+     * @return list<string> the primary key's columns; none, without introspection
+     */
+    public function primaryKeyColumns( $table_name ) {
+
+        return [];
+    }
+
+    /**
+     * @param string $table_name
+     * @return string|null the statement that creates the table; null, without a dialect that can say
+     */
+    public function createTableStatement( $table_name ) {
+
+        return null;
+    }
+
+    /**
+     * Run $fn in the session a dump is read in. As it is, without a dialect.
+     *
+     * @param callable $fn
+     * @return mixed $fn's result
+     */
+    public function withDumpSession( callable $fn ) {
+
+        return $fn();
+    }
+
+    /**
+     * Run $fn in one consistent snapshot. Unguarded, without a dialect.
+     *
+     * @param callable $fn
+     * @return mixed $fn's result
+     */
+    public function withConsistentSnapshot( callable $fn ) {
+
+        return $fn();
+    }
+
+    /**
+     * What a dump sets before and after its statements. Nothing, without a dialect.
+     *
+     * @return array{before: string, after: string}
+     */
+    public function dumpPreamble() {
+
+        return [ 'before' => '', 'after' => '' ];
+    }
+
+    /**
      * A table's size as the server estimates it. Unknown, without introspection.
      *
      * @param string $table_name

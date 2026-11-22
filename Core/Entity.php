@@ -97,6 +97,28 @@ class Entity {
      */
     protected $private_properties = [];
 
+    /** A backup group (cmd=backup): configuration, users, Properties -- what the installation is. */
+    const BACKUP_APPLICATION = 'application';
+
+    /** A backup group (cmd=backup): rows tracking writes, on every visit. */
+    const BACKUP_DATA = 'data';
+
+    /**
+     * Which of cmd=backup's groups this entity's table is in: BACKUP_DATA for
+     * a table tracking writes, BACKUP_APPLICATION for everything else. A
+     * module's own tracking table declares BACKUP_DATA, so `scope=application`
+     * stays the small, consistent dump of the installation.
+     *
+     * @var string
+     */
+    protected $backup_group = self::BACKUP_APPLICATION;
+
+    /** @return string BACKUP_APPLICATION or BACKUP_DATA */
+    public function getBackupGroup() {
+
+        return $this->backup_group;
+    }
+
     /**
      * The entity as a plain array, safe to serialize into a response.
      *
