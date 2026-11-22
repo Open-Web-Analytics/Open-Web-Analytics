@@ -805,7 +805,13 @@ $scenarios = [
 
     'passwordless-database' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        // A database account with no password, which boot accepts.
+        // A database account with no password, which boot accepts. Only on
+        // CI's own database server: nowhere else is a passwordless account made.
+        if ( getenv( 'GITHUB_ACTIONS' ) !== 'true' ) {
+
+            return 'skipped: it creates a database account without a password, so it runs only in CI';
+        }
+
         $user = 'owa_e2e_nopass';
         $m    = sql( $db );
         $m->query( "DROP USER IF EXISTS '$user'@'%'" );
@@ -978,8 +984,8 @@ foreach ( $scenarios as $name => $scenario ) {
 
     try {
 
-        $scenario();
-        say( sprintf( 'PASS %s (%.0fs)', $name, microtime( true ) - $t ) );
+        $skipped = $scenario();
+        say( is_string( $skipped ) ? "SKIP $name: $skipped" : sprintf( 'PASS %s (%.0fs)', $name, microtime( true ) - $t ) );
 
     } catch ( Throwable $e ) {
 
