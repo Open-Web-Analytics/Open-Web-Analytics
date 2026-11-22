@@ -3,13 +3,12 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 
 /**
  * owa-data/updating, the install lock, for booted code: updater.php's
- * isLocked, tryLock, unlock and touchLock, which say how it is held (flock(),
- * or a marker file where the filesystem has no flock()).
+ * isLocked, tryLock, unlock and touchLock, which say how it works.
  *
- * One process holds it at a time: an install for all of its attempt, or
- * Step 1: release check while it writes staged.json or deletes a staging.
- * Whoever finds it locked stops and tries again on a later run, cmd=update
- * by hand included.
+ * It exists while one process holds it, and its line says who: an install
+ * for all of its attempt, or Step 1: release check while it writes
+ * staged.json or deletes a staging. Whoever finds it held stops and tries
+ * again on a later run, cmd=update by hand included.
  */
 class InstallLock {
 
@@ -45,12 +44,13 @@ class InstallLock {
      * Run $fn holding the lock, if it is free now.
      *
      * @param  callable $fn
+     * @param  string   $who what the lock file says holds it
      * @return bool false when the lock is held and $fn did not run
      */
-    public static function tryExclusive( callable $fn ) {
+    public static function tryExclusive( callable $fn, $who = 'release check' ) {
 
         $u    = Staging::updater();
-        $hold = $u['tryLock']( dirname( self::path() ) );
+        $hold = $u['tryLock']( dirname( self::path() ), $who );
 
         if ( $hold === null ) {
 
@@ -70,8 +70,8 @@ class InstallLock {
     }
 
     /**
-     * The installer, between steps, whichever kind of lock it holds: the
-     * lock's time says the install is still moving, and a marker stays fresh.
+     * The installer, between steps: the lock file's time says the install is
+     * still moving, and where there is no flock() it keeps it from going stale.
      *
      * @return void
      */

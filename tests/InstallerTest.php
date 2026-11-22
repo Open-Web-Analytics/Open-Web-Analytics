@@ -263,58 +263,69 @@ final class InstallerTest extends TestCase
     }
 
     /** While an install holds the lock, every other run exits: schedule-run quietly. */
-    /** One holder at a time; a second process asking is told it is locked, and nothing is taken by asking. */
+    /** The lock file exists while one process holds it, says who, and is gone when it lets go. */
     public function testTheLock(): void
     {
+        $file = $this->data . '/updating';
         $this->assertFalse($this->u['isLocked']($this->data));
+        $this->assertFileDoesNotExist($file, 'asking creates nothing');
 
-        $hold = $this->u['tryLock']($this->data);
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
         $this->assertNotNull($hold);
-        $this->assertNull($hold['marker'], 'flock() where the filesystem has it');
+        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, [0-9a-f]{16}\n$/',
+            (string) file_get_contents($file), 'the operator can read who holds it');
 
-        $locked = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
+        $other = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
             '$u = require %s; var_export([$u["isLocked"](%2$s), $u["tryLock"](%2$s)]);',
             var_export($this->root . '/updater.php', true), var_export($this->data, true)))));
-        $this->assertSame(var_export([true, null], true), $locked, 'another process: locked, and it cannot take it');
+        $this->assertSame(var_export([true, null], true), $other, 'another process: held, and it cannot take it');
 
-        touch($this->data . '/updating', time() - 100);
+        touch($file, time() - 100);
         $this->u['touchLock']($hold);
         clearstatcache();
-        $this->assertGreaterThan(time() - 50, filemtime($this->data . '/updating'), 'touchLock dates a flock() too: the install is still moving');
+        $this->assertGreaterThan(time() - 50, filemtime($file), 'touchLock dates it: the holder is still moving');
 
         $this->u['unlock']($hold);
+        $this->assertFileDoesNotExist($file, 'letting go deletes it');
         $this->assertFalse($this->u['isLocked']($this->data));
-        $this->assertNotNull($hold = $this->u['tryLock']($this->data), 'free again');
-        $this->u['unlock']($hold);
+        $this->assertSame([], glob($file . '.*'), 'no temporary file left');
     }
 
-    /** Where the filesystem has no flock(): updating.held, locked until it is 10 minutes old. */
-    public function testTheMarkerLock(): void
+    /** A holder that dies leaves the file, unflocked: the next process takes it over. */
+    public function testALockWhoseHolderDiedIsTakenOver(): void
+    {
+        $file = $this->data . '/updating';
+        shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
+            '$u = require %s; $u["tryLock"](%s, "install 2.0.1"); exit(1);',
+            var_export($this->root . '/updater.php', true), var_export($this->data, true)))));
+
+        $this->assertFileExists($file, 'it died holding it');
+        $left = (string) file_get_contents($file);
+        $this->assertSame('left', $this->u['lockState']($file));
+        $this->assertFalse($this->u['isLocked']($this->data));
+
+        $hold = $this->u['tryLock']($this->data, 'release check');
+        $this->assertNotNull($hold);
+        $this->assertNotSame($left, file_get_contents($file));
+        $this->assertStringStartsWith('release check, pid ', (string) file_get_contents($file));
+
+        $this->u['unlock']($hold);
+        $this->assertSame([], glob($this->data . '/updating*'));
+    }
+
+    /** Where the filesystem has no flock(), the file's age says whether its holder is gone: 10 minutes. */
+    public function testWithoutFlockTheFilesAgeSays(): void
     {
         $file = $this->data . '/updating';
         $this->assertSame(600, $this->u['lock_stale']);
-        $this->assertFalse($this->u['markerIsLocked']($file));
+        $this->assertSame('free', $this->u['lockState']($file, true));
 
-        $hold = $this->u['markerTryLock']($file);
-        $this->assertFileExists($file . '.held');
-        $this->assertTrue($this->u['markerIsLocked']($file));
-        $this->assertNull($this->u['markerTryLock']($file), 'one holder');
+        file_put_contents($file, "install 2.0.1, pid 1, since 2026-11-22 10:00:00 UTC, 0000000000000000\n");
+        touch($file, time() - 590);
+        $this->assertSame('held', $this->u['lockState']($file, true));
 
-        touch($file . '.held', time() - 590);
-        $this->u['touchLock']($hold);
-        $this->assertTrue($this->u['markerIsLocked']($file), 'the holder keeps it fresh');
-
-        touch($file . '.held', time() - 601);
-        $this->assertFalse($this->u['markerIsLocked']($file), 'stale');
-        $next = $this->u['markerTryLock']($file);
-        $this->assertNotNull($next, 'a stale marker is taken over');
-        $this->assertNotSame($hold['token'], $next['token']);
-
-        $this->u['unlock']($hold);
-        $this->assertFileExists($file . '.held', 'the old holder does not delete its successor\'s');
-        $this->u['unlock']($next);
-        $this->assertFileDoesNotExist($file . '.held');
-        $this->assertSame([], glob($file . '.held.*'), 'nothing left aside');
+        touch($file, time() - 601);
+        $this->assertSame('left', $this->u['lockState']($file, true));
     }
 
     /** Step 1 holding the lock to write: an install that is due waits for a later run, and then installs. */

@@ -160,38 +160,45 @@ return [
     },
 
     /*
-     * The install lock, owa-data/updating. One process holds it at a time: an
-     * install for all of its attempt, or Step 1 while it writes staged.json
-     * or deletes a staging. Whoever finds it locked stops and tries again on a
-     * later run: every other CLI run, Step 1, an install, cmd=update by hand,
-     * and the entry points.
+     * The install lock, owa-data/updating. It exists while a process holds it:
+     * an install for all of its attempt, or Step 1 while it writes staged.json
+     * or deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
+     * since ..."). Whoever finds it held stops and tries again on a later run:
+     * every other CLI run, Step 1, an install, cmd=update by hand, and the
+     * entry points.
      *
-     * flock() where the filesystem has it, so the kernel lets go when the
-     * holder ends, however it ends. Where it has none (flock() fails without
-     * saying another process holds it), a marker file, updating.held, as
-     * WordPress's .maintenance: locked while it exists and is younger than
-     * lock_stale seconds. The holder touches it between steps (touchLock),
-     * but not during one statement: a schema update running longer leaves it
-     * stale, and a second attempt may start, which the updates-apply job
-     * lease stops at its schema updates. A flock() is never stale; touchLock
-     * dates it all the same, so its time says the install is still moving.
-     * Windows never says another process holds it, and has flock(), so it
-     * always uses flock().
+     * Taken by creating it, which only one process can do (link() of a file
+     * made and flocked under a temporary name, which fails when updating
+     * exists), and given up by deleting it. A holder that dies leaves it
+     * behind, and whether one has is told two ways:
+     *  - flock(): the holder flocks it while it runs, and the kernel lets go
+     *    when it ends, however it ends. A file nobody flocks is left over.
+     *  - where the filesystem has no flock() (it fails without saying another
+     *    process holds it; Windows never says, and has flock()): a file not
+     *    touched for lock_stale seconds is left over. The holder touches it
+     *    between steps (touchLock), not during one statement: a schema update
+     *    running longer lets a second attempt start, which the updates-apply
+     *    job lease stops at its schema updates.
+     * touchLock dates it in both, so its time is the holder's last step. A
+     * left-over file is moved aside, and put back if what moved was not it,
+     * before the lock is taken.
      */
     'lock_stale' => 600,
 
-    'isLocked' => static function ( $data ) {
+    /* 'free' (no file), 'held', or 'left' (its holder is gone). */
+    'lockState' => static function ( $file, $no_flock = false ) {
 
-        $file = rtrim( (string) $data, '/' ) . '/updating';
-        $h    = @fopen( $file, 'c' );
+        clearstatcache( true, $file );
+        $h = @fopen( $file, 'r' );
 
         if ( $h === false ) {
 
-            return false;
+            return file_exists( $file ) ? 'held' : 'free';
         }
 
         // Asked shared, so two runs asking at once never take each other for a holder.
-        $free = flock( $h, LOCK_SH | LOCK_NB, $would_block );
+        $would_block = 0;
+        $free        = ! $no_flock && flock( $h, LOCK_SH | LOCK_NB, $would_block );
 
         if ( $free ) {
 
@@ -202,118 +209,144 @@ return [
 
         if ( $free ) {
 
-            return false;
+            return 'left';
         }
 
-        if ( $would_block || PHP_OS_FAMILY === 'Windows' ) {
+        if ( ! $no_flock && ( $would_block || PHP_OS_FAMILY === 'Windows' ) ) {
 
-            return true;
+            return 'held';
         }
 
-        return ( require __FILE__ )['markerIsLocked']( $file );
+        $time = @filemtime( $file );
+
+        return $time !== false && time() - $time < ( require __FILE__ )['lock_stale'] ? 'held' : 'left';
     },
 
-    /* The lock, or null when another process holds it. */
-    'tryLock' => static function ( $data ) {
+    'isLocked' => static function ( $data ) {
 
+        return ( require __FILE__ )['lockState']( rtrim( (string) $data, '/' ) . '/updating' ) === 'held';
+    },
+
+    /*
+     * The lock, or null when another process holds it. $who goes in the file
+     * for the operator: "install", "release check".
+     */
+    'tryLock' => static function ( $data, $who = 'install' ) {
+
+        $u    = require __FILE__;
         $file = rtrim( (string) $data, '/' ) . '/updating';
-        $h    = @fopen( $file, 'c' );
+
+        switch ( $u['lockState']( $file ) ) {
+
+            case 'held':
+
+                return null;
+
+            case 'left':
+
+                $old   = @file_get_contents( $file );
+                $aside = $file . '.left-' . bin2hex( random_bytes( 8 ) );
+
+                if ( @rename( $file, $aside ) ) {
+
+                    // Another process took it over first: what moved is its lock. Put it back.
+                    if ( @file_get_contents( $aside ) !== $old ) {
+
+                        @link( $aside, $file ) || @rename( $aside, $file );
+                    }
+
+                    @unlink( $aside );
+                }
+        }
+
+        $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+        $tmp  = $file . '.new-' . bin2hex( random_bytes( 8 ) );
+        $h    = @fopen( $tmp, 'x+' );
 
         if ( $h === false ) {
 
             return null;
         }
 
-        if ( flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
+        fwrite( $h, $line );
+        fflush( $h );
 
-            // updating's time is the holder's last step (touchLock), from the claim on.
-            @touch( $file );
+        // A new file: refused only where the filesystem has no flock().
+        $flocked = flock( $h, LOCK_EX | LOCK_NB );
+        $placed  = @link( $tmp, $file );
+        @unlink( $tmp );
 
-            return [ 'handle' => $h, 'file' => $file, 'marker' => null, 'token' => null ];
-        }
+        // No hard links here: made in place, and flocked straight after.
+        if ( ! $placed && ! file_exists( $file ) ) {
 
-        fclose( $h );
+            fclose( $h );
+            $h = @fopen( $file, 'x+' );
 
-        if ( $would_block || PHP_OS_FAMILY === 'Windows' ) {
+            if ( $h === false ) {
 
-            return null;
-        }
-
-        return ( require __FILE__ )['markerTryLock']( $file );
-    },
-
-    /* The lock where the filesystem has no flock(): updating.held, while it is not stale. */
-    'markerIsLocked' => static function ( $file ) {
-
-        clearstatcache( true, $file . '.held' );
-        $held = @filemtime( $file . '.held' );
-
-        return $held !== false && time() - $held < ( require __FILE__ )['lock_stale'];
-    },
-
-    'markerTryLock' => static function ( $file ) {
-
-        $marker = $file . '.held';
-        clearstatcache( true, $marker );
-        $old    = @file_get_contents( $marker );
-        $time   = @filemtime( $marker );
-
-        // A stale marker is moved aside before a new one is made, and put back
-        // if what moved is not the one judged stale: of two runs that find it
-        // stale at once, only one takes it.
-        if ( $old !== false && $time !== false && time() - $time >= ( require __FILE__ )['lock_stale'] ) {
-
-            $aside = $marker . '.' . bin2hex( random_bytes( 8 ) );
-
-            if ( @rename( $marker, $aside ) ) {
-
-                @file_get_contents( $aside ) === $old ? @unlink( $aside ) : @rename( $aside, $marker );
+                return null;
             }
+
+            fwrite( $h, $line );
+            fflush( $h );
+            $flocked = flock( $h, LOCK_EX | LOCK_NB );
+            $placed  = true;
         }
 
-        $m = @fopen( $marker, 'x' );
+        if ( ! $placed || ! $flocked ) {
 
-        if ( $m === false ) {
-
-            return null;
+            fclose( $h );
         }
 
-        $token = getmypid() . ' ' . bin2hex( random_bytes( 8 ) ) . "\n";
-        fwrite( $m, $token );
-        fclose( $m );
-        @touch( $file );
-
-        return [ 'handle' => null, 'file' => $file, 'marker' => $marker, 'token' => $token ];
+        return $placed ? [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line ] : null;
     },
 
+    /*
+     * Delete the file, if it is still this holder's, then let the flock go:
+     * the other way round, another process would find it unflocked in between
+     * and take it over. Windows cannot delete a file held open, nor read one
+     * it has locked, so there it lets go first.
+     */
     'unlock' => static function ( array $hold ) {
 
-        if ( $hold['handle'] !== null ) {
+        $file = (string) $hold['file'];
+        $h    = $hold['handle'];
 
-            flock( $hold['handle'], LOCK_UN );
-            fclose( $hold['handle'] );
+        if ( $h !== null && PHP_OS_FAMILY !== 'Windows' ) {
 
-        } elseif ( @file_get_contents( (string) $hold['marker'] ) === $hold['token'] ) {
+            if ( @file_get_contents( $file ) === $hold['line'] ) {
 
-            @unlink( (string) $hold['marker'] );
+                @unlink( $file );
+            }
+
+            flock( $h, LOCK_UN );
+            fclose( $h );
+
+            return;
+        }
+
+        if ( $h !== null ) {
+
+            flock( $h, LOCK_UN );
+            fclose( $h );
+        }
+
+        if ( @file_get_contents( $file ) === $hold['line'] ) {
+
+            @unlink( $file );
         }
     },
 
     /*
-     * The holder calls this as it goes, whichever kind of lock it holds.
-     * updating's time is then the holder's last step, so a lock held and not
-     * touched for long is an install stuck in one step (its claim time is
-     * install.json's claimed_at). For a marker it also keeps it from going
-     * stale.
+     * The holder calls this between steps, whichever way it holds the lock:
+     * the file's time is then its last step, so a lock held and not touched
+     * for long is an install stuck in one step (its claim is the file's line,
+     * and install.json's claimed_at). Without flock() it keeps the file from
+     * going stale.
      */
     'touchLock' => static function ( array $hold ) {
 
         @touch( (string) $hold['file'] );
-
-        if ( $hold['marker'] !== null ) {
-
-            @touch( (string) $hold['marker'] );
-        }
     },
 
     'backoff' => static function ( $attempts ) {
@@ -488,7 +521,7 @@ return [
             return $due;
         }
 
-        $hold = $u['tryLock']( $data );
+        $hold = $u['tryLock']( $data, sprintf( 'install %s', $due[0] ) );
 
         if ( $hold === null ) {
 
