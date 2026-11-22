@@ -110,8 +110,12 @@ function run( $cmd, $cwd = null ) {
     $p = proc_open( $cmd, [ 1 => [ 'pipe', 'w' ], 2 => [ 'redirect', 1 ] ], $pipes, $cwd );
     $out = stream_get_contents( $pipes[1] );
     fclose( $pipes[1] );
+    $code = proc_close( $p );
 
-    return [ proc_close( $p ), (string) $out ];
+    // What the command changed on disk, not what this process last saw.
+    clearstatcache();
+
+    return [ $code, (string) $out ];
 }
 
 function must( $cmd, $cwd = null ) {
@@ -432,9 +436,9 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '' ) {
 
     must( 'php cli.php cmd=install user_id=e2e-admin password=e2e-admin-password-1 email_address=admin@example.test domain=example.test', $site );
 
-    // What belongs to the installation, and must survive an update.
-    @mkdir( "$site/public/tracker", 0755, true );
-    file_put_contents( "$site/public/tracker/OWA-e2e.js", 'a tracking bundle' );
+    // What belongs to the installation, and must survive an update: the
+    // bundles cmd=install published, and a module of someone else's.
+    check( (bool) glob( "$site/public/tracker/*.js" ), 'cmd=install published no tracking bundle' );
     @mkdir( "$site/modules/E2eThirdParty", 0755, true );
     file_put_contents( "$site/modules/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
 
@@ -444,6 +448,13 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '' ) {
 function cli( $site, $ca, $args ) {
 
     return run( sprintf( 'php -d curl.cainfo=%s cli.php %s', escapeshellarg( $ca ), $args ), $site );
+}
+
+/** Config lines that make a patch wait for a window twelve hours away: staged, not yet due. */
+function later() {
+
+    return "define('OWA_TIMEZONE', 'UTC');\ndefine('OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', false);\n"
+        . sprintf( "define('OWA_AUTO_UPDATE_WINDOW', '%s-%s');\n", gmdate( 'H:i', time() + 43200 ), gmdate( 'H:i', time() + 43260 ) );
 }
 
 /** Step 1, and what it left: [output, staged.json]. */
@@ -468,8 +479,8 @@ function installed( $site, $ca, $version ) {
 
     check( envVersion( $site ) === $version, "Core/Env.php says " . envVersion( $site ) . ", not $version" );
 
-    [ , $pending ] = cli( $site, $ca, 'cmd=update listpending' );
-    check( str_contains( $pending, 'no modules' ), "schema updates are still pending:\n$pending" );
+    [ , $pending ] = cli( $site, $ca, 'cmd=update --listpending' );
+    check( str_contains( $pending, 'No updates are pending' ), "schema updates are still pending:\n$pending" );
 
     $dir = updatesDir( $site );
     check( ! is_file( "$dir/install.json" ) && ! is_dir( "$dir/backup" ), 'install.json or backup/ was left behind' );
@@ -531,11 +542,12 @@ $scenarios = [
         $to   = package( $build, $work, 'installs', TO, withSchemaUpdate( true ) );
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
-        $hash = hash_file( 'sha256', "$site/owa-config.php" );
+        $hash    = hash_file( 'sha256', "$site/owa-config.php" );
+        $bundles = glob( "$site/public/tracker/*.js" );
 
         [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
         $staged = json( updatesDir( $site ) . '/staged.json' );
-        check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ) && ( $staged['window'] ?? 'x' ) === null,
+        check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ) && array_key_exists( 'window', (array) $staged ) && $staged['window'] === null,
             "release-check did not stage " . TO . " to install at once:\n$out" );
         check( hasNotice( notices( $db ), 'staged:' . TO ), 'no "will be installed" notice' );
 
@@ -543,8 +555,8 @@ $scenarios = [
         check( $code === 0, "schedule-run exited $code:\n$out" );
         check( envVersion( $site ) === TO, 'Core/Env.php says ' . envVersion( $site ) . ":\n$out" );
 
-        [ , $pending ] = cli( $site, $ca, 'cmd=update listpending' );
-        check( ! str_contains( $pending, 'base' ) || str_contains( $pending, 'no modules' ), "the schema update did not run:\n$pending" );
+        [ , $pending ] = cli( $site, $ca, 'cmd=update --listpending' );
+        check( str_contains( $pending, 'No updates are pending' ), "the schema update did not run:\n$pending" );
 
         $n = notices( $db );
         check( hasNotice( $n, 'installed:' . TO ), 'no "is installed" notice' );
@@ -555,7 +567,7 @@ $scenarios = [
             'the install left install.json, backup/ or the staged release behind' );
         check( ! file_exists( "$site/owa-data/updating" ), 'the lock file was left behind' );
         check( hash_file( 'sha256', "$site/owa-config.php" ) === $hash, 'owa-config.php changed' );
-        check( is_file( "$site/public/tracker/OWA-e2e.js" ), 'a tracking bundle was deleted' );
+        check( glob( "$site/public/tracker/*.js" ) == $bundles, 'the tracking bundles changed' );
         check( is_file( "$site/modules/E2eThirdParty/Module.php" ), 'a third-party module was deleted' );
         check( ! file_exists( "$site/modules/Base/e2e-only-in-" . FROM . '.txt' ), 'a file ' . TO . ' does not ship is still there' );
     },
@@ -646,7 +658,8 @@ $scenarios = [
 
         $to   = package( $build, $work, 'unreachable', TO );
         publish( $www, $base, $to, TO );
-        $site   = installFrom( $from, $work, $db, "$base/releases.json" );
+        // Staged for later: every cli.php run would otherwise install it first.
+        $site   = installFrom( $from, $work, $db, "$base/releases.json", later() );
         $staged = stagedToInstall( $site, $ca );
 
         proc_terminate( $server->proc );
@@ -659,6 +672,8 @@ $scenarios = [
             check( is_dir( updatesDir( $site ) . '/staged' ), 'GitHub unreachable deleted the staged release' );
 
             // Installing needs no network.
+            [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-now' );
+            check( $code === 0, "self-update-now exited $code:\n$out" );
             cli( $site, $ca, 'cmd=schedule-run' );
             installed( $site, $ca, TO );
 
@@ -676,13 +691,14 @@ $scenarios = [
             file_put_contents( "$tree/modules/Base/e2e-replaced.txt", 'only in the replacement' );
         } );
         publish( $www, $base, $first, TO );
-        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
         stagedToInstall( $site, $ca );
 
         publish( $www, $base, $second, TO );
         [ $out, $staged ] = stage( $site, $ca );
         check( ( $staged['sha256'] ?? null ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
 
+        cli( $site, $ca, 'cmd=self-update-now' );
         cli( $site, $ca, 'cmd=schedule-run' );
         installed( $site, $ca, TO );
         check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
@@ -895,11 +911,7 @@ $scenarios = [
         $to   = package( $build, $work, 'past', TO );
         publish( $www, $base, $to, TO );
 
-        // Patches wait for a window twelve hours from now.
-        $start = gmdate( 'H:i', time() + 43200 );
-        $end   = gmdate( 'H:i', time() + 43260 );
-        $site  = installFrom( $from, $work, $db, "$base/releases.json",
-            "define('OWA_TIMEZONE', 'UTC');\ndefine('OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', false);\ndefine('OWA_AUTO_UPDATE_WINDOW', '$start-$end');\n" );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
 
         [ $out, $staged ] = stage( $site, $ca );
         check( ( $staged['version'] ?? null ) === TO && is_array( $staged['window'] ?? null ), "it was not staged to wait for its window:\n$out" );
