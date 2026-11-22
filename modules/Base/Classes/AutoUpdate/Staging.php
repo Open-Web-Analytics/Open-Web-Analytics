@@ -14,7 +14,8 @@ use OWA\Core\CoreAPI;
  *     install.json       0644, the installer's, while an install is unfinished:
  *                        {version, attempts, retry_after, copied, booted, forced, error}
  *     staged/            0700: the one staged release, the tarball unpacked; there
- *                        only once its SHA-256 matched GitHub's digest
+ *                        only once its SHA-256 matched GitHub's digest and its
+ *                        signature a trusted key (Signature)
  *                        (staged.tmp/ while it downloads and unpacks)
  *     backup/            0700, the installer's: the originals of every file
  *                        replaced or deleted
@@ -247,8 +248,8 @@ class Staging {
     }
 
     /**
-     * Download a release into staged.tmp/, check it against its SHA-256 and
-     * unpack it, without touching the slot; swapIn() then puts it there. On
+     * Download a release into staged.tmp/, check its SHA-256 and its
+     * signature, and unpack it, without touching the slot; swapIn() then puts it there. On
      * any failure staged.tmp/ is deleted and the error thrown: the next run
      * starts again.
      *
@@ -324,7 +325,8 @@ class Staging {
 
     /**
      * Fetch the tarball into $tar and prove it: its SHA-256 against the
-     * asset's digest, else against the release's SHA256SUMS.
+     * asset's digest, else against the release's SHA256SUMS, then its
+     * signature against the keys this installation trusts.
      *
      * @param  Release $release
      * @param  string  $tar
@@ -353,6 +355,26 @@ class Staging {
 
             throw new \RuntimeException( sprintf( '%s does not match its SHA-256: expected %s, downloaded %s.',
                 basename( $tar ), $expected, $actual ) );
+        }
+
+        // The SHA-256 says this is the file the listing names; the signature
+        // says OWA released it (Signature), wherever the listing came from.
+        if ( $release['sig_url'] === null ) {
+
+            @unlink( $tar . '.part' );
+
+            throw new \RuntimeException( sprintf( '%s is not signed: the release has no %s.', basename( $tar ), sprintf( Signature::ASSET, $release['version'] ) ) );
+        }
+
+        try {
+
+            Signature::verify( $release['version'], $actual, Releases::get( $release['sig_url'], Releases::TIMEOUT ) );
+
+        } catch ( \RuntimeException $e ) {
+
+            @unlink( $tar . '.part' );
+
+            throw $e;
         }
 
         rename( $tar . '.part', $tar );

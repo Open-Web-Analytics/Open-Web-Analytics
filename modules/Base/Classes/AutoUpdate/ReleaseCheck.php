@@ -18,9 +18,10 @@ use OWA\Core\CoreAPI;
  *   3. An unfinished install of the chosen release: left as it is.
  *   4. A release staged by hand, for HAND_HOLD after it was staged: left as
  *      it is, whatever else applies.
- *   5. Downloaded, checked against its SHA-256 and unpacked into staged.tmp/,
- *      then swapped into staged/ in place of what was there, an unfinished
- *      install of another release with it (Staging::swapIn()); again if
+ *   5. Downloaded, checked against its SHA-256 and its signature, and
+ *      unpacked into staged.tmp/, then swapped into staged/ in place of what
+ *      was there, an unfinished install of another release with it
+ *      (Staging::swapIn()); again if
  *      GitHub's digest for it changes (the asset was replaced). A failure
  *      leaves the slot as it was, and the next run tries again. The first
  *      failure puts a notice in the bell; a week of them e-mails the admins.
@@ -249,7 +250,7 @@ class ReleaseCheck {
                 return $this->busy();
             }
 
-            $this->lines[] = sprintf( 'Downloaded %s and checked it against its SHA-256%s.', $v, $replaced ? ', as the release\'s asset was replaced'
+            $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced'
                 : ( $old !== '' && $old !== $v ? sprintf( '; it replaces %s', $old ) : '' ) );
             $before = null;
         }
@@ -431,7 +432,7 @@ class ReleaseCheck {
                 return $this->busy();
             }
 
-            $this->lines[] = sprintf( 'Downloaded %s and checked it against its SHA-256%s.', $v,
+            $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v,
                 $old !== '' && $old !== $v ? sprintf( '; it replaces %s', $old ) : '' );
 
             if ( $dropped !== '' ) {

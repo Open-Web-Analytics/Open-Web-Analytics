@@ -80,7 +80,7 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertGreaterThan(0, $checked);
     }
 
-    /** The newest 1.14 patch, downloaded and proved: 1.x tarballs carry no release.json, so that is where it stops. */
+    /** The newest 1.14 patch, downloaded and its SHA-256 proved: 1.x releases are not signed, so that is where it stops. */
     public function testADownloadMatchesItsDigest(): void
     {
         $list    = Releases::fetch((string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_releases_url'));
@@ -92,10 +92,10 @@ final class ReleaseListingNetworkTest extends TestCase
 
         try {
             (new Staging(null, $this->tmp))->download($release);
-            $this->fail('a 1.x release has no release.json');
+            $this->fail('a 1.x release is not signed');
         } catch (\RuntimeException $e) {
-            $this->assertSame(sprintf("%s's release.json says it is NULL.", $release['version']), $e->getMessage(),
-                'downloaded, its SHA-256 matched, and it unpacked');
+            $this->assertSame(sprintf('owa_%1$s_packaged.tar is not signed: the release has no owa_%1$s_packaged.tar.sig.', $release['version']), $e->getMessage(),
+                'downloaded, and its SHA-256 matched: the signature is checked after');
         }
 
         $this->assertSame([], glob($this->tmp . '/updates-*/staged*'), 'a failed staging is deleted');

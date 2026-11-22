@@ -22,6 +22,7 @@
  *   installs         2.0.91 stages, installs and runs its schema update; the
  *                    installation's own files stay, what 2.0.91 dropped goes
  *   wrong-digest     the listing's SHA-256 is not the tarball's: nothing staged
+ *   not-signed       no signature, or one by a key not trusted: nothing staged; signed, it installs
  *   unmet            2.0.91 needs PHP 99: staged, never installed
  *   does-not-boot    2.0.91's owa.php does not parse: undone, 2.0.90 runs
  *   schema-fails     2.0.91's schema update fails: its files stay, the error is recorded
@@ -51,6 +52,13 @@
  */
 
 require __DIR__ . '/scratch_guard.php';
+require dirname( __DIR__, 2 ) . '/modules/Base/Classes/AutoUpdate/Signature.php';
+
+// The run's signing key: every package trusts its public half, as a release
+// trusts the maintainers' keys, and is signed with it by the packager's script.
+$pair = sodium_crypto_sign_keypair();
+define( 'E2E_SIGNING_SECRET', base64_encode( sodium_crypto_sign_secretkey( $pair ) ) );
+define( 'E2E_SIGNING_PUBLIC', base64_encode( sodium_crypto_sign_publickey( $pair ) ) );
 
 const FROM = '2.0.90';
 const TO   = '2.0.91';
@@ -245,6 +253,11 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
     must( sprintf( 'cp -a %s %s', escapeshellarg( $build ), escapeshellarg( $tree ) ) );
     @unlink( "$tree/.complete" );
 
+    // The release trusts the run's key, in place of the maintainers'.
+    $sig = "$tree/modules/Base/Classes/AutoUpdate/Signature.php";
+    check( preg_match( '/const TRUSTED = \[[^\]]*\];/', (string) file_get_contents( $sig ) ) === 1, 'Signature declares no TRUSTED keys to replace' );
+    file_put_contents( $sig, preg_replace( '/const TRUSTED = \[[^\]]*\];/', "const TRUSTED = [ '" . E2E_SIGNING_PUBLIC . "' ];", (string) file_get_contents( $sig ) ) );
+
     $env = (string) file_get_contents( "$tree/Core/Env.php" );
     check( str_contains( $env, "const VERSION = 'master';" ), 'Core/Env.php does not say master, so it cannot be versioned as the packager does' );
     file_put_contents( "$tree/Core/Env.php", str_replace( "const VERSION = 'master';", "const VERSION = '$version';", $env ) );
@@ -263,12 +276,16 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
 
     must( sprintf( 'bash %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-tarball.sh' ), escapeshellarg( $version ) ), $tree );
 
+    // Signed as the packager signs it: its script, checked against the keys this tree trusts.
+    must( sprintf( 'OWA_RELEASE_SIGNING_KEY=%s php .github/scripts/release-sign.php %s', escapeshellarg( E2E_SIGNING_SECRET ), escapeshellarg( $version ) ), $tree );
+
     $file = "$work/tars/$name/owa_{$version}_packaged.tar";
     @mkdir( dirname( $file ), 0755, true );
     rename( "$tree/owa_{$version}_packaged.tar", $file );
+    rename( "$tree/owa_{$version}_packaged.tar.sig", "$file.sig" );
     must( 'rm -rf ' . escapeshellarg( $tree ) );
 
-    return [ 'file' => $file, 'sha256' => hash_file( 'sha256', $file ), 'size' => filesize( $file ) ];
+    return [ 'file' => $file, 'sig' => (string) file_get_contents( "$file.sig" ), 'sha256' => hash_file( 'sha256', $file ), 'size' => filesize( $file ) ];
 }
 
 /** A schema update for Base in the release, one past the release's own: up() returns $succeeds; $manual is its manual_install. */
@@ -364,12 +381,33 @@ function serve( $tls, $root, $port ) {
     throw new RuntimeException( 'The HTTPS server did not start: ' . @file_get_contents( "$tls/serve.log" ) );
 }
 
-/** The listing GitHub would give for one release, and its tarball, in $www. */
-function publish( $www, $base, array $pkg, $version, $digest = null ) {
+/**
+ * The listing GitHub would give for one release, its tarball and its
+ * signature, in $www. $signature: the signature file in place of the
+ * package's; false lists none.
+ */
+function publish( $www, $base, array $pkg, $version, $digest = null, $signature = null ) {
 
     must( 'rm -rf ' . escapeshellarg( $www ) );
     mkdir( "$www/download", 0755, true );
     copy( $pkg['file'], "$www/download/owa_{$version}_packaged.tar" );
+
+    $assets = [ [
+        'name'                 => "owa_{$version}_packaged.tar",
+        'browser_download_url' => "$base/download/owa_{$version}_packaged.tar",
+        'size'                 => $pkg['size'],
+        'digest'               => 'sha256:' . ( $digest ?? $pkg['sha256'] ),
+    ] ];
+
+    if ( $signature !== false ) {
+
+        file_put_contents( "$www/download/owa_{$version}_packaged.tar.sig", $signature ?? $pkg['sig'] );
+        $assets[] = [
+            'name'                 => "owa_{$version}_packaged.tar.sig",
+            'browser_download_url' => "$base/download/owa_{$version}_packaged.tar.sig",
+            'size'                 => strlen( (string) ( $signature ?? $pkg['sig'] ) ),
+        ];
+    }
 
     file_put_contents( "$www/releases.json", json_encode( [ [
         'id'           => 9000000 + (int) str_replace( '.', '', $version ),
@@ -380,12 +418,7 @@ function publish( $www, $base, array $pkg, $version, $digest = null ) {
         'html_url'     => "$base/release/$version",
         'published_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
         'body'         => 'The end-to-end test\'s release.',
-        'assets'       => [ [
-            'name'                 => "owa_{$version}_packaged.tar",
-            'browser_download_url' => "$base/download/owa_{$version}_packaged.tar",
-            'size'                 => $pkg['size'],
-            'digest'               => 'sha256:' . ( $digest ?? $pkg['sha256'] ),
-        ] ],
+        'assets'       => $assets,
     ] ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
 }
 
@@ -599,6 +632,34 @@ $scenarios = [
 
         cli( $site, $ca, 'cmd=schedule-run' );
         check( envVersion( $site ) === FROM, 'it installed anyway' );
+    },
+
+    'not-signed' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'not-signed', TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        // No signature published, then one by a key the installation does not trust.
+        $other = base64_encode( sodium_crypto_sign_secretkey( sodium_crypto_sign_keypair() ) );
+
+        foreach ( [ 'is not signed: the release has no' => false,
+                'is not signed by a key this installation trusts' => \OWA\Module\Base\Classes\AutoUpdate\Signature::sign( TO, $to['sha256'], $other ) ] as $why => $signature ) {
+
+            publish( $www, $base, $to, TO, null, $signature );
+            [ $out ] = stage( $site, $ca );
+            $dir = updatesDir( $site );
+            check( $dir === null || ( ! is_file( "$dir/staged.json" ) && ! is_dir( "$dir/staged" ) ), "a release that $why was staged:\n$out" );
+            check( str_contains( $out, $why ), "the check does not say the release $why:\n$out" );
+        }
+
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === FROM, 'it installed anyway' );
+
+        // Signed after all: staged and installed.
+        publish( $www, $base, $to, TO );
+        stagedToInstall( $site, $ca );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        installed( $site, $ca, TO );
     },
 
     'unmet' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
