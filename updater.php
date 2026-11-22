@@ -621,33 +621,18 @@ return [
     /*
      * Step 2. Returns null to boot normally, or the exit code to end with.
      *
-     * cmd=self-update-install version=<v> is handled here too, before OWA
-     * loads, so the new release boots in a process that holds no old code:
-     * that version installs now, whatever staged.json says.
+     * cmd=self-update-install is handled here too, before OWA loads, so the
+     * new release boots in a process that holds no old code: the staged
+     * release installs now, whatever staged.json says about when.
      */
     'handoff' => static function ( $root, array $argv ) {
 
-        $u     = require __FILE__;
-        $root  = rtrim( (string) $root, '/' );
-        $only  = null;
-        $force = in_array( '--force', $argv, true );
+        $u      = require __FILE__;
+        $root   = rtrim( (string) $root, '/' );
+        $manual = in_array( 'cmd=self-update-install', $argv, true );
+        $force  = in_array( '--force', $argv, true );
 
-        if ( in_array( 'cmd=self-update-install', $argv, true ) ) {
-
-            foreach ( $argv as $arg ) {
-
-                if ( str_starts_with( (string) $arg, 'version=' ) ) {
-
-                    $only = substr( (string) $arg, 8 );
-                }
-            }
-
-            if ( $only === null || $only === '' ) {
-
-                fwrite( STDERR, "version= names the release to install, such as version=2.0.3.\n" );
-
-                return 2;
-            }
+        if ( $manual ) {
 
             // A checkout is updated with its version control, never by copying a release over it.
             for ( $up = $root; $up !== ''; $up = dirname( $up ) === $up ? '' : dirname( $up ) ) {
@@ -666,7 +651,7 @@ return [
 
         $config = $u['config']( $root );
 
-        if ( $config === null && $only !== null ) {
+        if ( $config === null && $manual ) {
 
             fwrite( STDERR, sprintf( "owa-config.php uses %s. It is read before OWA loads: use plain values there, or install by hand.\n", $u['configRefused']( $root ) ) );
 
@@ -677,9 +662,9 @@ return [
 
         if ( $dir === null ) {
 
-            if ( $only !== null ) {
+            if ( $manual ) {
 
-                fwrite( STDERR, "Nothing is staged: run cmd=self-update-stage version=" . $only . " first.\n" );
+                fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.\n" );
 
                 return 1;
             }
@@ -708,24 +693,24 @@ return [
         // What to install: a version, or the exit code to end with. Decided
         // once without the lock, so a run with nothing due never takes it,
         // and again holding it, since Step 1 may have changed things between.
-        $decide = static function () use ( $u, $dir, $only, $force, $root ) {
+        $decide = static function () use ( $u, $dir, $manual, $force, $root ) {
 
             $current = json_decode( (string) @file_get_contents( $dir . '/install.json' ), true );
             $current = is_array( $current ) ? $current : null;
 
-            if ( $only !== null ) {
+            if ( $manual ) {
 
-                // An unfinished install comes first: it is the one to carry on with.
-                $unfinished = (string) ( $current['version'] ?? $only );
+                // The one release there is: an unfinished install's, which a
+                // staging of another release would have replaced, else the staged one.
+                $staged  = json_decode( (string) @file_get_contents( $dir . '/staged.json' ), true );
+                $version = (string) ( $current['version'] ?? ( is_array( $staged ) ? ( $staged['version'] ?? '' ) : '' ) );
 
-                if ( $unfinished !== $only ) {
+                if ( $version === '' ) {
 
-                    fwrite( STDERR, sprintf( "An install of OWA %s is unfinished; run cmd=self-update-install version=%s first.\n", $unfinished, $unfinished ) );
+                    fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.\n" );
 
                     return 1;
                 }
-
-                $version = $only;
 
             } else {
 
@@ -746,7 +731,7 @@ return [
              * install went past it (by hand, before the window): an automatic one
              * is dropped, its staging and any unfinished install of it deleted.
              */
-            if ( ! ( $only !== null && $force ) ) {
+            if ( ! ( $manual && $force ) ) {
 
                 $installed  = $u['installedVersion']( $root );
                 $unfinished = ( $current['version'] ?? null ) === $version;
@@ -755,7 +740,7 @@ return [
 
                 if ( ! $goes_on ) {
 
-                    if ( $only === null ) {
+                    if ( ! $manual ) {
 
                         return $installed === null ? null : [ 'drop' => $version ];
                     }
@@ -773,7 +758,7 @@ return [
 
             if ( $problem !== null ) {
 
-                if ( $only !== null ) {
+                if ( $manual ) {
 
                     fwrite( STDERR, $problem . "\n" );
 
@@ -831,6 +816,11 @@ return [
 
         [ $version, $gone ] = $due;
 
+        if ( $manual ) {
+
+            fwrite( STDOUT, sprintf( "Installing OWA %s.\n", $version ) );
+        }
+
         // From here until the copy is checked the files are mixed: log.php drops beacons.
         $hold = $u['setLockPhase']( $hold, 'copying' );
 
@@ -840,8 +830,8 @@ return [
             'data'    => $data,
             'public'  => $config['public'],
             'version' => $version,
-            'manual'  => $only !== null,
-            'forced'  => $only !== null && $force,
+            'manual'  => $manual,
+            'forced'  => $manual && $force,
             'now'     => time(),
             'lock'    => $hold,
         ];

@@ -286,7 +286,7 @@ class ReleaseCheck {
 
             $this->notify( 'manual:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s needs to be installed by hand' ), $v ),
-                implode( "\n", $texts ) . "\n\n" . sprintf( CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=self-update-install version=%s' ), $v ),
+                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=self-update-install' ),
                 $release['url'] );
 
             return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it is staged but will not install itself.', $v ) );
@@ -473,8 +473,8 @@ class ReleaseCheck {
 
         $until = (int) $this->heldUntil( $this->staging->staged() );
 
-        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged. Install it before %s UTC, when the release check may replace it: php cli.php cmd=self-update-install version=%s%s',
-            $v, gmdate( 'Y-m-d H:i', $until ?: (int) $this->context['now'] + self::HAND_HOLD ), $v, $step === null ? ' --force' : '' ) );
+        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged. Install it before %s UTC, when the release check may replace it: php cli.php cmd=self-update-install%s',
+            $v, gmdate( 'Y-m-d H:i', $until ?: (int) $this->context['now'] + self::HAND_HOLD ), $step === null ? ' --force' : '' ) );
     }
 
     /**
@@ -501,7 +501,7 @@ class ReleaseCheck {
 
             $u = (string) $this->staging->install()['version'];
 
-            return $this->outcome( self::CLAIMED, $u, [], sprintf( 'An install of %1$s is unfinished; it cannot be cancelled. Carry it on with: php cli.php cmd=self-update-install version=%1$s', $u ) );
+            return $this->outcome( self::CLAIMED, $u, [], sprintf( 'An install of %1$s is unfinished; it cannot be cancelled. Carry it on with: php cli.php cmd=self-update-install', $u ) );
         }
 
         if ( ! InstallLock::tryExclusive( fn () => $this->staging->clear() ) ) {
@@ -535,7 +535,7 @@ class ReleaseCheck {
 
         if ( ! empty( $staged['by_hand'] ) ) {
 
-            return $this->outcome( self::HELD, $v, [], sprintf( '%1$s was staged by hand: install it with php cli.php cmd=self-update-install version=%1$s', $v ) );
+            return $this->outcome( self::HELD, $v, [], sprintf( '%1$s was staged by hand: install it with php cli.php cmd=self-update-install', $v ) );
         }
 
         if ( empty( $staged['automatic'] ) ) {

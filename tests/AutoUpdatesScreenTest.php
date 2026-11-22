@@ -46,7 +46,7 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
     public function testAStagingThatDoesNotInstallItselfSaysSo(): void
     {
         $hand = $this->state($this->staged(['by_hand' => true, 'automatic' => false, 'staged_at' => self::NOW - 3600]));
-        $this->assertSame('2.1.0 was staged by hand. It installs only with: php cli.php cmd=self-update-install version=2.1.0', $hand['lines'][2]);
+        $this->assertSame('2.1.0 was staged by hand. It installs only with: php cli.php cmd=self-update-install', $hand['lines'][2]);
         $this->assertSame('The release check leaves it alone until ' . gmdate('Y-m-d H:i', self::NOW - 3600 + ReleaseCheck::HAND_HOLD) . ' UTC.', $hand['lines'][3]);
         $this->assertSame(['check', 'cancel'], $hand['actions']);
 

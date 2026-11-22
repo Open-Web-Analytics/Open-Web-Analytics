@@ -84,7 +84,7 @@ class UpdatesState {
 
             } elseif ( ! empty( $staged['by_hand'] ) ) {
 
-                $lines[] = sprintf( CoreAPI::t( '%1$s was staged by hand. It installs only with: php cli.php cmd=self-update-install version=%1$s' ), $v );
+                $lines[] = sprintf( CoreAPI::t( '%1$s was staged by hand. It installs only with: php cli.php cmd=self-update-install' ), $v );
                 $until   = min( (int) ( $staged['staged_at'] ?? 0 ), $now ) + ReleaseCheck::HAND_HOLD;
 
                 if ( $until > $now ) {

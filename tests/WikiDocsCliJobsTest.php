@@ -93,7 +93,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $elsewhere = [
             'update' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
             // Read before OWA loads, by the hand-off.
-            'self-update-install' => ['version' => 'updater.php', 'force' => 'updater.php'],
+            'self-update-install' => ['force' => 'updater.php'],
         ];
 
         foreach ($this->registeredCommands() as $command => $class) {

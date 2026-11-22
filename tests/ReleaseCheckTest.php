@@ -406,7 +406,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertFalse($this->staging()->staged()['install_now'], 'for that release only');
 
         $this->hand('2.0.1', ['2.0.1']);
-        $this->assertStringContainsString('install it with php cli.php cmd=self-update-install version=2.0.1', implode("\n", $c()->installNow()['lines']));
+        $this->assertStringContainsString('install it with php cli.php cmd=self-update-install', implode("\n", $c()->installNow()['lines']));
     }
 
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
@@ -524,7 +524,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertTrue($this->staging()->isStaged('2.1.0'));
         $this->assertSame(['base update 97: It rewrites every event. Back up the data tables first: php cli.php cmd=backup scope=data'],
             $result['problems'], 'only what this install would run');
-        $this->assertStringContainsString('cmd=self-update-install version=2.1.0', $this->notices['manual:2.1.0']['body']);
+        $this->assertStringContainsString('then install it: php cli.php cmd=self-update-install', $this->notices['manual:2.1.0']['body']);
         $this->assertStringContainsString('base update 97: It rewrites every event', $this->notices['manual:2.1.0']['body']);
 
         $this->schema['base'] = 97;
@@ -541,7 +541,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertTrue($this->staging()->staged()['by_hand']);
         $this->assertFalse($this->staging()->staged()['automatic'], 'not scheduled');
         $this->assertTrue($this->staging()->isStaged('2.0.1'));
-        $this->assertMatchesRegularExpression('/Install it before \d{4}-\d\d-\d\d \d\d:\d\d UTC, when the release check may replace it: php cli.php cmd=self-update-install version=2.0.1$/',
+        $this->assertMatchesRegularExpression('/Install it before \d{4}-\d\d-\d\d \d\d:\d\d UTC, when the release check may replace it: php cli.php cmd=self-update-install$/',
             implode("\n", $result['lines']));
         $this->assertSame([], $this->notices, 'the operator is reading the output');
     }
@@ -563,7 +563,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->hand('2.0.1', ['2.0.1'], ['installed' => '2.0.4']);
 
         $this->assertSame(ReleaseCheck::STAGED, $result['outcome'], implode("\n", array_merge($result['lines'], $result['problems'])));
-        $this->assertStringContainsString('php cli.php cmd=self-update-install version=2.0.1 --force', implode("\n", $result['lines']));
+        $this->assertStringContainsString('php cli.php cmd=self-update-install --force', implode("\n", $result['lines']));
     }
 
     /** By hand: a major or unpublished release is refused; another release replaces an unfinished install, the same one leaves it. */
