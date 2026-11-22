@@ -311,6 +311,23 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull($this->staging()->staged(), 'it named a staging that is gone');
     }
 
+    /** A staging deleted by hand is downloaded again, and staged.json written afresh: this download's SHA-256, the window as the settings say now. */
+    public function testADownloadAlwaysRewritesStagedJson(): void
+    {
+        $this->check(['2.1.0']);
+        $first = $this->staging()->staged();
+        $this->assertSame('02:00', $first['window']['start']);
+
+        Staging::remove($this->staging()->dir('2.1.0'));
+        $result = $this->check(['2.1.0'], ['window' => '03:00-05:00']);
+
+        $this->assertSame(ReleaseCheck::STAGED, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertTrue($this->staging()->isStaged('2.1.0'));
+        $again = $this->staging()->staged();
+        $this->assertSame('03:00', $again['window']['start'], 'not the window it was first staged with');
+        $this->assertSame(hash_file('sha256', $this->served['https://example.test/2.1.0.tar']), $again['sha256']);
+    }
+
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
     {
         $this->check(['2.0.1']);

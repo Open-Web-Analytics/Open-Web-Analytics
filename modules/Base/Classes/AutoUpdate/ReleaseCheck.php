@@ -206,20 +206,22 @@ class ReleaseCheck {
             return $this->outcome( self::CLAIMED, $v, [], sprintf( '%s is being installed; its staging is the installer\'s.', $v ) );
         }
 
-        // The asset GitHub lists now is not the one staged: it was replaced.
-        // staged.json goes first, so nothing installs the staging being redone.
+        // Downloaded again when it is not staged, or when the asset GitHub lists
+        // now is not the one staged (it was replaced). Either way staged.json is
+        // removed first, holding the lock, so nothing installs a staging being
+        // redone, and written afresh after, from this download and the
+        // settings now: staged.json always describes the tarball on disk.
         $before   = $this->staging->staged();
         $replaced = $this->staging->isStaged( $v ) && ( $before['version'] ?? null ) === $v
             && $release['sha256'] !== null && ( $before['sha256'] ?? null ) !== $release['sha256'];
-
-        if ( $replaced && ! InstallLock::tryExclusive( fn () => $this->staging->removeStaged() ) ) {
-
-            return $this->busy();
-        }
-
-        $sha = ( $before['version'] ?? null ) === $v && ! $replaced ? (string) ( $before['sha256'] ?? '' ) : (string) ( $release['sha256'] ?? '' );
+        $sha      = (string) ( $before['sha256'] ?? '' );
 
         if ( $replaced || ! $this->staging->isStaged( $v ) ) {
+
+            if ( ( $before['version'] ?? null ) === $v && ! InstallLock::tryExclusive( fn () => $this->staging->removeStaged() ) ) {
+
+                return $this->busy();
+            }
 
             try {
 
