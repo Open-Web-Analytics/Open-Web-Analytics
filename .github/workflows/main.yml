@@ -10,6 +10,10 @@ jobs:
   tag:
     name: Generate new release package
     runs-on: ubuntu-latest
+    # The release-signing environment holds OWA_RELEASE_SIGNING_KEY and needs
+    # a maintainer's approval before this job runs: only an approved run can
+    # sign a release that installations will install.
+    environment: release-signing
     env:
       VERSION: ${{ github.event.inputs.version }}
     steps:
@@ -51,6 +55,7 @@ jobs:
       uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
       with:
         php-version: '8.2'
+        extensions: sodium
         tools: composer:v2
     - name: Install Composer Dependancies
       run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
@@ -68,13 +73,20 @@ jobs:
     # automatic-update end-to-end test packs its releases with too.
     - name: Generate Release Tarball
       run: bash .github/scripts/release-tarball.sh "${{ env.VERSION }}"
+    # The signature installations check before they stage the release
+    # (Classes\AutoUpdate\Signature). Checked against this checkout's trusted
+    # keys before it is kept.
+    - name: Sign Release Tarball
+      env:
+        OWA_RELEASE_SIGNING_KEY: ${{ secrets.OWA_RELEASE_SIGNING_KEY }}
+      run: php .github/scripts/release-sign.php "${{ env.VERSION }}"
     # A draft release of the release branch, with the tarball attached. The tag
     # is created when the draft is published.
     - name: Create Draft Github Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create "${{ env.VERSION }}" "./owa_${{ env.VERSION }}_packaged.tar" \
+        gh release create "${{ env.VERSION }}" "./owa_${{ env.VERSION }}_packaged.tar" "./owa_${{ env.VERSION }}_packaged.tar.sig" \
           --draft \
           --target "release-${{ env.VERSION }}" \
           --title "Release ${{ env.VERSION }}" \

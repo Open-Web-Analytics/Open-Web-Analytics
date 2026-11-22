@@ -5,6 +5,7 @@ use OWA\Module\Base\Classes\AutoUpdate\InstallLock;
 use OWA\Module\Base\Classes\AutoUpdate\Preflight;
 use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 use OWA\Module\Base\Classes\AutoUpdate\Releases;
+use OWA\Module\Base\Classes\AutoUpdate\Signature;
 use OWA\Module\Base\Classes\AutoUpdate\Staging;
 use OWA\Module\Base\Classes\AutoUpdate\Tar;
 use OWA\Module\Base\Classes\AutoUpdate\Version;
@@ -41,6 +42,8 @@ final class ReleaseCheckTest extends TestCase
 
     private int $now = 1800000000;
 
+    private string $signingKey = '';
+
     protected function setUp(): void
     {
         $this->tmp = sys_get_temp_dir() . '/owa-release-check-' . bin2hex(random_bytes(4));
@@ -53,6 +56,11 @@ final class ReleaseCheckTest extends TestCase
 
         InstallLock::$path = $this->tmp . '/data/updating';
         $this->served      = [];
+
+        // Releases signed as the packager signs them, by a key made for the test.
+        $pair                  = sodium_crypto_sign_keypair();
+        $this->signingKey      = base64_encode(sodium_crypto_sign_secretkey($pair));
+        Signature::$trusted    = [base64_encode(sodium_crypto_sign_publickey($pair))];
         Releases::$fetcher = function ($url, $timeout, $sink) {
             if (!isset($this->served[$url])) {
                 throw new \RuntimeException("Fetching $url failed: 404");
@@ -68,8 +76,9 @@ final class ReleaseCheckTest extends TestCase
 
     protected function tearDown(): void
     {
-        Releases::$fetcher = null;
-        InstallLock::$path = null;
+        Releases::$fetcher  = null;
+        Signature::$trusted = null;
+        InstallLock::$path  = null;
         \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
         exec('chmod -R u+w ' . escapeshellarg($this->tmp) . '; rm -rf ' . escapeshellarg($this->tmp));
     }
@@ -661,6 +670,45 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('The release has no updater.php', implode("\n", $result['problems']));
     }
 
+    /** Signed by no key this installation trusts, unsigned, or a signature of another release: nothing is staged, and the bell says why. */
+    public function testOnlyAReleaseSignedByATrustedKeyIsStaged(): void
+    {
+        $other = base64_encode(sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()));
+        $tar   = $this->build('2.0.1', null);
+
+        $cases = [
+            'another key'     => [Signature::sign('2.0.1', hash_file('sha256', $tar), $other), 'owa_2.0.1_packaged.tar is not signed by a key this installation trusts.'],
+            'another release' => [Signature::sign('2.0.2', hash_file('sha256', $tar), $this->signingKey), 'owa_2.0.1_packaged.tar is not signed by a key this installation trusts.'],
+            'not a signature' => ['c2ln', 'owa_2.0.1_packaged.tar.sig is not a release signature.'],
+        ];
+
+        foreach ($cases as $case => [$signature, $why]) {
+            $this->notices = [];
+            $this->raised  = [];
+            $result = $this->check(['2.0.1'], [], null, null, false, false, static fn () => $signature);
+
+            $this->assertSame(ReleaseCheck::FAILED, $result['outcome'], $case);
+            $this->assertSame([$why], $result['problems'], $case);
+            $this->assertNull($this->staging()->staged(), "$case: nothing staged");
+            $this->assertFalse($this->staging()->isStaged('2.0.1'), "$case: nothing in the slot");
+            $this->assertArrayHasKey('staging_failing:2.0.1', $this->notices, $case);
+        }
+
+        // No signature asset at all.
+        $result = $this->check(['2.0.1'], [], static function (array $r) {
+            $r['assets'] = [$r['assets'][0]];
+
+            return $r;
+        });
+        $this->assertSame(ReleaseCheck::FAILED, $result['outcome']);
+        $this->assertStringContainsString('owa_2.0.1_packaged.tar is not signed: the release has no owa_2.0.1_packaged.tar.sig.', implode("\n", $result['problems']));
+
+        // No trusted key at all: fail closed.
+        Signature::$trusted = [];
+        $result = $this->check(['2.0.1']);
+        $this->assertStringContainsString('trusts no release signing key', implode("\n", $result['problems']));
+    }
+
     public function testADryRunWritesNothing(): void
     {
         $result = $this->check(['2.0.1'], [], null, null, true);
@@ -776,7 +824,8 @@ final class ReleaseCheckTest extends TestCase
      *
      * @param list<string>|null $versions released, null for a listing that fails
      */
-    private function check(?array $versions, array $context = [], ?callable $edit = null, ?callable $tamper = null, bool $dry = false, bool $noUpdater = false): array
+    /** $sign: the signature file for a release in place of a good one, given its version and tarball. */
+    private function check(?array $versions, array $context = [], ?callable $edit = null, ?callable $tamper = null, bool $dry = false, bool $noUpdater = false, ?callable $sign = null): array
     {
         $list = null;
 
@@ -784,7 +833,7 @@ final class ReleaseCheckTest extends TestCase
             $list = [];
             foreach ($versions as $v) {
                 $tar = $this->build($v, $tamper, $noUpdater);
-                $this->served["https://example.test/$v.tar"] = $tar;
+                $this->serve($v, $tar, $sign ? $sign($v, $tar) : null);
                 $r = $this->listed($v, 'https://example.test/' . $v . '.tar', hash_file('sha256', $tar));
                 $list[] = $edit ? $edit($r) : $r;
             }
@@ -830,7 +879,7 @@ final class ReleaseCheckTest extends TestCase
         $list = [];
         foreach ($versions as $v) {
             $tar = $this->build($v, null);
-            $this->served["https://example.test/$v.tar"] = $tar;
+            $this->serve($v, $tar);
             $list[] = $this->listed($v, 'https://example.test/' . $v . '.tar', hash_file('sha256', $tar));
         }
 
@@ -874,16 +923,30 @@ final class ReleaseCheckTest extends TestCase
         return $tar;
     }
 
+    /** The tarball at https://example.test/<v>.tar and its signature beside it, as the packager publishes them. */
+    private function serve(string $v, string $tar, ?string $signature = null): void
+    {
+        $this->served["https://example.test/$v.tar"] = $tar;
+        file_put_contents("$tar.sig", ($signature ?? Signature::sign($v, hash_file('sha256', $tar), $this->signingKey)) . "\n");
+        $this->served["https://example.test/$v.tar.sig"] = "$tar.sig";
+    }
+
     private function listed(string $v, ?string $url = null, ?string $sha = null): array
     {
+        $url = $url ?? "https://example.test/$v.tar";
+
         return [
             'tag_name' => $v,
             'html_url' => "https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/$v",
             'assets'   => [[
                 'name'                 => "owa_{$v}_packaged.tar",
-                'browser_download_url' => $url ?? "https://example.test/$v.tar",
+                'browser_download_url' => $url,
                 'size'                 => 10240,
                 'digest'               => 'sha256:' . ($sha ?? str_repeat('a', 64)),
+            ], [
+                'name'                 => "owa_{$v}_packaged.tar.sig",
+                'browser_download_url' => "$url.sig",
+                'size'                 => 89,
             ]],
         ];
     }

@@ -355,6 +355,26 @@ class Staging {
                 basename( $tar ), $expected, $actual ) );
         }
 
+        // The SHA-256 says this is the file the listing names; the signature
+        // says OWA released it (Signature), wherever the listing came from.
+        if ( $release['sig_url'] === null ) {
+
+            @unlink( $tar . '.part' );
+
+            throw new \RuntimeException( sprintf( '%s is not signed: the release has no %s.', basename( $tar ), sprintf( Signature::ASSET, $release['version'] ) ) );
+        }
+
+        try {
+
+            Signature::verify( $release['version'], $actual, Releases::get( $release['sig_url'], Releases::TIMEOUT ) );
+
+        } catch ( \RuntimeException $e ) {
+
+            @unlink( $tar . '.part' );
+
+            throw $e;
+        }
+
         rename( $tar . '.part', $tar );
 
         return $actual;

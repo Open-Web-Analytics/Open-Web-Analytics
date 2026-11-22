@@ -10,7 +10,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * fallback for a release without one. Tag, asset name and digest are a frozen
  * contract: an installed release finds the next one by them.
  *
- * @phpstan-type Release array{version: string, step: string, url: string, asset_url: string, size: int, sha256: string|null, sums_url: string|null}
+ * @phpstan-type Release array{version: string, step: string, url: string, asset_url: string, size: int, sha256: string|null, sums_url: string|null, sig_url: string|null}
  */
 class Releases {
 
@@ -114,6 +114,7 @@ class Releases {
 
         $tarball = null;
         $sums    = null;
+        $sig     = null;
 
         foreach ( (array) ( $r['assets'] ?? [] ) as $asset ) {
 
@@ -127,6 +128,10 @@ class Releases {
             } elseif ( $name === self::SUMS_ASSET ) {
 
                 $sums = (string) ( $asset['browser_download_url'] ?? '' );
+
+            } elseif ( $name === sprintf( Signature::ASSET, $version ) ) {
+
+                $sig = (string) ( $asset['browser_download_url'] ?? '' );
             }
         }
 
@@ -147,6 +152,7 @@ class Releases {
             'size'      => (int) ( $tarball['size'] ?? 0 ),
             'sha256'    => preg_match( '/^sha256:([0-9a-f]{64})$/', $digest, $m ) ? $m[1] : null,
             'sums_url'  => $sums !== '' && str_starts_with( (string) $sums, 'https://' ) ? $sums : null,
+            'sig_url'   => $sig !== null && str_starts_with( $sig, 'https://' ) ? $sig : null,
         ];
     }
 
