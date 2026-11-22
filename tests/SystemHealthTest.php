@@ -359,6 +359,30 @@ final class SystemHealthTest extends TestCase
         }
     }
 
+    /** Two automatic updates directories: red, since neither is guessed at. */
+    public function testMoreThanOneUpdatesDirectoryIsShown(): void
+    {
+        $data  = \OWA\Core\Env::dataDir();
+        $made  = [];
+
+        $this->assertNull(SystemHealth::updatesDirs());
+
+        try {
+            foreach (['d', 'e'] as $c) {
+                $made[] = $dir = $data . 'updates-' . str_repeat($c, 32);
+                mkdir($dir, 0700);
+            }
+
+            $finding = SystemHealth::updatesDirs();
+            $this->assertSame('red', $finding['level']);
+            $this->assertStringContainsString('holds 2 automatic updates directories', $finding['detail']);
+        } finally {
+            foreach ($made as $dir) {
+                @rmdir($dir);
+            }
+        }
+    }
+
     public function testTheInstallationNamesTheServerRole(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');

@@ -14,7 +14,7 @@ final class CliWithoutBootTest extends TestCase
 {
     private const WITHOUT_BOOT = [
         'version-info'     => \OWA\Module\Base\Controller\VersionInfoCli::class,
-        'release-manifest' => \OWA\Module\Base\Controller\ReleaseManifestCli::class,
+        'self-update-install' => \OWA\Module\Base\Controller\SelfUpdateInstallCli::class,
     ];
 
     public function testTheTwoCommandsResolveFromTheFilesAlone(): void
@@ -27,7 +27,7 @@ final class CliWithoutBootTest extends TestCase
         $this->assertNull(CliWithoutBoot::commandClass('no-such-command'), 'boot says it does not exist');
     }
 
-    /** Every registered command boots but those two, and boot's registry agrees with the files. */
+    /** Every registered command boots but those, and boot's registry agrees with the files. */
     public function testEveryOtherCommandBoots(): void
     {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -60,14 +60,15 @@ final class CliWithoutBootTest extends TestCase
     }
 
     /**
-     * cli.php runs it and never includes owa-config.php: what the build relies
-     * on in a checkout that has none.
+     * cli.php runs it without booting OWA: no settings, no database. What the
+     * build relies on in a checkout with no owa-config.php. Where there is
+     * one, the hand-off before it (updater.php) includes it, to find the data
+     * directory; nothing boots.
      */
-    public function testCliRunsItWithoutReadingTheConfig(): void
+    public function testCliRunsItWithoutBooting(): void
     {
         $root   = \OWA\Core\Env::root();
-        $script = 'register_shutdown_function(function () { fwrite(STDERR, in_array(' . var_export($root . '/owa-config.php', true)
-            . ', get_included_files(), true) ? "BOOTED" : "NOT BOOTED"); });'
+        $script = 'register_shutdown_function(function () { fwrite(STDERR, class_exists(\'OWA\\Module\\Base\\Classes\\Settings\', false) ? "BOOTED" : "NOT BOOTED"); });'
             . ' $_SERVER["argv"] = ["cli.php", "cmd=version-info"]; $argv = $_SERVER["argv"]; $argc = 2;'
             . ' require ' . var_export($root . '/cli.php', true) . ';';
 

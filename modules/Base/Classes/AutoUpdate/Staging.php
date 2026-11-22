@@ -1,56 +1,142 @@
 <?php
 namespace OWA\Module\Base\Classes\AutoUpdate;
 
-use OWA\Core\ReleaseManifest;
+use OWA\Core\CoreAPI;
 
 /**
- * owa-data/updates/: the releases Step 1: release check has downloaded.
+ * The updates directory: owa-data/updates-<32 hex>/, a random name so the
+ * web cannot guess it, found by looking for it (updater.php `updatesDir`)
+ * and kept in the updates_dir setting for the rest of the process.
  *
- *   updates/                     0700
- *     staged.json                Step 1's only: {format, version, window}
- *     <version>/                 0700
- *       owa_<version>_packaged.tar
- *       release/                 the tarball unpacked
- *       stage.json               Step 1's: what it proved, the preflight, and
- *                                whether it was staged by hand (by_hand: kept
- *                                until installed or cancelled, even if older)
- *       install.json, backup/    the installer's (Steps 2-4)
+ *   updates-<id>/                0700
+ *     staged.json                Step 1's only: {format, version, window, sha256, staged_at}
+ *     <version>/release/         a staged release: the tarball unpacked, there
+ *                                only once its SHA-256 matched GitHub's digest
+ *     install/                   the installer's, while an install is unfinished
+ *       install.json             {version, attempts, retry_after, copied, booted, error}
+ *       backup/                  the originals of every file replaced or deleted
  *
- * A <version>/ is staged once its stage.json says the manifest was checked:
- * stage.json is written last, so a directory without one is an interrupted
- * staging, deleted and redone. Step 1 never changes a staged release/; it
- * rewrites only stage.json's preflight. Every JSON file is written to a
- * temporary name and renamed into place, mode 0600.
+ * Step 1 writes staged.json and <version>/; the installer writes install/.
+ * Every JSON file is written to a temporary name and renamed into place,
+ * mode 0600.
  *
  * @phpstan-import-type Release from Releases
- * @phpstan-import-type Manifest from \OWA\Core\ReleaseManifest
  */
 class Staging {
 
     const STAGED  = 'staged.json';
-    const STAGE   = 'stage.json';
-    const INSTALL = 'install.json';
+    const INSTALL = 'install';
     const RELEASE = 'release';
 
-    /** The format of staged.json and stage.json: raised only when a field changes meaning or goes. */
+    /** staged.json's format: raised only when a field changes meaning or goes. */
     const FORMAT = 1;
 
     /** Seconds a tarball download may take. */
     const DOWNLOAD_TIMEOUT = 600;
 
-    /** @var string */
+    /** @var string the updates directory, '' while there is none */
     private $root;
 
-    /** @param string|null $root a test names its own; else owa-data/updates */
-    public function __construct( $root = null ) {
+    /** @var bool whether the updates directory was named, not found (a test's) */
+    private $named;
 
-        $this->root = rtrim( $root ?? \OWA\Core\Env::dataDir() . 'updates', '/' );
+    /** @var string the data directory it lives in */
+    private $data;
+
+    /**
+     * @param string|null $root the updates directory, for a test; else found
+     * @param string|null $data the data directory; else OWA's
+     */
+    public function __construct( $root = null, $data = null ) {
+
+        $this->data  = rtrim( (string) ( $data ?? \OWA\Core\Env::dataDir() ), '/' );
+        $this->named = $root !== null;
+        $this->root  = $root !== null ? rtrim( (string) $root, '/' ) : (string) self::locate( $this->data );
     }
 
-    /** @return string */
+    /**
+     * The installed release's updater.php closures: the one place the
+     * updates directory is found, before boot and after.
+     *
+     * @return array<string, mixed>
+     */
+    public static function updater() {
+
+        return require \OWA\Core\Env::root() . '/updater.php';
+    }
+
+    /**
+     * The updates directory, from the setting or by looking for it (and then
+     * set), or null when there is none or more than one.
+     *
+     * @param  string $data
+     * @return string|null
+     */
+    public static function locate( $data ) {
+
+        $set = (string) CoreAPI::getSetting( 'base', 'updates_dir' );
+
+        if ( $set !== '' && is_dir( $set ) ) {
+
+            return $set;
+        }
+
+        $found = self::updater()['updatesDir']( $data );
+
+        if ( $found !== null ) {
+
+            CoreAPI::setSetting( 'base', 'updates_dir', $found );
+        }
+
+        return $found;
+    }
+
+    /** @return int how many updates directories there are; more than one stops installs */
+    public function count() {
+
+        return count( self::updater()['updatesDirs']( $this->data ) );
+    }
+
+    /** @return string the updates directory, '' while there is none */
     public function root() {
 
         return $this->root;
+    }
+
+    /**
+     * Create the updates directory if there is none, as the only one, and
+     * set the setting.
+     *
+     * @return void
+     * @throws \RuntimeException when it cannot, or there is more than one
+     */
+    public function ensureRoot() {
+
+        if ( $this->root !== '' && is_dir( $this->root ) ) {
+
+            return;
+        }
+
+        // A directory named outright is made where it was named, never in OWA's data directory.
+        if ( $this->named ) {
+
+            if ( ! @mkdir( $this->root, 0700, true ) && ! is_dir( $this->root ) ) {
+
+                throw new \RuntimeException( sprintf( 'Could not create %s.', $this->root ) );
+            }
+
+            return;
+        }
+
+        $dir = self::updater()['updatesDir']( $this->data, true );
+
+        if ( $dir === null ) {
+
+            throw new \RuntimeException( sprintf( 'Could not make the updates directory in %s: it is not writable, or it holds more than one updates-* directory.', $this->data ) );
+        }
+
+        $this->root = $dir;
+        CoreAPI::setSetting( 'base', 'updates_dir', $dir );
     }
 
     /**
@@ -71,23 +157,17 @@ class Staging {
         return $this->dir( $version ) . '/' . self::RELEASE;
     }
 
-    /** @return void */
-    public function ensureRoot() {
-
-        if ( ! is_dir( $this->root ) && ! @mkdir( $this->root, 0700, true ) ) {
-
-            throw new \RuntimeException( sprintf( 'Could not create %s.', $this->root ) );
-        }
-
-        chmod( $this->root, 0700 );
-    }
-
     /**
-     * The release directories present, lowest version first.
+     * The staged releases, lowest version first.
      *
      * @return list<string>
      */
     public function versions() {
+
+        if ( $this->root === '' ) {
+
+            return [];
+        }
 
         $versions = [];
 
@@ -109,7 +189,7 @@ class Staging {
     /** @return array<string, mixed>|null staged.json */
     public function staged() {
 
-        $staged = $this->readJson( $this->root . '/' . self::STAGED );
+        $staged = $this->root === '' ? null : $this->readJson( $this->root . '/' . self::STAGED );
 
         return $staged && Version::parse( (string) ( $staged['version'] ?? '' ) ) !== null ? $staged : null;
     }
@@ -117,61 +197,57 @@ class Staging {
     /**
      * @param  string                    $version
      * @param  array<string, mixed>|null $window
+     * @param  string                    $sha256 the tarball's
      * @return void
      */
-    public function writeStaged( $version, $window ) {
+    public function writeStaged( $version, $window, $sha256 ) {
 
-        $this->writeJson( $this->root . '/' . self::STAGED, [ 'format' => self::FORMAT, 'version' => $version, 'window' => $window ] );
+        $this->writeJson( $this->root . '/' . self::STAGED, [
+            'format'    => self::FORMAT,
+            'version'   => $version,
+            'window'    => $window,
+            'sha256'    => $sha256,
+            'staged_at' => time(),
+        ] );
     }
 
     /** @return void */
     public function removeStaged() {
 
-        @unlink( $this->root . '/' . self::STAGED );
+        if ( $this->root !== '' ) {
+
+            @unlink( $this->root . '/' . self::STAGED );
+        }
     }
 
     /**
-     * @param  string $version
-     * @return array<string, mixed>|null stage.json
-     */
-    public function stageInfo( $version ) {
-
-        return $this->readJson( $this->dir( $version ) . '/' . self::STAGE );
-    }
-
-    /**
-     * @param  string               $version
-     * @param  array<string, mixed> $info
-     * @return void
-     */
-    public function writeStageInfo( $version, array $info ) {
-
-        $this->writeJson( $this->dir( $version ) . '/' . self::STAGE, $info );
-    }
-
-    /**
-     * Whether a release is staged: its stage.json says the manifest was checked.
+     * Whether a release is staged: its release/ exists (it is renamed into
+     * place only once proved) and says it is that version.
      *
      * @param  string $version
      * @return bool
      */
     public function isStaged( $version ) {
 
-        $info = $this->stageInfo( $version );
+        return $this->root !== '' && ( $this->releaseInfo( $version )['version'] ?? null ) === $version;
+    }
 
-        return $info !== null && ( $info['version'] ?? null ) === $version && ! empty( $info['manifest_checked'] )
-            && is_dir( $this->releaseDir( $version ) );
+    /** @return array<string, mixed>|null install/install.json: the unfinished install */
+    public function install() {
+
+        return $this->root === '' ? null : $this->readJson( $this->root . '/' . self::INSTALL . '/install.json' );
     }
 
     /**
-     * Whether the installer has claimed a release (its install.json).
+     * Whether the unfinished install is of this version: its staging is then
+     * the installer's.
      *
      * @param  string $version
      * @return bool
      */
     public function hasInstall( $version ) {
 
-        return is_file( $this->dir( $version ) . '/' . self::INSTALL );
+        return ( $this->install()['version'] ?? null ) === $version;
     }
 
     /**
@@ -182,33 +258,30 @@ class Staging {
      */
     public function releaseInfo( $version ) {
 
-        return $this->readJson( $this->releaseDir( $version ) . '/release.json' );
+        return $this->root === '' ? null : $this->readJson( $this->releaseDir( $version ) . '/release.json' );
     }
 
     /**
-     * Download, verify and unpack a release, then check every file against
-     * its manifest. On any failure the directory is deleted and the error
-     * thrown: the next run starts again.
-     *
-     * A staging the installer has claimed (install.json) is never replaced:
-     * its backup/ may be what restores a partly copied install.
+     * Download a release, check it against its SHA-256 and unpack it. On any
+     * failure the directory is deleted and the error thrown: the next run
+     * starts again.
      *
      * @param  Release $release
-     * @param  bool    $by_hand
-     * @return array<string, mixed> its stage.json
+     * @return string the tarball's SHA-256
      * @throws \RuntimeException
      */
-    public function stage( array $release, $by_hand = false ) {
+    public function stage( array $release ) {
 
-        $v   = $release['version'];
-        $dir = $this->dir( $v );
+        $v = $release['version'];
 
         if ( $this->hasInstall( $v ) ) {
 
-            throw new \LogicException( sprintf( '%s is claimed by the installer; staging does not change it.', $v ) );
+            throw new \LogicException( sprintf( '%s is being installed; its staging is not changed.', $v ) );
         }
 
         $this->ensureRoot();
+
+        $dir = $this->dir( $v );
         self::remove( $dir );
 
         try {
@@ -218,33 +291,27 @@ class Staging {
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $dir ) );
             }
 
-            $tar  = $dir . '/' . sprintf( Releases::ASSET, $v );
-            $sha  = $this->download( $release, $tar );
-            $tmp  = $dir . '/' . self::RELEASE . '.tmp';
+            $tar = $dir . '/' . sprintf( Releases::ASSET, $v );
+            $sha = $this->download( $release, $tar );
+            $tmp = $dir . '/' . self::RELEASE . '.tmp';
 
             mkdir( $tmp, 0755 );
             Tar::extract( $tar, $tmp );
+            @unlink( $tar );
+
+            $info = $this->readJson( $tmp . '/release.json' );
+
+            if ( ( $info['version'] ?? null ) !== $v ) {
+
+                throw new \RuntimeException( sprintf( '%s\'s release.json says it is %s.', $v, var_export( $info['version'] ?? null, true ) ) );
+            }
 
             if ( ! rename( $tmp, $this->releaseDir( $v ) ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not rename %s.', $tmp ) );
             }
 
-            $this->check( $v );
-
-            $info = [
-                'format'           => self::FORMAT,
-                'version'          => $v,
-                'staged_at'        => time(),
-                'tarball_sha256'   => $sha,
-                'manifest_checked' => true,
-                'by_hand'          => (bool) $by_hand,
-                'preflight'        => null,
-            ];
-
-            $this->writeStageInfo( $v, $info );
-
-            return $info;
+            return $sha;
 
         } catch ( \Throwable $e ) {
 
@@ -293,43 +360,6 @@ class Staging {
     }
 
     /**
-     * Every file of the unpacked release is the one its manifest lists, and
-     * it is the release it says it is.
-     *
-     * @param  string $version
-     * @return void
-     * @throws \RuntimeException
-     */
-    public function check( $version ) {
-
-        $dir      = $this->releaseDir( $version );
-        $manifest = $this->readJson( $dir . '/' . ReleaseManifest::FILE );
-        $release  = $this->readJson( $dir . '/release.json' );
-
-        if ( ! $manifest || ! isset( $manifest['files'] ) ) {
-
-            throw new \RuntimeException( sprintf( '%s has no readable %s.', $version, ReleaseManifest::FILE ) );
-        }
-
-        if ( ( $release['version'] ?? null ) !== $version ) {
-
-            throw new \RuntimeException( sprintf( '%s\'s release.json says it is %s.', $version, var_export( $release['version'] ?? null, true ) ) );
-        }
-
-        /** @var Manifest $manifest */
-        $diff = ReleaseManifest::compare( $manifest, $dir );
-
-        foreach ( [ 'missing', 'changed', 'unlisted' ] as $kind ) {
-
-            if ( $diff[ $kind ] ) {
-
-                throw new \RuntimeException( sprintf( '%s does not match its manifest: %d %s, such as %s.',
-                    $version, count( $diff[ $kind ] ), $kind, $diff[ $kind ][0] ) );
-            }
-        }
-    }
-
-    /**
      * Delete a directory and everything in it. Links are removed, not followed.
      *
      * @param  string $dir
@@ -337,36 +367,7 @@ class Staging {
      */
     public static function remove( $dir ) {
 
-        if ( is_link( $dir ) || is_file( $dir ) ) {
-
-            @unlink( $dir );
-
-            return;
-        }
-
-        if ( ! is_dir( $dir ) ) {
-
-            return;
-        }
-
-        $it = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ),
-            \RecursiveIteratorIterator::CHILD_FIRST );
-
-        foreach ( $it as $path => $info ) {
-
-            /** @var \SplFileInfo $info */
-            if ( $info->isDir() && ! $info->isLink() ) {
-
-                @rmdir( (string) $path );
-
-            } else {
-
-                @unlink( (string) $path );
-            }
-        }
-
-        @rmdir( $dir );
+        self::updater()['remove']( (string) $dir );
     }
 
     /**

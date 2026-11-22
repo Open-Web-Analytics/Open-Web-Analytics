@@ -40,8 +40,7 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * Print some output, or write it to $file under a temporary name renamed
-     * over it, so a reader never sees half of one. Shared with
-     * cmd=release-manifest.
+     * over it, so a reader never sees half of one.
      *
      * @param  string $output
      * @param  mixed  $file null to print; else --file's value

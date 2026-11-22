@@ -445,8 +445,8 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
         . SELFHOST_CONFIG_MARKER . "\n"
         . "// Added by tests/e2e/selfhost_harness.php -- keeps this run's queue and\n"
         . "// error log out of the live install's owa-data/logs/.\n"
-        . "define('OWA_ASYNC_LOG_DIR', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
-        . "define('OWA_ERROR_LOG_FILE', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
+        . "define('OWA_ASYNC_LOG_DIR', __DIR__ . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
+        . "define('OWA_ERROR_LOG_FILE', __DIR__ . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
 
     $close = strrpos($out, '?>');
     $out = $close === false ? $out . $override : substr($out, 0, $close) . $override . substr($out, $close);

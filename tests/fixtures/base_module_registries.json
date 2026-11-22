@@ -207,9 +207,6 @@
         "base.versionInfoCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\VersionInfoCli"
         },
-        "base.releaseManifestCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\ReleaseManifestCli"
-        },
         "base.backupCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\BackupCli"
         },
@@ -227,6 +224,9 @@
         },
         "base.selfUpdateCancelCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli"
+        },
+        "base.selfUpdateInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateInstallCli"
         },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
@@ -388,7 +388,6 @@
     "cli_commands": {
         "update": "base.updatesApplyCli",
         "version-info": "base.versionInfoCli",
-        "release-manifest": "base.releaseManifestCli",
         "strings-extract": "base.stringsExtractCli",
         "v1-drop": "base.v1DropCli",
         "backup": "base.backupCli",
@@ -397,6 +396,7 @@
         "self-update": "base.selfUpdateCli",
         "self-update-stage": "base.selfUpdateStageCli",
         "self-update-cancel": "base.selfUpdateCancelCli",
+        "self-update-install": "base.selfUpdateInstallCli",
         "update-ua-regexes": "base.updateUaRegexesCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",

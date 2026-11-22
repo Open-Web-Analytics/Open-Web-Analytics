@@ -5,7 +5,9 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * owa-data/updating: the install lock, and the maintenance signal.
  *
  * A permanent empty file. The installer (Steps 2-4) holds an exclusive flock
- * on it for an attempt; entry points that find it held serve maintenance.
+ * on it for an attempt, and cmd=update while it applies updates; entry points
+ * that find it held serve maintenance, and every other CLI run exits
+ * (updater.php `handoff`).
  * Step 1: release check takes it only for the moment it writes staged.json
  * or deletes a staging, non-blocking, and leaves everything as it is when it
  * is held: an install is running, and Step 1 does not change what it reads.
@@ -16,6 +18,15 @@ class InstallLock {
 
     /** @var string|null a test names its own */
     public static $path = null;
+
+    /**
+     * Whether this process holds the lock: the installer (updater.php took
+     * it before OWA loaded), or cmd=update while it applies updates. Read by
+     * cmd=update so it does not try to take it twice.
+     *
+     * @var bool
+     */
+    public static $held_here = false;
 
     /** @return string */
     public static function path() {
