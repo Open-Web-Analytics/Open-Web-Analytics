@@ -11,7 +11,9 @@ use OWA\Core\ReleaseManifest;
  *     <version>/                 0700
  *       owa_<version>_packaged.tar
  *       release/                 the tarball unpacked
- *       stage.json               Step 1's: what it proved, and the preflight
+ *       stage.json               Step 1's: what it proved, the preflight, and
+ *                                whether it was staged by hand (by_hand: kept
+ *                                until installed or cancelled, even if older)
  *       install.json, backup/    the installer's (Steps 2-4)
  *
  * A <version>/ is staged once its stage.json says the manifest was checked:
@@ -188,18 +190,22 @@ class Staging {
      * its manifest. On any failure the directory is deleted and the error
      * thrown: the next run starts again.
      *
+     * A staging the installer has claimed (install.json) is never replaced:
+     * its backup/ may be what restores a partly copied install.
+     *
      * @param  Release $release
+     * @param  bool    $by_hand
      * @return array<string, mixed> its stage.json
      * @throws \RuntimeException
      */
-    public function stage( array $release ) {
+    public function stage( array $release, $by_hand = false ) {
 
         $v   = $release['version'];
         $dir = $this->dir( $v );
 
         if ( $this->hasInstall( $v ) ) {
 
-            throw new \LogicException( sprintf( '%s is claimed by the installer; Step 1 does not change it.', $v ) );
+            throw new \LogicException( sprintf( '%s is claimed by the installer; staging does not change it.', $v ) );
         }
 
         $this->ensureRoot();
@@ -232,6 +238,7 @@ class Staging {
                 'staged_at'        => time(),
                 'tarball_sha256'   => $sha,
                 'manifest_checked' => true,
+                'by_hand'          => (bool) $by_hand,
                 'preflight'        => null,
             ];
 

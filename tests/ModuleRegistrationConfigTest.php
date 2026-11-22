@@ -129,6 +129,7 @@ final class ModuleRegistrationConfigTest extends TestCase
             'daily'    => [ 'command' => 'probe', 'schedule' => [ 'spread' => 'daily' ] ],
             'weekly'   => [ 'command' => 'probe', 'schedule' => [ 'spread' => 'weekly' ] ],
             'minutely' => [ 'command' => 'probe', 'schedule' => [ 'spread' => 'minutely', 'interval' => 5 ] ],
+            'hourly'   => [ 'command' => 'probe', 'schedule' => [ 'spread' => 'hourly', 'interval' => 6 ], 'while_updates_pending' => true ],
         ];");
 
         $m = $this->module();
@@ -144,11 +145,15 @@ final class ModuleRegistrationConfigTest extends TestCase
             'description' => 'Probes.',
             'module'      => 'test_fixture',
             'source'      => 'code',
+            'while_updates_pending' => false,
         ], $m->scheduled_jobs['fixed']);
 
         $this->assertSame(\OWA\Core\Cron::dailySpreadFor($seed('daily')), $m->scheduled_jobs['daily']['schedule']);
         $this->assertSame(\OWA\Core\Cron::weeklySpreadFor($seed('weekly')), $m->scheduled_jobs['weekly']['schedule']);
         $this->assertSame(\OWA\Core\Cron::minutelySpreadFor($seed('minutely'), 5), $m->scheduled_jobs['minutely']['schedule']);
+        $this->assertSame(\OWA\Core\Cron::hourlySpreadFor($seed('hourly'), 6), $m->scheduled_jobs['hourly']['schedule']);
+        $this->assertTrue($m->scheduled_jobs['hourly']['while_updates_pending'], 'runs while updates are pending');
+        $this->assertFalse($m->scheduled_jobs['daily']['while_updates_pending']);
         $this->assertSame([], $m->scheduled_jobs['daily']['params']);
         $this->assertSame('', $m->scheduled_jobs['daily']['description']);
     }

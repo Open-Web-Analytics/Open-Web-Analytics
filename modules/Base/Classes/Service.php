@@ -374,6 +374,13 @@ class Service extends \OWA\Core\Base {
 
             $job['source'] = $known ? 'config-override' : 'config';
 
+            // Running while updates are pending belongs to the registered
+            // command; one put in its place does not inherit it.
+            if ( isset( $spec['command'] ) && (string) $spec['command'] !== (string) ( $job['command'] ?? '' ) ) {
+
+                $job['while_updates_pending'] = false;
+            }
+
             foreach ( array_keys( self::SCHEDULED_JOB_KEYS ) as $key ) {
 
                 if ( isset( $spec[ $key ] ) ) {

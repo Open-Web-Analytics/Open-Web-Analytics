@@ -14,7 +14,7 @@ namespace OWA\Core;
  * @phpstan-type NavItem array{ref?: string|array<string, string>, anchortext?: string, order?: int|null, priviledge?: string, icon_class?: string, subgroup?: list<NavLink>}
  * @phpstan-type ViewNavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string, view: string, nav_name: string}
  * @phpstan-type ActivationDeclaration array{activated_by: list<mixed>, intake_queue_type: string}
- * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string}
+ * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string, while_updates_pending?: bool}
  */
 
 // Modules set properties they do not declare; this attribute is PHP 8.2's
@@ -1762,9 +1762,13 @@ abstract class Module {
      *                            administrator: the System Health screen shows
      *                            it, and cmd=schedule-status format=markdown
      *                            writes it out for the wiki
+     * @param bool   $while_updates_pending whether schedule-run runs it while
+     *                            schema updates are pending, when it runs no
+     *                            other job: only for a command that needs no
+     *                            current schema (Controller::needsCurrentSchema())
      * @return void
      */
-    public function registerJob( $name, $command, $schedule, $params, $description = '' ) {
+    public function registerJob( $name, $command, $schedule, $params, $description = '', $while_updates_pending = false ) {
 
         $this->scheduled_jobs[ $name ] = [
             'name'        => $name,
@@ -1774,6 +1778,7 @@ abstract class Module {
             'description' => (string) $description,
             'module'      => $this->name,
             'source'      => 'code',
+            'while_updates_pending' => (bool) $while_updates_pending,
         ];
     }
 
@@ -1898,9 +1903,13 @@ abstract class Module {
      *
      * `schedule` is a cron expression, an @alias or 'off', or one derived per
      * install and per job from jobSeed(): [ 'spread' => 'daily' ],
-     * [ 'spread' => 'weekly' ] or [ 'spread' => 'minutely', 'interval' => 15 ].
-     * A job without a command, or with a spread not named here, is not
-     * registered.
+     * [ 'spread' => 'weekly' ], [ 'spread' => 'hourly', 'interval' => 6 ]
+     * (hours) or [ 'spread' => 'minutely', 'interval' => 15 ]. A job without a
+     * command, or with a spread not named here, is not registered.
+     *
+     * `while_updates_pending` true lets schedule-run run the job while schema
+     * updates are pending, when it runs no other: its controller's
+     * needsCurrentSchema() must answer false (ScheduleCliTest holds that).
      *
      * @param  string $file
      * @return void
@@ -1930,6 +1939,10 @@ abstract class Module {
                         $schedule = \OWA\Core\Cron::minutelySpreadFor( $seed, (int) ( $schedule['interval'] ?? 15 ) );
                         break;
 
+                    case 'hourly':
+                        $schedule = \OWA\Core\Cron::hourlySpreadFor( $seed, (int) ( $schedule['interval'] ?? 6 ) );
+                        break;
+
                     default:
                         $schedule = null;
                 }
@@ -1944,7 +1957,8 @@ abstract class Module {
             }
 
             $this->registerJob( $name, (string) $job['command'], $schedule,
-                (array) ( $job['params'] ?? [] ), (string) ( $job['description'] ?? '' ) );
+                (array) ( $job['params'] ?? [] ), (string) ( $job['description'] ?? '' ),
+                ! empty( $job['while_updates_pending'] ) );
         }
     }
 

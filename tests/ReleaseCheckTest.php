@@ -25,6 +25,23 @@ final class ReleaseCheckTest extends TestCase
     /** @var array<string, string> url => file served */
     private array $served = [];
 
+    /** @var list<int> releases each feed was given */
+    private array $feeds = [];
+
+    /** @var array<string, array<string, mixed>> source_key => notice, each raised once as notify() does */
+    private array $notices = [];
+
+    /** @var array<string, int> source_key => when first raised */
+    private array $raised = [];
+
+    /** @var array<string, int> module => stored schema */
+    private array $schema = ['base' => 95];
+
+    /** @var array<string, array<string, mixed>> version => more for its release.json */
+    private array $releaseJson = [];
+
+    private int $now = 1800000000;
+
     protected function setUp(): void
     {
         $this->tmp = sys_get_temp_dir() . '/owa-release-check-' . bin2hex(random_bytes(4));
@@ -294,6 +311,186 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(ReleaseCheck::ROLE, $this->check(['2.0.1'], ['role' => 'collector'])['outcome']);
     }
 
+    /** The bell's release feed comes from the listing on every run: off, a checkout or another role. */
+    public function testTheBellIsFedWhateverFollows(): void
+    {
+        file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
+        $this->check(['2.0.1']);
+        $this->check(['2.0.1'], ['enabled' => false]);
+        $this->check(['2.0.1'], ['role' => 'worker']);
+        $this->assertSame([1, 1, 1], $this->feeds);
+
+        $this->check(null);
+        $this->check(['2.0.1'], [], null, null, true);
+        $this->assertSame([1, 1, 1], $this->feeds, 'not when the listing fails, nor on a dry run');
+    }
+
+    public function testStagingIsAnnouncedOnce(): void
+    {
+        $this->check(['2.1.0']);
+        $this->check(['2.1.0']);
+
+        $this->assertSame(['staged:2.1.0'], array_keys($this->notices));
+        $n = $this->notices['staged:2.1.0'];
+        $this->assertSame('OWA 2.1.0 will be installed between 02:00 and 06:00 (Europe/London), Sat, Sun', $n['title']);
+        $this->assertSame(['auto_update', 'info', true], [$n['source'], $n['severity'], $n['email']]);
+        $this->assertStringContainsString('cmd=self-update-cancel', $n['body']);
+
+        $this->check(['2.0.1'], ['installed' => '2.0.0', 'level' => 'patch']);
+        $this->assertSame('OWA 2.0.1 will be installed at the next scheduler run', $this->notices['staged:2.0.1']['title']);
+    }
+
+    public function testAnUnmetRequirementIsAnnouncedOncePerSetOfProblems(): void
+    {
+        $old = ['php' => '8.1.0'] + $this->env();
+        $this->check(['2.0.1'], ['env' => $old]);
+        $this->check(['2.0.1'], ['env' => $old]);
+        $this->check(['2.0.1'], ['env' => ['database' => '8.0.11'] + $old]);
+
+        $unmet = array_values(array_filter(array_keys($this->notices), fn ($k) => str_starts_with($k, 'unmet:2.0.1:')));
+        $this->assertCount(2, $unmet, 'a new problem is a new notice; the same one is not repeated');
+        $this->assertSame('warning', $this->notices[$unmet[0]]['severity']);
+        $this->assertStringContainsString('PHP 8.2 or later', $this->notices[$unmet[0]]['body']);
+    }
+
+    public function testAFailingDownloadIsInTheBellThenMailedAfterAWeek(): void
+    {
+        $bad = function ($r) {
+            $r['assets'][0]['digest'] = 'sha256:' . str_repeat('0', 64);
+
+            return $r;
+        };
+
+        $this->check(['2.0.1'], [], $bad);
+        $this->assertSame(['staging_failing:2.0.1'], array_keys($this->notices));
+        $this->assertFalse($this->notices['staging_failing:2.0.1']['email'], 'the bell only, at first');
+
+        $this->now += ReleaseCheck::FAILING_FOR - 1;
+        $this->check(['2.0.1'], ['now' => $this->now], $bad);
+        $this->assertArrayNotHasKey('staging_failed:2.0.1', $this->notices);
+
+        $this->now += 1;
+        $this->check(['2.0.1'], ['now' => $this->now], $bad);
+        $this->assertTrue($this->notices['staging_failed:2.0.1']['email']);
+        $this->assertSame('warning', $this->notices['staging_failed:2.0.1']['severity']);
+    }
+
+    /** An update this install would run that must be installed by hand: staged, announced, never staged.json. */
+    public function testAnUpdateMarkedForAManualInstall(): void
+    {
+        $this->releaseJson['2.1.0'] = ['modules' => ['base' => 97], 'updates' => [
+            ['module' => 'base', 'sequence' => 95, 'manual_install' => 'Already run here.'],
+            ['module' => 'base', 'sequence' => 96, 'manual_install' => ''],
+            ['module' => 'base', 'sequence' => 97, 'manual_install' => 'It rewrites every event. Back up the data tables first: php cli.php cmd=backup scope=data'],
+            ['module' => 'gone', 'sequence' => 1, 'manual_install' => 'A module this install does not have.'],
+        ]];
+
+        $result = $this->check(['2.1.0']);
+
+        $this->assertSame(ReleaseCheck::MANUAL, $result['outcome']);
+        $this->assertNull($this->staging()->staged());
+        $this->assertTrue($this->staging()->isStaged('2.1.0'));
+        $this->assertSame([['module' => 'base', 'sequence' => 97, 'manual_install' => 'It rewrites every event. Back up the data tables first: php cli.php cmd=backup scope=data']],
+            $this->staging()->stageInfo('2.1.0')['manual_install'], 'only what this install would run');
+        $this->assertStringContainsString('cmd=self-update-install version=2.1.0', $this->notices['manual:2.1.0']['body']);
+        $this->assertStringContainsString('base update 97: It rewrites every event', $this->notices['manual:2.1.0']['body']);
+
+        $this->schema['base'] = 97;
+        $this->assertSame(ReleaseCheck::STAGED, $this->check(['2.1.0'])['outcome'], 'once run by hand there is nothing manual left');
+    }
+
+    /** By hand: staged and judged, staged.json untouched, kept by the cleanup though it is older. */
+    public function testAReleaseIsStagedByHand(): void
+    {
+        $result = $this->hand('2.0.1', ['2.0.1', '2.0.2']);
+
+        $this->assertSame(ReleaseCheck::STAGED, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertNull($this->staging()->staged(), 'not scheduled');
+        $this->assertTrue($this->staging()->stageInfo('2.0.1')['by_hand']);
+        $this->assertStringContainsString('cmd=self-update-install version=2.0.1', implode("\n", $result['lines']));
+        $this->assertSame([], $this->notices, 'the operator is reading the output');
+
+        $this->check([], ['installed' => '2.0.2']);
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'an older staging made by hand is how a downgrade is prepared');
+    }
+
+    public function testAnOlderReleaseByHandListsTheRollbacksFirst(): void
+    {
+        $this->releaseJson['2.0.1'] = ['modules' => ['base' => 93]];
+        $result = $this->hand('2.0.1', ['2.0.1'], ['installed' => '2.0.4']);
+
+        $this->assertSame(ReleaseCheck::UNMET, $result['outcome']);
+        $this->assertSame(['php cli.php cmd=update rollback=base.095', 'php cli.php cmd=update rollback=base.094'], $result['problems']);
+        $this->assertStringContainsString('installing it goes back', implode("\n", $result['lines']));
+    }
+
+    public function testByHandRefusesAMajorACheckoutAndAClaimedStaging(): void
+    {
+        $this->assertStringContainsString('another major version', implode("\n", $this->hand('3.0.0', ['3.0.0'])['lines']));
+        $this->assertStringContainsString('no published release 2.0.9', implode("\n", $this->hand('2.0.9', ['2.0.1'])['lines']));
+
+        $this->hand('2.0.1', ['2.0.1']);
+        file_put_contents($this->staging()->dir('2.0.1') . '/install.json', '{"state":"installing","copied":true}');
+        mkdir($this->staging()->dir('2.0.1') . '/backup');
+        $this->assertSame(ReleaseCheck::CLAIMED, $this->hand('2.0.1', ['2.0.1'])['outcome']);
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1') . '/backup', 'never replaced: it may restore a partly copied install');
+
+        file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
+        $this->assertSame(ReleaseCheck::CHECKOUT, $this->hand('2.0.2', ['2.0.2'])['outcome']);
+    }
+
+    public function testCancel(): void
+    {
+        $c = fn (array $ctx = []) => new ReleaseCheck($this->staging(), $ctx + ['root' => $this->tmp . '/owa', 'enabled' => true]);
+
+        $this->assertStringContainsString('Nothing is staged', implode("\n", $c()->cancel()['lines']));
+
+        $this->check(['2.0.1']);
+        $this->assertStringContainsString('The next release check stages it again', implode("\n", $c()->cancel()['lines']));
+        $this->assertNull($this->staging()->staged());
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1'));
+
+        $this->check(['2.0.1']);
+        $c()->cancel('2.0.1');
+        $this->assertNull($this->staging()->staged());
+        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.0.1'));
+
+        $this->check(['2.0.1']);
+        $h = fopen(InstallLock::$path, 'c');
+        flock($h, LOCK_EX);
+        try {
+            $this->assertSame(ReleaseCheck::BUSY, $c()->cancel()['outcome']);
+            $this->assertNotNull($this->staging()->staged());
+            $this->assertTrue(InstallLock::isHeld());
+        } finally {
+            flock($h, LOCK_UN);
+            fclose($h);
+        }
+        $this->assertFalse(InstallLock::isHeld());
+    }
+
+    public function testStatus(): void
+    {
+        $this->check(['2.0.1']);
+        $this->check(['2.1.0'], ['env' => ['php' => '8.1.0'] + $this->env()]);
+
+        $lines = implode("\n", (new ReleaseCheck($this->staging(), [
+            'root' => $this->tmp . '/owa', 'installed' => '2.0.0', 'enabled' => true, 'level' => 'minor',
+            'window' => '02:00-06:00', 'days' => '', 'immediate' => true, 'timezone' => 'UTC',
+        ]))->status());
+
+        $this->assertStringContainsString('Automatic updates: patch and minor releases, starting between 02:00 and 06:00 (UTC), any day; patches install as soon as they are staged.', $lines);
+        $this->assertStringContainsString('Staged to install: nothing.', $lines, '2.1.0 is the one chosen, and it cannot be installed');
+        $this->assertStringContainsString('can be installed.', $lines);
+
+        $this->check(['2.0.1']);
+        $this->assertStringContainsString('Staged to install: 2.0.1, at the next scheduler run.', implode("\n", (new ReleaseCheck($this->staging(),
+            ['root' => $this->tmp . '/owa', 'installed' => '2.0.0', 'enabled' => true]))->status()));
+        $this->assertStringContainsString('2.1.0: downloaded', $lines);
+        $this->assertStringContainsString('cannot be installed yet', $lines);
+        $this->assertStringContainsString('It needs PHP 8.2 or later', $lines);
+    }
+
     public function testADryRunWritesNothing(): void
     {
         $result = $this->check(['2.0.1'], [], null, null, true);
@@ -387,6 +584,16 @@ final class ReleaseCheckTest extends TestCase
             'url'       => 'https://example.test/releases',
             'releases'  => $list,
             'env'       => $this->env(),
+            'feed'      => function (array $list) { $this->feeds[] = count($list); return 0; },
+            'notify'    => function (array $n) {
+                if (!isset($this->notices[$n['source_key']])) {
+                    $this->notices[$n['source_key']] = $n;
+                    $this->raised[$n['source_key']] = $this->now;
+                }
+            },
+            'raised_at' => fn ($key) => $this->raised[$key] ?? null,
+            'schema'    => fn ($module) => $this->schema[$module] ?? null,
+            'now'       => $this->now,
         ]);
 
         if ($versions === null) {
@@ -395,6 +602,27 @@ final class ReleaseCheckTest extends TestCase
         }
 
         return $check->run($dry);
+    }
+
+    /** ReleaseCheck::stageByHand() against listed releases built here. */
+    private function hand(string $version, array $versions, array $context = []): array
+    {
+        $list = [];
+        foreach ($versions as $v) {
+            $tar = $this->build($v, null);
+            $this->served["https://example.test/$v.tar"] = $tar;
+            $list[] = $this->listed($v, 'https://example.test/' . $v . '.tar', hash_file('sha256', $tar));
+        }
+
+        return (new ReleaseCheck($this->staging(), $context + [
+            'root'      => $this->tmp . '/owa',
+            'installed' => '2.0.0',
+            'releases'  => $list,
+            'env'       => $this->env(),
+            'notify'    => function (array $n) { $this->notices[$n['source_key']] = $n; },
+            'schema'    => fn ($module) => $this->schema[$module] ?? null,
+            'now'       => $this->now,
+        ]))->stageByHand($version);
     }
 
     /** A release tarball as the packager makes it: release.json and manifest.json inside, members ./... */
@@ -410,8 +638,8 @@ final class ReleaseCheckTest extends TestCase
         mkdir($dir . '/modules/Base', 0755, true);
         file_put_contents($dir . '/cli.php', 'new cli');
         file_put_contents($dir . '/modules/Base/Module.php', "<?php // $v");
-        file_put_contents($dir . '/release.json', json_encode(['format' => 1, 'version' => $v,
-            'requirements' => \OWA\Core\Requirements::toArray()]));
+        file_put_contents($dir . '/release.json', json_encode(($this->releaseJson[$v] ?? []) + ['format' => 1, 'version' => $v,
+            'requirements' => \OWA\Core\Requirements::toArray(), 'modules' => ['base' => 95], 'updates' => []]));
         file_put_contents($dir . '/manifest.json', json_encode(ReleaseManifest::build($dir)));
 
         if ($tamper) {

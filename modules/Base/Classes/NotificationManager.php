@@ -592,6 +592,29 @@ class NotificationManager {
     }
 
     /**
+     * When the install-wide notice stored under a source key was raised, or
+     * null when none is. A caller that warns about something lasting uses
+     * its first notice as the clock: the release check e-mails about a
+     * download that has failed for a week.
+     *
+     * @param  string $source
+     * @param  string $sourceKey
+     * @return int|null
+     */
+    public static function raisedAt( $source, $sourceKey ) {
+
+        foreach ( self::rowsForSourceKey( $source, $sourceKey ) as $row ) {
+
+            if ( (string) ( $row['user_id'] ?? '' ) === '' ) {
+
+                return (int) ( $row['created_at'] ?? 0 );
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Every stored row for one source key, whoever it is addressed to.
      *
      * @param  string $source

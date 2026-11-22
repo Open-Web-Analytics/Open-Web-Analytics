@@ -87,8 +87,6 @@ final class ControllerCapabilityContractTest extends TestCase
         // request_type === 'cli', so these are not web-reachable.
         'InstallCli',
         'UpdatesApplyCli',
-        // Runs from the scheduler and the shell only, like the others here.
-        'NotificationsFetchCli',
         // Publishes Profiles' tracking bundles; the scheduler and the shell only.
         'TrackerPublishCli',
         // Writes the English string catalogue from the code; the shell only.

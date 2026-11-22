@@ -23,7 +23,7 @@ final class VersionInfoTest extends TestCase
         $this->assertSame('base', array_key_first($info['modules']));
 
         foreach ($info['updates'] as $update) {
-            $this->assertSame(['module', 'sequence', 'lossy', 'does_not_restore'], array_keys($update));
+            $this->assertSame(['module', 'sequence', 'manual_install'], array_keys($update));
         }
     }
 
@@ -54,7 +54,7 @@ final class VersionInfoTest extends TestCase
             'every module directory shipped');
     }
 
-    /** Every update Module::update() would build, with its own $down_does_not_restore. */
+    /** Every update Module::update() would build, with its own $manual_install. */
     public function testEveryUpdateIsAsItsClassSays(): void
     {
         $info    = VersionInfo::toArray();
@@ -73,8 +73,7 @@ final class VersionInfoTest extends TestCase
             foreach ($listed[$name] ?? [] as $seq => $u) {
                 $update = \OWA\Core\CoreAPI::updateFactory($name, sprintf('Update%03d', $seq));
 
-                $this->assertSame((string) $update->down_does_not_restore, $u['does_not_restore'], "$name $seq");
-                $this->assertSame($update->down_does_not_restore !== '', $u['lossy']);
+                $this->assertSame((string) $update->manual_install, $u['manual_install'], "$name $seq");
             }
         }
 

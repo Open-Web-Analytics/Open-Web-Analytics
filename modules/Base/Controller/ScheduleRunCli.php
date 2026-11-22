@@ -60,18 +60,34 @@ class ScheduleRunCli extends SchedulerCli {
             return $this->refuse( sprintf( 'This server (role %s) does not run the scheduler. Nothing will run.', $role->name() ) );
         }
 
+        $jobs = $this->jobs();
+        $all  = $jobs;
+
         // Checked once, here, rather than being discovered separately by every
         // job: Controller::doAction() intercepts each controller with the same
-        // check and would render the update view once per job.
-        // The schema only: a new release not yet applied leaves it as the jobs expect.
-        if ( \OWA\Core\CoreAPI::isSchemaUpdateRequired() ) {
+        // check and would render the update view once per job, recording each
+        // as refused and so satisfied. The schema only: a new release not yet
+        // applied leaves it as the jobs expect. Only a job registered to run
+        // while updates are pending runs (the release check, which may stage
+        // the release that fixes them); the others stay due, unrecorded.
+        $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 
-            return $this->refuse(
-                'Schema updates are pending, so no job can run. Apply them with cmd=update.'
-            );
+        if ( $pending ) {
+
+            // Never with a filtered list: pruning would forget every job left out.
+            $jobs = $this->getParam( 'prune-orphans' ) || $this->getParam( 'force-release' ) ? []
+                : array_filter( $jobs, static fn ( $job ) => ! empty( $job['while_updates_pending'] ) );
+
+            if ( ! $jobs ) {
+
+                return $this->refuse(
+                    'Schema updates are pending, so no job can run. Apply them with cmd=update.'
+                );
+            }
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Schema updates are pending: running only %s. Apply them with cmd=update.',
+                implode( ', ', array_keys( $jobs ) ) ) );
         }
-
-        $jobs = $this->jobs();
 
         if ( $this->getParam( 'prune-orphans' ) ) {
 
@@ -90,6 +106,11 @@ class ScheduleRunCli extends SchedulerCli {
         $only    = $this->getParam( 'job' ) ?: null;
         $force   = (bool) $this->getParam( 'force' );
         $dry_run = (bool) $this->getParam( 'dry-run' );
+
+        if ( $only && $pending && isset( $all[ $only ] ) && ! isset( $jobs[ $only ] ) ) {
+
+            return $this->refuse( sprintf( 'Schema updates are pending, so %s cannot run. Apply them with cmd=update.', $only ) );
+        }
 
         if ( $only && ! isset( $jobs[ $only ] ) ) {
 
@@ -120,7 +141,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         // Then the one-off jobs, in what is left of the budget (PLAN 2.30.5).
         // Not when asked to run one named job, and not on a dry run.
-        if ( ! $only && ! $dry_run ) {
+        if ( ! $only && ! $dry_run && ! $pending ) {
 
             $this->drainQueue( $started + self::MAX_RUNTIME );
         }

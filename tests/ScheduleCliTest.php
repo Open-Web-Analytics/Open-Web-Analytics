@@ -236,6 +236,50 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
+     * With the schema behind, schedule-run runs only the jobs registered to
+     * run then (the release check), leaves the rest due, unrecorded, and
+     * drains no queue; pruning is refused, since it would see a filtered list.
+     */
+    public function testASchemaBehindRunsOnlyTheJobsThatMayRunThen()
+    {
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $was  = $c->get('base', 'schema_version');
+
+        $runner = static fn (array $params) => new class($params) extends \OWA\Module\Base\Controller\ScheduleRunCli {
+            public array $considered = [];
+            public bool $drained = false;
+            protected function considerJob($name, $job, $force, $dry_run) { $this->considered[] = $name; }
+            protected function drainQueue($deadline) { $this->drained = true; }
+        };
+
+        try {
+            $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+
+            $run = $runner([]);
+            $run->action();
+            $this->assertSame(['release-check'], $run->considered);
+            $this->assertFalse($run->drained);
+
+            $prune = $runner(['prune-orphans' => true]);
+            $prune->action();
+            $this->assertSame('refused', $prune->getCliOutcome()['outcome']);
+
+            $named = $runner(['job' => 'rebuild-cube']);
+            $named->action();
+            $this->assertSame('refused', $named->getCliOutcome()['outcome']);
+            $this->assertStringContainsString('so rebuild-cube cannot run', $named->getCliOutcome()['message']);
+        } finally {
+            $c->set('base', 'schema_version', $was);
+        }
+
+        $all = $runner([]);
+        $all->action();
+        $this->assertContains('rebuild-cube', $all->considered, 'and every job once the schema is current');
+        $this->assertTrue($all->drained);
+    }
+
+    /**
      * Every shipped job says what it does, in its registration: the System
      * Health screen shows it on hover and cmd=schedule-status format=markdown
      * writes it out for the wiki, so a job without one would be a gap in both.
@@ -281,7 +325,9 @@ final class ScheduleCliTest extends CliControllerTestCase
         // Named exactly, not counted: a job appearing here means every install
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
-        // News panel stopped calling api.github.com during page renders,
+        // News panel stopped calling api.github.com during page renders, and
+        // release-check replaced it, making the same call for the bell and
+        // for automatic updates,
         // rebuild-cube joined them once it could refuse cheaply on an install
         // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
@@ -295,7 +341,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         // prune-tracker-ingest-archive holds the intake's archived batches to
         // raw_retention_months, and deletes nothing while that is unset.
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'release-check'],
             array_keys($jobs)
         );
     }
@@ -403,17 +449,56 @@ final class ScheduleCliTest extends CliControllerTestCase
     /**
      * No default job may fire at midnight.
      *
-     * fetch-notifications calls a THIRD PARTY. `@daily` is `0 0 * * *`, so
-     * every install would call it at the same instant, and most servers keep
-     * UTC so timezones would not spread it either. Each install derives its own
-     * minute and hour from something stable about itself.
+     * release-check calls a THIRD PARTY. A fixed every-six-hours expression
+     * would have every install call it at the same instants, and most servers keep UTC so
+     * timezones would not spread it either. Each install derives its own
+     * minute and hours from something stable about itself.
      */
     public function testNoJobThatCallsOutIsScheduledAtMidnight()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertNotSame('@daily', $jobs['fetch-notifications']['schedule']);
-        $this->assertNotSame('0 0 * * *', $jobs['fetch-notifications']['schedule']);
+        $this->assertNotSame('0 */6 * * *', $jobs['release-check']['schedule']);
+        $this->assertMatchesRegularExpression('/^\d{1,2} \d{1,2},\d{1,2},\d{1,2},\d{1,2} \* \* \*$/', $jobs['release-check']['schedule'], 'four times a day');
+    }
+
+    /** Every six hours, at a minute and hour offset the install keeps. */
+    public function testTheHourlySpread()
+    {
+        $this->assertSame(\OWA\Core\Cron::hourlySpreadFor('a'), \OWA\Core\Cron::hourlySpreadFor('a'), 'stable');
+        $this->assertNotSame(\OWA\Core\Cron::hourlySpreadFor('a'), \OWA\Core\Cron::hourlySpreadFor('b'));
+
+        [$minute, $hours] = explode(' ', \OWA\Core\Cron::hourlySpreadFor('a', 6));
+        $hours = array_map('intval', explode(',', $hours));
+        $this->assertCount(4, $hours);
+        $this->assertSame([6, 6, 6], [$hours[1] - $hours[0], $hours[2] - $hours[1], $hours[3] - $hours[2]]);
+        $this->assertLessThan(6, $hours[0]);
+        $this->assertLessThan(60, (int) $minute);
+        $this->assertCount(4, explode(',', explode(' ', \OWA\Core\Cron::hourlySpreadFor('a', 7))[1]), 'a step that does not divide the day falls back to six');
+    }
+
+    /**
+     * A job that runs while updates are pending runs a command that needs no
+     * current schema: otherwise its controller would refuse, and the refusal
+     * be recorded as the occurrence satisfied.
+     */
+    public function testOnlyACommandThatNeedsNoCurrentSchemaRunsWhileUpdatesArePending()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+        $s    = \OWA\Core\CoreAPI::serviceSingleton();
+        $while = [];
+
+        foreach ($jobs as $name => $job) {
+            if (empty($job['while_updates_pending'])) {
+                continue;
+            }
+            $while[] = $name;
+            $map   = $s->getMapValue('actions', $s->getCliCommandClass($job['command']));
+            $class = (string) (is_array($map) ? ($map['class_name'] ?? '') : $map);
+            $this->assertFalse((new $class([]))->needsCurrentSchema(), "$name runs while updates are pending, so $class must not need them applied");
+        }
+
+        $this->assertSame(['release-check'], $while);
     }
 
     /** Every registered job must name a real command and parse. */
