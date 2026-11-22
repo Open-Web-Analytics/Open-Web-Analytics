@@ -26,6 +26,13 @@
  *   does-not-boot    2.0.91's owa.php does not parse: undone, 2.0.90 runs
  *   schema-fails     2.0.91's schema update fails: its files stay, the error is recorded
  *
+ * and the failure cases of the wiki's Automatic Updates page, each with the
+ * recovery it promises where there is one: unreachable, asset-replaced,
+ * unwritable-directory, config-refused, manual-install,
+ * two-updates-directories, major-release, copy-fails, killed-mid-copy (the
+ * web, the REST API and the CLI while it runs, then the take-over),
+ * newer-release-after-a-failure and installed-past.
+ *
  * Needs: a built checkout (npm run build), composer, tar, openssl, python3,
  * and a MySQL or MariaDB server named by OWA_E2E_DB_HOST, _PORT, _USER,
  * _PASSWORD and _TYPE. The database is OWA_E2E_DB_NAME, default
@@ -77,13 +84,16 @@ $work = rtrim( getenv( 'OWA_SELF_UPDATE_DIR' ) ?: sys_get_temp_dir() . '/owa-sel
 @mkdir( $work, 0755, true );
 
 $failures = 0;
-$server   = null;
+$server   = (object) [ 'proc' => null, 'web' => null ];
 
-register_shutdown_function( static function () use ( &$server ) {
+register_shutdown_function( static function () use ( $server ) {
 
-    if ( is_resource( $server ) ) {
+    foreach ( [ $server->proc, $server->web ] as $p ) {
 
-        proc_terminate( $server );
+        if ( is_resource( $p ) ) {
+
+            proc_terminate( $p );
+        }
     }
 } );
 
@@ -257,10 +267,10 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
     return [ 'file' => $file, 'sha256' => hash_file( 'sha256', $file ), 'size' => filesize( $file ) ];
 }
 
-/** A schema update for Base in the release, one past the release's own: up() returns $succeeds. */
-function withSchemaUpdate( $succeeds ) {
+/** A schema update for Base in the release, one past the release's own: up() returns $succeeds; $manual is its manual_install. */
+function withSchemaUpdate( $succeeds, $manual = '' ) {
 
-    return static function ( $tree ) use ( $succeeds ) {
+    return static function ( $tree ) use ( $succeeds, $manual ) {
 
         $module = (string) file_get_contents( "$tree/modules/Base/Module.php" );
         check( preg_match( '/public \$required_schema_version = (\d+);/', $module, $m ) === 1, 'Base declares no required_schema_version' );
@@ -276,6 +286,8 @@ class Update%03d extends \OWA\Core\Update {
 
     public $schema_version = %d;
 
+    public $manual_install = %s;
+
     public function up( $force = false ) {
 
         return %s;
@@ -287,7 +299,7 @@ class Update%03d extends \OWA\Core\Update {
     }
 }
 
-PHP, $next, $next, $succeeds ? 'true' : 'false' ) );
+PHP, $next, $next, var_export( $manual, true ), $succeeds ? 'true' : 'false' ) );
     };
 }
 
@@ -376,7 +388,7 @@ function publish( $www, $base, array $pkg, $version, $digest = null ) {
 // ---- the installation ------------------------------------------------------
 
 /** 2.0.90 unpacked, configured and installed into a fresh database, with files of its own. */
-function installFrom( array $pkg, $work, array $db, $listing ) {
+function installFrom( array $pkg, $work, array $db, $listing, $extra = '' ) {
 
     $site = "$work/site";
     must( 'rm -rf ' . escapeshellarg( $site ) );
@@ -409,7 +421,8 @@ function installFrom( array $pkg, $work, array $db, $listing ) {
         . "define('OWA_ADMIN_NOTICE_EMAIL', 'admin@example.test');\n"
         . "define('OWA_MAILER_USE_SMTP', true);\n"
         . "define('OWA_MAILER_HOST', '127.0.0.1');\n"
-        . "define('OWA_MAILER_PORT', '$smtp');\n";
+        . "define('OWA_MAILER_PORT', '$smtp');\n"
+        . $extra;
     $close  = strrpos( $config, '?>' );
     $config = $close === false ? $config . $own : substr( $config, 0, $close ) . $own . substr( $config, $close );
     file_put_contents( "$site/owa-config.php", $config );
@@ -433,6 +446,65 @@ function cli( $site, $ca, $args ) {
     return run( sprintf( 'php -d curl.cainfo=%s cli.php %s', escapeshellarg( $ca ), $args ), $site );
 }
 
+/** Step 1, and what it left: [output, staged.json]. */
+function stage( $site, $ca ) {
+
+    [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
+    $dir = updatesDir( $site );
+
+    return [ $out, $dir === null ? null : json( "$dir/staged.json" ) ];
+}
+
+function stagedToInstall( $site, $ca ) {
+
+    [ $out, $staged ] = stage( $site, $ca );
+    check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ), 'release-check did not stage ' . TO . " to install itself:\n$out" );
+
+    return $staged;
+}
+
+/** Installed and finished: the version, no schema update pending, nothing left of the install. */
+function installed( $site, $ca, $version ) {
+
+    check( envVersion( $site ) === $version, "Core/Env.php says " . envVersion( $site ) . ", not $version" );
+
+    [ , $pending ] = cli( $site, $ca, 'cmd=update listpending' );
+    check( str_contains( $pending, 'no modules' ), "schema updates are still pending:\n$pending" );
+
+    $dir = updatesDir( $site );
+    check( ! is_file( "$dir/install.json" ) && ! is_dir( "$dir/backup" ), 'install.json or backup/ was left behind' );
+    check( ! file_exists( "$site/owa-data/updating" ), 'the lock file was left behind' );
+}
+
+/** Wait until install.json's retry time has passed, as the scheduler would. */
+function waitForRetry( $site ) {
+
+    $install = json( updatesDir( $site ) . '/install.json' );
+    $wait    = (int) ( $install['retry_after'] ?? 0 ) - time() + 1;
+
+    if ( $wait > 0 ) {
+
+        sleep( $wait );
+    }
+}
+
+/** An HTTP GET of the installation through php -S: [status, body]. */
+function web( $port, $path ) {
+
+    $body   = @file_get_contents( "http://127.0.0.1:$port/$path", false, stream_context_create( [ 'http' => [ 'ignore_errors' => true, 'timeout' => 20 ] ] ) );
+    $status = 0;
+
+    foreach ( $http_response_header ?? [] as $h ) {
+
+        if ( preg_match( '#^HTTP/\S+ (\d+)#', $h, $m ) ) {
+
+            $status = (int) $m[1];
+        }
+    }
+
+    return [ $status, (string) $body ];
+}
+
 // ---- the scenarios ---------------------------------------------------------
 
 $build = buildTree( $repo, $work );
@@ -449,7 +521,7 @@ $port = freePort();
 $base = "https://127.0.0.1:$port";
 $www  = "$work/www";
 @mkdir( $www, 0755, true );
-$server = serve( $tls, $www, $port );
+$server->proc = serve( $tls, $www, $port );
 $ca     = "$tls/ca.pem";
 
 $scenarios = [
@@ -525,7 +597,8 @@ $scenarios = [
 
     'does-not-boot' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        $to = package( $build, $work, 'does-not-boot', TO, static function ( $tree ) {
+        // After release.json, which cmd=version-info writes by running OWA.
+        $to = package( $build, $work, 'does-not-boot', TO, null, static function ( $tree ) {
 
             file_put_contents( "$tree/owa.php", "\nthis is not PHP(\n", FILE_APPEND );
         } );
@@ -567,6 +640,284 @@ $scenarios = [
         check( hasNotice( $n, 'install_failed:' . TO ), 'no "failed" notice' );
         check( str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'tracking is queued' ), 'the notice does not say tracking is queued' );
     },
+    // ---- before anything is installed --------------------------------------
+
+    'unreachable' => function () use ( $build, $work, $db, $from, $www, $base, $ca, $tls, $port, $server ) {
+
+        $to   = package( $build, $work, 'unreachable', TO );
+        publish( $www, $base, $to, TO );
+        $site   = installFrom( $from, $work, $db, "$base/releases.json" );
+        $staged = stagedToInstall( $site, $ca );
+
+        proc_terminate( $server->proc );
+        proc_close( $server->proc );
+
+        try {
+
+            [ $out, $again ] = stage( $site, $ca );
+            check( $again == $staged, "GitHub unreachable changed staged.json:\n$out" );
+            check( is_dir( updatesDir( $site ) . '/staged' ), 'GitHub unreachable deleted the staged release' );
+
+            // Installing needs no network.
+            cli( $site, $ca, 'cmd=schedule-run' );
+            installed( $site, $ca, TO );
+
+        } finally {
+
+            $server->proc = serve( $tls, $www, $port );
+        }
+    },
+
+    'asset-replaced' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $first  = package( $build, $work, 'replaced-1', TO );
+        $second = package( $build, $work, 'replaced-2', TO, static function ( $tree ) {
+
+            file_put_contents( "$tree/modules/Base/e2e-replaced.txt", 'only in the replacement' );
+        } );
+        publish( $www, $base, $first, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        stagedToInstall( $site, $ca );
+
+        publish( $www, $base, $second, TO );
+        [ $out, $staged ] = stage( $site, $ca );
+        check( ( $staged['sha256'] ?? null ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
+
+        cli( $site, $ca, 'cmd=schedule-run' );
+        installed( $site, $ca, TO );
+        check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
+    },
+
+    'unwritable-directory' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'unwritable', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        chmod( "$site/Core", 0555 );
+
+        try {
+
+            [ $out, $staged ] = stage( $site, $ca );
+            check( ( $staged['version'] ?? null ) === TO && empty( $staged['automatic'] ), "a release that cannot be written was staged to install:\n$out" );
+            check( str_contains( $out, 'such as Core/' ), "the check does not name the directory:\n$out" );
+
+            cli( $site, $ca, 'cmd=schedule-run' );
+            check( envVersion( $site ) === FROM, 'it installed anyway' );
+
+        } finally {
+
+            chmod( "$site/Core", 0755 );
+        }
+
+        // Fixed: the next check stages it to install, and it installs.
+        stagedToInstall( $site, $ca );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        installed( $site, $ca, TO );
+    },
+
+    'config-refused' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'config-refused', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", "define('OWA_E2E_NAMES_A_CLASS', \\OWA\\Core\\Env::class);\n" );
+
+        [ $out, $staged ] = stage( $site, $ca );
+        check( ( $staged['version'] ?? null ) === TO && empty( $staged['automatic'] ), "it was staged to install:\n$out" );
+        check( str_contains( $out, 'owa-config.php uses' ), "the check does not say why:\n$out" );
+
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === FROM, 'it installed anyway' );
+    },
+
+    'manual-install' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'manual-install', TO, withSchemaUpdate( true, 'It rewrites nothing; the test says it must be installed by hand.' ) );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        [ $out, $staged ] = stage( $site, $ca );
+        check( ( $staged['version'] ?? null ) === TO && empty( $staged['automatic'] ), "an update marked for a manual install was staged to install itself:\n$out" );
+        check( hasNotice( notices( $db ), 'manual:' . TO ), 'no "needs to be installed by hand" notice' );
+
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === FROM, 'it installed itself' );
+
+        // By hand, as the notice says.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install version=' . TO );
+        check( $code === 0, "self-update-install exited $code:\n$out" );
+        installed( $site, $ca, TO );
+    },
+
+    'two-updates-directories' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'two-dirs', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        mkdir( "$site/owa-data/updates-" . str_repeat( 'a', 32 ), 0711 );
+        mkdir( "$site/owa-data/updates-" . str_repeat( 'b', 32 ), 0711 );
+
+        [ $out ] = stage( $site, $ca );
+        check( ! glob( "$site/owa-data/updates-*/staged.json" ), "something was staged beside two updates directories:\n$out" );
+
+        rmdir( "$site/owa-data/updates-" . str_repeat( 'b', 32 ) );
+        stagedToInstall( $site, $ca );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        installed( $site, $ca, TO );
+    },
+
+    'major-release' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'major', '3.0.0' );
+        publish( $www, $base, $to, '3.0.0' );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        [ $out, $staged ] = stage( $site, $ca );
+        check( $staged === null, "a major release was staged:\n$out" );
+
+        $m   = sql( $db );
+        $row = $m->query( sprintf( "SELECT COUNT(*) AS n FROM `%s`.owa_notification WHERE source <> 'auto_update'", $db['name'] ) )->fetch_assoc();
+        $m->close();
+        check( (int) $row['n'] === 1, 'the major release is not announced in the bell' );
+    },
+
+    // ---- during the copy -----------------------------------------------------
+
+    'copy-fails' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'copy-fails', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        stagedToInstall( $site, $ca );
+
+        // Writable when the release was checked, not when it is copied.
+        chmod( "$site/Core", 0555 );
+
+        try {
+
+            cli( $site, $ca, 'cmd=schedule-run' );
+            check( envVersion( $site ) === FROM, 'the failed copy was not undone' );
+
+            $install = json( updatesDir( $site ) . '/install.json' );
+            check( str_contains( (string) ( $install['error'] ?? '' ), 'Could not write' ) && str_contains( (string) $install['error'], 'previous release was put back' ),
+                'install.json does not record the undone copy: ' . json_encode( $install ) );
+
+            [ $code, $out ] = cli( $site, $ca, 'cmd=self-update' );
+            check( $code === 0, "the restored release does not run:\n$out" );
+            check( hasNotice( notices( $db ), 'install_failed:' . TO ), 'no "failed" notice' );
+
+        } finally {
+
+            chmod( "$site/Core", 0755 );
+        }
+
+        // Fixed: install it now, as the notice says.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install version=' . TO );
+        check( $code === 0, "self-update-install exited $code:\n$out" );
+        installed( $site, $ca, TO );
+    },
+
+    'killed-mid-copy' => function () use ( $build, $work, $db, $from, $www, $base, $ca, $server ) {
+
+        $to   = package( $build, $work, 'killed', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        stagedToInstall( $site, $ca );
+
+        // The copy writes Core/Env.php.owa-update before renaming it into
+        // place. A FIFO there blocks that write until it is read: the
+        // install stops part-way, holding the lock.
+        $fifo = "$site/Core/Env.php.owa-update";
+        check( posix_mkfifo( $fifo, 0644 ), 'could not make the FIFO' );
+
+        $proc = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=schedule-run' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
+
+        for ( $i = 0; $i < 100 && ! str_contains( (string) @file_get_contents( "$site/owa-data/updating" ), 'copying' ); $i++ ) {
+
+            usleep( 100000 );
+        }
+
+        check( str_contains( (string) @file_get_contents( "$site/owa-data/updating" ), 'copying' ), 'the install did not start copying' );
+
+        // While it runs: the web answers 503, the REST API says busy, the CLI waits.
+        $webPort     = freePort();
+        $server->web = proc_open( [ PHP_BINARY, '-S', "127.0.0.1:$webPort", '-t', $site ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes2 );
+        usleep( 500000 );
+
+        [ $status, $body ] = web( $webPort, 'index.php' );
+        check( $status === 503 && str_contains( $body, 'OWA is updating' ), "index.php answered $status during the install" );
+        [ $status, $body ] = web( $webPort, 'api/index.php' );
+        check( $status === 503 && str_contains( $body, '"busy"' ), "the REST API answered $status during the install" );
+        proc_terminate( $server->web );
+
+        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update' );
+        check( $code === 75 && str_contains( $out, 'OWA is installing an update' ), "a CLI command during the install exited $code:\n$out" );
+
+        // Killed: the lock file stays, its flock goes with the process.
+        $pid = (int) proc_get_status( $proc )['pid'];
+        posix_kill( $pid, 9 );
+        proc_close( $proc );
+        unlink( $fifo );
+        check( file_exists( "$site/owa-data/updating" ), 'the killed install\'s lock file is gone' );
+
+        // The next run after the retry time takes the lock over and carries the install on.
+        waitForRetry( $site );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
+        check( $code === 0, "the run after the kill exited $code:\n$out" );
+        installed( $site, $ca, TO );
+    },
+
+    // ---- after the new release has started -----------------------------------
+
+    'newer-release-after-a-failure' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $bad  = package( $build, $work, 'newer-bad', TO, withSchemaUpdate( false ) );
+        $good = package( $build, $work, 'newer-good', '2.0.92' );
+        publish( $www, $base, $bad, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        stagedToInstall( $site, $ca );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === TO && json( updatesDir( $site ) . '/install.json' ) !== null, 'the failing install did not leave ' . TO . ' unfinished' );
+
+        // The release that fixes it replaces the unfinished install.
+        publish( $www, $base, $good, '2.0.92' );
+        [ $out, $staged ] = stage( $site, $ca );
+        check( ( $staged['version'] ?? null ) === '2.0.92', "2.0.92 was not staged over the unfinished install:\n$out" );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        installed( $site, $ca, '2.0.92' );
+    },
+
+    // ---- a newer release installed meanwhile ---------------------------------
+
+    'installed-past' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'past', TO );
+        publish( $www, $base, $to, TO );
+
+        // Patches wait for a window twelve hours from now.
+        $start = gmdate( 'H:i', time() + 43200 );
+        $end   = gmdate( 'H:i', time() + 43260 );
+        $site  = installFrom( $from, $work, $db, "$base/releases.json",
+            "define('OWA_TIMEZONE', 'UTC');\ndefine('OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', false);\ndefine('OWA_AUTO_UPDATE_WINDOW', '$start-$end');\n" );
+
+        [ $out, $staged ] = stage( $site, $ca );
+        check( ( $staged['version'] ?? null ) === TO && is_array( $staged['window'] ?? null ), "it was not staged to wait for its window:\n$out" );
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === FROM, 'it installed outside its window' );
+
+        // 2.0.92 put in place by hand, as an operator unpacking it would leave Core/Env.php.
+        $env = (string) file_get_contents( "$site/Core/Env.php" );
+        file_put_contents( "$site/Core/Env.php", str_replace( "const VERSION = '" . FROM . "';", "const VERSION = '2.0.92';", $env ) );
+
+        // Not due before its window, so the hand-off leaves it; the next release check finds nothing newer and deletes it.
+        cli( $site, $ca, 'cmd=schedule-run' );
+        check( envVersion( $site ) === '2.0.92', 'the hand-off installed the older ' . TO . ' over 2.0.92' );
+        [ $out ] = stage( $site, $ca );
+        $dir = updatesDir( $site );
+        check( ! is_file( "$dir/staged.json" ) && ! is_dir( "$dir/staged" ), 'the staged ' . TO . ", older than what is installed, was kept:\n$out" );
+    },
+
 ];
 
 $only = array_slice( $argv, 1 );
@@ -592,7 +943,7 @@ foreach ( $scenarios as $name => $scenario ) {
     }
 }
 
-proc_terminate( $server );
+proc_terminate( $server->proc );
 
 try {
 

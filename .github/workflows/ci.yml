@@ -362,7 +362,7 @@ jobs:
   self-update:
     name: Automatic updates, end to end
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     # Real release packages built from this commit by the Release Packager's
     # own script, a real install of the first, and the next served from a
     # GitHub-shaped listing over HTTPS on 127.0.0.1 with a CA made for the
@@ -372,11 +372,11 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: owa-e2e-root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -powa-e2e-root"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -384,7 +384,9 @@ jobs:
       OWA_E2E_DB_HOST: 127.0.0.1
       OWA_E2E_DB_PORT: '3306'
       OWA_E2E_DB_USER: root
-      OWA_E2E_DB_PASSWORD: ''
+      # A password, as nearly every installation has: an empty one is refused
+      # by the release check's preflight though boot accepts it.
+      OWA_E2E_DB_PASSWORD: owa-e2e-root
       OWA_E2E_DB_NAME: owa_self_update_scratch
       OWA_E2E_DB_TYPE: mysql
     steps:
