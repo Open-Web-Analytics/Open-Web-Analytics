@@ -34,8 +34,9 @@ use OWA\Core\CoreAPI;
  *      A release it pointed at before is deleted unless an unfinished
  *      install uses it.
  *
- * Stagings of versions already installed are the installer's to delete
- * (Finish::cleanup(), updater.php `dropSuperseded`). Writes to
+ * A run that chooses nothing deletes staged.json and the staging it named
+ * (end()); stagings of versions an install went past are the installer's to
+ * delete (Finish::cleanup(), updater.php `dropSuperseded`). Writes to
  * staged.json and deletions happen holding the install lock, taken without
  * waiting; when an install holds it, the run changes nothing.
  *
@@ -791,7 +792,11 @@ class ReleaseCheck {
     }
 
     /**
-     * An outcome that ends automatic updates here: staged.json goes.
+     * An outcome in which the settings choose nothing to install: staged.json
+     * goes, and the staging it named with it, in one step holding the lock,
+     * so no staging is left that nothing will install. A staging an
+     * unfinished install uses stays; one staged by hand never had a
+     * staged.json, so this never sees it.
      *
      * @param  string      $outcome
      * @param  string|null $v
@@ -801,10 +806,25 @@ class ReleaseCheck {
      */
     private function end( $outcome, $v, $why, $dry_run ) {
 
-        if ( ! $dry_run && $this->staging->staged() !== null
-                && ! InstallLock::tryExclusive( fn () => $this->staging->removeStaged() ) ) {
+        $named = (string) ( $this->staging->staged()['version'] ?? '' );
 
-            return $this->busy();
+        if ( ! $dry_run && $named !== '' ) {
+
+            $done = InstallLock::tryExclusive( function () use ( $named ) {
+
+                $this->staging->removeStaged();
+
+                if ( ! $this->staging->hasInstall( $named ) ) {
+
+                    Staging::remove( $this->staging->dir( $named ) );
+                    $this->lines[] = sprintf( 'Deleted the staging of %s: nothing will install it now.', $named );
+                }
+            } );
+
+            if ( ! $done ) {
+
+                return $this->busy();
+            }
         }
 
         return $this->outcome( $outcome, $v, [], $why );

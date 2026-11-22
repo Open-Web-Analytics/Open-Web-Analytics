@@ -303,7 +303,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check([], ['installed' => '2.0.1']);
         $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
         $this->assertNull($this->staging()->staged(), 'nothing is chosen now');
-        $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'the release check deletes no staging of an installed version');
+        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.0.1'), 'nor its staging');
 
         $this->check(['2.0.2']);
         Staging::remove($this->staging()->dir('2.0.2'));
@@ -350,6 +350,19 @@ final class ReleaseCheckTest extends TestCase
 
         $this->assertSame(ReleaseCheck::CURRENT, $this->check(['2.1.0'], ['level' => 'patch'])['outcome']);
         $this->assertNull($this->staging()->staged());
+        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.1.0'), 'and its staging: no patch install would ever reach it');
+    }
+
+    /** Automatic updates turned off: staged.json and the staging it named go; a staging made by hand stays. */
+    public function testTurningOffRemovesTheStaging(): void
+    {
+        $this->check(['2.1.0']);
+        $this->hand('2.0.1', ['2.0.1', '2.1.0']);
+
+        $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false])['outcome']);
+        $this->assertNull($this->staging()->staged());
+        $this->assertDirectoryDoesNotExist($this->staging()->dir('2.1.0'));
+        $this->assertDirectoryExists($this->staging()->dir('2.0.1'), 'staged by hand: the operator\'s');
     }
 
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
