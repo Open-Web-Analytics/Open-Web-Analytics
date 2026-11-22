@@ -2,9 +2,9 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Install a staged release now (Step 2 for that version, then Steps 3 and 4).
+ * Install the staged release now (Step 2 for it, then Steps 3 and 4).
  *
- *   php cli.php cmd=self-update-install version=2.0.3
+ *   php cli.php cmd=self-update-install
  *
  * Handled by cli.php before OWA loads (updater.php `handoff`), so the new
  * release boots in a process that holds none of the old code. This class
@@ -17,10 +17,9 @@ class SelfUpdateInstallCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Installs a release staged with cmd=self-update-stage (or by the release check) now, whatever the automatic update settings say: backs up and copies its files, then runs its schema updates and republishes the tracking bundles. A failing install starts over with fresh attempts.',
+            'description' => 'Installs the staged release now, whether cmd=self-update-stage or the release check staged it, whatever the automatic update settings say: backs up and copies its files, then runs its schema updates and republishes the tracking bundles. A failing install starts over with fresh attempts.',
             'arguments'   => [
-                'version=<x.y.z>' => 'The staged release to install.',
-                '--force'         => 'Install it even when it is not newer than the installed release (going back, or the same release again).',
+                '--force' => 'Install it even when it is not newer than the installed release (going back, or the same release again).',
             ],
         ];
     }

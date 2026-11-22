@@ -95,7 +95,7 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertStringContainsString('the installed release runs as before', $bodies[0], 'undone: the old release runs');
         $this->assertStringNotContainsString('tracking is queued', $bodies[0]);
         $this->assertStringContainsString('tracking is queued and reports wait', $bodies[1], 'booted: the schema is behind');
-        $this->assertStringContainsString('cmd=self-update-install version=2.0.3', $bodies[2]);
+        $this->assertStringContainsString('php cli.php cmd=self-update-install', $bodies[2]);
         $this->assertStringNotContainsString('cmd=update;', $bodies[2], 'cmd=update cannot finish an install that was undone');
     }
 
