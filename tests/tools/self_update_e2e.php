@@ -507,18 +507,27 @@ function waitForRetry( $site ) {
 /** An HTTP GET of the installation through php -S: [status, body]. */
 function web( $port, $path ) {
 
-    $body   = @file_get_contents( "http://127.0.0.1:$port/$path", false, stream_context_create( [ 'http' => [ 'ignore_errors' => true, 'timeout' => 20 ] ] ) );
+    $h = @fopen( "http://127.0.0.1:$port/$path", 'r', false, stream_context_create( [ 'http' => [ 'ignore_errors' => true, 'timeout' => 20 ] ] ) );
+
+    if ( $h === false ) {
+
+        return [ 0, '' ];
+    }
+
+    $body   = (string) stream_get_contents( $h );
     $status = 0;
 
-    foreach ( $http_response_header ?? [] as $h ) {
+    foreach ( (array) ( stream_get_meta_data( $h )['wrapper_data'] ?? [] ) as $line ) {
 
-        if ( preg_match( '#^HTTP/\S+ (\d+)#', $h, $m ) ) {
+        if ( preg_match( '#^HTTP/\S+ (\d+)#', (string) $line, $m ) ) {
 
             $status = (int) $m[1];
         }
     }
 
-    return [ $status, (string) $body ];
+    fclose( $h );
+
+    return [ $status, $body ];
 }
 
 // ---- the scenarios ---------------------------------------------------------
