@@ -94,6 +94,8 @@ $_owa_messages = [
     3310 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Password is required.' )],
     3311 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Apply these updates from the command line: php cli.php cmd=update' )],
     3313 => ['headline' => \OWA\Core\CoreAPI::t( 'Updates are already being applied' ), 'message' => \OWA\Core\CoreAPI::t( 'Another request is applying them. Reload this page in a few minutes.' )],
+    3314 => ['headline' => \OWA\Core\CoreAPI::t( 'Queued' ), 'message' => \OWA\Core\CoreAPI::t( 'The scheduler runs it within a minute. Reload this page to see the result.' )],
+    3315 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That could not be queued; the error log says why.' )],
 
     // Report related
     3600 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Unknown error.' )],

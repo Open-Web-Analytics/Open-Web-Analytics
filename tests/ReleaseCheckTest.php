@@ -386,6 +386,29 @@ final class ReleaseCheckTest extends TestCase
         $this->assertFalse($this->staging()->staged()['by_hand']);
     }
 
+    /** "Install now": staged.json loses its window and says install_now, which the release check keeps for that release. */
+    public function testInstallNow(): void
+    {
+        $c = fn () => new ReleaseCheck($this->staging(), ['root' => $this->tmp . '/owa', 'now' => $this->now]);
+        $this->assertSame(ReleaseCheck::UNKNOWN, $c()->installNow()['outcome']);
+
+        $this->check(['2.1.0']);
+        $this->assertNotNull($this->staging()->staged()['window']);
+
+        $this->assertStringContainsString('2.1.0 installs at the next scheduler run, within a minute.', implode("\n", $c()->installNow()['lines']));
+        $this->assertNull($this->staging()->staged()['window']);
+        $this->assertTrue($this->staging()->staged()['install_now']);
+
+        $this->check(['2.1.0']);
+        $this->assertNull($this->staging()->staged()['window'], 'the next release check keeps it');
+
+        $this->check(['2.1.0', '2.1.1']);
+        $this->assertFalse($this->staging()->staged()['install_now'], 'for that release only');
+
+        $this->hand('2.0.1', ['2.0.1']);
+        $this->assertStringContainsString('install it with php cli.php cmd=self-update-install version=2.0.1', implode("\n", $c()->installNow()['lines']));
+    }
+
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
     {
         $this->check(['2.0.1']);

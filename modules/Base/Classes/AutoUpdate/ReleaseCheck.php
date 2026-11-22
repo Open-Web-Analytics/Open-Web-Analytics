@@ -256,14 +256,16 @@ class ReleaseCheck {
 
         $problems = $this->preflight( $v );
         $manual   = $problems ? [] : $this->manualInstall( $v );
-        $window   = $problems || $manual ? null : $this->window( $release['step'] );
         $auto     = ! $problems && ! $manual;
+        // "Install now" from the Updates screen stands for its release: no window.
+        $now      = $auto && $before !== null && ( $before['version'] ?? null ) === $v && ! empty( $before['install_now'] );
+        $window   = $auto && ! $now ? $this->window( $release['step'] ) : null;
         $same     = $before !== null && ( $before['version'] ?? null ) === $v && ! empty( $before['automatic'] ) === $auto
-            && empty( $before['by_hand'] ) && ( $before['window'] ?? null ) == $window;
+            && empty( $before['by_hand'] ) && ( $before['window'] ?? null ) == $window && ! empty( $before['install_now'] ) === $now;
 
         // staged.json describes the slot: the release, whether it installs on
         // its own, and the window the settings give now.
-        if ( ! $same && ! InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, $window, $sha, $auto, false, (int) $this->context['now'] ) ) ) {
+        if ( ! $same && ! InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, $window, $sha, $auto, false, (int) $this->context['now'], $now ) ) ) {
 
             return $this->busy();
         }
@@ -509,6 +511,49 @@ class ReleaseCheck {
 
         return $this->outcome( self::OFF, $v, [], sprintf( 'Cancelled %s: nothing is staged.%s', $v,
             $this->context['enabled'] && empty( $staged['by_hand'] ) ? ' The next release check stages it again; set OWA_AUTO_UPDATE to false to stop that.' : '' ) );
+    }
+
+    /**
+     * cmd=self-update-now, and the Updates screen's "Install now": the staged
+     * release installs at the next scheduler run, whatever its window.
+     * staged.json says install_now, which the release check keeps for that
+     * release. Only one that installs itself: one staged by hand is installed
+     * with cmd=self-update-install, and one that waits says why.
+     *
+     * @return Outcome
+     */
+    public function installNow() {
+
+        $staged = $this->staging->staged();
+
+        if ( $staged === null ) {
+
+            return $this->outcome( self::UNKNOWN, null, [], 'Nothing is staged.' );
+        }
+
+        $v = (string) $staged['version'];
+
+        if ( ! empty( $staged['by_hand'] ) ) {
+
+            return $this->outcome( self::HELD, $v, [], sprintf( '%1$s was staged by hand: install it with php cli.php cmd=self-update-install version=%1$s', $v ) );
+        }
+
+        if ( empty( $staged['automatic'] ) ) {
+
+            return $this->outcome( self::UNMET, $v, [], sprintf( '%s does not install itself; php cli.php cmd=self-update says why.', $v ) );
+        }
+
+        if ( ! empty( $staged['install_now'] ) || ( $staged['window'] ?? null ) === null ) {
+
+            return $this->outcome( self::STAGED, $v, [], sprintf( '%s installs at the next scheduler run.', $v ) );
+        }
+
+        $done = InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, null, (string) ( $staged['sha256'] ?? '' ), true, false,
+            (int) ( $staged['staged_at'] ?? $this->context['now'] ), true ) );
+
+        return $done
+            ? $this->outcome( self::STAGED, $v, [], sprintf( '%s installs at the next scheduler run, within a minute.', $v ) )
+            : $this->busy();
     }
 
     /**

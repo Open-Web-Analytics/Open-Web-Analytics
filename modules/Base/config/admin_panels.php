@@ -45,6 +45,15 @@ return [
             'fieldsets' => [ 'base.retention' ],
         ],
 
+        // Automatic updates: what they will do, and their settings.
+        [
+            'do'        => 'base.optionsUpdates',
+            'title'     => \OWA\Core\CoreAPI::t( 'Updates' ),
+            'group'     => 'General',
+            'order'     => 7,
+            'fieldsets' => [ 'base.updates' ],
+        ],
+
         [
             'do'    => 'base.optionsModules',
             'title' => \OWA\Core\CoreAPI::t( 'Modules' ),
@@ -117,6 +126,20 @@ return [
             'group'    => 'rest_api',
             'legend'   => \OWA\Core\CoreAPI::t( 'REST API' ),
             'settings' => [ 'app_passwords_enabled', 'app_passwords_require_https' ],
+        ],
+
+        [
+            'id'       => 'base.updates',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Automatic Updates' ),
+            'settings' => [
+                'auto_update',
+                'auto_update_level',
+                'auto_update_patch_immediately',
+                'auto_update_days',
+                'auto_update_window',
+                'auto_update_email_success',
+                'admin_notice_email',
+            ],
         ],
 
         [
