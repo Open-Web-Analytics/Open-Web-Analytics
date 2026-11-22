@@ -128,8 +128,10 @@ return [
             'settings' => [ 'app_passwords_enabled', 'app_passwords_require_https' ],
         ],
 
+        // The group is the wiki's Automatic Updates settings table (settings-auto_update).
         [
             'id'       => 'base.updates',
+            'group'    => 'auto_update',
             'legend'   => \OWA\Core\CoreAPI::t( 'Automatic Updates' ),
             'settings' => [
                 'auto_update',

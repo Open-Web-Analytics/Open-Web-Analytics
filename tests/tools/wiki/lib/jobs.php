@@ -84,6 +84,10 @@ function owa_wiki_job_schedule( array $job ) {
         return sprintf( 'every %d minutes, at an offset each install derives for itself', $m[2] - $m[1] );
     }
 
+    if ( preg_match( '#^\d+ (\d+),(\d+)(?:,\d+)* \* \* \*$#', $expr, $m ) ) {
+        return sprintf( 'every %d hours, at a time each install derives for itself', $m[2] - $m[1] );
+    }
+
     if ( preg_match( '#^\d+ \* \* \* \*$#', $expr ) ) {
         return 'hourly, at a minute each install derives for itself';
     }

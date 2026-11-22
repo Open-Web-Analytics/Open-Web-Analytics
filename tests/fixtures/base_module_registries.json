@@ -909,6 +909,7 @@
         },
         "base.updates": {
             "id": "base.updates",
+            "group": "auto_update",
             "legend": "Automatic Updates",
             "settings": [
                 "auto_update",
