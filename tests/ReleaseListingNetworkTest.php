@@ -91,14 +91,14 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertNotNull($release['sha256']);
 
         try {
-            (new Staging(null, $this->tmp))->stage($release);
+            (new Staging(null, $this->tmp))->download($release);
             $this->fail('a 1.x release has no release.json');
         } catch (\RuntimeException $e) {
             $this->assertSame(sprintf("%s's release.json says it is NULL.", $release['version']), $e->getMessage(),
                 'downloaded, its SHA-256 matched, and it unpacked');
         }
 
-        $this->assertSame([], glob($this->tmp . '/updates-*/' . $release['version']), 'a failed staging is deleted');
+        $this->assertSame([], glob($this->tmp . '/updates-*/staged*'), 'a failed staging is deleted');
         $this->assertSame([], glob(\OWA\Core\Env::dataDir() . 'updates-*'), 'nothing made in OWA\'s own data directory');
     }
 }

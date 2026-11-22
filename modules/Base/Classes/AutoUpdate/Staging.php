@@ -8,18 +8,20 @@ use OWA\Core\CoreAPI;
  * web cannot guess it, found by looking for it (updater.php `updatesDir`)
  * and kept in the updates_dir setting for the rest of the process.
  *
- *   updates-<id>/                0711: others open a name they know, list nothing
- *     staged.json                0644, Step 1's only: {format, version, window, sha256, staged_at}
- *     install.json               0644, the installer's, while an install is unfinished:
- *                                {version, attempts, retry_after, copied, booted, error}
- *     versions/                  0700
- *       <version>/release/       a staged release: the tarball unpacked, there
- *                                only once its SHA-256 matched GitHub's digest
- *     backup/                    0700, the installer's: the originals of every
- *                                file replaced or deleted
+ *   updates-<id>/        0711: others open a name they know, list nothing
+ *     staged.json        0644: what staged/ holds, and whether it installs on its own
+ *                        {format, version, window, sha256, staged_at, automatic, by_hand}
+ *     install.json       0644, the installer's, while an install is unfinished:
+ *                        {version, attempts, retry_after, copied, booted, forced, error}
+ *     staged/            0700: the one staged release, the tarball unpacked; there
+ *                        only once its SHA-256 matched GitHub's digest
+ *                        (staged.tmp/ while it downloads and unpacks)
+ *     backup/            0700, the installer's: the originals of every file
+ *                        replaced or deleted
  *
- * Step 1 writes staged.json and versions/; the installer writes install.json
- * and backup/. The two JSON files are readable by the web user, under any
+ * One release is staged at a time (Peter, 2026-11-22). A download, by Step 1
+ * or by hand, replaces it; staged.json exists exactly when staged/ does, and
+ * describes it. The two JSON files are readable by the web user, under any
  * arrangement of users and groups, for the Updates screen; nothing that holds
  * code is. Every JSON file is written to a temporary name and renamed into
  * place.
@@ -28,11 +30,10 @@ use OWA\Core\CoreAPI;
  */
 class Staging {
 
-    const STAGED   = 'staged.json';
-    const INSTALL  = 'install.json';
-    const BACKUP   = 'backup';
-    const VERSIONS = 'versions';
-    const RELEASE  = 'release';
+    const STAGED  = 'staged.json';
+    const INSTALL = 'install.json';
+    const BACKUP  = 'backup';
+    const SLOT    = 'staged';
 
     /** staged.json's format: raised only when a field changes meaning or goes. */
     const FORMAT = 1;
@@ -126,8 +127,7 @@ class Staging {
         // A directory named outright is made where it was named, never in OWA's data directory.
         if ( $this->named ) {
 
-            if ( ( ! @mkdir( $this->root, 0711, true ) && ! is_dir( $this->root ) )
-                    || ( ! @mkdir( $this->root . '/' . self::VERSIONS, 0700 ) && ! is_dir( $this->root . '/' . self::VERSIONS ) ) ) {
+            if ( ! @mkdir( $this->root, 0711, true ) && ! is_dir( $this->root ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $this->root ) );
             }
@@ -146,51 +146,10 @@ class Staging {
         CoreAPI::setSetting( 'base', 'updates_dir', $dir );
     }
 
-    /**
-     * @param  string $version
-     * @return string
-     */
-    public function dir( $version ) {
+    /** @return string the staged release */
+    public function releaseDir() {
 
-        return $this->root . '/' . self::VERSIONS . '/' . $version;
-    }
-
-    /**
-     * @param  string $version
-     * @return string the unpacked release
-     */
-    public function releaseDir( $version ) {
-
-        return $this->dir( $version ) . '/' . self::RELEASE;
-    }
-
-    /**
-     * The staged releases, lowest version first.
-     *
-     * @return list<string>
-     */
-    public function versions() {
-
-        if ( $this->root === '' ) {
-
-            return [];
-        }
-
-        $versions = [];
-
-        foreach ( (array) glob( $this->root . '/' . self::VERSIONS . '/*', GLOB_ONLYDIR ) as $dir ) {
-
-            $v = basename( (string) $dir );
-
-            if ( Version::parse( $v ) !== null ) {
-
-                $versions[] = $v;
-            }
-        }
-
-        usort( $versions, [ Version::class, 'compare' ] );
-
-        return $versions;
+        return $this->root . '/' . self::SLOT;
     }
 
     /** @return array<string, mixed>|null staged.json */
@@ -202,19 +161,28 @@ class Staging {
     }
 
     /**
+     * Describe what staged/ holds. $automatic: whether the hand-off installs it
+     * on its own, in its window; false for one staged by hand, or one that
+     * waits for a requirement or for an operator.
+     *
      * @param  string                    $version
      * @param  array<string, mixed>|null $window
      * @param  string                    $sha256 the tarball's
+     * @param  bool                      $automatic
+     * @param  bool                      $by_hand
+     * @param  int|null                  $staged_at the caller's clock; now when null
      * @return void
      */
-    public function writeStaged( $version, $window, $sha256 ) {
+    public function writeStaged( $version, $window, $sha256, $automatic = true, $by_hand = false, $staged_at = null ) {
 
         $this->writeJson( $this->root . '/' . self::STAGED, [
             'format'    => self::FORMAT,
             'version'   => $version,
             'window'    => $window,
             'sha256'    => $sha256,
-            'staged_at' => time(),
+            'staged_at' => $staged_at ?? time(),
+            'automatic' => (bool) $automatic,
+            'by_hand'   => (bool) $by_hand,
         ] );
     }
 
@@ -228,15 +196,29 @@ class Staging {
     }
 
     /**
-     * Whether a release is staged: its release/ exists (it is renamed into
-     * place only once proved) and says it is that version.
+     * Empty the slot: staged.json, then staged/. The caller holds the lock.
+     *
+     * @return void
+     */
+    public function clear() {
+
+        if ( $this->root !== '' ) {
+
+            $this->removeStaged();
+            self::remove( $this->releaseDir() );
+        }
+    }
+
+    /**
+     * Whether staged/ holds this release: its release.json says so (staged/
+     * is renamed into place only once proved).
      *
      * @param  string $version
      * @return bool
      */
     public function isStaged( $version ) {
 
-        return $this->root !== '' && ( $this->releaseInfo( $version )['version'] ?? null ) === $version;
+        return $this->root !== '' && ( $this->releaseInfo()['version'] ?? null ) === $version;
     }
 
     /** @return array<string, mixed>|null install.json: the unfinished install */
@@ -246,8 +228,7 @@ class Staging {
     }
 
     /**
-     * Whether the unfinished install is of this version: its staging is then
-     * the installer's.
+     * Whether the unfinished install is of this version.
      *
      * @param  string $version
      * @return bool
@@ -257,65 +238,49 @@ class Staging {
         return ( $this->install()['version'] ?? null ) === $version;
     }
 
-    /**
-     * The staged release's release.json.
-     *
-     * @param  string $version
-     * @return array<string, mixed>|null
-     */
-    public function releaseInfo( $version ) {
+    /** @return array<string, mixed>|null the staged release's release.json */
+    public function releaseInfo() {
 
-        return $this->root === '' ? null : $this->readJson( $this->releaseDir( $version ) . '/release.json' );
+        return $this->root === '' ? null : $this->readJson( $this->releaseDir() . '/release.json' );
     }
 
     /**
-     * Download a release, check it against its SHA-256 and unpack it. On any
-     * failure the directory is deleted and the error thrown: the next run
+     * Download a release into staged.tmp/, check it against its SHA-256 and
+     * unpack it, without touching the slot; swapIn() then puts it there. On
+     * any failure staged.tmp/ is deleted and the error thrown: the next run
      * starts again.
      *
      * @param  Release $release
      * @return string the tarball's SHA-256
      * @throws \RuntimeException
      */
-    public function stage( array $release ) {
+    public function download( array $release ) {
 
         $v = $release['version'];
-
-        if ( $this->hasInstall( $v ) ) {
-
-            throw new \LogicException( sprintf( '%s is being installed; its staging is not changed.', $v ) );
-        }
-
         $this->ensureRoot();
 
-        $dir = $this->dir( $v );
+        $dir = $this->root . '/' . self::SLOT . '.tmp';
         self::remove( $dir );
 
         try {
 
-            if ( ! @mkdir( $dir, 0700, true ) ) {
+            if ( ! @mkdir( $dir, 0700 ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $dir ) );
             }
 
             $tar = $dir . '/' . sprintf( Releases::ASSET, $v );
-            $sha = $this->download( $release, $tar );
-            $tmp = $dir . '/' . self::RELEASE . '.tmp';
+            $sha = $this->fetch( $release, $tar );
 
-            mkdir( $tmp, 0755 );
-            Tar::extract( $tar, $tmp );
+            mkdir( $dir . '/release', 0755 );
+            Tar::extract( $tar, $dir . '/release' );
             @unlink( $tar );
 
-            $info = $this->readJson( $tmp . '/release.json' );
+            $info = $this->readJson( $dir . '/release/release.json' );
 
             if ( ( $info['version'] ?? null ) !== $v ) {
 
                 throw new \RuntimeException( sprintf( '%s\'s release.json says it is %s.', $v, var_export( $info['version'] ?? null, true ) ) );
-            }
-
-            if ( ! rename( $tmp, $this->releaseDir( $v ) ) ) {
-
-                throw new \RuntimeException( sprintf( 'Could not rename %s.', $tmp ) );
             }
 
             return $sha;
@@ -329,6 +294,33 @@ class Staging {
     }
 
     /**
+     * Put what download() unpacked into the slot, in place of what was there:
+     * staged.json goes first, and an unfinished install with its backup/ (the
+     * release replacing it may well be the fix). The caller holds the lock and
+     * writes staged.json after.
+     *
+     * @return void
+     * @throws \RuntimeException
+     */
+    public function swapIn() {
+
+        $tmp = $this->root . '/' . self::SLOT . '.tmp';
+
+        $this->removeStaged();
+        @unlink( $this->root . '/' . self::INSTALL );
+        self::remove( $this->root . '/' . self::BACKUP );
+        self::remove( $this->releaseDir() );
+
+        if ( ! @rename( $tmp . '/release', $this->releaseDir() ) ) {
+
+            throw new \RuntimeException( sprintf( 'Could not move %s/release into place.', $tmp ) );
+        }
+
+        @chmod( $this->releaseDir(), 0700 );
+        self::remove( $tmp );
+    }
+
+    /**
      * Fetch the tarball into $tar and prove it: its SHA-256 against the
      * asset's digest, else against the release's SHA256SUMS.
      *
@@ -336,7 +328,7 @@ class Staging {
      * @param  string  $tar
      * @return string the SHA-256
      */
-    private function download( array $release, $tar ) {
+    private function fetch( array $release, $tar ) {
 
         $expected = $release['sha256'];
 

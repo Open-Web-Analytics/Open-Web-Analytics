@@ -20,6 +20,7 @@ class SelfUpdateInstallCli extends \OWA\Core\Controller\Cli {
             'description' => 'Installs a release staged with cmd=self-update-stage (or by the release check) now, whatever the automatic update settings say: backs up and copies its files, then runs its schema updates and republishes the tracking bundles. A failing install starts over with fresh attempts.',
             'arguments'   => [
                 'version=<x.y.z>' => 'The staged release to install.',
+                '--force'         => 'Install it even when it is not newer than the installed release (going back, or the same release again).',
             ],
         ];
     }

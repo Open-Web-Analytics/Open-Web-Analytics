@@ -21,9 +21,9 @@
  *               (the updates_dir setting); Step 1 creates it.
  *
  *     updates-<id>/          0711  others open a name they know, list nothing
- *       staged.json          0644  Step 1's: the release to install, and when
+ *       staged.json          0644  what staged/ holds, and whether and when it installs itself
  *       install.json         0644  the installer's, while an install is unfinished
- *       versions/            0700  the staged releases: <version>/release/
+ *       staged/              0700  the one staged release (staged.tmp/ while it downloads)
  *       backup/              0700  the originals, while an install is unfinished
  *
  *   The two JSON files are readable by the web user, under any arrangement
@@ -40,8 +40,9 @@
  * directories that are neither the release's nor a retired one of OWA's own.
  *
  * THE FROZEN CONTRACT between an installed release and the next is
- * `install`'s: one array (root, updates, data, public, version, manual, now,
- * lock) in, null (boot OWA as if nothing happened) or an exit code out. Its
+ * `install`'s: one array (root, updates, data, public, version, manual,
+ * forced, now, lock) in, null (boot OWA as if nothing happened) or an exit
+ * code out. Its
  * fields, like staged.json's and install.json's, are only ever added to.
  *
  * Each attempt is counted at the claim, retry_after set then on the back-off
@@ -138,8 +139,8 @@ return [
     /*
      * The updates directory, or null: none, or more than one (System Health
      * says so, and nothing installs). With $create, Step 1 makes it when
-     * there is none: mode 0711 with versions/ 0700, a name mkdir() refuses
-     * to reuse, and looked for again after, so it is the only one.
+     * there is none: mode 0711, a name mkdir() refuses to reuse, and looked
+     * for again after, so it is the only one.
      */
     'updatesDir' => static function ( $data, $create = false ) {
 
@@ -164,8 +165,6 @@ return [
         }
 
         @chmod( $dir, 0711 );
-        @mkdir( $dir . '/versions', 0700 );
-        @chmod( $dir . '/versions', 0700 );
         $found = $u['updatesDirs']( $data );
 
         return count( $found ) === 1 ? (string) $found[0] : null;
@@ -578,6 +577,18 @@ return [
         return $status !== null && $status['phase'] === 'copying';
     },
 
+    /*
+     * The installed release's version, from the line the Release Packager
+     * writes in Core/Env.php, read as text so no OWA class loads; null when
+     * it is not a release version (a checkout says master).
+     */
+    'installedVersion' => static function ( $root ) {
+
+        $env = (string) @file_get_contents( rtrim( (string) $root, '/' ) . '/Core/Env.php' );
+
+        return preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", $env, $m ) ? $m[1] : null;
+    },
+
     'backoff' => static function ( $attempts ) {
 
         return [ 1 => 60, 2 => 180, 3 => 600, 4 => 900, 5 => 7200, 6 => 86400 ][ (int) $attempts ] ?? 604800;
@@ -616,9 +627,10 @@ return [
      */
     'handoff' => static function ( $root, array $argv ) {
 
-        $u    = require __FILE__;
-        $root = rtrim( (string) $root, '/' );
-        $only = null;
+        $u     = require __FILE__;
+        $root  = rtrim( (string) $root, '/' );
+        $only  = null;
+        $force = in_array( '--force', $argv, true );
 
         if ( in_array( 'cmd=self-update-install', $argv, true ) ) {
 
@@ -696,7 +708,7 @@ return [
         // What to install: a version, or the exit code to end with. Decided
         // once without the lock, so a run with nothing due never takes it,
         // and again holding it, since Step 1 may have changed things between.
-        $decide = static function () use ( $u, $dir, $only ) {
+        $decide = static function () use ( $u, $dir, $only, $force, $root ) {
 
             $current = json_decode( (string) @file_get_contents( $dir . '/install.json' ), true );
             $current = is_array( $current ) ? $current : null;
@@ -725,7 +737,38 @@ return [
                 return null;
             }
 
-            $gone    = ! is_dir( $dir . '/versions/' . $version . '/release' );
+            /*
+             * An install starts only for a release newer than the installed one,
+             * unless cmd=self-update-install says --force. An unfinished install
+             * of it carries on while the installed version is not newer than it,
+             * since its copy may already have replaced Core/Env.php, and a forced
+             * one carries on regardless. A newer installed version means another
+             * install went past it (by hand, before the window): an automatic one
+             * is dropped, its staging and any unfinished install of it deleted.
+             */
+            if ( ! ( $only !== null && $force ) ) {
+
+                $installed  = $u['installedVersion']( $root );
+                $unfinished = ( $current['version'] ?? null ) === $version;
+                $cmp        = $installed === null ? null : version_compare( $version, $installed );
+                $goes_on    = $cmp !== null && ( $cmp > 0 || ( $unfinished && ( $cmp === 0 || ! empty( $current['forced'] ) ) ) );
+
+                if ( ! $goes_on ) {
+
+                    if ( $only === null ) {
+
+                        return $installed === null ? null : [ 'drop' => $version ];
+                    }
+
+                    fwrite( STDERR, $installed === null
+                        ? sprintf( "The installed version cannot be read from Core/Env.php; add --force to install %s anyway.\n", $version )
+                        : sprintf( "%s is not newer than the installed %s; add --force to install it anyway.\n", $version, $installed ) );
+
+                    return 1;
+                }
+            }
+
+            $gone    = ! $u['slotHolds']( $dir, $version );
             $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
 
             if ( $problem !== null ) {
@@ -745,6 +788,26 @@ return [
 
         $due = $decide();
 
+        // A staged release the installed one has gone past: deleted, holding the lock, and OWA boots.
+        if ( isset( $due['drop'] ) ) {
+
+            $hold = $u['tryLock']( $data, sprintf( 'clean-up %s', $due['drop'] ) );
+
+            if ( $hold !== null ) {
+
+                $again = $decide();
+
+                if ( ( $again['drop'] ?? null ) === $due['drop'] ) {
+
+                    $u['dropSuperseded']( $dir, $due['drop'] );
+                }
+
+                $u['unlock']( $hold );
+            }
+
+            return null;
+        }
+
         if ( ! is_array( $due ) ) {
 
             return $due;
@@ -759,11 +822,11 @@ return [
 
         $due = $decide();
 
-        if ( ! is_array( $due ) ) {
+        if ( ! is_array( $due ) || isset( $due['drop'] ) ) {
 
             $u['unlock']( $hold );
 
-            return $due;
+            return is_array( $due ) ? null : $due;
         }
 
         [ $version, $gone ] = $due;
@@ -778,6 +841,7 @@ return [
             'public'  => $config['public'],
             'version' => $version,
             'manual'  => $only !== null,
+            'forced'  => $only !== null && $force,
             'now'     => time(),
             'lock'    => $hold,
         ];
@@ -792,7 +856,7 @@ return [
             return null;
         }
 
-        $code = ( require $dir . '/versions/' . $version . '/release/updater.php' )['install']( $context );
+        $code = ( require $dir . '/staged/updater.php' )['install']( $context );
 
         // Done, however it ended. A process that dies, or exit()s from inside
         // the install (the 24-hour stop), leaves the file for the next
@@ -829,7 +893,8 @@ return [
         $staged  = $read( $dir . '/staged.json' );
         $version = (string) ( $staged['version'] ?? '' );
 
-        if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) || ! is_dir( $dir . '/versions/' . $version . '/release' ) ) {
+        // Only one that installs itself: not one staged by hand, nor one that waits.
+        if ( empty( $staged['automatic'] ) || ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
 
             return null;
         }
@@ -866,10 +931,18 @@ return [
         return $version;
     },
 
+    /* Whether staged/ holds this release: its release.json says so. */
+    'slotHolds' => static function ( $dir, $version ) {
+
+        $info = json_decode( (string) @file_get_contents( rtrim( (string) $dir, '/' ) . '/staged/release.json' ), true );
+
+        return is_array( $info ) && ( $info['version'] ?? null ) === $version;
+    },
+
     /*
-     * Why the staging may not be run, or null: the updates directory,
-     * <version>/ and release/updater.php owned by this user and writable by
-     * no one else.
+     * Why the staging may not be run, or null: staged/ holds that release,
+     * and the updates directory, staged/ and its updater.php are owned by this
+     * user and writable by no one else.
      */
     'checkStaging' => static function ( $dir, $version ) {
 
@@ -885,7 +958,12 @@ return [
 
         $uid = posix_geteuid();
 
-        foreach ( [ $dir, $dir . '/versions', $dir . '/versions/' . $version, $dir . '/versions/' . $version . '/release/updater.php' ] as $path ) {
+        if ( ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
+
+            return sprintf( '%s is not staged: stage it first (cmd=self-update-stage version=%s).', $version, $version );
+        }
+
+        foreach ( [ $dir, $dir . '/staged', $dir . '/staged/updater.php' ] as $path ) {
 
             clearstatcache( true, $path );
 
@@ -901,6 +979,30 @@ return [
         }
 
         return null;
+    },
+
+    /*
+     * A staged release the installed one has gone past: staged.json if it
+     * names it, its staging, and an unfinished install of it with its
+     * backup/ (the originals of a release no longer installed). The caller
+     * holds the lock.
+     */
+    'dropSuperseded' => static function ( $dir, $version ) {
+
+        $u    = require __FILE__;
+        $read = static fn ( $file ) => is_array( $j = json_decode( (string) @file_get_contents( $file ), true ) ) ? $j : [];
+
+        if ( ( $read( $dir . '/install.json' )['version'] ?? null ) === $version ) {
+
+            @unlink( $dir . '/install.json' );
+            $u['remove']( $dir . '/backup' );
+        }
+
+        if ( ( $read( $dir . '/staged.json' )['version'] ?? null ) === $version || $u['slotHolds']( $dir, $version ) ) {
+
+            @unlink( $dir . '/staged.json' );
+            $u['remove']( $dir . '/staged' );
+        }
     },
 
     /*
@@ -968,7 +1070,7 @@ return [
 
         $u       = require __FILE__;
         $root    = rtrim( (string) $c['root'], '/' );
-        $release = $c['updates'] . '/versions/' . $c['version'] . '/release';
+        $release = $c['updates'] . '/staged';
         $state   = $c['updates'] . '/install.json';
         $backup  = $c['updates'] . '/backup';
         $write   = static function ( $file, array $data ) {
@@ -1003,6 +1105,7 @@ return [
             'retry_after' => (int) $c['now'] + $u['backoff']( $attempts ),
             'copied'      => false,
             'booted'      => false,
+            'forced'      => ! empty( $c['forced'] ) || ! empty( $previous['forced'] ),
             'error'       => $previous['error'] ?? null,
         ];
         $write( $state, $install );
