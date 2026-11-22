@@ -93,7 +93,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $elsewhere = [
             'update' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
             // Read before OWA loads, by the hand-off.
-            'self-update-install' => ['version' => 'updater.php'],
+            'self-update-install' => ['version' => 'updater.php', 'force' => 'updater.php'],
         ];
 
         foreach ($this->registeredCommands() as $command => $class) {
@@ -105,7 +105,8 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
                     ? file_get_contents(dirname(__DIR__) . '/' . $elsewhere[$command][$name])
                     : $this->sourceOf($class);
 
-                $this->assertMatchesRegularExpression('/[\'"]' . preg_quote($name, '/') . '[\'"]/', $src,
+                // As a parsed parameter ('force'), or as the raw argument the hand-off reads ('--force').
+                $this->assertMatchesRegularExpression('/[\'"](?:--)?' . preg_quote($name, '/') . '[\'"]/', $src,
                     "cmd=$command documents $arg, but nothing in its code reads '$name'");
             }
         }

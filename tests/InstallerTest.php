@@ -45,6 +45,7 @@ final class InstallerTest extends TestCase
         $this->tree($this->root, [
             'cli.php'                          => 'old cli',
             'owa_env.php'                      => 'env',
+            'Core/Env.php'                     => "<?php\nfinal class Env {\n    const VERSION = '2.0.0';\n}\n",
             'modules/Base/Module.php'          => 'old module',
             'modules/Base/Retired.php'         => 'a file 2.0.1 no longer has',
             'modules/Hello/Module.php'         => 'a module OWA retired',
@@ -470,6 +471,44 @@ final class InstallerTest extends TestCase
         $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
     }
 
+    /** An install starts only for a release newer than the installed 2.0.0; by hand, --force goes back. */
+    public function testOnlyANewerReleaseInstalls(): void
+    {
+        $this->stage('2.0.0');
+        $this->assertSame(99, $this->handoff(), 'the same release: nothing installs, OWA boots');
+        $this->assertFileDoesNotExist($this->updates . '/install.json');
+
+        $this->stage('1.9.0', null, false);
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=1.9.0']));
+        $this->assertStringContainsString('1.9.0 is not newer than the installed 2.0.0; add --force to install it anyway.', $this->out);
+        $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
+
+        $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=1.9.0', '--force']), $this->out);
+        $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'), 'going back, by hand');
+    }
+
+    /** A retry carries on although the copy already replaced Core/Env.php with the release's. */
+    public function testAnUnfinishedInstallCarriesOnWhateverEnvSays(): void
+    {
+        $this->stage('2.0.1');
+        $this->unfinished('2.0.1', $this->now - 1);
+        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = '2.0.1';\n}\n");
+
+        $this->assertSame(0, $this->handoff(), $this->out);
+        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
+    }
+
+    /** An installed version that cannot be read (a checkout says master) starts nothing, unless forced. */
+    public function testAnUnreadableInstalledVersionStartsNothing(): void
+    {
+        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = 'master';\n}\n");
+        $this->stage('2.0.1');
+
+        $this->assertSame(99, $this->handoff());
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
+        $this->assertStringContainsString('The installed version cannot be read from Core/Env.php; add --force to install 2.0.1 anyway.', $this->out);
+    }
+
     public function testEveryOtherRunWaitsForAnInstall(): void
     {
         $h = fopen($this->data . '/updating', 'c');
@@ -546,6 +585,7 @@ final class InstallerTest extends TestCase
         $this->tree($dir . '/release', $extra + [
             'cli.php'                 => 'new cli',
             'owa_env.php'             => 'env',
+            'Core/Env.php'            => "<?php\nfinal class Env {\n    const VERSION = '$v';\n}\n",
             'modules/Base/Module.php' => 'new module',
             'modules/Base/Added.php'  => 'added',
             'public/base/new.js'      => 'a built asset',

@@ -452,6 +452,16 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('installing it goes back', implode("\n", $result['lines']));
     }
 
+    /** An older release staged by hand installs only with --force, and the output says so. */
+    public function testAnOlderReleaseByHandIsInstalledWithForce(): void
+    {
+        $this->releaseJson['2.0.1'] = ['modules' => ['base' => $this->schema['base']]];
+        $result = $this->hand('2.0.1', ['2.0.1'], ['installed' => '2.0.4']);
+
+        $this->assertSame(ReleaseCheck::STAGED, $result['outcome'], implode("\n", array_merge($result['lines'], $result['problems'])));
+        $this->assertStringContainsString('Install it with: php cli.php cmd=self-update-install version=2.0.1 --force', implode("\n", $result['lines']));
+    }
+
     public function testByHandRefusesAMajorACheckoutAndAClaimedStaging(): void
     {
         $this->assertStringContainsString('another major version', implode("\n", $this->hand('3.0.0', ['3.0.0'])['lines']));

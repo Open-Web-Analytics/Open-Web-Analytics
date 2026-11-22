@@ -578,6 +578,18 @@ return [
         return $status !== null && $status['phase'] === 'copying';
     },
 
+    /*
+     * The installed release's version, from the line the Release Packager
+     * writes in Core/Env.php, read as text so no OWA class loads; null when
+     * it is not a release version (a checkout says master).
+     */
+    'installedVersion' => static function ( $root ) {
+
+        $env = (string) @file_get_contents( rtrim( (string) $root, '/' ) . '/Core/Env.php' );
+
+        return preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", $env, $m ) ? $m[1] : null;
+    },
+
     'backoff' => static function ( $attempts ) {
 
         return [ 1 => 60, 2 => 180, 3 => 600, 4 => 900, 5 => 7200, 6 => 86400 ][ (int) $attempts ] ?? 604800;
@@ -616,9 +628,10 @@ return [
      */
     'handoff' => static function ( $root, array $argv ) {
 
-        $u    = require __FILE__;
-        $root = rtrim( (string) $root, '/' );
-        $only = null;
+        $u     = require __FILE__;
+        $root  = rtrim( (string) $root, '/' );
+        $only  = null;
+        $force = in_array( '--force', $argv, true );
 
         if ( in_array( 'cmd=self-update-install', $argv, true ) ) {
 
@@ -696,7 +709,7 @@ return [
         // What to install: a version, or the exit code to end with. Decided
         // once without the lock, so a run with nothing due never takes it,
         // and again holding it, since Step 1 may have changed things between.
-        $decide = static function () use ( $u, $dir, $only ) {
+        $decide = static function () use ( $u, $dir, $only, $force, $root ) {
 
             $current = json_decode( (string) @file_get_contents( $dir . '/install.json' ), true );
             $current = is_array( $current ) ? $current : null;
@@ -723,6 +736,28 @@ return [
             if ( $version === null ) {
 
                 return null;
+            }
+
+            // An install starts only for a release newer than the installed one,
+            // unless cmd=self-update-install says --force. An unfinished install
+            // of it carries on: its copy may already have replaced Core/Env.php.
+            if ( ( $current['version'] ?? null ) !== $version && ! ( $only !== null && $force ) ) {
+
+                $installed = $u['installedVersion']( $root );
+
+                if ( $installed === null || version_compare( $version, $installed, '<=' ) ) {
+
+                    if ( $only === null ) {
+
+                        return null;
+                    }
+
+                    fwrite( STDERR, $installed === null
+                        ? sprintf( "The installed version cannot be read from Core/Env.php; add --force to install %s anyway.\n", $version )
+                        : sprintf( "%s is not newer than the installed %s; add --force to install it anyway.\n", $version, $installed ) );
+
+                    return 1;
+                }
             }
 
             $gone    = ! is_dir( $dir . '/versions/' . $version . '/release' );

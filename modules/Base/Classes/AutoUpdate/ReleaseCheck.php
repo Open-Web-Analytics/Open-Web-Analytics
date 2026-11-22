@@ -413,7 +413,8 @@ class ReleaseCheck {
             return $this->outcome( self::UNMET, $v, $problems, sprintf( '%s cannot be installed here:', $v ) );
         }
 
-        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged. Install it with: php cli.php cmd=self-update-install version=%s', $v, $v ) );
+        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged. Install it with: php cli.php cmd=self-update-install version=%s%s', $v, $v,
+            $step === null ? ' --force' : '' ) );
     }
 
     /**
