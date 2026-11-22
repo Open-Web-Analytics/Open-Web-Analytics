@@ -93,7 +93,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $elsewhere = [
             'update' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
             // Read before OWA loads, by the hand-off.
-            'self-update-install' => ['version' => 'updater.php', 'force' => 'updater.php'],
+            'self-update-install' => ['force' => 'updater.php'],
         ];
 
         foreach ($this->registeredCommands() as $command => $class) {
@@ -108,6 +108,19 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
                 // As a parsed parameter ('force'), or as the raw argument the hand-off reads ('--force').
                 $this->assertMatchesRegularExpression('/[\'"](?:--)?' . preg_quote($name, '/') . '[\'"]/', $src,
                     "cmd=$command documents $arg, but nothing in its code reads '$name'");
+            }
+        }
+    }
+
+    /** As documented, with a placeholder value where it names one, each argument is one cli.php accepts. */
+    public function testEveryDocumentedArgumentParses(): void
+    {
+        foreach ($this->registeredCommands() as $command => $class) {
+
+            foreach (array_keys($class::usage()['arguments']) as $arg) {
+
+                $parsed = \OWA\Core\Lib::parseCliArgs(['cli.php', preg_replace('/=<[^>]*>|=\S+$/', '=x', $arg)]);
+                $this->assertIsArray($parsed, "cmd=$command documents $arg, which cli.php refuses: " . (is_string($parsed) ? $parsed : ''));
             }
         }
     }

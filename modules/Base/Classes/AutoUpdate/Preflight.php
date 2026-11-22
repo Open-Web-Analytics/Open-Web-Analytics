@@ -74,7 +74,10 @@ class Preflight {
 
                 $value = $env['constants'][ (string) $name ] ?? null;
 
-                if ( $value === null || $value === '' ) {
+                // As boot judges them (ServerRole): the database constants
+                // defined, an empty password among them; the URL not empty.
+                // An empty secret is too short, below.
+                if ( $value === null || ( $value === '' && $list === 'url_constants' ) ) {
 
                     $problems[] = sprintf( \OWA\Core\CoreAPI::t( 'It needs %s defined in owa-config.php.' ), $name );
 

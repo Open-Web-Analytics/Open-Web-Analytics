@@ -106,7 +106,7 @@ final class InstallerTest extends TestCase
 
         $this->assertSame(99, $this->handoff(), 'no fatal: the run boots normally - ' . $this->out);
         $this->assertFileDoesNotExist($this->updates . '/install.json', 'and installs nothing');
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
         $this->assertStringContainsString('owa-config.php uses OWA\\Core\\Env.', $this->out, 'by hand, it says why');
 
         file_put_contents($this->root . '/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '{$this->data}/');\n// \\OWA\\Core\\Env in a comment\n");
@@ -213,6 +213,26 @@ final class InstallerTest extends TestCase
         $this->assertSame(0, $this->handoff([], 60), $this->out);
         $this->assertSame(2, $this->install()['attempts']);
         $this->assertSame('new cli', file_get_contents($this->root . '/cli.php'));
+    }
+
+    /** A file the copy backed up and then could not replace is unchanged: nothing to put back, and the undo says the release was. */
+    public function testAFileTheCopyCouldNotReplaceIsNotPutBack(): void
+    {
+        $this->tree($this->root, ['modules/Locked/Old.php' => 'old']);
+        $this->stage('2.0.1', null, true, ['modules/Locked/Old.php' => 'new']);
+        chmod($this->root . '/modules/Locked', 0555);
+
+        try {
+            $this->assertSame(99, $this->handoff(), $this->out);
+        } finally {
+            chmod($this->root . '/modules/Locked', 0755);
+        }
+
+        $this->assertSame('old', file_get_contents($this->root . '/modules/Locked/Old.php'));
+        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
+        $error = $this->install()['error'];
+        $this->assertStringContainsString('Could not write modules/Locked/Old.php', $error);
+        $this->assertStringContainsString('The previous release was put back', $error, 'nothing failed to go back');
     }
 
     /** A release that does not boot is undone from the shutdown: no schema can have changed. */
@@ -478,11 +498,11 @@ final class InstallerTest extends TestCase
         $this->assertFileDoesNotExist($this->updates . '/install.json');
 
         $this->stage('1.9.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=1.9.0']));
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
         $this->assertStringContainsString('1.9.0 is not newer than the installed 2.0.0; add --force to install it anyway.', $this->out);
         $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
 
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=1.9.0', '--force']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=self-update-install', '--force']), $this->out);
         $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'), 'going back, by hand');
         $this->assertTrue($this->install()['forced'], 'its retries carry on');
     }
@@ -508,7 +528,7 @@ final class InstallerTest extends TestCase
     public function testByHandNothingIsDropped(): void
     {
         $this->stage('2.0.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.0']));
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
         $this->assertDirectoryExists($this->updates . '/staged');
     }
 
@@ -542,7 +562,7 @@ final class InstallerTest extends TestCase
         $this->stage('2.0.1');
 
         $this->assertSame(99, $this->handoff());
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
         $this->assertStringContainsString('The installed version cannot be read from Core/Env.php; add --force to install 2.0.1 anyway.', $this->out);
     }
 
@@ -554,7 +574,7 @@ final class InstallerTest extends TestCase
         $this->assertSame(99, $this->handoff(), 'not due');
         $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
 
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=2.0.1']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=self-update-install']), $this->out);
         $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
     }
 
@@ -573,26 +593,22 @@ final class InstallerTest extends TestCase
         }
     }
 
+    /** Whatever is staged: there is one staged release, and an unfinished install is of it. */
     public function testInstallByHand(): void
     {
-        $this->assertSame(2, $this->handoff(['cmd=self-update-install']));
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
-        $this->assertStringContainsString('2.0.1 is not staged: stage it first (cmd=self-update-stage version=2.0.1).', $this->out);
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertStringContainsString('Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.', $this->out);
 
-        // An unfinished install of another version comes first.
-        $this->stage('2.0.2', null, false);
-        $this->unfinished('2.0.1', $this->now + 600000);
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.2']));
-        $this->assertStringContainsString('An install of OWA 2.0.1 is unfinished', $this->out);
-
-        // The same version starts over with fresh attempts, whatever its retry_after.
+        // It starts over with fresh attempts, whatever its retry_after.
         $this->stage('2.0.1', null, false);
         $this->unfinished('2.0.1', $this->now + 600000, 5);
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=2.0.1']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=self-update-install']), $this->out);
+        $this->assertStringContainsString('Installing OWA 2.0.1.', $this->out, 'it says which');
         $this->assertSame(1, $this->install()['attempts']);
+        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
 
         file_put_contents($this->root . '/.git', 'gitdir: elsewhere');
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
         $this->assertStringContainsString('version control checkout', $this->out);
     }
 
