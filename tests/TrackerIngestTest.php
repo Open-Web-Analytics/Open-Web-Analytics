@@ -24,12 +24,33 @@ final class TrackerIngestTest extends TestCase
     /** @var array<string,mixed> settings to restore */
     private array $saved = [];
 
+    /** @var array<string,mixed> each module's stored schema version, to restore */
+    private array $schemas = [];
+
     protected function setUp(): void
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
         foreach (['queue_tracking_events', 'server_role', 'raw_retention_months'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+        }
+
+        // A schema behind queues every beacon: each module's is made current,
+        // since without a database (CI's PHPUnit job) none is stored.
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ((fn () => $this->modules)->call(\OWA\Core\CoreAPI::serviceSingleton()) as $name => $module) {
+            $this->schemas[$name] = $c->get($name, 'schema_version');
+            $c->set($name, 'schema_version', (int) $module->required_schema_version);
+        }
+
+        // A schema behind queues every beacon: each module's is made current,
+        // since without a database (CI's PHPUnit job) none is stored.
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ((fn () => $this->modules)->call(\OWA\Core\CoreAPI::serviceSingleton()) as $name => $module) {
+            $this->schemas[$name] = $c->get($name, 'schema_version');
+            $c->set($name, 'schema_version', (int) $module->required_schema_version);
         }
 
         IntakeTestProcessor::$outcome = 'ok';
@@ -45,6 +66,14 @@ final class TrackerIngestTest extends TestCase
     {
         foreach ($this->saved as $key => $value) {
             \OWA\Core\CoreAPI::setSetting('base', $key, $value);
+        }
+
+        foreach ($this->schemas as $name => $version) {
+            \OWA\Core\CoreAPI::configSingleton()->set($name, 'schema_version', $version);
+        }
+
+        foreach ($this->schemas as $name => $version) {
+            \OWA\Core\CoreAPI::configSingleton()->set($name, 'schema_version', $version);
         }
 
         TrackerIngest::$queue   = null;
