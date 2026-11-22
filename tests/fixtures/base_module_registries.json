@@ -120,6 +120,15 @@
         "base.optionsRetentionUpdate": {
             "class_name": "OWA\\Module\\Base\\Controller\\OptionsRetentionUpdate"
         },
+        "base.optionsUpdates": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsUpdates"
+        },
+        "base.optionsUpdatesUpdate": {
+            "class_name": "OWA\\Module\\Base\\Controller\\OptionsUpdatesUpdate"
+        },
+        "base.updatesRun": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UpdatesRun"
+        },
         "base.propertyRetention": {
             "class_name": "OWA\\Module\\Base\\Controller\\PropertyRetention"
         },
@@ -224,6 +233,9 @@
         },
         "base.selfUpdateCancelCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli"
+        },
+        "base.selfUpdateNowCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateNowCli"
         },
         "base.selfUpdateInstallCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateInstallCli"
@@ -396,6 +408,7 @@
         "self-update": "base.selfUpdateCli",
         "self-update-stage": "base.selfUpdateStageCli",
         "self-update-cancel": "base.selfUpdateCancelCli",
+        "self-update-now": "base.selfUpdateNowCli",
         "self-update-install": "base.selfUpdateInstallCli",
         "update-ua-regexes": "base.updateUaRegexesCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
@@ -633,6 +646,20 @@
                 "base.retention"
             ],
             "anchortext": "Data retention",
+            "priviledge": "admin",
+            "section": "General",
+            "capability": "edit_settings",
+            "owa_titled": true
+        },
+        "base.optionsUpdates": {
+            "do": "base.optionsUpdates",
+            "title": "Updates",
+            "group": "General",
+            "order": 7,
+            "fieldsets": [
+                "base.updates"
+            ],
+            "anchortext": "Updates",
             "priviledge": "admin",
             "section": "General",
             "capability": "edit_settings",
@@ -877,6 +904,20 @@
             "settings": [
                 "app_passwords_enabled",
                 "app_passwords_require_https"
+            ],
+            "module": "base"
+        },
+        "base.updates": {
+            "id": "base.updates",
+            "legend": "Automatic Updates",
+            "settings": [
+                "auto_update",
+                "auto_update_level",
+                "auto_update_patch_immediately",
+                "auto_update_days",
+                "auto_update_window",
+                "auto_update_email_success",
+                "admin_notice_email"
             ],
             "module": "base"
         },

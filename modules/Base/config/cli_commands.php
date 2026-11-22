@@ -18,6 +18,7 @@ return [
     'self-update'                 => 'base.selfUpdateCli',
     'self-update-stage'           => 'base.selfUpdateStageCli',
     'self-update-cancel'          => 'base.selfUpdateCancelCli',
+    'self-update-now'             => 'base.selfUpdateNowCli',
     // Run by cli.php before OWA loads (updater.php), like the two above it run without boot.
     'self-update-install'         => 'base.selfUpdateInstallCli',
     'update-ua-regexes'           => 'base.updateUaRegexesCli',

@@ -10,7 +10,7 @@ use OWA\Core\CoreAPI;
  *
  *   updates-<id>/        0711: others open a name they know, list nothing
  *     staged.json        0644: what staged/ holds, and whether it installs on its own
- *                        {format, version, window, sha256, staged_at, automatic, by_hand}
+ *                        {format, version, window, sha256, staged_at, automatic, by_hand, install_now}
  *     install.json       0644, the installer's, while an install is unfinished:
  *                        {version, attempts, retry_after, copied, booted, forced, error}
  *     staged/            0700: the one staged release, the tarball unpacked; there
@@ -171,18 +171,20 @@ class Staging {
      * @param  bool                      $automatic
      * @param  bool                      $by_hand
      * @param  int|null                  $staged_at the caller's clock; now when null
+     * @param  bool                      $install_now an admin asked for it to install at once (the Updates screen)
      * @return void
      */
-    public function writeStaged( $version, $window, $sha256, $automatic = true, $by_hand = false, $staged_at = null ) {
+    public function writeStaged( $version, $window, $sha256, $automatic = true, $by_hand = false, $staged_at = null, $install_now = false ) {
 
         $this->writeJson( $this->root . '/' . self::STAGED, [
-            'format'    => self::FORMAT,
-            'version'   => $version,
-            'window'    => $window,
-            'sha256'    => $sha256,
-            'staged_at' => $staged_at ?? time(),
-            'automatic' => (bool) $automatic,
-            'by_hand'   => (bool) $by_hand,
+            'format'      => self::FORMAT,
+            'version'     => $version,
+            'window'      => $install_now ? null : $window,
+            'sha256'      => $sha256,
+            'staged_at'   => $staged_at ?? time(),
+            'automatic'   => (bool) $automatic,
+            'by_hand'     => (bool) $by_hand,
+            'install_now' => (bool) $install_now,
         ] );
     }
 

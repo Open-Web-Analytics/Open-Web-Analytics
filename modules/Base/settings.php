@@ -95,14 +95,79 @@ return [
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ],
-        'auto_update' => [ 'config_constant' => 'OWA_AUTO_UPDATE', 'default' => true, 'description' => 'Whether OWA installs its own patch and minor releases (cmd=release-check stages them). Never on a version control checkout, and never a major release.' ],
-        'auto_update_days' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DAYS', 'default' => '', 'description' => 'The days an automatic update may start on, such as sat,sun. Empty: any day.' ],
-        'auto_update_email_success' => [ 'config_constant' => 'OWA_AUTO_UPDATE_EMAIL_SUCCESS', 'default' => true, 'description' => 'Whether the admins are e-mailed when an automatic update installs. A failure is always e-mailed.' ],
-        'auto_update_level' => [ 'config_constant' => 'OWA_AUTO_UPDATE_LEVEL', 'default' => 'minor', 'description' => 'Which releases install automatically: patch (x.y.Z only) or minor (x.Y.z and patches).' ],
-        'auto_update_patch_immediately' => [ 'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', 'default' => true, 'description' => 'Whether a patch release installs as soon as it is staged rather than in the window.' ],
-        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from.' ],
+        /*
+         * Automatic updates: edited on the Updates screen (a constant wins, as
+         * everywhere), and read by the release check, which stages what they
+         * choose. auto_update_releases_url is config-only: a web admin must not
+         * be able to point the download somewhere else.
+         */
+        'auto_update' => [
+            'config_constant' => 'OWA_AUTO_UPDATE',
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'boolean',
+            'label'    => \OWA\Core\CoreAPI::t( 'Install Updates Automatically' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'Whether OWA downloads and installs its own patch and minor releases. Never on a version control checkout, and never a major release.' ),
+        ],
+        'auto_update_level' => [
+            'config_constant' => 'OWA_AUTO_UPDATE_LEVEL',
+            'default'  => 'minor',
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'select',
+            'label'    => \OWA\Core\CoreAPI::t( 'Releases To Install' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features.' ),
+            'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'patch' => \OWA\Core\CoreAPI::t( 'Patch releases only' ) ],
+        ],
+        'auto_update_patch_immediately' => [
+            'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY',
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'boolean',
+            'label'    => \OWA\Core\CoreAPI::t( 'Install Patches At Once' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'Whether a patch release installs as soon as it is downloaded, rather than in the update window.' ),
+        ],
+        'auto_update_days' => [
+            'config_constant' => 'OWA_AUTO_UPDATE_DAYS',
+            'default'  => '',
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'text',
+            'label'    => \OWA\Core\CoreAPI::t( 'Update Days' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun. Empty: any day.' ),
+            'pattern'  => '/^$|^(mon|tue|wed|thu|fri|sat|sun)(\s*,\s*(mon|tue|wed|thu|fri|sat|sun))*$/i',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Days is a list of days such as sat,sun: mon, tue, wed, thu, fri, sat or sun, separated by commas.' ),
+        ],
+        'auto_update_window' => [
+            'config_constant' => 'OWA_AUTO_UPDATE_WINDOW',
+            'default'  => '02:00-06:00',
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'text',
+            'label'    => \OWA\Core\CoreAPI::t( 'Update Window' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'The time an update may start in, such as 02:00-06:00, in this installation\'s timezone. Empty: any time.' ),
+            'pattern'  => '/^$|^([01][0-9]|2[0-3]):[0-5][0-9]-([01][0-9]|2[0-3]):[0-5][0-9]$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Window is two times, HH:MM-HH:MM, such as 02:00-06:00.' ),
+        ],
+        'auto_update_email_success' => [
+            'config_constant' => 'OWA_AUTO_UPDATE_EMAIL_SUCCESS',
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => [ 'install' ],
+            'type'     => 'boolean',
+            'label'    => \OWA\Core\CoreAPI::t( 'E-mail When An Update Installs' ),
+            'description' =>
+                \OWA\Core\CoreAPI::t( 'Whether the admins are e-mailed when an update installs. A failed update is always e-mailed.' ),
+        ],
+        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from. Config-only: a web admin cannot point the download elsewhere.' ],
         'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found by looking for it when first needed. Never stored.' ],
-        'auto_update_window' => [ 'config_constant' => 'OWA_AUTO_UPDATE_WINDOW', 'default' => '02:00-06:00', 'description' => 'The time an automatic update may start in, HH:MM-HH:MM in the installation\'s timezone. Empty: any time.' ],
         'app_passwords_enabled' => [
             'default'  => true,
             'storable' => true,
