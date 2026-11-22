@@ -6,13 +6,13 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 /**
  * What automatic updates will do here, and what is staged (owa-data/updates/).
  *
- *   php cli.php cmd=self-update
+ *   php cli.php cmd=core-update-status
  *
  * The settings in effect, the release staged to install and when, and each
  * downloaded release: when it was checked, whether it can be installed, any
  * update in it that must be installed by hand, and its install's state.
  */
-class SelfUpdateCli extends \OWA\Core\Controller\Cli {
+class CoreUpdateStatusCli extends \OWA\Core\Controller\Cli {
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {

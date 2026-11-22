@@ -24,8 +24,8 @@
         "base.stringsExtractCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\StringsExtractCli"
         },
-        "base.updateUaRegexesCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli"
+        "base.uaUpdateDefinitionsCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UaUpdateDefinitionsCli"
         },
         "base.installBase": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallBase"
@@ -222,23 +222,23 @@
         "base.tablesCleanupCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\TablesCleanupCli"
         },
-        "base.releaseCheckCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\ReleaseCheckCli"
+        "base.coreUpdateCheckCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateCheckCli"
         },
-        "base.selfUpdateCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCli"
+        "base.coreUpdateStatusCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli"
         },
-        "base.selfUpdateStageCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateStageCli"
+        "base.coreUpdateStageCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStageCli"
         },
-        "base.selfUpdateCancelCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateCancelCli"
+        "base.coreUpdateUnstageCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateUnstageCli"
         },
-        "base.selfUpdateNowCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateNowCli"
+        "base.coreUpdateIgnoreWindowCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateIgnoreWindowCli"
         },
-        "base.selfUpdateInstallCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\SelfUpdateInstallCli"
+        "base.coreUpdateInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateInstallCli"
         },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
@@ -345,8 +345,8 @@
         "base.reportRealtime": {
             "class_name": "OWA\\Module\\Base\\Controller\\ReportRealtime"
         },
-        "base.updatesApplyCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\UpdatesApplyCli"
+        "base.coreUpdateSchemaCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateSchemaCli"
         },
         "base.users": {
             "class_name": "OWA\\Module\\Base\\Controller\\Users"
@@ -398,19 +398,19 @@
         }
     },
     "cli_commands": {
-        "update": "base.updatesApplyCli",
+        "core-update-schema": "base.coreUpdateSchemaCli",
         "version-info": "base.versionInfoCli",
         "strings-extract": "base.stringsExtractCli",
         "v1-drop": "base.v1DropCli",
         "backup": "base.backupCli",
         "tables-cleanup": "base.tablesCleanupCli",
-        "release-check": "base.releaseCheckCli",
-        "self-update": "base.selfUpdateCli",
-        "self-update-stage": "base.selfUpdateStageCli",
-        "self-update-cancel": "base.selfUpdateCancelCli",
-        "self-update-now": "base.selfUpdateNowCli",
-        "self-update-install": "base.selfUpdateInstallCli",
-        "update-ua-regexes": "base.updateUaRegexesCli",
+        "core-update-check": "base.coreUpdateCheckCli",
+        "core-update-status": "base.coreUpdateStatusCli",
+        "core-update-stage": "base.coreUpdateStageCli",
+        "core-update-unstage": "base.coreUpdateUnstageCli",
+        "core-update-ignore-window": "base.coreUpdateIgnoreWindowCli",
+        "core-update-install": "base.coreUpdateInstallCli",
+        "ua-update-definitions": "base.uaUpdateDefinitionsCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",
         "tracker-ingest-provision": "base.trackerIngestProvisionCli",
@@ -605,10 +605,10 @@
             "source": "code",
             "while_updates_pending": false
         },
-        "release-check": {
-            "name": "release-check",
-            "command": "release-check",
-            "schedule": "35 0,6,12,18 * * *",
+        "core-update-check": {
+            "name": "core-update-check",
+            "command": "core-update-check",
+            "schedule": "22 3,9,15,21 * * *",
             "params": [],
             "description": "Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.",
             "module": "base",

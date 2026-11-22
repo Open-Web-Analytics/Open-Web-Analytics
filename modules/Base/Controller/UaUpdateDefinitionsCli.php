@@ -8,7 +8,7 @@ use UAParser\Util\Fetcher;
 /**
  * Refresh the user-agent patterns OWA identifies browsers and crawlers with.
  *
- *     php cli.php cmd=update-ua-regexes
+ *     php cli.php cmd=ua-update-definitions
  *
  * WHY THIS EXISTS
  * The patterns come from uap-core, which is a separate project from the PHP
@@ -31,7 +31,7 @@ use UAParser\Util\Fetcher;
  * Browscap prefers this file whenever it exists, so a successful run takes
  * effect immediately with nothing to configure.
  */
-class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
+class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {

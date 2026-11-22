@@ -155,7 +155,7 @@ final class ModuleActivateInstallTest extends TestCase
      * missing version might mean 27 updates are pending rather than none.
      * Guessing "current" there is precisely the migration skip, so install()
      * must refuse and leave the version unset --
-     * getSchemaVersion() then reads 1 and cmd=update replays properly.
+     * getSchemaVersion() then reads 1 and cmd=core-update-schema replays properly.
      */
     public function testAMissingVersionIsNotRepairedWhenUpdatesCouldBePending(): void
     {

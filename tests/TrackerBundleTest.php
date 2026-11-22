@@ -627,7 +627,7 @@ final class TrackerBundleTest extends TestCase
             $this->assertFalse($base->isUpToDate(), 'an older tracker is an update pending');
             $this->assertTrue($base->isSchemaCurrent(), 'and only that: the schema is current');
 
-            // cmd=update: published in the run.
+            // cmd=core-update-schema: published in the run.
             \OWA\Module\Base\Module::$publish_inline = true;
             $this->assertTrue($base->update());
 

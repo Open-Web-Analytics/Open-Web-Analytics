@@ -175,7 +175,7 @@ return [
      * an install for all of its attempt, or Step 1 while it writes staged.json
      * or deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
      * since ..."). Whoever finds it held stops and tries again on a later run:
-     * every other CLI run, Step 1, an install, cmd=update by hand, and the
+     * every other CLI run, Step 1, an install, cmd=core-update-schema by hand, and the
      * entry points.
      *
      * Taken by creating it, which only one process can do (link() of a file
@@ -621,7 +621,7 @@ return [
     /*
      * Step 2. Returns null to boot normally, or the exit code to end with.
      *
-     * cmd=self-update-install is handled here too, before OWA loads, so the
+     * cmd=core-update-install is handled here too, before OWA loads, so the
      * new release boots in a process that holds no old code: the staged
      * release installs now, whatever staged.json says about when.
      */
@@ -629,7 +629,7 @@ return [
 
         $u      = require __FILE__;
         $root   = rtrim( (string) $root, '/' );
-        $manual = in_array( 'cmd=self-update-install', $argv, true );
+        $manual = in_array( 'cmd=core-update-install', $argv, true );
         $force  = in_array( '--force', $argv, true );
 
         if ( $manual ) {
@@ -664,7 +664,7 @@ return [
 
             if ( $manual ) {
 
-                fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.\n" );
+                fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.\n" );
 
                 return 1;
             }
@@ -707,7 +707,7 @@ return [
 
                 if ( $version === '' ) {
 
-                    fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.\n" );
+                    fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.\n" );
 
                     return 1;
                 }
@@ -724,7 +724,7 @@ return [
 
             /*
              * An install starts only for a release newer than the installed one,
-             * unless cmd=self-update-install says --force. An unfinished install
+             * unless cmd=core-update-install says --force. An unfinished install
              * of it carries on while the installed version is not newer than it,
              * since its copy may already have replaced Core/Env.php, and a forced
              * one carries on regardless. A newer installed version means another
@@ -950,7 +950,7 @@ return [
 
         if ( ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
 
-            return sprintf( '%s is not staged: stage it first (cmd=self-update-stage version=%s).', $version, $version );
+            return sprintf( '%s is not staged: stage it first (cmd=core-update-stage version=%s).', $version, $version );
         }
 
         foreach ( [ $dir, $dir . '/staged', $dir . '/staged/updater.php' ] as $path ) {

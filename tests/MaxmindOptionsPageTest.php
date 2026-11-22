@@ -186,7 +186,7 @@ final class MaxmindOptionsPageTest extends TestCase {
 
     public function testTheCommandIsNamedSoTheresSomethingToDoNext(): void {
 
-        $this->assertStringContainsString( 'cmd=update-geoip-db', $this->render(),
+        $this->assertStringContainsString( 'cmd=geoip-update-db', $this->render(),
             'a settings page that cannot say how to get the database is only half the answer' );
     }
 
@@ -216,7 +216,7 @@ final class MaxmindOptionsPageTest extends TestCase {
         $this->assertStringContainsString( 'modules/MaxmindGeoip/templates/options_geoip.php', (string) $view->body->file,
             'the view must point at this module\'s template, not at Base\'s directory' );
 
-        $this->assertStringContainsString( 'cmd=update-geoip-db', $html,
+        $this->assertStringContainsString( 'cmd=geoip-update-db', $html,
             'an unresolved template renders as nothing at all, silently' );
     }
 }

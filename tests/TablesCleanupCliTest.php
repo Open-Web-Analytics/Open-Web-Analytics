@@ -74,7 +74,7 @@ final class TablesCleanupCliTest extends CliControllerTestCase
         $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('base', 'v1_tables_dropped'));
     }
 
-    /** A table a pending update is about to rename has no entity yet, so this waits for cmd=update. */
+    /** A table a pending update is about to rename has no entity yet, so this waits for cmd=core-update-schema. */
     public function testItWaitsForPendingUpdates(): void
     {
         $this->assertTrue((new \OWA\Module\Base\Controller\TablesCleanupCli([]))->needsCurrentSchema());

@@ -46,6 +46,18 @@ final class CliCommandsTest extends CliControllerTestCase
             "CLI command '{$cmd}' should resolve to {$expectedClass} through the service registry.");
     }
 
+    /** 1.x's names for the renamed commands are free, so cli.php can say what they are now; the new names are registered. */
+    public function testTheRenamedCommandsPointAtRegisteredOnes(): void
+    {
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+
+        foreach (\OWA\Core\Controller\Cli::RENAMED as $old => $new) {
+            $this->assertEmpty($s->getCliCommandClass($old), "$old is still a command");
+            $this->assertNotEmpty($s->getCliCommandClass($new), "$new is not a command");
+        }
+    }
+
     /**
      * cmd name => module.class string it must map to (module.php:537-552).
      *
@@ -54,7 +66,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public static function commandRegistryProvider(): array
     {
         return [
-            'update'                     => ['update',                     'base.updatesApplyCli'],
+            'core-update-schema'         => ['core-update-schema',         'base.coreUpdateSchemaCli'],
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
             'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
             'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
@@ -515,7 +527,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public function testUpdateListPendingRunsReadOnly(): void
     {
         $result = $this->runCommand(
-            \OWA\Module\Base\Controller\UpdatesApplyCli::class,
+            \OWA\Module\Base\Controller\CoreUpdateSchemaCli::class,
             'updatesApplyCli.php',
             ['listpending' => '']
         );

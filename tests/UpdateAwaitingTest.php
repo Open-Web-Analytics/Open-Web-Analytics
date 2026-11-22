@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * An update can stop for the operator -- a choice to make, something to do
  * first -- without that being reported as a failure. Update062 stops to ask
- * how much history to migrate, and cmd=update says so rather than "Updates
+ * how much history to migrate, and cmd=core-update-schema says so rather than "Updates
  * failed", which would read as a broken upgrade.
  */
 final class UpdateAwaitingTest extends TestCase

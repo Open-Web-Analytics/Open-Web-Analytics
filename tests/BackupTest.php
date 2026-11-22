@@ -190,7 +190,7 @@ final class BackupTest extends CliControllerTestCase
         $this->assertSame([], glob(\OWA\Core\Env::root() . '/owa-data/owa-*.sql.gz*'));
     }
 
-    /** It is how a backup is taken before cmd=update. */
+    /** It is how a backup is taken before cmd=core-update-schema. */
     public function testItRunsWhileUpdatesArePending(): void
     {
         $this->assertFalse((new \OWA\Module\Base\Controller\BackupCli(['scope' => 'all']))->needsCurrentSchema());

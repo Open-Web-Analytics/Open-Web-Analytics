@@ -153,7 +153,7 @@ abstract class Module {
 
     /**
      * Called by update() after each update it applies. Returning false stops
-     * update() before the next one, and update() returns false. cmd=update sets
+     * update() before the next one, and update() returns false. cmd=core-update-schema sets
      * it to renew its lease.
      *
      * @var callable|null
@@ -1019,14 +1019,14 @@ abstract class Module {
              *
              * Three cases, and only the first two can be answered here:
              *
-             *  - Already recorded: leave it. cmd=update migrates from there.
+             *  - Already recorded: leave it. cmd=core-update-schema migrates from there.
              *  - Not recorded, and every table was just created at the current
              *    definition (which includes a module with no tables at all).
              *    The required version is then the truth, and recording it
              *    REPAIRS a module that was activated without being installed.
              *  - Not recorded, tables already existed, and updates exist between
              *    1 and required: unknowable from here. Say so and leave it
-             *    absent -- getSchemaVersion() reads that as 1, so cmd=update
+             *    absent -- getSchemaVersion() reads that as 1, so cmd=core-update-schema
              *    replays the updates and records the version as it goes, which
              *    is the safe direction.
              */
@@ -1049,7 +1049,7 @@ abstract class Module {
 
                     \OWA\Core\CoreAPI::notice( sprintf(
                         'Module %s has tables but no recorded schema version, so its version '
-                      . 'was left unset rather than assumed current. Run "cmd=update" to apply '
+                      . 'was left unset rather than assumed current. Run "cmd=core-update-schema" to apply '
                       . 'any pending updates and record it.', $this->name ) );
                 }
             }

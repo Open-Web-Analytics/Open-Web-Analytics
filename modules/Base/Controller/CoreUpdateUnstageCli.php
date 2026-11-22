@@ -6,12 +6,12 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 /**
  * Stop an automatic install before it starts (ReleaseCheck::cancel()).
  *
- *   php cli.php cmd=self-update-cancel                  the release staged to install
- *   php cli.php cmd=self-update-cancel version=2.0.3    and delete that release's staging
+ *   php cli.php cmd=core-update-unstage                  the release staged to install
+ *   php cli.php cmd=core-update-unstage version=2.0.3    and delete that release's staging
  *
  * Refused while an install is running.
  */
-class SelfUpdateCancelCli extends \OWA\Core\Controller\Cli {
+class CoreUpdateUnstageCli extends \OWA\Core\Controller\Cli {
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {

@@ -10,7 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * (Update062Test).
  *
  * Against a scratch table (Update068::$table), so the install's own is left
- * for cmd=update.
+ * for cmd=core-update-schema.
  */
 final class Update068Test extends TestCase
 {

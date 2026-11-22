@@ -9,8 +9,8 @@
  * 127.0.0.1, and lets the installation update itself with the commands its
  * cron entry runs:
  *
- *   php cli.php cmd=release-check    Step 1: listing, download, SHA-256, unpack, preflight, staged.json
- *   php cli.php cmd=schedule-run     Steps 2-4: hand-off, copy, the new release's boot, cmd=update, finish
+ *   php cli.php cmd=core-update-check    Step 1: listing, download, SHA-256, unpack, preflight, staged.json
+ *   php cli.php cmd=schedule-run     Steps 2-4: hand-off, copy, the new release's boot, cmd=core-update-schema, finish
  *
  * The HTTPS server's certificate is signed by a CA made for the run, which
  * each cli.php trusts through PHP's curl.cainfo. OWA is pointed at the
@@ -465,7 +465,7 @@ function later() {
 /** Step 1, and what it left: [output, staged.json]. */
 function stage( $site, $ca ) {
 
-    [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
+    [ , $out ] = cli( $site, $ca, 'cmd=core-update-check' );
     $dir = updatesDir( $site );
 
     return [ $out, $dir === null ? null : json( "$dir/staged.json" ) ];
@@ -474,7 +474,7 @@ function stage( $site, $ca ) {
 function stagedToInstall( $site, $ca ) {
 
     [ $out, $staged ] = stage( $site, $ca );
-    check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ), 'release-check did not stage ' . TO . " to install itself:\n$out" );
+    check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ), 'core-update-check did not stage ' . TO . " to install itself:\n$out" );
 
     return $staged;
 }
@@ -484,7 +484,7 @@ function installed( $site, $ca, $version ) {
 
     check( envVersion( $site ) === $version, "Core/Env.php says " . envVersion( $site ) . ", not $version" );
 
-    [ , $pending ] = cli( $site, $ca, 'cmd=update --listpending' );
+    [ , $pending ] = cli( $site, $ca, 'cmd=core-update-schema --listpending' );
     check( str_contains( $pending, 'No updates are pending' ), "schema updates are still pending:\n$pending" );
 
     $dir = updatesDir( $site );
@@ -559,17 +559,17 @@ $scenarios = [
         $hash    = hash_file( 'sha256', "$site/owa-config.php" );
         $bundles = glob( "$site/public/tracker/*.js" );
 
-        [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
+        [ , $out ] = cli( $site, $ca, 'cmd=core-update-check' );
         $staged = json( updatesDir( $site ) . '/staged.json' );
         check( ( $staged['version'] ?? null ) === TO && ! empty( $staged['automatic'] ) && array_key_exists( 'window', (array) $staged ) && $staged['window'] === null,
-            "release-check did not stage " . TO . " to install at once:\n$out" );
+            "core-update-check did not stage " . TO . " to install at once:\n$out" );
         check( hasNotice( notices( $db ), 'staged:' . TO ), 'no "will be installed" notice' );
 
         [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
         check( $code === 0, "schedule-run exited $code:\n$out" );
         check( envVersion( $site ) === TO, 'Core/Env.php says ' . envVersion( $site ) . ":\n$out" );
 
-        [ , $pending ] = cli( $site, $ca, 'cmd=update --listpending' );
+        [ , $pending ] = cli( $site, $ca, 'cmd=core-update-schema --listpending' );
         check( str_contains( $pending, 'No updates are pending' ), "the schema update did not run:\n$pending" );
 
         $n = notices( $db );
@@ -592,7 +592,7 @@ $scenarios = [
         publish( $www, $base, $to, TO, str_repeat( '0', 64 ) );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
+        [ , $out ] = cli( $site, $ca, 'cmd=core-update-check' );
         $dir = updatesDir( $site );
         check( $dir === null || ( ! is_file( "$dir/staged.json" ) && ! is_dir( "$dir/staged" ) ), "a release that fails its SHA-256 was staged:\n$out" );
         check( hasNotice( notices( $db ), 'staging_failing:' . TO ), 'no "could not be downloaded" notice' );
@@ -612,7 +612,7 @@ $scenarios = [
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        [ , $out ] = cli( $site, $ca, 'cmd=release-check' );
+        [ , $out ] = cli( $site, $ca, 'cmd=core-update-check' );
         $staged = json( updatesDir( $site ) . '/staged.json' );
         check( ( $staged['version'] ?? null ) === TO && empty( $staged['automatic'] ), "it was not staged as not installing itself:\n$out" );
         check( hasNotice( notices( $db ), 'unmet:' . TO ), 'no "cannot be installed automatically yet" notice' );
@@ -631,7 +631,7 @@ $scenarios = [
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        cli( $site, $ca, 'cmd=release-check' );
+        cli( $site, $ca, 'cmd=core-update-check' );
         [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
         check( $code !== 0, "a release that does not parse reported success:\n$out" );
         check( envVersion( $site ) === FROM, 'Core/Env.php says ' . envVersion( $site ) . ', not the restored ' . FROM );
@@ -640,7 +640,7 @@ $scenarios = [
         check( str_contains( (string) ( $install['error'] ?? '' ), 'stopped before it booted' ), 'install.json does not say why: ' . json_encode( $install ) );
 
         // The restored release runs, and raises the notice.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update' );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-status' );
         check( $code === 0, "the restored release does not run:\n$out" );
         $n = notices( $db );
         check( hasNotice( $n, 'install_failed:' . TO ), 'no "failed" notice' );
@@ -653,13 +653,13 @@ $scenarios = [
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        cli( $site, $ca, 'cmd=release-check' );
+        cli( $site, $ca, 'cmd=core-update-check' );
         [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
         check( $code !== 0, "a failed schema update reported success:\n$out" );
         check( envVersion( $site ) === TO, 'the files were undone after the new release booted' );
 
         $install = json( updatesDir( $site ) . '/install.json' );
-        check( ! empty( $install['booted'] ) && str_contains( (string) ( $install['error'] ?? '' ), 'cmd=update did not complete' ),
+        check( ! empty( $install['booted'] ) && str_contains( (string) ( $install['error'] ?? '' ), 'cmd=core-update-schema did not complete' ),
             'install.json does not record the failure: ' . json_encode( $install ) );
 
         $n = notices( $db );
@@ -686,8 +686,8 @@ $scenarios = [
             check( is_dir( updatesDir( $site ) . '/staged' ), 'GitHub unreachable deleted the staged release' );
 
             // Installing needs no network.
-            [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-now' );
-            check( $code === 0, "self-update-now exited $code:\n$out" );
+            [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-ignore-window' );
+            check( $code === 0, "core-update-ignore-window exited $code:\n$out" );
             cli( $site, $ca, 'cmd=schedule-run' );
             installed( $site, $ca, TO );
 
@@ -712,7 +712,7 @@ $scenarios = [
         [ $out, $staged ] = stage( $site, $ca );
         check( ( $staged['sha256'] ?? null ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
 
-        cli( $site, $ca, 'cmd=self-update-now' );
+        cli( $site, $ca, 'cmd=core-update-ignore-window' );
         cli( $site, $ca, 'cmd=schedule-run' );
         installed( $site, $ca, TO );
         check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
@@ -774,8 +774,8 @@ $scenarios = [
         check( envVersion( $site ) === FROM, 'it installed itself' );
 
         // By hand, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install' );
-        check( $code === 0, "self-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
+        check( $code === 0, "core-update-install exited $code:\n$out" );
         installed( $site, $ca, TO );
     },
 
@@ -867,7 +867,7 @@ $scenarios = [
             check( str_contains( (string) ( $install['error'] ?? '' ), 'Could not write' ) && str_contains( (string) $install['error'], 'previous release was put back' ),
                 'install.json does not record the undone copy: ' . json_encode( $install ) );
 
-            [ $code, $out ] = cli( $site, $ca, 'cmd=self-update' );
+            [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-status' );
             check( $code === 0, "the restored release does not run:\n$out" );
             check( hasNotice( notices( $db ), 'install_failed:' . TO ), 'no "failed" notice' );
 
@@ -877,8 +877,8 @@ $scenarios = [
         }
 
         // Fixed: install it now, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update-install' );
-        check( $code === 0, "self-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
+        check( $code === 0, "core-update-install exited $code:\n$out" );
         installed( $site, $ca, TO );
     },
 
@@ -915,7 +915,7 @@ $scenarios = [
         check( $status === 503 && str_contains( $body, '"busy"' ), "the REST API answered $status during the install" );
         proc_terminate( $server->web );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=self-update' );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-status' );
         check( $code === 75 && str_contains( $out, 'OWA is installing an update' ), "a CLI command during the install exited $code:\n$out" );
 
         // Killed: the lock file stays, its flock goes with the process.

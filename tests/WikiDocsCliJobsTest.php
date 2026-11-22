@@ -58,7 +58,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $active = array_keys((array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('cli_commands'));
 
         $this->assertContains('cube-rebuild', $active);
-        $this->assertArrayHasKey('update-geoip-db', $commands, 'a command of a module a configless boot leaves inactive');
+        $this->assertArrayHasKey('geoip-update-db', $commands, 'a command of a module a configless boot leaves inactive');
 
         foreach (array_unique(array_merge($active, array_keys($commands))) as $command) {
             $this->assertStringContainsString("\n### $command\n", $md, "cmd=$command has no section");
@@ -91,9 +91,9 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
     {
         // Read by the update that needs them, not by the controller.
         $elsewhere = [
-            'update' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
+            'core-update-schema' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
             // Read before OWA loads, by the hand-off.
-            'self-update-install' => ['force' => 'updater.php'],
+            'core-update-install' => ['force' => 'updater.php'],
         ];
 
         foreach ($this->registeredCommands() as $command => $class) {
@@ -195,7 +195,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $this->assertSame('daily, at a time each install derives for itself', owa_wiki_job_schedule($jobs['rotate-partitions']));
         $this->assertSame('every 5 minutes, at an offset each install derives for itself', owa_wiki_job_schedule($jobs['rebuild-cube']));
         $this->assertSame('every minute', owa_wiki_job_schedule($jobs['drain-tracker-ingest']));
-        $this->assertSame('every 6 hours, at a time each install derives for itself', owa_wiki_job_schedule($jobs['release-check']));
+        $this->assertSame('every 6 hours, at a time each install derives for itself', owa_wiki_job_schedule($jobs['core-update-check']));
 
         // A module's job: listed whether or not the module is active here.
         $this->assertTrue($jobs['refresh-geoip-db']['spread']);

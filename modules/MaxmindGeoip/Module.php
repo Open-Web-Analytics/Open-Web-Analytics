@@ -70,7 +70,7 @@ class Module extends \OWA\Core\Module {
      */
     public function registerCliCommands() {
 
-        $this->registerCliCommand( 'update-geoip-db', 'maxmind_geoip.updateGeoipDbCli' );
+        $this->registerCliCommand( 'geoip-update-db', 'maxmind_geoip.geoipUpdateDbCli' );
     }
 
     /**
@@ -82,7 +82,7 @@ class Module extends \OWA\Core\Module {
      * whether or not a licence key is set, so the job is listed wherever it can
      * run; without a key the scheduled run is a success that says it skipped.
      *
-     * Unlike Base's update-ua-regexes, this outbound request ships on: an
+     * Unlike Base's ua-update-definitions, this outbound request ships on: an
      * administrator who activated this module and saved a key has asked for
      * the database.
      *
@@ -94,7 +94,7 @@ class Module extends \OWA\Core\Module {
     public function registerJobs() {
 
         $this->registerJob(
-            'refresh-geoip-db', 'update-geoip-db',
+            'refresh-geoip-db', 'geoip-update-db',
             \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), [ 'scheduled' => 1 ],
             'Checks whether MaxMind have published a newer GeoLite2 database than the local copy, and downloads '
           . 'it if they have, or if there is no local copy. The check does not count against the MaxMind '
@@ -104,8 +104,8 @@ class Module extends \OWA\Core\Module {
     public function registerActions() {
 
         $this->registerAction(
-            'maxmind_geoip.updateGeoipDbCli',
-            'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli' );
+            'maxmind_geoip.geoipUpdateDbCli',
+            'OWA\\Module\\MaxmindGeoip\\Controller\\GeoipUpdateDbCli' );
 
         $this->registerAction(
             'maxmind_geoip.optionsGeoip',

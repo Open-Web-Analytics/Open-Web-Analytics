@@ -95,7 +95,7 @@ final class Update062Test extends TestCase
     {
         $this->assertFalse($this->update->up());
         $this->assertSame('a choice of how much history to migrate', $this->update->awaiting,
-            'it waits for the operator rather than failing, so cmd=update says so instead of "failed"');
+            'it waits for the operator rather than failing, so cmd=core-update-schema says so instead of "failed"');
 
         \OWA\Core\CoreAPI::setRequestParam('since', '2years');
         \OWA\Core\CoreAPI::setRequestParam('all', true);

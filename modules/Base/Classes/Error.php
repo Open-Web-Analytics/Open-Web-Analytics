@@ -293,7 +293,7 @@ class Error {
          * A write that fails is dropped, never thrown: logging must not be the
          * thing that turns a request into an error. At shutdown STDOUT can be
          * closed before an object whose destructor still logs (the cache
-         * persisting itself), which once made a successful `cmd=update` exit 255.
+         * persisting itself), which once made a successful `cmd=core-update-schema` exit 255.
          */
         foreach ( $this->sinks() as $sink ) {
 

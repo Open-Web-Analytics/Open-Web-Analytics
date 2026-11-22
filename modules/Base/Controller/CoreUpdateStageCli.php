@@ -6,20 +6,20 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 /**
  * Download, verify and judge one release by hand (ReleaseCheck::stageByHand()).
  *
- *   php cli.php cmd=self-update-stage version=2.0.3
+ *   php cli.php cmd=core-update-stage version=2.0.3
  *
  * Any version in this major, older ones included, whatever the automatic
  * update settings say: the operator chose it. It is not scheduled; install it
- * with cmd=self-update-install. For an older release it prints the rollback
+ * with cmd=core-update-install. For an older release it prints the rollback
  * commands to run first.
  */
-class SelfUpdateStageCli extends \OWA\Core\Controller\Cli {
+class CoreUpdateStageCli extends \OWA\Core\Controller\Cli {
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
         return [
-            'description' => 'Downloads one release in place of the staged one, checks it against its SHA-256, and checks it can be installed here, whatever the automatic update settings say. It is not scheduled: install it with cmd=self-update-install. The release check leaves it alone for 24 hours. For an older release, prints the rollback commands to run first.',
+            'description' => 'Downloads one release in place of the staged one, checks it against its SHA-256, and checks it can be installed here, whatever the automatic update settings say. It is not scheduled: install it with cmd=core-update-install. The release check leaves it alone for 24 hours. For an older release, prints the rollback commands to run first.',
             'arguments'   => [
                 'version=<x.y.z>' => 'The release to stage, in this major version.',
             ],

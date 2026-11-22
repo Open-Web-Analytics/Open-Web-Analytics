@@ -292,7 +292,7 @@ jobs:
     # same bug: a value that means two things, only distinguishable against a
     # database that already has a history. This job makes one -- it installs,
     # rewinds the schema through the rollbacks, and upgrades it forward again
-    # with the real `cli.php cmd=update`.
+    # with the real `cli.php cmd=core-update-schema`.
     #
     # See tests/tools/upgrade_cycle.php for what is asserted and why.
     services:
@@ -359,14 +359,14 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  self-update:
+  core-update:
     name: Automatic updates, end to end
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Real release packages built from this commit by the Release Packager's
     # own script, a real install of the first, and the next served from a
     # GitHub-shaped listing over HTTPS on 127.0.0.1 with a CA made for the
-    # run. release-check and schedule-run do the rest, as an installation's
+    # run. core-update-check and schedule-run do the rest, as an installation's
     # cron entry would. See tests/tools/self_update_e2e.php.
     services:
       mysql:

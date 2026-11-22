@@ -23,7 +23,7 @@ if (!OWA_CLI)
 }
 
 // Automatic updates, Step 2: hand-off (updater.php). Before any OWA file
-// loads: an install that is due, or cmd=self-update-install, runs here in
+// loads: an install that is due, or cmd=core-update-install, runs here in
 // this process and ends it; otherwise nothing happens and OWA boots.
 $owa_handoff = (require __DIR__ . '/updater.php')['handoff'](__DIR__, (array) ($_SERVER['argv'] ?? []));
 
@@ -102,7 +102,12 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
         ? \OWA\Core\Controller\Cli::undeclaredArguments($map['class_name'], $params)
         : [];
 
-    if (!$cmd) {
+    $renamed = \OWA\Core\Controller\Cli::RENAMED;
+
+    if (!$cmd && isset($renamed[$params['cmd']])) {
+        fwrite(STDERR, sprintf("cmd=%s is now cmd=%s.\n", $params['cmd'], $renamed[$params['cmd']]));
+        $exit_code = 2;
+    } elseif (!$cmd) {
         fwrite(STDERR, sprintf("No command named \"%s\".\n", $params['cmd']));
         $exit_code = 2;
     } elseif ($refused) {

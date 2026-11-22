@@ -5,7 +5,7 @@
  *
  * The capability is read from the controller's source the way
  * ControllerCapabilityContractTest reads it, because constructing a controller
- * has side effects -- InstallCli defines OWA_INSTALLING, UpdatesApplyCli
+ * has side effects -- InstallCli defines OWA_INSTALLING, CoreUpdateSchemaCli
  * OWA_UPDATING -- that would leak into every section generated after this one.
  */
 

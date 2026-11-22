@@ -14,9 +14,9 @@ class UpdatesState {
 
     /** The screen's actions, and the command each queues. */
     const ACTIONS = [
-        'check'  => 'release-check',
-        'now'    => 'self-update-now',
-        'cancel' => 'self-update-cancel',
+        'check'  => 'core-update-check',
+        'now'    => 'core-update-ignore-window',
+        'cancel' => 'core-update-unstage',
     ];
 
     /**
@@ -84,7 +84,7 @@ class UpdatesState {
 
             } elseif ( ! empty( $staged['by_hand'] ) ) {
 
-                $lines[] = sprintf( CoreAPI::t( '%1$s was staged by hand. It installs only with: php cli.php cmd=self-update-install' ), $v );
+                $lines[] = sprintf( CoreAPI::t( '%1$s was staged by hand. It installs only with: php cli.php cmd=core-update-install' ), $v );
                 $until   = min( (int) ( $staged['staged_at'] ?? 0 ), $now ) + ReleaseCheck::HAND_HOLD;
 
                 if ( $until > $now ) {
@@ -94,7 +94,7 @@ class UpdatesState {
 
             } elseif ( empty( $staged['automatic'] ) ) {
 
-                $lines[] = sprintf( CoreAPI::t( '%s is staged but does not install itself: a requirement is not met, or an update in it must be installed by hand. php cli.php cmd=self-update says which.' ), $v );
+                $lines[] = sprintf( CoreAPI::t( '%s is staged but does not install itself: a requirement is not met, or an update in it must be installed by hand. php cli.php cmd=core-update-status says which.' ), $v );
 
             } elseif ( ! empty( $staged['install_now'] ) || ( $staged['window'] ?? null ) === null ) {
 

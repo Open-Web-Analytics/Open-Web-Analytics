@@ -6,7 +6,7 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  * Refresh the GeoLite2 database that IP lookups resolve against: the edition
  * the db_edition setting names (Maxmind::edition()).
  *
- *     php cli.php cmd=update-geoip-db
+ *     php cli.php cmd=geoip-update-db
  *
  * The database ages badly in a way that is invisible: IP ranges are reassigned
  * between countries and cities continuously, and a stale file does not fail --
@@ -33,7 +33,7 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  * there is something newer, or when there is no local copy, and not again
  * within RETRY_DOWNLOAD_AFTER of a download that did not install.
  */
-class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
+class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
     /**
      * How long a scheduled run waits after a download that did not install
@@ -189,7 +189,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
             return $this->fail( sprintf(
                 'The download at %s did not install, so the next scheduled download is after %s. '
-              . 'Run update-geoip-db by hand to try now.',
+              . 'Run geoip-update-db by hand to try now.',
                 gmdate( 'Y-m-d H:i:s', $last ) . ' UTC',
                 gmdate( 'Y-m-d H:i:s', $last + self::RETRY_DOWNLOAD_AFTER ) . ' UTC'
             ) );

@@ -106,7 +106,7 @@ final class InstallerTest extends TestCase
 
         $this->assertSame(99, $this->handoff(), 'no fatal: the run boots normally - ' . $this->out);
         $this->assertFileDoesNotExist($this->updates . '/install.json', 'and installs nothing');
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
         $this->assertStringContainsString('owa-config.php uses OWA\\Core\\Env.', $this->out, 'by hand, it says why');
 
         file_put_contents($this->root . '/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '{$this->data}/');\n// \\OWA\\Core\\Env in a comment\n");
@@ -498,11 +498,11 @@ final class InstallerTest extends TestCase
         $this->assertFileDoesNotExist($this->updates . '/install.json');
 
         $this->stage('1.9.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
         $this->assertStringContainsString('1.9.0 is not newer than the installed 2.0.0; add --force to install it anyway.', $this->out);
         $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
 
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install', '--force']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=core-update-install', '--force']), $this->out);
         $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'), 'going back, by hand');
         $this->assertTrue($this->install()['forced'], 'its retries carry on');
     }
@@ -528,7 +528,7 @@ final class InstallerTest extends TestCase
     public function testByHandNothingIsDropped(): void
     {
         $this->stage('2.0.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
         $this->assertDirectoryExists($this->updates . '/staged');
     }
 
@@ -562,11 +562,11 @@ final class InstallerTest extends TestCase
         $this->stage('2.0.1');
 
         $this->assertSame(99, $this->handoff());
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
         $this->assertStringContainsString('The installed version cannot be read from Core/Env.php; add --force to install 2.0.1 anyway.', $this->out);
     }
 
-    /** staged.json says automatic false (staged by hand, or waiting): the hand-off never installs it on its own; self-update-install does. */
+    /** staged.json says automatic false (staged by hand, or waiting): the hand-off never installs it on its own; core-update-install does. */
     public function testOnlyAReleaseThatInstallsItselfIsDue(): void
     {
         $this->stage('2.0.1', null, false);
@@ -574,7 +574,7 @@ final class InstallerTest extends TestCase
         $this->assertSame(99, $this->handoff(), 'not due');
         $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
 
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=core-update-install']), $this->out);
         $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
     }
 
@@ -584,7 +584,7 @@ final class InstallerTest extends TestCase
         flock($h, LOCK_EX);
 
         try {
-            $this->assertSame(75, $this->handoff(['cmd=self-update']));
+            $this->assertSame(75, $this->handoff(['cmd=core-update-status']));
             $this->assertStringContainsString('installing an update', $this->out);
             $this->assertSame(0, $this->handoff(['cmd=schedule-run']));
         } finally {
@@ -596,19 +596,19 @@ final class InstallerTest extends TestCase
     /** Whatever is staged: there is one staged release, and an unfinished install is of it. */
     public function testInstallByHand(): void
     {
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
-        $this->assertStringContainsString('Nothing is staged: stage a release first, with cmd=self-update-stage version=<x.y.z>.', $this->out);
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
+        $this->assertStringContainsString('Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.', $this->out);
 
         // It starts over with fresh attempts, whatever its retry_after.
         $this->stage('2.0.1', null, false);
         $this->unfinished('2.0.1', $this->now + 600000, 5);
-        $this->assertSame(0, $this->handoff(['cmd=self-update-install']), $this->out);
+        $this->assertSame(0, $this->handoff(['cmd=core-update-install']), $this->out);
         $this->assertStringContainsString('Installing OWA 2.0.1.', $this->out, 'it says which');
         $this->assertSame(1, $this->install()['attempts']);
         $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
 
         file_put_contents($this->root . '/.git', 'gitdir: elsewhere');
-        $this->assertSame(1, $this->handoff(['cmd=self-update-install']));
+        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
         $this->assertStringContainsString('version control checkout', $this->out);
     }
 
@@ -637,7 +637,7 @@ final class InstallerTest extends TestCase
         return proc_close($proc);
     }
 
-    /** The one staged release, as Step 1 leaves it, installing itself; $point false: as staged by hand, installed only by self-update-install. */
+    /** The one staged release, as Step 1 leaves it, installing itself; $point false: as staged by hand, installed only by core-update-install. */
     private function stage(string $v, ?array $window = null, bool $point = true, array $extra = [], ?string $owa = null): void
     {
         $dir = $this->updates . '/staged';

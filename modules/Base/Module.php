@@ -581,7 +581,7 @@ class Module extends \OWA\Core\Module {
                 'app_password',
                 'site_user',
                 /*
-                 * v2. Registered unconditionally so cmd=update creates them and
+                 * v2. Registered unconditionally so cmd=core-update-schema creates them and
                  * the partition commands find them -- neither is conditional on
                  * anything, and a table nothing writes to costs an empty
                  * tablespace. Handler\EventRawHandlers writes both, for every

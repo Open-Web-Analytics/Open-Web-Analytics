@@ -42,8 +42,8 @@ class InstallNotices {
         $retry = gmdate( 'Y-m-d H:i', (int) ( $install['retry_after'] ?? 0 ) ) . ' UTC';
         // Before the new release booted the old one was put back, and runs as before.
         $body  = $error . "\n\n" . sprintf( empty( $install['booted'] )
-            ? CoreAPI::t( 'Automatic updates try again after %s; the installed release runs as before until then. To try now: php cli.php cmd=self-update-install' )
-            : CoreAPI::t( 'Automatic updates try again after %s. Until the install succeeds, tracking is queued and reports wait. To try now: php cli.php cmd=self-update-install' ), $retry );
+            ? CoreAPI::t( 'Automatic updates try again after %s; the installed release runs as before until then. To try now: php cli.php cmd=core-update-install' )
+            : CoreAPI::t( 'Automatic updates try again after %s. Until the install succeeds, tracking is queued and reports wait. To try now: php cli.php cmd=core-update-install' ), $retry );
 
         if ( $attempts < self::WEEKLY_FROM ) {
 

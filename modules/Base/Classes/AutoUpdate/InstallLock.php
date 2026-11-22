@@ -8,7 +8,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * It exists while one process holds it, and its line says who: an install
  * for all of its attempt, or Step 1: release check while it writes
  * staged.json or deletes a staging. Whoever finds it held stops and tries
- * again on a later run, cmd=update by hand included.
+ * again on a later run, cmd=core-update-schema by hand included.
  */
 class InstallLock {
 
@@ -19,7 +19,7 @@ class InstallLock {
 
     /**
      * Whether this process holds the lock: the installer (updater.php took it
-     * before OWA loaded). Read by cmd=update, which runs inside the install.
+     * before OWA loaded). Read by cmd=core-update-schema, which runs inside the install.
      *
      * @var bool
      */

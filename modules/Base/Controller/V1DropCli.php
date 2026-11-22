@@ -48,7 +48,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         if ( $schema < self::MIGRATED_SCHEMA ) {
 
             return $this->refuse( sprintf( 'The v1 migration has not run (schema %d, needs %d). Run'
-                . ' cmd=update first: it reads these tables.', $schema, self::MIGRATED_SCHEMA ) );
+                . ' cmd=core-update-schema first: it reads these tables.', $schema, self::MIGRATED_SCHEMA ) );
         }
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();

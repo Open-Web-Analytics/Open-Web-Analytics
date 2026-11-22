@@ -643,7 +643,7 @@ class Lib {
      * re-derived, at which point the installation falls through to 63-bit.
      *
      * The schema check covers the gap the flag cannot. New code lands on disk
-     * before anyone runs cmd=update, and tracking does not stop for a pending
+     * before anyone runs cmd=core-update-schema, and tracking does not stop for a pending
      * update -- log.php keeps ingesting the moment the files are replaced. In
      * that window an existing installation has no flag yet, so the flag alone
      * would have it derive 63-bit ids against crc32 history. Reading the stored

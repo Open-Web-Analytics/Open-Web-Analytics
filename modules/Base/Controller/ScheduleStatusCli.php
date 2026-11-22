@@ -82,14 +82,14 @@ class ScheduleStatusCli extends SchedulerCli {
 
             $lines[] = '';
             $lines[] = 'ACTION: schema updates are pending, so the dispatcher refuses every job. '
-                     . 'Apply them with cmd=update. Nothing below will run until you do.';
+                     . 'Apply them with cmd=core-update-schema. Nothing below will run until you do.';
         }
 
         if ( ! $pending && \OWA\Core\CoreAPI::isUpdateRequired() ) {
 
             $lines[] = '';
             $lines[] = 'NOTE: an update is pending that changes no schema -- a new tracker. Jobs still run; the admin '
-                     . 'screens wait for the update, and Profiles\' tracking bundles are from the last one. Apply it with cmd=update.';
+                     . 'screens wait for the update, and Profiles\' tracking bundles are from the last one. Apply it with cmd=core-update-schema.';
         }
 
         // Any state row is proof the dispatcher has run at least once, because
