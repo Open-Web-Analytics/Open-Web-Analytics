@@ -29,7 +29,7 @@
  * and the failure cases of the wiki's Automatic Updates page, each with the
  * recovery it promises where there is one: unreachable, asset-replaced,
  * unwritable-directory, config-refused, manual-install,
- * two-updates-directories, major-release, copy-fails, killed-mid-copy (the
+ * two-updates-directories, major-release, passwordless-database, copy-fails, killed-mid-copy (the
  * web, the REST API and the CLI while it runs, then the take-over),
  * newer-release-after-a-failure and installed-past.
  *
@@ -392,7 +392,11 @@ function publish( $www, $base, array $pkg, $version, $digest = null ) {
 // ---- the installation ------------------------------------------------------
 
 /** 2.0.90 unpacked, configured and installed into a fresh database, with files of its own. */
-function installFrom( array $pkg, $work, array $db, $listing, $extra = '' ) {
+/**
+ * $as: the database account owa-config.php names, when not $db's (which
+ * creates the database).
+ */
+function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?array $as = null ) {
 
     $site = "$work/site";
     must( 'rm -rf ' . escapeshellarg( $site ) );
@@ -404,13 +408,14 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '' ) {
     $m->query( "CREATE DATABASE `{$db['name']}`" );
     $m->close();
 
+    $as     = ( $as ?? [] ) + $db;
     $rand   = static fn () => bin2hex( random_bytes( 24 ) );
     $config = strtr( (string) file_get_contents( "$site/owa-config-dist.php" ), [
         'yourdbtypegoeshere'         => $db['type'],
         'yourdbnamegoeshere'         => $db['name'],
         'yourdbhostgoeshere'         => $db['host'],
-        'yourdbusergoeshere'         => $db['user'],
-        'yourdbpasswordgoeshere'     => addcslashes( $db['password'], "\\'" ),
+        'yourdbusergoeshere'         => $as['user'],
+        'yourdbpasswordgoeshere'     => addcslashes( $as['password'], "\\'" ),
         'yournoncekeygoeshere'       => $rand(),
         'yournoncesaltgoeshere'      => $rand(),
         'yourauthkeygoeshere'        => $rand(),
@@ -796,6 +801,34 @@ $scenarios = [
         $row = $m->query( sprintf( "SELECT COUNT(*) AS n FROM `%s`.owa_notification WHERE source <> 'auto_update'", $db['name'] ) )->fetch_assoc();
         $m->close();
         check( (int) $row['n'] === 1, 'the major release is not announced in the bell' );
+    },
+
+    'passwordless-database' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // A database account with no password, which boot accepts.
+        $user = 'owa_e2e_nopass';
+        $m    = sql( $db );
+        $m->query( "DROP USER IF EXISTS '$user'@'%'" );
+        $m->query( "CREATE USER '$user'@'%' IDENTIFIED BY ''" );
+        $m->query( "GRANT ALL ON `{$db['name']}`.* TO '$user'@'%'" );
+        $m->close();
+
+        try {
+
+            $to   = package( $build, $work, 'passwordless', TO );
+            publish( $www, $base, $to, TO );
+            $site = installFrom( $from, $work, $db, "$base/releases.json", '', [ 'user' => $user, 'password' => '' ] );
+
+            stagedToInstall( $site, $ca );
+            cli( $site, $ca, 'cmd=schedule-run' );
+            installed( $site, $ca, TO );
+
+        } finally {
+
+            $m = sql( $db );
+            $m->query( "DROP USER IF EXISTS '$user'@'%'" );
+            $m->close();
+        }
     },
 
     // ---- during the copy -----------------------------------------------------
