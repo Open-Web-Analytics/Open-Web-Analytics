@@ -85,6 +85,16 @@ if ( function_exists( 'fastcgi_finish_request' ) ) {
     flush();
 }
 
+/*
+ * While an install copies files, the tree is part old and part new and
+ * nothing can boot: the beacon is dropped (updater.php `dropsBeacon`). Once the
+ * copy is done OWA boots, and while the schema is behind every beacon is
+ * queued for the drain (TrackerIngest::isQueued()).
+ */
+if ((require __DIR__ . '/updater.php')['dropsBeacon'](__DIR__)) {
+    exit;
+}
+
 // Create instance of OWA
 require_once(__DIR__ . '/owa.php');
 $config = [

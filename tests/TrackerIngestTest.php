@@ -136,6 +136,27 @@ final class TrackerIngestTest extends TestCase
         $this->assertTrue(TrackerIngest::isQueued(), 'a collector has no database to write a beacon to');
     }
 
+    /** New code must not write against an old schema: while it is behind, every beacon waits for the drain, which waits too. */
+    public function testASchemaBehindQueues(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
+
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $was  = $c->get('base', 'schema_version');
+
+        try {
+            $this->assertFalse(TrackerIngest::isQueued());
+            $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+            $this->assertTrue(TrackerIngest::isQueued(), 'the schema is behind');
+        } finally {
+            $c->set('base', 'schema_version', $was);
+        }
+
+        $this->assertFalse(TrackerIngest::isQueued());
+    }
+
     public function testTheDefaultIsNotQueued(): void
     {
         $settings = require dirname(__DIR__) . '/modules/Base/settings.php';

@@ -275,7 +275,7 @@ final class InstallerTest extends TestCase
 
         $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
         $this->assertNotNull($hold);
-        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, [0-9a-f]{16}\n$/',
+        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, token [0-9a-f]{16}\n$/',
             (string) file_get_contents($file), 'the operator can read who holds it');
 
         $other = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
@@ -348,8 +348,88 @@ final class InstallerTest extends TestCase
         $hold = $this->u['tryLock']($this->data, 'install 2.0.1', true);
         $this->assertTrue($this->u['stillMine']($hold));
 
-        file_put_contents($this->data . '/updating', "release check, pid 1, since 2026-11-22 10:00:00 UTC, 0000000000000000\n");
+        file_put_contents($this->data . '/updating', "release check, pid 1, since 2026-11-22 10:00:00 UTC, token 0000000000000000\n");
         $this->assertFalse($this->u['stillMine']($hold), 'another process took it');
+    }
+
+    /** The phase at the end of the line: what the entry points read before OWA loads. */
+    public function testThePhase(): void
+    {
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+        $this->assertNull($this->u['lockStatus']($this->data)['phase']);
+
+        $hold = $this->u['setLockPhase']($hold, 'copying');
+        $this->assertStringEndsWith(', copying', trim((string) file_get_contents($this->data . '/updating')));
+        $this->assertSame('copying', $this->u['lockStatus']($this->data)['phase']);
+
+        $hold = $this->u['setLockPhase']($hold, 'copied');
+        $this->assertSame('copied', $this->u['lockStatus']($this->data)['phase']);
+        $this->assertStringNotContainsString('copying', (string) file_get_contents($this->data . '/updating'), 'one phase at a time');
+        $this->assertTrue($this->u['stillMine']($hold), 'a new phase is the same holder');
+
+        $this->u['unlock']($hold);
+        $this->assertNull($this->u['lockStatus']($this->data));
+        $this->assertFileDoesNotExist($this->data . '/updating');
+    }
+
+    /** Step 4 runs with the copy done and marked so: log.php boots again from there. */
+    public function testStep4RunsMarkedCopied(): void
+    {
+        $this->stage('2.0.1', null, true, [], "<?php\nnamespace OWA\\Module\\Base\\Classes\\AutoUpdate;\nclass Finish {\n    public static function run(array \$c) {\n"
+            . "        file_put_contents(" . var_export($this->root . '/finished.txt', true) . ", (string) file_get_contents(" . var_export($this->data . '/updating', true) . "));\n"
+            . "        return 0;\n    }\n}\n");
+
+        $this->assertSame(0, $this->handoff(), $this->out);
+        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since .+ UTC, token [0-9a-f]{16}, copied\n$/', (string) file_get_contents($this->root . '/finished.txt'));
+    }
+
+    /** index.php and the REST API before OWA loads: 503 while the lock is held, and a stuck install says who holds it. */
+    public function testTheMaintenanceAnswers(): void
+    {
+        $serve = function (bool $rest): string {
+            return (string) shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
+                '$u = require %s; var_export($u["serveMaintenance"](%s, %s)); echo "|";',
+                var_export($this->root . '/updater.php', true), var_export($this->root, true), var_export($rest, true)))));
+        };
+
+        $this->assertSame('false|', $serve(false), 'no lock: OWA boots');
+
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+        $hold = $this->u['setLockPhase']($hold, 'copied');
+
+        $page = $serve(false);
+        $this->assertStringContainsString('OWA is updating. This takes a minute or two.', $page);
+        $this->assertStringNotContainsString('may be stuck', $page);
+        $this->assertStringEndsWith('true|', $page);
+
+        $rest = json_decode(substr($serve(true), 0, -5), true);
+        $this->assertSame(503, $rest['httpResponse']['status_code']);
+        $this->assertSame('busy', $rest['error'][0]['code']);
+
+        touch($this->data . '/updating', time() - 7201);
+        $this->assertStringContainsString('may be stuck. The lock file, owa-data/updating, says: <code>install 2.0.1, pid ', $serve(false));
+
+        $this->u['unlock']($hold);
+    }
+
+    /** log.php drops a beacon only while an install copies files; at any other time OWA boots. */
+    public function testLogPhpDropsBeaconsOnlyDuringTheCopy(): void
+    {
+        $drops = fn (): string => (string) shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
+            'var_export((require %s)["dropsBeacon"](%s));', var_export($this->root . '/updater.php', true), var_export($this->root, true)))));
+
+        $this->assertSame('false', $drops());
+
+        $hold = $this->u['tryLock']($this->data, 'release check');
+        $this->assertSame('false', $drops(), 'Step 1 writing: the files are whole');
+
+        $hold = $this->u['setLockPhase']($hold, 'copying');
+        $this->assertSame('true', $drops());
+
+        $hold = $this->u['setLockPhase']($hold, 'copied');
+        $this->assertSame('false', $drops(), 'the schema update: OWA boots, and queues');
+
+        $this->u['unlock']($hold);
     }
 
     /** Where the filesystem has no flock(), the file's age says whether its holder is gone: 10 minutes. */

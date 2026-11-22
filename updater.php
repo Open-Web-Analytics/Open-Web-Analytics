@@ -252,7 +252,8 @@ return [
 
             case 'left':
 
-                $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+                $token = bin2hex( random_bytes( 8 ) );
+                $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
                 $h    = @fopen( $file, 'r+' );
 
                 if ( $h !== false ) {
@@ -275,7 +276,7 @@ return [
                             fflush( $h );
                             @touch( $file );
 
-                            return [ 'handle' => $h, 'file' => $file, 'line' => $line ];
+                            return [ 'handle' => $h, 'file' => $file, 'line' => $line, 'token' => $token ];
                         }
 
                         flock( $h, LOCK_UN );
@@ -319,7 +320,8 @@ return [
                 }
         }
 
-        $line = sprintf( "%s, pid %d, since %s UTC, %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), bin2hex( random_bytes( 8 ) ) );
+        $token = bin2hex( random_bytes( 8 ) );
+        $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
         $tmp  = $file . '.new-' . bin2hex( random_bytes( 8 ) );
         $h    = @fopen( $tmp, 'x+' );
 
@@ -363,7 +365,7 @@ return [
             return null;
         }
 
-        $hold = [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line ];
+        $hold = [ 'handle' => $flocked ? $h : null, 'file' => $file, 'line' => $line, 'token' => $token ];
 
         // A stale file taken over without flock(): another process moving
         // files in the same instant could have lost this one. Asked again a
@@ -376,7 +378,7 @@ return [
         return $hold;
     },
 
-    /* Whether the lock file still holds this holder's line, $wait seconds on. */
+    /* Whether the lock file is still this holder's (its token), $wait seconds on. */
     'stillMine' => static function ( array $hold, $wait = 0 ) {
 
         if ( $wait > 0 ) {
@@ -384,7 +386,58 @@ return [
             sleep( (int) $wait );
         }
 
-        return @file_get_contents( (string) $hold['file'] ) === $hold['line'];
+        return str_contains( (string) @file_get_contents( (string) $hold['file'] ), ', token ' . $hold['token'] );
+    },
+
+    /*
+     * Say what the holder is doing, at the end of its line: an install is
+     * "copying" while the files are mixed (the copy, and an undo), then
+     * "copied". log.php drops a beacon while it says copying, since nothing
+     * can boot then. Returns the hold with its new line.
+     */
+    'setLockPhase' => static function ( array $hold, $phase ) {
+
+        $hold['line'] = sprintf( "%s, %s\n", preg_replace( '/, (copying|copied)$/', '', rtrim( (string) $hold['line'] ) ), $phase );
+
+        if ( $hold['handle'] !== null ) {
+
+            ftruncate( $hold['handle'], 0 );
+            rewind( $hold['handle'] );
+            fwrite( $hold['handle'], $hold['line'] );
+            fflush( $hold['handle'] );
+
+        } elseif ( ( require __FILE__ )['stillMine']( $hold ) ) {
+
+            @file_put_contents( (string) $hold['file'], $hold['line'] );
+        }
+
+        return $hold;
+    },
+
+    /*
+     * For the entry points, before OWA loads: null when no lock is held, else
+     * what its line says and how long since its holder last touched it.
+     *
+     * @return array{line: string, phase: string|null, idle: int}|null
+     */
+    'lockStatus' => static function ( $data ) {
+
+        $u    = require __FILE__;
+        $file = rtrim( (string) $data, '/' ) . '/updating';
+
+        if ( ! $u['isLocked']( $data ) ) {
+
+            return null;
+        }
+
+        $line = trim( (string) @file_get_contents( $file ) );
+        $time = @filemtime( $file );
+
+        return [
+            'line'  => $line,
+            'phase' => preg_match( '/, (copying|copied)$/', $line, $m ) ? $m[1] : null,
+            'idle'  => $time === false ? 0 : max( 0, time() - $time ),
+        ];
     },
 
     /*
@@ -395,12 +448,13 @@ return [
      */
     'unlock' => static function ( array $hold ) {
 
+        $u    = require __FILE__;
         $file = (string) $hold['file'];
         $h    = $hold['handle'];
 
         if ( $h !== null && PHP_OS_FAMILY !== 'Windows' ) {
 
-            if ( @file_get_contents( $file ) === $hold['line'] ) {
+            if ( $u['stillMine']( $hold ) ) {
 
                 @unlink( $file );
             }
@@ -417,7 +471,7 @@ return [
             fclose( $h );
         }
 
-        if ( @file_get_contents( $file ) === $hold['line'] ) {
+        if ( $u['stillMine']( $hold ) ) {
 
             @unlink( $file );
         }
@@ -433,6 +487,78 @@ return [
     'touchLock' => static function ( array $hold ) {
 
         @touch( (string) $hold['file'] );
+    },
+
+    /*
+     * The entry points, before OWA loads: the lock's status for this
+     * installation (lockStatus), or null when none is held or the config
+     * cannot be read before boot (configRefused; such an installation never
+     * installs itself, so holds no lock).
+     */
+    'maintenance' => static function ( $root ) {
+
+        $u      = require __FILE__;
+        $config = $u['config']( $root );
+
+        return $config === null ? null : $u['lockStatus']( $config['data'] );
+    },
+
+    /* A lock held this long without its holder touching it is an install stuck in one step. */
+    'lock_stuck' => 7200,
+
+    /*
+     * index.php and api/index.php: answer 503 while the lock is held, and say
+     * so; true when it answered. $rest: the REST API's JSON envelope.
+     */
+    'serveMaintenance' => static function ( $root, $rest = false ) {
+
+        $u      = require __FILE__;
+        $status = $u['maintenance']( $root );
+
+        if ( $status === null ) {
+
+            return false;
+        }
+
+        $stuck = $status['idle'] >= $u['lock_stuck'];
+
+        http_response_code( 503 );
+        header( 'Retry-After: 60' );
+        header( 'Cache-Control: no-store' );
+
+        if ( $rest ) {
+
+            header( 'Content-Type: application/json; charset=utf-8' );
+            echo json_encode( [
+                'requestId'    => null,
+                'httpResponse' => [ 'status_code' => 503 ],
+                'error'        => [ [
+                    'code'     => 'busy',
+                    'headline' => 'OWA is updating.',
+                    'msg'      => $stuck ? 'The update has not moved for over two hours and may be stuck.' : 'Try again in a minute.',
+                ] ],
+                'data'         => null,
+            ] );
+
+            return true;
+        }
+
+        header( 'Content-Type: text/html; charset=utf-8' );
+        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>OWA is updating</title></head><body>'
+            . '<p>OWA is updating. This takes a minute or two.</p>'
+            . ( $stuck ? '<p>The update has not moved for over two hours and may be stuck. The lock file, owa-data/updating, says: <code>'
+                . htmlspecialchars( $status['line'], ENT_QUOTES ) . '</code>. Once that process has ended, the next run of cli.php carries the install on or undoes it.</p>' : '' )
+            . '</body></html>';
+
+        return true;
+    },
+
+    /* log.php, its response already sent: whether to drop this beacon, because an install is copying files and nothing can boot. */
+    'dropsBeacon' => static function ( $root ) {
+
+        $status = ( require __FILE__ )['maintenance']( $root );
+
+        return $status !== null && $status['phase'] === 'copying';
     },
 
     'backoff' => static function ( $attempts ) {
@@ -625,6 +751,9 @@ return [
 
         [ $version, $gone ] = $due;
 
+        // From here until the copy is checked the files are mixed: log.php drops beacons.
+        $hold = $u['setLockPhase']( $hold, 'copying' );
+
         $context = [
             'root'    => $root,
             'updates' => $dir,
@@ -764,6 +893,12 @@ return [
      * @return list<string> the files that could not be put back
      */
     'undo' => static function ( array $c, $why ) {
+
+        // The files are mixed again while the originals go back.
+        if ( isset( $c['lock'] ) && is_array( $c['lock'] ) ) {
+
+            ( require __FILE__ )['setLockPhase']( $c['lock'], 'copying' );
+        }
 
         $backup = $c['updates'] . '/install/backup';
         $state  = $c['updates'] . '/install/install.json';
@@ -1077,8 +1212,10 @@ return [
 
         $record( [ 'copied' => true ] );
 
+        // Every file is the new release's: log.php may boot again.
         if ( isset( $c['lock'] ) && is_array( $c['lock'] ) ) {
 
+            $c['lock'] = $u['setLockPhase']( $c['lock'], 'copied' );
             $u['touchLock']( $c['lock'] );
         }
 

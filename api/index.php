@@ -1,5 +1,11 @@
 <?php
 
+// Automatic updates: while the install lock is held, 503 busy in the REST
+// envelope, before any OWA file loads (updater.php).
+if ((require __DIR__ . '/../updater.php')['serveMaintenance'](dirname(__DIR__), true)) {
+    exit;
+}
+
 require_once(__DIR__ . '/../owa.php');
 
 /**
