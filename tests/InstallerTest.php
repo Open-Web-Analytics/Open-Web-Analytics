@@ -485,6 +485,44 @@ final class InstallerTest extends TestCase
 
         $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=1.9.0', '--force']), $this->out);
         $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'), 'going back, by hand');
+        $this->assertTrue($this->install()['forced'], 'its retries carry on');
+    }
+
+    /** 2.0.1 staged for the window, 2.0.2 installed by hand before it: the hand-off deletes 2.0.1, and its unfinished install. */
+    public function testAStagingTheInstalledReleaseWentPastIsDropped(): void
+    {
+        $this->stage('2.0.1');
+        $this->unfinished('2.0.1', $this->now - 1);
+        mkdir($this->updates . '/backup', 0700);
+        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = '2.0.2';\n}\n");
+
+        $this->assertSame(99, $this->handoff(), 'OWA boots: ' . $this->out);
+        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'), 'nothing copied: no downgrade');
+        $this->assertFileDoesNotExist($this->updates . '/staged.json');
+        $this->assertFileDoesNotExist($this->updates . '/install.json');
+        $this->assertDirectoryDoesNotExist($this->updates . '/backup');
+        $this->assertDirectoryDoesNotExist($this->updates . '/versions/2.0.1');
+        $this->assertFileDoesNotExist($this->data . '/updating', 'the lock is let go');
+    }
+
+    /** By hand, a release that is not newer is refused and nothing is deleted: --force is still there to add. */
+    public function testByHandNothingIsDropped(): void
+    {
+        $this->stage('2.0.0', null, false);
+        $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.0']));
+        $this->assertDirectoryExists($this->updates . '/versions/2.0.0');
+    }
+
+    /** A forced downgrade's retries carry on while Core/Env.php still says the newer release. */
+    public function testAForcedInstallsRetriesCarryOn(): void
+    {
+        $this->stage('1.9.0', null, false);
+        file_put_contents($this->updates . '/install.json', json_encode([
+            'state' => 'installing', 'version' => '1.9.0', 'attempts' => 1, 'retry_after' => $this->now - 1, 'forced' => true,
+        ]));
+
+        $this->assertSame(0, $this->handoff(), $this->out);
+        $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'));
     }
 
     /** A retry carries on although the copy already replaced Core/Env.php with the release's. */

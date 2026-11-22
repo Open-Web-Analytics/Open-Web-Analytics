@@ -34,7 +34,7 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** install.json and backup/, its own staging and staged.json if it names it; never a newer or another staging. */
+    /** install.json and backup/, every staging not newer and staged.json naming one; never a newer staging. */
     public function testTheCleanUp(): void
     {
         $s = new Staging($this->tmp . '/updates');
@@ -48,14 +48,16 @@ final class InstallFinishTest extends CliControllerTestCase
         $s->writeStaged('2.0.4', null, str_repeat('a', 64));
         Finish::cleanup($s, '2.0.3');
 
-        $this->assertSame(['2.0.2', '2.0.4'], $s->versions(), 'others are Step 1\'s to clear');
+        $this->assertSame(['2.0.4'], $s->versions(), 'an older staging goes too: this install went past it');
         $this->assertFileDoesNotExist($this->tmp . '/updates/install.json');
         $this->assertDirectoryDoesNotExist($this->tmp . '/updates/backup');
-        $this->assertSame('2.0.4', $s->staged()['version']);
+        $this->assertSame('2.0.4', $s->staged()['version'], 'a newer one stays');
 
-        $s->writeStaged('2.0.4', null, str_repeat('a', 64));
-        Finish::cleanup($s, '2.0.4');
-        $this->assertNull($s->staged());
+        // An install by hand of 2.0.5 before 2.0.4's window.
+        mkdir($s->dir('2.0.5') . '/release', 0700, true);
+        Finish::cleanup($s, '2.0.5');
+        $this->assertNull($s->staged(), 'staged.json named an older release');
+        $this->assertSame([], $s->versions());
     }
 
     /** A warning at the first failure, critical when the weekly back-off starts, then weekly reminders. */

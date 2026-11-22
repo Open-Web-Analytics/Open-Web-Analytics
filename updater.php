@@ -40,8 +40,9 @@
  * directories that are neither the release's nor a retired one of OWA's own.
  *
  * THE FROZEN CONTRACT between an installed release and the next is
- * `install`'s: one array (root, updates, data, public, version, manual, now,
- * lock) in, null (boot OWA as if nothing happened) or an exit code out. Its
+ * `install`'s: one array (root, updates, data, public, version, manual,
+ * forced, now, lock) in, null (boot OWA as if nothing happened) or an exit
+ * code out. Its
  * fields, like staged.json's and install.json's, are only ever added to.
  *
  * Each attempt is counted at the claim, retry_after set then on the back-off
@@ -738,18 +739,27 @@ return [
                 return null;
             }
 
-            // An install starts only for a release newer than the installed one,
-            // unless cmd=self-update-install says --force. An unfinished install
-            // of it carries on: its copy may already have replaced Core/Env.php.
-            if ( ( $current['version'] ?? null ) !== $version && ! ( $only !== null && $force ) ) {
+            /*
+             * An install starts only for a release newer than the installed one,
+             * unless cmd=self-update-install says --force. An unfinished install
+             * of it carries on while the installed version is not newer than it,
+             * since its copy may already have replaced Core/Env.php, and a forced
+             * one carries on regardless. A newer installed version means another
+             * install went past it (by hand, before the window): an automatic one
+             * is dropped, its staging and any unfinished install of it deleted.
+             */
+            if ( ! ( $only !== null && $force ) ) {
 
-                $installed = $u['installedVersion']( $root );
+                $installed  = $u['installedVersion']( $root );
+                $unfinished = ( $current['version'] ?? null ) === $version;
+                $cmp        = $installed === null ? null : version_compare( $version, $installed );
+                $goes_on    = $cmp !== null && ( $cmp > 0 || ( $unfinished && ( $cmp === 0 || ! empty( $current['forced'] ) ) ) );
 
-                if ( $installed === null || version_compare( $version, $installed, '<=' ) ) {
+                if ( ! $goes_on ) {
 
                     if ( $only === null ) {
 
-                        return null;
+                        return $installed === null ? null : [ 'drop' => $version ];
                     }
 
                     fwrite( STDERR, $installed === null
@@ -780,6 +790,26 @@ return [
 
         $due = $decide();
 
+        // A staged release the installed one has gone past: deleted, holding the lock, and OWA boots.
+        if ( isset( $due['drop'] ) ) {
+
+            $hold = $u['tryLock']( $data, sprintf( 'clean-up %s', $due['drop'] ) );
+
+            if ( $hold !== null ) {
+
+                $again = $decide();
+
+                if ( ( $again['drop'] ?? null ) === $due['drop'] ) {
+
+                    $u['dropSuperseded']( $dir, $due['drop'] );
+                }
+
+                $u['unlock']( $hold );
+            }
+
+            return null;
+        }
+
         if ( ! is_array( $due ) ) {
 
             return $due;
@@ -794,11 +824,11 @@ return [
 
         $due = $decide();
 
-        if ( ! is_array( $due ) ) {
+        if ( ! is_array( $due ) || isset( $due['drop'] ) ) {
 
             $u['unlock']( $hold );
 
-            return $due;
+            return is_array( $due ) ? null : $due;
         }
 
         [ $version, $gone ] = $due;
@@ -813,6 +843,7 @@ return [
             'public'  => $config['public'],
             'version' => $version,
             'manual'  => $only !== null,
+            'forced'  => $only !== null && $force,
             'now'     => time(),
             'lock'    => $hold,
         ];
@@ -939,6 +970,31 @@ return [
     },
 
     /*
+     * A staged release the installed one has gone past: staged.json if it
+     * names it, its staging, and an unfinished install of it with its
+     * backup/ (the originals of a release no longer installed). The caller
+     * holds the lock.
+     */
+    'dropSuperseded' => static function ( $dir, $version ) {
+
+        $u    = require __FILE__;
+        $read = static fn ( $file ) => is_array( $j = json_decode( (string) @file_get_contents( $file ), true ) ) ? $j : [];
+
+        if ( ( $read( $dir . '/staged.json' )['version'] ?? null ) === $version ) {
+
+            @unlink( $dir . '/staged.json' );
+        }
+
+        if ( ( $read( $dir . '/install.json' )['version'] ?? null ) === $version ) {
+
+            @unlink( $dir . '/install.json' );
+            $u['remove']( $dir . '/backup' );
+        }
+
+        $u['remove']( $dir . '/versions/' . $version );
+    },
+
+    /*
      * Put back every file in backup/ and record why: the old release
      * runs until the retry.
      *
@@ -1038,6 +1094,7 @@ return [
             'retry_after' => (int) $c['now'] + $u['backoff']( $attempts ),
             'copied'      => false,
             'booted'      => false,
+            'forced'      => ! empty( $c['forced'] ) || ! empty( $previous['forced'] ),
             'error'       => $previous['error'] ?? null,
         ];
         $write( $state, $install );

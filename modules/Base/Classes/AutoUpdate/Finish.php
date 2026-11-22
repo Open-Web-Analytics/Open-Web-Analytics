@@ -132,9 +132,10 @@ class Finish {
     }
 
     /**
-     * After a successful install: install.json and backup/, its own staging, updater.php with it, and staged.json if it names exactly
-     * this version. Nothing else: Step 1 deletes the stagings it replaces and
-     * those not newer than what is installed.
+     * After a successful install: install.json and backup/, every staging not
+     * newer than this version (its own, with the updater.php it runs from,
+     * and any older one an install by hand went past), and staged.json if it
+     * names one of them. A newer staging stays.
      *
      * @param  Staging $staging
      * @param  string  $v
@@ -142,13 +143,22 @@ class Finish {
      */
     public static function cleanup( Staging $staging, $v ) {
 
-        if ( ( $staging->staged()['version'] ?? null ) === $v ) {
+        $named = (string) ( $staging->staged()['version'] ?? '' );
+
+        if ( $named !== '' && Version::compare( $named, $v ) <= 0 ) {
 
             $staging->removeStaged();
         }
 
         Staging::remove( $staging->root() . '/' . Staging::BACKUP );
         @unlink( $staging->root() . '/' . Staging::INSTALL );
-        Staging::remove( $staging->dir( $v ) );
+
+        foreach ( $staging->versions() as $staged ) {
+
+            if ( Version::compare( $staged, $v ) <= 0 ) {
+
+                Staging::remove( $staging->dir( $staged ) );
+            }
+        }
     }
 }
