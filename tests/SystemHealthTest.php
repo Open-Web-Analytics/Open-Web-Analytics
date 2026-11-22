@@ -594,4 +594,39 @@ final class SystemHealthTest extends TestCase
             $db->e = $was;
         }
     }
+
+    /** The web server able to change OWA's code, and not its owner: yellow, naming what it can write. */
+    public function testCodeTheWebServerCanChange(): void
+    {
+        $root = sys_get_temp_dir() . '/owa-writable-' . bin2hex(random_bytes(4));
+        mkdir($root . '/Core', 0775, true);
+        mkdir($root . '/modules', 0775);
+        file_put_contents($root . '/owa.php', '<?php');
+        chmod($root . '/owa.php', 0664);
+        $owner = fileowner($root . '/owa.php');
+
+        try {
+            $this->assertNull(SystemHealth::writableCode($root, $owner), 'its owner: nothing to tighten');
+
+            $finding = SystemHealth::writableCode($root, $owner + 1);
+            $this->assertSame('yellow', $finding['level']);
+            $this->assertStringContainsString('(the OWA directory, owa.php, Core/, modules/)', $finding['detail']);
+
+            chmod($root . '/owa.php', 0444);
+            chmod($root . '/Core', 0555);
+            chmod($root . '/modules', 0555);
+            $this->assertStringContainsString('(the OWA directory)', SystemHealth::writableCode($root, $owner + 1)['detail'],
+                'a writable directory lets any file in it be replaced');
+
+            chmod($root, 0555);
+            chmod($root . '/Core', 0555);
+            chmod($root . '/modules', 0555);
+            $this->assertNull(SystemHealth::writableCode($root, $owner + 1), 'not writable: nothing to say');
+        } finally {
+            chmod($root, 0755);
+            chmod($root . '/Core', 0755);
+            chmod($root . '/modules', 0755);
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
 }
