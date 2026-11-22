@@ -95,6 +95,12 @@ return [
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ],
+        'auto_update' => [ 'config_constant' => 'OWA_AUTO_UPDATE', 'default' => true, 'description' => 'Whether OWA installs its own patch and minor releases (cmd=release-check stages them). Never on a version control checkout, and never a major release.' ],
+        'auto_update_days' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DAYS', 'default' => '', 'description' => 'The days an automatic update may start on, such as sat,sun. Empty: any day.' ],
+        'auto_update_level' => [ 'config_constant' => 'OWA_AUTO_UPDATE_LEVEL', 'default' => 'minor', 'description' => 'Which releases install automatically: patch (x.y.Z only) or minor (x.Y.z and patches).' ],
+        'auto_update_patch_immediately' => [ 'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY', 'default' => true, 'description' => 'Whether a patch release installs as soon as it is staged rather than in the window.' ],
+        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from.' ],
+        'auto_update_window' => [ 'config_constant' => 'OWA_AUTO_UPDATE_WINDOW', 'default' => '02:00-06:00', 'description' => 'The time an automatic update may start in, HH:MM-HH:MM in the installation\'s timezone. Empty: any time.' ],
         'app_passwords_enabled' => [
             'default'  => true,
             'storable' => true,

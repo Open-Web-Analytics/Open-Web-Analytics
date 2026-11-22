@@ -59,35 +59,42 @@ class DatabaseRequirement {
      * MySQL and its compatible builds -- Percona, Aurora MySQL 3 -- report a
      * plain MySQL version ("8.0.35-27", "8.4.10").
      *
-     * @param string $version
+     * The floors are this release's, or another's (a release check judges the
+     * release it would install against this server).
+     *
+     * @param string      $version
+     * @param string|null $mysql_min   null: Core\Requirements::MYSQL_MIN
+     * @param string|null $mariadb_min null: Core\Requirements::MARIADB_MIN
      * @return string|null
      */
-    public static function problemFor( $version ) {
+    public static function problemFor( $version, $mysql_min = null, $mariadb_min = null ) {
 
-        $version = trim( (string) $version );
+        $version     = trim( (string) $version );
+        $mysql_min   = $mysql_min ?? \OWA\Core\Requirements::MYSQL_MIN;
+        $mariadb_min = $mariadb_min ?? \OWA\Core\Requirements::MARIADB_MIN;
 
         if ( ! preg_match( '/^(\d+)\.(\d+)\.(\d+)/', $version, $m ) ) {
 
             return sprintf( \OWA\Core\CoreAPI::t( 'OWA could not read the database server\'s version (%s). It needs MySQL %s '
               . 'or later, or MariaDB %s or later.' ),
                 $version !== '' ? '"' . $version . '"' : \OWA\Core\CoreAPI::t( 'nothing was returned' ),
-                \OWA\Core\Requirements::MYSQL_MIN, self::shortVersion( \OWA\Core\Requirements::MARIADB_MIN ) );
+                $mysql_min, self::shortVersion( $mariadb_min ) );
         }
 
         $number = $m[1] . '.' . $m[2] . '.' . $m[3];
 
         if ( stripos( $version, 'mariadb' ) !== false ) {
 
-            return version_compare( $number, \OWA\Core\Requirements::MARIADB_MIN, '>=' ) ? null : sprintf(
+            return version_compare( $number, $mariadb_min, '>=' ) ? null : sprintf(
                 \OWA\Core\CoreAPI::t( 'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest '
               . 'MariaDB release still supported -- or MySQL %s or later.' ),
-                $number, self::shortVersion( \OWA\Core\Requirements::MARIADB_MIN ), \OWA\Core\Requirements::MYSQL_MIN );
+                $number, self::shortVersion( $mariadb_min ), $mysql_min );
         }
 
-        return version_compare( $number, \OWA\Core\Requirements::MYSQL_MIN, '>=' ) ? null : sprintf(
+        return version_compare( $number, $mysql_min, '>=' ) ? null : sprintf(
             \OWA\Core\CoreAPI::t( 'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build '
           . 'uses JSON_VALUE and window functions -- or MariaDB %s or later.' ),
-            $number, \OWA\Core\Requirements::MYSQL_MIN, self::shortVersion( \OWA\Core\Requirements::MARIADB_MIN ) );
+            $number, $mysql_min, self::shortVersion( $mariadb_min ) );
     }
 
     /**
