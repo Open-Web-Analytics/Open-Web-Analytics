@@ -73,7 +73,6 @@ final class InstallerTest extends TestCase
     {
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $this->updates);
         $this->assertSame('0711', sprintf('%04o', fileperms($this->updates) & 0777), 'others open a name they know, list nothing');
-        $this->assertSame('0700', sprintf('%04o', fileperms($this->updates . '/versions') & 0777), 'nothing that holds code is readable');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data), 'found again, never derived');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data, true), 'created once');
 
@@ -249,11 +248,11 @@ final class InstallerTest extends TestCase
     public function testNothingRunsFromAStagingOthersCanWrite(): void
     {
         $this->stage('2.0.1');
-        chmod($this->updates . '/versions/2.0.1', 0770);
+        chmod($this->updates . '/staged', 0770);
         $this->assertSame(99, $this->handoff());
 
-        chmod($this->updates . '/versions/2.0.1', 0700);
-        chmod($this->updates . '/versions/2.0.1/release/updater.php', 0666);
+        chmod($this->updates . '/staged', 0700);
+        chmod($this->updates . '/staged/updater.php', 0666);
         $this->assertSame(99, $this->handoff());
         $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
     }
@@ -501,7 +500,7 @@ final class InstallerTest extends TestCase
         $this->assertFileDoesNotExist($this->updates . '/staged.json');
         $this->assertFileDoesNotExist($this->updates . '/install.json');
         $this->assertDirectoryDoesNotExist($this->updates . '/backup');
-        $this->assertDirectoryDoesNotExist($this->updates . '/versions/2.0.1');
+        $this->assertDirectoryDoesNotExist($this->updates . '/staged');
         $this->assertFileDoesNotExist($this->data . '/updating', 'the lock is let go');
     }
 
@@ -510,7 +509,7 @@ final class InstallerTest extends TestCase
     {
         $this->stage('2.0.0', null, false);
         $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.0']));
-        $this->assertDirectoryExists($this->updates . '/versions/2.0.0');
+        $this->assertDirectoryExists($this->updates . '/staged');
     }
 
     /** A forced downgrade's retries carry on while Core/Env.php still says the newer release. */
@@ -547,6 +546,18 @@ final class InstallerTest extends TestCase
         $this->assertStringContainsString('The installed version cannot be read from Core/Env.php; add --force to install 2.0.1 anyway.', $this->out);
     }
 
+    /** staged.json says automatic false (staged by hand, or waiting): the hand-off never installs it on its own; self-update-install does. */
+    public function testOnlyAReleaseThatInstallsItselfIsDue(): void
+    {
+        $this->stage('2.0.1', null, false);
+
+        $this->assertSame(99, $this->handoff(), 'not due');
+        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
+
+        $this->assertSame(0, $this->handoff(['cmd=self-update-install', 'version=2.0.1']), $this->out);
+        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
+    }
+
     public function testEveryOtherRunWaitsForAnInstall(): void
     {
         $h = fopen($this->data . '/updating', 'c');
@@ -566,7 +577,7 @@ final class InstallerTest extends TestCase
     {
         $this->assertSame(2, $this->handoff(['cmd=self-update-install']));
         $this->assertSame(1, $this->handoff(['cmd=self-update-install', 'version=2.0.1']));
-        $this->assertStringContainsString('stage the release first', $this->out);
+        $this->assertStringContainsString('2.0.1 is not staged: stage it first (cmd=self-update-stage version=2.0.1).', $this->out);
 
         // An unfinished install of another version comes first.
         $this->stage('2.0.2', null, false);
@@ -610,17 +621,17 @@ final class InstallerTest extends TestCase
         return proc_close($proc);
     }
 
-    /** A staged release, as Step 1 leaves it, and staged.json pointing at it (unless $point is false). */
+    /** The one staged release, as Step 1 leaves it, installing itself; $point false: as staged by hand, installed only by self-update-install. */
     private function stage(string $v, ?array $window = null, bool $point = true, array $extra = [], ?string $owa = null): void
     {
-        $dir = $this->updates . "/versions/$v";
+        $dir = $this->updates . '/staged';
         exec('rm -rf ' . escapeshellarg($dir));
-        mkdir($dir . '/release', 0700, true);
+        mkdir($dir, 0700, true);
 
         $owa ??= "<?php\nnamespace OWA\\Module\\Base\\Classes\\AutoUpdate;\nclass Finish {\n    public static function run(array \$c) {\n"
             . "        (\$c['record'])(['booted' => true]);\n        file_put_contents(\$c['root'] . '/finished.txt', \$c['version']);\n        return 0;\n    }\n}\n";
 
-        $this->tree($dir . '/release', $extra + [
+        $this->tree($dir, $extra + [
             'cli.php'                 => 'new cli',
             'owa_env.php'             => 'env',
             'Core/Env.php'            => "<?php\nfinal class Env {\n    const VERSION = '$v';\n}\n",
@@ -631,13 +642,12 @@ final class InstallerTest extends TestCase
             'release.json'            => json_encode(['version' => $v]),
             'owa.php'                 => $owa,
         ]);
-        chmod($dir . '/release/cli.php', 0755);
-        copy(dirname(__DIR__) . '/updater.php', $dir . '/release/updater.php');
-        chmod($dir . '/release/updater.php', 0644);
+        chmod($dir . '/cli.php', 0755);
+        copy(dirname(__DIR__) . '/updater.php', $dir . '/updater.php');
+        chmod($dir . '/updater.php', 0644);
 
-        if ($point) {
-            file_put_contents($this->updates . '/staged.json', json_encode(['format' => 1, 'version' => $v, 'window' => $window, 'sha256' => str_repeat('a', 64)]));
-        }
+        file_put_contents($this->updates . '/staged.json', json_encode(['format' => 1, 'version' => $v, 'window' => $window,
+            'sha256' => str_repeat('a', 64), 'staged_at' => $this->now, 'automatic' => $point, 'by_hand' => ! $point]));
     }
 
     private function unfinished(string $v, int $retry_after, int $attempts = 1): void

@@ -21,9 +21,9 @@
  *               (the updates_dir setting); Step 1 creates it.
  *
  *     updates-<id>/          0711  others open a name they know, list nothing
- *       staged.json          0644  Step 1's: the release to install, and when
+ *       staged.json          0644  what staged/ holds, and whether and when it installs itself
  *       install.json         0644  the installer's, while an install is unfinished
- *       versions/            0700  the staged releases: <version>/release/
+ *       staged/              0700  the one staged release (staged.tmp/ while it downloads)
  *       backup/              0700  the originals, while an install is unfinished
  *
  *   The two JSON files are readable by the web user, under any arrangement
@@ -139,8 +139,8 @@ return [
     /*
      * The updates directory, or null: none, or more than one (System Health
      * says so, and nothing installs). With $create, Step 1 makes it when
-     * there is none: mode 0711 with versions/ 0700, a name mkdir() refuses
-     * to reuse, and looked for again after, so it is the only one.
+     * there is none: mode 0711, a name mkdir() refuses to reuse, and looked
+     * for again after, so it is the only one.
      */
     'updatesDir' => static function ( $data, $create = false ) {
 
@@ -165,8 +165,6 @@ return [
         }
 
         @chmod( $dir, 0711 );
-        @mkdir( $dir . '/versions', 0700 );
-        @chmod( $dir . '/versions', 0700 );
         $found = $u['updatesDirs']( $data );
 
         return count( $found ) === 1 ? (string) $found[0] : null;
@@ -770,7 +768,7 @@ return [
                 }
             }
 
-            $gone    = ! is_dir( $dir . '/versions/' . $version . '/release' );
+            $gone    = ! $u['slotHolds']( $dir, $version );
             $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
 
             if ( $problem !== null ) {
@@ -858,7 +856,7 @@ return [
             return null;
         }
 
-        $code = ( require $dir . '/versions/' . $version . '/release/updater.php' )['install']( $context );
+        $code = ( require $dir . '/staged/updater.php' )['install']( $context );
 
         // Done, however it ended. A process that dies, or exit()s from inside
         // the install (the 24-hour stop), leaves the file for the next
@@ -895,7 +893,8 @@ return [
         $staged  = $read( $dir . '/staged.json' );
         $version = (string) ( $staged['version'] ?? '' );
 
-        if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) || ! is_dir( $dir . '/versions/' . $version . '/release' ) ) {
+        // Only one that installs itself: not one staged by hand, nor one that waits.
+        if ( empty( $staged['automatic'] ) || ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
 
             return null;
         }
@@ -932,10 +931,18 @@ return [
         return $version;
     },
 
+    /* Whether staged/ holds this release: its release.json says so. */
+    'slotHolds' => static function ( $dir, $version ) {
+
+        $info = json_decode( (string) @file_get_contents( rtrim( (string) $dir, '/' ) . '/staged/release.json' ), true );
+
+        return is_array( $info ) && ( $info['version'] ?? null ) === $version;
+    },
+
     /*
-     * Why the staging may not be run, or null: the updates directory,
-     * <version>/ and release/updater.php owned by this user and writable by
-     * no one else.
+     * Why the staging may not be run, or null: staged/ holds that release,
+     * and the updates directory, staged/ and its updater.php are owned by this
+     * user and writable by no one else.
      */
     'checkStaging' => static function ( $dir, $version ) {
 
@@ -951,7 +958,12 @@ return [
 
         $uid = posix_geteuid();
 
-        foreach ( [ $dir, $dir . '/versions', $dir . '/versions/' . $version, $dir . '/versions/' . $version . '/release/updater.php' ] as $path ) {
+        if ( ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
+
+            return sprintf( '%s is not staged: stage it first (cmd=self-update-stage version=%s).', $version, $version );
+        }
+
+        foreach ( [ $dir, $dir . '/staged', $dir . '/staged/updater.php' ] as $path ) {
 
             clearstatcache( true, $path );
 
@@ -980,18 +992,17 @@ return [
         $u    = require __FILE__;
         $read = static fn ( $file ) => is_array( $j = json_decode( (string) @file_get_contents( $file ), true ) ) ? $j : [];
 
-        if ( ( $read( $dir . '/staged.json' )['version'] ?? null ) === $version ) {
-
-            @unlink( $dir . '/staged.json' );
-        }
-
         if ( ( $read( $dir . '/install.json' )['version'] ?? null ) === $version ) {
 
             @unlink( $dir . '/install.json' );
             $u['remove']( $dir . '/backup' );
         }
 
-        $u['remove']( $dir . '/versions/' . $version );
+        if ( ( $read( $dir . '/staged.json' )['version'] ?? null ) === $version || $u['slotHolds']( $dir, $version ) ) {
+
+            @unlink( $dir . '/staged.json' );
+            $u['remove']( $dir . '/staged' );
+        }
     },
 
     /*
@@ -1059,7 +1070,7 @@ return [
 
         $u       = require __FILE__;
         $root    = rtrim( (string) $c['root'], '/' );
-        $release = $c['updates'] . '/versions/' . $c['version'] . '/release';
+        $release = $c['updates'] . '/staged';
         $state   = $c['updates'] . '/install.json';
         $backup  = $c['updates'] . '/backup';
         $write   = static function ( $file, array $data ) {

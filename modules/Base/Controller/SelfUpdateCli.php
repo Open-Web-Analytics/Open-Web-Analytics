@@ -18,7 +18,7 @@ class SelfUpdateCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Shows what automatic updates will do: the settings in effect, the release staged to install and when, and every downloaded release with its checks and install state.',
+            'description' => 'Shows what automatic updates will do: the settings in effect, the staged release, whether and when it installs, its checks, and an unfinished install.',
             'arguments'   => [],
         ];
     }

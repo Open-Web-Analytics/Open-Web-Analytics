@@ -17,9 +17,9 @@ class SelfUpdateCancelCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Stops the release staged to install from installing; the next release check stages it again unless automatic updates are off. With version=, deletes that release\'s download too, and its install if one is failing. Refused while an install runs.',
+            'description' => 'Deletes the staged release, so nothing installs until one is staged again: the next release check stages it again unless automatic updates are off. Refused while an install runs or is unfinished.',
             'arguments'   => [
-                'version=<x.y.z>' => 'Also delete this release\'s download.',
+                'version=<x.y.z>' => 'Only if it is the release staged.',
             ],
         ];
     }

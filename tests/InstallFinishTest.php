@@ -34,30 +34,34 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** install.json and backup/, every staging not newer and staged.json naming one; never a newer staging. */
+    /** install.json and backup/, and the slot when it holds this release or an older one; a newer one staged meanwhile stays. */
     public function testTheCleanUp(): void
     {
-        $s = new Staging($this->tmp . '/updates');
+        $s    = new Staging($this->tmp . '/updates');
+        $slot = function (string $v) use ($s): void {
+            @mkdir($s->releaseDir(), 0700, true);
+            file_put_contents($s->releaseDir() . '/release.json', json_encode(['version' => $v]));
+            $s->writeStaged($v, null, str_repeat('a', 64));
+        };
 
-        foreach (['2.0.2', '2.0.3', '2.0.4'] as $v) {
-            mkdir($s->dir($v) . '/release', 0700, true);
-        }
+        $slot('2.0.3');
         mkdir($this->tmp . '/updates/backup', 0700, true);
         file_put_contents($this->tmp . '/updates/install.json', '{"state":"installing","version":"2.0.3"}');
 
-        $s->writeStaged('2.0.4', null, str_repeat('a', 64));
         Finish::cleanup($s, '2.0.3');
-
-        $this->assertSame(['2.0.4'], $s->versions(), 'an older staging goes too: this install went past it');
         $this->assertFileDoesNotExist($this->tmp . '/updates/install.json');
         $this->assertDirectoryDoesNotExist($this->tmp . '/updates/backup');
-        $this->assertSame('2.0.4', $s->staged()['version'], 'a newer one stays');
+        $this->assertNull($s->staged());
+        $this->assertDirectoryDoesNotExist($s->releaseDir());
 
-        // An install by hand of 2.0.5 before 2.0.4's window.
-        mkdir($s->dir('2.0.5') . '/release', 0700, true);
+        $slot('2.0.4');
+        Finish::cleanup($s, '2.0.3');
+        $this->assertSame('2.0.4', $s->staged()['version'], 'a newer release staged meanwhile stays');
+        $this->assertTrue($s->isStaged('2.0.4'));
+
+        // 2.0.5 installed by hand before 2.0.4's window.
         Finish::cleanup($s, '2.0.5');
-        $this->assertNull($s->staged(), 'staged.json named an older release');
-        $this->assertSame([], $s->versions());
+        $this->assertNull($s->staged(), 'an older release goes');
     }
 
     /** A warning at the first failure, critical when the weekly back-off starts, then weekly reminders. */
