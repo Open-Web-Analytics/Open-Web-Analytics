@@ -40,7 +40,7 @@ final class ReleaseCheckTest extends TestCase
     /** @var array<string, int> module => stored schema */
     private array $schema = ['base' => 95];
 
-    /** @var array<string, array<string, mixed>> version => more for its release.json */
+    /** @var array<string, array<string, mixed>> version => more for its release.php */
     private array $releaseJson = [];
 
     private int $now = 1800000000;
@@ -282,10 +282,10 @@ final class ReleaseCheckTest extends TestCase
 
     public function testATarballOfAnotherReleaseFailsTheDownload(): void
     {
-        $result = $this->check(['2.0.1'], [], null, fn ($dir) => file_put_contents($dir . '/release.json', json_encode(['version' => '2.0.9'])));
+        $result = $this->check(['2.0.1'], [], null, fn ($dir) => file_put_contents($dir . '/release.php', \OWA\Core\VersionInfo::encode(['version' => '2.0.9'])));
 
         $this->assertSame(ReleaseCheck::FAILED, $result['outcome']);
-        $this->assertStringContainsString("2.0.1's release.json says it is '2.0.9'", implode("\n", $result['problems']));
+        $this->assertStringContainsString("2.0.1's release.php says it is '2.0.9'", implode("\n", $result['problems']));
         $this->assertFalse($this->downloads()->has('2.0.1'));
     }
 
@@ -904,7 +904,7 @@ final class ReleaseCheckTest extends TestCase
         ]);
     }
 
-    /** A release tarball as the packager makes it: release.json inside, members ./... */
+    /** A release tarball as the packager makes it: release.php inside, members ./... */
     private function build(string $v, ?callable $tamper, bool $noUpdater = false): string
     {
         $dir = $this->tmp . "/build-$v";
@@ -926,7 +926,7 @@ final class ReleaseCheckTest extends TestCase
             copy(dirname(__DIR__) . "/modules/Base/Classes/AutoUpdate/$class.php", $dir . "/modules/Base/Classes/AutoUpdate/$class.php");
         }
         file_put_contents($dir . '/modules/Base/Module.php', "<?php // $v");
-        file_put_contents($dir . '/release.json', json_encode(($this->releaseJson[$v] ?? []) + ['format' => 1, 'version' => $v,
+        file_put_contents($dir . '/release.php', \OWA\Core\VersionInfo::encode(($this->releaseJson[$v] ?? []) + ['format' => 1, 'version' => $v,
             'requirements' => \OWA\Core\Requirements::toArray(), 'modules' => ['base' => 95], 'updates' => []]));
 
         if ($tamper) {

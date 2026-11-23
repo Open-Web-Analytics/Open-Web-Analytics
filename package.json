@@ -13,7 +13,7 @@
     "test:e2e:install:doctor": "php tests/e2e/install_harness.php doctor",
     "test:e2e:selfhost:doctor": "php tests/e2e/selfhost_harness.php doctor",
     "build": "webpack-cli --mode production && npm run version-info",
-    "version-info": "php cli.php cmd=version-info --file=release.json",
+    "version-info": "php cli.php cmd=version-info --file=release.php",
     "start": "webpack-cli --mode development --watch"
   },
   "repository": {

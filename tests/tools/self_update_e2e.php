@@ -249,8 +249,8 @@ function buildTree( $repo, $work ) {
 }
 
 /**
- * A release package: the build at $version, changed by $edit, its release.json
- * written as npm run build writes it, then $after (for release.json itself).
+ * A release package: the build at $version, changed by $edit, its release.php
+ * written as npm run build writes it, then $after (for release.php itself).
  *
  * @return array{file: string, sha256: string, size: int}
  */
@@ -275,7 +275,7 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
         $edit( $tree );
     }
 
-    must( 'php cli.php cmd=version-info --file=release.json', $tree );
+    must( 'php cli.php cmd=version-info --file=release.php', $tree );
 
     if ( $after ) {
 
@@ -696,9 +696,9 @@ $scenarios = [
 
         $to = package( $build, $work, 'unmet', TO, null, static function ( $tree ) {
 
-            $r = json_decode( (string) file_get_contents( "$tree/release.json" ), true );
+            $r = \OWA\Core\VersionInfo::decode( (string) file_get_contents( "$tree/release.php" ) );
             $r['requirements']['php']['min'] = '99.0';
-            file_put_contents( "$tree/release.json", json_encode( $r, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+            file_put_contents( "$tree/release.php", \OWA\Core\VersionInfo::encode( $r ) );
         } );
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
@@ -716,7 +716,7 @@ $scenarios = [
 
     'does-not-boot' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        // After release.json, which cmd=version-info writes by running OWA.
+        // After release.php, which cmd=version-info writes by running OWA.
         $to = package( $build, $work, 'does-not-boot', TO, null, static function ( $tree ) {
 
             file_put_contents( "$tree/owa.php", "\nthis is not PHP(\n", FILE_APPEND );

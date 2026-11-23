@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 /**
  * cmd=version-info: what this code is, as JSON (Core\VersionInfo). Printed,
- * or written to --file, which is how `npm run build` writes release.json.
+ * or written to --file, which is how `npm run build` writes release.php.
  *
  * Runs without OWA booted (needsBoot()), so it answers in a checkout with no
  * owa-config.php and no database, and on any server role.
@@ -16,7 +16,7 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Prints what this code is as JSON: its version, what it needs of a server, each module\'s schema and every schema update, with whether its rollback restores what it changed. Runs without OWA booted.',
             'arguments'   => [
-                '--file=<path>' => 'Write the JSON to this file instead of printing it. The build writes release.json.',
+                '--file=<path>' => 'Write it to this file instead of printing it: a .php file as release.php, which exits when a web server runs it, then the JSON. The build writes release.php.',
             ],
         ];
     }
@@ -33,9 +33,13 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
      */
     public static function runWithoutBoot( array $params ) {
 
-        $json = json_encode( \OWA\Core\VersionInfo::toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n";
+        $info = \OWA\Core\VersionInfo::toArray();
+        $file = $params['file'] ?? null;
 
-        return self::emit( $json, $params['file'] ?? null );
+        // A .php file is release.php: guarded, so a web server shows nothing of it.
+        return self::emit( is_string( $file ) && str_ends_with( $file, '.php' )
+            ? \OWA\Core\VersionInfo::encode( $info )
+            : json_encode( $info, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n", $file );
     }
 
     /**

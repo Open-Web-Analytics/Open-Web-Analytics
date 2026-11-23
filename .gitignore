@@ -19,4 +19,4 @@ owa-data/e2e-selfhost-logs/
 /modules/Base/build/
 # What this code is (Core\VersionInfo), written by npm run build; shipped in
 # the release tarball. Nothing reads an install's own copy.
-/release.json
+/release.php

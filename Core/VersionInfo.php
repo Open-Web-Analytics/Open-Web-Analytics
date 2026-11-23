@@ -4,9 +4,12 @@ namespace OWA\Core;
 /**
  * What this code is, as data: its version and branch, what it needs of a
  * server (Requirements), each module's schema, and every schema update with
- * whether its down() can restore what its up() changed. release.json, which
+ * whether its down() can restore what its up() changed. release.php, which
  * cmd=version-info writes at build time and a release check reads from a
- * newer release before installing it.
+ * newer release before installing it: a PHP file that exits (GUARD), so a
+ * request for it shows nothing on any web server, then the JSON. It is read
+ * as text (decode()), never run: the installer reads it from a release it
+ * has not installed.
  *
  * BOOT-FREE. No settings, no database, no CoreAPI, and no module is
  * constructed: a module's name and required_schema_version are read as its
@@ -23,8 +26,45 @@ namespace OWA\Core;
  */
 class VersionInfo {
 
-    /** release.json's format: raised when a field changes meaning or goes. */
+    /** release.php's format: raised when a field changes meaning or goes. */
     const FORMAT = 1;
+
+    /** The file, at the top of a release. */
+    const FILE = 'release.php';
+
+    /** release.php's first line: run, it exits before anything is shown. */
+    const GUARD = "<?php exit; ?>\n";
+
+    /**
+     * release.php's contents for $info.
+     *
+     * @param  array<string, mixed> $info
+     * @return string
+     */
+    public static function encode( array $info ) {
+
+        return self::GUARD . json_encode( $info, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n";
+    }
+
+    /**
+     * release.php's data, read as text; null when it is not release.php.
+     *
+     * @param  string|null $contents
+     * @return array<string, mixed>|null
+     */
+    public static function decode( $contents ) {
+
+        $contents = (string) $contents;
+
+        if ( ! str_starts_with( $contents, self::GUARD ) ) {
+
+            return null;
+        }
+
+        $data = json_decode( substr( $contents, strlen( self::GUARD ) ), true );
+
+        return is_array( $data ) ? $data : null;
+    }
 
     /**
      * @return VersionInfoArray

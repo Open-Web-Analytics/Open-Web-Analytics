@@ -9,7 +9,7 @@ namespace OWA\Core;
  * Read by the installer's and System Health's environment checks
  * (Classes\EnvironmentCheck), the database version check
  * (Classes\DatabaseRequirement), the configuration checks (ServerRole), the
- * wiki's generated tables, and release.json, which a release check reads to
+ * wiki's generated tables, and release.php, which a release check reads to
  * judge a newer release against this server before installing it (toArray()).
  *
  * DATA ONLY. Constants and a pure toArray(): no settings, no database, no
@@ -99,7 +99,7 @@ class Requirements {
     ];
 
     /**
-     * Everything above as data: release.json's requirements. Names and
+     * Everything above as data: release.php's requirements. Names and
      * floors only; what each extension is for and what replaces a retired
      * constant are words for the screens, not facts to check.
      *

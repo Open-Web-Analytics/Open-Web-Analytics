@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Core\Requirements: what this version needs of a server, as constants and
- * as release.json's requirements (toArray()).
+ * as release.php's requirements (toArray()).
  */
 final class RequirementsTest extends TestCase
 {
@@ -53,7 +53,7 @@ final class RequirementsTest extends TestCase
 
     /**
      * It answers with nothing booted: a release check reads a NEWER release's
-     * requirements, and the build writes release.json in a checkout with no
+     * requirements, and the build writes release.php in a checkout with no
      * owa-config.php.
      */
     public function testItAnswersWithNothingBooted(): void

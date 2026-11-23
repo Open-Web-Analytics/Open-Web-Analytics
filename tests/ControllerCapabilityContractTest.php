@@ -91,7 +91,7 @@ final class ControllerCapabilityContractTest extends TestCase
         'TrackerPublishCli',
         // Writes the English string catalogue from the code; the shell only.
         'StringsExtractCli',
-        // What the code is (release.json), from the files alone: run before
+        // What the code is (release.php), from the files alone: run before
         // OWA boots, so there is no user.
         'VersionInfoCli',
 
