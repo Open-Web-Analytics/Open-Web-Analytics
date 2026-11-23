@@ -86,7 +86,7 @@ final class ReleaseSignatureTest extends TestCase
             $this->assertSame(SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES, strlen($raw), "$key is an Ed25519 public key");
         }
 
-        $this->assertLessThanOrEqual(2, count(Signature::TRUSTED), 'the key in use and one spare');
+        $this->assertCount(2, array_unique(Signature::TRUSTED), 'the key in use and one spare');
         $this->assertSame(Signature::TRUSTED, Signature::keys(), 'with no test override');
     }
 
