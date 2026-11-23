@@ -37,7 +37,10 @@ class Signature {
      * can be retired by a release that both trust. Keys never expire; one is
      * retired by a release that no longer lists it.
      */
-    const TRUSTED = [];
+    const TRUSTED = [
+        'n4fhW6m/lbuLxK2LedFdbbD0/0VpY+sK6MyyLWF9zP4=', // key 1: signs releases (the release-signing environment)
+        'mikd6F9brxsZEEBWKaXkcGaQRZOB//kJvsbCoE1zlsM=', // key 2: the spare, held offline
+    ];
 
     /**
      * Tests only: the keys trusted in place of TRUSTED.
