@@ -8,9 +8,11 @@ use OWA\Core\CoreAPI;
  *
  * The scheduler runs it every hour (job core-update-check). Four of those
  * runs a day, six hours apart at hours this installation keeps
- * (listingHour()), list the releases: every listing feeds the notifications
- * bell first, whatever follows. Run by hand it always lists. Then, stopping
- * at the first that applies:
+ * (listingHour()), list the releases, each after waiting a number of
+ * seconds it also keeps (listingDelay()): installations spread over 21,600
+ * slots, never all asking the update host and GitHub at once. Every listing
+ * feeds the notifications bell first, whatever follows. Run by hand it
+ * always lists, at once. Then, stopping at the first that applies:
  *   1. Not a full server role, a version control checkout (the bell has
  *      said what is new), an unreadable installed version, automatic updates
  *      off, or an install under way.
@@ -94,8 +96,12 @@ class ReleaseCheck {
             'url'       => (string) CoreAPI::getSetting( 'base', 'auto_update_releases_url' ),
             // The scheduler's run: it lists only in its listing hours, and says nothing after the copy.
             'scheduled' => false,
-            // What fixes this installation's listing hours, as the scheduler's spread does.
-            'seed'      => ( (string) CoreAPI::getSetting( 'base', 'public_url' ) ?: \OWA\Core\Env::root() . '/' ) . '|core-update-check',
+            // What fixes this installation's listing hour and second: its auth
+            // secret, which differs per installation however it was cloned,
+            // and is only hashed here, never sent.
+            'seed'      => hash( 'sha256', 'owa-release-listing|' . ( defined( 'OWA_AUTH_KEY' ) ? (string) constant( 'OWA_AUTH_KEY' ) : '' )
+                . '|' . (string) CoreAPI::getSetting( 'base', 'public_url' ) . '|' . \OWA\Core\Env::root() ),
+            'sleep'     => static fn ( $seconds ) => sleep( (int) $seconds ),
             'releases'  => null,
             'env'       => null,
             // The services: the bell feed, a notice, when one was first
@@ -132,6 +138,11 @@ class ReleaseCheck {
         $error     = '';
 
         if ( $listed ) {
+
+            if ( $this->context['scheduled'] && ! $dry_run ) {
+
+                ( $this->context['sleep'] )( $this->listingDelay() );
+            }
 
             try {
 
@@ -307,7 +318,7 @@ class ReleaseCheck {
     /**
      * Whether this hour is one of the four a day the scheduler's runs list
      * the releases in: six hours apart, at an offset this installation keeps
-     * (the seed), as Cron spreads a job.
+     * (the seed).
      *
      * @return bool
      */
@@ -316,6 +327,18 @@ class ReleaseCheck {
         $offset = hexdec( substr( md5( (string) $this->context['seed'] ), 6, 6 ) ) % self::LISTING_EVERY;
 
         return ( (int) gmdate( 'G', (int) $this->context['now'] ) - $offset + 24 ) % self::LISTING_EVERY === 0;
+    }
+
+    /**
+     * The seconds, 0-59, a scheduled run waits before it lists: kept by this
+     * installation (the seed), so the installations that share an hour and a
+     * minute do not ask in the same second.
+     *
+     * @return int
+     */
+    public function listingDelay() {
+
+        return (int) ( hexdec( substr( md5( (string) $this->context['seed'] ), 12, 6 ) ) % 60 );
     }
 
     /**

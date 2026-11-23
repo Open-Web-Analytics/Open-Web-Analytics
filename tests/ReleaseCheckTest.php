@@ -248,11 +248,22 @@ final class ReleaseCheckTest extends TestCase
         $this->assertCount(4, $hours);
         $this->assertSame([6, 12, 18], [$hours[1] - $hours[0], $hours[2] - $hours[0], $hours[3] - $hours[0]]);
 
-        $this->check(['2.0.1']);
+        // And a second of the minute, the same each day; a run by hand waits for nothing.
+        $slept = [];
+        $sleep = function ($s) use (&$slept) { $slept[] = $s; };
+        $delay = $check(0)->listingDelay();
+        $this->assertGreaterThanOrEqual(0, $delay);
+        $this->assertLessThan(60, $delay);
+        $delays = array_map(fn ($i) => (new ReleaseCheck($this->downloads(), ['seed' => "installation $i"]))->listingDelay(), range(1, 30));
+        $this->assertGreaterThan(15, count(array_unique($delays)), 'installations wait different seconds');
+        $this->check(['2.0.1'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update-check', 'now' => gmmktime($hours[0], 17, 0, 11, 23, 2026), 'sleep' => $sleep]);
+        $this->check(['2.0.1'], ['sleep' => $sleep]);
+        $this->assertSame([$delay], $slept);
+
         $quiet = ($hours[0] + 1) % 24;
         $result = $this->check(['2.0.1', '2.0.2'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update-check', 'now' => gmmktime($quiet, 17, 0, 11, 23, 2026)]);
         $this->assertFalse($this->downloads()->has('2.0.2'), 'not a listing hour: nothing listed, nothing downloaded');
-        $this->assertSame([2], $this->feeds, 'nor the bell fed');
+        $this->assertSame([2, 2], $this->feeds, 'nor the bell fed: only the listing hour\'s run and the run by hand fed it');
         $this->assertSame('2.0.1', $result['version'], 'what was downloaded is still judged');
     }
 
@@ -833,6 +844,7 @@ final class ReleaseCheckTest extends TestCase
             'raised_at' => fn ($key) => $this->raised[$key] ?? null,
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
+            'sleep'     => static function ($s) {},
             'data_dir'  => $this->tmp . '/data/',
         ]);
 

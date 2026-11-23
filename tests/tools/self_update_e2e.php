@@ -494,6 +494,8 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
         . "define('OWA_MAILER_USE_SMTP', true);\n"
         . "define('OWA_MAILER_HOST', '127.0.0.1');\n"
         . "define('OWA_MAILER_PORT', '$smtp');\n"
+        // No update window, so a release installs at the check that downloads it, unless the scenario sets one (later()).
+        . ( str_contains( (string) $extra, 'OWA_AUTO_UPDATE_WINDOW' ) ? '' : "define('OWA_AUTO_UPDATE_WINDOW', '');\n" )
         . $extra;
     $close  = strrpos( $config, '?>' );
     $config = $close === false ? $config . $own : substr( $config, 0, $close ) . $own . substr( $config, $close );

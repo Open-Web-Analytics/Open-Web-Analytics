@@ -487,124 +487,135 @@ return ( static function () {
 
         rewind( $tar );
 
-        \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env ) {
+        try {
 
-            $target = $root . '/' . $rel;
+            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env ) {
 
-            if ( $type === 'dir' ) {
+                $target = $root . '/' . $rel;
 
-                $dirs[ $rel ] = true;
+                if ( $type === 'dir' ) {
 
-                if ( ! is_dir( $target ) && ! @mkdir( $target, 0755, true ) ) {
+                    $dirs[ $rel ] = true;
 
-                    throw new \RuntimeException( sprintf( 'Could not create %s.', $rel ) );
+                    if ( ! is_dir( $target ) && ! @mkdir( $target, 0755, true ) ) {
+
+                        throw new \RuntimeException( sprintf( 'Could not create %s.', $rel ) );
+                    }
+
+                    return;
                 }
 
-                return;
-            }
+                $files[ $rel ] = true;
 
-            $files[ $rel ] = true;
+                // Read whole first: a file that is already this one is left as it is,
+                // so putting a release back writes only what the copy changed.
+                $buf = fopen( 'php://temp/maxmemory:16777216', 'w+b' );
+                $read( $buf );
+                rewind( $buf );
+                $ctx = hash_init( 'sha256' );
+                hash_update_stream( $ctx, $buf );
+                rewind( $buf );
 
-            // Read whole first: a file that is already this one is left as it is,
-            // so putting a release back writes only what the copy changed.
-            $buf = fopen( 'php://temp/maxmemory:16777216', 'w+b' );
-            $read( $buf );
-            rewind( $buf );
-            $ctx = hash_init( 'sha256' );
-            hash_update_stream( $ctx, $buf );
-            rewind( $buf );
+                $exists = is_file( $target ) && ! is_link( $target );
 
-            $exists = is_file( $target ) && ! is_link( $target );
+                if ( $exists && hash_file( 'sha256', $target ) === hash_final( $ctx ) ) {
 
-            if ( $exists && hash_file( 'sha256', $target ) === hash_final( $ctx ) ) {
+                    fclose( $buf );
 
+                    return;
+                }
+
+                if ( ! is_dir( dirname( $target ) ) && ! @mkdir( dirname( $target ), 0755, true ) ) {
+
+                    fclose( $buf );
+
+                    throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
+                }
+
+                $tmp = $target . '.owa-update';
+                $out = @fopen( $tmp, 'wb' );
+
+                if ( $out === false ) {
+
+                    fclose( $buf );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+
+                $copied = stream_copy_to_stream( $buf, $out ) === $size;
                 fclose( $buf );
+                fclose( $out );
 
-                return;
+                if ( ! $copied ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Writing %s failed; the disk may be full.', $rel ) );
+                }
+
+                $keep = $exists ? fileperms( $target ) & 0777 : $mode & 0755;
+
+                if ( ! @chmod( $tmp, $keep ) ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+
+                if ( $rel === 'Core/Env.php' ) {
+
+                    $env = [ $tmp, $target ];
+
+                    return;
+                }
+
+                if ( ! @rename( $tmp, $target ) ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+            } );
+
+            if ( ! isset( $files['Core/Env.php'] ) ) {
+
+                throw new \RuntimeException( 'The release has no Core/Env.php.' );
             }
 
-            if ( ! is_dir( dirname( $target ) ) && ! @mkdir( dirname( $target ), 0755, true ) ) {
+            foreach ( $old_files as $rel ) {
 
-                fclose( $buf );
+                $rel = (string) $rel;
 
-                throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
+                if ( isset( $files[ $rel ] ) || $rel === '' || str_contains( '/' . $rel . '/', '/../' ) ) {
+
+                    continue;
+                }
+
+                $path = $root . '/' . $rel;
+
+                if ( ( is_file( $path ) || is_link( $path ) ) && ! @unlink( $path ) ) {
+
+                    throw new \RuntimeException( sprintf( 'Could not delete %s, which the release does not ship.', $rel ) );
+                }
+
+                for ( $dir = dirname( $rel ); $dir !== '.' && ! isset( $dirs[ $dir ] ) && @rmdir( $root . '/' . $dir ); $dir = dirname( $dir ) ) {
+                }
             }
 
-            $tmp = $target . '.owa-update';
-            $out = @fopen( $tmp, 'wb' );
+            if ( $env !== null && ! @rename( $env[0], $env[1] ) ) {
 
-            if ( $out === false ) {
-
-                fclose( $buf );
-
-                throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                throw new \RuntimeException( 'Could not write Core/Env.php.' );
             }
 
-            $copied = stream_copy_to_stream( $buf, $out ) === $size;
-            fclose( $buf );
-            fclose( $out );
+        } catch ( \Throwable $e ) {
 
-            if ( ! $copied ) {
+            // Core/Env.php, written ahead and kept back, goes with a copy that failed.
+            if ( $env !== null ) {
 
-                @unlink( $tmp );
-
-                throw new \RuntimeException( sprintf( 'Writing %s failed; the disk may be full.', $rel ) );
+                @unlink( $env[0] );
             }
 
-            $keep = $exists ? fileperms( $target ) & 0777 : $mode & 0755;
-
-            if ( ! @chmod( $tmp, $keep ) ) {
-
-                @unlink( $tmp );
-
-                throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
-            }
-
-            if ( $rel === 'Core/Env.php' ) {
-
-                $env = [ $tmp, $target ];
-
-                return;
-            }
-
-            if ( ! @rename( $tmp, $target ) ) {
-
-                @unlink( $tmp );
-
-                throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
-            }
-        } );
-
-        if ( ! isset( $files['Core/Env.php'] ) ) {
-
-            throw new \RuntimeException( 'The release has no Core/Env.php.' );
-        }
-
-        foreach ( $old_files as $rel ) {
-
-            $rel = (string) $rel;
-
-            if ( isset( $files[ $rel ] ) || $rel === '' || str_contains( '/' . $rel . '/', '/../' ) ) {
-
-                continue;
-            }
-
-            $path = $root . '/' . $rel;
-
-            if ( ( is_file( $path ) || is_link( $path ) ) && ! @unlink( $path ) ) {
-
-                throw new \RuntimeException( sprintf( 'Could not delete %s, which the release does not ship.', $rel ) );
-            }
-
-            for ( $dir = dirname( $rel ); $dir !== '.' && ! isset( $dirs[ $dir ] ) && @rmdir( $root . '/' . $dir ); $dir = dirname( $dir ) ) {
-            }
-        }
-
-        if ( $env !== null && ! @rename( $env[0], $env[1] ) ) {
-
-            @unlink( $env[0] );
-
-            throw new \RuntimeException( 'Could not write Core/Env.php.' );
+            throw $e;
         }
     };
 
