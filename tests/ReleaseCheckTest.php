@@ -599,6 +599,8 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('This database is newer than 2.0.1 expects', $result['message']);
         $this->assertSame(['php cli.php cmd=core-update-schema rollback=base.095', 'php cli.php cmd=core-update-schema rollback=base.094'], $result['lines']);
         $this->assertNull(Install::$pending);
+        $this->assertFalse($this->downloads()->has('2.0.1'), 'refused after its download: deleted');
+        $this->assertTrue($this->downloads()->has('2.0.4'), 'the installed release\'s stays');
 
         Downloads::remove($this->tmp . '/build-2.0.1');
         @unlink($this->tmp . '/owa_2.0.1_packaged.tar');

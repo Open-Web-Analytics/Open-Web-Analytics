@@ -102,7 +102,7 @@ class Install {
      * with no listing (Releases::byTag()). One not newer than the installed
      * release only with $force, and never one older than the database
      * schema. A failure recorded for it is cleared: whoever installs by hand
-     * has dealt with it.
+     * has dealt with it. A release refused after its download is deleted.
      *
      * @param  string               $version
      * @param  bool                 $force
@@ -155,31 +155,46 @@ class Install {
             return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
         }
 
+        // A release refused here was fetched for nothing: it goes, unless it is
+        // the installed one (a reinstall), which a failed install puts back.
+        $refuse = static function ( $outcome, $message, array $lines = [] ) use ( $downloads, $v, $installed ) {
+
+            if ( $v !== $installed ) {
+
+                @unlink( $downloads->tarball( $v ) );
+                @unlink( $downloads->tarball( $v ) . '.sig' );
+            }
+
+            return self::answer( $outcome, $message, $lines );
+        };
+
         $missing = $check->ensureInstalled();
 
         if ( $missing !== null ) {
 
-            return self::answer( self::REFUSED, $missing );
+            return $refuse( self::REFUSED, $missing );
         }
 
         $judged = $check->judge( $v );
 
         if ( $judged['rollback'] ) {
 
-            return self::answer( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            return $refuse( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
         }
 
         if ( $judged['problems'] ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
+            return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
         }
 
         $result = self::prepare( $downloads, $v, $installed, $root, false );
 
-        if ( $result['outcome'] === self::OK ) {
+        if ( $result['outcome'] !== self::OK ) {
 
-            $downloads->clearFailure();
+            return $refuse( $result['outcome'], $result['message'], $result['lines'] );
         }
+
+        $downloads->clearFailure();
 
         return $result;
     }
