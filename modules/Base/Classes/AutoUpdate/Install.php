@@ -8,9 +8,10 @@ use OWA\Core\CoreAPI;
  * (ReleaseCheck) when a release is due, or cmd=core-install --version by hand
  * (byHand()).
  *
- * prepare() takes the install lock and opens both tarballs, proving each
- * through its handle (Downloads::open()): the release's, and the installed
- * release's, which a failed copy puts back. The copy waits for the end of
+ * prepare() takes the install lock and proves both tarballs (Downloads::open(),
+ * a private copy of each, checked against its signature): the release's, and
+ * the installed release's, which a failed copy puts back. The copy reads
+ * those private copies, never the files on disk. The copy waits for the end of
  * the process: cli.php calls run() once the command, and the scheduler's
  * other jobs, have finished and recorded what they did.
  *
@@ -64,10 +65,11 @@ class Install {
 
         try {
 
+            // Each the private copy Downloads proved: what is copied is what was checked.
+            $to_files   = array_keys( $downloads->files( $v ) );
+            $from_files = array_keys( $downloads->files( $installed ) );
             $to         = $downloads->open( $v );
             $from       = $downloads->open( $installed );
-            $to_files   = Tar::files( $to );
-            $from_files = Tar::files( $from );
 
         } catch ( \Throwable $e ) {
 
@@ -88,6 +90,8 @@ class Install {
             'updates'    => $downloads->root(),
             'from_tar'   => $downloads->tarball( $installed ),
             'to_tar'     => $downloads->tarball( $v ),
+            'from_sha'   => $downloads->sha256( $installed ),
+            'to_sha'     => $downloads->sha256( $v ),
             'quiet'      => (bool) $quiet,
             'u'          => $u,
         ];
@@ -229,16 +233,21 @@ class Install {
         }
 
         $marker = [
-            'format'   => 1,
-            'from'     => $p['from'],
-            'to'       => $p['to'],
-            'phase'    => 'copying',
-            'since'    => time(),
-            'lock'     => $p['hold']['file'],
-            'updates'  => $p['updates'],
-            'from_tar' => $p['from_tar'],
-            'to_tar'   => $p['to_tar'],
-            'boots'    => 0,
+            'format'      => 1,
+            'from'        => $p['from'],
+            'to'          => $p['to'],
+            'phase'       => 'copying',
+            'since'       => time(),
+            'lock'        => $p['hold']['file'],
+            'updates'     => $p['updates'],
+            'from_tar'    => $p['from_tar'],
+            'to_tar'      => $p['to_tar'],
+            // Proved here, against the keys this release trusts: putting the
+            // installed release back checks these, not a signature, so a
+            // release that retires a key can still be put back.
+            'from_sha256' => $p['from_sha'],
+            'to_sha256'   => $p['to_sha'],
+            'boots'       => 0,
         ];
 
         try {

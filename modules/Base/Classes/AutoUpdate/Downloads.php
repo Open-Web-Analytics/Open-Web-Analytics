@@ -19,11 +19,14 @@ use OWA\Core\CoreAPI;
  *                                or whose schema updates did not complete, until one
  *                                installs: {format, version, from, error, at, booted}
  *
- * Nothing here is trusted for what it holds. The installer opens each
- * tarball once and checks its SHA-256 and signature through that handle
- * before it reads a file from it (open()). last-failure.json only says which
- * release automatic updates skip; it is readable by the web user, for the
- * Updates screen.
+ * Nothing here is trusted for what it holds: the web user can write the data
+ * directory, so it may have replaced any of it. A tarball is read once, into
+ * a private copy (php://temp) while its SHA-256 is taken, and only that copy
+ * is checked against the signature and read after (open()): its release.php,
+ * its file list and the files the copy installs. Rewriting the file on disk
+ * afterwards changes nothing. last-failure.json only says which release
+ * automatic updates skip; it is readable by the web user, for the Updates
+ * screen.
  *
  * @phpstan-import-type Release from Releases
  */
@@ -36,6 +39,12 @@ class Downloads {
 
     /** Seconds a tarball download may take. */
     const DOWNLOAD_TIMEOUT = 600;
+
+    /** The most a tarball may hold: a release is about 20 MB. */
+    const MAX_TARBALL = 268435456;
+
+    /** @var array<string, array{h: resource, sha256: string, info: array<string, mixed>}> the private copies open() proved, by version */
+    private $proved = [];
 
     /** @var string the updates directory, '' while there is none */
     private $root;
@@ -235,33 +244,27 @@ class Downloads {
     }
 
     /**
-     * A downloaded release's release.php, read from its tarball; null when
-     * it has none or there is no such tarball.
+     * A downloaded release's release.php, read from its proved copy (open());
+     * null when it has none, there is no such tarball, or it does not prove.
      *
      * @param  string $version
      * @return array<string, mixed>|null
      */
     public function releaseInfo( $version ) {
 
-        if ( ! array_key_exists( $version, $this->info ) ) {
+        try {
 
-            try {
+            return $this->has( $version ) ? $this->proof( $version )['info'] : null;
 
-                $data = $this->has( $version ) ? \OWA\Core\VersionInfo::decode( Tar::member( $this->tarball( $version ), \OWA\Core\VersionInfo::FILE ) ) : null;
+        } catch ( \RuntimeException $e ) {
 
-            } catch ( \RuntimeException $e ) {
-
-                $data = null;
-            }
-
-            $this->info[ $version ] = $data;
+            return null;
         }
-
-        return $this->info[ $version ];
     }
 
     /**
-     * Each file the release's tarball holds, with its size.
+     * Each file the release's tarball holds, with its size, from its proved
+     * copy (open()).
      *
      * @param  string $version
      * @return array<string, int>
@@ -271,7 +274,7 @@ class Downloads {
 
         $out = [];
 
-        Tar::each( $this->tarball( $version ), static function ( $rel, $type, $mode, $size ) use ( &$out ) {
+        Tar::each( $this->open( $version ), static function ( $rel, $type, $mode, $size ) use ( &$out ) {
 
             if ( $type === 'file' ) {
 
@@ -283,53 +286,188 @@ class Downloads {
     }
 
     /**
-     * Open a downloaded release's tarball and prove it through that handle:
-     * its SHA-256 against its signature by a trusted key (Signature), its
-     * release.php naming it, and every member one a release may hold (Tar).
-     * Whatever is read from the handle after is what was proved, whatever
-     * happens to the file. A tarball that does not prove is deleted with its
-     * signature, so the next release check downloads it again.
+     * The size of the tarballs named, together: those downloaded, and the
+     * first one's again for one that is not (it is about the size of a
+     * release).
+     *
+     * @param  string ...$versions
+     * @return int
+     */
+    public function tarballBytes( ...$versions ) {
+
+        $sizes = array_map( fn ( $v ) => $this->has( $v ) ? (int) @filesize( $this->tarball( $v ) ) : 0, $versions );
+
+        return (int) array_sum( array_map( static fn ( $s ) => $s ?: (int) ( $sizes[0] ?? 0 ), $sizes ) );
+    }
+
+    /**
+     * A downloaded release's SHA-256, as open() proved it.
      *
      * @param  string $version
-     * @return resource rewound
+     * @return string
+     * @throws \RuntimeException
+     */
+    public function sha256( $version ) {
+
+        return $this->proof( $version )['sha256'];
+    }
+
+    /**
+     * A downloaded release, proved: its tarball read once into a private
+     * copy while its SHA-256 is taken, then that copy checked against its
+     * signature by a trusted key (Signature), its release.php naming it, and
+     * every member one a release may hold (Tar). The handle returned reads
+     * that copy, rewound: whatever happens to the file on disk after, it reads
+     * what was proved. A tarball that is not a plain file, is larger than
+     * MAX_TARBALL, or does not prove is deleted with its signature, so the
+     * next release check downloads it again. Proved once per process.
+     *
+     * @param  string $version
+     * @return resource
      * @throws \RuntimeException
      */
     public function open( $version ) {
 
-        $tar = $this->tarball( $version );
-        $h   = @fopen( $tar, 'rb' );
+        $h = $this->proof( $version )['h'];
+        rewind( $h );
 
-        if ( $h === false ) {
+        return $h;
+    }
 
-            throw new \RuntimeException( sprintf( '%s has not been downloaded.', basename( $tar ) ) );
+    /**
+     * @param  string $version
+     * @return array{h: resource, sha256: string, info: array<string, mixed>}
+     * @throws \RuntimeException
+     */
+    private function proof( $version ) {
+
+        if ( isset( $this->proved[ $version ] ) ) {
+
+            return $this->proved[ $version ];
         }
+
+        $tar  = $this->tarball( $version );
+        $copy = null;
 
         try {
 
-            $ctx = hash_init( 'sha256' );
-            hash_update_stream( $ctx, $h );
-            Signature::verify( $version, hash_final( $ctx ), (string) @file_get_contents( $tar . '.sig' ) );
+            [ $copy, $sha ] = self::privateCopy( $tar );
+            Signature::verify( $version, $sha, (string) @file_get_contents( $tar . '.sig' ) );
 
-            rewind( $h );
-            $info = \OWA\Core\VersionInfo::decode( Tar::member( $h, \OWA\Core\VersionInfo::FILE ) );
+            $info = \OWA\Core\VersionInfo::decode( Tar::member( $copy, \OWA\Core\VersionInfo::FILE ) );
 
             if ( ( is_array( $info ) ? $info['version'] ?? null : null ) !== $version ) {
 
                 throw new \RuntimeException( sprintf( '%s\'s release.php does not say it is %s.', basename( $tar ), $version ) );
             }
 
-            rewind( $h );
-
-            return $h;
+            return $this->proved[ $version ] = [ 'h' => $copy, 'sha256' => $sha, 'info' => $info ];
 
         } catch ( \Throwable $e ) {
 
-            fclose( $h );
-            @unlink( $tar );
-            @unlink( $tar . '.sig' );
+            if ( is_resource( $copy ) ) {
+
+                fclose( $copy );
+            }
+
+            if ( ! str_contains( $e->getMessage(), 'has not been downloaded' ) ) {
+
+                @unlink( $tar );
+                @unlink( $tar . '.sig' );
+            }
 
             throw new \RuntimeException( sprintf( '%s It was deleted; the next release check downloads it again.', rtrim( $e->getMessage(), '.' ) . '.' ), 0, $e );
         }
+    }
+
+    /**
+     * $file read once into php://temp (memory, then a temporary file only
+     * this process holds) while its SHA-256 is taken. Only a plain file, no
+     * link, at most MAX_TARBALL.
+     *
+     * @param  string $file
+     * @return array{0: resource, 1: string} the copy, rewound, and the SHA-256
+     * @throws \RuntimeException
+     */
+    public static function privateCopy( $file ) {
+
+        clearstatcache( true, $file );
+
+        if ( ! file_exists( $file ) && ! is_link( $file ) ) {
+
+            throw new \RuntimeException( sprintf( '%s has not been downloaded.', basename( $file ) ) );
+        }
+
+        // Never opened unless it is a plain file: opening a FIFO would wait for a writer.
+        $in = is_link( $file ) || ! is_file( $file ) ? false : @fopen( $file, 'rb' );
+        $st = $in === false ? false : fstat( $in );
+
+        if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
+
+            if ( $in !== false ) {
+
+                fclose( $in );
+            }
+
+            throw new \RuntimeException( sprintf( '%s is not a plain file.', basename( $file ) ) );
+        }
+
+        $copy  = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
+        $ctx   = hash_init( 'sha256' );
+        $bytes = 0;
+
+        try {
+
+            while ( ! feof( $in ) ) {
+
+                $chunk = fread( $in, 1048576 );
+
+                if ( $chunk === false ) {
+
+                    throw new \RuntimeException( sprintf( 'Reading %s failed.', basename( $file ) ) );
+                }
+
+                $bytes += strlen( $chunk );
+
+                if ( $bytes > self::MAX_TARBALL ) {
+
+                    throw new \RuntimeException( sprintf( '%s is larger than %d MB, which no release is.', basename( $file ), self::MAX_TARBALL >> 20 ) );
+                }
+
+                hash_update( $ctx, $chunk );
+
+                if ( fwrite( $copy, $chunk ) !== strlen( $chunk ) ) {
+
+                    throw new \RuntimeException( 'Copying the tarball failed; the disk holding the temporary directory may be full.' );
+                }
+            }
+
+        } catch ( \Throwable $e ) {
+
+            fclose( $in );
+            fclose( $copy );
+
+            throw $e;
+        }
+
+        fclose( $in );
+
+        return [ self::rewound( $copy ), hash_final( $ctx ) ];
+    }
+
+    /**
+     * @param  resource $h
+     * @return resource
+     * @throws \RuntimeException
+     */
+    private static function rewound( $h ) {
+
+        if ( ! rewind( $h ) ) {
+
+            throw new \RuntimeException( 'The tarball\'s copy cannot be read from the start.' );
+        }
+
+        return $h;
     }
 
     /**

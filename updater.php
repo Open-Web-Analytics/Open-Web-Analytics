@@ -35,7 +35,8 @@
  * there can already change OWA's code: the marker is trusted as the code
  * is, however the server's users and directories are arranged.
  *
- *   {format, from, to, phase, since, lock, updates, from_tar, to_tar, boots}
+ *   {format, from, to, phase, since, lock, updates, from_tar, to_tar,
+ *    from_sha256, to_sha256, boots}
  *   phase  copying  the files are mixed. With the lock held, the installer
  *                   is copying; with it free, the copy was killed, and the
  *                   next run of cli.php puts the installed release back.
@@ -45,10 +46,14 @@
  *          booted   the new release booted; Finish has not completed.
  *
  * Putting the installed release back unpacks from_tar, the installed
- * release's tarball, checked against its signature first, then deletes what
- * to_tar ships and from_tar does not, when to_tar's signature checks too,
- * and records the failure in the updates directory's last-failure.json:
- * automatic updates skip that release (Downloads).
+ * release's tarball, then deletes what to_tar ships and from_tar does not.
+ * Each is read once into a private copy and checked against the SHA-256 the
+ * marker names, which the installing release proved against the keys it
+ * trusts: the data directory, where the tarballs are, is not trusted, and
+ * the new release's keys may not be the old one's. to_tar that does not
+ * check only means the new release's added files stay. The failure is recorded in the
+ * updates directory's last-failure.json: automatic updates skip that
+ * release (Downloads).
  *
  * THE FROZEN CONTRACT between an installed release and the next: the
  * marker, written by the installed release and read by the next; cli.php
@@ -509,7 +514,7 @@ return ( static function () {
 
                 // Read whole first: a file that is already this one is left as it is,
                 // so putting a release back writes only what the copy changed.
-                $buf = fopen( 'php://temp/maxmemory:16777216', 'w+b' );
+                $buf = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
                 $read( $buf );
                 rewind( $buf );
                 $ctx = hash_init( 'sha256' );
@@ -639,37 +644,58 @@ return ( static function () {
 
         try {
 
-            foreach ( [ 'Tar', 'Signature' ] as $class ) {
+            if ( ! class_exists( '\\OWA\\Module\\Base\\Classes\\AutoUpdate\\Tar', false ) ) {
 
-                if ( ! class_exists( '\\OWA\\Module\\Base\\Classes\\AutoUpdate\\' . $class, false ) ) {
-
-                    require rtrim( (string) $root, '/' ) . '/modules/Base/Classes/AutoUpdate/' . $class . '.php';
-                }
+                require rtrim( (string) $root, '/' ) . '/modules/Base/Classes/AutoUpdate/Tar.php';
             }
 
-            $open = static function ( $tar, $version ) {
+            // Read once into memory or a temporary file only this process holds,
+            // hashed as it is read: what is unpacked is what was checked.
+            $open = static function ( $tar, $version, $sha256 ) {
 
-                $h = @fopen( (string) $tar, 'rb' );
+                clearstatcache( true, (string) $tar );
+                // Never opened unless it is a plain file: opening a FIFO would wait for a writer.
+                $in = is_link( (string) $tar ) || ! is_file( (string) $tar ) ? false : @fopen( (string) $tar, 'rb' );
+                $st = $in === false ? false : fstat( $in );
 
-                if ( $h === false ) {
+                if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
 
-                    throw new \RuntimeException( sprintf( '%s is missing.', $tar ) );
+                    throw new \RuntimeException( sprintf( '%s is missing, or is not a plain file.', $tar ) );
                 }
 
-                $ctx = hash_init( 'sha256' );
-                hash_update_stream( $ctx, $h );
-                \OWA\Module\Base\Classes\AutoUpdate\Signature::verify( (string) $version, hash_final( $ctx ), (string) @file_get_contents( $tar . '.sig' ) );
-                rewind( $h );
+                $copy = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
+                $ctx  = hash_init( 'sha256' );
+                $ok   = true;
 
-                return $h;
+                while ( $ok && ! feof( $in ) ) {
+
+                    $chunk = fread( $in, 1048576 );
+                    $ok    = $chunk !== false && fwrite( $copy, $chunk ) === strlen( $chunk );
+                    $ok && hash_update( $ctx, $chunk );
+                }
+
+                fclose( $in );
+                $actual = hash_final( $ctx );
+
+                // A read or write that failed leaves a copy whose SHA-256 is not the one recorded.
+                if ( ! $ok || ! rewind( $copy ) || ! hash_equals( strtolower( (string) $sha256 ), $actual ) ) {
+
+                    fclose( $copy );
+
+                    throw new \RuntimeException( $ok
+                        ? sprintf( '%s is not the tarball OWA %s was installed from: its SHA-256 is %s.', $tar, $version, $actual )
+                        : sprintf( 'Copying %s failed; the disk holding PHP\'s temporary directory may be full.', $tar ) );
+                }
+
+                return $copy;
             };
 
-            $h   = $open( $m['from_tar'] ?? '', $from );
+            $h   = $open( $m['from_tar'] ?? '', $from, $m['from_sha256'] ?? '' );
             $old = [];
 
             try {
 
-                $old = \OWA\Module\Base\Classes\AutoUpdate\Tar::files( $open( $m['to_tar'] ?? '', (string) ( $m['to'] ?? '' ) ) );
+                $old = \OWA\Module\Base\Classes\AutoUpdate\Tar::files( $open( $m['to_tar'] ?? '', (string) ( $m['to'] ?? '' ), $m['to_sha256'] ?? '' ) );
 
             } catch ( \RuntimeException $e ) {
 
@@ -682,8 +708,9 @@ return ( static function () {
         } catch ( \Throwable $e ) {
 
             $unlock( $hold );
-            fwrite( STDERR, sprintf( "Putting OWA %s back failed: %s\nOWA cannot run until it is put back by hand: unpack owa_%s_packaged.tar over %s, then delete %s.\n",
-                $from, $e->getMessage(), $from, $root, $marker( $root ) ) );
+            // The tarball here may be what failed: the release is fetched again.
+            fwrite( STDERR, sprintf( "Putting OWA %s back failed: %s\nOWA cannot run until it is put back by hand: download https://updates.openwebanalytics.com/download/%s/owa_%s_packaged.tar, unpack it over %s as the user the scheduler runs as, then delete %s.\n",
+                $from, $e->getMessage(), $from, $from, $root, $marker( $root ) ) );
 
             return 1;
         }
