@@ -2,7 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\AutoUpdate\Releases;
-use OWA\Module\Base\Classes\AutoUpdate\Staging;
+use OWA\Module\Base\Classes\AutoUpdate\Downloads;
 use OWA\Module\Base\Classes\AutoUpdate\Version;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -90,7 +90,12 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertGreaterThan(0, $checked);
     }
 
-    /** The newest 1.14 patch, downloaded and its SHA-256 proved: 1.x releases are not signed, so that is where it stops. */
+    /**
+     * The newest 1.14 patch, through the production client and the update
+     * host's redirects: downloaded, and its SHA-256 GitHub's digest. 1.x
+     * releases are not signed, so Downloads refuses it before downloading
+     * anything: a release that can never install is never fetched.
+     */
     public function testADownloadMatchesItsDigest(): void
     {
         $list    = Releases::fetch((string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_releases_url'));
@@ -100,15 +105,19 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertSame('patch', $release['step']);
         $this->assertNotNull($release['sha256']);
 
+        $tar = $this->tmp . '/owa_' . $release['version'] . '_packaged.tar';
+        Releases::get($release['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
+        $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
+        unlink($tar);
+
         try {
-            (new Staging(null, $this->tmp))->download($release);
+            (new Downloads(null, $this->tmp))->download($release);
             $this->fail('a 1.x release is not signed');
         } catch (\RuntimeException $e) {
-            $this->assertSame(sprintf('owa_%1$s_packaged.tar is not signed: the release has no owa_%1$s_packaged.tar.sig.', $release['version']), $e->getMessage(),
-                'downloaded, and its SHA-256 matched: the signature is checked after');
+            $this->assertSame(sprintf('owa_%1$s_packaged.tar is not signed: the release has no owa_%1$s_packaged.tar.sig.', $release['version']), $e->getMessage());
         }
 
-        $this->assertSame([], glob($this->tmp . '/updates-*/staged*'), 'a failed staging is deleted');
+        $this->assertSame([], glob($this->tmp . '/updates-*/owa_*'), 'nothing downloaded, nothing kept');
         $this->assertSame([], glob(\OWA\Core\Env::dataDir() . 'updates-*'), 'nothing made in OWA\'s own data directory');
     }
 }
