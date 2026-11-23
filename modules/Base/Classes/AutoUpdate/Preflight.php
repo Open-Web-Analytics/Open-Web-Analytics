@@ -198,18 +198,22 @@ class Preflight {
     /**
      * Room in PHP's temporary directory for the tarballs an install reads:
      * each is read once into a private copy (Downloads::open()), held in
-     * memory up to 1 MB and in a temporary file beyond.
+     * memory up to 1 MB and in a temporary file beyond. Whether PHP can write
+     * there is tried, not inferred (tempWrites()): sys_temp_dir, TMPDIR and
+     * open_basedir all decide it, and the CLI's php.ini may differ from the
+     * web server's.
      *
      * @param  int         $bytes the tarballs' size together
-     * @param  string|null $dir   a test's; else sys_get_temp_dir()
+     * @param  string|null $dir   a test's, judged by its mode; else PHP's own, tried
      * @return list<string>
      */
     public static function temp( $bytes, $dir = null ) {
 
-        $dir  = rtrim( (string) ( $dir ?? sys_get_temp_dir() ), '/' );
-        $free = @disk_free_space( $dir );
+        $writes = $dir === null ? self::tempWrites() : is_dir( (string) $dir ) && is_writable( (string) $dir );
+        $dir    = rtrim( (string) ( $dir ?? sys_get_temp_dir() ), '/' );
+        $free   = @disk_free_space( $dir );
 
-        if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+        if ( ! $writes ) {
 
             return [ sprintf( \OWA\Core\CoreAPI::t( 'PHP\'s temporary directory (%s) cannot be written by the user the scheduler runs as; an install reads each release there. Set sys_temp_dir in php.ini to a directory it can write.' ), $dir ) ];
         }
@@ -221,6 +225,28 @@ class Preflight {
         }
 
         return [];
+    }
+
+    /**
+     * Whether this process can spill a php://temp stream to a temporary
+     * file, as reading a tarball does: a write past the memory limit returns
+     * 0 when it cannot.
+     *
+     * @return bool
+     */
+    public static function tempWrites() {
+
+        $h = @fopen( 'php://temp/maxmemory:1', 'w+b' );
+
+        if ( $h === false ) {
+
+            return false;
+        }
+
+        $ok = @fwrite( $h, str_repeat( "\0", 8192 ) ) === 8192;
+        fclose( $h );
+
+        return $ok;
     }
 
     /**

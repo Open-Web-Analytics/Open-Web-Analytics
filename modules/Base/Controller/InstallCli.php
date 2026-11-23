@@ -122,6 +122,14 @@ class InstallCli extends \OWA\Core\Controller\Cli {
                         . 'Give them to the user the cron entry runs as.', count( $dirs ), $dirs[0] === '' ? 'the OWA directory' : $dirs[0] . '/' ) );
                 }
 
+                if ( \OWA\Module\Base\Classes\AutoUpdate\Vcs::checkout( $root ) === null ) {
+
+                    foreach ( \OWA\Module\Base\Classes\AutoUpdate\Preflight::temp( 0 ) as $problem ) {
+
+                        \OWA\Core\CoreAPI::notice( $problem );
+                    }
+                }
+
             // schema was not installed successfully
             } else {
                 return $this->fail('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
