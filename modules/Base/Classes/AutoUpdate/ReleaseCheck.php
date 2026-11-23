@@ -133,7 +133,7 @@ class ReleaseCheck {
 
         try {
 
-            $list = $this->context['releases'] ?? Releases::fetch( (string) $this->context['url'] );
+            $list = $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
 
         } catch ( \RuntimeException $e ) {
 
@@ -385,7 +385,7 @@ class ReleaseCheck {
 
         try {
 
-            $list = $this->context['releases'] ?? Releases::fetch( (string) $this->context['url'] );
+            $list = $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
 
         } catch ( \RuntimeException $e ) {
 

@@ -4,7 +4,9 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 /**
  * OWA's releases on GitHub, and the one an installation updates to.
  *
- * ONE API CALL lists the releases with their assets (auto_update_releases_url).
+ * ONE API CALL lists the releases with their assets (auto_update_releases_url:
+ * by default OWA's update host, updates.openwebanalytics.com/releases, which
+ * redirects to GitHub's API).
  * The asset a release ships is owa_<version>_packaged.tar (ASSET), with its
  * SHA-256 in the asset's digest; a SHA256SUMS asset (SUMS_ASSET) is the
  * fallback for a release without one. Tag, asset name and digest are a frozen
@@ -174,6 +176,20 @@ class Releases {
         }
 
         return null;
+    }
+
+    /**
+     * The listing as requested: $url with from=<the installed version>, which
+     * the update host's access logs count installations by. Nothing else about
+     * the installation is sent.
+     *
+     * @param  string $url
+     * @param  string $installed
+     * @return string
+     */
+    public static function listingUrl( $url, $installed ) {
+
+        return $url . ( str_contains( (string) $url, '?' ) ? '&' : '?' ) . 'from=' . rawurlencode( (string) $installed );
     }
 
     /**

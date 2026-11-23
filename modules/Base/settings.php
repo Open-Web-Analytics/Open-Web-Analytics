@@ -166,7 +166,7 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Whether the admins are e-mailed when an update installs. A failed update is always e-mailed.' ),
         ],
-        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100', 'description' => 'The GitHub releases listing automatic updates choose from. Config-only: a web admin cannot point the download elsewhere.' ],
+        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://updates.openwebanalytics.com/releases', 'description' => 'The releases listing automatic updates choose from, in GitHub\'s format. The default is OWA\'s update host, which redirects to GitHub; each request adds from=<installed version>. Config-only: a web admin cannot point the download elsewhere.' ],
         'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found by looking for it when first needed. Never stored.' ],
         'app_passwords_enabled' => [
             'default'  => true,

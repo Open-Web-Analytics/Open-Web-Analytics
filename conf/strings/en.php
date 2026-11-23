@@ -1578,6 +1578,7 @@ return [
     'The regular expression is not valid.' => 'The regular expression is not valid.',
     'The regular expression was refused: %s' => 'The regular expression was refused: %s',
     'The release check leaves it alone until %s UTC.' => 'The release check leaves it alone until %s UTC.',
+    'The release check lists OWA\'s releases every six hours, with automatic updates on or off, from OWA\'s update host unless owa-config.php names another. It sends the installed OWA version and nothing else about this installation.' => 'The release check lists OWA\'s releases every six hours, with automatic updates on or off, from OWA\'s update host unless owa-config.php names another. It sends the installed OWA version and nothing else about this installation.',
     'The release does not say what it requires.' => 'The release does not say what it requires.',
     'The release has no updater.php, so it cannot install itself. Install it by hand.' => 'The release has no updater.php, so it cannot install itself. Install it by hand.',
     'The report could not be shown: %s' => 'The report could not be shown: %s',

@@ -24,7 +24,7 @@ return [
     'auto_update_email_success' => true,
     'auto_update_level' => 'minor',
     'auto_update_patch_immediately' => true,
-    'auto_update_releases_url' => 'https://api.github.com/repos/Open-Web-Analytics/Open-Web-Analytics/releases?per_page=100',
+    'auto_update_releases_url' => 'https://updates.openwebanalytics.com/releases',
     'auto_update_window' => '02:00-06:00',
     'autoload_indexes_before_093' => [],
     'backup_dir' => '',
