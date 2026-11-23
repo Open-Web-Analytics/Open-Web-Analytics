@@ -8,9 +8,8 @@
 </div>
 <?php
 $labels = [
-    'check'  => \OWA\Core\CoreAPI::t( 'Check now' ),
-    'now'    => \OWA\Core\CoreAPI::t( 'Install now' ),
-    'cancel' => \OWA\Core\CoreAPI::t( 'Cancel' ),
+    'check'   => \OWA\Core\CoreAPI::t( 'Check now' ),
+    'install' => \OWA\Core\CoreAPI::t( 'Install now' ),
 ];
 if ( $view->updates_state['actions'] ): ?>
 <form method="post" name="owa_updates_run">
@@ -31,7 +30,7 @@ foreach ( $view->settings_fieldsets as $set ) {
     echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set ); // trusted: SettingsForm escapes what it prints
 }
 ?>
-    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'A change takes effect at the next release check, within six hours, or at once with Check now.' ) ); ?></p>
+    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'A change takes effect at the next release check, within an hour, or at once with Check now. Install now installs the newest release, whatever these settings say.' ) ); ?></p>
     <p><?php $view->out( \OWA\Core\CoreAPI::t( 'The release check lists OWA\'s releases every six hours, with automatic updates on or off, from OWA\'s update host unless owa-config.php names another. It sends the installed OWA version and nothing else about this installation.' ) ); ?></p>
     <?php echo $view->createNonceFormField( 'base.optionsUpdatesUpdate' );?>
     <input type="hidden" name="module" value="base">

@@ -181,21 +181,23 @@ return [
     ],
 
     /*
-     * Step 1 of automatic updates, and the notifications bell's release feed:
-     * one GitHub listing every six hours (Classes\AutoUpdate\ReleaseCheck).
-     * It took over from fetch-notifications, which made the same call daily.
+     * Automatic updates, and the notifications bell's release feed
+     * (Classes\AutoUpdate\ReleaseCheck): every hour, so an install can start
+     * inside a window of an hour; four of those runs a day list the releases,
+     * six hours apart at hours each installation keeps. It took over from
+     * fetch-notifications, which made the same call daily.
      *
-     * Spread by the hour as fetch-notifications was by the day: every install
-     * calling api.github.com at the same instant cannot be told from an attack.
+     * Spread by the minute and, for the listing, by the hour: every install
+     * calling the update host at the same instant cannot be told from an attack.
      *
-     * The one job that runs while schema updates are pending: the release
-     * that fixes a failed one is what it stages.
+     * It runs while schema updates are pending: the release that fixes a
+     * failed one is what it installs.
      */
     'core-update-check' => [
         'command'     => 'core-update-check',
-        'schedule'    => [ 'spread' => 'hourly', 'interval' => 6 ],
-        'params'      => [],
-        'description' => 'Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.',
+        'schedule'    => [ 'spread' => 'hourly', 'interval' => 1 ],
+        'params'      => [ 'scheduled' => 1 ],
+        'description' => 'Automatic updates, every hour: four times a day lists OWA\'s releases for the notifications bell, and downloads and verifies the release to update to; then installs it, in the update window if one is set. The files are copied when the run\'s other jobs have finished, and the next run finishes the install.',
         'while_updates_pending' => true,
     ],
 ];

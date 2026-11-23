@@ -5,7 +5,7 @@ require_once __DIR__ . '/CliControllerTestCase.php';
 use OWA\Module\Base\Classes\AutoUpdate\Finish;
 use OWA\Module\Base\Classes\AutoUpdate\InstallLock;
 use OWA\Module\Base\Classes\AutoUpdate\InstallNotices;
-use OWA\Module\Base\Classes\AutoUpdate\Staging;
+use OWA\Module\Base\Classes\AutoUpdate\Downloads;
 
 /**
  * Step 4: finish, the parts that run without a fresh process: the clean-up
@@ -34,69 +34,41 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** install.json and backup/, and the slot when it holds this release or an older one; a newer one staged meanwhile stays. */
+    /** After an install: the failure record, and every tarball but this release's, which the next install puts back if it fails. */
     public function testTheCleanUp(): void
     {
-        $s    = new Staging($this->tmp . '/updates');
-        $slot = function (string $v) use ($s): void {
-            @mkdir($s->releaseDir(), 0700, true);
-            file_put_contents($s->releaseDir() . '/release.json', json_encode(['version' => $v]));
-            $s->writeStaged($v, null, str_repeat('a', 64));
+        $d      = new Downloads($this->tmp . '/updates');
+        $tarred = function (string $v) use ($d): void {
+            file_put_contents($d->tarball($v), 'a tarball');
+            file_put_contents($d->tarball($v) . '.sig', 'a signature');
         };
 
-        $slot('2.0.3');
-        mkdir($this->tmp . '/updates/backup', 0700, true);
-        file_put_contents($this->tmp . '/updates/install.json', '{"state":"installing","version":"2.0.3"}');
+        $tarred('2.0.2');
+        $tarred('2.0.3');
+        $d->writeFailure(['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'an earlier attempt']);
 
-        Finish::cleanup($s, '2.0.3');
-        $this->assertFileDoesNotExist($this->tmp . '/updates/install.json');
-        $this->assertDirectoryDoesNotExist($this->tmp . '/updates/backup');
-        $this->assertNull($s->staged());
-        $this->assertDirectoryDoesNotExist($s->releaseDir());
-
-        $slot('2.0.4');
-        Finish::cleanup($s, '2.0.3');
-        $this->assertSame('2.0.4', $s->staged()['version'], 'a newer release staged meanwhile stays');
-        $this->assertTrue($s->isStaged('2.0.4'));
-
-        // 2.0.5 installed by hand before 2.0.4's window.
-        Finish::cleanup($s, '2.0.5');
-        $this->assertNull($s->staged(), 'an older release goes');
+        Finish::cleanup($d, '2.0.3');
+        $this->assertNull($d->failure());
+        $this->assertSame(['2.0.3'], $d->versions());
     }
 
-    /** A warning at the first failure, critical when the weekly back-off starts, then weekly reminders. */
-    public function testTheNoticesOfAFailingInstall(): void
+    /** One notice per failed release; what it says depends on whether the new release had booted. */
+    public function testTheNoticeOfAFailedInstall(): void
     {
         $raised = [];
-        $notify = function (array $n) use (&$raised) { $raised[$n['source_key']] = $n['severity']; };
-        $install = ['state' => 'installing', 'version' => '2.0.3', 'error' => 'the database went away', 'retry_after' => 1800000000];
+        $notify = function (array $n) use (&$raised) { $raised[] = $n; };
+        $failed = ['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'Could not write Core/Env.php. OWA 2.0.2 was put back.'];
 
-        foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9] as $attempts) {
-            InstallNotices::forInstall(['attempts' => $attempts] + $install, $notify);
-        }
+        InstallNotices::forFailure($failed, $notify);
+        InstallNotices::forFailure(['booted' => true, 'error' => 'cmd=core-update-schema did not complete'] + $failed, $notify);
+        InstallNotices::forFailure(['error' => ''] + $failed, $notify);
 
-        $this->assertSame([
-            'install_failed:2.0.3'  => 'warning',
-            'install_stuck:2.0.3'   => 'critical',
-            'install_stuck:2.0.3:8' => 'critical',
-            'install_stuck:2.0.3:9' => 'critical',
-        ], $raised, 'the weekly back-off starts at the seventh failed attempt');
-
-        $raised = [];
-        InstallNotices::forInstall(['attempts' => 1, 'error' => null] + $install, $notify);
-        $this->assertSame([], $raised, 'nothing failed yet');
-
-        // What the notice says depends on whether the new release had booted.
-        $bodies = [];
-        $keep   = function (array $n) use (&$bodies) { $bodies[] = $n['body']; };
-        InstallNotices::forInstall(['attempts' => 1, 'booted' => false] + $install, $keep);
-        InstallNotices::forInstall(['attempts' => 1, 'booted' => true] + $install, $keep);
-        InstallNotices::forInstall(['attempts' => 7, 'booted' => false] + $install, $keep);
-        $this->assertStringContainsString('the installed release runs as before', $bodies[0], 'undone: the old release runs');
-        $this->assertStringNotContainsString('tracking is queued', $bodies[0]);
-        $this->assertStringContainsString('tracking is queued and reports wait', $bodies[1], 'booted: the schema is behind');
-        $this->assertStringContainsString('php cli.php cmd=core-update-install', $bodies[2]);
-        $this->assertStringNotContainsString('cmd=core-update-schema;', $bodies[2], 'cmd=core-update-schema cannot finish an install that was undone');
+        $this->assertCount(2, $raised, 'nothing for a record without an error');
+        $this->assertSame(['install_failed:2.0.3', 'warning', true], [$raised[0]['source_key'], $raised[0]['severity'], $raised[0]['email']]);
+        $this->assertStringContainsString('The installed release runs as before. Automatic updates skip OWA 2.0.3', $raised[0]['body'], 'put back: the old release runs');
+        $this->assertStringContainsString('php cli.php cmd=core-update-install version=2.0.3', $raised[0]['body']);
+        $this->assertStringContainsString('tracking is queued and reports wait', $raised[1]['body'], 'booted: the schema is behind');
+        $this->assertStringContainsString('php cli.php cmd=core-update-schema', $raised[1]['body']);
     }
 
     /** cmd=core-update-schema by hand waits for an install and takes no lock of its own; the installer itself runs it. */

@@ -3,81 +3,65 @@
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/RestControllerTestCase.php';
 
-use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 use OWA\Module\Base\Classes\AutoUpdate\UpdatesState;
 use OWA\Module\Base\Classes\JobQueue;
 
 /**
- * The Updates screen: what it says, from staged.json and install.json; the
- * actions it offers, queued as jobs; and its settings.
+ * The Updates screen: what it says, from the updates directory and the
+ * install marker; the actions it offers, queued as jobs; and its settings.
  */
 final class AutoUpdatesScreenTest extends RestControllerTestCase
 {
     private const NOW = 1800000000;
 
-    private function state(?array $staged, ?array $install = null, array $more = []): array
+    private function state(array $downloaded = [], ?array $failure = null, array $more = []): array
     {
-        $more += ['installed' => '2.0.0', 'checkout' => null, 'enabled' => true, 'dirs' => 1, 'present' => true];
-
-        return UpdatesState::describe($staged, $install, $more['installed'], self::NOW, $more['checkout'], $more['enabled'], $more['dirs'], $more['present']);
-    }
-
-    private function staged(array $fields = []): array
-    {
-        return $fields + ['version' => '2.1.0', 'automatic' => true, 'by_hand' => false, 'install_now' => false, 'staged_at' => self::NOW,
+        $more += ['installed' => '2.0.0', 'checkout' => null, 'enabled' => true, 'dirs' => 1, 'marker' => null,
             'window' => ['days' => [6, 7], 'start' => '02:00', 'end' => '06:00', 'timezone' => 'UTC']];
+
+        return UpdatesState::describe($downloaded, $failure, $more['installed'], $more['checkout'], $more['enabled'], $more['dirs'], $more['window'], $more['marker']);
     }
 
-    public function testWhatIsStagedAndWhenItInstalls(): void
+    public function testWhatIsDownloadedAndWhenItInstalls(): void
     {
-        $none = $this->state(null);
-        $this->assertSame(['Installed: OWA 2.0.0.', 'Automatic updates are on.', 'Nothing is staged.'], $none['lines']);
-        $this->assertSame(['check'], $none['actions']);
+        $none = $this->state();
+        $this->assertSame(['Installed: OWA 2.0.0.', 'Automatic updates are on: a release installs between 02:00 and 06:00 (UTC), Sat, Sun.'], $none['lines']);
+        $this->assertSame(['check', 'install'], $none['actions']);
 
-        $windowed = $this->state($this->staged());
-        $this->assertSame('2.1.0 is staged and installs between 02:00 and 06:00 (UTC), Sat, Sun.', $windowed['lines'][2]);
-        $this->assertSame(['check', 'now', 'cancel'], $windowed['actions']);
-
-        $now = $this->state($this->staged(['install_now' => true, 'window' => null]));
-        $this->assertSame('2.1.0 is staged and installs at the next scheduler run.', $now['lines'][2]);
-        $this->assertSame(['check', 'cancel'], $now['actions'], 'nothing to bring forward');
+        $this->assertSame('OWA 2.1.0 is downloaded and checked.', end($this->state(['2.1.0', '2.0.0'])['lines']));
+        $this->assertCount(2, $this->state(['2.0.0'])['lines'], 'the installed release\'s own tarball is not news');
+        $this->assertSame('Automatic updates are on: a release installs as soon as it is downloaded.', $this->state([], null, ['window' => null])['lines'][1]);
     }
 
-    public function testAStagingThatDoesNotInstallItselfSaysSo(): void
+    public function testAFailedInstallSaysWhy(): void
     {
-        $hand = $this->state($this->staged(['by_hand' => true, 'automatic' => false, 'staged_at' => self::NOW - 3600]));
-        $this->assertSame('2.1.0 was staged by hand. It installs only with: php cli.php cmd=core-update-install', $hand['lines'][2]);
-        $this->assertSame('The release check leaves it alone until ' . gmdate('Y-m-d H:i', self::NOW - 3600 + ReleaseCheck::HAND_HOLD) . ' UTC.', $hand['lines'][3]);
-        $this->assertSame(['check', 'cancel'], $hand['actions']);
+        $state = $this->state(['2.1.0', '2.0.0'], ['version' => '2.1.0', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.']);
 
-        $waits = $this->state($this->staged(['automatic' => false]));
-        $this->assertStringContainsString('2.1.0 is staged but does not install itself', $waits['lines'][2]);
+        $this->assertSame('Installing OWA 2.1.0 failed: Could not write Core/Env.php. OWA 2.0.0 was put back. Automatic updates skip it until a newer release.', end($state['lines']));
+        $this->assertSame(['check', 'install'], $state['actions'], 'the installed release runs: installing it by hand is the way to try again');
 
-        $past = $this->state($this->staged(), null, ['installed' => '2.1.0']);
-        $this->assertSame('2.1.0 is staged, but 2.1.0 is installed: it will not install, and the next release check removes it.', $past['lines'][2]);
-
-        $gone = $this->state($this->staged(), null, ['present' => false]);
-        $this->assertStringContainsString('its download is missing', $gone['lines'][2]);
+        $booted = $this->state([], ['version' => '2.1.0', 'booted' => true, 'error' => 'cmd=core-update-schema did not complete'], ['installed' => '2.1.0']);
+        $this->assertSame('OWA 2.1.0 is installed, and finishing it failed: cmd=core-update-schema did not complete. Fix the cause, then run php cli.php cmd=core-update-schema', end($booted['lines']));
     }
 
-    public function testAnUnfinishedInstallOffersNoCancel(): void
+    /** While the install marker is there the files may be mixed: the screen says so and offers only a check. */
+    public function testAnInstallUnderWayOffersNothingButACheck(): void
     {
-        $state = $this->state($this->staged(), ['version' => '2.1.0', 'attempts' => 2, 'error' => 'lock wait timeout', 'retry_after' => self::NOW + 180]);
+        $state = $this->state(['2.1.0'], null, ['marker' => ['from' => '2.0.0', 'to' => '2.1.0', 'phase' => 'copied']]);
 
-        $this->assertSame('An install of 2.1.0 is unfinished: attempt 2 failed (lock wait timeout). It is tried again after '
-            . gmdate('Y-m-d H:i', self::NOW + 180) . ' UTC.', end($state['lines']));
-        $this->assertSame(['check'], $state['actions'], 'its tree may be half copied');
+        $this->assertSame('OWA 2.1.0 is being installed.', end($state['lines']));
+        $this->assertSame(['check'], $state['actions']);
     }
 
     public function testACheckoutOffersNothing(): void
     {
-        $state = $this->state($this->staged(), null, ['checkout' => '/srv/owa/.git']);
+        $state = $this->state([], null, ['checkout' => '/srv/owa/.git']);
 
         $this->assertSame('OWA runs from a version control checkout (/srv/owa/.git): it is updated with that, never automatically.', $state['lines'][1]);
         $this->assertSame([], $state['actions']);
 
-        $this->assertStringContainsString('more than one updates-* directory', implode("\n", $this->state(null, null, ['dirs' => 2])['lines']));
-        $this->assertSame('Automatic updates are off.', $this->state(null, null, ['enabled' => false])['lines'][1]);
+        $this->assertStringContainsString('more than one updates-* directory', implode("\n", $this->state([], null, ['dirs' => 2])['lines']));
+        $this->assertSame('Automatic updates are off.', $this->state([], null, ['enabled' => false])['lines'][1]);
     }
 
     /** Each action is a job for the scheduler, one pending per action; anything else is refused. */
@@ -102,8 +86,8 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
             $this->assertTrue(JobQueue::isQueued('core-update-check', 'updates-screen:check'));
             $this->assertSame($was + 1, $checks());
 
-            $this->assertSame(3314, $data('now')['status_code']);
-            $this->assertTrue(JobQueue::isQueued('core-update-ignore-window', 'updates-screen:now'));
+            $this->assertSame(3314, $data('install')['status_code']);
+            $this->assertTrue(JobQueue::isQueued('core-update-install', 'updates-screen:install'));
 
             $this->assertSame(3315, $data('delete-everything')['error_code']);
         } finally {
@@ -118,15 +102,15 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
         $t = new \OWA\Core\Template('base');
         $t->set('settings_page_title', 'Updates');
         $t->set('settings_fieldsets', \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsUpdates'));
-        $t->set('updates_state', $this->state($this->staged()));
+        $t->set('updates_state', $this->state(['2.1.0', '2.0.0']));
         $this->assertTrue($t->set_template('options_updates.php'));
         $html = $t->fetch();
 
-        $this->assertStringContainsString('2.1.0 is staged and installs between 02:00 and 06:00', $html);
-        foreach (['check', 'now', 'cancel'] as $run) {
+        $this->assertStringContainsString('OWA 2.1.0 is downloaded and checked.', $html);
+        foreach (['check', 'install'] as $run) {
             $this->assertStringContainsString('data-ui="updates:' . $run . '"', $html);
         }
-        foreach (['auto_update', 'auto_update_level', 'auto_update_patch_immediately', 'auto_update_days', 'auto_update_window', 'auto_update_email_success', 'admin_notice_email'] as $name) {
+        foreach (['auto_update', 'auto_update_level', 'auto_update_days', 'auto_update_window', 'auto_update_email_success', 'admin_notice_email'] as $name) {
             $this->assertStringContainsString('base.' . $name, $html, $name);
         }
         $this->assertStringNotContainsString('auto_update_releases_url', $html, 'config-only: a web admin cannot repoint the download');
@@ -144,7 +128,7 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
         $this->assertNotNull($c->valueProblem('base', 'auto_update_days', 'weekends'));
 
         $settings = (require dirname(__DIR__) . '/modules/Base/settings.php')['settings'];
-        foreach (['auto_update', 'auto_update_level', 'auto_update_patch_immediately', 'auto_update_days', 'auto_update_window', 'auto_update_email_success'] as $name) {
+        foreach (['auto_update', 'auto_update_level', 'auto_update_days', 'auto_update_window', 'auto_update_email_success'] as $name) {
             $this->assertTrue($settings[$name]['storable'] ?? false, $name);
         }
         $this->assertArrayNotHasKey('storable', $settings['auto_update_releases_url']);

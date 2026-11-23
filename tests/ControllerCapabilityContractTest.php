@@ -94,8 +94,6 @@ final class ControllerCapabilityContractTest extends TestCase
         // What the code is (release.json), from the files alone: run before
         // OWA boots, so there is no user.
         'VersionInfoCli',
-        // Installs before OWA loads (updater.php); the class only declares the command.
-        'CoreUpdateInstallCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',

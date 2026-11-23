@@ -4,13 +4,14 @@ namespace OWA\Module\Base\Controller;
 use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 
 /**
- * What automatic updates will do here, and what is staged (owa-data/updates/).
+ * What automatic updates will do here, and what is downloaded (the updates
+ * directory, Classes\AutoUpdate\Downloads).
  *
  *   php cli.php cmd=core-update-status
  *
- * The settings in effect, the release staged to install and when, and each
- * downloaded release: when it was checked, whether it can be installed, any
- * update in it that must be installed by hand, and its install's state.
+ * The settings in effect, and each downloaded release: when it was checked,
+ * whether it can be installed, any update in it that must be installed by
+ * hand; a failed install, and one under way.
  */
 class CoreUpdateStatusCli extends \OWA\Core\Controller\Cli {
 
@@ -18,7 +19,7 @@ class CoreUpdateStatusCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Shows what automatic updates will do: the settings in effect, the staged release, whether and when it installs, its checks, and an unfinished install.',
+            'description' => 'Shows what automatic updates will do: the settings in effect, each downloaded release and whether it can be installed, a failed install, and an install under way.',
             'arguments'   => [],
         ];
     }

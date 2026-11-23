@@ -6,7 +6,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * isLocked, tryLock, unlock and touchLock, which say how it works.
  *
  * It exists while one process holds it, and its line says who: an install
- * for all of its attempt, or Step 1: release check while it writes
+ * from its checks to the end of the copy (Install), Finish, a release being
+ * put back (updater.php `preboot`), or Step 1: release check while it writes
  * staged.json or deletes a staging. Whoever finds it held stops and tries
  * again on a later run, cmd=core-update-schema by hand included.
  */
@@ -18,14 +19,15 @@ class InstallLock {
     public static $path = null;
 
     /**
-     * Whether this process holds the lock: the installer (updater.php took it
-     * before OWA loaded). Read by cmd=core-update-schema, which runs inside the install.
+     * Whether this process holds the lock to finish an install (Finish; the
+     * hold preboot took before OWA loaded). Read by cmd=core-update-schema,
+     * which runs inside it.
      *
      * @var bool
      */
     public static $held_here = false;
 
-    /** @var array<string, mixed>|null the installer's hold, which it touches as it goes */
+    /** @var array<string, mixed>|null Finish's hold, which it touches as it goes */
     public static $hold = null;
 
     /** @return string */
@@ -37,7 +39,7 @@ class InstallLock {
     /** @return bool whether another process holds the lock now */
     public static function isHeld() {
 
-        return (bool) Staging::updater()['isLocked']( dirname( self::path() ) );
+        return (bool) Downloads::updater()['isLocked']( dirname( self::path() ) );
     }
 
     /**
@@ -49,7 +51,7 @@ class InstallLock {
      */
     public static function tryExclusive( callable $fn, $who = 'release check' ) {
 
-        $u    = Staging::updater();
+        $u    = Downloads::updater();
         $hold = $u['tryLock']( dirname( self::path() ), $who );
 
         if ( $hold === null ) {
@@ -70,8 +72,8 @@ class InstallLock {
     }
 
     /**
-     * The installer, between steps: the lock file's time says the install is
-     * still moving, and where there is no flock() it keeps it from going stale.
+     * Finish, between steps: the lock file's time says the install is still
+     * moving, and where there is no flock() it keeps it from going stale.
      *
      * @return void
      */
@@ -79,7 +81,7 @@ class InstallLock {
 
         if ( self::$hold !== null ) {
 
-            Staging::updater()['touchLock']( self::$hold );
+            Downloads::updater()['touchLock']( self::$hold );
         }
     }
 }

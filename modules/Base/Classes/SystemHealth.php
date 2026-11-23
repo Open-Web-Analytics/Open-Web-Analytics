@@ -681,7 +681,7 @@ class SystemHealth {
      */
     public static function updatesDirs() {
 
-        $dirs = \OWA\Module\Base\Classes\AutoUpdate\Staging::updater()['updatesDirs']( \OWA\Core\Env::dataDir() );
+        $dirs = \OWA\Module\Base\Classes\AutoUpdate\Downloads::updater()['updatesDirs']( \OWA\Core\Env::dataDir() );
 
         if ( count( $dirs ) < 2 ) {
 

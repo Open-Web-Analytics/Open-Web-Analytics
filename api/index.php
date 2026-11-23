@@ -1,7 +1,7 @@
 <?php
 
-// Automatic updates: while the install lock is held, 503 busy in the REST
-// envelope, before any OWA file loads (updater.php).
+// Automatic updates: until a new release being installed has booted (the
+// install marker), 503 busy in the REST envelope, before any OWA file loads (updater.php).
 if ((require __DIR__ . '/../updater.php')['serveMaintenance'](dirname(__DIR__), true)) {
     exit;
 }

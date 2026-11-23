@@ -4,71 +4,67 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 use OWA\Core\CoreAPI;
 
 /**
- * Step 1: release check. Finds the release this installation updates to,
- * stages it, judges it, and points staged.json at it when it can be
- * installed. Installs nothing: Steps 2-4 read staged.json.
+ * Automatic updates: the release check, which installs what it finds.
  *
- * One listing of the releases feeds the notifications bell first, on every
- * run whatever follows (the job cmd=fetch-notifications used to be). Then, in
- * order, stopping at the first that applies:
- *   1. Not a full server role, a version control checkout, an unreadable
- *      installed version, automatic updates off, or no newer release the
- *      settings choose: the slot is emptied (end()).
- *   2. The listing failed: staged.json is only repaired (repair()).
- *   3. An unfinished install of the chosen release: left as it is.
- *   4. A release staged by hand, for HAND_HOLD after it was staged: left as
- *      it is, whatever else applies.
- *   5. Downloaded, checked against its SHA-256 and its signature, and
- *      unpacked into staged.tmp/, then swapped into staged/ in place of what
- *      was there, an unfinished install of another release with it
- *      (Staging::swapIn()); again if
- *      GitHub's digest for it changes (the asset was replaced). A failure
- *      leaves the slot as it was, and the next run tries again. The first
- *      failure puts a notice in the bell; a week of them e-mails the admins.
- *   6. The preflight, every run, from the slot. Unmet, or an update this
- *      installation would run that must be installed by hand
- *      ($manual_install): staged.json says it does not install itself, and
- *      the admins are told once.
- *   7. Otherwise staged.json says it installs itself, with the window the
- *      settings give now, and the admins are told when.
+ * The scheduler runs it every hour (job core-update-check). Four of those
+ * runs a day, six hours apart at hours this installation keeps
+ * (listingHour()), list the releases: every listing feeds the notifications
+ * bell first, whatever follows. Run by hand it always lists. Then, stopping
+ * at the first that applies:
+ *   1. Not a full server role, a version control checkout (the bell has
+ *      said what is new), an unreadable installed version, automatic updates
+ *      off, or an install under way.
+ *   2. With a listing: the release the settings choose. Its tarball is
+ *      downloaded and checked against its SHA-256 and its signature, again
+ *      if GitHub's digest for it changes (the asset was replaced), and the
+ *      installed release's too, once: a failed install puts it back. Every
+ *      other tarball is deleted. A failed download puts a notice in the
+ *      bell; a week of them e-mails the admins. A release whose install
+ *      failed (last-failure.json) is skipped: it installs by hand, or a newer
+ *      one does.
+ *   3. The newest downloaded release the settings allow is judged, from its
+ *      tarball (judge()). Unmet, or an update in it that must be installed
+ *      by hand ($manual_install): the admins are told once, and it waits.
+ *   4. Outside the update window it waits. Inside it, or with no window,
+ *      it installs (Install): the files are copied when this run of the
+ *      scheduler has finished, and the next run finishes the install.
  *
- * One release is staged at a time (Staging). Writes happen holding the
- * install lock, taken without waiting; when an install holds it, the run
- * changes nothing.
+ * Without a listing (GitHub unreachable, or not a listing hour) only 3 and 4
+ * apply, to what was downloaded before.
  *
  * @phpstan-import-type Release from Releases
  * @phpstan-type Outcome array{outcome: string, version: string|null, lines: list<string>, problems: list<string>}
  */
 class ReleaseCheck {
 
-    const ROLE      = 'not_full_role';
-    const CHECKOUT  = 'vcs_checkout';
-    const OFF       = 'auto_update_off';
-    const UNKNOWN   = 'unknown_version';
-    const UNREACHED = 'listing_failed';
-    const CURRENT   = 'up_to_date';
-    const CLAIMED   = 'installing';
-    const FAILED    = 'staging_failed';
-    const UNMET     = 'requirements_unmet';
-    const MANUAL    = 'manual_install';
-    const STAGED    = 'staged';
-    const BUSY      = 'install_running';
-    const CHOSEN    = 'chosen';
-    const HELD      = 'held_by_hand';
-
-    /** How long a release staged by hand is left alone by the release check, in seconds. */
-    const HAND_HOLD = 86400;
+    const ROLE       = 'not_full_role';
+    const CHECKOUT   = 'vcs_checkout';
+    const OFF        = 'auto_update_off';
+    const UNKNOWN    = 'unknown_version';
+    const UNREACHED  = 'listing_failed';
+    const CURRENT    = 'up_to_date';
+    const FAILED     = 'download_failed';
+    const UNMET      = 'requirements_unmet';
+    const MANUAL     = 'manual_install';
+    const BUSY       = 'install_running';
+    const CHOSEN     = 'chosen';
+    const SKIPPED    = 'failed_before';
+    const WAITING    = 'waiting_for_window';
+    const INSTALLING = 'installing';
 
     /** The notices' source (NotificationManager). */
     const SOURCE = 'auto_update';
 
-    /** How long a staging may keep failing before the admins are e-mailed. */
+    /** How long a download may keep failing before the admins are e-mailed. */
     const FAILING_FOR = 604800;
+
+    /** Hours between listings in the scheduler's runs. */
+    const LISTING_EVERY = 6;
 
     const DAYS = [ 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7 ];
 
-    /** @var Staging */
-    private $staging;
+    /** @var Downloads */
+    private $downloads;
 
     /** @var string */
     private $root;
@@ -80,13 +76,13 @@ class ReleaseCheck {
     public $context;
 
     /**
-     * @param Staging|null         $staging
+     * @param Downloads|null       $downloads
      * @param array<string, mixed> $context in place of what is read from the installation, for a test
      */
-    public function __construct( $staging = null, array $context = [] ) {
+    public function __construct( $downloads = null, array $context = [] ) {
 
-        $this->staging = $staging ?? new Staging();
-        $this->context = $context + [
+        $this->downloads = $downloads ?? new Downloads();
+        $this->context   = $context + [
             'root'      => \OWA\Core\Env::root(),
             'installed' => \OWA\Core\Env::version(),
             'role'      => \OWA\Core\ServerRole::current()->name(),
@@ -94,9 +90,12 @@ class ReleaseCheck {
             'level'     => (string) CoreAPI::getSetting( 'base', 'auto_update_level' ),
             'days'      => (string) CoreAPI::getSetting( 'base', 'auto_update_days' ),
             'window'    => CoreAPI::getSetting( 'base', 'auto_update_window' ),
-            'immediate' => (bool) CoreAPI::getSetting( 'base', 'auto_update_patch_immediately' ),
             'timezone'  => (string) ( CoreAPI::getSetting( 'base', 'timezone' ) ?: 'UTC' ),
             'url'       => (string) CoreAPI::getSetting( 'base', 'auto_update_releases_url' ),
+            // The scheduler's run: it lists only in its listing hours, and says nothing after the copy.
+            'scheduled' => false,
+            // What fixes this installation's listing hours, as the scheduler's spread does.
+            'seed'      => ( (string) CoreAPI::getSetting( 'base', 'public_url' ) ?: \OWA\Core\Env::root() . '/' ) . '|core-update-check',
             'releases'  => null,
             'env'       => null,
             // The services: the bell feed, a notice, when one was first
@@ -122,22 +121,26 @@ class ReleaseCheck {
     }
 
     /**
-     * @param  bool $dry_run choose only: nothing downloaded, written or announced
+     * @param  bool $dry_run choose only: nothing downloaded, written, announced or installed
      * @return Outcome
      */
     public function run( $dry_run = false ) {
 
         $installed = (string) $this->context['installed'];
+        $listed    = $dry_run || ! $this->context['scheduled'] || $this->listingHour();
         $list      = null;
         $error     = '';
 
-        try {
+        if ( $listed ) {
 
-            $list = $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
+            try {
 
-        } catch ( \RuntimeException $e ) {
+                $list = $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
 
-            $error = $e->getMessage();
+            } catch ( \RuntimeException $e ) {
+
+                $error = $e->getMessage();
+            }
         }
 
         if ( $list !== null && ! $dry_run ) {
@@ -148,425 +151,224 @@ class ReleaseCheck {
 
         if ( $this->context['role'] !== \OWA\Core\ServerRole::FULL ) {
 
-            return $this->end( self::ROLE, null, sprintf( 'This server\'s role is %s; automatic updates run on a full server only.', $this->context['role'] ), $dry_run );
+            return $this->outcome( self::ROLE, null, [], sprintf( 'This server\'s role is %s; automatic updates run on a full server only.', $this->context['role'] ) );
         }
 
         $checkout = Vcs::checkout( $this->root );
 
         if ( $checkout !== null ) {
 
-            return $this->end( self::CHECKOUT, null, sprintf( 'OWA runs from a version control checkout (%s): it is updated with that, never automatically.', $checkout ), $dry_run );
+            return $this->outcome( self::CHECKOUT, null, [], sprintf( 'OWA runs from a version control checkout (%s): it is updated with that, never automatically.', $checkout ) );
         }
 
         if ( Version::parse( $installed ) === null ) {
 
-            return $this->end( self::UNKNOWN, null, sprintf( 'This installation\'s version, %s, is not a release version.', $installed ), $dry_run );
+            return $this->outcome( self::UNKNOWN, null, [], sprintf( 'This installation\'s version, %s, is not a release version.', $installed ) );
         }
 
-        // An install that failed and was restored left only the old release
-        // to say so; the notices are raised once each (InstallNotices).
-        if ( ! $dry_run ) {
+        $failure = $this->downloads->failure();
 
-            $install = $this->staging->install();
+        if ( $failure && ! $dry_run ) {
 
-            if ( $install ) {
-
-                InstallNotices::forInstall( $install, $this->context['notify'] );
-            }
+            InstallNotices::forFailure( $failure, $this->context['notify'] );
         }
 
         if ( ! $this->context['enabled'] ) {
 
-            return $this->end( self::OFF, null, 'Automatic updates are off.', $dry_run );
+            if ( ! $dry_run ) {
+
+                $this->downloads->prune( [ $installed ] );
+            }
+
+            return $this->outcome( self::OFF, null, [], 'Automatic updates are off.' );
         }
 
-        if ( $list === null ) {
+        if ( ! $dry_run && $this->installing() ) {
 
-            return $this->repair( self::UNREACHED, $error, $dry_run );
+            return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
         }
 
         $level   = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
-        $release = Releases::choose( $list, $installed, $level );
+        $missing = null;
 
-        // Nothing the settings choose now: a staged.json naming what they chose
-        // before (a minor, now patch only; a release since installed) goes.
-        if ( $release === null ) {
+        if ( $listed && $list === null ) {
 
-            return $this->end( self::CURRENT, null, sprintf( 'No release newer than %s for automatic %s updates.', $installed,
-                $level === Version::PATCH ? 'patch' : 'patch and minor' ), $dry_run );
+            $this->lines[] = sprintf( 'The releases could not be listed: %s', $error );
+
+        } elseif ( $list !== null ) {
+
+            $release = Releases::choose( $list, $installed, $level );
+
+            if ( $release === null ) {
+
+                if ( ! $dry_run ) {
+
+                    $this->downloads->prune( [ $installed ] );
+                }
+
+                return $this->outcome( self::CURRENT, null, [], sprintf( 'No release newer than %s for automatic %s updates.', $installed,
+                    $level === Version::PATCH ? 'patch' : 'patch and minor' ) );
+            }
+
+            $v = $release['version'];
+            $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
+
+            if ( $dry_run ) {
+
+                return $this->outcome( self::CHOSEN, $v );
+            }
+
+            if ( $this->skips( $v ) ) {
+
+                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-update-install version=%s', $v, $v ) );
+            }
+
+            // Downloaded when it has not been, and again when the asset GitHub
+            // lists now is not the one downloaded (it was replaced).
+            $replaced = $this->downloads->has( $v ) && $release['sha256'] !== null
+                && ! hash_equals( (string) $release['sha256'], (string) hash_file( 'sha256', $this->downloads->tarball( $v ) ) );
+
+            if ( $replaced || ! $this->downloads->has( $v ) ) {
+
+                try {
+
+                    $this->downloads->download( $release );
+
+                } catch ( \RuntimeException $e ) {
+
+                    $this->downloadFailed( $v, $e->getMessage(), $release['url'] );
+
+                    return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
+                }
+
+                $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
+            }
+
+            $missing = $this->ensureInstalled( $list );
+
+            // The release to install, and the installed one a failed install puts back.
+            $this->downloads->prune( [ $v, $installed ] );
         }
 
-        $v = $release['version'];
-        $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
+        $v = $this->candidate( $level );
+
+        if ( $v === null ) {
+
+            return $this->outcome( $listed && $list === null ? self::UNREACHED : self::CURRENT, null, [], sprintf( 'Nothing newer than %s is downloaded to install.', $installed ) );
+        }
 
         if ( $dry_run ) {
 
             return $this->outcome( self::CHOSEN, $v );
         }
 
-        if ( $this->staging->hasInstall( $v ) ) {
+        if ( $missing === null && ! $this->downloads->has( $installed ) ) {
 
-            return $this->outcome( self::CLAIMED, $v, [], sprintf( '%s is being installed; its staging is the installer\'s.', $v ) );
+            $missing = sprintf( CoreAPI::t( 'The installed release, %s, has not been downloaded: a failed install puts it back, so nothing installs until the next listing downloads it.' ), $installed );
         }
 
-        $before = $this->staging->staged();
-
-        if ( ( $held = $this->heldUntil( $before ) ) !== null ) {
-
-            return $this->held( $before, $held );
-        }
-
-        // Downloaded when the slot does not hold it, and again when the asset
-        // GitHub lists now is not the one staged (it was replaced: the slot is
-        // emptied first, holding the lock, so nothing installs it meanwhile).
-        // A download replaces whatever the slot held, an unfinished install of
-        // another release with it (Staging::swapIn()).
-        $replaced = $this->staging->isStaged( $v ) && $release['sha256'] !== null
-            && ( $before['sha256'] ?? null ) !== $release['sha256'];
-        $sha      = (string) ( $before['sha256'] ?? '' );
-
-        if ( $replaced || ! $this->staging->isStaged( $v ) ) {
-
-            if ( $replaced && ! InstallLock::tryExclusive( fn () => $this->staging->clear() ) ) {
-
-                return $this->busy();
-            }
-
-            try {
-
-                $sha = $this->staging->download( $release );
-
-            } catch ( \RuntimeException $e ) {
-
-                $this->stagingFailed( $v, $e->getMessage(), $release['url'] );
-
-                return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Staging %s failed; the next run tries again.', $v ) );
-            }
-
-            $old = (string) ( $this->staging->releaseInfo()['version'] ?? '' );
-
-            if ( ! InstallLock::tryExclusive( fn () => $this->staging->swapIn() ) ) {
-
-                return $this->busy();
-            }
-
-            $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced'
-                : ( $old !== '' && $old !== $v ? sprintf( '; it replaces %s', $old ) : '' ) );
-            $before = null;
-        }
-
-        $problems = $this->preflight( $v );
-        $manual   = $problems ? [] : $this->manualInstall( $v );
-        $auto     = ! $problems && ! $manual;
-        // "Install now" from the Updates screen stands for its release: no window.
-        $now      = $auto && $before !== null && ( $before['version'] ?? null ) === $v && ! empty( $before['install_now'] );
-        $window   = $auto && ! $now ? $this->window( $release['step'] ) : null;
-        $same     = $before !== null && ( $before['version'] ?? null ) === $v && ! empty( $before['automatic'] ) === $auto
-            && empty( $before['by_hand'] ) && ( $before['window'] ?? null ) == $window && ! empty( $before['install_now'] ) === $now;
-
-        // staged.json describes the slot: the release, whether it installs on
-        // its own, and the window the settings give now.
-        if ( ! $same && ! InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, $window, $sha, $auto, false, (int) $this->context['now'], $now ) ) ) {
-
-            return $this->busy();
-        }
+        $judged   = $this->judge( $v );
+        $problems = array_merge( $judged['problems'], $missing === null ? [] : [ $missing ] );
+        $url      = sprintf( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/%s', $v );
 
         if ( $problems ) {
 
             $this->notify( sprintf( 'unmet:%s:%s', $v, substr( md5( implode( "\n", $problems ) ), 0, 12 ) ), 'warning',
                 sprintf( CoreAPI::t( 'OWA %s cannot be installed automatically yet' ), $v ),
-                implode( "\n", $problems ) . "\n\n" . CoreAPI::t( 'It is checked again every six hours, and installs once these are fixed.' ),
-                $release['url'] );
+                implode( "\n", $problems ) . "\n\n" . CoreAPI::t( 'It is checked again every hour, and installs once these are fixed.' ), $url );
 
             return $this->outcome( self::UNMET, $v, $problems, sprintf( '%s cannot be installed here yet; it is judged again at the next run.', $v ) );
         }
 
-        if ( $manual ) {
+        if ( $judged['manual'] ) {
 
-            $texts = array_map( static fn ( $u ) => sprintf( '%s update %d: %s', $u['module'], $u['sequence'], $u['manual_install'] ), $manual );
+            $texts = array_map( static fn ( $u ) => sprintf( '%s update %d: %s', $u['module'], $u['sequence'], $u['manual_install'] ), $judged['manual'] );
 
             $this->notify( 'manual:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s needs to be installed by hand' ), $v ),
-                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update-install' ),
-                $release['url'] );
+                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update-install' ), $url );
 
-            return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it is staged but will not install itself.', $v ) );
+            return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it will not install itself.', $v ) );
         }
 
-        if ( $same ) {
+        $window = $this->window();
 
-            return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged, as it was.', $v ) );
+        if ( $window !== null && ! self::inWindow( $window, (int) $this->context['now'] ) ) {
+
+            return $this->outcome( self::WAITING, $v, [], sprintf( '%s installs %s.', $v, self::describeWindow( $window ) ) );
         }
 
-        $when = self::describeWindow( $window );
+        $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'] );
 
-        if ( $before !== null && ( $before['version'] ?? null ) === $v && ! empty( $before['automatic'] ) ) {
-
-            $this->lines[] = sprintf( 'The window for %s is now %s.', $v, $when );
-
-            return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged to install %s.', $v, $when ) );
-        }
-
-        $this->notify( 'staged:' . $v, 'info',
-            sprintf( CoreAPI::t( 'OWA %1$s will be installed %2$s' ), $v, $when ),
-            sprintf( CoreAPI::t( 'Automatic updates downloaded and checked OWA %1$s, a %2$s release. To stop it: php cli.php cmd=core-update-unstage' ), $v, $release['step'] ),
-            $release['url'] );
-
-        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged to install %s.', $v, $when ) );
+        return $this->outcome( $result['outcome'] === Install::OK ? self::INSTALLING : ( $result['outcome'] === Install::BUSY ? self::BUSY : self::FAILED ),
+            $v, $result['lines'], $result['message'] );
     }
 
     /**
-     * When a release staged by hand stops being left alone: HAND_HOLD after
-     * it was staged, by this server's clock (a time in the future counts as
-     * now); null when what is staged was not staged by hand, or its hold is over.
+     * Whether this hour is one of the four a day the scheduler's runs list
+     * the releases in: six hours apart, at an offset this installation keeps
+     * (the seed), as Cron spreads a job.
      *
-     * @param  array<string, mixed>|null $staged
-     * @return int|null
+     * @return bool
      */
-    private function heldUntil( $staged ) {
+    public function listingHour() {
 
-        if ( empty( $staged['by_hand'] ) ) {
+        $offset = hexdec( substr( md5( (string) $this->context['seed'] ), 6, 6 ) ) % self::LISTING_EVERY;
 
-            return null;
-        }
-
-        $now   = (int) $this->context['now'];
-        $until = min( (int) ( $staged['staged_at'] ?? 0 ), $now ) + self::HAND_HOLD;
-
-        return $until > $now ? $until : null;
+        return ( (int) gmdate( 'G', (int) $this->context['now'] ) - $offset + 24 ) % self::LISTING_EVERY === 0;
     }
 
     /**
-     * @param  array<string, mixed> $staged
-     * @param  int                  $until
-     * @return Outcome
-     */
-    private function held( array $staged, $until ) {
-
-        return $this->outcome( self::HELD, (string) $staged['version'], [], sprintf( '%s was staged by hand and is held until %s UTC; this run changes nothing.',
-            $staged['version'], gmdate( 'Y-m-d H:i', $until ) ) );
-    }
-
-    /**
-     * cmd=core-update-stage: stage one named release by hand, in place of the
-     * staged one, as Step 1 would, and judge it. staged.json says by hand, so it
-     * installs only when an operator installs it (cmd=core-update-install), and
-     * the release check leaves it alone for HAND_HOLD. Any version in this
-     * major the listing has, older and the installed one included; a major
-     * release is a migration, done by hand. Nothing is announced: the operator
-     * is reading the output.
+     * The newest downloaded release the settings allow: newer than the
+     * installed one, the same major, a patch for patch-only updates, and not
+     * one whose install failed.
      *
-     * For an older release, the modules whose stored schema is newer than it
-     * expects are listed with the rollback commands to run first, newest first:
-     * older code cannot run a newer schema.
-     *
-     * @param  string $version
-     * @return Outcome
+     * @param  string $level
+     * @return string|null
      */
-    public function stageByHand( $version ) {
+    private function candidate( $level ) {
 
         $installed = (string) $this->context['installed'];
-        $checkout  = Vcs::checkout( $this->root );
 
-        if ( $checkout !== null ) {
+        foreach ( $this->downloads->versions() as $v ) {
 
-            return $this->outcome( self::CHECKOUT, null, [], sprintf( 'OWA runs from a version control checkout (%s): update it with that.', $checkout ) );
-        }
+            $step = Version::step( $installed, $v );
 
-        if ( Version::parse( $installed ) === null || Version::parse( (string) $version ) === null ) {
+            if ( $step !== null && $step !== Version::MAJOR && ( $level !== Version::PATCH || $step === Version::PATCH ) && ! $this->skips( $v ) ) {
 
-            return $this->outcome( self::UNKNOWN, null, [], sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $version ) );
-        }
-
-        if ( Version::step( $installed, $version ) === Version::MAJOR || Version::step( $version, $installed ) === Version::MAJOR ) {
-
-            return $this->outcome( self::UNKNOWN, null, [], sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $version ) );
-        }
-
-        try {
-
-            $list = $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
-
-        } catch ( \RuntimeException $e ) {
-
-            return $this->outcome( self::UNREACHED, null, [ $e->getMessage() ], 'The releases could not be listed.' );
-        }
-
-        $release = Releases::find( $list, $version, $installed );
-
-        if ( $release === null ) {
-
-            return $this->outcome( self::UNKNOWN, null, [], sprintf( 'There is no published release %s with its tarball.', $version ) );
-        }
-
-        $v = $release['version'];
-
-        if ( InstallLock::isHeld() ) {
-
-            return $this->busy();
-        }
-
-        $before = $this->staging->staged();
-        $sha    = (string) ( $before['sha256'] ?? '' );
-
-        if ( $this->staging->isStaged( $v ) && $release['sha256'] !== null && $sha === $release['sha256'] ) {
-
-            $this->lines[] = sprintf( '%s was already downloaded and checked.', $v );
-
-        } else {
-
-            try {
-
-                $sha = $this->staging->download( $release );
-
-            } catch ( \Throwable $e ) {
-
-                return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Staging %s failed.', $v ) );
-            }
-
-            $old     = (string) ( $this->staging->releaseInfo()['version'] ?? '' );
-            $dropped = (string) ( $this->staging->install()['version'] ?? '' );
-
-            if ( ! InstallLock::tryExclusive( fn () => $this->staging->swapIn() ) ) {
-
-                return $this->busy();
-            }
-
-            $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v,
-                $old !== '' && $old !== $v ? sprintf( '; it replaces %s', $old ) : '' );
-
-            if ( $dropped !== '' ) {
-
-                $this->lines[] = sprintf( 'The unfinished install of %s was dropped: this staging replaces it.', $dropped );
+                return $v;
             }
         }
 
-        // Staged by hand: it installs only by cmd=core-update-install, and the
-        // release check leaves it alone for HAND_HOLD.
-        if ( ! InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, null, $sha, false, true, (int) $this->context['now'] ) ) ) {
-
-            return $this->busy();
-        }
-
-        $problems = $this->preflight( $v );
-        $manual   = $this->manualInstall( $v );
-        $rollback = $this->rollbackFirst( $v );
-
-        $step = Version::step( $installed, $v );
-        $this->lines[] = $step === null
-            ? sprintf( '%s is not newer than the installed %s: installing it goes back.', $v, $installed )
-            : sprintf( '%s is a %s release after the installed %s.', $v, $step, $installed );
-
-        foreach ( $manual as $u ) {
-
-            $this->lines[] = sprintf( 'Read before installing -- %s update %d: %s', $u['module'], $u['sequence'], $u['manual_install'] );
-        }
-
-        if ( $rollback ) {
-
-            return $this->outcome( self::UNMET, $v, $rollback, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ) );
-        }
-
-        if ( $problems ) {
-
-            return $this->outcome( self::UNMET, $v, $problems, sprintf( '%s cannot be installed here:', $v ) );
-        }
-
-        $until = (int) $this->heldUntil( $this->staging->staged() );
-
-        return $this->outcome( self::STAGED, $v, [], sprintf( '%s is staged. Install it before %s UTC, when the release check may replace it: php cli.php cmd=core-update-install%s',
-            $v, gmdate( 'Y-m-d H:i', $until ?: (int) $this->context['now'] + self::HAND_HOLD ), $step === null ? ' --force' : '' ) );
+        return null;
     }
 
     /**
-     * cmd=core-update-unstage [version=]: empty the slot, so nothing installs
-     * until a release is staged again (the next release check, unless
-     * automatic updates are off). With a version, only if it is the one
-     * staged. Refused while an install runs or is unfinished: its live tree
-     * may be half copied, and only carrying it on, or its own undo, settles it.
+     * Whether automatic updates skip this release: installing it over the
+     * installed one failed (last-failure.json).
      *
-     * @param  string|null $version
-     * @return Outcome
+     * @param  string $v
+     * @return bool
      */
-    public function cancel( $version = null ) {
+    private function skips( $v ) {
 
-        $staged = $this->staging->staged();
-        $v      = (string) ( $staged['version'] ?? ( $this->staging->releaseInfo()['version'] ?? '' ) );
+        $failure = $this->downloads->failure();
 
-        if ( $v === '' || ( $version !== null && $version !== $v ) ) {
-
-            return $this->outcome( self::UNKNOWN, null, [], $version === null ? 'Nothing is staged.' : sprintf( 'Nothing of %s is staged.', $version ) );
-        }
-
-        if ( $this->staging->install() ) {
-
-            $u = (string) $this->staging->install()['version'];
-
-            return $this->outcome( self::CLAIMED, $u, [], sprintf( 'An install of %1$s is unfinished; it cannot be cancelled. Carry it on with: php cli.php cmd=core-update-install', $u ) );
-        }
-
-        if ( ! InstallLock::tryExclusive( fn () => $this->staging->clear() ) ) {
-
-            return $this->busy();
-        }
-
-        return $this->outcome( self::OFF, $v, [], sprintf( 'Cancelled %s: nothing is staged.%s', $v,
-            $this->context['enabled'] && empty( $staged['by_hand'] ) ? ' The next release check stages it again; set OWA_AUTO_UPDATE to false to stop that.' : '' ) );
+        return ( $failure['version'] ?? null ) === $v && ( $failure['from'] ?? null ) === (string) $this->context['installed'];
     }
 
     /**
-     * cmd=core-update-ignore-window, and the Updates screen's "Install now": the staged
-     * release installs at the next scheduler run, whatever its window.
-     * staged.json says install_now, which the release check keeps for that
-     * release. Only one that installs itself: one staged by hand is installed
-     * with cmd=core-update-install, and one that waits says why.
-     *
-     * @return Outcome
-     */
-    public function installNow() {
-
-        $staged = $this->staging->staged();
-
-        if ( $staged === null ) {
-
-            return $this->outcome( self::UNKNOWN, null, [], 'Nothing is staged.' );
-        }
-
-        $v = (string) $staged['version'];
-
-        if ( ! empty( $staged['by_hand'] ) ) {
-
-            return $this->outcome( self::HELD, $v, [], sprintf( '%1$s was staged by hand: install it with php cli.php cmd=core-update-install', $v ) );
-        }
-
-        if ( empty( $staged['automatic'] ) ) {
-
-            return $this->outcome( self::UNMET, $v, [], sprintf( '%s does not install itself; php cli.php cmd=core-update-status says why.', $v ) );
-        }
-
-        if ( ! empty( $staged['install_now'] ) || ( $staged['window'] ?? null ) === null ) {
-
-            return $this->outcome( self::STAGED, $v, [], sprintf( '%s installs at the next scheduler run.', $v ) );
-        }
-
-        $done = InstallLock::tryExclusive( fn () => $this->staging->writeStaged( $v, null, (string) ( $staged['sha256'] ?? '' ), true, false,
-            (int) ( $staged['staged_at'] ?? $this->context['now'] ), true ) );
-
-        return $done
-            ? $this->outcome( self::STAGED, $v, [], sprintf( '%s installs at the next scheduler run, within a minute.', $v ) )
-            : $this->busy();
-    }
-
-    /**
-     * cmd=core-update-status: what automatic updates will do, and the staged release.
+     * cmd=core-update-status: what automatic updates will do, and what is downloaded.
      *
      * @return list<string>
      */
     public function status() {
 
-        $c     = $this->context;
-        $lines = [ sprintf( 'Installed: %s', $c['installed'] ) ];
-        $vcs   = Vcs::checkout( $this->root );
+        $c         = $this->context;
+        $installed = (string) $c['installed'];
+        $lines     = [ sprintf( 'Installed: %s', $installed ) ];
+        $vcs       = Vcs::checkout( $this->root );
+        $window    = $this->window();
 
         if ( $vcs !== null ) {
 
@@ -578,66 +380,148 @@ class ReleaseCheck {
 
         } else {
 
-            $lines[] = sprintf( 'Automatic updates: %s releases, starting %s; patches %s.',
-                $c['level'] === Version::PATCH ? 'patch' : 'patch and minor',
-                self::describeWindow( $this->window( Version::MINOR ) ),
-                $c['immediate'] ? 'install as soon as they are staged' : 'wait for the same window' );
+            $lines[] = sprintf( 'Automatic updates: %s releases, installed %s.',
+                $c['level'] === Version::PATCH ? 'patch' : 'patch and minor', $window === null ? 'as soon as they are downloaded' : self::describeWindow( $window ) );
         }
 
-        $staged = $this->staging->staged();
+        foreach ( $this->downloads->versions() as $v ) {
 
-        if ( $staged === null ) {
+            if ( $v === $installed ) {
 
-            $lines[] = 'Staged: nothing.';
+                $lines[] = sprintf( 'Downloaded: %s, the installed release, which a failed install puts back.', $v );
 
-        } else {
+                continue;
+            }
 
-            $v       = (string) $staged['version'];
-            $held    = $this->heldUntil( $staged );
-            $lines[] = sprintf( 'Staged: %s, %s.', $v, ! empty( $staged['by_hand'] )
-                ? 'by hand; it installs only by cmd=core-update-install' . ( $held !== null ? ', held until ' . gmdate( 'Y-m-d H:i', $held ) . ' UTC' : '' )
-                : ( ! empty( $staged['automatic'] ) ? 'installing ' . self::describeWindow( $staged['window'] ?? null ) : 'waiting (see below); it does not install itself' ) );
+            $judged  = $this->judge( $v );
+            $lines[] = sprintf( 'Downloaded: %s, %s UTC; %s.', $v, gmdate( 'Y-m-d H:i', (int) filemtime( $this->downloads->tarball( $v ) ) ),
+                $this->skips( $v ) ? 'skipped, its install failed' : ( $judged['problems'] ? 'cannot be installed yet' : 'can be installed' ) );
 
-            if ( ! $this->staging->isStaged( $v ) ) {
+            foreach ( $judged['problems'] as $p ) {
 
-                $lines[] = '    Its download is missing: the next release check downloads it again.';
+                $lines[] = '    ' . $p;
+            }
 
-            } else {
+            foreach ( $judged['problems'] ? [] : $judged['manual'] as $u ) {
 
-                $problems = $this->preflight( $v );
-                $lines[]  = sprintf( '    Downloaded %s UTC; %s.', gmdate( 'Y-m-d H:i', (int) filemtime( $this->staging->releaseDir() ) ),
-                    $problems ? 'cannot be installed yet' : 'can be installed' );
-
-                foreach ( $problems as $p ) {
-
-                    $lines[] = '    ' . $p;
-                }
-
-                foreach ( $problems ? [] : $this->manualInstall( $v ) as $u ) {
-
-                    $lines[] = sprintf( '    Needs installing by hand -- %s update %d: %s', $u['module'], $u['sequence'], $u['manual_install'] );
-                }
+                $lines[] = sprintf( '    Needs installing by hand -- %s update %d: %s', $u['module'], $u['sequence'], $u['manual_install'] );
             }
         }
 
-        if ( $this->staging->count() > 1 ) {
+        if ( $this->downloads->count() > 1 ) {
 
             $lines[] = 'There is more than one updates-* directory in the data directory: nothing installs until all but one are removed.';
         }
 
-        $install = $this->staging->install();
+        $failure = $this->downloads->failure();
 
-        if ( $install ) {
+        if ( $failure ) {
 
-            $lines[] = 'Unfinished install: ' . json_encode( $install, JSON_UNESCAPED_SLASHES );
+            $lines[] = sprintf( 'Installing %s over %s failed, %s UTC: %s', $failure['version'] ?? '?', $failure['from'] ?? '?',
+                gmdate( 'Y-m-d H:i', (int) ( $failure['at'] ?? 0 ) ), $failure['error'] ?? '' );
+        }
+
+        $marker = Downloads::updater()['readMarker']( $this->root );
+
+        if ( $marker !== null ) {
+
+            $lines[] = $marker === []
+                ? 'owa-update.php, the install marker, cannot be read.'
+                : sprintf( 'Installing %s over %s: %s since %s UTC.', $marker['to'] ?? '?', $marker['from'] ?? '?', [
+                    'copying' => 'copying the files',
+                    'copied'  => 'copied, waiting for the next run of cli.php to boot it',
+                    'booted'  => 'booted, finishing',
+                ][ (string) ( $marker['phase'] ?? '' ) ] ?? (string) ( $marker['phase'] ?? '' ), gmdate( 'Y-m-d H:i', (int) ( $marker['since'] ?? 0 ) ) );
         }
 
         if ( InstallLock::isHeld() ) {
 
-            $lines[] = 'An install is running now.';
+            $lines[] = 'The install lock is held: an install is running now.';
         }
 
         return $lines;
+    }
+
+    /**
+     * A downloaded release's checks, read from its tarball: what stops it
+     * installing here (its requirements, and what the copy needs), the
+     * updates in it that must be installed by hand, and, for one older than
+     * the database, the rollbacks to run first.
+     *
+     * @param  string $v
+     * @return array{problems: list<string>, manual: list<array{module: string, sequence: int, manual_install: string}>, rollback: list<string>}
+     */
+    public function judge( $v ) {
+
+        $release = (array) $this->downloads->releaseInfo( $v );
+        $req     = (array) ( $release['requirements'] ?? [] );
+        $env     = $this->context['env'] ?? Preflight::environment( $req );
+
+        try {
+
+            $files = $this->downloads->files( $v );
+
+        } catch ( \RuntimeException $e ) {
+
+            return [ 'problems' => [ $e->getMessage() ], 'manual' => [], 'rollback' => [] ];
+        }
+
+        $problems = array_merge( Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ) );
+
+        // What the next run of cli.php needs, before OWA loads, to boot it or put this one back.
+        foreach ( [ 'updater.php', 'cli.php', 'owa_env.php', 'Core/Env.php', 'modules/Base/Classes/AutoUpdate/Tar.php', 'modules/Base/Classes/AutoUpdate/Signature.php' ] as $needed ) {
+
+            if ( ! isset( $files[ $needed ] ) ) {
+
+                $problems[] = sprintf( CoreAPI::t( 'The release has no %s, so it cannot install itself. Install it by hand.' ), $needed );
+            }
+        }
+
+        return [ 'problems' => $problems, 'manual' => $this->manualInstall( $v ), 'rollback' => $this->rollbackFirst( $v ) ];
+    }
+
+    /**
+     * The installed release's tarball, which a failed install puts back:
+     * downloaded and checked once, from $list or the listing. Null when it is
+     * there, else why it is not.
+     *
+     * @param  list<array<string, mixed>>|null $list the listing, when the caller has it
+     * @return string|null
+     */
+    public function ensureInstalled( $list = null ) {
+
+        $installed = (string) $this->context['installed'];
+
+        if ( $this->downloads->has( $installed ) ) {
+
+            return null;
+        }
+
+        try {
+
+            $list    = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
+            $release = Releases::find( $list, $installed, $installed );
+
+            if ( $release === null ) {
+
+                throw new \RuntimeException( sprintf( 'the listing has no release %s with its tarball', $installed ) );
+            }
+
+            $this->downloads->download( $release );
+            $this->lines[] = sprintf( 'Downloaded the installed release, %s, and checked its SHA-256 and signature: a failed install puts it back.', $installed );
+
+            return null;
+
+        } catch ( \RuntimeException $e ) {
+
+            return sprintf( CoreAPI::t( 'The installed release, %1$s, could not be downloaded: %2$s. A failed install puts it back, so nothing installs until it is.' ), $installed, rtrim( $e->getMessage(), '.' ) );
+        }
+    }
+
+    /** @return bool whether an install is under way: the install marker, or the lock */
+    private function installing() {
+
+        return Downloads::updater()['readMarker']( $this->root ) !== null || InstallLock::isHeld();
     }
 
     /**
@@ -651,7 +535,7 @@ class ReleaseCheck {
 
         $out = [];
 
-        foreach ( (array) ( $this->staging->releaseInfo()['modules'] ?? [] ) as $module => $expects ) {
+        foreach ( (array) ( $this->downloads->releaseInfo( $v )['modules'] ?? [] ) as $module => $expects ) {
 
             $stored = ( $this->context['schema'] )( (string) $module );
 
@@ -679,7 +563,7 @@ class ReleaseCheck {
      */
     private function manualInstall( $v ) {
 
-        $release = (array) $this->staging->releaseInfo();
+        $release = (array) $this->downloads->releaseInfo( $v );
         $modules = (array) ( $release['modules'] ?? [] );
         $out     = [];
 
@@ -700,7 +584,7 @@ class ReleaseCheck {
     }
 
     /**
-     * A staging that failed: a notice in the bell the first time, and an
+     * A download that failed: a notice in the bell the first time, and an
      * e-mail once it has kept failing for FAILING_FOR.
      *
      * @param  string $v
@@ -708,19 +592,19 @@ class ReleaseCheck {
      * @param  string $url
      * @return void
      */
-    private function stagingFailed( $v, $why, $url ) {
+    private function downloadFailed( $v, $why, $url ) {
 
-        $first = ( $this->context['raised_at'] )( 'staging_failing:' . $v );
+        $first = ( $this->context['raised_at'] )( 'download_failing:' . $v );
 
         if ( $first === null ) {
 
-            $this->notify( 'staging_failing:' . $v, 'info',
+            $this->notify( 'download_failing:' . $v, 'info',
                 sprintf( CoreAPI::t( 'OWA %s could not be downloaded' ), $v ),
                 $why . "\n\n" . CoreAPI::t( 'Automatic updates try again every six hours.' ), $url, false );
 
         } elseif ( (int) $this->context['now'] - $first >= self::FAILING_FOR ) {
 
-            $this->notify( 'staging_failed:' . $v, 'warning',
+            $this->notify( 'download_failed:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s has not downloaded for a week' ), $v ),
                 $why . "\n\n" . CoreAPI::t( 'Automatic updates keep trying every six hours.' ), $url );
         }
@@ -749,60 +633,16 @@ class ReleaseCheck {
     }
 
     /**
-     * @param  string $v
-     * @return list<string>
-     */
-    private function preflight( $v ) {
-
-        $release  = (array) $this->staging->releaseInfo();
-        $req      = (array) ( $release['requirements'] ?? [] );
-        $env      = $this->context['env'] ?? Preflight::environment( $req );
-
-        return array_merge( Preflight::requirements( $req, $env ), Preflight::install( $this->staging->releaseDir(), $this->staging->releaseDir(), $this->root ),
-            $this->handoffProblems( $v ) );
-    }
-
-    /**
-     * What would stop Step 2: hand-off running the release: the installed
-     * release's updater.php (it runs before OWA loads) and the release's own.
+     * The window an update may start in, from the settings; null when it may
+     * start at any time.
      *
-     * @param  string $v
-     * @return list<string>
-     */
-    private function handoffProblems( $v ) {
-
-        $problems = [];
-
-        if ( ! is_file( $this->staging->releaseDir() . '/updater.php' ) ) {
-
-            $problems[] = CoreAPI::t( 'The release has no updater.php, so it cannot install itself. Install it by hand.' );
-        }
-
-        if ( ! is_file( $this->root . '/updater.php' ) ) {
-
-            $problems[] = CoreAPI::t( 'This installation has no updater.php, so it cannot install a release itself. Install it by hand.' );
-
-        } elseif ( ( $why = Staging::updater()['configRefused']( $this->root ) ) !== null ) {
-
-            $problems[] = sprintf( CoreAPI::t( 'owa-config.php uses %s. It is read before OWA loads, so this installation cannot install a release itself. Use plain values there, or install by hand.' ), $why );
-        }
-
-        return $problems;
-    }
-
-    /**
-     * The window a release may start in, from the settings; null when it may
-     * start at once (a patch while patches install immediately, or no window).
-     *
-     * @param  string $step
      * @return array{days: list<int>, start: string, end: string, timezone: string}|null
      */
-    public function window( $step ) {
+    public function window() {
 
         $window = (string) ( $this->context['window'] ?: '' );
 
-        if ( ( $step === Version::PATCH && $this->context['immediate'] )
-                || ! preg_match( '/^([01][0-9]|2[0-3]):([0-5][0-9])-([01][0-9]|2[0-3]):([0-5][0-9])$/', $window ) ) {
+        if ( ! preg_match( '/^([01][0-9]|2[0-3]):([0-5][0-9])-([01][0-9]|2[0-3]):([0-5][0-9])$/', $window ) ) {
 
             return null;
         }
@@ -825,6 +665,37 @@ class ReleaseCheck {
     }
 
     /**
+     * Whether $now is inside the window. One that crosses midnight starts on
+     * its day and ends on the next.
+     *
+     * @param  array{days: list<int>, start: string, end: string, timezone: string} $window
+     * @param  int                                                                    $now
+     * @return bool
+     */
+    public static function inWindow( array $window, $now ) {
+
+        try {
+
+            $tz = new \DateTimeZone( (string) $window['timezone'] );
+
+        } catch ( \Exception $e ) {
+
+            $tz = new \DateTimeZone( 'UTC' );
+        }
+
+        $t     = ( new \DateTimeImmutable( '@' . (int) $now ) )->setTimezone( $tz );
+        $hm    = $t->format( 'H:i' );
+        $start = (string) $window['start'];
+        $end   = (string) $window['end'];
+        $day   = (int) $t->format( 'N' );
+
+        $inside = $start <= $end ? ( $hm >= $start && $hm < $end ) : ( $hm >= $start || $hm < $end );
+        $on_day = $start <= $end || $hm >= $start ? $day : ( $day === 1 ? 7 : $day - 1 );
+
+        return $inside && in_array( $on_day, array_map( 'intval', (array) $window['days'] ), true );
+    }
+
+    /**
      * @param  array<string, mixed>|null $window
      * @return string
      */
@@ -840,78 +711,6 @@ class ReleaseCheck {
             : implode( ', ', array_map( fn ( $d ) => ucfirst( $names[ (int) $d ] ), (array) $window['days'] ) );
 
         return sprintf( CoreAPI::t( 'between %1$s and %2$s (%3$s), %4$s' ), $window['start'], $window['end'], $window['timezone'], $days );
-    }
-
-    /**
-     * When GitHub cannot be reached, so nothing can be chosen: keep
-     * staged.json while the release it names is staged.
-     *
-     * @param  string $outcome
-     * @param  string $why
-     * @param  bool   $dry_run
-     * @return Outcome
-     */
-    private function repair( $outcome, $why, $dry_run ) {
-
-        $staged = $this->staging->staged();
-        $v      = $staged['version'] ?? null;
-
-        if ( ! $dry_run && $v !== null && ! $this->staging->isStaged( (string) $v ) && ! $this->staging->install() ) {
-
-            if ( ! InstallLock::tryExclusive( fn () => $this->staging->clear() ) ) {
-
-                return $this->busy();
-            }
-
-            $this->lines[] = sprintf( 'Removed staged.json: it named %s, which staged/ does not hold.', $v );
-            $v = null;
-        }
-
-        return $this->outcome( $outcome, $v, $outcome === self::UNREACHED ? [ $why ] : [], $why );
-    }
-
-    /**
-     * An outcome in which the settings choose nothing to install: the slot is
-     * emptied, staged.json and staged/ in one step holding the lock, so it
-     * never installs against the settings and nothing is kept that nothing
-     * will install. Not while an unfinished install uses it, nor while a
-     * release staged by hand is held.
-     *
-     * @param  string      $outcome
-     * @param  string|null $v
-     * @param  string      $why
-     * @param  bool        $dry_run
-     * @return Outcome
-     */
-    private function end( $outcome, $v, $why, $dry_run ) {
-
-        $staged = $this->staging->staged();
-        $named  = (string) ( $staged['version'] ?? ( $this->staging->releaseInfo()['version'] ?? '' ) );
-
-        if ( $dry_run || $named === '' || $this->staging->install() ) {
-
-            return $this->outcome( $outcome, $v, [], $why );
-        }
-
-        if ( ( $held = $this->heldUntil( $staged ) ) !== null ) {
-
-            return $this->held( (array) $staged, $held );
-        }
-
-        if ( ! InstallLock::tryExclusive( fn () => $this->staging->clear() ) ) {
-
-            return $this->busy();
-        }
-
-        $this->lines[] = sprintf( 'Deleted the staging of %s: nothing will install it now.', $named );
-
-        return $this->outcome( $outcome, $v, [], $why );
-    }
-
-    /** @return Outcome */
-    private function busy() {
-
-        return $this->outcome( self::BUSY, null, [], 'An install is running; this run changed nothing.' );
     }
 
     /**
