@@ -12,10 +12,10 @@ use OWA\Core\CoreAPI;
  */
 class UpdatesState {
 
-    /** The screen's actions, and the command each queues. */
+    /** The screen's actions, and the command and parameters each queues. */
     const ACTIONS = [
-        'check'   => 'core-update',
-        'install' => 'core-update-install',
+        'check'   => [ 'core-update', [] ],
+        'install' => [ 'core-update', [ 'force' => 1 ] ],
     ];
 
     /**

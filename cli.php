@@ -134,7 +134,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
 }
 
-// An install cmd=core-update-install proved: the copy, last, once the
+// An install cmd=core-update proved: the copy, last, once the
 // command and every job have finished. It exits (Classes\AutoUpdate\Install).
 \OWA\Module\Base\Classes\AutoUpdate\Install::run();
 

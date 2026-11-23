@@ -706,8 +706,8 @@ $scenarios = [
         check( str_contains( $out, 'cannot be installed here yet' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no \"cannot be installed automatically yet\" notice:\n$out" );
 
         // Nor by hand: what it needs is not met.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-update-install installed a release whose requirements are unmet (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-update --force installed a release whose requirements are unmet (exit $code):\n$out" );
         next_run( $site, $ca );
         check( envVersion( $site ) === FROM, 'it installed anyway' );
     },
@@ -784,15 +784,15 @@ $scenarios = [
         $tar = updatesDir( $site ) . '/owa_' . TO . '_packaged.tar';
         copy( $other['file'], $tar );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install version=' . TO );
-        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-update-install does not refuse the tampered tarball (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
+        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-update --force does not refuse the tampered tarball (exit $code):\n$out" );
         check( ! file_exists( $tar ), 'the tarball that does not check was kept' );
         next_run( $site, $ca );
         check( envVersion( $site ) === FROM && ! file_exists( "$site/modules/Base/e2e-tampered.txt" ), 'a tarball its signature does not match was installed' );
 
         // Downloaded again, and it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+        check( $code === 0, "core-update --force exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -809,8 +809,8 @@ $scenarios = [
         check( downloaded( $site, TO ) && envVersion( $site ) === FROM && str_contains( $out, TO . ' installs between' ), "it did not wait for its window:\n$out" );
 
         // Installing by hand ignores the window.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-update --force exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -831,8 +831,8 @@ $scenarios = [
             check( downloaded( $site, TO ) && str_contains( $out, 'could not be listed' ), "GitHub unreachable deleted the downloaded release, or was not said:\n$out" );
 
             // Installing what was downloaded needs no network.
-            [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-            check( $code === 0, "core-update-install exited $code:\n$out" );
+            [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+            check( $code === 0, "core-update --force exited $code:\n$out" );
             next_run( $site, $ca );
             installed( $site, $ca, TO );
 
@@ -857,7 +857,7 @@ $scenarios = [
         [ , $out ] = release_check( $site, $ca );
         check( hash_file( 'sha256', updatesDir( $site ) . '/owa_' . TO . '_packaged.tar' ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
 
-        cli( $site, $ca, 'cmd=core-update-install' );
+        cli( $site, $ca, 'cmd=core-update --force' );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
         check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
@@ -911,8 +911,8 @@ $scenarios = [
         check( hasNotice( notices( $db ), 'manual:' . TO ), 'no "needs to be installed by hand" notice' );
 
         // By hand, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0 && envVersion( $site ) === TO, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+        check( $code === 0 && envVersion( $site ) === TO, "core-update --force exited $code:\n$out" );
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the next command did not finish the install (exit $code):\n$out" );
         installed( $site, $ca, TO );
@@ -1013,8 +1013,8 @@ $scenarios = [
 
         // Fixed: install it by hand, as the notice says.
         rmdir( $blocker );
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install version=' . TO );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
+        check( $code === 0, "core-update --force exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -1074,8 +1074,8 @@ $scenarios = [
         check( envVersion( $site ) === FROM && str_contains( $out, 'skipped' ), "the killed install was tried again on its own:\n$out" );
 
         // By hand, it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
+        check( $code === 0, "core-update --force exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },

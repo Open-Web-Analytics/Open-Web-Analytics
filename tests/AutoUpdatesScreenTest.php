@@ -87,7 +87,11 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
             $this->assertSame($was + 1, $checks());
 
             $this->assertSame(3314, $data('install')['status_code']);
-            $this->assertTrue(JobQueue::isQueued('core-update-install', 'updates-screen:install'));
+            $this->assertTrue(JobQueue::isQueued('core-update', 'updates-screen:install'));
+            $params = array_map(fn ($j) => json_decode((string) $j['params'], true),
+                array_filter(JobQueue::listJobs(null, 500), fn ($j) => !in_array($j['id'], $before) && $j['command'] === 'core-update'));
+            $this->assertContains(['force' => 1], $params, 'Install now is core-update --force');
+            $this->assertContains([], $params, 'Check now is core-update as the scheduler runs it');
 
             $this->assertSame(3315, $data('delete-everything')['error_code']);
         } finally {

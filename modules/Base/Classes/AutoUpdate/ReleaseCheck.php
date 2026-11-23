@@ -231,7 +231,7 @@ class ReleaseCheck {
 
             if ( $this->skips( $v ) ) {
 
-                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-update-install version=%s', $v, $v ) );
+                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-update --version=%s', $v, $v ) );
             }
 
             // Downloaded when it has not been, and again when the asset GitHub
@@ -297,7 +297,7 @@ class ReleaseCheck {
 
             $this->notify( 'manual:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s needs to be installed by hand' ), $v ),
-                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update-install' ), $url );
+                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --force' ), $url );
 
             return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it will not install itself.', $v ) );
         }

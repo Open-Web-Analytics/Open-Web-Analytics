@@ -5,7 +5,7 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-update-install by hand
+ * (ReleaseCheck) when a release is due, or cmd=core-update --version / --force by hand
  * (byHand()).
  *
  * prepare() takes the install lock and opens both tarballs, proving each
@@ -96,8 +96,8 @@ class Install {
     }
 
     /**
-     * cmd=core-update-install [version=] [--force]: the release the release
-     * check would choose, or the one named, downloaded if it is not and
+     * cmd=core-update --force, or --version=<x.y.z> [--force]: the newest
+     * release in this major, or the one named, downloaded if it is not and
      * installed now, whatever the automatic update settings say. A release
      * not newer than the installed one only with $force, and never one older
      * than the database schema. Without the listing, a release already
