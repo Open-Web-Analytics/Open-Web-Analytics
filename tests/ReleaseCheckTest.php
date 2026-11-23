@@ -392,9 +392,11 @@ final class ReleaseCheckTest extends TestCase
 
         // The installed release's tarball, when the listing it needs is not the caller's.
         $asked = [];
-        $check = new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'installed' => '2.0.1', 'url' => 'https://example.test/releases']);
+        $check = new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'installed' => '2.0.1', 'url' => 'https://example.test/releases',
+            'download' => 'https://example.test/download/']);
         $this->assertStringContainsString('The installed release, 2.0.1, could not be downloaded', (string) $check->ensureInstalled());
-        $this->assertSame(['https://example.test/releases?from=2.0.1'], $asked);
+        $this->assertSame(['https://example.test/releases?from=2.0.1', 'https://example.test/download/2.0.1/owa_2.0.1_packaged.tar'], $asked,
+            'the listing, then the release by its version');
     }
 
     /** A minor downloaded for tonight, then automatic updates set to patch only: it is deleted, and nothing installs. */
@@ -556,6 +558,37 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
+    /** --version fetches that release by its version, not through the listing, the signature its only proof; a download that does not prove is refused. */
+    public function testInstallByVersionFetchesByTag(): void
+    {
+        $tar = $this->build('2.0.3', null);
+        $this->serve('2.0.3', $tar);
+
+        $result = $this->hand('2.0.3', [], []);
+        $this->assertSame(Install::OK, $result['outcome'], $result['message']);
+        $this->assertSame('2.0.3', Install::$pending['to'], 'not in the listing, fetched by its version');
+        $this->dropPending();
+
+        // The listing's 2.0.0 tarball is fine; this one is signed for another release.
+        $this->served['https://example.test/download/2.0.3/owa_2.0.3_packaged.tar.sig'] = $this->tmp . '/bad.sig';
+        file_put_contents($this->tmp . '/bad.sig', Signature::sign('2.0.4', hash_file('sha256', $tar), $this->signingKey));
+        $result = $this->hand('2.0.3', [], []);
+        $this->assertSame(Install::FAILED, $result['outcome']);
+        $this->assertStringContainsString('is not signed by a key this installation trusts', $result['message']);
+        $this->assertNull(Install::$pending);
+    }
+
+    /** The installed release not in the listing (past its first 100): fetched by its version. */
+    public function testTheInstalledReleaseIsFetchedByTagWhenTheListingLacksIt(): void
+    {
+        $this->serve('2.0.0', $this->build('2.0.0', null));
+
+        $result = $this->check(['2.0.1'], ['window' => ''], null, null, false, false, null, false);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertTrue($this->downloads()->has('2.0.0'));
+        $this->dropPending();
+    }
+
     /** By hand without the listing: what was downloaded before installs all the same. */
     public function testInstallByHandWithoutTheListing(): void
     {
@@ -594,7 +627,7 @@ final class ReleaseCheckTest extends TestCase
     public function testInstallByHandRefuses(): void
     {
         $this->assertStringContainsString('another major version', $this->hand('3.0.0', ['3.0.0'])['message']);
-        $this->assertStringContainsString('no published release 2.0.9', $this->hand('2.0.9', ['2.0.1'])['message']);
+        $this->assertStringContainsString('Downloading 2.0.9 failed: Fetching https://example.test/download/2.0.9/owa_2.0.9_packaged.tar failed', $this->hand('2.0.9', ['2.0.1'])['message'], 'not published');
         $this->assertStringContainsString('cannot be installed here', $this->hand('2.0.1', ['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env()])['message']);
 
         file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
@@ -632,7 +665,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check(['2.0.1'], ['installed' => '2.0.0', 'window' => ''], null, null, false, false, null, false);
 
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
-        $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded: the listing has no release 2.0.0 with its tarball. A failed install puts it back',
+        $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded: Fetching https://example.test/download/2.0.0/owa_2.0.0_packaged.tar failed: 404. A failed install puts it back',
             implode("\n", $result['problems']));
         $this->assertNull(Install::$pending);
 
@@ -832,6 +865,7 @@ final class ReleaseCheckTest extends TestCase
             'window'    => '02:00-06:00',
             'timezone'  => 'Europe/London',
             'url'       => 'https://example.test/releases',
+            'download'  => 'https://example.test/download/',
             'releases'  => $list,
             'env'       => $this->env(),
             'feed'      => function (array $list) { $this->feeds[] = count($list); return 0; },
@@ -875,6 +909,7 @@ final class ReleaseCheckTest extends TestCase
             'installed' => '2.0.0',
             'role'      => \OWA\Core\ServerRole::FULL,
             'releases'  => $list,
+            'download'  => 'https://example.test/download/',
             'env'       => $this->env(),
             'notify'    => function (array $n) { $this->notices[$n['source_key']] = $n; },
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
@@ -917,11 +952,14 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /** The tarball at https://example.test/<v>.tar and its signature beside it, as the packager publishes them. */
+    /** Also where a release is fetched by its version: https://example.test/download/<v>/<file>. */
     private function serve(string $v, string $tar, ?string $signature = null): void
     {
         $this->served["https://example.test/$v.tar"] = $tar;
         file_put_contents("$tar.sig", ($signature ?? Signature::sign($v, hash_file('sha256', $tar), $this->signingKey)) . "\n");
         $this->served["https://example.test/$v.tar.sig"] = "$tar.sig";
+        $this->served["https://example.test/download/$v/owa_{$v}_packaged.tar"] = $tar;
+        $this->served["https://example.test/download/$v/owa_{$v}_packaged.tar.sig"] = "$tar.sig";
     }
 
     private function listed(string $v, ?string $url = null, ?string $sha = null): array

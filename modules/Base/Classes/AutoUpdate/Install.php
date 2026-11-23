@@ -96,13 +96,15 @@ class Install {
     }
 
     /**
-     * cmd=core-update --force, or --version=<x.y.z> [--force]: the newest
-     * release in this major, or the one named, downloaded if it is not and
-     * installed now, whatever the automatic update settings say. A release
-     * not newer than the installed one only with $force, and never one older
-     * than the database schema. Without the listing, a release already
-     * downloaded installs all the same. A failure recorded for it is cleared:
-     * whoever installs by hand has dealt with it.
+     * cmd=core-update --force, or --version=<x.y.z> [--force], installed now
+     * whatever the automatic update settings say. --force alone: the newest
+     * release in this major from the listing, downloaded if it is not (and,
+     * without the listing, the newest already downloaded). --version: that
+     * release's tarball and signature fetched from the download URL by its
+     * version, every time, with no listing (Releases::byTag()). A release not
+     * newer than the installed one only with $force, and never one older than
+     * the database schema. A failure recorded for it is cleared: whoever
+     * installs by hand has dealt with it.
      *
      * @param  string|null          $version
      * @param  bool                 $force
@@ -140,23 +142,33 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $version ) );
         }
 
-        try {
+        $list = null;
 
-            $list = $c['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $c['url'], $installed ) );
+        if ( $version !== null ) {
 
-        } catch ( \RuntimeException $e ) {
+            $release = Releases::byTag( $version, $installed, (string) $c['download'] );
+            $v       = (string) $version;
 
-            $list = null;
-        }
+        } else {
 
-        $release = $list === null ? null : ( $version !== null ? Releases::find( $list, $version, $installed ) : Releases::choose( $list, $installed, Version::MINOR ) );
-        $v       = (string) ( $release['version'] ?? $version ?? ( $downloads->versions()[0] ?? '' ) );
+            try {
 
-        if ( $v === '' || ( $release === null && ! $downloads->has( $v ) ) ) {
+                $list = $c['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $c['url'], $installed ) );
 
-            return self::answer( self::REFUSED, $list === null
-                ? 'The releases could not be listed, and nothing to install has been downloaded.'
-                : ( $version === null ? sprintf( 'No release is newer than %s.', $installed ) : sprintf( 'There is no published release %s with its tarball.', $version ) ) );
+            } catch ( \RuntimeException $e ) {
+
+                $list = null;
+            }
+
+            $release = $list === null ? null : Releases::choose( $list, $installed, Version::MINOR );
+            $v       = (string) ( $release['version'] ?? ( $downloads->versions()[0] ?? '' ) );
+
+            if ( $v === '' || Version::compare( $v, $installed ) <= 0 ) {
+
+                return self::answer( self::REFUSED, $list === null
+                    ? 'The releases could not be listed, and no newer release has been downloaded.'
+                    : sprintf( 'No release is newer than %s.', $installed ) );
+            }
         }
 
         if ( Version::compare( $v, $installed ) <= 0 && ! $force ) {
@@ -164,7 +176,7 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
-        if ( $release !== null && ! $downloads->has( $v ) ) {
+        if ( $release !== null && ( $version !== null || ! $downloads->has( $v ) ) ) {
 
             try {
 

@@ -26,6 +26,33 @@ class Releases {
     const TIMEOUT = 20;
 
     /**
+     * A release by its version alone, without the listing: its tarball and
+     * signature at <base>/<version>/<file>, as GitHub serves a release's
+     * assets. No digest: the signature, which names the version and the
+     * tarball's SHA-256, is what proves the download (Downloads::download()).
+     *
+     * @param  string $version
+     * @param  string $installed
+     * @param  string $base auto_update_download_url
+     * @return Release
+     */
+    public static function byTag( $version, $installed, $base ) {
+
+        $at = rtrim( (string) $base, '/' ) . '/' . rawurlencode( (string) $version ) . '/' . sprintf( self::ASSET, $version );
+
+        return [
+            'version'   => (string) $version,
+            'step'      => (string) ( Version::step( (string) $installed, (string) $version ) ?? Version::PATCH ),
+            'url'       => sprintf( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/%s', rawurlencode( (string) $version ) ),
+            'asset_url' => $at,
+            'size'      => 0,
+            'sha256'    => null,
+            'sums_url'  => null,
+            'sig_url'   => $at . '.sig',
+        ];
+    }
+
+    /**
      * Tests only: answers get() in place of the network, given its arguments.
      *
      * @var (callable(string, int, string|null): string)|null

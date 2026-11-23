@@ -94,6 +94,7 @@ class ReleaseCheck {
             'window'    => CoreAPI::getSetting( 'base', 'auto_update_window' ),
             'timezone'  => (string) ( CoreAPI::getSetting( 'base', 'timezone' ) ?: 'UTC' ),
             'url'       => (string) CoreAPI::getSetting( 'base', 'auto_update_releases_url' ),
+            'download'  => (string) CoreAPI::getSetting( 'base', 'auto_update_download_url' ),
             // The scheduler's run: it lists only in its listing hours, and says nothing after the copy.
             'scheduled' => false,
             // What fixes this installation's listing hour and second: its auth
@@ -505,8 +506,9 @@ class ReleaseCheck {
 
     /**
      * The installed release's tarball, which a failed install puts back:
-     * downloaded and checked once, from $list or the listing. Null when it is
-     * there, else why it is not.
+     * downloaded and checked once, from $list or the listing, or by its
+     * version when the listing does not have it (Releases::byTag()). Null
+     * when it is there, else why it is not.
      *
      * @param  list<array<string, mixed>>|null $list the listing, when the caller has it
      * @return string|null
@@ -522,15 +524,17 @@ class ReleaseCheck {
 
         try {
 
-            $list    = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
-            $release = Releases::find( $list, $installed, $installed );
+            try {
 
-            if ( $release === null ) {
+                $list = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
 
-                throw new \RuntimeException( sprintf( 'the listing has no release %s with its tarball', $installed ) );
+            } catch ( \RuntimeException $e ) {
+
+                $list = [];
             }
 
-            $this->downloads->download( $release );
+            $this->downloads->download( Releases::find( $list, $installed, $installed )
+                ?? Releases::byTag( $installed, $installed, (string) $this->context['download'] ) );
             $this->lines[] = sprintf( 'Downloaded the installed release, %s, and checked its SHA-256 and signature: a failed install puts it back.', $installed );
 
             return null;

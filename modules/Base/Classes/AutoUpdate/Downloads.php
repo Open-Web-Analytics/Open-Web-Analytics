@@ -335,8 +335,8 @@ class Downloads {
 
     /**
      * Download a release's tarball and its signature, check its SHA-256
-     * against the asset's digest (else the release's SHA256SUMS), its
-     * signature, and that its release.json names it, and only then give it
+     * against the asset's digest (else the release's SHA256SUMS, when either
+     * is known), its signature, and that its release.json names it, and only then give it
      * its name. On any failure nothing is left and the error is thrown: the
      * next run starts again.
      *
@@ -361,12 +361,6 @@ class Downloads {
                 $expected = Releases::sumFor( Releases::get( $release['sums_url'], Releases::TIMEOUT ), basename( $tar ) );
             }
 
-            if ( $expected === null ) {
-
-                throw new \RuntimeException( sprintf( '%s has no SHA-256 to check it against: no digest and no %s entry.',
-                    basename( $tar ), Releases::SUMS_ASSET ) );
-            }
-
             if ( $release['sig_url'] === null ) {
 
                 throw new \RuntimeException( sprintf( '%s is not signed: the release has no %s.', basename( $tar ), sprintf( Signature::ASSET, $release['version'] ) ) );
@@ -377,7 +371,8 @@ class Downloads {
 
             $actual = (string) hash_file( 'sha256', $part );
 
-            if ( ! hash_equals( $expected, $actual ) ) {
+            // Without a digest (a release fetched by its version) the signature alone proves it, below.
+            if ( $expected !== null && ! hash_equals( $expected, $actual ) ) {
 
                 throw new \RuntimeException( sprintf( '%s does not match its SHA-256: expected %s, downloaded %s.',
                     basename( $tar ), $expected, $actual ) );

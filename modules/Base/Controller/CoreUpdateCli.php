@@ -11,7 +11,7 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
  *   php cli.php cmd=core-update                            as the scheduler runs it: list, download, install if the settings allow
  *   php cli.php cmd=core-update --dry-run                  only say which release that is
  *   php cli.php cmd=core-update --force                    the newest release in this major, now, whatever the settings say
- *   php cli.php cmd=core-update --version=2.0.3            that release, now, whatever the settings say
+ *   php cli.php cmd=core-update --version=2.0.3            that release, fetched from GitHub by its version, now, whatever the settings say
  *   php cli.php cmd=core-update --version=2.0.1 --force    that release, even if it is not newer than the installed one
  *
  * The scheduler runs it every hour, on any server that runs the scheduler:
@@ -28,7 +28,7 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Automatic updates: stores new OWA releases as notifications, then finds the release this installation updates to, downloads and verifies it, checks that it can be installed here, and installs it if the settings allow. With --version or --force, installs a release now, whatever the settings say. Runs on the scheduler every hour as core-update, listing the releases four times a day. A copy that fails puts the installed release back.',
             'arguments'   => [
-                '--version=<x.y.z>' => 'Install this release now, in this major version, whatever the automatic update settings say. Clears a failed install of it, which automatic updates skip.',
+                '--version=<x.y.z>' => 'Install this release now, in this major version, whatever the automatic update settings say. Its tarball and signature are fetched from GitHub by its version (auto_update_download_url), not looked up in the listing, so any release can be named. Clears a failed install of it, which automatic updates skip.',
                 '--force'           => 'Install now, whatever the settings say: the newest release, or the one --version names even when it is not newer than the installed one (going back, or the same release again). Never one older than the database schema: the rollbacks to run first are listed instead.',
                 '--dry-run'         => 'Only say which release automatic updates would install: nothing is downloaded, written or installed.',
                 'scheduled=1'       => 'Set by the scheduler: the releases are listed only in four of the day\'s hours, and nothing is said.',

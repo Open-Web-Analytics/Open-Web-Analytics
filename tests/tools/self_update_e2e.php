@@ -32,8 +32,8 @@
  *   tampered         the downloaded tarball is replaced after it was checked: it never installs
  *
  * and the failure cases of the wiki's Automatic Updates page, each with the
- * recovery it promises where there is one: unreachable, asset-replaced,
- * unwritable-directory, config-names-a-class, manual-install,
+ * recovery it promises where there is one: window, by-version, unreachable,
+ * asset-replaced, unwritable-directory, config-names-a-class, manual-install,
  * two-updates-directories, major-release, passwordless-database, copy-fails,
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry), newer-release-after-a-failure and
@@ -398,22 +398,23 @@ function serve( $tls, $root, $port ) {
 function publish( $www, $base, array $pkg, $version, $digest = null, $signature = null ) {
 
     must( 'rm -rf ' . escapeshellarg( $www ) );
-    mkdir( "$www/download", 0755, true );
-    copy( $pkg['file'], "$www/download/owa_{$version}_packaged.tar" );
+    @mkdir( "$www/download/$version", 0755, true );
+    copy( $pkg['file'], "$www/download/$version/owa_{$version}_packaged.tar" );
 
     $releases = [];
     $from     = $GLOBALS['e2e_from'] ?? null;
 
     if ( $from !== null && $version !== FROM ) {
 
-        copy( $from['file'], "$www/download/owa_" . FROM . '_packaged.tar' );
-        file_put_contents( "$www/download/owa_" . FROM . '_packaged.tar.sig', $from['sig'] );
+        @mkdir( "$www/download/" . FROM, 0755, true );
+        copy( $from['file'], "$www/download/" . FROM . '/owa_' . FROM . '_packaged.tar' );
+        file_put_contents( "$www/download/" . FROM . '/owa_' . FROM . '_packaged.tar.sig', $from['sig'] );
         $releases[] = listed( $base, $from, FROM, $from['sha256'], $from['sig'], '2026-01-01T00:00:00Z' );
     }
 
     if ( $signature !== false ) {
 
-        file_put_contents( "$www/download/owa_{$version}_packaged.tar.sig", $signature ?? $pkg['sig'] );
+        file_put_contents( "$www/download/$version/owa_{$version}_packaged.tar.sig", $signature ?? $pkg['sig'] );
     }
 
     array_unshift( $releases, listed( $base, $pkg, $version, $digest ?? $pkg['sha256'], $signature === false ? false : ( $signature ?? $pkg['sig'] ), gmdate( 'Y-m-d\TH:i:s\Z' ) ) );
@@ -425,7 +426,7 @@ function listed( $base, array $pkg, $version, $digest, $sig, $published ) {
 
     $assets = [ [
         'name'                 => "owa_{$version}_packaged.tar",
-        'browser_download_url' => "$base/download/owa_{$version}_packaged.tar",
+        'browser_download_url' => "$base/download/$version/owa_{$version}_packaged.tar",
         'size'                 => $pkg['size'],
         'digest'               => 'sha256:' . $digest,
     ] ];
@@ -434,7 +435,7 @@ function listed( $base, array $pkg, $version, $digest, $sig, $published ) {
 
         $assets[] = [
             'name'                 => "owa_{$version}_packaged.tar.sig",
-            'browser_download_url' => "$base/download/owa_{$version}_packaged.tar.sig",
+            'browser_download_url' => "$base/download/$version/owa_{$version}_packaged.tar.sig",
             'size'                 => strlen( (string) $sig ),
         ];
     }
@@ -490,6 +491,7 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
     $smtp = freePort();
     $own  = "\n// tests/tools/self_update_e2e.php: the listing it serves, and no e-mail leaves the machine.\n"
         . "define('OWA_AUTO_UPDATE_RELEASES_URL', " . var_export( $listing, true ) . ");\n"
+        . "define('OWA_AUTO_UPDATE_DOWNLOAD_URL', " . var_export( dirname( $listing ) . '/download/', true ) . ");\n"
         . "define('OWA_ADMIN_NOTICE_EMAIL', 'admin@example.test');\n"
         . "define('OWA_MAILER_USE_SMTP', true);\n"
         . "define('OWA_MAILER_HOST', '127.0.0.1');\n"
@@ -784,7 +786,8 @@ $scenarios = [
         $tar = updatesDir( $site ) . '/owa_' . TO . '_packaged.tar';
         copy( $other['file'], $tar );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
+        // --force installs what is downloaded; --version would fetch it afresh.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --force' );
         check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-update --force does not refuse the tampered tarball (exit $code):\n$out" );
         check( ! file_exists( $tar ), 'the tarball that does not check was kept' );
         next_run( $site, $ca );
@@ -813,6 +816,24 @@ $scenarios = [
         check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-update --force exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
+    },
+
+    'by-version' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // 2.0.92 is not in the listing, as a release past its newest 100 would not be:
+        // --version fetches it from the download URL by its version.
+        $to  = package( $build, $work, 'by-version-listed', TO );
+        $old = package( $build, $work, 'by-version', '2.0.92' );
+        publish( $www, $base, $to, TO );
+        @mkdir( "$www/download/2.0.92", 0755, true );
+        copy( $old['file'], "$www/download/2.0.92/owa_2.0.92_packaged.tar" );
+        file_put_contents( "$www/download/2.0.92/owa_2.0.92_packaged.tar.sig", $old['sig'] );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=2.0.92' );
+        check( $code === 0 && envVersion( $site ) === '2.0.92', "core-update --version did not install a release the listing does not have (exit $code):\n$out" );
+        next_run( $site, $ca );
+        installed( $site, $ca, '2.0.92' );
     },
 
     'unreachable' => function () use ( $build, $work, $db, $from, $www, $base, $ca, $tls, $port, $server ) {
