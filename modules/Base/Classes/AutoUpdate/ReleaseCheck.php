@@ -55,6 +55,7 @@ class ReleaseCheck {
     const SKIPPED    = 'failed_before';
     const WAITING    = 'waiting_for_window';
     const INSTALLING = 'installing';
+    const NO_TEMP    = 'temp_dir_unwritable';
 
     /** The notices' source (NotificationManager). */
     const SOURCE = 'auto_update';
@@ -107,6 +108,8 @@ class ReleaseCheck {
             'sleep'     => static fn ( $seconds ) => sleep( (int) $seconds ),
             'releases'  => null,
             'env'       => null,
+            // Preflight::temp()'s problems, for a test; null tries PHP's own.
+            'temp'      => null,
             // The services: the bell feed, a notice, when one was first
             // raised, and a module's stored schema version.
             'feed'      => static function ( array $list ) {
@@ -200,6 +203,15 @@ class ReleaseCheck {
         if ( ! $dry_run && $this->installing() ) {
 
             return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
+        }
+
+        // Every run, not only when a release is due: the job fails, so System
+        // Health says so before a security release needs it.
+        $temp = $this->context['temp'] ?? Preflight::temp( $this->downloads->tarballBytes( $installed, $installed ) );
+
+        if ( $temp ) {
+
+            return $this->outcome( self::NO_TEMP, null, $temp, 'No release can be installed:' );
         }
 
         $level   = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;

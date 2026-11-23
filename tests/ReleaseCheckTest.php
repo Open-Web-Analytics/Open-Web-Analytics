@@ -835,6 +835,24 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(2 * filesize($d->tarball('2.1.0')), $d->tarballBytes('2.1.0', '9.9.9'), 'one not downloaded counts as the first');
     }
 
+    /** Every run tries PHP's temporary directory: one it cannot write fails the job, so System Health says so before a release needs it. */
+    public function testAnUnwritableTemporaryDirectoryFailsEveryRun(): void
+    {
+        $result = $this->check([], ['temp' => ['PHP\'s temporary directory (/x) cannot be written.']]);
+        $this->assertSame(ReleaseCheck::NO_TEMP, $result['outcome']);
+        $this->assertStringContainsString('/x) cannot be written', implode("\n", $result['lines']));
+        $this->assertSame(ReleaseCheck::CURRENT, $this->check([])['outcome'], 'this one can');
+
+        // The probe, in a PHP whose temporary directory cannot be written.
+        mkdir($this->tmp . '/ro', 0555);
+        $probe = 'require ' . var_export(dirname(__DIR__) . '/modules/Base/Classes/AutoUpdate/Preflight.php', true)
+            . '; echo json_encode(\\OWA\\Module\\Base\\Classes\\AutoUpdate\\Preflight::tempWrites());';
+        foreach ([$this->tmp . '/ro' => 'false', $this->tmp => 'true'] as $dir => $expected) {
+            $this->assertSame($expected, shell_exec(escapeshellarg(PHP_BINARY) . ' -n -d sys_temp_dir=' . escapeshellarg($dir) . ' -r ' . escapeshellarg($probe)), $dir);
+        }
+        chmod($this->tmp . '/ro', 0755);
+    }
+
     public function testInstallConditions(): void
     {
         $root  = $this->tmp . '/owa';
