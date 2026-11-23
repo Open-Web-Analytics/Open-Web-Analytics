@@ -29,16 +29,26 @@ final class ReleaseListingNetworkTest extends TestCase
         $token = (string) getenv('GITHUB_TOKEN');
 
         if ($token !== '') {
+            // Redirects followed here, so the token goes to api.github.com
+            // behind the update host and nowhere else.
             Releases::$fetcher = static function ($url, $timeout, $sink) use ($token) {
-                $client = new \GuzzleHttp\Client(['timeout' => $timeout]);
-                $host   = (string) parse_url($url, PHP_URL_HOST);
-                $r      = $client->request('GET', $url, array_filter([
-                    'headers' => ['User-Agent' => 'owa-ci', 'Accept' => 'application/vnd.github+json, */*;q=0.1']
-                        + ($host === 'api.github.com' ? ['Authorization' => 'Bearer ' . $token] : []),
-                    'sink'    => $sink,
-                ]));
+                $client = new \GuzzleHttp\Client(['timeout' => $timeout, 'allow_redirects' => false]);
 
-                return $sink === null ? (string) $r->getBody() : '';
+                for ($hops = 0; $hops < 5; $hops++) {
+                    $host = (string) parse_url($url, PHP_URL_HOST);
+                    $r    = $client->request('GET', $url, array_filter([
+                        'headers' => ['User-Agent' => 'owa-ci', 'Accept' => 'application/vnd.github+json, */*;q=0.1']
+                            + ($host === 'api.github.com' ? ['Authorization' => 'Bearer ' . $token] : []),
+                        'sink'    => $sink,
+                    ]));
+
+                    if ($r->getStatusCode() < 300 || $r->getStatusCode() >= 400) {
+                        return $sink === null ? (string) $r->getBody() : '';
+                    }
+                    $url = $r->getHeaderLine('Location');
+                }
+
+                throw new \RuntimeException("Fetching $url failed: too many redirects");
             };
         }
 

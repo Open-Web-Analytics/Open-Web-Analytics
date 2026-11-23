@@ -326,6 +326,21 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull($this->staging()->staged(), 'it named a release the slot does not hold');
     }
 
+    /** The listing request names the installed version and nothing else about the installation, for the update host's logs. */
+    public function testTheListingRequestSendsTheInstalledVersionOnly(): void
+    {
+        $asked = [];
+        Releases::$fetcher = function ($url) use (&$asked) {
+            $asked[] = $url;
+            throw new \RuntimeException("Fetching $url failed: 404");
+        };
+
+        $this->check(null);
+        $this->check(null, ['url' => 'https://example.test/releases?per_page=100', 'installed' => '2.0.1']);
+
+        $this->assertSame(['https://example.test/releases?from=2.0.0', 'https://example.test/releases?per_page=100&from=2.0.1'], $asked);
+    }
+
     /** A staging deleted by hand is downloaded again, and staged.json written afresh: this download's SHA-256, the window as the settings say now. */
     public function testADownloadAlwaysRewritesStagedJson(): void
     {
