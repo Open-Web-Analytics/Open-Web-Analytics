@@ -19,7 +19,7 @@ class CoreUpdateInstallCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Installs the staged release now, whether cmd=core-update-stage or the release check staged it, whatever the automatic update settings say: backs up and copies its files, then runs its schema updates and republishes the tracking bundles. A failing install starts over with fresh attempts.',
             'arguments'   => [
-                '--force' => 'Install it even when it is not newer than the installed release (going back, or the same release again).',
+                '--force' => 'Install it even when it is not newer than the installed release (going back, or the same release again). Only the files change: a release older than the database schema is not staged, and cmd=core-update-stage lists the rollbacks to run first.',
             ],
         ];
     }
