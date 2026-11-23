@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Controller;
 use OWA\Module\Base\Classes\AutoUpdate\UpdatesState;
 
 /**
- * The Updates page's actions: "Check now" (cmd=core-update-check) and
+ * The Updates page's actions: "Check now" (cmd=core-update) and
  * "Install now" (cmd=core-update-install). The web user cannot write OWA's
  * code or the updates directory, so each is queued as a job the scheduler
  * runs as the install owner, within a minute.

@@ -6,7 +6,7 @@ use OWA\Core\CoreAPI;
 /**
  * Automatic updates: the release check, which installs what it finds.
  *
- * The scheduler runs it every hour (job core-update-check). Four of those
+ * The scheduler runs it every hour (job core-update). Four of those
  * runs a day, six hours apart at hours this installation keeps
  * (listingHour()), list the releases, each after waiting a number of
  * seconds it also keeps (listingDelay()): installations spread over 21,600

@@ -77,13 +77,13 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
 
         $ids    = fn (): array => array_column(JobQueue::listJobs(null, 500), 'id');
         $before = $ids();
-        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'core-update-check'));
+        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'core-update'));
         $was    = $checks();
 
         try {
             $this->assertSame(3314, $data('check')['status_code']);
             $this->assertSame(3314, $data('check')['status_code'], 'clicked twice: still one job');
-            $this->assertTrue(JobQueue::isQueued('core-update-check', 'updates-screen:check'));
+            $this->assertTrue(JobQueue::isQueued('core-update', 'updates-screen:check'));
             $this->assertSame($was + 1, $checks());
 
             $this->assertSame(3314, $data('install')['status_code']);

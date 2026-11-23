@@ -14,7 +14,7 @@ class UpdatesState {
 
     /** The screen's actions, and the command each queues. */
     const ACTIONS = [
-        'check'   => 'core-update-check',
+        'check'   => 'core-update',
         'install' => 'core-update-install',
     ];
 

@@ -9,7 +9,7 @@
  * 127.0.0.1, and lets the installation update itself with the commands its
  * cron entry runs:
  *
- *   php cli.php cmd=core-update-check    the listing, the download, its SHA-256 and signature, the
+ *   php cli.php cmd=core-update    the listing, the download, its SHA-256 and signature, the
  *                                        checks, and the install: both tarballs proved, the files
  *                                        copied when the command has finished
  *   php cli.php cmd=core-update-status   the next run of cli.php: it boots the new release and finishes
@@ -530,7 +530,7 @@ function later() {
 /** The release check, by hand: it lists the releases, downloads, and installs what is due. [exit, output] */
 function release_check( $site, $ca ) {
 
-    return cli( $site, $ca, 'cmd=core-update-check' );
+    return cli( $site, $ca, 'cmd=core-update' );
 }
 
 /** The next run of cli.php, which finishes an install whose files are copied. [exit, output] */
@@ -634,7 +634,7 @@ $scenarios = [
 
         // No window: the release check downloads it and installs it, in one run.
         [ $code, $out ] = release_check( $site, $ca );
-        check( $code === 0, "core-update-check exited $code:\n$out" );
+        check( $code === 0, "core-update exited $code:\n$out" );
         check( envVersion( $site ) === TO, 'Core/Env.php says ' . envVersion( $site ) . ":\n$out" );
         check( str_contains( (string) @file_get_contents( "$site/owa-update.php" ), '"phase":"copied"' ), "the marker does not say copied after the copy:\n$out" );
         check( downloaded( $site, TO ) && downloaded( $site, FROM ), 'the release\'s tarball, or the installed release\'s, was not downloaded' );
@@ -1031,7 +1031,7 @@ $scenarios = [
         $fifo = "$site/Core/Env.php.owa-update";
         check( posix_mkfifo( $fifo, 0644 ), 'could not make the FIFO' );
 
-        $proc   = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update-check' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
+        $proc   = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
         $marker = "$site/owa-update.php";
 
         for ( $i = 0; $i < 300 && ! str_contains( (string) @file_get_contents( $marker ), '"phase":"copying"' ); $i++ ) {

@@ -83,7 +83,7 @@ return [
     'base.versionInfoCli'               => 'OWA\\Module\\Base\\Controller\\VersionInfoCli',
     'base.backupCli'                    => 'OWA\\Module\\Base\\Controller\\BackupCli',
     'base.tablesCleanupCli'             => 'OWA\\Module\\Base\\Controller\\TablesCleanupCli',
-    'base.coreUpdateCheckCli'           => 'OWA\\Module\\Base\\Controller\\CoreUpdateCheckCli',
+    'base.coreUpdateCli'                => 'OWA\\Module\\Base\\Controller\\CoreUpdateCli',
     'base.coreUpdateStatusCli'          => 'OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli',
     'base.coreUpdateInstallCli'         => 'OWA\\Module\\Base\\Controller\\CoreUpdateInstallCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',

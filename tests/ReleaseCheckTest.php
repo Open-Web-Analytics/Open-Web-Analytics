@@ -241,7 +241,7 @@ final class ReleaseCheckTest extends TestCase
     /** The scheduler's hourly runs list the releases in four hours a day, six apart; the others install what was downloaded. */
     public function testTheScheduledRunsListFourTimesADay(): void
     {
-        $check = fn (int $hour) => new ReleaseCheck($this->downloads(), ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update-check',
+        $check = fn (int $hour) => new ReleaseCheck($this->downloads(), ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update',
             'now' => gmmktime($hour, 17, 0, 11, 23, 2026)]);
         $hours = array_values(array_filter(range(0, 23), fn ($h) => $check($h)->listingHour()));
 
@@ -256,12 +256,12 @@ final class ReleaseCheckTest extends TestCase
         $this->assertLessThan(60, $delay);
         $delays = array_map(fn ($i) => (new ReleaseCheck($this->downloads(), ['seed' => "installation $i"]))->listingDelay(), range(1, 30));
         $this->assertGreaterThan(15, count(array_unique($delays)), 'installations wait different seconds');
-        $this->check(['2.0.1'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update-check', 'now' => gmmktime($hours[0], 17, 0, 11, 23, 2026), 'sleep' => $sleep]);
+        $this->check(['2.0.1'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update', 'now' => gmmktime($hours[0], 17, 0, 11, 23, 2026), 'sleep' => $sleep]);
         $this->check(['2.0.1'], ['sleep' => $sleep]);
         $this->assertSame([$delay], $slept);
 
         $quiet = ($hours[0] + 1) % 24;
-        $result = $this->check(['2.0.1', '2.0.2'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update-check', 'now' => gmmktime($quiet, 17, 0, 11, 23, 2026)]);
+        $result = $this->check(['2.0.1', '2.0.2'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update', 'now' => gmmktime($quiet, 17, 0, 11, 23, 2026)]);
         $this->assertFalse($this->downloads()->has('2.0.2'), 'not a listing hour: nothing listed, nothing downloaded');
         $this->assertSame([2, 2], $this->feeds, 'nor the bell fed: only the listing hour\'s run and the run by hand fed it');
         $this->assertSame('2.0.1', $result['version'], 'what was downloaded is still judged');

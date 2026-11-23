@@ -14,7 +14,7 @@ return [
     'v1-drop'                     => 'base.v1DropCli',
     'backup'                      => 'base.backupCli',
     'tables-cleanup'              => 'base.tablesCleanupCli',
-    'core-update-check'           => 'base.coreUpdateCheckCli',
+    'core-update'                 => 'base.coreUpdateCli',
     'core-update-status'          => 'base.coreUpdateStatusCli',
     'core-update-install'         => 'base.coreUpdateInstallCli',
     'ua-update-definitions'       => 'base.uaUpdateDefinitionsCli',

@@ -366,7 +366,7 @@ jobs:
     # Real release packages built from this commit by the Release Packager's
     # own script, a real install of the first, and the next served from a
     # GitHub-shaped listing over HTTPS on 127.0.0.1 with a CA made for the
-    # run. core-update-check and schedule-run do the rest, as an installation's
+    # run. core-update and schedule-run do the rest, as an installation's
     # cron entry would. See tests/tools/self_update_e2e.php.
     services:
       mysql:

@@ -193,7 +193,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $this->assertSame('daily, at a time each install derives for itself', owa_wiki_job_schedule($jobs['rotate-partitions']));
         $this->assertSame('every 5 minutes, at an offset each install derives for itself', owa_wiki_job_schedule($jobs['rebuild-cube']));
         $this->assertSame('every minute', owa_wiki_job_schedule($jobs['drain-tracker-ingest']));
-        $this->assertSame('hourly, at a minute each install derives for itself', owa_wiki_job_schedule($jobs['core-update-check']));
+        $this->assertSame('hourly, at a minute each install derives for itself', owa_wiki_job_schedule($jobs['core-update']));
 
         // A module's job: listed whether or not the module is active here.
         $this->assertTrue($jobs['refresh-geoip-db']['spread']);
