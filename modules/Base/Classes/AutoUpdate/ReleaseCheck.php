@@ -17,7 +17,9 @@ use OWA\Core\CoreAPI;
  *      said what is new), an unreadable installed version, automatic updates
  *      off, or an install under way.
  *   2. With a listing: the release the settings choose. Its tarball is
- *      downloaded and checked against its SHA-256 and its signature, again
+ *      downloaded through the update host (auto_update_download_url, never
+ *      the listing's GitHub address) and checked against its SHA-256 and
+ *      its signature, again
  *      if GitHub's digest for it changes (the asset was replaced), and the
  *      installed release's too, once: a failed install puts it back. Every
  *      other tarball is deleted. A failed download puts a notice in the
@@ -244,7 +246,7 @@ class ReleaseCheck {
 
                 try {
 
-                    $this->downloads->download( $release );
+                    $this->downloads->download( Releases::via( $release, (string) $this->context['download'] ) );
 
                 } catch ( \RuntimeException $e ) {
 
@@ -533,8 +535,9 @@ class ReleaseCheck {
                 $list = [];
             }
 
-            $this->downloads->download( Releases::find( $list, $installed, $installed )
-                ?? Releases::byTag( $installed, $installed, (string) $this->context['download'] ) );
+            $listed = Releases::find( $list, $installed, $installed );
+            $this->downloads->download( $listed !== null ? Releases::via( $listed, (string) $this->context['download'] )
+                : Releases::byTag( $installed, $installed, (string) $this->context['download'] ) );
             $this->lines[] = sprintf( 'Downloaded the installed release, %s, and checked its SHA-256 and signature: a failed install puts it back.', $installed );
 
             return null;

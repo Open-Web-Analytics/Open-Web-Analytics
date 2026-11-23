@@ -21,7 +21,7 @@ return [
     'attribution_lookback_days' => 90,
     'auto_update' => true,
     'auto_update_days' => '',
-    'auto_update_download_url' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/download/',
+    'auto_update_download_url' => 'https://updates.openwebanalytics.com/download/',
     'auto_update_email_success' => true,
     'auto_update_level' => 'minor',
     'auto_update_releases_url' => 'https://updates.openwebanalytics.com/releases',

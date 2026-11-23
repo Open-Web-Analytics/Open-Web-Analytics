@@ -31,13 +31,15 @@ final class ReleaseListingNetworkTest extends TestCase
         if ($token !== '') {
             // Redirects followed here, so the token goes to api.github.com
             // behind the update host and nowhere else.
-            Releases::$fetcher = static function ($url, $timeout, $sink) use ($token) {
+            // The user agent OWA sends: the update host's WAF lets only that through.
+            $agent = (string) \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent');
+            Releases::$fetcher = static function ($url, $timeout, $sink) use ($token, $agent) {
                 $client = new \GuzzleHttp\Client(['timeout' => $timeout, 'allow_redirects' => false]);
 
                 for ($hops = 0; $hops < 5; $hops++) {
                     $host = (string) parse_url($url, PHP_URL_HOST);
                     $r    = $client->request('GET', $url, array_filter([
-                        'headers' => ['User-Agent' => 'owa-ci', 'Accept' => 'application/vnd.github+json, */*;q=0.1']
+                        'headers' => ['User-Agent' => $agent, 'Accept' => 'application/vnd.github+json, */*;q=0.1']
                             + ($host === 'api.github.com' ? ['Authorization' => 'Bearer ' . $token] : []),
                         'sink'    => $sink,
                     ]));
@@ -106,7 +108,10 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertNotNull($release['sha256']);
 
         $tar = $this->tmp . '/owa_' . $release['version'] . '_packaged.tar';
-        Releases::get($release['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
+        // Through the update host's /download/, which redirects to GitHub, as every download goes.
+        $via = Releases::via($release, (string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_download_url'));
+        $this->assertStringStartsWith('https://updates.openwebanalytics.com/download/', $via['asset_url']);
+        Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
         $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
         unlink($tar);
 
