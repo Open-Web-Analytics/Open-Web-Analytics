@@ -62,7 +62,7 @@ return [
      * NOT '@daily'. That is midnight exactly, and several OWA installs commonly
      * share one database server -- so every one of them would start a run, and
      * possibly a REORGANIZE that rewrites rows, at the same instant. Same
-     * reasoning as core-update-check below, for a local reason rather than a
+     * reasoning as core-update below, for a local reason rather than a
      * remote one.
      */
     'rotate-partitions' => [
@@ -193,8 +193,8 @@ return [
      * It runs while schema updates are pending: the release that fixes a
      * failed one is what it installs.
      */
-    'core-update-check' => [
-        'command'     => 'core-update-check',
+    'core-update' => [
+        'command'     => 'core-update',
         'schedule'    => [ 'spread' => 'hourly', 'interval' => 1 ],
         'params'      => [ 'scheduled' => 1 ],
         'description' => 'Automatic updates, every hour: four times a day lists OWA\'s releases for the notifications bell, and downloads and verifies the release to update to; then installs it, in the update window if one is set. The files are copied when the run\'s other jobs have finished, and the next run finishes the install.',

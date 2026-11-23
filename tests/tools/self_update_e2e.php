@@ -9,7 +9,7 @@
  * 127.0.0.1, and lets the installation update itself with the commands its
  * cron entry runs:
  *
- *   php cli.php cmd=core-update-check    the listing, the download, its SHA-256 and signature, the
+ *   php cli.php cmd=core-update    the listing, the download, its SHA-256 and signature, the
  *                                        checks, and the install: both tarballs proved, the files
  *                                        copied when the command has finished
  *   php cli.php cmd=core-update-status   the next run of cli.php: it boots the new release and finishes
@@ -32,8 +32,8 @@
  *   tampered         the downloaded tarball is replaced after it was checked: it never installs
  *
  * and the failure cases of the wiki's Automatic Updates page, each with the
- * recovery it promises where there is one: unreachable, asset-replaced,
- * unwritable-directory, config-names-a-class, manual-install,
+ * recovery it promises where there is one: window, by-version, unreachable,
+ * asset-replaced, unwritable-directory, config-names-a-class, manual-install,
  * two-updates-directories, major-release, passwordless-database, copy-fails,
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry), newer-release-after-a-failure and
@@ -61,6 +61,8 @@
 
 require __DIR__ . '/scratch_guard.php';
 require dirname( __DIR__, 2 ) . '/modules/Base/Classes/AutoUpdate/Signature.php';
+// release.php's encode() and decode(), which need no other class.
+require dirname( __DIR__, 2 ) . '/Core/VersionInfo.php';
 
 // The run's signing key: every package trusts its public half, as a release
 // trusts the maintainers' keys, and is signed with it by the packager's script.
@@ -249,8 +251,8 @@ function buildTree( $repo, $work ) {
 }
 
 /**
- * A release package: the build at $version, changed by $edit, its release.json
- * written as npm run build writes it, then $after (for release.json itself).
+ * A release package: the build at $version, changed by $edit, its release.php
+ * written as npm run build writes it, then $after (for release.php itself).
  *
  * @return array{file: string, sha256: string, size: int}
  */
@@ -275,7 +277,7 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
         $edit( $tree );
     }
 
-    must( 'php cli.php cmd=version-info --file=release.json', $tree );
+    must( 'php cli.php cmd=version-info --file=release.php', $tree );
 
     if ( $after ) {
 
@@ -398,22 +400,23 @@ function serve( $tls, $root, $port ) {
 function publish( $www, $base, array $pkg, $version, $digest = null, $signature = null ) {
 
     must( 'rm -rf ' . escapeshellarg( $www ) );
-    mkdir( "$www/download", 0755, true );
-    copy( $pkg['file'], "$www/download/owa_{$version}_packaged.tar" );
+    @mkdir( "$www/download/$version", 0755, true );
+    copy( $pkg['file'], "$www/download/$version/owa_{$version}_packaged.tar" );
 
     $releases = [];
     $from     = $GLOBALS['e2e_from'] ?? null;
 
     if ( $from !== null && $version !== FROM ) {
 
-        copy( $from['file'], "$www/download/owa_" . FROM . '_packaged.tar' );
-        file_put_contents( "$www/download/owa_" . FROM . '_packaged.tar.sig', $from['sig'] );
+        @mkdir( "$www/download/" . FROM, 0755, true );
+        copy( $from['file'], "$www/download/" . FROM . '/owa_' . FROM . '_packaged.tar' );
+        file_put_contents( "$www/download/" . FROM . '/owa_' . FROM . '_packaged.tar.sig', $from['sig'] );
         $releases[] = listed( $base, $from, FROM, $from['sha256'], $from['sig'], '2026-01-01T00:00:00Z' );
     }
 
     if ( $signature !== false ) {
 
-        file_put_contents( "$www/download/owa_{$version}_packaged.tar.sig", $signature ?? $pkg['sig'] );
+        file_put_contents( "$www/download/$version/owa_{$version}_packaged.tar.sig", $signature ?? $pkg['sig'] );
     }
 
     array_unshift( $releases, listed( $base, $pkg, $version, $digest ?? $pkg['sha256'], $signature === false ? false : ( $signature ?? $pkg['sig'] ), gmdate( 'Y-m-d\TH:i:s\Z' ) ) );
@@ -425,7 +428,7 @@ function listed( $base, array $pkg, $version, $digest, $sig, $published ) {
 
     $assets = [ [
         'name'                 => "owa_{$version}_packaged.tar",
-        'browser_download_url' => "$base/download/owa_{$version}_packaged.tar",
+        'browser_download_url' => "$base/download/$version/owa_{$version}_packaged.tar",
         'size'                 => $pkg['size'],
         'digest'               => 'sha256:' . $digest,
     ] ];
@@ -434,7 +437,7 @@ function listed( $base, array $pkg, $version, $digest, $sig, $published ) {
 
         $assets[] = [
             'name'                 => "owa_{$version}_packaged.tar.sig",
-            'browser_download_url' => "$base/download/owa_{$version}_packaged.tar.sig",
+            'browser_download_url' => "$base/download/$version/owa_{$version}_packaged.tar.sig",
             'size'                 => strlen( (string) $sig ),
         ];
     }
@@ -490,6 +493,7 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
     $smtp = freePort();
     $own  = "\n// tests/tools/self_update_e2e.php: the listing it serves, and no e-mail leaves the machine.\n"
         . "define('OWA_AUTO_UPDATE_RELEASES_URL', " . var_export( $listing, true ) . ");\n"
+        . "define('OWA_AUTO_UPDATE_DOWNLOAD_URL', " . var_export( dirname( $listing ) . '/download/', true ) . ");\n"
         . "define('OWA_ADMIN_NOTICE_EMAIL', 'admin@example.test');\n"
         . "define('OWA_MAILER_USE_SMTP', true);\n"
         . "define('OWA_MAILER_HOST', '127.0.0.1');\n"
@@ -530,7 +534,7 @@ function later() {
 /** The release check, by hand: it lists the releases, downloads, and installs what is due. [exit, output] */
 function release_check( $site, $ca ) {
 
-    return cli( $site, $ca, 'cmd=core-update-check' );
+    return cli( $site, $ca, 'cmd=core-update' );
 }
 
 /** The next run of cli.php, which finishes an install whose files are copied. [exit, output] */
@@ -634,7 +638,7 @@ $scenarios = [
 
         // No window: the release check downloads it and installs it, in one run.
         [ $code, $out ] = release_check( $site, $ca );
-        check( $code === 0, "core-update-check exited $code:\n$out" );
+        check( $code === 0, "core-update exited $code:\n$out" );
         check( envVersion( $site ) === TO, 'Core/Env.php says ' . envVersion( $site ) . ":\n$out" );
         check( str_contains( (string) @file_get_contents( "$site/owa-update.php" ), '"phase":"copied"' ), "the marker does not say copied after the copy:\n$out" );
         check( downloaded( $site, TO ) && downloaded( $site, FROM ), 'the release\'s tarball, or the installed release\'s, was not downloaded' );
@@ -694,9 +698,9 @@ $scenarios = [
 
         $to = package( $build, $work, 'unmet', TO, null, static function ( $tree ) {
 
-            $r = json_decode( (string) file_get_contents( "$tree/release.json" ), true );
+            $r = \OWA\Core\VersionInfo::decode( (string) file_get_contents( "$tree/release.php" ) );
             $r['requirements']['php']['min'] = '99.0';
-            file_put_contents( "$tree/release.json", json_encode( $r, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+            file_put_contents( "$tree/release.php", \OWA\Core\VersionInfo::encode( $r ) );
         } );
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
@@ -706,15 +710,15 @@ $scenarios = [
         check( str_contains( $out, 'cannot be installed here yet' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no \"cannot be installed automatically yet\" notice:\n$out" );
 
         // Nor by hand: what it needs is not met.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-update-install installed a release whose requirements are unmet (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-install --version installed a release whose requirements are unmet (exit $code):\n$out" );
         next_run( $site, $ca );
         check( envVersion( $site ) === FROM, 'it installed anyway' );
     },
 
     'does-not-boot' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        // After release.json, which cmd=version-info writes by running OWA.
+        // After release.php, which cmd=version-info writes by running OWA.
         $to = package( $build, $work, 'does-not-boot', TO, null, static function ( $tree ) {
 
             file_put_contents( "$tree/owa.php", "\nthis is not PHP(\n", FILE_APPEND );
@@ -780,19 +784,21 @@ $scenarios = [
         check( downloaded( $site, TO ) && str_contains( $out, 'installs between' ), "it was not downloaded to wait for its window:\n$out" );
 
         // After the release check proved it, someone who can write the data
-        // directory puts another tarball, a real release's, in its place.
-        $tar = updatesDir( $site ) . '/owa_' . TO . '_packaged.tar';
+        // directory puts another tarball, a real release's, in place of the
+        // installed release's: what a failed install would put back. --version
+        // fetches its own release afresh, and uses the installed one as kept.
+        $tar = updatesDir( $site ) . '/owa_' . FROM . '_packaged.tar';
         copy( $other['file'], $tar );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install version=' . TO );
-        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-update-install does not refuse the tampered tarball (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-install --version does not refuse the tampered tarball (exit $code):\n$out" );
         check( ! file_exists( $tar ), 'the tarball that does not check was kept' );
         next_run( $site, $ca );
-        check( envVersion( $site ) === FROM && ! file_exists( "$site/modules/Base/e2e-tampered.txt" ), 'a tarball its signature does not match was installed' );
+        check( envVersion( $site ) === FROM && ! file_exists( "$site/modules/Base/e2e-tampered.txt" ), 'an install went ahead without a way back it could prove' );
 
         // Downloaded again, and it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -809,10 +815,28 @@ $scenarios = [
         check( downloaded( $site, TO ) && envVersion( $site ) === FROM && str_contains( $out, TO . ' installs between' ), "it did not wait for its window:\n$out" );
 
         // Installing by hand ignores the window.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
+    },
+
+    'by-version' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // 2.0.92 is not in the listing, as a release past its newest 100 would not be:
+        // --version fetches it from the download URL by its version.
+        $to  = package( $build, $work, 'by-version-listed', TO );
+        $old = package( $build, $work, 'by-version', '2.0.92' );
+        publish( $www, $base, $to, TO );
+        @mkdir( "$www/download/2.0.92", 0755, true );
+        copy( $old['file'], "$www/download/2.0.92/owa_2.0.92_packaged.tar" );
+        file_put_contents( "$www/download/2.0.92/owa_2.0.92_packaged.tar.sig", $old['sig'] );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=2.0.92' );
+        check( $code === 0 && envVersion( $site ) === '2.0.92', "core-install --version did not install a release the listing does not have (exit $code):\n$out" );
+        next_run( $site, $ca );
+        installed( $site, $ca, '2.0.92' );
     },
 
     'unreachable' => function () use ( $build, $work, $db, $from, $www, $base, $ca, $tls, $port, $server ) {
@@ -830,9 +854,11 @@ $scenarios = [
             [ , $out ] = release_check( $site, $ca );
             check( downloaded( $site, TO ) && str_contains( $out, 'could not be listed' ), "GitHub unreachable deleted the downloaded release, or was not said:\n$out" );
 
-            // Installing what was downloaded needs no network.
-            [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-            check( $code === 0, "core-update-install exited $code:\n$out" );
+            // Installing what was downloaded needs no network: the window opens, and the check installs it.
+            $config = (string) file_get_contents( "$site/owa-config.php" );
+            file_put_contents( "$site/owa-config.php", preg_replace( "/define\\('OWA_AUTO_UPDATE_WINDOW', '[^']*'\\);/", "define('OWA_AUTO_UPDATE_WINDOW', '');", $config ) );
+            [ $code, $out ] = release_check( $site, $ca );
+            check( envVersion( $site ) === TO, "the downloaded release did not install without the listing:\n$out" );
             next_run( $site, $ca );
             installed( $site, $ca, TO );
 
@@ -857,7 +883,7 @@ $scenarios = [
         [ , $out ] = release_check( $site, $ca );
         check( hash_file( 'sha256', updatesDir( $site ) . '/owa_' . TO . '_packaged.tar' ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
 
-        cli( $site, $ca, 'cmd=core-update-install' );
+        cli( $site, $ca, 'cmd=core-install --version=' . TO );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
         check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
@@ -911,8 +937,8 @@ $scenarios = [
         check( hasNotice( notices( $db ), 'manual:' . TO ), 'no "needs to be installed by hand" notice' );
 
         // By hand, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0 && envVersion( $site ) === TO, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0 && envVersion( $site ) === TO, "core-install --version exited $code:\n$out" );
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the next command did not finish the install (exit $code):\n$out" );
         installed( $site, $ca, TO );
@@ -1013,8 +1039,8 @@ $scenarios = [
 
         // Fixed: install it by hand, as the notice says.
         rmdir( $blocker );
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install version=' . TO );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -1031,7 +1057,7 @@ $scenarios = [
         $fifo = "$site/Core/Env.php.owa-update";
         check( posix_mkfifo( $fifo, 0644 ), 'could not make the FIFO' );
 
-        $proc   = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update-check' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
+        $proc   = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
         $marker = "$site/owa-update.php";
 
         for ( $i = 0; $i < 300 && ! str_contains( (string) @file_get_contents( $marker ), '"phase":"copying"' ); $i++ ) {
@@ -1074,8 +1100,8 @@ $scenarios = [
         check( envVersion( $site ) === FROM && str_contains( $out, 'skipped' ), "the killed install was tried again on its own:\n$out" );
 
         // By hand, it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-install' );
-        check( $code === 0, "core-update-install exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },

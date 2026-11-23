@@ -26,9 +26,12 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
     {
         $none = $this->state();
         $this->assertSame(['Installed: OWA 2.0.0.', 'Automatic updates are on: a release installs between 02:00 and 06:00 (UTC), Sat, Sun.'], $none['lines']);
-        $this->assertSame(['check', 'install'], $none['actions']);
+        $this->assertSame(['check'], $none['actions'], 'nothing downloaded to install');
 
         $this->assertSame('OWA 2.1.0 is downloaded and checked.', end($this->state(['2.1.0', '2.0.0'])['lines']));
+        $this->assertSame(['check', 'install'], $this->state(['2.1.0', '2.0.0'])['actions']);
+        $this->assertSame('2.1.0', UpdatesState::installable(['2.1.0', '2.0.0'], '2.0.0'), 'Install now is core-install --version=2.1.0');
+        $this->assertNull(UpdatesState::installable(['2.0.0'], '2.0.0'));
         $this->assertCount(2, $this->state(['2.0.0'])['lines'], 'the installed release\'s own tarball is not news');
         $this->assertSame('Automatic updates are on: a release installs as soon as it is downloaded.', $this->state([], null, ['window' => null])['lines'][1]);
     }
@@ -77,17 +80,20 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
 
         $ids    = fn (): array => array_column(JobQueue::listJobs(null, 500), 'id');
         $before = $ids();
-        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'core-update-check'));
+        $checks = fn (): int => count(array_filter(JobQueue::listJobs('pending', 500), fn ($j) => $j['command'] === 'core-update'));
         $was    = $checks();
 
         try {
             $this->assertSame(3314, $data('check')['status_code']);
             $this->assertSame(3314, $data('check')['status_code'], 'clicked twice: still one job');
-            $this->assertTrue(JobQueue::isQueued('core-update-check', 'updates-screen:check'));
+            $this->assertTrue(JobQueue::isQueued('core-update', 'updates-screen:check'));
             $this->assertSame($was + 1, $checks());
 
-            $this->assertSame(3314, $data('install')['status_code']);
-            $this->assertTrue(JobQueue::isQueued('core-update-install', 'updates-screen:install'));
+            // This checkout has downloaded nothing newer: Install now has nothing to name.
+            $this->assertSame(3315, $data('install')['error_code']);
+            $params = array_map(fn ($j) => json_decode((string) $j['params'], true),
+                array_filter(JobQueue::listJobs(null, 500), fn ($j) => !in_array($j['id'], $before) && $j['command'] === 'core-update'));
+            $this->assertSame([[]], array_values($params), 'Check now is core-update as the scheduler runs it');
 
             $this->assertSame(3315, $data('delete-everything')['error_code']);
         } finally {

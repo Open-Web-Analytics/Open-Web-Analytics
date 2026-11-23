@@ -46,7 +46,7 @@ class Downloads {
     /** @var string the data directory it lives in */
     private $data;
 
-    /** @var array<string, array<string, mixed>|null> release.json by version, read once */
+    /** @var array<string, array<string, mixed>|null> release.php by version, read once */
     private $info = [];
 
     /**
@@ -235,7 +235,7 @@ class Downloads {
     }
 
     /**
-     * A downloaded release's release.json, read from its tarball; null when
+     * A downloaded release's release.php, read from its tarball; null when
      * it has none or there is no such tarball.
      *
      * @param  string $version
@@ -247,15 +247,14 @@ class Downloads {
 
             try {
 
-                $json = $this->has( $version ) ? Tar::member( $this->tarball( $version ), 'release.json' ) : null;
+                $data = $this->has( $version ) ? \OWA\Core\VersionInfo::decode( Tar::member( $this->tarball( $version ), \OWA\Core\VersionInfo::FILE ) ) : null;
 
             } catch ( \RuntimeException $e ) {
 
-                $json = null;
+                $data = null;
             }
 
-            $data                   = $json === null ? null : json_decode( $json, true );
-            $this->info[ $version ] = is_array( $data ) ? $data : null;
+            $this->info[ $version ] = $data;
         }
 
         return $this->info[ $version ];
@@ -286,7 +285,7 @@ class Downloads {
     /**
      * Open a downloaded release's tarball and prove it through that handle:
      * its SHA-256 against its signature by a trusted key (Signature), its
-     * release.json naming it, and every member one a release may hold (Tar).
+     * release.php naming it, and every member one a release may hold (Tar).
      * Whatever is read from the handle after is what was proved, whatever
      * happens to the file. A tarball that does not prove is deleted with its
      * signature, so the next release check downloads it again.
@@ -312,11 +311,11 @@ class Downloads {
             Signature::verify( $version, hash_final( $ctx ), (string) @file_get_contents( $tar . '.sig' ) );
 
             rewind( $h );
-            $info = json_decode( (string) Tar::member( $h, 'release.json' ), true );
+            $info = \OWA\Core\VersionInfo::decode( Tar::member( $h, \OWA\Core\VersionInfo::FILE ) );
 
             if ( ( is_array( $info ) ? $info['version'] ?? null : null ) !== $version ) {
 
-                throw new \RuntimeException( sprintf( '%s\'s release.json does not say it is %s.', basename( $tar ), $version ) );
+                throw new \RuntimeException( sprintf( '%s\'s release.php does not say it is %s.', basename( $tar ), $version ) );
             }
 
             rewind( $h );
@@ -335,8 +334,8 @@ class Downloads {
 
     /**
      * Download a release's tarball and its signature, check its SHA-256
-     * against the asset's digest (else the release's SHA256SUMS), its
-     * signature, and that its release.json names it, and only then give it
+     * against the asset's digest (else the release's SHA256SUMS, when either
+     * is known), its signature, and that its release.php names it, and only then give it
      * its name. On any failure nothing is left and the error is thrown: the
      * next run starts again.
      *
@@ -361,12 +360,6 @@ class Downloads {
                 $expected = Releases::sumFor( Releases::get( $release['sums_url'], Releases::TIMEOUT ), basename( $tar ) );
             }
 
-            if ( $expected === null ) {
-
-                throw new \RuntimeException( sprintf( '%s has no SHA-256 to check it against: no digest and no %s entry.',
-                    basename( $tar ), Releases::SUMS_ASSET ) );
-            }
-
             if ( $release['sig_url'] === null ) {
 
                 throw new \RuntimeException( sprintf( '%s is not signed: the release has no %s.', basename( $tar ), sprintf( Signature::ASSET, $release['version'] ) ) );
@@ -377,7 +370,8 @@ class Downloads {
 
             $actual = (string) hash_file( 'sha256', $part );
 
-            if ( ! hash_equals( $expected, $actual ) ) {
+            // Without a digest (a release fetched by its version) the signature alone proves it, below.
+            if ( $expected !== null && ! hash_equals( $expected, $actual ) ) {
 
                 throw new \RuntimeException( sprintf( '%s does not match its SHA-256: expected %s, downloaded %s.',
                     basename( $tar ), $expected, $actual ) );
@@ -389,11 +383,11 @@ class Downloads {
             Signature::verify( $release['version'], $actual, $sig );
 
             // Read whole, so it is checked whole as a release (Tar), and says it is this one.
-            $info = json_decode( (string) Tar::member( $part, 'release.json' ), true );
+            $info = \OWA\Core\VersionInfo::decode( Tar::member( $part, \OWA\Core\VersionInfo::FILE ) );
 
             if ( ( is_array( $info ) ? $info['version'] ?? null : null ) !== $release['version'] ) {
 
-                throw new \RuntimeException( sprintf( '%s\'s release.json says it is %s.', $release['version'], var_export( is_array( $info ) ? $info['version'] ?? null : null, true ) ) );
+                throw new \RuntimeException( sprintf( '%s\'s release.php says it is %s.', $release['version'], var_export( is_array( $info ) ? $info['version'] ?? null : null, true ) ) );
             }
 
             if ( @file_put_contents( $tar . '.sig', trim( $sig ) . "\n" ) === false || ! @rename( $part, $tar ) ) {

@@ -12,11 +12,32 @@ use OWA\Core\CoreAPI;
  */
 class UpdatesState {
 
-    /** The screen's actions, and the command each queues. */
+    /** The screen's actions, and the command each queues: Install now names the downloaded release (installable()). */
     const ACTIONS = [
-        'check'   => 'core-update-check',
-        'install' => 'core-update-install',
+        'check'   => 'core-update',
+        'install' => 'core-install',
     ];
+
+    /**
+     * The newest downloaded release newer than the installed one, which
+     * Install now installs (cmd=core-install --version=<it>); null for none.
+     *
+     * @param  list<string> $downloaded newest first
+     * @param  string       $installed
+     * @return string|null
+     */
+    public static function installable( array $downloaded, $installed ) {
+
+        foreach ( $downloaded as $v ) {
+
+            if ( Version::parse( (string) $installed ) !== null && Version::compare( $v, (string) $installed ) > 0 ) {
+
+                return $v;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * The installation's state, read now.
@@ -73,11 +94,11 @@ class UpdatesState {
             return [ 'lines' => $lines, 'actions' => [ 'check' ] ];
         }
 
-        $newer = array_values( array_filter( $downloaded, static fn ( $v ) => Version::parse( (string) $installed ) !== null && Version::compare( $v, (string) $installed ) > 0 ) );
+        $newer = self::installable( $downloaded, $installed );
 
-        if ( $newer ) {
+        if ( $newer !== null ) {
 
-            $lines[] = sprintf( CoreAPI::t( 'OWA %s is downloaded and checked.' ), $newer[0] );
+            $lines[] = sprintf( CoreAPI::t( 'OWA %s is downloaded and checked.' ), $newer );
         }
 
         $err = trim( (string) ( $failure['error'] ?? '' ) );
@@ -93,6 +114,6 @@ class UpdatesState {
                 (string) ( $failure['version'] ?? '' ), rtrim( $err, '.' ) . '.' );
         }
 
-        return [ 'lines' => $lines, 'actions' => [ 'check', 'install' ] ];
+        return [ 'lines' => $lines, 'actions' => $newer === null ? [ 'check' ] : [ 'check', 'install' ] ];
     }
 }

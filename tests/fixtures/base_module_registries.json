@@ -222,14 +222,14 @@
         "base.tablesCleanupCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\TablesCleanupCli"
         },
-        "base.coreUpdateCheckCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateCheckCli"
+        "base.coreUpdateCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateCli"
         },
         "base.coreUpdateStatusCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli"
         },
-        "base.coreUpdateInstallCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateInstallCli"
+        "base.coreInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreInstallCli"
         },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
@@ -395,9 +395,9 @@
         "v1-drop": "base.v1DropCli",
         "backup": "base.backupCli",
         "tables-cleanup": "base.tablesCleanupCli",
-        "core-update-check": "base.coreUpdateCheckCli",
+        "core-update": "base.coreUpdateCli",
         "core-update-status": "base.coreUpdateStatusCli",
-        "core-update-install": "base.coreUpdateInstallCli",
+        "core-install": "base.coreInstallCli",
         "ua-update-definitions": "base.uaUpdateDefinitionsCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",
@@ -593,10 +593,10 @@
             "source": "code",
             "while_updates_pending": false
         },
-        "core-update-check": {
-            "name": "core-update-check",
-            "command": "core-update-check",
-            "schedule": "22 * * * *",
+        "core-update": {
+            "name": "core-update",
+            "command": "core-update",
+            "schedule": "16 * * * *",
             "params": {
                 "scheduled": 1
             },

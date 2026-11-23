@@ -5,7 +5,7 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-update-install by hand
+ * (ReleaseCheck) when a release is due, or cmd=core-install --version by hand
  * (byHand()).
  *
  * prepare() takes the install lock and opens both tarballs, proving each
@@ -96,27 +96,28 @@ class Install {
     }
 
     /**
-     * cmd=core-update-install [version=] [--force]: the release the release
-     * check would choose, or the one named, downloaded if it is not and
-     * installed now, whatever the automatic update settings say. A release
-     * not newer than the installed one only with $force, and never one older
-     * than the database schema. Without the listing, a release already
-     * downloaded installs all the same. A failure recorded for it is cleared:
-     * whoever installs by hand has dealt with it.
+     * cmd=core-install --version=<x.y.z> [--force]: that release installed
+     * now, whatever the automatic update settings say, its tarball and
+     * signature fetched from the download URL by its version every time,
+     * with no listing (Releases::byTag()). One not newer than the installed
+     * release only with $force, and never one older than the database
+     * schema. A failure recorded for it is cleared: whoever installs by hand
+     * has dealt with it. A release refused after its download is deleted.
      *
-     * @param  string|null          $version
+     * @param  string               $version
      * @param  bool                 $force
      * @param  Downloads|null       $downloads
      * @param  array<string, mixed> $context ReleaseCheck's, for a test
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    public static function byHand( $version = null, $force = false, $downloads = null, array $context = [] ) {
+    public static function byHand( $version, $force = false, $downloads = null, array $context = [] ) {
 
         $downloads = $downloads ?? new Downloads();
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
         $root      = (string) $c['root'];
         $installed = (string) $c['installed'];
+        $v         = (string) $version;
 
         $checkout = Vcs::checkout( $root );
 
@@ -130,33 +131,14 @@ class Install {
             return self::answer( self::REFUSED, sprintf( 'This server\'s role is %s; OWA is installed from a full server only.', $c['role'] ) );
         }
 
-        if ( Version::parse( $installed ) === null || ( $version !== null && Version::parse( (string) $version ) === null ) ) {
+        if ( Version::parse( $installed ) === null || Version::parse( $v ) === null ) {
 
-            return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $version ?? 'the newest' ) );
+            return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $v ) );
         }
 
-        if ( $version !== null && ( Version::step( $installed, $version ) === Version::MAJOR || Version::step( $version, $installed ) === Version::MAJOR ) ) {
+        if ( Version::step( $installed, $v ) === Version::MAJOR || Version::step( $v, $installed ) === Version::MAJOR ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $version ) );
-        }
-
-        try {
-
-            $list = $c['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $c['url'], $installed ) );
-
-        } catch ( \RuntimeException $e ) {
-
-            $list = null;
-        }
-
-        $release = $list === null ? null : ( $version !== null ? Releases::find( $list, $version, $installed ) : Releases::choose( $list, $installed, Version::MINOR ) );
-        $v       = (string) ( $release['version'] ?? $version ?? ( $downloads->versions()[0] ?? '' ) );
-
-        if ( $v === '' || ( $release === null && ! $downloads->has( $v ) ) ) {
-
-            return self::answer( self::REFUSED, $list === null
-                ? 'The releases could not be listed, and nothing to install has been downloaded.'
-                : ( $version === null ? sprintf( 'No release is newer than %s.', $installed ) : sprintf( 'There is no published release %s with its tarball.', $version ) ) );
+            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $v ) );
         }
 
         if ( Version::compare( $v, $installed ) <= 0 && ! $force ) {
@@ -164,43 +146,55 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
-        if ( $release !== null && ! $downloads->has( $v ) ) {
+        try {
 
-            try {
+            $downloads->download( Releases::byTag( $v, $installed, (string) $c['download'] ) );
 
-                $downloads->download( $release );
+        } catch ( \RuntimeException $e ) {
 
-            } catch ( \RuntimeException $e ) {
-
-                return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
-            }
+            return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
         }
 
-        $missing = $check->ensureInstalled( $list );
+        // A release refused here was fetched for nothing: it goes, unless it is
+        // the installed one (a reinstall), which a failed install puts back.
+        $refuse = static function ( $outcome, $message, array $lines = [] ) use ( $downloads, $v, $installed ) {
+
+            if ( $v !== $installed ) {
+
+                @unlink( $downloads->tarball( $v ) );
+                @unlink( $downloads->tarball( $v ) . '.sig' );
+            }
+
+            return self::answer( $outcome, $message, $lines );
+        };
+
+        $missing = $check->ensureInstalled();
 
         if ( $missing !== null ) {
 
-            return self::answer( self::REFUSED, $missing );
+            return $refuse( self::REFUSED, $missing );
         }
 
         $judged = $check->judge( $v );
 
         if ( $judged['rollback'] ) {
 
-            return self::answer( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            return $refuse( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
         }
 
         if ( $judged['problems'] ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
+            return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
         }
 
         $result = self::prepare( $downloads, $v, $installed, $root, false );
 
-        if ( $result['outcome'] === self::OK ) {
+        if ( $result['outcome'] !== self::OK ) {
 
-            $downloads->clearFailure();
+            return $refuse( $result['outcome'], $result['message'], $result['lines'] );
         }
+
+        $downloads->clearFailure();
 
         return $result;
     }

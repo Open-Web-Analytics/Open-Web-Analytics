@@ -258,7 +258,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
             $run = $runner([]);
             $run->action();
-            $this->assertSame(['core-update-check'], $run->considered);
+            $this->assertSame(['core-update'], $run->considered);
             $this->assertFalse($run->drained);
 
             $prune = $runner(['prune-orphans' => true]);
@@ -326,7 +326,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
         // News panel stopped calling api.github.com during page renders, and
-        // core-update-check replaced it, making the same call for the bell and
+        // core-update replaced it, making the same call for the bell and
         // for automatic updates,
         // rebuild-cube joined them once it could refuse cheaply on an install
         // with no site collecting into v2, apply-custom-dimensions joined
@@ -341,7 +341,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         // prune-tracker-ingest-archive holds the intake's archived batches to
         // raw_retention_months, and deletes nothing while that is unset.
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'core-update-check'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'core-update'],
             array_keys($jobs)
         );
     }
@@ -449,7 +449,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /**
      * No default job may fire at midnight.
      *
-     * core-update-check calls a THIRD PARTY. A fixed every-six-hours expression
+     * core-update calls a THIRD PARTY. A fixed every-six-hours expression
      * would have every install call it at the same instants, and most servers keep UTC so
      * timezones would not spread it either. Each install derives its own
      * minute and hours from something stable about itself.
@@ -460,8 +460,8 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         // Every hour at a minute the install keeps; it lists the releases in
         // four of those hours, also its own (ReleaseCheck::listingHour()).
-        $this->assertNotSame('0 * * * *', $jobs['core-update-check']['schedule']);
-        $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', $jobs['core-update-check']['schedule'], 'hourly, spread by the minute');
+        $this->assertNotSame('0 * * * *', $jobs['core-update']['schedule']);
+        $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', $jobs['core-update']['schedule'], 'hourly, spread by the minute');
         $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', \OWA\Core\Cron::hourlySpreadFor('a', 1), 'an interval of one hour is every hour');
     }
 
@@ -501,7 +501,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             $this->assertFalse((new $class([]))->needsCurrentSchema(), "$name runs while updates are pending, so $class must not need them applied");
         }
 
-        $this->assertSame(['core-update-check'], $while);
+        $this->assertSame(['core-update'], $while);
     }
 
     /** Every registered job must name a real command and parse. */

@@ -32,7 +32,7 @@ class InstallNotices {
         }
 
         $body = $error . "\n\n" . ( empty( $failure['booted'] )
-            ? sprintf( CoreAPI::t( 'The installed release runs as before. Automatic updates skip OWA %1$s; a newer release installs as usual. To try it again: php cli.php cmd=core-update-install version=%1$s' ), $v )
+            ? sprintf( CoreAPI::t( 'The installed release runs as before. Automatic updates skip OWA %1$s; a newer release installs as usual. To try it again: php cli.php cmd=core-install --version=%1$s' ), $v )
             : CoreAPI::t( 'Its files are installed, and its schema updates did not complete. Until they do, tracking is queued and reports wait: fix the cause, then run php cli.php cmd=core-update-schema' ) );
 
         $notify( [

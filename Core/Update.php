@@ -185,12 +185,12 @@ class Update extends \OWA\Core\Base {
      * in a sentence or two; empty for one that may install itself. A release
      * with such an update among those an installation would run is staged and
      * announced, never installed automatically (Step 1: release check reads it
-     * from release.json). Never set in a patch release.
+     * from release.php). Never set in a patch release.
      *
      * For example: 'It rewrites every event's browser value. Back up the data
      * tables first: php cli.php cmd=backup scope=data'.
      *
-     * Declared as a default, not set in the constructor: release.json reads it
+     * Declared as a default, not set in the constructor: release.php reads it
      * without constructing the update (Core\VersionInfo).
      *
      * @var string

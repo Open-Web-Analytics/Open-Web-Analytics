@@ -2,7 +2,7 @@
 #
 # The Release Packager's tarball: owa_<version>_packaged.tar of the current
 # directory, which must be a built tree (composer install --no-dev, npm run
-# build, release.json written). Used by .github/workflows/main.yml, and by
+# build, release.php written). Used by .github/workflows/main.yml, and by
 # tests/tools/self_update_e2e.php to pack its test releases the same way.
 #
 # Usage: bash .github/scripts/release-tarball.sh <version>
@@ -59,8 +59,8 @@ tar --directory ./ \
     --exclude="./owa_${VERSION}_packaged.tar" \
     -pcvf "./owa_${VERSION}_packaged.tar" ./
 
-# What an installed release relies on to install this one: release.json,
-# which npm run build wrote, and updater.php. The tarball's SHA-256, which
-# GitHub records as the asset's digest, is the only proof it needs.
-tar -tf "./owa_${VERSION}_packaged.tar" | grep -x './release.json' > /dev/null
+# What an installed release relies on to install this one: release.php,
+# which npm run build wrote, and updater.php. What proves the tarball is its
+# signature (.github/scripts/release-sign.php), made after this.
+tar -tf "./owa_${VERSION}_packaged.tar" | grep -x './release.php' > /dev/null
 tar -tf "./owa_${VERSION}_packaged.tar" | grep -x './updater.php' > /dev/null

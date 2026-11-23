@@ -6,7 +6,7 @@ use OWA\Core\CoreAPI;
 /**
  * Automatic updates: the release check, which installs what it finds.
  *
- * The scheduler runs it every hour (job core-update-check). Four of those
+ * The scheduler runs it every hour (job core-update). Four of those
  * runs a day, six hours apart at hours this installation keeps
  * (listingHour()), list the releases, each after waiting a number of
  * seconds it also keeps (listingDelay()): installations spread over 21,600
@@ -94,6 +94,7 @@ class ReleaseCheck {
             'window'    => CoreAPI::getSetting( 'base', 'auto_update_window' ),
             'timezone'  => (string) ( CoreAPI::getSetting( 'base', 'timezone' ) ?: 'UTC' ),
             'url'       => (string) CoreAPI::getSetting( 'base', 'auto_update_releases_url' ),
+            'download'  => (string) CoreAPI::getSetting( 'base', 'auto_update_download_url' ),
             // The scheduler's run: it lists only in its listing hours, and says nothing after the copy.
             'scheduled' => false,
             // What fixes this installation's listing hour and second: its auth
@@ -231,7 +232,7 @@ class ReleaseCheck {
 
             if ( $this->skips( $v ) ) {
 
-                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-update-install version=%s', $v, $v ) );
+                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
             }
 
             // Downloaded when it has not been, and again when the asset GitHub
@@ -297,7 +298,7 @@ class ReleaseCheck {
 
             $this->notify( 'manual:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s needs to be installed by hand' ), $v ),
-                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update-install' ), $url );
+                implode( "\n", $texts ) . "\n\n" . sprintf( CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-install --version=%s' ), $v ), $url );
 
             return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it will not install itself.', $v ) );
         }
@@ -505,8 +506,9 @@ class ReleaseCheck {
 
     /**
      * The installed release's tarball, which a failed install puts back:
-     * downloaded and checked once, from $list or the listing. Null when it is
-     * there, else why it is not.
+     * downloaded and checked once, from $list or the listing, or by its
+     * version when the listing does not have it (Releases::byTag()). Null
+     * when it is there, else why it is not.
      *
      * @param  list<array<string, mixed>>|null $list the listing, when the caller has it
      * @return string|null
@@ -522,15 +524,17 @@ class ReleaseCheck {
 
         try {
 
-            $list    = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
-            $release = Releases::find( $list, $installed, $installed );
+            try {
 
-            if ( $release === null ) {
+                $list = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
 
-                throw new \RuntimeException( sprintf( 'the listing has no release %s with its tarball', $installed ) );
+            } catch ( \RuntimeException $e ) {
+
+                $list = [];
             }
 
-            $this->downloads->download( $release );
+            $this->downloads->download( Releases::find( $list, $installed, $installed )
+                ?? Releases::byTag( $installed, $installed, (string) $this->context['download'] ) );
             $this->lines[] = sprintf( 'Downloaded the installed release, %s, and checked its SHA-256 and signature: a failed install puts it back.', $installed );
 
             return null;

@@ -6,7 +6,7 @@ use OWA\Core\VersionInfo;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * release.json (Core\VersionInfo), held to what the booted code says: each
+ * release.php (Core\VersionInfo), held to what the booted code says: each
  * module's schema as its constructed module has it, and every update as
  * Module::update() would build it.
  */
@@ -94,8 +94,19 @@ final class VersionInfoTest extends TestCase
             $this->assertSame(0, $code);
             $this->assertSame(VersionInfo::toArray(), json_decode((string) file_get_contents($file), true));
             $this->assertSame([], glob($file . '.tmp*'), 'no temporary file left');
+
+            // release.php: run, it shows nothing; read as text, it is the same data.
+            $php = substr($file, 0, -5) . '.php';
+            ob_start();
+            \OWA\Module\Base\Controller\VersionInfoCli::runWithoutBoot(['cmd' => 'version-info', 'file' => $php]);
+            ob_end_clean();
+            $this->assertStringStartsWith(VersionInfo::GUARD, (string) file_get_contents($php));
+            $this->assertSame(VersionInfo::toArray(), VersionInfo::decode((string) file_get_contents($php)));
+            $this->assertSame('', (string) shell_exec(sprintf('%s -f %s', escapeshellarg(PHP_BINARY), escapeshellarg($php))));
+            $this->assertNull(VersionInfo::decode('{"version": "2.0.1"}'), 'bare JSON is not release.php');
         } finally {
             @unlink($file);
+            @unlink(substr($file, 0, -5) . '.php');
         }
     }
 }

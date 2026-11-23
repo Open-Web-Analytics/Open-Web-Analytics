@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 /**
  * Whether a staged release can be installed here: Step 1's preflight.
  *
- * Two halves. requirements() judges the release's release.json requirements
+ * Two halves. requirements() judges the release's release.php requirements
  * (Core\Requirements::toArray() as that release wrote it) against this
  * server, seen from the CLI: PHP, its extensions, the database server over
  * OWA's own connection, and owa-config.php's constants. The rest of the
@@ -21,7 +21,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 class Preflight {
 
     /**
-     * @param  array<string, mixed> $req release.json's requirements
+     * @param  array<string, mixed> $req release.php's requirements
      * @param  Environment          $env
      * @return list<string>
      */
