@@ -61,6 +61,8 @@
 
 require __DIR__ . '/scratch_guard.php';
 require dirname( __DIR__, 2 ) . '/modules/Base/Classes/AutoUpdate/Signature.php';
+// release.php's encode() and decode(), which need no other class.
+require dirname( __DIR__, 2 ) . '/Core/VersionInfo.php';
 
 // The run's signing key: every package trusts its public half, as a release
 // trusts the maintainers' keys, and is signed with it by the packager's script.
