@@ -298,7 +298,7 @@ class ReleaseCheck {
 
             $this->notify( 'manual:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s needs to be installed by hand' ), $v ),
-                implode( "\n", $texts ) . "\n\n" . CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --force' ), $url );
+                implode( "\n", $texts ) . "\n\n" . sprintf( CoreAPI::t( 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --version=%s' ), $v ), $url );
 
             return $this->outcome( self::MANUAL, $v, $texts, sprintf( '%s has updates that must be installed by hand; it will not install itself.', $v ) );
         }

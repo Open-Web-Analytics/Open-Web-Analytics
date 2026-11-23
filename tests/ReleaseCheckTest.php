@@ -536,25 +536,22 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
         $this->assertSame(['base update 97: It rewrites every event. Back up the data tables first: php cli.php cmd=backup scope=data'],
             $result['problems'], 'only what this install would run');
-        $this->assertStringContainsString('then install it: php cli.php cmd=core-update --force', $this->notices['manual:2.1.0']['body']);
+        $this->assertStringContainsString('then install it: php cli.php cmd=core-update --version=2.1.0', $this->notices['manual:2.1.0']['body']);
 
         $this->schema['base'] = 97;
         $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.1.0'])['outcome'], 'once run by hand there is nothing manual left');
     }
 
-    /** By hand: the newest release, or the one named, installs now whatever the settings, and a failure recorded for it is cleared. */
+    /** By hand: the release named installs now whatever the settings, and a failure recorded for it is cleared. */
     public function testInstallByHand(): void
     {
         $this->downloads()->ensureRoot();
         $this->downloads()->writeFailure(['version' => '2.0.2', 'from' => '2.0.0', 'error' => 'it failed']);
 
-        $result = $this->hand(null, ['2.0.1', '2.0.2'], ['enabled' => false]);
+        $result = $this->hand('2.0.2', ['2.0.1', '2.0.2'], ['enabled' => false]);
         $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
-        $this->assertSame('2.0.2', Install::$pending['to'], 'the newest');
+        $this->assertSame('2.0.2', Install::$pending['to']);
         $this->assertNull($this->downloads()->failure());
-        $this->dropPending();
-
-        $this->assertSame('2.0.1', $this->hand('2.0.1', ['2.0.1', '2.0.2'])['outcome'] === Install::OK ? Install::$pending['to'] : null);
         $this->dropPending();
     }
 
@@ -586,18 +583,6 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check(['2.0.1'], ['window' => ''], null, null, false, false, null, false);
         $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertTrue($this->downloads()->has('2.0.0'));
-        $this->dropPending();
-    }
-
-    /** By hand without the listing: what was downloaded before installs all the same. */
-    public function testInstallByHandWithoutTheListing(): void
-    {
-        $this->check(['2.0.1']);
-
-        $result = Install::byHand(null, false, $this->downloads(), ['root' => $this->tmp . '/owa', 'installed' => '2.0.0', 'role' => \OWA\Core\ServerRole::FULL,
-            'env' => $this->env(), 'schema' => fn ($m) => $this->schema[$m] ?? null, 'url' => 'https://example.test/unreachable']);
-        $this->assertSame(Install::OK, $result['outcome'], $result['message']);
-        $this->assertSame('2.0.1', Install::$pending['to']);
         $this->dropPending();
     }
 
@@ -891,7 +876,7 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /** Install::byHand() against listed releases built here. */
-    private function hand(?string $version, array $versions, array $context = [], bool $force = false): array
+    private function hand(string $version, array $versions, array $context = [], bool $force = false): array
     {
         $list      = [];
         $installed = (string) ($context['installed'] ?? '2.0.0');

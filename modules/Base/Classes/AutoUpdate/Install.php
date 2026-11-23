@@ -5,7 +5,7 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-update --version / --force by hand
+ * (ReleaseCheck) when a release is due, or cmd=core-update --version by hand
  * (byHand()).
  *
  * prepare() takes the install lock and opens both tarballs, proving each
@@ -96,29 +96,28 @@ class Install {
     }
 
     /**
-     * cmd=core-update --force, or --version=<x.y.z> [--force], installed now
-     * whatever the automatic update settings say. --force alone: the newest
-     * release in this major from the listing, downloaded if it is not (and,
-     * without the listing, the newest already downloaded). --version: that
-     * release's tarball and signature fetched from the download URL by its
-     * version, every time, with no listing (Releases::byTag()). A release not
-     * newer than the installed one only with $force, and never one older than
-     * the database schema. A failure recorded for it is cleared: whoever
-     * installs by hand has dealt with it.
+     * cmd=core-update --version=<x.y.z> [--force]: that release installed
+     * now, whatever the automatic update settings say, its tarball and
+     * signature fetched from the download URL by its version every time,
+     * with no listing (Releases::byTag()). One not newer than the installed
+     * release only with $force, and never one older than the database
+     * schema. A failure recorded for it is cleared: whoever installs by hand
+     * has dealt with it.
      *
-     * @param  string|null          $version
+     * @param  string               $version
      * @param  bool                 $force
      * @param  Downloads|null       $downloads
      * @param  array<string, mixed> $context ReleaseCheck's, for a test
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    public static function byHand( $version = null, $force = false, $downloads = null, array $context = [] ) {
+    public static function byHand( $version, $force = false, $downloads = null, array $context = [] ) {
 
         $downloads = $downloads ?? new Downloads();
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
         $root      = (string) $c['root'];
         $installed = (string) $c['installed'];
+        $v         = (string) $version;
 
         $checkout = Vcs::checkout( $root );
 
@@ -132,43 +131,14 @@ class Install {
             return self::answer( self::REFUSED, sprintf( 'This server\'s role is %s; OWA is installed from a full server only.', $c['role'] ) );
         }
 
-        if ( Version::parse( $installed ) === null || ( $version !== null && Version::parse( (string) $version ) === null ) ) {
+        if ( Version::parse( $installed ) === null || Version::parse( $v ) === null ) {
 
-            return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $version ?? 'the newest' ) );
+            return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $v ) );
         }
 
-        if ( $version !== null && ( Version::step( $installed, $version ) === Version::MAJOR || Version::step( $version, $installed ) === Version::MAJOR ) ) {
+        if ( Version::step( $installed, $v ) === Version::MAJOR || Version::step( $v, $installed ) === Version::MAJOR ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $version ) );
-        }
-
-        $list = null;
-
-        if ( $version !== null ) {
-
-            $release = Releases::byTag( $version, $installed, (string) $c['download'] );
-            $v       = (string) $version;
-
-        } else {
-
-            try {
-
-                $list = $c['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $c['url'], $installed ) );
-
-            } catch ( \RuntimeException $e ) {
-
-                $list = null;
-            }
-
-            $release = $list === null ? null : Releases::choose( $list, $installed, Version::MINOR );
-            $v       = (string) ( $release['version'] ?? ( $downloads->versions()[0] ?? '' ) );
-
-            if ( $v === '' || Version::compare( $v, $installed ) <= 0 ) {
-
-                return self::answer( self::REFUSED, $list === null
-                    ? 'The releases could not be listed, and no newer release has been downloaded.'
-                    : sprintf( 'No release is newer than %s.', $installed ) );
-            }
+            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $v ) );
         }
 
         if ( Version::compare( $v, $installed ) <= 0 && ! $force ) {
@@ -176,19 +146,16 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
-        if ( $release !== null && ( $version !== null || ! $downloads->has( $v ) ) ) {
+        try {
 
-            try {
+            $downloads->download( Releases::byTag( $v, $installed, (string) $c['download'] ) );
 
-                $downloads->download( $release );
+        } catch ( \RuntimeException $e ) {
 
-            } catch ( \RuntimeException $e ) {
-
-                return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
-            }
+            return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
         }
 
-        $missing = $check->ensureInstalled( $list );
+        $missing = $check->ensureInstalled();
 
         if ( $missing !== null ) {
 

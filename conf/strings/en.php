@@ -774,7 +774,7 @@ return [
     'It checks with MaxMind first and does nothing if your copy is already current.' => 'It checks with MaxMind first and does nothing if your copy is already current.',
     'It could not be written when the settings were saved, so it is queued; the scheduler publishes it within a minute. If it stays here, see %1$s. To be served from %2$s' => 'It could not be written when the settings were saved, so it is queued; the scheduler publishes it within a minute. If it stays here, see %1$s. To be served from %2$s',
     'It is checked again every hour, and installs once these are fixed.' => 'It is checked again every hour, and installs once these are fixed.',
-    'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --force' => 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --force',
+    'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --version=%s' => 'It is downloaded and checked. Take the backup each update names, then install it: php cli.php cmd=core-update --version=%s',
     'It is recommended that you back up your database before applying updates.' => 'It is recommended that you back up your database before applying updates.',
     'It needs %1$s to be at least %2$d characters long.' => 'It needs %1$s to be at least %2$d characters long.',
     'It needs %d-bit PHP.' => 'It needs %d-bit PHP.',
