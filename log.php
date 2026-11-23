@@ -86,10 +86,11 @@ if ( function_exists( 'fastcgi_finish_request' ) ) {
 }
 
 /*
- * While an install copies files, the tree is part old and part new and
- * nothing can boot: the beacon is dropped (updater.php `dropsBeacon`). Once the
- * copy is done OWA boots, and while the schema is behind every beacon is
- * queued for the drain (TrackerIngest::isQueued()).
+ * While an update is being installed and the new release has not booted
+ * yet (the install marker), the files may be part old and part new: the
+ * beacon is dropped (updater.php `dropsBeacon`). Once it has booted OWA
+ * boots, and while the schema is behind every beacon is queued for the drain
+ * (TrackerIngest::isQueued()).
  */
 if ((require __DIR__ . '/updater.php')['dropsBeacon'](__DIR__)) {
     exit;

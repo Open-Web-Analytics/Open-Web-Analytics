@@ -458,8 +458,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertNotSame('0 */6 * * *', $jobs['core-update-check']['schedule']);
-        $this->assertMatchesRegularExpression('/^\d{1,2} \d{1,2},\d{1,2},\d{1,2},\d{1,2} \* \* \*$/', $jobs['core-update-check']['schedule'], 'four times a day');
+        // Every hour at a minute the install keeps; it lists the releases in
+        // four of those hours, also its own (ReleaseCheck::listingHour()).
+        $this->assertNotSame('0 * * * *', $jobs['core-update-check']['schedule']);
+        $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', $jobs['core-update-check']['schedule'], 'hourly, spread by the minute');
+        $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', \OWA\Core\Cron::hourlySpreadFor('a', 1), 'an interval of one hour is every hour');
     }
 
     /** Every six hours, at a minute and hour offset the install keeps. */

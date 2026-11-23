@@ -23,7 +23,6 @@ return [
     'auto_update_days' => '',
     'auto_update_email_success' => true,
     'auto_update_level' => 'minor',
-    'auto_update_patch_immediately' => true,
     'auto_update_releases_url' => 'https://updates.openwebanalytics.com/releases',
     'auto_update_window' => '02:00-06:00',
     'autoload_indexes_before_093' => [],

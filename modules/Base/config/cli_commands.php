@@ -16,10 +16,6 @@ return [
     'tables-cleanup'              => 'base.tablesCleanupCli',
     'core-update-check'           => 'base.coreUpdateCheckCli',
     'core-update-status'          => 'base.coreUpdateStatusCli',
-    'core-update-stage'           => 'base.coreUpdateStageCli',
-    'core-update-unstage'         => 'base.coreUpdateUnstageCli',
-    'core-update-ignore-window'   => 'base.coreUpdateIgnoreWindowCli',
-    // Run by cli.php before OWA loads (updater.php), like the two above it run without boot.
     'core-update-install'         => 'base.coreUpdateInstallCli',
     'ua-update-definitions'       => 'base.uaUpdateDefinitionsCli',
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',

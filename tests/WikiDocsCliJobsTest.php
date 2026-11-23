@@ -92,8 +92,6 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         // Read by the update that needs them, not by the controller.
         $elsewhere = [
             'core-update-schema' => ['since' => 'modules/Base/Update/Update062.php', 'all' => 'modules/Base/Update/Update062.php'],
-            // Read before OWA loads, by the hand-off.
-            'core-update-install' => ['force' => 'updater.php'],
         ];
 
         foreach ($this->registeredCommands() as $command => $class) {
@@ -105,7 +103,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
                     ? file_get_contents(dirname(__DIR__) . '/' . $elsewhere[$command][$name])
                     : $this->sourceOf($class);
 
-                // As a parsed parameter ('force'), or as the raw argument the hand-off reads ('--force').
+                // As a parsed parameter ('force'), or as the raw argument ('--force').
                 $this->assertMatchesRegularExpression('/[\'"](?:--)?' . preg_quote($name, '/') . '[\'"]/', $src,
                     "cmd=$command documents $arg, but nothing in its code reads '$name'");
             }
@@ -195,7 +193,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $this->assertSame('daily, at a time each install derives for itself', owa_wiki_job_schedule($jobs['rotate-partitions']));
         $this->assertSame('every 5 minutes, at an offset each install derives for itself', owa_wiki_job_schedule($jobs['rebuild-cube']));
         $this->assertSame('every minute', owa_wiki_job_schedule($jobs['drain-tracker-ingest']));
-        $this->assertSame('every 6 hours, at a time each install derives for itself', owa_wiki_job_schedule($jobs['core-update-check']));
+        $this->assertSame('hourly, at a minute each install derives for itself', owa_wiki_job_schedule($jobs['core-update-check']));
 
         // A module's job: listed whether or not the module is active here.
         $this->assertTrue($jobs['refresh-geoip-db']['spread']);

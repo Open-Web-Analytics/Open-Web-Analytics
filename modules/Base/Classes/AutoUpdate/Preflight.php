@@ -10,9 +10,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * OWA's own connection, and owa-config.php's constants. The rest of the
  * environment -- the web server's PHP among it -- is taken as it was when OWA
  * was installed: requirements change only in major releases, which are never
- * automatic. install() judges what copying the release needs: the staging
- * owned by this user and writable by no one else, every directory the
- * release writes in writable, and room for it and its backup.
+ * automatic. install() judges what copying the release needs: every
+ * directory the release writes in writable, and room for its files.
  *
  * Each returns its problems as sentences, [] when there are none. Pure where
  * it can be: requirements() is given the environment, environment() reads it.
@@ -147,65 +146,26 @@ class Preflight {
     }
 
     /**
-     * What copying the release over $root needs.
+     * What copying the release over $root needs: every directory it writes
+     * in writable, and room on the disk for its files beside the old.
      *
-     * @param  string $staging the release's <version>/
-     * @param  string $release its release/, whose files are the ones copied
-     * @param  string $root    the OWA directory
+     * @param  array<string, int> $files the release's files, relative to its root, with their sizes
+     * @param  string             $root  the OWA directory
      * @return list<string>
      */
-    public static function install( $staging, $release, $root ) {
+    public static function install( array $files, $root ) {
 
         $root     = rtrim( (string) $root, '/' );
         $problems = [];
 
-        if ( ! function_exists( 'posix_geteuid' ) ) {
-
-            return [ \OWA\Core\CoreAPI::t( 'Automatic updates need PHP\'s posix extension in the CLI, to check who owns OWA\'s files.' ) ];
-        }
-
-        $uid = posix_geteuid();
-
-        // The staging is what the installer runs: no one but the scheduler's
-        // user may be able to change it. The OWA directory itself is often
-        // group-writable on purpose (a setgid web group), and only has to let
-        // that user write the release's files, checked below.
-        foreach ( [ dirname( (string) $staging ), (string) $staging ] as $dir ) {
-
-            $owner = @fileowner( $dir );
-            $perms = @fileperms( $dir );
-
-            if ( $owner !== $uid ) {
-
-                $problems[] = sprintf( \OWA\Core\CoreAPI::t( '%s is not owned by the user the scheduler runs as.' ), $dir );
-
-            } elseif ( $perms !== false && ( $perms & 0022 ) ) {
-
-                $problems[] = sprintf( \OWA\Core\CoreAPI::t( '%s can be written by users other than its owner.' ), $dir );
-            }
-        }
-
         // Each file is written beside its target and renamed over it, and
         // what the release does not ship is unlinked: the directories must be
         // writable, whatever the files' own modes.
-        $bytes = 0;
-        $dirs  = [];
+        $dirs = [];
 
-        $release = rtrim( (string) $release, '/' );
-        $files   = is_dir( $release )
-            ? new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $release, \FilesystemIterator::SKIP_DOTS ) )
-            : [];
+        foreach ( array_keys( $files ) as $rel ) {
 
-        foreach ( $files as $file => $info ) {
-
-            /** @var \SplFileInfo $info */
-            if ( ! $info->isFile() ) {
-
-                continue;
-            }
-
-            $bytes += (int) $info->getSize();
-            $dir    = dirname( $root . '/' . substr( (string) $file, strlen( $release ) + 1 ) );
+            $dir = dirname( $root . '/' . $rel );
 
             while ( ! is_dir( $dir ) && $dir !== $root && $dir !== dirname( $dir ) ) {
 
@@ -223,26 +183,13 @@ class Preflight {
                 count( $unwritable ), self::named( $unwritable[0], $root ) );
         }
 
-        // The new files go beside the old in the OWA directory; the backup of
-        // what they replace, at most the release's size, in the updates directory.
-        $need = [];
+        $bytes = array_sum( $files );
+        $free  = @disk_free_space( $root );
 
-        foreach ( [ $root, dirname( (string) $staging ) ] as $path ) {
+        if ( $free !== false && $free < $bytes ) {
 
-            $stat = @stat( $path );
-            $disk = $stat === false ? $path : (string) $stat['dev'];
-            $need[ $disk ] = [ 'path' => $path, 'bytes' => ( $need[ $disk ]['bytes'] ?? 0 ) + $bytes ];
-        }
-
-        foreach ( $need as $n ) {
-
-            $free = @disk_free_space( $n['path'] );
-
-            if ( $free !== false && $free < $n['bytes'] ) {
-
-                $problems[] = sprintf( \OWA\Core\CoreAPI::t( 'Installing it needs about %1$d MB free on the disk holding %2$s; %3$d MB are.' ),
-                    (int) ceil( $n['bytes'] / 1048576 ), $n['path'], (int) floor( $free / 1048576 ) );
-            }
+            $problems[] = sprintf( \OWA\Core\CoreAPI::t( 'Installing it needs about %1$d MB free on the disk holding %2$s; %3$d MB are.' ),
+                (int) ceil( $bytes / 1048576 ), $root, (int) floor( $free / 1048576 ) );
         }
 
         return $problems;

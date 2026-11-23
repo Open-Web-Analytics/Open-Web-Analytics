@@ -1,17 +1,20 @@
 <?php
 
+use OWA\Module\Base\Classes\AutoUpdate\Signature;
+use OWA\Module\Base\Classes\AutoUpdate\Tar;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Steps 2 and 3 of automatic updates: updater.php's hand-off and install.
+ * Automatic updates before OWA loads, and the copy: updater.php's closures
+ * (the copy, the install marker, preboot, putting a release back, the lock,
+ * the entry points' answers).
  *
- * Each install runs in a process of its own, as cli.php runs it, against a
- * throwaway installed tree and staging: the INSTALLED tree's updater.php
- * hands off to the STAGED release's. The release's owa.php stands in for
- * Step 4: it defines Classes\AutoUpdate\Finish, which records that it ran
- * (or, for the release that does not boot, fails).
+ * Against a throwaway installed tree, 2.0.0, and two signed tarballs as the
+ * packager makes them: 2.0.0's, which a failed install puts back, and 2.0.1's.
+ * Install::run() ends the process it runs in; the end-to-end harness
+ * (tests/tools/self_update_e2e.php) drives it through cli.php.
  */
 final class InstallerTest extends TestCase
 {
@@ -19,51 +22,71 @@ final class InstallerTest extends TestCase
     private string $root = '';
     private string $data = '';
     private string $updates = '';
-    private int $now = 0;
-    private string $out = '';
+    private string $signingKey = '';
 
-    /** @var array<string, \Closure> updater.php's closures, for the parts that need no process */
+    /** @var array<string, \Closure> updater.php's closures */
     private array $u = [];
+
+    /** 2.0.0's files, as installed. */
+    private const OLD = [
+        'cli.php'                 => 'old cli',
+        'owa_env.php'             => 'env',
+        'Core/Env.php'            => "<?php\nfinal class Env {\n    const VERSION = '2.0.0';\n}\n",
+        'modules/Base/Module.php' => 'old module',
+        'modules/Base/Retired.php' => 'a file 2.0.1 no longer has',
+        'modules/Gone/Module.php' => 'a module 2.0.1 no longer has',
+        'public/base/old.js'      => 'a built asset 2.0.1 does not ship',
+        'same.php'                => 'unchanged',
+        'owa.php'                 => '<?php // 2.0.0',
+    ];
+
+    /** 2.0.1's. */
+    private const NEW = [
+        'cli.php'                 => 'new cli',
+        'owa_env.php'             => 'env',
+        'Core/Env.php'            => "<?php\nfinal class Env {\n    const VERSION = '2.0.1';\n}\n",
+        'modules/Base/Module.php' => 'new module',
+        'modules/Base/Added.php'  => 'added',
+        'public/base/new.js'      => 'a built asset',
+        'same.php'                => 'unchanged',
+        'owa.php'                 => '<?php // 2.0.1',
+    ];
 
     protected function setUp(): void
     {
-        if (!function_exists('posix_geteuid')) {
-            $this->markTestSkipped('needs the posix extension');
-        }
-
         $this->tmp     = sys_get_temp_dir() . '/owa-installer-' . bin2hex(random_bytes(4));
         $this->root    = $this->tmp . '/owa';
         $this->data    = $this->tmp . '/data';
-        $this->now     = time();
         $this->u       = require dirname(__DIR__) . '/updater.php';
 
         mkdir($this->root, 0755, true);
         mkdir($this->data, 0755, true);
         $this->updates = (string) $this->u['updatesDir']($this->data, true);
 
-        // The installed release, 2.0.0, and what belongs to this installation.
-        $this->tree($this->root, [
-            'cli.php'                          => 'old cli',
-            'owa_env.php'                      => 'env',
-            'Core/Env.php'                     => "<?php\nfinal class Env {\n    const VERSION = '2.0.0';\n}\n",
-            'modules/Base/Module.php'          => 'old module',
-            'modules/Base/Retired.php'         => 'a file 2.0.1 no longer has',
-            'modules/Hello/Module.php'         => 'a module OWA retired',
-            'modules/ThirdParty/Module.php'    => 'someone else\'s module',
-            'public/base/old.js'               => 'a built asset 2.0.1 does not ship',
-            'public/tracker/OWA-site.js'       => 'a tracking bundle',
-            'notes.txt'                        => 'a file left at the top level',
-            'same.php'                         => 'unchanged',
-            'owa-data/logs/errors.txt'         => 'the default data directory',
+        $pair               = sodium_crypto_sign_keypair();
+        $this->signingKey   = base64_encode(sodium_crypto_sign_secretkey($pair));
+        Signature::$trusted = [base64_encode(sodium_crypto_sign_publickey($pair))];
+
+        // The installed release, and what belongs to the installation and its operator.
+        $this->tree($this->root, self::OLD + [
+            'owa-config.php'                => '<?php // the installation\'s',
+            'owa-data/logs/errors.txt'      => 'the data directory',
+            'public/tracker/OWA-site.js'    => 'a tracking bundle',
+            'modules/ThirdParty/Module.php' => 'someone else\'s module',
+            '.htpasswd'                     => 'the operator\'s',
+            '.well-known/security.txt'      => 'the operator\'s',
         ]);
         chmod($this->root . '/cli.php', 0700);
         copy(dirname(__DIR__) . '/updater.php', $this->root . '/updater.php');
-        file_put_contents($this->root . '/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '{$this->data}/');\n");
-        file_put_contents($this->root . '/owa.php', '<?php // the installed release');
+
+        $this->release('2.0.0', self::OLD);
+        $this->release('2.0.1', self::NEW);
     }
 
     protected function tearDown(): void
     {
+        Signature::$trusted = null;
+
         if ($this->tmp !== '') {
             exec('chmod -R u+w ' . escapeshellarg($this->tmp) . '; rm -rf ' . escapeshellarg($this->tmp));
         }
@@ -81,215 +104,195 @@ final class InstallerTest extends TestCase
         $this->assertNull($this->u['updatesDir']($this->data, true), 'nor a third made');
     }
 
-    public function testTheConfigIsIncludedAsBootIncludesIt(): void
+    /** 2.0.1 over 2.0.0: what differs is written, what 2.0.0 shipped and 2.0.1 does not goes, and nothing else is touched. */
+    public function testTheCopy(): void
     {
-        $out = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
-            '$c = (require %s)["config"](%s); echo json_encode($c), defined("OWA_DATA_DIR") ? " defined" : "";',
-            var_export($this->root . '/updater.php', true), var_export($this->root, true)))));
-        $this->assertSame(json_encode(['data' => $this->data, 'public' => $this->root . '/public']) . ' defined', $out);
+        touch($this->root . '/same.php', 1700000000);
 
-        file_put_contents($this->root . '/owa-config.php', "<?php\n\$this->x = 1;\n");
-        $out = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
-            'var_export((require %s)["config"](%s));', var_export($this->root . '/updater.php', true), var_export($this->root, true)))));
-        $this->assertSame('NULL', $out, 'a file using $this is refused, not run');
-    }
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
 
-    /** A config naming an OWA class would fatal before OWA loads, or load the old class into the new release's process. */
-    public function testAConfigNamingAnOwaClassIsRefused(): void
-    {
-        foreach (["define('X', \\OWA\\Core\\Env::root());", "use OWA\\Core\\Env;\ndefine('X', Env::root());"] as $line) {
-            file_put_contents($this->root . '/owa-config.php', "<?php\n" . $line . "\n");
-            $this->assertNotNull($this->u['configRefused']($this->root), $line);
+        foreach (self::NEW as $path => $content) {
+            $this->assertSame($content, file_get_contents($this->root . '/' . $path), $path);
         }
 
-        $this->stage('2.0.1');
+        clearstatcache();
+        $this->assertSame(1700000000, filemtime($this->root . '/same.php'), 'a file that is already the release\'s is left as it is');
+        $this->assertSame('0700', sprintf('%04o', fileperms($this->root . '/cli.php') & 0777), 'a replaced file keeps its mode');
 
-        $this->assertSame(99, $this->handoff(), 'no fatal: the run boots normally - ' . $this->out);
-        $this->assertFileDoesNotExist($this->updates . '/install.json', 'and installs nothing');
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertStringContainsString('owa-config.php uses OWA\\Core\\Env.', $this->out, 'by hand, it says why');
+        foreach (['modules/Base/Retired.php', 'public/base/old.js'] as $gone) {
+            $this->assertFileDoesNotExist($this->root . '/' . $gone, '2.0.1 does not ship it');
+        }
+        $this->assertDirectoryDoesNotExist($this->root . '/modules/Gone', 'the directory it leaves empty goes too');
 
-        file_put_contents($this->root . '/owa-config.php', "<?php\ndefine('OWA_DATA_DIR', '{$this->data}/');\n// \\OWA\\Core\\Env in a comment\n");
-        $this->assertNull($this->u['configRefused']($this->root), 'a comment is not code');
-    }
-
-    public function testTheBackOff(): void
-    {
-        $this->assertSame([60, 180, 600, 900, 7200, 86400, 604800, 604800], array_map($this->u['backoff'], [1, 2, 3, 4, 5, 6, 7, 12]));
-    }
-
-    public function testWhatIsDue(): void
-    {
-        $due = $this->u['due'];
-
-        $this->assertNull($due($this->updates, $this->now), 'nothing staged');
-
-        $this->stage('2.0.1');
-        $this->assertSame('2.0.1', $due($this->updates, $this->now), 'no window: at once');
-
-        // 03:00 on a Saturday in London.
-        $sat3 = (new DateTimeImmutable('2026-11-21 03:00', new DateTimeZone('Europe/London')))->getTimestamp();
-        $this->stage('2.0.1', ['days' => [6, 7], 'start' => '02:00', 'end' => '06:00', 'timezone' => 'Europe/London']);
-        $this->assertSame('2.0.1', $due($this->updates, $sat3));
-        $this->assertNull($due($this->updates, $sat3 + 3 * 3600), 'after the window');
-        $this->assertNull($due($this->updates, $sat3 - 2 * 86400), 'not on a Thursday');
-
-        // 23:00-02:00 starting Saturday: 01:00 Sunday is still Saturday's window.
-        $this->stage('2.0.1', ['days' => [6], 'start' => '23:00', 'end' => '02:00', 'timezone' => 'Europe/London']);
-        $this->assertSame('2.0.1', $due($this->updates, $sat3 + 22 * 3600), '01:00 Sunday');
-        $this->assertNull($due($this->updates, $sat3 - 2 * 3600), '01:00 Saturday belongs to Friday');
-    }
-
-    /** An unfinished install comes first, on its back-off, whatever staged.json says; nothing new starts meanwhile. */
-    public function testAnUnfinishedInstallComesFirst(): void
-    {
-        $this->stage('2.0.2');
-        $this->stage('2.0.1', null, false);
-        $this->unfinished('2.0.1', $this->now + 60);
-
-        $this->assertNull($this->u['due']($this->updates, $this->now));
-        $this->assertSame('2.0.1', $this->u['due']($this->updates, $this->now + 60));
-    }
-
-    public function testNothingStagedBootsNormally(): void
-    {
-        $this->assertSame(99, $this->handoff());
-    }
-
-    /** Copied (cli.php last, installed modes kept), what it does not ship deleted, what is the installation's kept, then Step 4. */
-    public function testAnInstall(): void
-    {
-        $this->stage('2.0.1');
-
-        $this->assertSame(0, $this->handoff(), $this->out);
-
-        $this->assertSame('new cli', file_get_contents($this->root . '/cli.php'));
-        $this->assertSame('0700', sprintf('%04o', fileperms($this->root . '/cli.php') & 0777), 'the installed mode stays');
-        $this->assertSame('new module', file_get_contents($this->root . '/modules/Base/Module.php'));
-        $this->assertSame('added', file_get_contents($this->root . '/modules/Base/Added.php'));
-        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'), 'Step 4 ran, in the new code');
-        $this->assertFileDoesNotExist($this->data . '/updating', 'the lock is let go when the install is done');
-
-        foreach (['modules/Base/Retired.php', 'modules/Hello', 'public/base/old.js', 'notes.txt'] as $gone) {
-            $this->assertFileDoesNotExist($this->root . '/' . $gone, "$gone is not shipped and not the installation's");
+        foreach (['owa-config.php', 'owa-data/logs/errors.txt', 'public/tracker/OWA-site.js', 'modules/ThirdParty/Module.php', '.htpasswd', '.well-known/security.txt', 'updater.php'] as $kept) {
+            $this->assertFileExists($this->root . '/' . $kept, 'no release ships it, so the copy never deletes it');
         }
 
-        foreach (['owa-config.php', 'owa-data/logs/errors.txt', 'public/tracker/OWA-site.js', 'modules/ThirdParty/Module.php'] as $kept) {
-            $this->assertFileExists($this->root . '/' . $kept, "$kept is the installation's");
-        }
-
-        $install = $this->install();
-        $this->assertSame(['installing', '2.0.1', 1, true, true], [$install['state'], $install['version'], $install['attempts'], $install['copied'], $install['booted']]);
-        $this->assertEqualsWithDelta($this->now + 60, $install['retry_after'], 5, 'set at the claim, so a process that dies retries a minute later');
-        $this->assertSame('old cli', file_get_contents($this->updates . '/backup/cli.php'));
-        $this->assertSame('a file 2.0.1 no longer has', file_get_contents($this->updates . '/backup/modules/Base/Retired.php'), 'what it deleted is backed up too');
-        $this->assertFileDoesNotExist($this->updates . '/backup/same.php', 'an unchanged file is not touched');
+        $this->assertSame([], $this->leftovers(), 'no temporary file left');
     }
 
-    /** A copy error is undone at once, counted, and the old release boots; what it added waits for the next copy. */
-    public function testACopyErrorIsUndone(): void
+    /** A copy that cannot write is put back from the installed release's tarball by the same closure: only what it changed is written. */
+    public function testAFailedCopyIsPutBack(): void
     {
-        $this->stage('2.0.1', null, true, ['modules/Locked/New.php' => 'cannot be written']);
-        mkdir($this->root . '/modules/Locked', 0555);
-
-        $this->assertSame(99, $this->handoff(), $this->out);
-
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-        $this->assertSame('old module', file_get_contents($this->root . '/modules/Base/Module.php'));
-        $this->assertFileExists($this->root . '/modules/Base/Retired.php');
-        $this->assertFileDoesNotExist($this->root . '/finished.txt');
-
-        $install = $this->install();
-        $this->assertSame([1, false, false], [$install['attempts'], $install['copied'], $install['booted']]);
-        $this->assertStringContainsString('Could not write modules/Locked/New.php', $install['error']);
-        $this->assertStringContainsString('The previous release was put back', $install['error']);
-        $this->assertFileDoesNotExist($this->data . '/updating', 'a failed attempt lets the lock go too');
-        $this->assertSame('0644', sprintf('%04o', fileperms($this->updates . '/install.json') & 0777), 'readable by the Updates screen');
-        $this->assertSame('0700', sprintf('%04o', fileperms($this->updates . '/backup') & 0777), 'the originals: not readable');
-
-        $this->assertSame(99, $this->handoff(), 'not due again until its retry_after');
-
-        chmod($this->root . '/modules/Locked', 0755);
-        $this->assertSame(0, $this->handoff([], 60), $this->out);
-        $this->assertSame(2, $this->install()['attempts']);
-        $this->assertSame('new cli', file_get_contents($this->root . '/cli.php'));
-    }
-
-    /** A file the copy backed up and then could not replace is unchanged: nothing to put back, and the undo says the release was. */
-    public function testAFileTheCopyCouldNotReplaceIsNotPutBack(): void
-    {
-        $this->tree($this->root, ['modules/Locked/Old.php' => 'old']);
-        $this->stage('2.0.1', null, true, ['modules/Locked/Old.php' => 'new']);
-        chmod($this->root . '/modules/Locked', 0555);
+        $before = $this->snapshot();
+        chmod($this->root . '/modules/Base', 0555);
 
         try {
-            $this->assertSame(99, $this->handoff(), $this->out);
-        } finally {
-            chmod($this->root . '/modules/Locked', 0755);
+            $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+            $this->fail('the copy wrote into a directory it cannot write');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('Could not write modules/Base/', $e->getMessage());
         }
 
-        $this->assertSame('old', file_get_contents($this->root . '/modules/Locked/Old.php'));
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-        $error = $this->install()['error'];
-        $this->assertStringContainsString('Could not write modules/Locked/Old.php', $error);
-        $this->assertStringContainsString('The previous release was put back', $error, 'nothing failed to go back');
+        $this->u['apply']($this->root, $this->open('2.0.0'), Tar::files($this->open('2.0.1')));
+        chmod($this->root . '/modules/Base', 0755);
+
+        $this->assertSame($before, $this->snapshot(), 'every file as it was, the unwritable directory\'s left alone');
+        $this->assertFileDoesNotExist($this->root . '/public/base/new.js', 'what 2.0.1 added before the failure goes');
     }
 
-    /** A release that does not boot is undone from the shutdown: no schema can have changed. */
-    public function testAReleaseThatDoesNotBootIsUndone(): void
+    public function testTheCopyRefusesATreeThatIsNotOwa(): void
     {
-        $this->stage('2.0.1', null, true, [], "<?php\nthrow new \\Error('this release does not boot');\n");
-
-        $this->handoff();
-
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-        $this->assertFileExists($this->root . '/modules/Base/Retired.php');
-        $this->assertSame('<?php // the installed release', file_get_contents($this->root . '/owa.php'));
-
-        $install = $this->install();
-        $this->assertStringContainsString('stopped before it booted: Uncaught Error: this release does not boot', $install['error']);
-        $this->assertFalse($install['copied']);
-        $this->assertFalse($this->u['isLocked']($this->data), 'a process that died holds nothing: its file is left over');
-    }
-
-    /** An unfinished install whose staging is gone is undone; the old release runs and Step 1 stages it again. */
-    public function testAnUnfinishedInstallWithoutItsStagingIsUndone(): void
-    {
-        mkdir($this->updates . '/backup', 0700, true);
-        file_put_contents($this->updates . '/backup/cli.php', 'old cli');
-        file_put_contents($this->root . '/cli.php', 'half copied');
-        $this->unfinished('2.0.1', 0);
-
-        $this->assertSame(99, $this->handoff());
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-        $this->assertStringContainsString('Its staging is gone', $this->install()['error']);
-    }
-
-    public function testNothingRunsFromAStagingOthersCanWrite(): void
-    {
-        $this->stage('2.0.1');
-        chmod($this->updates . '/staged', 0770);
-        $this->assertSame(99, $this->handoff());
-
-        chmod($this->updates . '/staged', 0700);
-        chmod($this->updates . '/staged/updater.php', 0666);
-        $this->assertSame(99, $this->handoff());
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-    }
-
-    /** It deletes what the release does not ship, so it refuses a tree that is not OWA. */
-    public function testItRefusesATreeThatIsNotOwa(): void
-    {
-        $this->stage('2.0.1');
         unlink($this->root . '/owa_env.php');
 
-        $this->assertSame(1, $this->handoff());
-        $this->assertStringContainsString('is not an OWA directory', $this->out);
-        $this->assertFileExists($this->root . '/notes.txt');
+        $this->expectExceptionMessage('is not an OWA directory');
+        $this->u['apply']($this->root, $this->open('2.0.1'), []);
     }
 
-    /** While an install holds the lock, every other run exits: schedule-run quietly. */
-    /** The lock file exists while one process holds it, says who, and is gone when it lets go. */
+    public function testWithoutAMarkerOwaBoots(): void
+    {
+        $this->assertNull($this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertFalse($this->u['dropsBeacon']($this->root));
+        $this->assertFalse($this->serve(false));
+    }
+
+    /** The copy under way, its installer holding the lock: every run of cli.php waits, the scheduler's quietly. */
+    public function testWhileTheCopyRunsEveryoneWaits(): void
+    {
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+        $this->marker('copying');
+
+        try {
+            $this->assertSame(75, $this->u['preboot']($this->root, ['cli.php', 'cmd=core-update-status']));
+            $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+            $this->assertTrue($this->u['dropsBeacon']($this->root));
+            $this->assertSame('0644', sprintf('%04o', fileperms($this->u['marker']($this->root)) & 0777));
+        } finally {
+            $this->u['unlock']($hold);
+        }
+    }
+
+    /** The copy killed part-way: the next run of cli.php puts the installed release back, checked against its signature. */
+    public function testAKilledCopyIsPutBack(): void
+    {
+        $before = $this->snapshot();
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copying');
+
+        $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+
+        $this->assertSame($before, $this->snapshot());
+        $this->assertFileDoesNotExist($this->root . '/modules/Base/Added.php', 'what 2.0.1 shipped and 2.0.0 does not goes');
+        $this->assertFileDoesNotExist($this->u['marker']($this->root));
+        $this->assertFalse($this->u['isLocked']($this->data));
+        $this->assertSame(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished. OWA 2.0.0 was put back.', 'booted' => false],
+            array_intersect_key($this->failure(), ['version' => 1, 'from' => 1, 'error' => 1, 'booted' => 1]), 'automatic updates skip 2.0.1 now');
+    }
+
+    /** Copied: the next two runs boot it, counting; the third puts the installed release back. Booted: finish, uncounted. */
+    public function testARunBootsTheCopiedReleaseTwiceThenPutsItBack(): void
+    {
+        $before = $this->snapshot();
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copied');
+
+        foreach ([1, 2] as $boots) {
+            $finish = $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']);
+            $this->assertIsArray($finish, "boot $boots");
+            $this->assertSame($boots, $finish['finish']['boots']);
+            $this->assertSame($boots, $this->u['readMarker']($this->root)['boots']);
+            $this->assertSame(75, $this->u['preboot']($this->root, ['cli.php', 'cmd=jobs']), 'it holds the lock until it finishes');
+            // The boot fails: the process ends, and the kernel lets the lock go.
+            flock($finish['hold']['handle'], LOCK_UN);
+            fclose($finish['hold']['handle']);
+        }
+
+        $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame($before, $this->snapshot());
+        $this->assertSame('OWA 2.0.1 did not boot. OWA 2.0.0 was put back.', $this->failure()['error']);
+
+        $this->marker('booted', ['boots' => 2]);
+        $finish = $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']);
+        $this->assertSame(2, $finish['finish']['boots'], 'booted: Finish is not counted');
+        $this->u['unlock']($finish['hold']);
+    }
+
+    /** Putting back: the installed release's tarball must check against its signature, or nothing is touched. */
+    public function testATarballThatDoesNotCheckIsNotPutBack(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $after = $this->snapshot();
+        $this->marker('copying');
+        file_put_contents($this->updates . '/owa_2.0.0_packaged.tar.sig', Signature::sign('2.0.0', str_repeat('0', 64), $this->signingKey));
+
+        $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame($after, $this->snapshot(), 'nothing unpacked');
+        $this->assertFileExists($this->u['marker']($this->root), 'the marker stays: OWA does not run on a tree it cannot vouch for');
+        $this->assertFalse($this->u['isLocked']($this->data));
+    }
+
+    /** 2.0.1's tarball does not check: 2.0.0 is put back, and what 2.0.1 added stays, since nothing proves which files it shipped. */
+    public function testWithoutAProvenNewTarballNothingIsDeleted(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copying');
+        unlink($this->updates . '/owa_2.0.1_packaged.tar.sig');
+
+        $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame(self::OLD['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'));
+        $this->assertFileExists($this->root . '/modules/Base/Added.php');
+    }
+
+    public function testAMarkerThatCannotBeReadStopsEveryRun(): void
+    {
+        file_put_contents($this->u['marker']($this->root), "<?php exit; ?>\nnot json\n");
+
+        $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertTrue($this->u['dropsBeacon']($this->root));
+    }
+
+    /** Until the new release has booted: the copy, and the runs that try to boot it. */
+    public function testTheEntryPointsAnswer503UntilTheNewReleaseBoots(): void
+    {
+        $this->marker('copied');
+
+        $page = (string) $this->serve(false);
+        $this->assertStringContainsString('OWA is updating. This takes a minute or two.', $page);
+        $this->assertStringNotContainsString('may be stuck', $page);
+
+        $rest = json_decode((string) $this->serve(true), true);
+        $this->assertSame(503, $rest['httpResponse']['status_code']);
+        $this->assertSame('busy', $rest['error'][0]['code']);
+
+        $this->marker('copied', ['since' => time() - 7201]);
+        $page = (string) $this->serve(false);
+        $this->assertStringContainsString('may be stuck', $page);
+        $this->assertStringNotContainsString($this->updates, $page, 'it names no path');
+
+        // Booted: OWA's pending schema updates stop what they stop, and beacons queue.
+        $this->marker('booted');
+        $this->assertFalse($this->serve(false));
+        $this->assertFalse($this->u['dropsBeacon']($this->root));
+    }
+
+    /** The marker is a PHP file that exits: a request for it shows nothing. */
+    public function testTheMarkerShowsNothingOverHttp(): void
+    {
+        $this->marker('copying');
+
+        $this->assertSame('', (string) shell_exec(sprintf('%s -f %s', escapeshellarg(PHP_BINARY), escapeshellarg($this->u['marker']($this->root)))));
+    }
+
     public function testTheLock(): void
     {
         $file = $this->data . '/updating';
@@ -300,7 +303,7 @@ final class InstallerTest extends TestCase
         $hold  = $this->u['tryLock']($this->data, 'install 2.0.1');
         umask($umask);
         $this->assertNotNull($hold);
-        $this->assertSame('0644', sprintf('%04o', fileperms($file) & 0777), 'the web user reads it, whatever the umask');
+        $this->assertSame('0644', sprintf('%04o', fileperms($file) & 0777), 'readable, whatever the umask');
         $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, token [0-9a-f]{16}\n$/',
             (string) file_get_contents($file), 'the operator can read who holds it');
 
@@ -346,6 +349,22 @@ final class InstallerTest extends TestCase
         $this->assertSame([], glob($this->data . '/updating*'));
     }
 
+    /** A link named updating is never opened, so whatever it names is never written: it is deleted, and the lock made new. */
+    public function testALinkIsNeverTakenForTheLock(): void
+    {
+        $file   = $this->data . '/updating';
+        $target = $this->root . '/owa-config.php';
+        symlink($target, $file);
+
+        $this->assertSame('left', $this->u['lockState']($file));
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+
+        $this->assertNotNull($hold);
+        $this->assertFalse(is_link($file));
+        $this->assertSame('<?php // the installation\'s', file_get_contents($target), 'what it named is untouched');
+        $this->u['unlock']($hold);
+    }
+
     /** Without flock(): taken by creating it, held while it is fresh, a stale one taken over and asked again a second later. */
     public function testTheLockWithoutFlock(): void
     {
@@ -378,86 +397,6 @@ final class InstallerTest extends TestCase
         $this->assertFalse($this->u['stillMine']($hold), 'another process took it');
     }
 
-    /** The phase at the end of the line: what the entry points read before OWA loads. */
-    public function testThePhase(): void
-    {
-        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
-        $this->assertNull($this->u['lockStatus']($this->data)['phase']);
-
-        $hold = $this->u['setLockPhase']($hold, 'copying');
-        $this->assertStringEndsWith(', copying', trim((string) file_get_contents($this->data . '/updating')));
-        $this->assertSame('copying', $this->u['lockStatus']($this->data)['phase']);
-
-        $hold = $this->u['setLockPhase']($hold, 'copied');
-        $this->assertSame('copied', $this->u['lockStatus']($this->data)['phase']);
-        $this->assertStringNotContainsString('copying', (string) file_get_contents($this->data . '/updating'), 'one phase at a time');
-        $this->assertTrue($this->u['stillMine']($hold), 'a new phase is the same holder');
-
-        $this->u['unlock']($hold);
-        $this->assertNull($this->u['lockStatus']($this->data));
-        $this->assertFileDoesNotExist($this->data . '/updating');
-    }
-
-    /** Step 4 runs with the copy done and marked so: log.php boots again from there. */
-    public function testStep4RunsMarkedCopied(): void
-    {
-        $this->stage('2.0.1', null, true, [], "<?php\nnamespace OWA\\Module\\Base\\Classes\\AutoUpdate;\nclass Finish {\n    public static function run(array \$c) {\n"
-            . "        file_put_contents(" . var_export($this->root . '/finished.txt', true) . ", (string) file_get_contents(" . var_export($this->data . '/updating', true) . "));\n"
-            . "        return 0;\n    }\n}\n");
-
-        $this->assertSame(0, $this->handoff(), $this->out);
-        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since .+ UTC, token [0-9a-f]{16}, copied\n$/', (string) file_get_contents($this->root . '/finished.txt'));
-    }
-
-    /** index.php and the REST API before OWA loads: 503 while the lock is held, and a stuck install says who holds it. */
-    public function testTheMaintenanceAnswers(): void
-    {
-        $serve = function (bool $rest): string {
-            return (string) shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
-                '$u = require %s; var_export($u["serveMaintenance"](%s, %s)); echo "|";',
-                var_export($this->root . '/updater.php', true), var_export($this->root, true), var_export($rest, true)))));
-        };
-
-        $this->assertSame('false|', $serve(false), 'no lock: OWA boots');
-
-        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
-        $hold = $this->u['setLockPhase']($hold, 'copied');
-
-        $page = $serve(false);
-        $this->assertStringContainsString('OWA is updating. This takes a minute or two.', $page);
-        $this->assertStringNotContainsString('may be stuck', $page);
-        $this->assertStringEndsWith('true|', $page);
-
-        $rest = json_decode(substr($serve(true), 0, -5), true);
-        $this->assertSame(503, $rest['httpResponse']['status_code']);
-        $this->assertSame('busy', $rest['error'][0]['code']);
-
-        touch($this->data . '/updating', time() - 7201);
-        $this->assertStringContainsString('may be stuck. The lock file, owa-data/updating, says: <code>install 2.0.1, pid ', $serve(false));
-
-        $this->u['unlock']($hold);
-    }
-
-    /** log.php drops a beacon only while an install copies files; at any other time OWA boots. */
-    public function testLogPhpDropsBeaconsOnlyDuringTheCopy(): void
-    {
-        $drops = fn (): string => (string) shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
-            'var_export((require %s)["dropsBeacon"](%s));', var_export($this->root . '/updater.php', true), var_export($this->root, true)))));
-
-        $this->assertSame('false', $drops());
-
-        $hold = $this->u['tryLock']($this->data, 'release check');
-        $this->assertSame('false', $drops(), 'Step 1 writing: the files are whole');
-
-        $hold = $this->u['setLockPhase']($hold, 'copying');
-        $this->assertSame('true', $drops());
-
-        $hold = $this->u['setLockPhase']($hold, 'copied');
-        $this->assertSame('false', $drops(), 'the schema update: OWA boots, and queues');
-
-        $this->u['unlock']($hold);
-    }
-
     /** Where the filesystem has no flock(), the file's age says whether its holder is gone: 10 minutes. */
     public function testWithoutFlockTheFilesAgeSays(): void
     {
@@ -473,204 +412,75 @@ final class InstallerTest extends TestCase
         $this->assertSame('left', $this->u['lockState']($file, true));
     }
 
-    /** Step 1 holding the lock to write: an install that is due waits for a later run, and then installs. */
-    public function testAnInstallWaitsForStep1(): void
-    {
-        $this->stage('2.0.1');
-        $hold = $this->u['tryLock']($this->data);
-
-        try {
-            $this->assertSame(0, $this->handoff());
-            $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
-        } finally {
-            $this->u['unlock']($hold);
-        }
-
-        $this->assertSame(0, $this->handoff(), $this->out);
-        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
-    }
-
-    /** An install starts only for a release newer than the installed 2.0.0; by hand, --force goes back. */
-    public function testOnlyANewerReleaseInstalls(): void
-    {
-        $this->stage('2.0.0');
-        $this->assertSame(99, $this->handoff(), 'the same release: nothing installs, OWA boots');
-        $this->assertFileDoesNotExist($this->updates . '/install.json');
-
-        $this->stage('1.9.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertStringContainsString('1.9.0 is not newer than the installed 2.0.0; add --force to install it anyway.', $this->out);
-        $this->assertFileDoesNotExist($this->updates . '/install.json', 'nothing claimed');
-
-        $this->assertSame(0, $this->handoff(['cmd=core-update-install', '--force']), $this->out);
-        $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'), 'going back, by hand');
-        $this->assertTrue($this->install()['forced'], 'its retries carry on');
-    }
-
-    /** 2.0.1 staged for the window, 2.0.2 installed by hand before it: the hand-off deletes 2.0.1, and its unfinished install. */
-    public function testAStagingTheInstalledReleaseWentPastIsDropped(): void
-    {
-        $this->stage('2.0.1');
-        $this->unfinished('2.0.1', $this->now - 1);
-        mkdir($this->updates . '/backup', 0700);
-        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = '2.0.2';\n}\n");
-
-        $this->assertSame(99, $this->handoff(), 'OWA boots: ' . $this->out);
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'), 'nothing copied: no downgrade');
-        $this->assertFileDoesNotExist($this->updates . '/staged.json');
-        $this->assertFileDoesNotExist($this->updates . '/install.json');
-        $this->assertDirectoryDoesNotExist($this->updates . '/backup');
-        $this->assertDirectoryDoesNotExist($this->updates . '/staged');
-        $this->assertFileDoesNotExist($this->data . '/updating', 'the lock is let go');
-    }
-
-    /** By hand, a release that is not newer is refused and nothing is deleted: --force is still there to add. */
-    public function testByHandNothingIsDropped(): void
-    {
-        $this->stage('2.0.0', null, false);
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertDirectoryExists($this->updates . '/staged');
-    }
-
-    /** A forced downgrade's retries carry on while Core/Env.php still says the newer release. */
-    public function testAForcedInstallsRetriesCarryOn(): void
-    {
-        $this->stage('1.9.0', null, false);
-        file_put_contents($this->updates . '/install.json', json_encode([
-            'state' => 'installing', 'version' => '1.9.0', 'attempts' => 1, 'retry_after' => $this->now - 1, 'forced' => true,
-        ]));
-
-        $this->assertSame(0, $this->handoff(), $this->out);
-        $this->assertSame('1.9.0', file_get_contents($this->root . '/finished.txt'));
-    }
-
-    /** A retry carries on although the copy already replaced Core/Env.php with the release's. */
-    public function testAnUnfinishedInstallCarriesOnWhateverEnvSays(): void
-    {
-        $this->stage('2.0.1');
-        $this->unfinished('2.0.1', $this->now - 1);
-        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = '2.0.1';\n}\n");
-
-        $this->assertSame(0, $this->handoff(), $this->out);
-        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
-    }
-
-    /** An installed version that cannot be read (a checkout says master) starts nothing, unless forced. */
-    public function testAnUnreadableInstalledVersionStartsNothing(): void
-    {
-        file_put_contents($this->root . '/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = 'master';\n}\n");
-        $this->stage('2.0.1');
-
-        $this->assertSame(99, $this->handoff());
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertStringContainsString('The installed version cannot be read from Core/Env.php; add --force to install 2.0.1 anyway.', $this->out);
-    }
-
-    /** staged.json says automatic false (staged by hand, or waiting): the hand-off never installs it on its own; core-update-install does. */
-    public function testOnlyAReleaseThatInstallsItselfIsDue(): void
-    {
-        $this->stage('2.0.1', null, false);
-
-        $this->assertSame(99, $this->handoff(), 'not due');
-        $this->assertSame('old cli', file_get_contents($this->root . '/cli.php'));
-
-        $this->assertSame(0, $this->handoff(['cmd=core-update-install']), $this->out);
-        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
-    }
-
-    public function testEveryOtherRunWaitsForAnInstall(): void
-    {
-        $h = fopen($this->data . '/updating', 'c');
-        flock($h, LOCK_EX);
-
-        try {
-            $this->assertSame(75, $this->handoff(['cmd=core-update-status']));
-            $this->assertStringContainsString('installing an update', $this->out);
-            $this->assertSame(0, $this->handoff(['cmd=schedule-run']));
-        } finally {
-            flock($h, LOCK_UN);
-            fclose($h);
-        }
-    }
-
-    /** Whatever is staged: there is one staged release, and an unfinished install is of it. */
-    public function testInstallByHand(): void
-    {
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertStringContainsString('Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.', $this->out);
-
-        // It starts over with fresh attempts, whatever its retry_after.
-        $this->stage('2.0.1', null, false);
-        $this->unfinished('2.0.1', $this->now + 600000, 5);
-        $this->assertSame(0, $this->handoff(['cmd=core-update-install']), $this->out);
-        $this->assertStringContainsString('Installing OWA 2.0.1.', $this->out, 'it says which');
-        $this->assertSame(1, $this->install()['attempts']);
-        $this->assertSame('2.0.1', file_get_contents($this->root . '/finished.txt'));
-
-        file_put_contents($this->root . '/.git', 'gitdir: elsewhere');
-        $this->assertSame(1, $this->handoff(['cmd=core-update-install']));
-        $this->assertStringContainsString('version control checkout', $this->out);
-    }
-
     // ---------------------------------------------------------------------
 
-    /**
-     * The installed tree's updater.php `handoff`, in a process of its own as
-     * cli.php runs it: its exit code, 99 for "boot normally". $later moves
-     * install.json's retry_after back by that many seconds, as the clock
-     * moving on would.
-     */
-    private function handoff(array $argv = ['cmd=schedule-run'], int $later = 0): int
+    /** A release's tarball and signature in the updates directory, as Step 1 leaves them. */
+    private function release(string $v, array $files): void
     {
-        if ($later && is_file($this->updates . '/install.json')) {
-            $i = $this->install();
-            $i['retry_after'] -= $later;
-            file_put_contents($this->updates . '/install.json', json_encode($i));
-        }
-
-        $script = sprintf('$h = (require %s)["handoff"]; $r = $h(%s, %s); exit($r === null ? 99 : $r);',
-            var_export($this->root . '/updater.php', true), var_export($this->root, true), var_export(array_merge(['cli.php'], $argv), true));
-
-        $proc = proc_open([PHP_BINARY, '-d', 'display_errors=stderr', '-r', $script], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->tmp);
-        $this->out = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
-
-        return proc_close($proc);
+        $dir = $this->tmp . "/build-$v";
+        $this->tree($dir, $files);
+        $tar = $this->updates . "/owa_{$v}_packaged.tar";
+        exec(sprintf('tar --format=gnu -C %s -cf %s ./ 2>&1', escapeshellarg($dir), escapeshellarg($tar)));
+        file_put_contents("$tar.sig", Signature::sign($v, hash_file('sha256', $tar), $this->signingKey) . "\n");
     }
 
-    /** The one staged release, as Step 1 leaves it, installing itself; $point false: as staged by hand, installed only by core-update-install. */
-    private function stage(string $v, ?array $window = null, bool $point = true, array $extra = [], ?string $owa = null): void
+    /** @return resource */
+    private function open(string $v)
     {
-        $dir = $this->updates . '/staged';
-        exec('rm -rf ' . escapeshellarg($dir));
-        mkdir($dir, 0700, true);
+        return fopen($this->updates . "/owa_{$v}_packaged.tar", 'rb');
+    }
 
-        $owa ??= "<?php\nnamespace OWA\\Module\\Base\\Classes\\AutoUpdate;\nclass Finish {\n    public static function run(array \$c) {\n"
-            . "        (\$c['record'])(['booted' => true]);\n        file_put_contents(\$c['root'] . '/finished.txt', \$c['version']);\n        return 0;\n    }\n}\n";
-
-        $this->tree($dir, $extra + [
-            'cli.php'                 => 'new cli',
-            'owa_env.php'             => 'env',
-            'Core/Env.php'            => "<?php\nfinal class Env {\n    const VERSION = '$v';\n}\n",
-            'modules/Base/Module.php' => 'new module',
-            'modules/Base/Added.php'  => 'added',
-            'public/base/new.js'      => 'a built asset',
-            'same.php'                => 'unchanged',
-            'release.json'            => json_encode(['version' => $v]),
-            'owa.php'                 => $owa,
+    /** The install marker, as Install writes it, 2.0.0 to 2.0.1. */
+    private function marker(string $phase, array $more = []): void
+    {
+        $this->u['writeMarker']($this->root, $more + [
+            'format'   => 1,
+            'from'     => '2.0.0',
+            'to'       => '2.0.1',
+            'phase'    => $phase,
+            'since'    => time(),
+            'lock'     => $this->data . '/updating',
+            'updates'  => $this->updates,
+            'from_tar' => $this->updates . '/owa_2.0.0_packaged.tar',
+            'to_tar'   => $this->updates . '/owa_2.0.1_packaged.tar',
+            'boots'    => 0,
         ]);
-        chmod($dir . '/cli.php', 0755);
-        copy(dirname(__DIR__) . '/updater.php', $dir . '/updater.php');
-        chmod($dir . '/updater.php', 0644);
-
-        file_put_contents($this->updates . '/staged.json', json_encode(['format' => 1, 'version' => $v, 'window' => $window,
-            'sha256' => str_repeat('a', 64), 'staged_at' => $this->now, 'automatic' => $point, 'by_hand' => ! $point]));
     }
 
-    private function unfinished(string $v, int $retry_after, int $attempts = 1): void
+    /** What serveMaintenance prints, or false when it lets OWA boot. */
+    private function serve(bool $rest): string|false
     {
-        file_put_contents($this->updates . '/install.json', json_encode([
-            'state' => 'installing', 'version' => $v, 'attempts' => $attempts, 'retry_after' => $retry_after, 'error' => 'before',
-        ]));
+        ob_start();
+        $served = $this->u['serveMaintenance']($this->root, $rest);
+        $out    = (string) ob_get_clean();
+
+        return $served ? $out : false;
+    }
+
+    /** Every file under the OWA directory but the marker and updater.php, with its contents. */
+    private function snapshot(): array
+    {
+        $out = [];
+        $it  = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->root, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $path => $info) {
+            $rel = substr((string) $path, strlen($this->root) + 1);
+            if ($info->isFile() && $rel !== 'owa-update.php') {
+                $out[$rel] = file_get_contents((string) $path);
+            }
+        }
+        ksort($out);
+
+        return $out;
+    }
+
+    private function leftovers(): array
+    {
+        return array_values(array_filter(array_keys($this->snapshot()), static fn ($p) => str_ends_with($p, '.owa-update') || str_contains($p, '.tmp')));
+    }
+
+    private function failure(): array
+    {
+        return json_decode((string) file_get_contents($this->updates . '/last-failure.json'), true);
     }
 
     private function tree(string $dir, array $files): void
@@ -679,10 +489,5 @@ final class InstallerTest extends TestCase
             @mkdir(dirname($dir . '/' . $path), 0755, true);
             file_put_contents($dir . '/' . $path, $content);
         }
-    }
-
-    private function install(): array
-    {
-        return json_decode((string) file_get_contents($this->updates . '/install.json'), true);
     }
 }

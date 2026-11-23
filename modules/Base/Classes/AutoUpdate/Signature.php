@@ -9,10 +9,11 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * secret of a GitHub environment that needs a maintainer's approval
  * (.github/scripts/release-sign.php), and publishes the signature beside the
  * tarball as owa_<version>_packaged.tar.sig: the 64-byte detached signature,
- * base64, on one line. Step 1 checks it against the public keys below after
- * the download matches its SHA-256 (Staging::fetch()). A release that is not
- * signed, or not signed by one of these keys, is not staged: there is no
- * soft-fail. GitHub's digest only says the download is the file the listing
+ * base64, on one line. The release check checks it against the public keys
+ * below once the download matches its SHA-256 (Downloads::download()), and
+ * the installer again, through the handle it copies from (Downloads::open()).
+ * A release that is not signed, or not signed by one of these keys, is not
+ * kept and never installs: there is no soft-fail. GitHub's digest only says the download is the file the listing
  * names; this says OWA's maintainers released it, so the listing and the
  * tarball can come from any host.
  *

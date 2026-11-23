@@ -13,11 +13,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class CliWithoutBootTest extends TestCase
 {
     private const WITHOUT_BOOT = [
-        'version-info'     => \OWA\Module\Base\Controller\VersionInfoCli::class,
-        'core-update-install' => \OWA\Module\Base\Controller\CoreUpdateInstallCli::class,
+        'version-info' => \OWA\Module\Base\Controller\VersionInfoCli::class,
     ];
 
-    public function testTheTwoCommandsResolveFromTheFilesAlone(): void
+    public function testTheCommandResolvesFromTheFilesAlone(): void
     {
         foreach (self::WITHOUT_BOOT as $command => $class) {
             $this->assertSame($class, CliWithoutBoot::commandClass($command));
@@ -27,7 +26,7 @@ final class CliWithoutBootTest extends TestCase
         $this->assertNull(CliWithoutBoot::commandClass('no-such-command'), 'boot says it does not exist');
     }
 
-    /** Every registered command boots but those, and boot's registry agrees with the files. */
+    /** Every registered command boots but that one, and boot's registry agrees with the files. */
     public function testEveryOtherCommandBoots(): void
     {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -61,9 +60,7 @@ final class CliWithoutBootTest extends TestCase
 
     /**
      * cli.php runs it without booting OWA: no settings, no database. What the
-     * build relies on in a checkout with no owa-config.php. Where there is
-     * one, the hand-off before it (updater.php) includes it, to find the data
-     * directory; nothing boots.
+     * build relies on in a checkout with no owa-config.php.
      */
     public function testCliRunsItWithoutBooting(): void
     {

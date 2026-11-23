@@ -228,15 +228,6 @@
         "base.coreUpdateStatusCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli"
         },
-        "base.coreUpdateStageCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStageCli"
-        },
-        "base.coreUpdateUnstageCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateUnstageCli"
-        },
-        "base.coreUpdateIgnoreWindowCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateIgnoreWindowCli"
-        },
         "base.coreUpdateInstallCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateInstallCli"
         },
@@ -406,9 +397,6 @@
         "tables-cleanup": "base.tablesCleanupCli",
         "core-update-check": "base.coreUpdateCheckCli",
         "core-update-status": "base.coreUpdateStatusCli",
-        "core-update-stage": "base.coreUpdateStageCli",
-        "core-update-unstage": "base.coreUpdateUnstageCli",
-        "core-update-ignore-window": "base.coreUpdateIgnoreWindowCli",
         "core-update-install": "base.coreUpdateInstallCli",
         "ua-update-definitions": "base.uaUpdateDefinitionsCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
@@ -608,9 +596,11 @@
         "core-update-check": {
             "name": "core-update-check",
             "command": "core-update-check",
-            "schedule": "22 3,9,15,21 * * *",
-            "params": [],
-            "description": "Checks for new OWA releases every six hours: release notifications for the bell, and the release automatic updates install, downloaded, verified and checked against this server.",
+            "schedule": "22 * * * *",
+            "params": {
+                "scheduled": 1
+            },
+            "description": "Automatic updates, every hour: four times a day lists OWA's releases for the notifications bell, and downloads and verifies the release to update to; then installs it, in the update window if one is set. The files are copied when the run's other jobs have finished, and the next run finishes the install.",
             "module": "base",
             "source": "code",
             "while_updates_pending": true
@@ -914,7 +904,6 @@
             "settings": [
                 "auto_update",
                 "auto_update_level",
-                "auto_update_patch_immediately",
                 "auto_update_days",
                 "auto_update_window",
                 "auto_update_email_success",

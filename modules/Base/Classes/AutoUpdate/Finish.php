@@ -4,46 +4,54 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 use OWA\Core\CoreAPI;
 
 /**
- * Step 4: finish. The new release's code, in the process that copied it
- * (updater.php `install`), which loaded no OWA code before the copy: this is
- * the new release booting as any fresh process would.
+ * Step 4: finish. The new release's code, in the first run of cli.php after
+ * the copy (updater.php `preboot`), which booted it before the command it
+ * was asked for.
  *
- * Boot, and record booted: true in install.json before anything changes the
- * schema (a failure before it is restored by the updater; one after it is
- * not). Then cmd=core-update-schema (the schema updates, each recording its version as
- * it completes, then the tracker bundles), cmd=publish-trackers (a release can
- * change a setting's default with nothing to update), the success notice, a
- * release check of its own as a self-test, and the clean-up. A failure after
- * boot records its error in install.json, which already holds the attempt and
- * retry_after from the claim, and raises the notice the attempt calls for.
+ * The install marker says booted first: a boot that fails before then
+ * counts, and the third puts the installed release back (updater.php). Then
+ * cmd=core-update-schema (the schema updates, each recording its version as
+ * it completes), cmd=publish-trackers (a release can change a setting's
+ * default with nothing to update), the success notice, a release check of
+ * its own as a self-test, and the clean-up. Nothing is undone once the new
+ * release has booted: the schema may have moved on. A failure records its
+ * error in last-failure.json and raises the notice it calls for; the marker
+ * goes either way, and pending schema updates stop OWA as they always do.
  *
  * The process holds the install lock throughout (InstallLock::$held_here,
- * and the hold in InstallLock::$hold, which cmd=core-update-schema touches between
- * updates), so cmd=core-update-schema knows it runs inside the install.
+ * and the hold in InstallLock::$hold, which cmd=core-update-schema touches
+ * between updates), so cmd=core-update-schema knows it runs inside the
+ * install.
  */
 class Finish {
 
     /**
-     * @param  array<string, mixed> $c the updater's context, with install (install.json's path) and record (its writer)
-     * @return int the exit code
+     * @param  \owa                $owa    booted
+     * @param  array<string, mixed> $marker the install marker
+     * @param  array<string, mixed> $hold   the install lock, which preboot took
+     * @return void
      */
-    public static function run( array $c ) {
+    public static function run( $owa, array $marker, array $hold ) {
+
+        $u    = Downloads::updater();
+        $root = \OWA\Core\Env::root();
+        $v    = (string) ( $marker['to'] ?? '' );
 
         InstallLock::$held_here = true;
-        InstallLock::$hold      = isset( $c['lock'] ) && is_array( $c['lock'] ) ? $c['lock'] : null;
+        InstallLock::$hold      = $hold;
 
-        $record = $c['record'];
-        $owa    = new \owa( [ 'request_type' => 'cli' ] );
         $owa->setCurrentUser( 'admin' );
 
-        $record( [ 'booted' => true ] );
-
-        $v       = (string) $c['version'];
-        $staging = new Staging( (string) $c['updates'], (string) $c['data'] );
-        \OWA\Core\CoreAPI::setSetting( 'base', 'updates_dir', (string) $c['updates'] );
+        $downloads = new Downloads( (string) ( $marker['updates'] ?? '' ) ?: null );
         $notify  = static fn ( array $n ) => \OWA\Module\Base\Classes\NotificationManager::notify( $n );
+        $failed  = false;
 
         try {
+
+            if ( ( $marker['phase'] ?? '' ) !== 'booted' ) {
+
+                $u['writeMarker']( $root, [ 'phase' => 'booted' ] + $marker );
+            }
 
             $update = self::command( '\\OWA\\Module\\Base\\Controller\\CoreUpdateSchemaCli' );
 
@@ -68,20 +76,34 @@ class Finish {
 
         } catch ( \Throwable $e ) {
 
-            $record( [ 'error' => $e->getMessage() ] );
-            InstallNotices::forInstall( (array) $staging->readJson( (string) $c['install'] ), $notify );
+            $failed  = true;
+            $failure = [ 'version' => $v, 'from' => (string) ( $marker['from'] ?? '' ), 'error' => $e->getMessage(), 'at' => time(), 'booted' => true ];
 
-            fwrite( STDERR, sprintf( "Installing OWA %s: %s\n", $v, $e->getMessage() ) );
+            try {
 
-            return 1;
+                $downloads->writeFailure( $failure );
+
+            } catch ( \RuntimeException $write ) {
+
+                CoreAPI::debug( 'Recording the install\'s error: ' . $write->getMessage() );
+            }
+
+            InstallNotices::forFailure( $failure, $notify );
+            fwrite( STDERR, sprintf( "Finishing the install of OWA %s: %s\n", $v, $e->getMessage() ) );
         }
 
-        self::selfTest( $v, $notify );
-        self::cleanup( $staging, $v );
+        if ( ! $failed ) {
 
-        fwrite( STDOUT, sprintf( "OWA %s is installed.\n", $v ) );
+            self::selfTest( $v, $notify );
+            self::cleanup( $downloads, $v );
+            fwrite( STDOUT, sprintf( "OWA %s is installed.\n", $v ) );
+        }
 
-        return 0;
+        @unlink( $u['marker']( $root ) );
+        $u['unlock']( $hold );
+
+        InstallLock::$held_here = false;
+        InstallLock::$hold      = null;
     }
 
     /**
@@ -132,25 +154,16 @@ class Finish {
     }
 
     /**
-     * After a successful install: install.json and backup/, and the slot
-     * (staged.json and staged/) when it holds this release, with the
-     * updater.php this runs from, or an older one. A newer release staged
-     * meanwhile stays.
+     * After a successful install: the failure record, and every tarball but
+     * this release's, which the next install puts back if it fails.
      *
-     * @param  Staging $staging
-     * @param  string  $v
+     * @param  Downloads $downloads
+     * @param  string    $v
      * @return void
      */
-    public static function cleanup( Staging $staging, $v ) {
+    public static function cleanup( Downloads $downloads, $v ) {
 
-        Staging::remove( $staging->root() . '/' . Staging::BACKUP );
-        @unlink( $staging->root() . '/' . Staging::INSTALL );
-
-        $held = (string) ( $staging->releaseInfo()['version'] ?? ( $staging->staged()['version'] ?? '' ) );
-
-        if ( $held !== '' && Version::compare( $held, $v ) <= 0 ) {
-
-            $staging->clear();
-        }
+        $downloads->clearFailure();
+        $downloads->prune( [ $v ] );
     }
 }

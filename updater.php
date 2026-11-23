@@ -1,151 +1,154 @@
 <?php
 /**
- * Automatic updates, Steps 2 and 3: the hand-off and the updater.
+ * Automatic updates: what runs before OWA loads, and the copy.
  *
  * Plain PHP with no OWA class, no global function, constant or variable: it
- * returns closures, so it can be loaded more than once in a process and loads
- * nothing a newer release would have to replace. Every release ships it.
+ * returns closures, so it can be loaded more than once in a process. Every
+ * release ships it.
  *
- *   handoff     Step 2. The INSTALLED release's copy, run by cli.php before
- *               OWA loads. Is an install due? Then take the install lock,
- *               check that the staging is the scheduler user's alone, and run
- *               that release's `install`.
- *   install     Step 3. The STAGED release's copy, in the same process. Claim
- *               install.json, back up and copy the release over the
- *               OWA directory (cli.php last), delete what it does not ship,
- *               check every file, then boot the new OWA and run Step 4
- *               (Classes\AutoUpdate\Finish::run()).
- *   updatesDir  Where the updates live: owa-data/updates-<32 hex>/, a random
- *               name so the web cannot guess it, found by looking for it,
- *               never derived. Booted OWA reads it through the same closure
- *               (the updates_dir setting); Step 1 creates it.
+ *   preboot     cli.php, before OWA loads: what the install marker says to
+ *               do. Nothing (boot), wait for the installer, put the
+ *               installed release back, or boot the new release and finish
+ *               its install (Classes\AutoUpdate\Finish).
+ *   apply       the copy: a release's files from its tarball over the OWA
+ *               directory, then the files of the release it replaces that it
+ *               does not ship, deleted; Core/Env.php, the version, last. The
+ *               installer (Classes\AutoUpdate\Install) calls the copy it
+ *               loaded before the copy began, and a copy that fails is put
+ *               back by the same closure from the installed release's tarball.
+ *   serveMaintenance, dropsBeacon
+ *               index.php, api/index.php and log.php until the new release
+ *               has booted: while the files may be mixed, and until it is
+ *               known to boot. Once booted, OWA's pending schema updates
+ *               stop what they always stop, and beacons are queued.
+ *   updatesDirs, updatesDir
+ *               the updates directory, owa-data/updates-<32 hex>/ (Downloads).
+ *   tryLock, unlock, isLocked, lockState, stillMine, touchLock
+ *               the install lock, owa-data/updating (InstallLock).
  *
- *     updates-<id>/          0711  others open a name they know, list nothing
- *       staged.json          0644  what staged/ holds, and whether and when it installs itself
- *       install.json         0644  the installer's, while an install is unfinished
- *       staged/              0700  the one staged release (staged.tmp/ while it downloads)
- *       backup/              0700  the originals, while an install is unfinished
+ * THE INSTALL MARKER is owa-update.php in the OWA directory, beside
+ * owa-config.php, as WordPress puts .maintenance beside wp-config.php: a
+ * PHP file that exits, so a request for it shows nothing, then one line of
+ * JSON. The installer writes it before the copy, and it is deleted when the
+ * new release has finished, or the installed release is back. It is kept in
+ * the OWA directory, never the data directory, because whoever can write
+ * there can already change OWA's code: the marker is trusted as the code
+ * is, however the server's users and directories are arranged.
  *
- *   The two JSON files are readable by the web user, under any arrangement
- *   of users and groups, for the Updates screen; nothing that holds code is,
- *   so none can be run over HTTP. Only the owner writes any of it.
+ *   {format, from, to, phase, since, lock, updates, from_tar, to_tar, boots}
+ *   phase  copying  the files are mixed. With the lock held, the installer
+ *                   is copying; with it free, the copy was killed, and the
+ *                   next run of cli.php puts the installed release back.
+ *          copied   every file is the new release's, and it has not booted.
+ *                   boots counts the runs of cli.php that tried; at the third
+ *                   the installed release is put back.
+ *          booted   the new release booted; Finish has not completed.
  *
- * The staged release is its own list of files: there is no manifest. It was
- * proved by the tarball's SHA-256 against GitHub's digest (Step 1), and the
- * live tree is checked against it after the copy.
+ * Putting the installed release back unpacks from_tar, the installed
+ * release's tarball, checked against its signature first, then deletes what
+ * to_tar ships and from_tar does not, when to_tar's signature checks too,
+ * and records the failure in the updates directory's last-failure.json:
+ * automatic updates skip that release (Downloads).
  *
- * What the release does not ship is deleted, except what belongs to this
- * installation: owa-config.php, owa-data/ and the data directory, the
- * tracking bundles (public/tracker/, or under OWA_PUBLIC_PATH), and module
- * directories that are neither the release's nor a retired one of OWA's own.
- *
- * THE FROZEN CONTRACT between an installed release and the next is
- * `install`'s: one array (root, updates, data, public, version, manual,
- * forced, now, lock) in, null (boot OWA as if nothing happened) or an exit
- * code out. Its
- * fields, like staged.json's and install.json's, are only ever added to.
- *
- * Each attempt is counted at the claim, retry_after set then on the back-off
- * (1, 3 and 10 minutes, 15 minutes, 2 hours, a day, then weekly), so a
- * process that dies retries soon and an install that keeps dying slows
- * down. A copy error, or a new release that does not boot, is undone at once
- * from backup/, the originals of every file replaced or deleted, each
- * backed up once. The files the copy added stay until the next attempt's
- * copy, which ships them or deletes them. Once the new OWA has booted
- * (install.json booted: true) nothing is undone.
+ * THE FROZEN CONTRACT between an installed release and the next: the
+ * marker, written by the installed release and read by the next; cli.php
+ * calling preboot; Finish::run(). The marker's fields, like
+ * last-failure.json's, are only ever added to.
  */
 
-return [
+return ( static function () {
 
-    /* OWA's own modules that releases no longer ship: deleted, not kept as third-party. */
-    'retired_modules' => [ 'FileCache', 'Hello', 'MemcachedCache', 'RemoteQueue' ],
+    $marker = static fn ( $root ) => rtrim( (string) $root, '/' ) . '/owa-update.php';
 
-    /*
-     * What stops owa-config.php being included before OWA loads: $this, or
-     * an OWA class's name as written; null when nothing does. Boot refuses
-     * $this too. An OWA class would fail here, where none is loaded, or load
-     * the installed release's class into the process that then requires the
-     * new release.
-     */
-    'configRefused' => static function ( $root ) {
+    /* The marker's fields; [] when the file is there and cannot be read; null when there is none. */
+    $readMarker = static function ( $root ) use ( $marker ) {
 
-        $file = rtrim( (string) $root, '/' ) . '/owa-config.php';
+        $raw = @file_get_contents( $marker( $root ) );
 
-        if ( ! is_file( $file ) ) {
+        if ( $raw === false ) {
 
-            return null;
+            return file_exists( $marker( $root ) ) ? [] : null;
         }
 
-        foreach ( (array) @token_get_all( (string) file_get_contents( $file ) ) as $token ) {
+        $json = substr( $raw, (int) strpos( $raw, "\n" ) + 1 );
+        $data = json_decode( $json, true );
 
-            if ( ! is_array( $token ) ) {
+        return is_array( $data ) ? $data : [];
+    };
 
-                continue;
-            }
+    /* Write a JSON file under a temporary name and rename it into place; readable by the web user. */
+    $writeFile = static function ( $file, $contents ) {
 
-            if ( $token[0] === T_VARIABLE && $token[1] === '$this' ) {
+        $tmp = $file . '.tmp' . getmypid();
 
-                return '$this';
-            }
+        if ( @file_put_contents( $tmp, $contents ) === false || ! @chmod( $tmp, 0644 ) || ! @rename( $tmp, $file ) ) {
 
-            if ( ( $token[0] === T_NAME_FULLY_QUALIFIED || $token[0] === T_NAME_QUALIFIED )
-                    && stripos( ltrim( $token[1], '\\' ), 'OWA\\' ) === 0 ) {
+            @unlink( $tmp );
 
-                return $token[1];
-            }
+            throw new \RuntimeException( sprintf( 'Could not write %s.', $file ) );
+        }
+    };
+
+    $writeMarker = static function ( $root, array $data ) use ( $marker, $writeFile ) {
+
+        $writeFile( $marker( $root ), "<?php exit; ?>\n" . json_encode( $data, JSON_UNESCAPED_SLASHES ) . "\n" );
+    };
+
+    /* A failed install, in the updates directory's last-failure.json (Downloads): automatic updates skip that release. */
+    $recordFailure = static function ( $updates, $from, $to, $error, $booted = false ) use ( $writeFile ) {
+
+        $failure = [ 'format' => 1, 'version' => (string) $to, 'from' => (string) $from, 'error' => (string) $error, 'at' => time(), 'booted' => (bool) $booted ];
+
+        try {
+
+            $writeFile( rtrim( (string) $updates, '/' ) . '/last-failure.json', json_encode( $failure, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
+
+        } catch ( \RuntimeException $e ) {
+
+            fwrite( STDERR, $e->getMessage() . "\n" );
+        }
+    };
+
+    /* Delete a directory and everything in it; links are removed, not followed. */
+    $remove = static function ( $dir ) {
+
+        if ( is_link( $dir ) || is_file( $dir ) ) {
+
+            return @unlink( $dir );
         }
 
-        return null;
-    },
+        if ( ! is_dir( $dir ) ) {
 
-    /*
-     * owa-config.php, included as boot includes it (include_once, from a
-     * static closure), so boot finds it done; null when configRefused says
-     * it cannot be.
-     *
-     * @return array{data: string, public: string}|null null when it cannot be read
-     */
-    'config' => static function ( $root ) {
-
-        $root = rtrim( (string) $root, '/' );
-        $file = $root . '/owa-config.php';
-
-        if ( is_file( $file ) ) {
-
-            if ( ( require __FILE__ )['configRefused']( $root ) !== null ) {
-
-                return null;
-            }
-
-            ( static function ( $__owa_config_file ) {
-
-                include_once $__owa_config_file;
-            } )( $file );
+            return true;
         }
 
-        $data   = defined( 'OWA_DATA_DIR' ) && (string) constant( 'OWA_DATA_DIR' ) !== '' ? (string) constant( 'OWA_DATA_DIR' ) : $root . '/owa-data';
-        $public = defined( 'OWA_PUBLIC_PATH' ) && (string) constant( 'OWA_PUBLIC_PATH' ) !== '' ? (string) constant( 'OWA_PUBLIC_PATH' ) : $root . '/public';
+        $it = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ),
+            \RecursiveIteratorIterator::CHILD_FIRST );
 
-        return [ 'data' => rtrim( $data, '/' ), 'public' => rtrim( $public, '/' ) ];
-    },
+        foreach ( $it as $path => $info ) {
+
+            $info->isDir() && ! $info->isLink() ? @rmdir( (string) $path ) : @unlink( (string) $path );
+        }
+
+        return @rmdir( $dir );
+    };
 
     /* Every updates-<32 hex>/ in the data directory; there should be one at most. */
-    'updatesDirs' => static function ( $data ) {
+    $updatesDirs = static function ( $data ) {
 
         return array_values( array_filter( (array) glob( rtrim( (string) $data, '/' ) . '/updates-*', GLOB_ONLYDIR ),
             static fn ( $d ) => (bool) preg_match( '#/updates-[0-9a-f]{32}$#', (string) $d ) ) );
-    },
+    };
 
     /*
      * The updates directory, or null: none, or more than one (System Health
-     * says so, and nothing installs). With $create, Step 1 makes it when
-     * there is none: mode 0711, a name mkdir() refuses to reuse, and looked
-     * for again after, so it is the only one.
+     * says so, and nothing installs). With $create, made when there is none:
+     * mode 0711, a name mkdir() refuses to reuse, and looked for again after,
+     * so it is the only one.
      */
-    'updatesDir' => static function ( $data, $create = false ) {
+    $updatesDir = static function ( $data, $create = false ) use ( $updatesDirs ) {
 
-        $u     = require __FILE__;
-        $found = $u['updatesDirs']( $data );
+        $found = $updatesDirs( $data );
 
         if ( count( $found ) === 1 ) {
 
@@ -165,18 +168,18 @@ return [
         }
 
         @chmod( $dir, 0711 );
-        $found = $u['updatesDirs']( $data );
+        $found = $updatesDirs( $data );
 
         return count( $found ) === 1 ? (string) $found[0] : null;
-    },
+    };
 
     /*
-     * The install lock, owa-data/updating. It exists while a process holds it:
-     * an install for all of its attempt, or Step 1 while it writes staged.json
-     * or deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
-     * since ..."). Whoever finds it held stops and tries again on a later run:
-     * every other CLI run, Step 1, an install, cmd=core-update-schema by hand, and the
-     * entry points.
+     * The install lock, owa-data/updating. It exists while a process holds
+     * it: the installer from its checks to the end of the copy, Finish, a
+     * release being put back, or Step 1 while it writes staged.json or
+     * deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
+     * since ..."). Whoever finds it held stops and tries again on a later
+     * run.
      *
      * Taken by creating it, which only one process can do (link() of a file
      * made and flocked under a temporary name, which fails when updating
@@ -187,26 +190,30 @@ return [
      *  - where the filesystem has no flock() (it fails without saying another
      *    process holds it; Windows never says, and has flock()): a file not
      *    touched for lock_stale seconds is left over. The holder touches it
-     *    between steps (touchLock), not during one statement: a schema update
-     *    running longer lets a second attempt start, which the updates-apply
-     *    job lease stops at its schema updates.
-     * touchLock dates it in both, so its time is the holder's last step.
+     *    between steps (touchLock).
      *
      * A left-over file is taken over by flocking it, if it is still the file
      * named updating (the same inode), and writing the new holder's line into
-     * it: it is never missing, so no third process can slip in. Without
-     * flock() nothing does that atomically: it is moved aside and deleted,
+     * it: it is never missing, so no third process can slip in. A link is
+     * never opened: it is deleted, and the lock made new. Without flock()
+     * nothing takes a file over atomically: it is moved aside and deleted,
      * and the taker stops if what moved was another process's (put back
      * with link()). The taker then reads the file again a second later and
      * stops if its line is gone, which a third process taking it in that
      * instant would do.
      */
-    'lock_stale' => 600,
+    $lock_stale = 600;
 
     /* 'free' (no file), 'held', or 'left' (its holder is gone). */
-    'lockState' => static function ( $file, $no_flock = false ) {
+    $lockState = static function ( $file, $no_flock = false ) use ( $lock_stale ) {
 
         clearstatcache( true, $file );
+
+        if ( is_link( $file ) ) {
+
+            return 'left';
+        }
+
         $h = @fopen( $file, 'r' );
 
         if ( $h === false ) {
@@ -237,25 +244,33 @@ return [
 
         $time = @filemtime( $file );
 
-        return $time !== false && time() - $time < ( require __FILE__ )['lock_stale'] ? 'held' : 'left';
-    },
+        return $time !== false && time() - $time < $lock_stale ? 'held' : 'left';
+    };
 
-    'isLocked' => static function ( $data ) {
+    $isLocked = static fn ( $data ) => $lockState( rtrim( (string) $data, '/' ) . '/updating' ) === 'held';
 
-        return ( require __FILE__ )['lockState']( rtrim( (string) $data, '/' ) . '/updating' ) === 'held';
-    },
+    /* Whether the lock file is still this holder's (its token), $wait seconds on. */
+    $stillMine = static function ( array $hold, $wait = 0 ) {
+
+        if ( $wait > 0 ) {
+
+            sleep( (int) $wait );
+        }
+
+        return ! is_link( (string) $hold['file'] ) && str_contains( (string) @file_get_contents( (string) $hold['file'] ), ', token ' . $hold['token'] );
+    };
 
     /*
      * The lock, or null when another process holds it. $who goes in the file
-     * for the operator: "install", "release check". $no_flock: as where the
-     * filesystem has none (a test's).
+     * for the operator: "install 2.0.1", "release check". $no_flock: as where
+     * the filesystem has none (a test's).
      */
-    'tryLock' => static function ( $data, $who = 'install', $no_flock = false ) {
+    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine ) {
 
-        $u    = require __FILE__;
-        $file = rtrim( (string) $data, '/' ) . '/updating';
+        $file  = rtrim( (string) $data, '/' ) . '/updating';
+        $stale = false;
 
-        switch ( $u['lockState']( $file, $no_flock ) ) {
+        switch ( $lockState( $file, $no_flock ) ) {
 
             case 'held':
 
@@ -263,9 +278,20 @@ return [
 
             case 'left':
 
+                if ( is_link( $file ) ) {
+
+                    // Never followed: whatever it names is no lock.
+                    if ( ! @unlink( $file ) ) {
+
+                        return null;
+                    }
+
+                    break;
+                }
+
                 $token = bin2hex( random_bytes( 8 ) );
                 $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
-                $h    = @fopen( $file, 'r+' );
+                $h     = @fopen( $file, 'r+' );
 
                 if ( $h !== false ) {
 
@@ -273,10 +299,10 @@ return [
 
                     if ( ! $no_flock && flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
 
-                        // Taken, if what it flocked is still the file named updating:
+                        // Taken, if what it flocked is still the file named updating, and no link:
                         // another process may have replaced it in between.
                         clearstatcache( true, $file );
-                        $mine = @stat( $file );
+                        $mine = @lstat( $file );
                         $held = fstat( $h );
 
                         if ( $mine !== false && $held !== false && $mine['ino'] === $held['ino'] && $mine['dev'] === $held['dev'] ) {
@@ -333,15 +359,14 @@ return [
 
         $token = bin2hex( random_bytes( 8 ) );
         $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
-        $tmp  = $file . '.new-' . bin2hex( random_bytes( 8 ) );
-        $h    = @fopen( $tmp, 'x+' );
+        $tmp   = $file . '.new-' . bin2hex( random_bytes( 8 ) );
+        $h     = @fopen( $tmp, 'x+' );
 
         if ( $h === false ) {
 
             return null;
         }
 
-        // Read before OWA loads by the web user (its phase), whatever the umask.
         @chmod( $tmp, 0644 );
 
         fwrite( $h, $line );
@@ -353,7 +378,7 @@ return [
         @unlink( $tmp );
 
         // No hard links here: made in place, and flocked straight after.
-        if ( ! $placed && ! file_exists( $file ) ) {
+        if ( ! $placed && ! file_exists( $file ) && ! is_link( $file ) ) {
 
             fclose( $h );
             $h = @fopen( $file, 'x+' );
@@ -386,75 +411,13 @@ return [
         // A stale file taken over without flock(): another process moving
         // files in the same instant could have lost this one. Asked again a
         // moment later; gone means it is another's, left as it is.
-        if ( ! empty( $stale ) && ! $u['stillMine']( $hold, 1 ) ) {
+        if ( $stale && ! $stillMine( $hold, 1 ) ) {
 
             return null;
         }
 
         return $hold;
-    },
-
-    /* Whether the lock file is still this holder's (its token), $wait seconds on. */
-    'stillMine' => static function ( array $hold, $wait = 0 ) {
-
-        if ( $wait > 0 ) {
-
-            sleep( (int) $wait );
-        }
-
-        return str_contains( (string) @file_get_contents( (string) $hold['file'] ), ', token ' . $hold['token'] );
-    },
-
-    /*
-     * Say what the holder is doing, at the end of its line: an install is
-     * "copying" while the files are mixed (the copy, and an undo), then
-     * "copied". log.php drops a beacon while it says copying, since nothing
-     * can boot then. Returns the hold with its new line.
-     */
-    'setLockPhase' => static function ( array $hold, $phase ) {
-
-        $hold['line'] = sprintf( "%s, %s\n", preg_replace( '/, (copying|copied)$/', '', rtrim( (string) $hold['line'] ) ), $phase );
-
-        if ( $hold['handle'] !== null ) {
-
-            ftruncate( $hold['handle'], 0 );
-            rewind( $hold['handle'] );
-            fwrite( $hold['handle'], $hold['line'] );
-            fflush( $hold['handle'] );
-
-        } elseif ( ( require __FILE__ )['stillMine']( $hold ) ) {
-
-            @file_put_contents( (string) $hold['file'], $hold['line'] );
-        }
-
-        return $hold;
-    },
-
-    /*
-     * For the entry points, before OWA loads: null when no lock is held, else
-     * what its line says and how long since its holder last touched it.
-     *
-     * @return array{line: string, phase: string|null, idle: int}|null
-     */
-    'lockStatus' => static function ( $data ) {
-
-        $u    = require __FILE__;
-        $file = rtrim( (string) $data, '/' ) . '/updating';
-
-        if ( ! $u['isLocked']( $data ) ) {
-
-            return null;
-        }
-
-        $line = trim( (string) @file_get_contents( $file ) );
-        $time = @filemtime( $file );
-
-        return [
-            'line'  => $line,
-            'phase' => preg_match( '/, (copying|copied)$/', $line, $m ) ? $m[1] : null,
-            'idle'  => $time === false ? 0 : max( 0, time() - $time ),
-        ];
-    },
+    };
 
     /*
      * Delete the file, if it is still this holder's, then let the flock go:
@@ -462,15 +425,14 @@ return [
      * and take it over. Windows cannot delete a file held open, nor read one
      * it has locked, so there it lets go first.
      */
-    'unlock' => static function ( array $hold ) {
+    $unlock = static function ( array $hold ) use ( $stillMine ) {
 
-        $u    = require __FILE__;
         $file = (string) $hold['file'];
         $h    = $hold['handle'];
 
         if ( $h !== null && PHP_OS_FAMILY !== 'Windows' ) {
 
-            if ( $u['stillMine']( $hold ) ) {
+            if ( $stillMine( $hold ) ) {
 
                 @unlink( $file );
             }
@@ -487,860 +449,406 @@ return [
             fclose( $h );
         }
 
-        if ( $u['stillMine']( $hold ) ) {
+        if ( $stillMine( $hold ) ) {
 
             @unlink( $file );
         }
-    },
+    };
 
-    /*
-     * The holder calls this between steps, whichever way it holds the lock:
-     * the file's time is then its last step, so a lock held and not touched
-     * for long is an install stuck in one step (its claim is the file's line,
-     * and install.json's claimed_at). Without flock() it keeps the file from
-     * going stale.
-     */
-    'touchLock' => static function ( array $hold ) {
+    /* The holder, between steps: the file's time is its last step, and without flock() it keeps the file from going stale. */
+    $touchLock = static function ( array $hold ) {
 
         @touch( (string) $hold['file'] );
-    },
+    };
 
     /*
-     * The entry points, before OWA loads: the lock's status for this
-     * installation (lockStatus), or null when none is held or the config
-     * cannot be read before boot (configRefused; such an installation never
-     * installs itself, so holds no lock).
-     */
-    'maintenance' => static function ( $root ) {
-
-        $u      = require __FILE__;
-        $config = $u['config']( $root );
-
-        return $config === null ? null : $u['lockStatus']( $config['data'] );
-    },
-
-    /* A lock held this long without its holder touching it is an install stuck in one step. */
-    'lock_stuck' => 7200,
-
-    /*
-     * index.php and api/index.php: answer 503 while the lock is held, and say
-     * so; true when it answered. $rest: the REST API's JSON envelope.
-     */
-    'serveMaintenance' => static function ( $root, $rest = false ) {
-
-        $u      = require __FILE__;
-        $status = $u['maintenance']( $root );
-
-        if ( $status === null ) {
-
-            return false;
-        }
-
-        $stuck = $status['idle'] >= $u['lock_stuck'];
-
-        http_response_code( 503 );
-        header( 'Retry-After: 60' );
-        header( 'Cache-Control: no-store' );
-
-        if ( $rest ) {
-
-            header( 'Content-Type: application/json; charset=utf-8' );
-            echo json_encode( [
-                'requestId'    => null,
-                'httpResponse' => [ 'status_code' => 503 ],
-                'error'        => [ [
-                    'code'     => 'busy',
-                    'headline' => 'OWA is updating.',
-                    'msg'      => $stuck ? 'The update has not moved for over two hours and may be stuck.' : 'Try again in a minute.',
-                ] ],
-                'data'         => null,
-            ] );
-
-            return true;
-        }
-
-        header( 'Content-Type: text/html; charset=utf-8' );
-        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>OWA is updating</title></head><body>'
-            . '<p>OWA is updating. This takes a minute or two.</p>'
-            . ( $stuck ? '<p>The update has not moved for over two hours and may be stuck. The lock file, owa-data/updating, says: <code>'
-                . htmlspecialchars( $status['line'], ENT_QUOTES ) . '</code>. Once that process has ended, the next run of cli.php carries the install on or undoes it.</p>' : '' )
-            . '</body></html>';
-
-        return true;
-    },
-
-    /* log.php, its response already sent: whether to drop this beacon, because an install is copying files and nothing can boot. */
-    'dropsBeacon' => static function ( $root ) {
-
-        $status = ( require __FILE__ )['maintenance']( $root );
-
-        return $status !== null && $status['phase'] === 'copying';
-    },
-
-    /*
-     * The installed release's version, from the line the Release Packager
-     * writes in Core/Env.php, read as text so no OWA class loads; null when
-     * it is not a release version (a checkout says master).
-     */
-    'installedVersion' => static function ( $root ) {
-
-        $env = (string) @file_get_contents( rtrim( (string) $root, '/' ) . '/Core/Env.php' );
-
-        return preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", $env, $m ) ? $m[1] : null;
-    },
-
-    'backoff' => static function ( $attempts ) {
-
-        return [ 1 => 60, 2 => 180, 3 => 600, 4 => 900, 5 => 7200, 6 => 86400 ][ (int) $attempts ] ?? 604800;
-    },
-
-    /* Delete a directory and everything in it; links are removed, not followed. */
-    'remove' => static function ( $dir ) {
-
-        if ( is_link( $dir ) || is_file( $dir ) ) {
-
-            return @unlink( $dir );
-        }
-
-        if ( ! is_dir( $dir ) ) {
-
-            return true;
-        }
-
-        $it = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ),
-            \RecursiveIteratorIterator::CHILD_FIRST );
-
-        foreach ( $it as $path => $info ) {
-
-            $info->isDir() && ! $info->isLink() ? @rmdir( (string) $path ) : @unlink( (string) $path );
-        }
-
-        return @rmdir( $dir );
-    },
-
-    /*
-     * Step 2. Returns null to boot normally, or the exit code to end with.
+     * The copy: $tar's files over $root, each that differs written beside
+     * its target and renamed over it (keeping the target's mode), then each
+     * of $old_files the release does not ship deleted, with the directories
+     * that leaves empty; Core/Env.php, which says the version, renamed into
+     * place last.
+     * $tar is a handle, read from the start; Tar is loaded by the caller.
+     * Throws at the first failure, leaving the files mixed.
      *
-     * cmd=core-update-install is handled here too, before OWA loads, so the
-     * new release boots in a process that holds no old code: the staged
-     * release installs now, whatever staged.json says about when.
+     * @param resource     $tar
+     * @param list<string> $old_files the replaced release's files, relative to $root
      */
-    'handoff' => static function ( $root, array $argv ) {
+    $apply = static function ( $root, $tar, array $old_files ) {
 
-        $u      = require __FILE__;
-        $root   = rtrim( (string) $root, '/' );
-        $manual = in_array( 'cmd=core-update-install', $argv, true );
-        $force  = in_array( '--force', $argv, true );
-
-        if ( $manual ) {
-
-            // A checkout is updated with its version control, never by copying a release over it.
-            for ( $up = $root; $up !== ''; $up = dirname( $up ) === $up ? '' : dirname( $up ) ) {
-
-                foreach ( [ '.git', '.svn', '.hg', '.bzr' ] as $marker ) {
-
-                    if ( @file_exists( $up . '/' . $marker ) ) {
-
-                        fwrite( STDERR, sprintf( "OWA runs from a version control checkout (%s): update it with that.\n", $up . '/' . $marker ) );
-
-                        return 1;
-                    }
-                }
-            }
-        }
-
-        $config = $u['config']( $root );
-
-        if ( $config === null && $manual ) {
-
-            fwrite( STDERR, sprintf( "owa-config.php uses %s. It is read before OWA loads: use plain values there, or install by hand.\n", $u['configRefused']( $root ) ) );
-
-            return 1;
-        }
-
-        $dir = $config === null ? null : $u['updatesDir']( $config['data'] );
-
-        if ( $dir === null ) {
-
-            if ( $manual ) {
-
-                fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.\n" );
-
-                return 1;
-            }
-
-            return null;
-        }
-
-        $data  = $config['data'];
-        $quiet = in_array( 'cmd=schedule-run', $argv, true );
-        $busy  = static function () use ( $quiet ) {
-
-            if ( ! $quiet ) {
-
-                fwrite( STDERR, "OWA is installing an update; try again in a minute.\n" );
-            }
-
-            return $quiet ? 0 : 75;
-        };
-
-        // Locked: an install is running, or Step 1 is writing. Every other run waits.
-        if ( $u['isLocked']( $data ) ) {
-
-            return $busy();
-        }
-
-        // What to install: a version, or the exit code to end with. Decided
-        // once without the lock, so a run with nothing due never takes it,
-        // and again holding it, since Step 1 may have changed things between.
-        $decide = static function () use ( $u, $dir, $manual, $force, $root ) {
-
-            $current = json_decode( (string) @file_get_contents( $dir . '/install.json' ), true );
-            $current = is_array( $current ) ? $current : null;
-
-            if ( $manual ) {
-
-                // The one release there is: an unfinished install's, which a
-                // staging of another release would have replaced, else the staged one.
-                $staged  = json_decode( (string) @file_get_contents( $dir . '/staged.json' ), true );
-                $version = (string) ( $current['version'] ?? ( is_array( $staged ) ? ( $staged['version'] ?? '' ) : '' ) );
-
-                if ( $version === '' ) {
-
-                    fwrite( STDERR, "Nothing is staged: stage a release first, with cmd=core-update-stage version=<x.y.z>.\n" );
-
-                    return 1;
-                }
-
-            } else {
-
-                $version = $u['due']( $dir, time() );
-            }
-
-            if ( $version === null ) {
-
-                return null;
-            }
-
-            /*
-             * An install starts only for a release newer than the installed one,
-             * unless cmd=core-update-install says --force. An unfinished install
-             * of it carries on while the installed version is not newer than it,
-             * since its copy may already have replaced Core/Env.php, and a forced
-             * one carries on regardless. A newer installed version means another
-             * install went past it (by hand, before the window): an automatic one
-             * is dropped, its staging and any unfinished install of it deleted.
-             */
-            if ( ! ( $manual && $force ) ) {
-
-                $installed  = $u['installedVersion']( $root );
-                $unfinished = ( $current['version'] ?? null ) === $version;
-                $cmp        = $installed === null ? null : version_compare( $version, $installed );
-                $goes_on    = $cmp !== null && ( $cmp > 0 || ( $unfinished && ( $cmp === 0 || ! empty( $current['forced'] ) ) ) );
-
-                if ( ! $goes_on ) {
-
-                    if ( ! $manual ) {
-
-                        return $installed === null ? null : [ 'drop' => $version ];
-                    }
-
-                    fwrite( STDERR, $installed === null
-                        ? sprintf( "The installed version cannot be read from Core/Env.php; add --force to install %s anyway.\n", $version )
-                        : sprintf( "%s is not newer than the installed %s; add --force to install it anyway.\n", $version, $installed ) );
-
-                    return 1;
-                }
-            }
-
-            $gone    = ! $u['slotHolds']( $dir, $version );
-            $problem = $gone && $current !== null ? null : $u['checkStaging']( $dir, $version );
-
-            if ( $problem !== null ) {
-
-                if ( $manual ) {
-
-                    fwrite( STDERR, $problem . "\n" );
-
-                    return 1;
-                }
-
-                return null;
-            }
-
-            return [ $version, $gone ];
-        };
-
-        $due = $decide();
-
-        // A staged release the installed one has gone past: deleted, holding the lock, and OWA boots.
-        if ( isset( $due['drop'] ) ) {
-
-            $hold = $u['tryLock']( $data, sprintf( 'clean-up %s', $due['drop'] ) );
-
-            if ( $hold !== null ) {
-
-                $again = $decide();
-
-                if ( ( $again['drop'] ?? null ) === $due['drop'] ) {
-
-                    $u['dropSuperseded']( $dir, $due['drop'] );
-                }
-
-                $u['unlock']( $hold );
-            }
-
-            return null;
-        }
-
-        if ( ! is_array( $due ) ) {
-
-            return $due;
-        }
-
-        $hold = $u['tryLock']( $data, sprintf( 'install %s', $due[0] ) );
-
-        if ( $hold === null ) {
-
-            return $busy();
-        }
-
-        $due = $decide();
-
-        if ( ! is_array( $due ) || isset( $due['drop'] ) ) {
-
-            $u['unlock']( $hold );
-
-            return is_array( $due ) ? null : $due;
-        }
-
-        [ $version, $gone ] = $due;
-
-        if ( $manual ) {
-
-            fwrite( STDOUT, sprintf( "Installing OWA %s.\n", $version ) );
-        }
-
-        // From here until the copy is checked the files are mixed: log.php drops beacons.
-        $hold = $u['setLockPhase']( $hold, 'copying' );
-
-        $context = [
-            'root'    => $root,
-            'updates' => $dir,
-            'data'    => $data,
-            'public'  => $config['public'],
-            'version' => $version,
-            'manual'  => $manual,
-            'forced'  => $manual && $force,
-            'now'     => time(),
-            'lock'    => $hold,
-        ];
-
-        // An unfinished install whose staging is gone cannot go on: undo it,
-        // and the old release runs. Step 1 stages the release again.
-        if ( $gone ) {
-
-            $u['undo']( $context, 'Its staging is gone, so it was undone; it is staged and installed again.' );
-            $u['unlock']( $hold );
-
-            return null;
-        }
-
-        $code = ( require $dir . '/staged/updater.php' )['install']( $context );
-
-        // Done, however it ended. A process that dies, or exit()s from inside
-        // the install (the 24-hour stop), leaves the file for the next
-        // process to take over, once the kernel has let its flock go.
-        $u['unlock']( $hold );
-
-        return $code;
-    },
-
-    /*
-     * Which version is due, or null: the unfinished install
-     * (install.json) once past its retry_after, whatever the window,
-     * and nothing new while one waits; else the release staged.json points
-     * at, inside its window.
-     */
-    'due' => static function ( $dir, $now ) {
-
-        $read = static function ( $file ) {
-
-            $data = is_file( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : null;
-
-            return is_array( $data ) ? $data : null;
-        };
-
-        $install = $read( $dir . '/install.json' );
-
-        if ( $install !== null ) {
-
-            $v = (string) ( $install['version'] ?? '' );
-
-            return preg_match( '/^\d+\.\d+\.\d+$/', $v ) && (int) ( $install['retry_after'] ?? 0 ) <= $now ? $v : null;
-        }
-
-        $staged  = $read( $dir . '/staged.json' );
-        $version = (string) ( $staged['version'] ?? '' );
-
-        // Only one that installs itself: not one staged by hand, nor one that waits.
-        if ( empty( $staged['automatic'] ) || ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
-
-            return null;
-        }
-
-        $window = $staged['window'] ?? null;
-
-        if ( is_array( $window ) ) {
-
-            try {
-
-                $tz = new \DateTimeZone( (string) ( $window['timezone'] ?? 'UTC' ) );
-
-            } catch ( \Exception $e ) {
-
-                $tz = new \DateTimeZone( 'UTC' );
-            }
-
-            $t     = ( new \DateTimeImmutable( '@' . (int) $now ) )->setTimezone( $tz );
-            $hm    = $t->format( 'H:i' );
-            $start = (string) ( $window['start'] ?? '00:00' );
-            $end   = (string) ( $window['end'] ?? '24:00' );
-            $day   = (int) $t->format( 'N' );
-
-            // A window that crosses midnight starts on its day and ends on the next.
-            $inside = $start <= $end ? ( $hm >= $start && $hm < $end ) : ( $hm >= $start || $hm < $end );
-            $on_day = $start <= $end || $hm >= $start ? $day : ( $day === 1 ? 7 : $day - 1 );
-
-            if ( ! $inside || ! in_array( $on_day, array_map( 'intval', (array) ( $window['days'] ?? [] ) ), true ) ) {
-
-                return null;
-            }
-        }
-
-        return $version;
-    },
-
-    /* Whether staged/ holds this release: its release.json says so. */
-    'slotHolds' => static function ( $dir, $version ) {
-
-        $info = json_decode( (string) @file_get_contents( rtrim( (string) $dir, '/' ) . '/staged/release.json' ), true );
-
-        return is_array( $info ) && ( $info['version'] ?? null ) === $version;
-    },
-
-    /*
-     * Why the staging may not be run, or null: staged/ holds that release,
-     * and the updates directory, staged/ and its updater.php are owned by this
-     * user and writable by no one else.
-     */
-    'checkStaging' => static function ( $dir, $version ) {
-
-        if ( ! function_exists( 'posix_geteuid' ) ) {
-
-            return 'Automatic updates need PHP\'s posix extension in the CLI.';
-        }
-
-        if ( ! preg_match( '/^\d+\.\d+\.\d+$/', (string) $version ) ) {
-
-            return sprintf( '%s is not a release version.', $version );
-        }
-
-        $uid = posix_geteuid();
-
-        if ( ! ( require __FILE__ )['slotHolds']( $dir, $version ) ) {
-
-            return sprintf( '%s is not staged: stage it first (cmd=core-update-stage version=%s).', $version, $version );
-        }
-
-        foreach ( [ $dir, $dir . '/staged', $dir . '/staged/updater.php' ] as $path ) {
-
-            clearstatcache( true, $path );
-
-            if ( ! file_exists( $path ) ) {
-
-                return sprintf( '%s does not exist: stage the release first.', $path );
-            }
-
-            if ( @fileowner( $path ) !== $uid || ( @fileperms( $path ) & 0022 ) ) {
-
-                return sprintf( '%s must be owned by the user running cli.php and writable by no one else.', $path );
-            }
-        }
-
-        return null;
-    },
-
-    /*
-     * A staged release the installed one has gone past: staged.json if it
-     * names it, its staging, and an unfinished install of it with its
-     * backup/ (the originals of a release no longer installed). The caller
-     * holds the lock.
-     */
-    'dropSuperseded' => static function ( $dir, $version ) {
-
-        $u    = require __FILE__;
-        $read = static fn ( $file ) => is_array( $j = json_decode( (string) @file_get_contents( $file ), true ) ) ? $j : [];
-
-        if ( ( $read( $dir . '/install.json' )['version'] ?? null ) === $version ) {
-
-            @unlink( $dir . '/install.json' );
-            $u['remove']( $dir . '/backup' );
-        }
-
-        if ( ( $read( $dir . '/staged.json' )['version'] ?? null ) === $version || $u['slotHolds']( $dir, $version ) ) {
-
-            @unlink( $dir . '/staged.json' );
-            $u['remove']( $dir . '/staged' );
-        }
-    },
-
-    /*
-     * Put back every file in backup/ and record why: the old release
-     * runs until the retry.
-     *
-     * @return list<string> the files that could not be put back
-     */
-    'undo' => static function ( array $c, $why ) {
-
-        // The files are mixed again while the originals go back.
-        if ( isset( $c['lock'] ) && is_array( $c['lock'] ) ) {
-
-            ( require __FILE__ )['setLockPhase']( $c['lock'], 'copying' );
-        }
-
-        $backup = $c['updates'] . '/backup';
-        $state  = $c['updates'] . '/install.json';
-        $failed = [];
-
-        if ( is_dir( $backup ) ) {
-
-            $it = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $backup, \FilesystemIterator::SKIP_DOTS ) );
-
-            foreach ( $it as $path => $info ) {
-
-                if ( ! $info->isFile() ) {
-
-                    continue;
-                }
-
-                $rel    = substr( (string) $path, strlen( $backup ) + 1 );
-                $target = rtrim( $c['root'], '/' ) . '/' . $rel;
-
-                // Backed up, then not changed: the copy failed on this file.
-                // Writing it back would only fail the same way, in a
-                // directory that is not writable.
-                if ( is_file( $target ) && ! is_link( $target ) && hash_file( 'sha256', $target ) === hash_file( 'sha256', (string) $path )
-                        && ( fileperms( $target ) & 0777 ) === ( fileperms( (string) $path ) & 0777 ) ) {
-
-                    continue;
-                }
-
-                @mkdir( dirname( $target ), 0755, true );
-
-                if ( ! @copy( (string) $path, $target . '.owa-undo' ) || ! @chmod( $target . '.owa-undo', fileperms( (string) $path ) & 0777 )
-                        || ! @rename( $target . '.owa-undo', $target ) ) {
-
-                    $failed[] = $rel;
-                }
-            }
-        }
-
-        $install = json_decode( (string) @file_get_contents( $state ), true );
-
-        if ( is_array( $install ) ) {
-
-            $install['copied'] = false;
-            $install['error']  = $why . ( $failed ? sprintf( ' Putting back %d file(s) failed, such as %s.', count( $failed ), $failed[0] ) : ' The previous release was put back.' );
-            $tmp = $state . '.tmp' . getmypid();
-            file_put_contents( $tmp, json_encode( $install, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
-            chmod( $tmp, 0644 );
-            rename( $tmp, $state );
-        }
-
-        return $failed;
-    },
-
-    /*
-     * Step 3. Returns null to boot (the old release, after an undo) or the
-     * exit code once Step 4 has run.
-     */
-    'install' => static function ( array $c ) {
-
-        $u       = require __FILE__;
-        $root    = rtrim( (string) $c['root'], '/' );
-        $release = $c['updates'] . '/staged';
-        $state   = $c['updates'] . '/install.json';
-        $backup  = $c['updates'] . '/backup';
-        $write   = static function ( $file, array $data ) {
-
-            $tmp = $file . '.tmp' . getmypid();
-            file_put_contents( $tmp, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
-            chmod( $tmp, 0644 );
-            rename( $tmp, $file );
-        };
-        $sha     = static fn ( $file ) => is_file( $file ) && ! is_link( $file ) ? (string) hash_file( 'sha256', $file ) : '';
-
-        // The copy deletes what the release does not ship: both trees must be OWA's.
-        foreach ( [ $root, $release ] as $tree ) {
-
-            if ( $tree === '' || $tree === '/' || ! is_file( $tree . '/owa_env.php' ) || ! is_file( $tree . '/cli.php' ) ) {
-
-                fwrite( STDERR, sprintf( "%s is not an OWA directory; nothing was installed.\n", $tree ) );
-
-                return 1;
-            }
-        }
-
-        $previous = json_decode( (string) @file_get_contents( $state ), true );
-        $previous = is_array( $previous ) && ( $previous['version'] ?? null ) === $c['version'] ? $previous : null;
-        $attempts = $c['manual'] ? 1 : (int) ( $previous['attempts'] ?? 0 ) + 1;
-        $install  = [
-            'format'      => 1,
-            'state'       => 'installing',
-            'version'     => $c['version'],
-            'attempts'    => $attempts,
-            'claimed_at'  => (int) $c['now'],
-            'retry_after' => (int) $c['now'] + $u['backoff']( $attempts ),
-            'copied'      => false,
-            'booted'      => false,
-            'forced'      => ! empty( $c['forced'] ) || ! empty( $previous['forced'] ),
-            'error'       => $previous['error'] ?? null,
-        ];
-        $write( $state, $install );
-
-        $record = static function ( array $change ) use ( &$install, $write, $state ) {
-
-            $install = $change + $install;
-            $write( $state, $install );
-        };
-
-        // The release's files, relative to its root (Step 1's reader admits
-        // plain files and directories only).
+        $root  = rtrim( (string) $root, '/' );
         $files = [];
         $dirs  = [];
-        $it    = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $release, \FilesystemIterator::SKIP_DOTS ),
-            \RecursiveIteratorIterator::SELF_FIRST );
+        $env   = null;
 
-        foreach ( $it as $path => $info ) {
+        if ( $root === '' || ! is_file( $root . '/owa_env.php' ) ) {
 
-            $rel = substr( (string) $path, strlen( $release ) + 1 );
-
-            if ( $info->isDir() && ! $info->isLink() ) {
-
-                $dirs[ $rel ] = true;
-
-            } elseif ( $info->isFile() && ! $info->isLink() ) {
-
-                $files[ $rel ] = true;
-            }
+            throw new \RuntimeException( sprintf( '%s is not an OWA directory.', $root ) );
         }
 
-        $modules = [];
-
-        foreach ( array_keys( $dirs ) as $rel ) {
-
-            if ( preg_match( '#^modules/([^/]+)$#', $rel, $m ) ) {
-
-                $modules[ $m[1] ] = true;
-            }
-        }
-
-        // What belongs to this installation, not to any release: never deleted.
-        // owa-data/ by name too: with OWA_DATA_DIR elsewhere it may still hold
-        // what was there before the data directory moved.
-        $own  = [ $c['data'], $root . '/owa-data', $c['public'] . '/tracker', $c['updates'] ];
-        $keep = static function ( $abs, $rel ) use ( $own, $modules, $u ) {
-
-            if ( $rel === 'owa-config.php' ) {
-
-                return true;
-            }
-
-            foreach ( $own as $path ) {
-
-                $path = rtrim( (string) $path, '/' );
-
-                if ( $abs === $path || str_starts_with( $abs, $path . '/' ) ) {
-
-                    return true;
-                }
-            }
-
-            if ( preg_match( '#^modules/([^/]+)(/|$)#', $rel, $m ) ) {
-
-                return ! isset( $modules[ $m[1] ] ) && ! in_array( $m[1], (array) $u['retired_modules'], true );
-            }
-
-            return false;
-        };
-
-        $backupOnce = static function ( $target, $rel ) use ( $backup ) {
-
-            $copy = $backup . '/' . $rel;
-
-            if ( file_exists( $copy ) ) {
-
-                return;
-            }
-
-            @mkdir( dirname( $copy ), 0700, true );
-
-            if ( ! @copy( $target, $copy . '.tmp' ) || ! @chmod( $copy . '.tmp', fileperms( $target ) & 0777 ) || ! @rename( $copy . '.tmp', $copy ) ) {
-
-                throw new \RuntimeException( sprintf( 'Could not back up %s.', $rel ) );
-            }
-        };
-
-        $run = (object) [ 'finished' => false ];
-
-        // A fatal error before the new OWA has booted (a parse error in it, a
-        // missing class) ends the process: undo here, from the shutdown.
-        register_shutdown_function( static function () use ( &$install, $run, $u, $c, $record ) {
-
-            if ( $run->finished || ! $install['copied'] ) {
-
-                return;
-            }
-
-            $error = error_get_last();
-            $what  = $error ? $error['message'] . ' in ' . $error['file'] . ':' . $error['line'] : 'no error was reported';
-
-            // Once booted nothing is undone: the schema may have moved on.
-            if ( $install['booted'] ) {
-
-                $record( [ 'error' => 'The install stopped: ' . $what ] );
-
-                return;
-            }
-
-            $u['undo']( $c, 'The new release stopped before it booted: ' . $what . '.' );
-        } );
-
-        if ( function_exists( 'pcntl_alarm' ) && function_exists( 'pcntl_signal' ) && function_exists( 'pcntl_async_signals' ) ) {
-
-            pcntl_async_signals( true );
-            pcntl_signal( SIGALRM, static function () use ( $record ) {
-
-                $record( [ 'error' => 'The install ran for 24 hours and was stopped.' ] );
-                exit( 1 );
-            } );
-            pcntl_alarm( 86400 );
-        }
-
-        $paths = array_keys( $files );
-        usort( $paths, static fn ( $a, $b ) => [ $a === 'cli.php', $a ] <=> [ $b === 'cli.php', $b ] );
+        rewind( $tar );
 
         try {
 
-            // Copy each file that differs, its original backed up first; cli.php last.
-            foreach ( $paths as $rel ) {
+            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env ) {
 
-                $source = $release . '/' . $rel;
                 $target = $root . '/' . $rel;
 
-                if ( $sha( $target ) === $sha( $source ) ) {
+                if ( $type === 'dir' ) {
 
-                    continue;
+                    $dirs[ $rel ] = true;
+
+                    if ( ! is_dir( $target ) && ! @mkdir( $target, 0755, true ) ) {
+
+                        throw new \RuntimeException( sprintf( 'Could not create %s.', $rel ) );
+                    }
+
+                    return;
                 }
 
-                if ( file_exists( $target ) || is_link( $target ) ) {
+                $files[ $rel ] = true;
 
-                    $backupOnce( $target, $rel );
+                // Read whole first: a file that is already this one is left as it is,
+                // so putting a release back writes only what the copy changed.
+                $buf = fopen( 'php://temp/maxmemory:16777216', 'w+b' );
+                $read( $buf );
+                rewind( $buf );
+                $ctx = hash_init( 'sha256' );
+                hash_update_stream( $ctx, $buf );
+                rewind( $buf );
+
+                $exists = is_file( $target ) && ! is_link( $target );
+
+                if ( $exists && hash_file( 'sha256', $target ) === hash_final( $ctx ) ) {
+
+                    fclose( $buf );
+
+                    return;
                 }
 
                 if ( ! is_dir( dirname( $target ) ) && ! @mkdir( dirname( $target ), 0755, true ) ) {
 
+                    fclose( $buf );
+
                     throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
                 }
 
-                $mode = file_exists( $target ) ? fileperms( $target ) & 0777 : fileperms( $source ) & 0777;
-                $tmp  = $target . '.owa-update';
+                $tmp = $target . '.owa-update';
+                $out = @fopen( $tmp, 'wb' );
 
-                if ( ! @copy( $source, $tmp ) || ! @chmod( $tmp, $mode ) || ! @rename( $tmp, $target ) ) {
+                if ( $out === false ) {
+
+                    fclose( $buf );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+
+                $copied = stream_copy_to_stream( $buf, $out ) === $size;
+                fclose( $buf );
+                fclose( $out );
+
+                if ( ! $copied ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Writing %s failed; the disk may be full.', $rel ) );
+                }
+
+                $keep = $exists ? fileperms( $target ) & 0777 : $mode & 0755;
+
+                if ( ! @chmod( $tmp, $keep ) ) {
 
                     @unlink( $tmp );
 
                     throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
                 }
+
+                if ( $rel === 'Core/Env.php' ) {
+
+                    $env = [ $tmp, $target ];
+
+                    return;
+                }
+
+                if ( ! @rename( $tmp, $target ) ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+            } );
+
+            if ( ! isset( $files['Core/Env.php'] ) ) {
+
+                throw new \RuntimeException( 'The release has no Core/Env.php.' );
             }
 
-            // Delete what the release does not ship and the installation does not own.
-            $live = new \RecursiveIteratorIterator(
-                new \RecursiveCallbackFilterIterator(
-                    new \RecursiveDirectoryIterator( $root, \FilesystemIterator::SKIP_DOTS ),
-                    static function ( \SplFileInfo $f ) use ( $root, $keep ) {
+            foreach ( $old_files as $rel ) {
 
-                        $abs = (string) $f->getPathname();
+                $rel = (string) $rel;
 
-                        return ! $keep( $abs, substr( $abs, strlen( $root ) + 1 ) );
-                    } ),
-                \RecursiveIteratorIterator::CHILD_FIRST );
-
-            foreach ( $live as $abs => $info ) {
-
-                $rel = substr( (string) $abs, strlen( $root ) + 1 );
-
-                if ( $info->isDir() && ! $info->isLink() ) {
-
-                    // A directory the release does not have, emptied above.
-                    if ( ! isset( $dirs[ $rel ] ) ) {
-
-                        @rmdir( (string) $abs );
-                    }
+                if ( isset( $files[ $rel ] ) || $rel === '' || str_contains( '/' . $rel . '/', '/../' ) ) {
 
                     continue;
                 }
 
-                if ( isset( $files[ $rel ] ) ) {
+                $path = $root . '/' . $rel;
 
-                    continue;
-                }
-
-                $backupOnce( (string) $abs, $rel );
-
-                if ( ! @unlink( (string) $abs ) ) {
+                if ( ( is_file( $path ) || is_link( $path ) ) && ! @unlink( $path ) ) {
 
                     throw new \RuntimeException( sprintf( 'Could not delete %s, which the release does not ship.', $rel ) );
                 }
+
+                for ( $dir = dirname( $rel ); $dir !== '.' && ! isset( $dirs[ $dir ] ) && @rmdir( $root . '/' . $dir ); $dir = dirname( $dir ) ) {
+                }
             }
 
-            // Check: every file is the release's.
-            foreach ( $paths as $rel ) {
+            if ( $env !== null && ! @rename( $env[0], $env[1] ) ) {
 
-                if ( $sha( $root . '/' . $rel ) !== $sha( $release . '/' . $rel ) ) {
-
-                    throw new \RuntimeException( sprintf( '%s does not match the release after the copy.', $rel ) );
-                }
+                throw new \RuntimeException( 'Could not write Core/Env.php.' );
             }
 
         } catch ( \Throwable $e ) {
 
-            $run->finished = true;
-            $u['undo']( $c, $e->getMessage() );
-            fwrite( STDERR, sprintf( "Installing OWA %s failed: %s\n", $c['version'], $e->getMessage() ) );
+            // Core/Env.php, written ahead and kept back, goes with a copy that failed.
+            if ( $env !== null ) {
 
-            return null;
+                @unlink( $env[0] );
+            }
+
+            throw $e;
+        }
+    };
+
+    /*
+     * Put the installed release back, before OWA loads: from_tar unpacked
+     * over the OWA directory once its signature checks, then what to_tar
+     * ships and from_tar does not deleted, when to_tar's checks too. Holding
+     * the lock. Returns the exit code; the marker goes once it is done.
+     */
+    $putBack = static function ( $root, array $m, $why ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure ) {
+
+        $from = (string) ( $m['from'] ?? '' );
+        $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'putting back %s', $from ) );
+
+        if ( $hold === null ) {
+
+            fwrite( STDERR, "OWA is installing an update; try again in a minute.\n" );
+
+            return 75;
         }
 
-        $record( [ 'copied' => true ] );
+        try {
 
-        // Every file is the new release's: log.php may boot again.
-        if ( isset( $c['lock'] ) && is_array( $c['lock'] ) ) {
+            foreach ( [ 'Tar', 'Signature' ] as $class ) {
 
-            $c['lock'] = $u['setLockPhase']( $c['lock'], 'copied' );
-            $u['touchLock']( $c['lock'] );
+                if ( ! class_exists( '\\OWA\\Module\\Base\\Classes\\AutoUpdate\\' . $class, false ) ) {
+
+                    require rtrim( (string) $root, '/' ) . '/modules/Base/Classes/AutoUpdate/' . $class . '.php';
+                }
+            }
+
+            $open = static function ( $tar, $version ) {
+
+                $h = @fopen( (string) $tar, 'rb' );
+
+                if ( $h === false ) {
+
+                    throw new \RuntimeException( sprintf( '%s is missing.', $tar ) );
+                }
+
+                $ctx = hash_init( 'sha256' );
+                hash_update_stream( $ctx, $h );
+                \OWA\Module\Base\Classes\AutoUpdate\Signature::verify( (string) $version, hash_final( $ctx ), (string) @file_get_contents( $tar . '.sig' ) );
+                rewind( $h );
+
+                return $h;
+            };
+
+            $h   = $open( $m['from_tar'] ?? '', $from );
+            $old = [];
+
+            try {
+
+                $old = \OWA\Module\Base\Classes\AutoUpdate\Tar::files( $open( $m['to_tar'] ?? '', (string) ( $m['to'] ?? '' ) ) );
+
+            } catch ( \RuntimeException $e ) {
+
+                // What the new release added stays: nothing proves which files it shipped.
+            }
+
+            $apply( $root, $h, $old );
+            fclose( $h );
+
+        } catch ( \Throwable $e ) {
+
+            $unlock( $hold );
+            fwrite( STDERR, sprintf( "Putting OWA %s back failed: %s\nOWA cannot run until it is put back by hand: unpack owa_%s_packaged.tar over %s, then delete %s.\n",
+                $from, $e->getMessage(), $from, $root, $marker( $root ) ) );
+
+            return 1;
         }
 
-        // Step 4, in the new code. Nothing of OWA is loaded in this process,
-        // so this is the new release as a fresh process would see it.
-        require $root . '/owa.php';
+        @unlink( $marker( $root ) );
+        $recordFailure( (string) ( $m['updates'] ?? '' ), $from, (string) ( $m['to'] ?? '' ), sprintf( '%s OWA %s was put back.', $why, $from ) );
+        $unlock( $hold );
+        fwrite( STDERR, sprintf( "Installing OWA %s failed: %s OWA %s was put back.\n", $m['to'] ?? '', $why, $from ) );
 
-        $finish = '\\OWA\\Module\\Base\\Classes\\AutoUpdate\\Finish';
-        $code   = (int) $finish::run( $c + [ 'install' => $state, 'record' => $record ] );
+        return 0;
+    };
 
-        $run->finished = true;
+    return [
 
-        return $code;
-    },
-];
+        'updatesDirs' => $updatesDirs,
+        'updatesDir'  => $updatesDir,
+        'lock_stale'  => $lock_stale,
+        'lockState'   => $lockState,
+        'isLocked'    => $isLocked,
+        'tryLock'     => $tryLock,
+        'stillMine'   => $stillMine,
+        'unlock'      => $unlock,
+        'touchLock'   => $touchLock,
+        'remove'      => $remove,
+        'apply'       => $apply,
+        'marker'      => $marker,
+        'readMarker'  => $readMarker,
+        'writeMarker' => $writeMarker,
+        'recordFailure' => $recordFailure,
+        'putBack'     => $putBack,
+
+        /* The installed release's version, read as text from Core/Env.php; null when it is not a release version (a checkout says master). */
+        'installedVersion' => static function ( $root ) {
+
+            $env = (string) @file_get_contents( rtrim( (string) $root, '/' ) . '/Core/Env.php' );
+
+            return preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", $env, $m ) ? $m[1] : null;
+        },
+
+        /*
+         * cli.php, before OWA loads. Returns null to boot as usual, an exit
+         * code to end with, or ['finish' => marker, 'hold' => lock] to boot
+         * and run Finish first, whatever the command.
+         */
+        'preboot' => static function ( $root, array $argv ) use ( $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker ) {
+
+            $m = $readMarker( $root );
+
+            if ( $m === null ) {
+
+                return null;
+            }
+
+            $quiet = in_array( 'cmd=schedule-run', $argv, true );
+            $busy  = static function () use ( $quiet ) {
+
+                if ( ! $quiet ) {
+
+                    fwrite( STDERR, "OWA is installing an update; try again in a minute.\n" );
+                }
+
+                return $quiet ? 0 : 75;
+            };
+
+            $phase = (string) ( $m['phase'] ?? '' );
+
+            if ( ! in_array( $phase, [ 'copying', 'copied', 'booted' ], true ) ) {
+
+                fwrite( STDERR, sprintf( "%s cannot be read, so OWA does not know whether an update is half installed. If no install is running, delete it.\n", $marker( $root ) ) );
+
+                return 1;
+            }
+
+            if ( $phase === 'copying' ) {
+
+                return $lockState( (string) ( $m['lock'] ?? '' ) ) === 'held'
+                    ? $busy()
+                    : $putBack( $root, $m, 'The copy stopped before it finished.' );
+            }
+
+            if ( $phase === 'copied' && (int) ( $m['boots'] ?? 0 ) >= 2 ) {
+
+                return $putBack( $root, $m, sprintf( 'OWA %s did not boot.', $m['to'] ?? '' ) );
+            }
+
+            $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'finishing %s', $m['to'] ?? '' ) );
+
+            if ( $hold === null ) {
+
+                return $busy();
+            }
+
+            if ( $phase === 'copied' ) {
+
+                $m['boots'] = (int) ( $m['boots'] ?? 0 ) + 1;
+
+                try {
+
+                    $writeMarker( $root, $m );
+
+                } catch ( \RuntimeException $e ) {
+
+                    $unlock( $hold );
+                    fwrite( STDERR, $e->getMessage() . "\n" );
+
+                    return 1;
+                }
+            }
+
+            return [ 'finish' => $m, 'hold' => $hold ];
+        },
+
+        /*
+         * index.php and api/index.php: answer 503 until the new release has
+         * booted, and say so; true when it answered. $rest: the REST API's
+         * JSON envelope.
+         */
+        'serveMaintenance' => static function ( $root, $rest = false ) use ( $readMarker ) {
+
+            $m = $readMarker( $root );
+
+            if ( $m === null || ( $m['phase'] ?? '' ) === 'booted' ) {
+
+                return false;
+            }
+
+            // Two hours on, something is wrong: the next run of cli.php says what.
+            $stuck = time() - (int) ( $m['since'] ?? time() ) >= 7200;
+
+            http_response_code( 503 );
+            header( 'Retry-After: 60' );
+            header( 'Cache-Control: no-store' );
+
+            if ( $rest ) {
+
+                header( 'Content-Type: application/json; charset=utf-8' );
+                echo json_encode( [
+                    'requestId'    => null,
+                    'httpResponse' => [ 'status_code' => 503 ],
+                    'error'        => [ [
+                        'code'     => 'busy',
+                        'headline' => 'OWA is updating.',
+                        'msg'      => $stuck ? 'The update has not finished for over two hours and may be stuck.' : 'Try again in a minute.',
+                    ] ],
+                    'data'         => null,
+                ] );
+
+                return true;
+            }
+
+            header( 'Content-Type: text/html; charset=utf-8' );
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>OWA is updating</title></head><body>'
+                . '<p>OWA is updating. This takes a minute or two.</p>'
+                . ( $stuck ? '<p>The update has not finished for over two hours and may be stuck. The administrator can see why by running php cli.php cmd=core-update-status.</p>' : '' )
+                . '</body></html>';
+
+            return true;
+        },
+
+        /* log.php, its response already sent: whether to drop this beacon, because the new release has not booted yet. */
+        'dropsBeacon' => static function ( $root ) use ( $readMarker ) {
+
+            $m = $readMarker( $root );
+
+            return $m !== null && ( $m['phase'] ?? '' ) !== 'booted';
+        },
+    ];
+} )();

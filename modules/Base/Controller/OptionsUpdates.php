@@ -2,9 +2,9 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * The install's Updates page: what automatic updates will do, read from
- * staged.json and install.json (Classes\AutoUpdate\UpdatesState), the
- * actions the scheduler runs for it (base.updatesRun), and the settings.
+ * The install's Updates page: what automatic updates will do, read from the
+ * updates directory (Classes\AutoUpdate\UpdatesState), the actions the
+ * scheduler runs for it (base.updatesRun), and the settings.
  */
 class OptionsUpdates extends \OWA\Core\AdminController {
 

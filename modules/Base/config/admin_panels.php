@@ -136,7 +136,6 @@ return [
             'settings' => [
                 'auto_update',
                 'auto_update_level',
-                'auto_update_patch_immediately',
                 'auto_update_days',
                 'auto_update_window',
                 'auto_update_email_success',

@@ -22,18 +22,23 @@ if (!OWA_CLI)
     exit();
 }
 
-// Automatic updates, Step 2: hand-off (updater.php). Before any OWA file
-// loads: an install that is due, or cmd=core-update-install, runs here in
-// this process and ends it; otherwise nothing happens and OWA boots.
-$owa_handoff = (require __DIR__ . '/updater.php')['handoff'](__DIR__, (array) ($_SERVER['argv'] ?? []));
+// Automatic updates (updater.php `preboot`), before any OWA file loads: an
+// install the marker says is under way is waited for, put back, or finished.
+// Finishing boots the new release and runs Step 4 before the command.
+$owa_update = (require __DIR__ . '/updater.php')['preboot'](__DIR__, (array) ($_SERVER['argv'] ?? []));
 
-if ($owa_handoff !== null) {
-    exit((int) $owa_handoff);
+if (is_int($owa_update)) {
+    exit($owa_update);
 }
 
-unset($owa_handoff);
-
 require_once(__DIR__ . '/owa.php');
+
+if (is_array($owa_update)) {
+    $owa = new owa(['request_type' => 'cli']);
+    \OWA\Module\Base\Classes\AutoUpdate\Finish::run($owa, $owa_update['finish'], $owa_update['hold']);
+}
+
+unset($owa_update);
 
 // Parse the command line. See Lib::parseCliArgs() for the accepted forms.
 $params = \OWA\Core\Lib::parseCliArgs($_SERVER['argv'] ?? []);
@@ -76,7 +81,7 @@ $config = [
     'request_type' => 'cli'
 ];
 
-$owa = new owa( $config );
+$owa = $owa ?? new owa( $config );
 
 // A failed install leaves its error in its install.json; the notices it calls
 // for are raised once each, by whichever booted run comes next.
@@ -128,6 +133,10 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     }
 
 }
+
+// An install cmd=core-update-install proved: the copy, last, once the
+// command and every job have finished. It exits (Classes\AutoUpdate\Install).
+\OWA\Module\Base\Classes\AutoUpdate\Install::run();
 
 if (!empty($exit_code)) {
     exit($exit_code);

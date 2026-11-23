@@ -4,18 +4,17 @@ namespace OWA\Module\Base\Controller;
 use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 
 /**
- * Step 1: release check, run once (Classes\AutoUpdate\ReleaseCheck).
+ * Automatic updates, run once (Classes\AutoUpdate\ReleaseCheck).
  *
- *   php cli.php cmd=core-update-check             stage and judge the release to update to
+ *   php cli.php cmd=core-update-check             list the releases, download the one to update to, and install it if it is due
  *   php cli.php cmd=core-update-check --dry-run   only say which release that is
  *
- * Installs nothing: it leaves owa-data/updates/staged.json pointing at a
- * release that can be installed here, for the installer.
- *
- * Runs while updates are pending: a release that fixes a failed update is
- * the one to stage. The scheduler runs it every six hours as core-update-check,
- * on any server that runs the scheduler: the bell's release feed comes from
- * its listing, and only a full server stages.
+ * The scheduler runs it every hour as core-update-check, on any server that
+ * runs the scheduler: four of those runs a day list the releases for the
+ * bell, and only a full server downloads and installs. An install's files
+ * are copied when the run has finished, and the next run of cli.php
+ * finishes it. Runs while updates are pending: a release that fixes a failed
+ * update is the one to install.
  */
 class CoreUpdateCheckCli extends \OWA\Core\Controller\Cli {
 
@@ -23,9 +22,10 @@ class CoreUpdateCheckCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Stores new OWA releases as notifications, then finds the release this installation updates to automatically, downloads and verifies it, checks that it can be installed here, and stages it for the installer. Installs nothing. Runs on the scheduler every six hours as core-update-check.',
+            'description' => 'Stores new OWA releases as notifications, then finds the release this installation updates to automatically, downloads and verifies it, checks that it can be installed here, and installs it if the update window allows. Runs on the scheduler every hour as core-update-check, listing the releases four times a day.',
             'arguments'   => [
-                '--dry-run' => 'Only say which release that is: nothing is downloaded or written.',
+                '--dry-run'   => 'Only say which release that is: nothing is downloaded, written or installed.',
+                'scheduled=1' => 'Set by the scheduler: the releases are listed only in four of the day\'s hours, and nothing is said.',
             ],
         ];
     }
@@ -37,7 +37,7 @@ class CoreUpdateCheckCli extends \OWA\Core\Controller\Cli {
         parent::__construct( $params );
     }
 
-    /** A release that fixes a failed update is staged while it is pending. */
+    /** A release that fixes a failed update installs while it is pending. */
     public function needsCurrentSchema() {
 
         return false;
@@ -45,13 +45,17 @@ class CoreUpdateCheckCli extends \OWA\Core\Controller\Cli {
 
     public function action() {
 
-        $result = ( new ReleaseCheck() )->run( (bool) $this->getParam( 'dry-run' ) );
+        $scheduled = (bool) $this->getParam( 'scheduled' );
+        $result    = ( new ReleaseCheck( null, [ 'scheduled' => $scheduled ] ) )->run( (bool) $this->getParam( 'dry-run' ) );
 
-        $this->write( $result['lines'] );
+        if ( ! $scheduled ) {
+
+            $this->write( $result['lines'] );
+        }
 
         if ( in_array( $result['outcome'], [ ReleaseCheck::FAILED, ReleaseCheck::UNREACHED ], true ) ) {
 
-            return $this->fail( sprintf( 'Release check: %s.', $result['outcome'] ) );
+            return $this->fail( sprintf( 'Release check: %s. %s', $result['outcome'], implode( ' ', $result['problems'] ) ) );
         }
     }
 }

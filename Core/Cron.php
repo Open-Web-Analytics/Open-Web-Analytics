@@ -113,9 +113,10 @@ class Cron {
     /**
      * Every N hours, at a minute and an hour offset this install keeps.
      *
-     * For a job that calls a third party more than once a day: the release
-     * check asks GitHub every six hours. Seeded as dailySpreadFor() is, and
-     * for its reason: installs must not all ask at the same instant.
+     * For a job that runs more than once a day: the release check runs every
+     * hour (an interval of 1, every hour at the install's minute). Seeded as
+     * dailySpreadFor() is, and for its reason: installs must not all ask a
+     * third party at the same instant.
      *
      * @param string $seed  something stable and install-specific
      * @param int    $hours hours between runs; must divide 24
@@ -133,6 +134,11 @@ class Cron {
         $digest = md5( (string) $seed );
         $minute = hexdec( substr( $digest, 0, 6 ) ) % 60;
         $offset = hexdec( substr( $digest, 6, 6 ) ) % $hours;
+
+        if ( $hours === 1 ) {
+
+            return sprintf( '%d * * * *', $minute );
+        }
 
         return sprintf( '%d %s * * *', $minute, implode( ',', range( $offset, 23, $hours ) ) );
     }

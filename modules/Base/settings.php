@@ -97,7 +97,7 @@ return [
         ],
         /*
          * Automatic updates: edited on the Updates screen (a constant wins, as
-         * everywhere), and read by the release check, which stages what they
+         * everywhere), and read by the release check, which installs what they
          * choose. auto_update_releases_url is config-only: a web admin must not
          * be able to point the download somewhere else.
          */
@@ -122,16 +122,6 @@ return [
                 \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features.' ),
             'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'patch' => \OWA\Core\CoreAPI::t( 'Patch releases only' ) ],
         ],
-        'auto_update_patch_immediately' => [
-            'config_constant' => 'OWA_AUTO_UPDATE_PATCH_IMMEDIATELY',
-            'default'  => true,
-            'storable' => true,
-            'scopes'   => [ 'install' ],
-            'type'     => 'boolean',
-            'label'    => \OWA\Core\CoreAPI::t( 'Install Patches At Once' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Whether a patch release installs as soon as it is downloaded, rather than in the update window.' ),
-        ],
         'auto_update_days' => [
             'config_constant' => 'OWA_AUTO_UPDATE_DAYS',
             'default'  => '',
@@ -152,7 +142,7 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Update Window' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'The time an update may start in, such as 02:00-06:00, in this installation\'s timezone. Empty: any time.' ),
+                \OWA\Core\CoreAPI::t( 'The time an update may start in, such as 02:00-06:00, in this installation\'s timezone; patches wait for it too. Empty: any time, as soon as a release is downloaded.' ),
             'pattern'  => '/^$|^([01][0-9]|2[0-3]):[0-5][0-9]-([01][0-9]|2[0-3]):[0-5][0-9]$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Window is two times, HH:MM-HH:MM, such as 02:00-06:00.' ),
         ],
