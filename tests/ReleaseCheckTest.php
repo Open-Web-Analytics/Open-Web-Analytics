@@ -267,6 +267,25 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame('2.0.1', $result['version'], 'what was downloaded is still judged');
     }
 
+    /** Every download goes through the download URL (the update host), never the address the listing gives; the listing's digest is still checked. */
+    public function testDownloadsGoThroughTheDownloadUrl(): void
+    {
+        $asked = [];
+        $serve = Releases::$fetcher;
+        Releases::$fetcher = function ($url, $timeout, $sink) use (&$asked, $serve) {
+            $asked[] = $url;
+
+            return $serve($url, $timeout, $sink);
+        };
+
+        $this->check(['2.1.0']);
+
+        $this->assertTrue($this->downloads()->has('2.1.0') && $this->downloads()->has('2.0.0'));
+        $this->assertSame([], array_values(array_filter($asked, fn ($u) => preg_match('#^https://example\.test/\d#', $u))), 'never the listing\'s address');
+        $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar', $asked);
+        $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar.sig', $asked);
+    }
+
     public function testATarballThatDoesNotMatchItsDigestIsDeleted(): void
     {
         $result = $this->check(['2.0.1'], [], function ($r) {

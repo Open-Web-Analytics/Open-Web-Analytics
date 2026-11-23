@@ -106,7 +106,10 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertNotNull($release['sha256']);
 
         $tar = $this->tmp . '/owa_' . $release['version'] . '_packaged.tar';
-        Releases::get($release['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
+        // Through the update host's /download/, which redirects to GitHub, as every download goes.
+        $via = Releases::via($release, (string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_download_url'));
+        $this->assertStringStartsWith('https://updates.openwebanalytics.com/download/', $via['asset_url']);
+        Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
         $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
         unlink($tar);
 

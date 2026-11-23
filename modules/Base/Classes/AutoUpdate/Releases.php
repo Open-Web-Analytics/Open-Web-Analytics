@@ -26,6 +26,27 @@ class Releases {
     const TIMEOUT = 20;
 
     /**
+     * A release the listing gave, its downloads moved to <base>/<version>/<file>
+     * (the update host, auto_update_download_url): the tarball, and the
+     * signature and SHA256SUMS where the listing has them. The listing's
+     * SHA-256 stays, to check the download against.
+     *
+     * @param  Release $release
+     * @param  string  $base
+     * @return Release
+     */
+    public static function via( array $release, $base ) {
+
+        $at = rtrim( (string) $base, '/' ) . '/' . rawurlencode( $release['version'] ) . '/';
+
+        return [
+            'asset_url' => $at . sprintf( self::ASSET, $release['version'] ),
+            'sig_url'   => $release['sig_url'] === null ? null : $at . sprintf( self::ASSET, $release['version'] ) . '.sig',
+            'sums_url'  => $release['sums_url'] === null ? null : $at . self::SUMS_ASSET,
+        ] + $release;
+    }
+
+    /**
      * A release by its version alone, without the listing: its tarball and
      * signature at <base>/<version>/<file>, as GitHub serves a release's
      * assets. No digest: the signature, which names the version and the
