@@ -11,7 +11,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * tarball as owa_<version>_packaged.tar.sig: the 64-byte detached signature,
  * base64, on one line. The release check checks it against the public keys
  * below once the download matches its SHA-256 (Downloads::download()), and
- * the installer again, through the handle it copies from (Downloads::open()).
+ * again on the private copy the installer reads and copies from
+ * (Downloads::open()).
  * A release that is not signed, or not signed by one of these keys, is not
  * kept and never installs: there is no soft-fail. GitHub's digest only says the download is the file the listing
  * names; this says OWA's maintainers released it, so the listing and the

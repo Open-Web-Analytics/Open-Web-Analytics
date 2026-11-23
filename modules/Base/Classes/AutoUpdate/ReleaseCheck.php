@@ -479,10 +479,7 @@ class ReleaseCheck {
      */
     public function judge( $v ) {
 
-        $release = (array) $this->downloads->releaseInfo( $v );
-        $req     = (array) ( $release['requirements'] ?? [] );
-        $env     = $this->context['env'] ?? Preflight::environment( $req );
-
+        // The file list first: it proves the tarball (Downloads::open()), and says why when it does not.
         try {
 
             $files = $this->downloads->files( $v );
@@ -492,10 +489,15 @@ class ReleaseCheck {
             return [ 'problems' => [ $e->getMessage() ], 'manual' => [], 'rollback' => [] ];
         }
 
-        $problems = array_merge( Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ) );
+        $release = (array) $this->downloads->releaseInfo( $v );
+        $req     = (array) ( $release['requirements'] ?? [] );
+        $env     = $this->context['env'] ?? Preflight::environment( $req );
+
+        $problems = array_merge( Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
+            Preflight::temp( $this->downloads->tarballBytes( $v, (string) $this->context['installed'] ) ) );
 
         // What the next run of cli.php needs, before OWA loads, to boot it or put this one back.
-        foreach ( [ 'updater.php', 'cli.php', 'owa_env.php', 'Core/Env.php', 'modules/Base/Classes/AutoUpdate/Tar.php', 'modules/Base/Classes/AutoUpdate/Signature.php' ] as $needed ) {
+        foreach ( [ 'updater.php', 'cli.php', 'owa_env.php', 'Core/Env.php', 'modules/Base/Classes/AutoUpdate/Tar.php' ] as $needed ) {
 
             if ( ! isset( $files[ $needed ] ) ) {
 

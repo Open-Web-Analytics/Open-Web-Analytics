@@ -196,6 +196,34 @@ class Preflight {
     }
 
     /**
+     * Room in PHP's temporary directory for the tarballs an install reads:
+     * each is read once into a private copy (Downloads::open()), held in
+     * memory up to 1 MB and in a temporary file beyond.
+     *
+     * @param  int         $bytes the tarballs' size together
+     * @param  string|null $dir   a test's; else sys_get_temp_dir()
+     * @return list<string>
+     */
+    public static function temp( $bytes, $dir = null ) {
+
+        $dir  = rtrim( (string) ( $dir ?? sys_get_temp_dir() ), '/' );
+        $free = @disk_free_space( $dir );
+
+        if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+
+            return [ sprintf( \OWA\Core\CoreAPI::t( 'PHP\'s temporary directory (%s) cannot be written by the user the scheduler runs as; an install reads each release there. Set sys_temp_dir in php.ini to a directory it can write.' ), $dir ) ];
+        }
+
+        if ( $free !== false && $free < $bytes ) {
+
+            return [ sprintf( \OWA\Core\CoreAPI::t( 'Installing needs about %1$d MB free in PHP\'s temporary directory (%2$s); %3$d MB are.' ),
+                (int) ceil( $bytes / 1048576 ), $dir, (int) floor( $free / 1048576 ) ) ];
+        }
+
+        return [];
+    }
+
+    /**
      * The directories of OWA's code this process cannot write, relative to
      * $root ('' for the OWA directory itself): what an automatic update
      * writes in, asked where the installer runs (cmd=install). The

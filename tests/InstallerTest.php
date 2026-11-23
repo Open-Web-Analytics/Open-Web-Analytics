@@ -228,12 +228,14 @@ final class InstallerTest extends TestCase
     }
 
     /** Putting back: the installed release's tarball must check against its signature, or nothing is touched. */
+    /** Putting back: the installed release's tarball must be the one the marker names (its SHA-256), or nothing is touched. */
     public function testATarballThatDoesNotCheckIsNotPutBack(): void
     {
+        $this->marker('copying');
         $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
         $after = $this->snapshot();
-        $this->marker('copying');
-        file_put_contents($this->updates . '/owa_2.0.0_packaged.tar.sig', Signature::sign('2.0.0', str_repeat('0', 64), $this->signingKey));
+        // Someone who can write the data directory replaces it, with its signature: a real release, not the one installed from.
+        copy($this->updates . '/owa_2.0.1_packaged.tar', $this->updates . '/owa_2.0.0_packaged.tar');
 
         $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
         $this->assertSame($after, $this->snapshot(), 'nothing unpacked');
@@ -241,12 +243,48 @@ final class InstallerTest extends TestCase
         $this->assertFalse($this->u['isLocked']($this->data));
     }
 
-    /** 2.0.1's tarball does not check: 2.0.0 is put back, and what 2.0.1 added stays, since nothing proves which files it shipped. */
-    public function testWithoutAProvenNewTarballNothingIsDeleted(): void
+    /** What is unpacked is what was hashed: a FIFO, or a link, in place of the tarball is refused, never read twice. */
+    public function testAPutBackReadsAPlainFileOnce(): void
     {
         $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
         $this->marker('copying');
-        unlink($this->updates . '/owa_2.0.1_packaged.tar.sig');
+        $tar = $this->updates . '/owa_2.0.0_packaged.tar';
+        rename($tar, $tar . '.real');
+
+        foreach (['fifo', 'link'] as $kind) {
+            $kind === 'fifo' ? posix_mkfifo($tar, 0644) : symlink($tar . '.real', $tar);
+            $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']), $kind);
+            $this->assertSame(self::NEW['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'), "$kind: nothing unpacked");
+            unlink($tar);
+        }
+
+        rename($tar . '.real', $tar);
+        $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']), 'the real one');
+    }
+
+    /** Putting back checks the hash the installing release recorded, not a signature: a new release that retires a key can still put its predecessor back. */
+    public function testAPutBackNeedsNoKey(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copying');
+        Signature::$trusted = [base64_encode(sodium_crypto_sign_publickey(sodium_crypto_sign_keypair()))];
+
+        $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame(self::OLD['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'));
+
+        // Without a recorded hash there is nothing to check it against: nothing is unpacked.
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copying', ['from_sha256' => '']);
+        $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame(self::NEW['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'));
+    }
+
+    /** 2.0.1's tarball is not the one installed: 2.0.0 is put back, and what 2.0.1 added stays, since nothing proves which files it shipped. */
+    public function testWithoutAProvenNewTarballNothingIsDeleted(): void
+    {
+        $this->marker('copying');
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        file_put_contents($this->updates . '/owa_2.0.1_packaged.tar', 'not the tarball', FILE_APPEND);
 
         $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
         $this->assertSame(self::OLD['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'));
@@ -443,6 +481,9 @@ final class InstallerTest extends TestCase
             'updates'  => $this->updates,
             'from_tar' => $this->updates . '/owa_2.0.0_packaged.tar',
             'to_tar'   => $this->updates . '/owa_2.0.1_packaged.tar',
+            // As Install writes them: the SHA-256 it proved of each.
+            'from_sha256' => hash_file('sha256', $this->updates . '/owa_2.0.0_packaged.tar'),
+            'to_sha256'   => hash_file('sha256', $this->updates . '/owa_2.0.1_packaged.tar'),
             'boots'    => 0,
         ]);
     }

@@ -14,8 +14,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * twice: a release ships none of them, so any means the file is not one.
  *
  * Every reader takes a path or an open handle. A handle is read from where
- * it is, so the caller rewinds it: the installer reads the tarball it
- * verified through the handle it verified it with (Install).
+ * it is, so the caller rewinds it: the installer reads the private copy of
+ * the tarball it verified (Downloads::open()), never the file again.
  *
  * Plain PHP with no other OWA class: cli.php requires it on its own before
  * OWA loads, to put the installed release back (updater.php `preboot`).
@@ -74,6 +74,12 @@ class Tar {
                 $size = self::octal( substr( $header, 124, 12 ) );
                 $name = $long ?? self::name( $header );
                 $long = null;
+
+                // A long name or a pax record is read whole: never one larger than a release has.
+                if ( ( $type === 'L' || $type === 'x' || $type === 'g' ) && $size > self::MEMBER_MAX ) {
+
+                    throw new \RuntimeException( sprintf( 'The archive has a header record of %d bytes, larger than any release has.', $size ) );
+                }
 
                 if ( $type === 'L' || $type === 'x' ) {
 

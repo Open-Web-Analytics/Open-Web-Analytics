@@ -286,6 +286,61 @@ final class ReleaseCheckTest extends TestCase
         $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar.sig', $asked);
     }
 
+    /** A proved tarball is a private copy: rewriting or replacing the file afterwards changes nothing that is read or installed. */
+    public function testWhatIsReadIsWhatWasProved(): void
+    {
+        $this->check(['2.1.0']);
+        $d   = $this->downloads();
+        $sha = $d->sha256('2.1.0');
+        $d->open('2.1.0');
+
+        // Someone who can write the data directory swaps in another release's tarball.
+        copy($d->tarball('2.0.0'), $d->tarball('2.1.0'));
+
+        $this->assertSame('2.1.0', \OWA\Core\VersionInfo::decode(Tar::member($d->open('2.1.0'), 'release.php'))['version']);
+        $this->assertSame($sha, $d->sha256('2.1.0'));
+        $this->assertNotSame($sha, hash_file('sha256', $d->tarball('2.1.0')), 'the file on disk did change');
+        $this->assertSame('2.1.0', $d->releaseInfo('2.1.0')['version']);
+    }
+
+    /** Nothing is parsed that has not been proved: a FIFO, or a tarball without a valid signature, is refused and deleted, and judged as a problem. */
+    public function testAnUnprovedTarballIsNeverRead(): void
+    {
+        $this->check(['2.1.0']);
+        $d   = $this->downloads();
+        $tar = $d->tarball('2.1.0');
+
+        unlink($tar);
+        posix_mkfifo($tar, 0644);
+        $this->assertFalse($this->downloads()->has('2.1.0'), 'not a download');
+        $this->assertNull($this->downloads()->releaseInfo('2.1.0'), 'never opened, so never waited on');
+        $this->assertStringContainsString('is not a plain file', implode("\n", $this->judge('2.1.0')['problems']));
+        $this->assertFileDoesNotExist($tar, 'judged, it is deleted like any tarball that does not prove');
+
+        // A tarball of its own, signed by no trusted key.
+        copy($this->tmp . '/owa_2.1.0_packaged.tar', $tar);
+        file_put_contents($tar . '.sig', Signature::sign('2.1.0', hash_file('sha256', $tar), base64_encode(sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()))));
+        $judged = $this->judge('2.1.0');
+        $this->assertStringContainsString('is not signed by a key this installation trusts', implode("\n", $judged['problems']));
+        $this->assertSame([], $judged['manual'], 'its release.php was never read');
+        $this->assertFileDoesNotExist($tar);
+    }
+
+    /** @return array{problems: list<string>, manual: list<array<string, mixed>>, rollback: list<string>} */
+    private function judge(string $v): array
+    {
+        return (new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'env' => $this->env(), 'installed' => '2.0.0']))->judge($v);
+    }
+
+    /** A long name or pax record is read whole, so none larger than a release has is read at all. */
+    public function testAnOversizedHeaderRecordIsRefused(): void
+    {
+        file_put_contents($this->tmp . '/big.tar', $this->member('././@LongLink', '', 'L', 2 * 1048576) . str_repeat("\0", 1024));
+
+        $this->expectExceptionMessage('has a header record of 2097152 bytes');
+        Tar::files($this->tmp . '/big.tar');
+    }
+
     public function testATarballThatDoesNotMatchItsDigestIsDeleted(): void
     {
         $result = $this->check(['2.0.1'], [], function ($r) {
@@ -761,6 +816,25 @@ final class ReleaseCheckTest extends TestCase
             implode("\n", Preflight::requirements($req, ['constants' => ['OWA_AUTH_KEY' => ''] + $env['constants']] + $env)));
     }
 
+    /** Each tarball is read into a private temporary copy: PHP's temporary directory must take both. */
+    public function testTheTemporaryDirectoryTakesTheTarballs(): void
+    {
+        mkdir($this->tmp . '/t', 0755);
+        $this->assertSame([], Preflight::temp(1048576, $this->tmp . '/t'));
+        $this->assertStringContainsString('Installing needs about 1073741824 MB free in PHP\'s temporary directory',
+            implode("\n", Preflight::temp(1073741824 * 1048576, $this->tmp . '/t')));
+
+        chmod($this->tmp . '/t', 0555);
+        $this->assertStringContainsString('cannot be written by the user the scheduler runs as', implode("\n", Preflight::temp(1, $this->tmp . '/t')));
+        chmod($this->tmp . '/t', 0755);
+        $this->assertStringContainsString('cannot be written', implode("\n", Preflight::temp(1, $this->tmp . '/none')));
+
+        $this->check(['2.1.0']);
+        $d = $this->downloads();
+        $this->assertSame(filesize($d->tarball('2.1.0')) + filesize($d->tarball('2.0.0')), $d->tarballBytes('2.1.0', '2.0.0'));
+        $this->assertSame(2 * filesize($d->tarball('2.1.0')), $d->tarballBytes('2.1.0', '9.9.9'), 'one not downloaded counts as the first');
+    }
+
     public function testInstallConditions(): void
     {
         $root  = $this->tmp . '/owa';
@@ -1007,11 +1081,11 @@ final class ReleaseCheckTest extends TestCase
         ];
     }
 
-    /** One ustar member, for archives GNU tar refuses to make. */
-    private function member(string $name, string $data): string
+    /** One ustar member, for archives GNU tar refuses to make; $size in place of the data's when given. */
+    private function member(string $name, string $data, string $type = '0', ?int $size = null): string
     {
         $h = str_pad($name, 100, "\0") . str_pad('0000644', 8, "\0") . str_pad('0000000', 8, "\0") . str_pad('0000000', 8, "\0")
-            . str_pad(sprintf('%011o', strlen($data)), 12, "\0") . str_pad(sprintf('%011o', 0), 12, "\0") . '        ' . '0'
+            . str_pad(sprintf('%011o', $size ?? strlen($data)), 12, "\0") . str_pad(sprintf('%011o', 0), 12, "\0") . '        ' . $type
             . str_repeat("\0", 100) . "ustar\0" . '00' . str_repeat("\0", 247);
         $sum = 0;
         for ($i = 0; $i < 512; $i++) {
