@@ -5,7 +5,7 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-update --version by hand
+ * (ReleaseCheck) when a release is due, or cmd=core-install --version by hand
  * (byHand()).
  *
  * prepare() takes the install lock and opens both tarballs, proving each
@@ -96,7 +96,7 @@ class Install {
     }
 
     /**
-     * cmd=core-update --version=<x.y.z> [--force]: that release installed
+     * cmd=core-install --version=<x.y.z> [--force]: that release installed
      * now, whatever the automatic update settings say, its tarball and
      * signature fetched from the download URL by its version every time,
      * with no listing (Releases::byTag()). One not newer than the installed

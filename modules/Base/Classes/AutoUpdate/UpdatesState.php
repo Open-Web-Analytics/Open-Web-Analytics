@@ -15,12 +15,12 @@ class UpdatesState {
     /** The screen's actions, and the command each queues: Install now names the downloaded release (installable()). */
     const ACTIONS = [
         'check'   => 'core-update',
-        'install' => 'core-update',
+        'install' => 'core-install',
     ];
 
     /**
      * The newest downloaded release newer than the installed one, which
-     * Install now installs (cmd=core-update --version=<it>); null for none.
+     * Install now installs (cmd=core-install --version=<it>); null for none.
      *
      * @param  list<string> $downloaded newest first
      * @param  string       $installed

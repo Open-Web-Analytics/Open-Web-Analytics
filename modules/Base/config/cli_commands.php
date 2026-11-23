@@ -16,6 +16,7 @@ return [
     'tables-cleanup'              => 'base.tablesCleanupCli',
     'core-update'                 => 'base.coreUpdateCli',
     'core-update-status'          => 'base.coreUpdateStatusCli',
+    'core-install'                => 'base.coreInstallCli',
     'ua-update-definitions'       => 'base.uaUpdateDefinitionsCli',
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',
     'tracker-ingest-replay'       => 'base.trackerIngestReplayCli',

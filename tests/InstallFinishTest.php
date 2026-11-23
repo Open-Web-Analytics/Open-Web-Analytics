@@ -66,7 +66,7 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertCount(2, $raised, 'nothing for a record without an error');
         $this->assertSame(['install_failed:2.0.3', 'warning', true], [$raised[0]['source_key'], $raised[0]['severity'], $raised[0]['email']]);
         $this->assertStringContainsString('The installed release runs as before. Automatic updates skip OWA 2.0.3', $raised[0]['body'], 'put back: the old release runs');
-        $this->assertStringContainsString('php cli.php cmd=core-update --version=2.0.3', $raised[0]['body']);
+        $this->assertStringContainsString('php cli.php cmd=core-install --version=2.0.3', $raised[0]['body']);
         $this->assertStringContainsString('tracking is queued and reports wait', $raised[1]['body'], 'booted: the schema is behind');
         $this->assertStringContainsString('php cli.php cmd=core-update-schema', $raised[1]['body']);
     }

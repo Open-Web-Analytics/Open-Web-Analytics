@@ -708,8 +708,8 @@ $scenarios = [
         check( str_contains( $out, 'cannot be installed here yet' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no \"cannot be installed automatically yet\" notice:\n$out" );
 
         // Nor by hand: what it needs is not met.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-update --version installed a release whose requirements are unmet (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code !== 0 && str_contains( $out, 'cannot be installed here' ), "core-install --version installed a release whose requirements are unmet (exit $code):\n$out" );
         next_run( $site, $ca );
         check( envVersion( $site ) === FROM, 'it installed anyway' );
     },
@@ -788,15 +788,15 @@ $scenarios = [
         $tar = updatesDir( $site ) . '/owa_' . FROM . '_packaged.tar';
         copy( $other['file'], $tar );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-update --version does not refuse the tampered tarball (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-install --version does not refuse the tampered tarball (exit $code):\n$out" );
         check( ! file_exists( $tar ), 'the tarball that does not check was kept' );
         next_run( $site, $ca );
         check( envVersion( $site ) === FROM && ! file_exists( "$site/modules/Base/e2e-tampered.txt" ), 'an install went ahead without a way back it could prove' );
 
         // Downloaded again, and it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code === 0, "core-update --version exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -813,8 +813,8 @@ $scenarios = [
         check( downloaded( $site, TO ) && envVersion( $site ) === FROM && str_contains( $out, TO . ' installs between' ), "it did not wait for its window:\n$out" );
 
         // Installing by hand ignores the window.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-update --version exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0 && str_contains( $out, 'The next run of cli.php boots it' ), "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -831,8 +831,8 @@ $scenarios = [
         file_put_contents( "$www/download/2.0.92/owa_2.0.92_packaged.tar.sig", $old['sig'] );
         $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=2.0.92' );
-        check( $code === 0 && envVersion( $site ) === '2.0.92', "core-update --version did not install a release the listing does not have (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=2.0.92' );
+        check( $code === 0 && envVersion( $site ) === '2.0.92', "core-install --version did not install a release the listing does not have (exit $code):\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, '2.0.92' );
     },
@@ -881,7 +881,7 @@ $scenarios = [
         [ , $out ] = release_check( $site, $ca );
         check( hash_file( 'sha256', updatesDir( $site ) . '/owa_' . TO . '_packaged.tar' ) === $second['sha256'], "the replaced asset was not downloaded again:\n$out" );
 
-        cli( $site, $ca, 'cmd=core-update --version=' . TO );
+        cli( $site, $ca, 'cmd=core-install --version=' . TO );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
         check( is_file( "$site/modules/Base/e2e-replaced.txt" ), 'what was installed is not the replacement' );
@@ -935,8 +935,8 @@ $scenarios = [
         check( hasNotice( notices( $db ), 'manual:' . TO ), 'no "needs to be installed by hand" notice' );
 
         // By hand, as the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code === 0 && envVersion( $site ) === TO, "core-update --version exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0 && envVersion( $site ) === TO, "core-install --version exited $code:\n$out" );
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the next command did not finish the install (exit $code):\n$out" );
         installed( $site, $ca, TO );
@@ -1037,8 +1037,8 @@ $scenarios = [
 
         // Fixed: install it by hand, as the notice says.
         rmdir( $blocker );
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code === 0, "core-update --version exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },
@@ -1098,8 +1098,8 @@ $scenarios = [
         check( envVersion( $site ) === FROM && str_contains( $out, 'skipped' ), "the killed install was tried again on its own:\n$out" );
 
         // By hand, it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update --version=' . TO );
-        check( $code === 0, "core-update --version exited $code:\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
+        check( $code === 0, "core-install --version exited $code:\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },

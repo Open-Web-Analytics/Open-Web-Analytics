@@ -85,6 +85,7 @@ return [
     'base.tablesCleanupCli'             => 'OWA\\Module\\Base\\Controller\\TablesCleanupCli',
     'base.coreUpdateCli'                => 'OWA\\Module\\Base\\Controller\\CoreUpdateCli',
     'base.coreUpdateStatusCli'          => 'OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli',
+    'base.coreInstallCli'               => 'OWA\\Module\\Base\\Controller\\CoreInstallCli',
     'base.partitionDropCli'             => 'OWA\\Module\\Base\\Controller\\PartitionDropCli',
     'base.partitionReorganizeCli'       => 'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',
     'base.partitionRotateCli'           => 'OWA\\Module\\Base\\Controller\\PartitionRotateCli',

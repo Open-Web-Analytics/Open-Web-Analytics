@@ -30,7 +30,7 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
 
         $this->assertSame('OWA 2.1.0 is downloaded and checked.', end($this->state(['2.1.0', '2.0.0'])['lines']));
         $this->assertSame(['check', 'install'], $this->state(['2.1.0', '2.0.0'])['actions']);
-        $this->assertSame('2.1.0', UpdatesState::installable(['2.1.0', '2.0.0'], '2.0.0'), 'Install now is core-update --version=2.1.0');
+        $this->assertSame('2.1.0', UpdatesState::installable(['2.1.0', '2.0.0'], '2.0.0'), 'Install now is core-install --version=2.1.0');
         $this->assertNull(UpdatesState::installable(['2.0.0'], '2.0.0'));
         $this->assertCount(2, $this->state(['2.0.0'])['lines'], 'the installed release\'s own tarball is not news');
         $this->assertSame('Automatic updates are on: a release installs as soon as it is downloaded.', $this->state([], null, ['window' => null])['lines'][1]);

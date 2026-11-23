@@ -5,7 +5,7 @@ use OWA\Module\Base\Classes\AutoUpdate\UpdatesState;
 
 /**
  * The Updates page's actions: "Check now" (cmd=core-update) and
- * "Install now" (cmd=core-update --version=<the downloaded release>). The web user cannot write OWA's
+ * "Install now" (cmd=core-install --version=<the downloaded release>). The web user cannot write OWA's
  * code or the updates directory, so each is queued as a job the scheduler
  * runs as the install owner, within a minute.
  */

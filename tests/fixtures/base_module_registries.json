@@ -228,6 +228,9 @@
         "base.coreUpdateStatusCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\CoreUpdateStatusCli"
         },
+        "base.coreInstallCli": {
+            "class_name": "OWA\\Module\\Base\\Controller\\CoreInstallCli"
+        },
         "base.partitionDropCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\PartitionDropCli"
         },
@@ -394,6 +397,7 @@
         "tables-cleanup": "base.tablesCleanupCli",
         "core-update": "base.coreUpdateCli",
         "core-update-status": "base.coreUpdateStatusCli",
+        "core-install": "base.coreInstallCli",
         "ua-update-definitions": "base.uaUpdateDefinitionsCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",

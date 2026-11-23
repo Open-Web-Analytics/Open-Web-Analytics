@@ -427,7 +427,7 @@ final class ReleaseCheckTest extends TestCase
 
         $result = $this->check(['2.0.1'], ['window' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
-        $this->assertStringContainsString('cmd=core-update --version=2.0.1', implode("\n", $result['lines']));
+        $this->assertStringContainsString('cmd=core-install --version=2.0.1', implode("\n", $result['lines']));
         $this->assertArrayHasKey('install_failed:2.0.1', $this->notices, 'the notice the failure calls for');
         $this->assertNull(Install::$pending);
 
@@ -536,7 +536,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
         $this->assertSame(['base update 97: It rewrites every event. Back up the data tables first: php cli.php cmd=backup scope=data'],
             $result['problems'], 'only what this install would run');
-        $this->assertStringContainsString('then install it: php cli.php cmd=core-update --version=2.1.0', $this->notices['manual:2.1.0']['body']);
+        $this->assertStringContainsString('then install it: php cli.php cmd=core-install --version=2.1.0', $this->notices['manual:2.1.0']['body']);
 
         $this->schema['base'] = 97;
         $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.1.0'])['outcome'], 'once run by hand there is nothing manual left');
