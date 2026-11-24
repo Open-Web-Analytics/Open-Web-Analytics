@@ -218,6 +218,21 @@ final class JobQueueTest extends TestCase
         $this->assertNotNull($this->row($ok)['finished_at']);
     }
 
+    /** A job queued with force, as anyone who can write the table could queue one, runs without it. */
+    public function testAQueuedJobIsNeverForced(): void
+    {
+        JobQueue::enqueue(self::CMD, ['version' => '2.0.1', 'force' => true]);
+
+        $ran = [];
+        JobQueue::drain(JobQueue::now() + 600, function ($c, $params) use (&$ran) {
+            $ran[] = $params;
+
+            return ['outcome' => 'ok'];
+        });
+
+        $this->assertSame([['version' => '2.0.1']], $ran);
+    }
+
     /** A retry keeps its row and waits each back-off step; the last attempt fails it for good. */
     public function testAFailedRunIsRetriedInPlaceAfterEachBackOffStep(): void
     {

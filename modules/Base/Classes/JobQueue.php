@@ -28,6 +28,11 @@ namespace OWA\Module\Base\Classes;
  * step. A job that exhausts its attempts is kept as failed, with its error,
  * until retried or pruned.
  *
+ * NEVER FORCED. A job runs without its force argument: the web user can write
+ * this table, and a forced run as the install owner installs a release older
+ * than the installed one, or drops partitions holding data. Nothing OWA queues
+ * forces.
+ *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-type Policy array{max_attempts: int, backoff: list<int>, lease_seconds: int}
  */
@@ -399,6 +404,8 @@ class JobQueue {
 
                 continue;
             }
+
+            unset( $params['force'] );
 
             try {
 
