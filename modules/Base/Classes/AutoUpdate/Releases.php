@@ -25,6 +25,18 @@ class Releases {
     /** Seconds the listing may take. */
     const TIMEOUT = 20;
 
+    /** A release's page, its notes; %s is its tag. On the update host, which redirects to GitHub's. */
+    const PAGE = 'https://updates.openwebanalytics.com/tag/%s';
+
+    /**
+     * @param  string $tag a release's tag: its version
+     * @return string the release's page
+     */
+    public static function page( $tag ) {
+
+        return sprintf( self::PAGE, rawurlencode( (string) $tag ) );
+    }
+
     /**
      * A release the listing gave, its downloads moved to <base>/<version>/<file>
      * (the update host, auto_update_download_url): the tarball, and the
@@ -64,7 +76,7 @@ class Releases {
         return [
             'version'   => (string) $version,
             'step'      => (string) ( Version::step( (string) $installed, (string) $version ) ?? Version::PATCH ),
-            'url'       => sprintf( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/%s', rawurlencode( (string) $version ) ),
+            'url'       => self::page( $version ),
             'asset_url' => $at,
             'size'      => 0,
             'sha256'    => null,
@@ -197,7 +209,7 @@ class Releases {
         return [
             'version'   => $version,
             'step'      => $step,
-            'url'       => (string) ( $r['html_url'] ?? '' ),
+            'url'       => self::page( $version ),
             'asset_url' => $url,
             'size'      => (int) ( $tarball['size'] ?? 0 ),
             'sha256'    => preg_match( '/^sha256:([0-9a-f]{64})$/', $digest, $m ) ? $m[1] : null,

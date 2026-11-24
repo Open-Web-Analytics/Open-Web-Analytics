@@ -20,8 +20,9 @@ final class NotificationManagerTest extends TestCase
             (object) [
                 'id'           => 42,
                 'name'         => '1.12.0',
+                'tag_name'     => '1.12.0',
                 'body'         => 'notes',
-                'html_url'     => 'https://example.test/r/42',
+                'html_url'     => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/1.12.0',
                 'published_at' => '2026-08-21T10:00:00Z',
             ],
         ] );
@@ -29,7 +30,7 @@ final class NotificationManagerTest extends TestCase
         $this->assertCount( 1, $items );
         $this->assertSame( '42', $items[0]['source_key'] );
         $this->assertSame( '1.12.0', $items[0]['title'] );
-        $this->assertSame( 'https://example.test/r/42', $items[0]['url'] );
+        $this->assertSame( 'https://updates.openwebanalytics.com/tag/1.12.0', $items[0]['url'], 'the update host\'s address, not the listing\'s' );
         $this->assertSame( strtotime( '2026-08-21T10:00:00Z' ), $items[0]['published_at'] );
     }
 
