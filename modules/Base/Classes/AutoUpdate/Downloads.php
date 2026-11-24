@@ -90,7 +90,7 @@ class Downloads {
 
         $set = (string) CoreAPI::getSetting( 'base', 'updates_dir' );
 
-        if ( $set !== '' && is_dir( $set ) ) {
+        if ( $set !== '' && is_dir( $set ) && ! is_link( $set ) ) {
 
             return $set;
         }
@@ -126,7 +126,7 @@ class Downloads {
      */
     public function ensureRoot() {
 
-        if ( $this->root !== '' && is_dir( $this->root ) ) {
+        if ( $this->root !== '' && is_dir( $this->root ) && ( $this->named || ! is_link( $this->root ) ) ) {
 
             return;
         }
@@ -485,9 +485,15 @@ class Downloads {
 
         $this->ensureRoot();
 
+        $u    = self::updater();
         $tar  = $this->tarball( $release['version'] );
-        $part = $tar . '.part';
-        @unlink( $part );
+        $part = $u['fresh']( $tar . '.part' );
+
+        // What a download that was killed left (unlink() removes a link, never what it names).
+        foreach ( (array) glob( $tar . '.part*' ) as $left ) {
+
+            @unlink( (string) $left );
+        }
 
         try {
 
@@ -503,8 +509,22 @@ class Downloads {
                 throw new \RuntimeException( sprintf( '%s is not signed: the release has no %s.', basename( $tar ), sprintf( Signature::ASSET, $release['version'] ) ) );
             }
 
-            Releases::get( $release['asset_url'], self::DOWNLOAD_TIMEOUT, $part );
-            @chmod( $part, 0600 );
+            // Opened here under a fresh name, which no link can be waiting at: the fetch writes into it.
+            $sink = $u['createFile']( $part, 0600 );
+
+            if ( $sink === false ) {
+
+                throw new \RuntimeException( sprintf( 'Could not write %s.', $part ) );
+            }
+
+            try {
+
+                Releases::get( $release['asset_url'], self::DOWNLOAD_TIMEOUT, $sink );
+
+            } finally {
+
+                fclose( $sink );
+            }
 
             $actual = (string) hash_file( 'sha256', $part );
 
@@ -528,7 +548,9 @@ class Downloads {
                 throw new \RuntimeException( sprintf( '%s\'s release.php says it is %s.', $release['version'], var_export( is_array( $info ) ? $info['version'] ?? null : null, true ) ) );
             }
 
-            if ( @file_put_contents( $tar . '.sig', trim( $sig ) . "\n" ) === false || ! @rename( $part, $tar ) ) {
+            $u['writeFile']( $tar . '.sig', trim( $sig ) . "\n" );
+
+            if ( ! @rename( $part, $tar ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not write %s.', $tar ) );
             }
@@ -574,23 +596,7 @@ class Downloads {
      */
     public function writeJson( $path, array $data ) {
 
-        $tmp = $path . '.tmp' . getmypid();
-
-        if ( file_put_contents( $tmp, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" ) === false ) {
-
-            @unlink( $tmp );
-
-            throw new \RuntimeException( sprintf( 'Could not write %s.', $path ) );
-        }
-
-        // Readable by the web user (the Updates screen); written by the owner alone.
-        chmod( $tmp, 0644 );
-
-        if ( ! rename( $tmp, $path ) ) {
-
-            @unlink( $tmp );
-
-            throw new \RuntimeException( sprintf( 'Could not write %s.', $path ) );
-        }
+        // Readable by the web user (the Updates screen); written by the owner alone, never through a link.
+        self::updater()['writeFile']( $path, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
     }
 }

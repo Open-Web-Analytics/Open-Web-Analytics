@@ -147,7 +147,8 @@ class Preflight {
 
     /**
      * What copying the release over $root needs: every directory it writes
-     * in writable, and room on the disk for its files beside the old.
+     * in writable (not owa-data/, which the copy leaves alone), and room on
+     * the disk for its files beside the old.
      *
      * @param  array<string, int> $files the release's files, relative to its root, with their sizes
      * @param  string             $root  the OWA directory
@@ -157,6 +158,7 @@ class Preflight {
 
         $root     = rtrim( (string) $root, '/' );
         $problems = [];
+        $files    = array_filter( $files, Downloads::updater()['copies'], ARRAY_FILTER_USE_KEY );
 
         // Each file is written beside its target and renamed over it, and
         // what the release does not ship is unlinked: the directories must be

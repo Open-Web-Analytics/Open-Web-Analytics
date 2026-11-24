@@ -76,7 +76,7 @@ class Releases {
     /**
      * Tests only: answers get() in place of the network, given its arguments.
      *
-     * @var (callable(string, int, string|null): string)|null
+     * @var (callable(string, int, resource|null): string)|null
      */
     public static $fetcher = null;
 
@@ -263,9 +263,9 @@ class Releases {
     /**
      * A GET's body, or a RuntimeException saying why there is none.
      *
-     * @param  string      $url
-     * @param  int         $timeout seconds
-     * @param  string|null $sink    a file to stream the body into instead
+     * @param  string        $url
+     * @param  int           $timeout seconds
+     * @param  resource|null $sink    an open file to write the body into instead, left open
      * @return string the body; '' when sunk to a file
      */
     public static function get( $url, $timeout, $sink = null ) {
@@ -277,6 +277,11 @@ class Releases {
 
         $client = new \GuzzleHttp\Client( [ 'timeout' => $timeout, 'connect_timeout' => 10 ] );
 
+        // One stream for every response, a redirect's too, emptied as each
+        // one's headers arrive, so what is left is the last one's body; let
+        // go after, so the handle stays the caller's to close.
+        $body = $sink === null ? null : new \GuzzleHttp\Psr7\Stream( $sink );
+
         try {
 
             $response = $client->request( 'GET', $url, array_filter( [
@@ -286,12 +291,24 @@ class Releases {
                 ],
                 'allow_redirects' => [ 'max' => 5, 'protocols' => [ 'https' ] ],
                 'http_errors'     => true,
-                'sink'            => $sink,
+                'sink'            => $body,
+                'on_headers'      => $sink === null ? null : static function () use ( $sink ) {
+
+                    ftruncate( $sink, 0 );
+                    rewind( $sink );
+                },
             ], static fn ( $v ) => $v !== null ) );
 
         } catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
 
             throw new \RuntimeException( sprintf( 'Fetching %s failed: %s', $url, $e->getMessage() ), 0, $e );
+
+        } finally {
+
+            if ( $body !== null ) {
+
+                $body->detach();
+            }
         }
 
         return $sink === null ? (string) $response->getBody() : '';
