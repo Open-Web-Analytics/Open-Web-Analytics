@@ -17,14 +17,18 @@
  *               loaded before the copy began, and a copy that fails is put
  *               back by the same closure from the installed release's tarball.
  *   serveMaintenance, dropsBeacon
- *               index.php, api/index.php and log.php until the new release
- *               has booted: while the files may be mixed, and until it is
- *               known to boot. Once booted, OWA's pending schema updates
- *               stop what they always stop, and beacons are queued.
+ *               index.php, api/index.php and log.php from the copy until
+ *               the new release has booted: while the files may be mixed,
+ *               and until it is known to boot. Once booted, OWA's pending
+ *               schema updates stop what they always stop, and beacons are
+ *               queued.
  *   updatesDirs, updatesDir
  *               the updates directory, owa-data/updates-<32 hex>/ (Downloads).
  *   tryLock, unlock, isLocked, lockState, stillMine, touchLock
  *               the install lock, owa-data/updating (InstallLock).
+ *   running, alone
+ *               the shared flock() every run of cli.php holds on cli.php,
+ *               which the installer holds alone before it copies.
  *
  * THE INSTALL MARKER is owa-update.php in the OWA directory, beside
  * owa-config.php, as WordPress puts .maintenance beside wp-config.php: a
@@ -36,14 +40,21 @@
  * is, however the server's users and directories are arranged.
  *
  *   {format, from, to, phase, since, lock, updates, from_tar, to_tar,
- *    from_sha256, to_sha256, boots}
- *   phase  copying  the files are mixed. With the lock held, the installer
+ *    from_sha256, to_sha256, boots, schema_lease}
+ *   phase  waiting  nothing has changed: the installer waits for the runs
+ *                   of cli.php already going to end (running), and every
+ *                   run that starts stops. With the lock free, the
+ *                   installer died waiting, and the marker is deleted.
+ *          copying  the files are mixed. With the lock held, the installer
  *                   is copying; with it free, the copy was killed, and the
  *                   next run of cli.php puts the installed release back.
  *          copied   every file is the new release's, and it has not booted.
  *                   boots counts the runs of cli.php that tried; at the third
  *                   the installed release is put back.
  *          booted   the new release booted; Finish has not completed.
+ *                   schema_lease is the owner of the updates-apply lease
+ *                   its schema updates hold, so a Finish run again after
+ *                   one was killed takes that lease back.
  *
  * Putting the installed release back unpacks from_tar, the installed
  * release's tarball, then deletes what to_tar ships and from_tar does not.
@@ -508,6 +519,75 @@ return ( static function () {
     };
 
     /*
+     * Every run of cli.php holds a shared flock() on cli.php until it ends,
+     * taken before it reads the marker ($running), and the installer copies
+     * only once it holds it alone ($alone): a run that booted the installed
+     * release loads its classes as it goes, so none may still be going when
+     * they change. The marker, phase waiting, stops every run that starts
+     * while the installer waits. Where the filesystem has no flock() nothing
+     * is told, and the copy goes ahead.
+     *
+     * $running: the handle; false while the installer holds it alone; null
+     * where there is no flock().
+     */
+    $running = static function ( $root ) {
+
+        $h = @fopen( rtrim( (string) $root, '/' ) . '/cli.php', 'r' );
+
+        if ( $h === false ) {
+
+            return null;
+        }
+
+        $would_block = 0;
+
+        if ( flock( $h, LOCK_SH | LOCK_NB, $would_block ) ) {
+
+            return $h;
+        }
+
+        fclose( $h );
+
+        return $would_block || PHP_OS_FAMILY === 'Windows' ? false : null;
+    };
+
+    /*
+     * Whether this run, holding $h ($running), holds it alone within $wait
+     * seconds; held exclusively when it does. True where there is no flock().
+     */
+    $alone = static function ( $h, $wait ) {
+
+        if ( ! is_resource( $h ) ) {
+
+            return true;
+        }
+
+        // Windows locks no file twice, even for one handle: this run's own share goes first.
+        flock( $h, LOCK_UN );
+        $until = microtime( true ) + (int) $wait;
+
+        do {
+
+            $would_block = 0;
+
+            if ( flock( $h, LOCK_EX | LOCK_NB, $would_block ) ) {
+
+                return true;
+            }
+
+            if ( ! $would_block && PHP_OS_FAMILY !== 'Windows' ) {
+
+                return true;
+            }
+
+            usleep( 200000 );
+
+        } while ( microtime( true ) < $until );
+
+        return false;
+    };
+
+    /*
      * The copy: $tar's files over $root, each that differs written beside
      * its target and renamed over it (keeping the target's mode), then each
      * of $old_files the release does not ship deleted, with the directories
@@ -782,6 +862,8 @@ return ( static function () {
         'stillMine'   => $stillMine,
         'unlock'      => $unlock,
         'touchLock'   => $touchLock,
+        'running'     => $running,
+        'alone'       => $alone,
         'remove'      => $remove,
         'copies'      => $copies,
         'apply'       => $apply,
@@ -826,11 +908,24 @@ return ( static function () {
 
             $phase = (string) ( $m['phase'] ?? '' );
 
-            if ( ! in_array( $phase, [ 'copying', 'copied', 'booted' ], true ) ) {
+            if ( ! in_array( $phase, [ 'waiting', 'copying', 'copied', 'booted' ], true ) ) {
 
                 fwrite( STDERR, sprintf( "%s cannot be read, so OWA does not know whether an update is half installed. If no install is running, delete it.\n", $marker( $root ) ) );
 
                 return 1;
+            }
+
+            // Nothing has changed: an installer that died waiting leaves only the marker.
+            if ( $phase === 'waiting' ) {
+
+                if ( $lockState( (string) ( $m['lock'] ?? '' ) ) === 'held' ) {
+
+                    return $busy();
+                }
+
+                @unlink( $marker( $root ) );
+
+                return null;
             }
 
             if ( $phase === 'copying' ) {
@@ -881,7 +976,7 @@ return ( static function () {
 
             $m = $readMarker( $root );
 
-            if ( $m === null || ( $m['phase'] ?? '' ) === 'booted' ) {
+            if ( $m === null || in_array( $m['phase'] ?? '', [ 'waiting', 'booted' ], true ) ) {
 
                 return false;
             }
@@ -924,7 +1019,7 @@ return ( static function () {
 
             $m = $readMarker( $root );
 
-            return $m !== null && ( $m['phase'] ?? '' ) !== 'booted';
+            return $m !== null && ! in_array( $m['phase'] ?? '', [ 'waiting', 'booted' ], true );
         },
     ];
 } )();

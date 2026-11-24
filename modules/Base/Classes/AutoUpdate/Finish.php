@@ -21,7 +21,9 @@ use OWA\Core\CoreAPI;
  * The process holds the install lock throughout (InstallLock::$held_here,
  * and the hold in InstallLock::$hold, which cmd=core-update-schema touches
  * between updates), so cmd=core-update-schema knows it runs inside the
- * install.
+ * install. The schema updates' lease is the install's own, its owner kept
+ * in the marker (schema_lease): a Finish killed during them leaves it held
+ * for an hour, and the next takes it back and carries on.
  */
 class Finish {
 
@@ -48,10 +50,16 @@ class Finish {
 
         try {
 
-            if ( ( $marker['phase'] ?? '' ) !== 'booted' ) {
+            // Kept in the marker: a Finish run again takes back what a killed one held (CoreUpdateSchemaCli).
+            $lease = (string) ( $marker['schema_lease'] ?? '' );
 
-                $u['writeMarker']( $root, [ 'phase' => 'booted' ] + $marker );
+            if ( ( $marker['phase'] ?? '' ) !== 'booted' || $lease === '' ) {
+
+                $lease = $lease ?: bin2hex( random_bytes( 8 ) );
+                $u['writeMarker']( $root, [ 'phase' => 'booted', 'schema_lease' => $lease ] + $marker );
             }
+
+            InstallLock::$schema_lease = $lease;
 
             $update = self::command( '\\OWA\\Module\\Base\\Controller\\CoreUpdateSchemaCli' );
 
@@ -102,8 +110,9 @@ class Finish {
         @unlink( $u['marker']( $root ) );
         $u['unlock']( $hold );
 
-        InstallLock::$held_here = false;
-        InstallLock::$hold      = null;
+        InstallLock::$held_here    = false;
+        InstallLock::$hold         = null;
+        InstallLock::$schema_lease = null;
     }
 
     /**

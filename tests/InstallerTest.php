@@ -241,6 +241,53 @@ final class InstallerTest extends TestCase
         }
     }
 
+    /** Waiting for the other runs to end: every run of cli.php that starts stops, and the web and beacons carry on, as nothing has changed. */
+    public function testWhileTheInstallerWaitsEveryRunStops(): void
+    {
+        $hold = $this->u['tryLock']($this->data, 'install 2.0.1');
+        $this->marker('waiting');
+
+        try {
+            $this->assertSame(75, $this->u['preboot']($this->root, ['cli.php', 'cmd=core-update-status']));
+            $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+            $this->assertFalse($this->u['dropsBeacon']($this->root));
+            $this->assertFalse($this->serve(false));
+        } finally {
+            // The installer dies waiting: the kernel lets the lock go.
+            flock($hold['handle'], LOCK_UN);
+            fclose($hold['handle']);
+        }
+
+        $this->assertNull($this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']), 'nothing changed: OWA boots');
+        $this->assertFileDoesNotExist($this->u['marker']($this->root));
+        $this->assertFileDoesNotExist($this->updates . '/last-failure.json', 'and nothing is skipped');
+    }
+
+    /** The installer holds cli.php alone only once every other run of cli.php has ended; a run that starts meanwhile is told. */
+    public function testTheInstallerWaitsForTheOtherRuns(): void
+    {
+        $mine = $this->u['running']($this->root);
+        $this->assertIsResource($mine);
+
+        // Another run, holding cli.php as every run does, for a second.
+        $code = sprintf('$h = (require %s)["running"](%s); echo is_resource($h) ? "held\n" : "not held\n"; sleep(1);',
+            var_export($this->root . '/updater.php', true), var_export($this->root, true));
+        $proc = proc_open([PHP_BINARY, '-r', $code], [1 => ['pipe', 'w']], $pipes);
+        $this->assertSame("held\n", fgets($pipes[1]), 'runs share it');
+
+        $this->assertFalse($this->u['alone']($mine, 0), 'the other run is going');
+        $started = microtime(true);
+        $this->assertTrue($this->u['alone']($mine, 5));
+        $this->assertGreaterThan(0.5, microtime(true) - $started, 'once it ended');
+        $this->assertSame(0, proc_close($proc));
+
+        $this->assertFalse($this->u['running']($this->root), 'a run that starts now finds the installer holding it');
+
+        flock($mine, LOCK_UN);
+        fclose($mine);
+        $this->assertTrue($this->u['alone'](null, 0), 'no flock(): nothing is told');
+    }
+
     /** The copy killed part-way: the next run of cli.php puts the installed release back, checked against its signature. */
     public function testAKilledCopyIsPutBack(): void
     {

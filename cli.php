@@ -25,7 +25,13 @@ if (!OWA_CLI)
 // Automatic updates (updater.php `preboot`), before any OWA file loads: an
 // install the marker says is under way is waited for, put back, or finished.
 // Finishing boots the new release and runs Step 4 before the command.
-$owa_update = (require __DIR__ . '/updater.php')['preboot'](__DIR__, (array) ($_SERVER['argv'] ?? []));
+// $owa_running, taken first, is held until this run ends: an install copies
+// only once no other run of cli.php holds it (updater.php `running`).
+// Mid-copy, the updater.php beside a new cli.php may be one without it.
+$owa_updater = require __DIR__ . '/updater.php';
+$owa_running = isset($owa_updater['running']) ? $owa_updater['running'](__DIR__) : null;
+$owa_update  = $owa_updater['preboot'](__DIR__, (array) ($_SERVER['argv'] ?? []));
+unset($owa_updater);
 
 if (is_int($owa_update)) {
     exit($owa_update);
@@ -136,7 +142,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
 // An install cmd=core-update proved: the copy, last, once the
 // command and every job have finished. It exits (Classes\AutoUpdate\Install).
-\OWA\Module\Base\Classes\AutoUpdate\Install::run();
+\OWA\Module\Base\Classes\AutoUpdate\Install::run($owa_running);
 
 if (!empty($exit_code)) {
     exit($exit_code);
