@@ -25,6 +25,9 @@ class Releases {
     /** Seconds the listing may take. */
     const TIMEOUT = 20;
 
+    /** The most a body read into memory may hold: the listing, a signature, SHA256SUMS. */
+    const MAX_BODY = 8388608;
+
     /** A release's page, its notes; %s is its tag. On the update host, which redirects to GitHub's. */
     const PAGE = 'https://updates.openwebanalytics.com/tag/%s';
 
@@ -273,7 +276,9 @@ class Releases {
     }
 
     /**
-     * A GET's body, or a RuntimeException saying why there is none.
+     * A GET's body, or a RuntimeException saying why there is none. At most
+     * MAX_BODY, or Downloads::MAX_TARBALL into $sink: curl refuses a larger
+     * Content-Length, and from libcurl 8.4 stops a body that grows past it.
      *
      * @param  string        $url
      * @param  int           $timeout seconds
@@ -302,6 +307,9 @@ class Releases {
                     'Accept'     => 'application/vnd.github+json, application/octet-stream;q=0.9, */*;q=0.1',
                 ],
                 'allow_redirects' => [ 'max' => 5, 'protocols' => [ 'https' ] ],
+                // Without the curl extension Guzzle uses PHP's streams, and nothing caps the size.
+                'curl'            => defined( 'CURLOPT_MAXFILESIZE_LARGE' )
+                    ? [ CURLOPT_MAXFILESIZE_LARGE => $sink === null ? self::MAX_BODY : Downloads::MAX_TARBALL ] : null,
                 'http_errors'     => true,
                 'sink'            => $body,
                 'on_headers'      => $sink === null ? null : static function () use ( $sink ) {
