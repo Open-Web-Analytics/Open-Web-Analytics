@@ -120,7 +120,7 @@ class ReleaseCheck {
                     \OWA\Module\Base\Classes\NotificationManager::SOURCE_GITHUB, '',
                     \OWA\Module\Base\Classes\NotificationManager::TYPE_RELEASE );
             },
-            'notify'    => static fn ( array $notice ) => \OWA\Module\Base\Classes\NotificationManager::notify( $notice ),
+            'notify'    => [ InstallNotices::class, 'send' ],
             'raised_at' => static fn ( $key ) => \OWA\Module\Base\Classes\NotificationManager::raisedAt( self::SOURCE, $key ),
             'schema'    => static function ( $module ) {
 

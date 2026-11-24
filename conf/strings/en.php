@@ -1998,6 +1998,7 @@ return [
     'shown' => 'shown',
     'tall' => 'tall',
     'the OWA directory' => 'the OWA directory',
+    'the data directory' => 'the data directory',
     'the directory owa-config.php goes in' => 'the directory owa-config.php goes in',
     'the last %d month by month, older years by year' => [ 'the last %d month by month, older years by year', 'the last %d months by month, older years by year' ],
     'the last build stopped on this Property\'s cube' => 'the last build stopped on this Property\'s cube',

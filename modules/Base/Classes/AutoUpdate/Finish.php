@@ -45,7 +45,7 @@ class Finish {
         $owa->setCurrentUser( 'admin' );
 
         $downloads = new Downloads( (string) ( $marker['updates'] ?? '' ) ?: null );
-        $notify  = static fn ( array $n ) => \OWA\Module\Base\Classes\NotificationManager::notify( $n );
+        $notify  = [ InstallNotices::class, 'send' ];
         $failed  = false;
 
         try {
