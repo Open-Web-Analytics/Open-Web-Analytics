@@ -234,6 +234,7 @@ final class InstallerTest extends TestCase
         try {
             $this->assertSame(75, $this->u['preboot']($this->root, ['cli.php', 'cmd=core-update-status']));
             $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+            $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', '--cmd=schedule-run']), 'the other form cli.php accepts');
             $this->assertTrue($this->u['dropsBeacon']($this->root));
             $this->assertSame('0644', sprintf('%04o', fileperms($this->u['marker']($this->root)) & 0777));
         } finally {

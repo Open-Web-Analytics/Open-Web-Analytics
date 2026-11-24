@@ -134,6 +134,29 @@ final class InstallFinishTest extends CliControllerTestCase
         }
     }
 
+    /** Once nothing is pending, a hand run clears the record of the installed release's Finish that failed, and no other. */
+    public function testAHandRunThatCompletesClearsTheFailedFinish(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', $this->tmp . '/updates');
+        $d = new Downloads($this->tmp . '/updates');
+
+        try {
+            $d->writeFailure(['version' => '1.0.0', 'from' => '0.9.0', 'error' => 'another release', 'booted' => true]);
+            $this->updates([]);
+            $this->assertNotNull($d->failure(), 'another release\'s record stays');
+
+            $d->writeFailure(['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'put back', 'booted' => false]);
+            $this->updates([]);
+            $this->assertNotNull($d->failure(), 'a release put back is not this one finishing');
+
+            $d->writeFailure(['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'cmd=core-update-schema did not complete', 'booted' => true]);
+            $this->updates([]);
+            $this->assertNull($d->failure());
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
+        }
+    }
+
     private function updates(array $params): \OWA\Module\Base\Controller\CoreUpdateSchemaCli
     {
         // Built without its constructor, which defines OWA_UPDATING for the rest of the process.

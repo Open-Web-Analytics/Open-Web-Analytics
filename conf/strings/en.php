@@ -1894,7 +1894,6 @@ return [
     'any day' => 'any day',
     'at least' => 'at least',
     'at most' => 'at most',
-    'at the next scheduler run' => 'at the next scheduler run',
     'between %1$s and %2$s (%3$s), %4$s' => 'between %1$s and %2$s (%3$s), %4$s',
     'between two filters' . "\x04" . ' and ' => ' and ',
     'build %s (built here: %s)' => 'build %s (built here: %s)',
