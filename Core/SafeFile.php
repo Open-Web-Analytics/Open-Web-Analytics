@@ -15,8 +15,8 @@ namespace OWA\Core;
  *    the name, never on what a link there points to;
  *  - a file that is there is opened, then checked to be the plain file the
  *    name holds (append());
- *  - a mode is set through the umask as the file is made, never by chmod()
- *    after, which follows a link.
+ *  - a mode is set through the umask as the file or directory is made
+ *    (create(), makeDir()), never by chmod() after, which follows a link.
  *
  * updater.php has its own closures for this: it runs before OWA loads, and
  * loads no class. On Windows the umask and the inode check change nothing,
@@ -43,15 +43,21 @@ class SafeFile {
      */
     public static function create( $path, $mode, $flags = 'xb' ) {
 
-        $umask = function_exists( 'umask' ) ? umask( 0777 & ~ $mode ) : null;
-        $h     = @fopen( (string) $path, $flags );
+        return self::withUmask( $mode, static fn () => @fopen( (string) $path, $flags ) );
+    }
 
-        if ( $umask !== null ) {
+    /**
+     * A new directory with $mode, whatever the umask: set as it is made,
+     * never by chmod() after, which follows a link put there in between.
+     * mkdir() itself refuses a name that is there, a link included.
+     *
+     * @param  string $dir
+     * @param  int    $mode
+     * @return bool whether it was made
+     */
+    public static function makeDir( $dir, $mode ) {
 
-            umask( $umask );
-        }
-
-        return $h;
+        return self::withUmask( $mode, static fn () => @mkdir( (string) $dir, $mode ) );
     }
 
     /**
@@ -79,9 +85,11 @@ class SafeFile {
     /**
      * $data appended to $path, under an exclusive lock so lines from many
      * processes never interleave; $path made with $mode when it is not
-     * there. False, and nothing written, when $path is not a plain file of
-     * its own (a link, a hard link to another file, a FIFO) or cannot be
-     * written.
+     * there. Checked under the lock, so a file a reader renames away (a
+     * rotation) between the open and the lock is not written: the next try
+     * writes to the file at $path then. False, and nothing written, when
+     * $path is not a plain file of its own (a link, a hard link to another
+     * file, a FIFO) or cannot be written.
      *
      * @param  string $path
      * @param  string $data
@@ -93,44 +101,52 @@ class SafeFile {
         $path = (string) $path;
         $data = (string) $data;
 
-        if ( ! file_exists( $path ) && ! is_link( $path ) && self::place( $path, $data, $mode ) ) {
+        for ( $try = 0; $try < 5; $try++ ) {
 
-            return true;
+            if ( ! file_exists( $path ) && ! is_link( $path ) && self::place( $path, $data, $mode ) ) {
+
+                return true;
+            }
+
+            // Not opened unless it is a plain file: a FIFO would block the open.
+            if ( is_link( $path ) || ( file_exists( $path ) && ! is_file( $path ) ) ) {
+
+                return false;
+            }
+
+            $h = is_file( $path ) ? @fopen( $path, 'ab' ) : null;
+
+            if ( $h === false ) {
+
+                return false;
+            }
+
+            if ( $h === null ) {
+
+                continue;
+            }
+
+            flock( $h, LOCK_EX );
+            $named = self::isNamed( $h, $path );
+            $ok    = $named && @fwrite( $h, $data ) === strlen( $data );
+            flock( $h, LOCK_UN );
+            fclose( $h );
+
+            if ( $named ) {
+
+                return $ok;
+            }
         }
 
-        // Not opened unless it is a plain file: a FIFO would block the open.
-        if ( is_link( $path ) || ! is_file( $path ) ) {
-
-            return false;
-        }
-
-        $h = @fopen( $path, 'ab' );
-
-        if ( $h === false ) {
-
-            return false;
-        }
-
-        $ok = self::isNamed( $h, $path );
-
-        if ( $ok ) {
-
-            @flock( $h, LOCK_EX );
-            $ok = @fwrite( $h, $data ) === strlen( $data );
-            @flock( $h, LOCK_UN );
-        }
-
-        fclose( $h );
-
-        return $ok;
+        return false;
     }
 
     /**
      * Whether $h, opened by $path, is the plain file $path names now, and
      * its only name: a link put there before the open, or swapped back
-     * after, is told by the inode; a hard link to another file by its count
-     * (place() gives a new file two names for an instant: a line written
-     * then is refused).
+     * after, is told by the inode, as is a file renamed away; a hard link to
+     * another file by its count (place() gives a new file two names for an
+     * instant: append() tries again).
      *
      * @param  resource $h
      * @param  string   $path
@@ -188,6 +204,30 @@ class SafeFile {
         }
 
         return $placed;
+    }
+
+    /**
+     * @template T
+     * @param  int          $mode
+     * @param  callable(): T $make
+     * @return T what $make made, under the umask that gives $mode; the
+     *           process's own where umask() is disabled
+     */
+    private static function withUmask( $mode, callable $make ) {
+
+        $umask = function_exists( 'umask' ) ? umask( 0777 & ~ $mode ) : null;
+
+        try {
+
+            return $make();
+
+        } finally {
+
+            if ( $umask !== null ) {
+
+                umask( $umask );
+            }
+        }
     }
 
     /**

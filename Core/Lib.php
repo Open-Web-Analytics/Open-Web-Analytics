@@ -739,8 +739,7 @@ class Lib {
      *
      * For directories both the web server user and the account running cli.php
      * write to: one created 0755 by either shuts the other out. The mode is set
-     * with chmod() because mkdir()'s is reduced by the umask, as
-     * Base\Classes\Error sets its log file's.
+     * through the umask (SafeFile::makeDir()), as the error log's is.
      *
      * @param  string $dir
      * @return bool whether the directory exists afterwards
@@ -763,11 +762,7 @@ class Lib {
 
         foreach ( array_reverse( $missing ) as $d ) {
 
-            if ( @mkdir( $d, 0775 ) ) {
-
-                @chmod( $d, 0775 );
-
-            } elseif ( ! is_dir( $d ) ) {
+            if ( ! SafeFile::makeDir( $d, 0775 ) && ! is_dir( $d ) ) {
 
                 // Not made, and not made by a concurrent request either.
                 return false;

@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Classes;
  * and "at"; a line that never decoded is kept there as "raw".
  *
  * WRITERS append under flock(LOCK_EX) and, holding it, check that the file
- * they opened is still the one at that path. A consumer rotates by renaming
+ * they opened is still the one at that path (SafeFile::append()). A consumer rotates by renaming
  * the file and then taking the same lock, which waits out any writer
  * mid-line; a writer that opened the old file and locks after the rename sees
  * a different inode and writes to the new one. No line is lost to a rotation
@@ -337,7 +337,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        foreach ( self::files( $this->delayed_path ) as $name ) {
+        foreach ( self::files( $this->delayed_path, '.txt' ) as $name ) {
 
             if ( (int) $name <= time() ) {
 
@@ -567,10 +567,10 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     }
 
     /**
-     * Append one line to $path, safe against a rotation renaming it.
-     *
-     * A file this creates is made group-writable (0664), as the directories
-     * are: the web server and the CLI both append to events.txt.
+     * Append one line to $path: SafeFile::append(), which checks under its
+     * lock that the file is still the one at $path, so a rotation renaming
+     * it loses no line. Group-writable (0664), as the directories are: the
+     * web server and the CLI both append to events.txt.
      *
      * @param  string $path
      * @param  string $line  without its newline
@@ -578,44 +578,12 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      */
     private function append( $path, $line ) {
 
-        for ( $try = 0; $try < 5; $try++ ) {
+        if ( \OWA\Core\SafeFile::append( $path, $line . "\n", 0664 ) ) {
 
-            $created = ! file_exists( $path );
-
-            $fh = @fopen( $path, 'a' );
-
-            if ( ! $fh ) {
-
-                \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot open $path for writing." );
-
-                return false;
-            }
-
-            if ( $created ) {
-
-                @chmod( $path, 0664 );
-            }
-
-            flock( $fh, LOCK_EX );
-
-            clearstatcache( true, $path );
-            $mine = fstat( $fh );
-            $now  = @stat( $path );
-
-            if ( $now && $mine && $now['ino'] === $mine['ino'] && $now['dev'] === $mine['dev'] ) {
-
-                $ok = fwrite( $fh, $line . "\n" ) === strlen( $line ) + 1;
-                fflush( $fh );
-                flock( $fh, LOCK_UN );
-                fclose( $fh );
-
-                return $ok;
-            }
-
-            // Renamed between our open and our lock: write to the file now at $path.
-            flock( $fh, LOCK_UN );
-            fclose( $fh );
+            return true;
         }
+
+        \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot write $path." );
 
         return false;
     }
@@ -652,7 +620,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             [ $this->event_file ],
             array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
             array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
-            array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path ) )
+            array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path, '.txt' ) )
         ), 'is_file' ) );
     }
 
@@ -682,7 +650,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      */
     private function promoteDue() {
 
-        foreach ( self::files( $this->delayed_path ) as $name ) {
+        foreach ( self::files( $this->delayed_path, '.txt' ) as $name ) {
 
             if ( (int) $name <= time() ) {
 
@@ -901,7 +869,15 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         if ( $this->batch ) {
 
-            @file_put_contents( $this->batch . '.state', json_encode( $this->state ), LOCK_EX );
+            try {
+
+                // Under a fresh name, renamed into place: processing/ is the web server's to write too.
+                \OWA\Core\SafeFile::replace( $this->batch . '.state', (string) json_encode( $this->state ), 0664 );
+
+            } catch ( \RuntimeException $e ) {
+
+                \OWA\Core\CoreAPI::notice( 'Tracker ingest: ' . $e->getMessage() );
+            }
         }
     }
 

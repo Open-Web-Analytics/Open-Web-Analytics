@@ -559,4 +559,47 @@ PHP
 
         $this->assertSame('0664', sprintf('%04o', fileperms($this->dir . 'events.txt') & 0777), 'events.txt');
     }
+
+    /** The web server's user writes the queue's directories: a link it puts at events.txt, a delayed file or a batch's .state is never written through. */
+    public function testALinkInTheQueueIsNeverWrittenThrough(): void
+    {
+        $victim = $this->dir . 'victim.php';
+        $q      = $this->queue();
+        $this->assertTrue($q->send(self::envelope('a')));
+        file_put_contents($victim, 'the cron user\'s');
+
+        rename($this->dir . 'events.txt', $this->dir . 'kept.txt');
+        symlink($victim, $this->dir . 'events.txt');
+        $this->assertFalse($q->send(self::envelope('b')));
+        unlink($this->dir . 'events.txt');
+        rename($this->dir . 'kept.txt', $this->dir . 'events.txt');
+
+        $minute = $this->dir . 'delayed/' . ((int) ceil((time() + 600) / 60) * 60) . '.txt';
+        symlink($victim, $minute);
+        $this->assertFalse($q->send(self::envelope('c'), 600));
+        unlink($minute);
+
+        $got   = $q->receive(10, 300);
+        $state = (array) glob($this->dir . 'processing/*.txt.state');
+        $this->assertCount(1, $state);
+        unlink($state[0]);
+        symlink($victim, $state[0]);
+        $q->ack($got[0]);
+
+        $this->assertSame('the cron user\'s', file_get_contents($victim));
+        $this->assertFalse(is_link($state[0]));
+        $this->assertSame(['a'], self::names($got));
+    }
+
+    /** A delayed file being made, under its temporary name, is not taken for a minute that has come. */
+    public function testOnlyADelayedFileIsPromoted(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('later'), 120);
+        touch($this->dir . 'delayed/60.txt.new-' . str_repeat('a', 32));
+
+        $this->assertTrue($q->isProbablyEmpty());
+        $this->assertSame([], $q->receive(10, 300));
+        $this->assertFileExists($this->dir . 'delayed/60.txt.new-' . str_repeat('a', 32));
+    }
 }
