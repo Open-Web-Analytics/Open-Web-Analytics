@@ -24,8 +24,9 @@ use OWA\Core\CoreAPI;
  *      installed release's too, once: a failed install puts it back. Every
  *      other tarball is deleted. A failed download puts a notice in the
  *      bell; a week of them e-mails the admins. A release whose install
- *      failed (last-failure.json) is skipped: it installs by hand, or a newer
- *      one does.
+ *      failed (last-failure.json) is tried again 6 hours on, 3 attempts in
+ *      all, and one that did not boot not at all; then it is skipped: it
+ *      installs by hand, or a newer one does.
  *   3. The newest downloaded release the settings allow is judged, from its
  *      tarball (judge()). Unmet, or an update in it that must be installed
  *      by hand ($manual_install): the admins are told once, and it waits.
@@ -246,7 +247,11 @@ class ReleaseCheck {
 
             if ( $this->skips( $v ) ) {
 
-                return $this->outcome( self::SKIPPED, $v, [], sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
+                $retry = (int) ( $this->downloads->failure()['retry_after'] ?? 0 );
+
+                return $this->outcome( self::SKIPPED, $v, [], $retry > 0
+                    ? sprintf( 'Installing %s failed; it is tried again after %s UTC. To try it now: php cli.php cmd=core-install --version=%s', $v, gmdate( 'Y-m-d H:i', $retry ), $v )
+                    : sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
             }
 
             // Downloaded when it has not been, and again when the asset GitHub
@@ -385,8 +390,9 @@ class ReleaseCheck {
     }
 
     /**
-     * Whether automatic updates skip this release: installing it over the
-     * installed one failed (last-failure.json).
+     * Whether automatic updates skip this release now: installing it over
+     * the installed one failed (last-failure.json), and it is not yet
+     * retry_after, or never is.
      *
      * @param  string $v
      * @return bool
@@ -394,8 +400,10 @@ class ReleaseCheck {
     private function skips( $v ) {
 
         $failure = $this->downloads->failure();
+        $retry   = (int) ( $failure['retry_after'] ?? 0 );
 
-        return ( $failure['version'] ?? null ) === $v && ( $failure['from'] ?? null ) === (string) $this->context['installed'];
+        return ( $failure['version'] ?? null ) === $v && ( $failure['from'] ?? null ) === (string) $this->context['installed']
+            && ( $retry === 0 || (int) $this->context['now'] < $retry );
     }
 
     /**
@@ -436,7 +444,8 @@ class ReleaseCheck {
 
             $judged  = $this->judge( $v );
             $lines[] = sprintf( 'Downloaded: %s, %s UTC; %s.', $v, gmdate( 'Y-m-d H:i', (int) filemtime( $this->downloads->tarball( $v ) ) ),
-                $this->skips( $v ) ? 'skipped, its install failed' : ( $judged['problems'] ? 'cannot be installed yet' : 'can be installed' ) );
+                $this->skips( $v ) ? ( empty( $this->downloads->failure()['retry_after'] ) ? 'skipped, its install failed' : 'its install failed, tried again later' )
+                    : ( $judged['problems'] ? 'cannot be installed yet' : 'can be installed' ) );
 
             foreach ( $judged['problems'] as $p ) {
 

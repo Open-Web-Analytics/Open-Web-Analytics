@@ -577,6 +577,44 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(ReleaseCheck::CURRENT, $this->check(['2.0.1'], ['installed' => '2.0.2'])['outcome'], 'the failure was of 2.0.1 over 2.0.0 only');
     }
 
+    /** A failure to be tried again: skipped until retry_after, then installed. */
+    public function testAFailedInstallIsTriedAgainLater(): void
+    {
+        $this->check(['2.0.1']);
+        $failure = ['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished.', 'at' => $this->now, 'attempts' => 1];
+
+        $this->downloads()->writeFailure($failure + ['retry_after' => $this->now + 3600]);
+        $result = $this->check(['2.0.1'], ['window' => '']);
+        $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
+        $this->assertStringContainsString('Installing 2.0.1 failed; it is tried again after 2027-01-15 09:00 UTC.', implode("\n", $result['lines']));
+        $this->assertStringContainsString('try OWA 2.0.1 again after 2027-01-15 09:00 UTC, 3 attempts in all', $this->notices['install_failed:2.0.1']['body']);
+        $this->assertNull(Install::$pending);
+
+        $this->downloads()->writeFailure($failure + ['retry_after' => $this->now]);
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1'], ['window' => ''])['outcome'], 'its time has come');
+        $this->dropPending();
+    }
+
+    /** A failure that could not be recorded would be tried every hour: nothing installs while the updates directory cannot be written. */
+    public function testNothingInstallsWhereAFailureCouldNotBeRecorded(): void
+    {
+        $this->check(['2.0.1']);
+        $dir = $this->downloads()->root();
+        chmod($dir, 0555);
+
+        try {
+            $result = $this->check(['2.0.1'], ['window' => '']);
+        } finally {
+            chmod($dir, 0711);
+        }
+
+        $this->assertSame(ReleaseCheck::FAILED, $result['outcome']);
+        $this->assertStringContainsString('the updates directory cannot be written', implode("\n", $result['lines']));
+        $this->assertNull(Install::$pending);
+        $this->assertFalse(InstallLock::isHeld());
+        $this->assertSame([], glob($dir . '/write-test*'), 'the test file goes');
+    }
+
     public function testNothingChangesWhileAnInstallHoldsTheLock(): void
     {
         $this->check(['2.0.1']);

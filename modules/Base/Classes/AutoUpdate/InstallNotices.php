@@ -6,7 +6,8 @@ use OWA\Core\CoreAPI;
 /**
  * The notice a failed install calls for (last-failure.json), raised once
  * (NotificationManager::notify(), source auto_update, key
- * install_failed:<version>).
+ * install_failed:<version>), and once more when the last attempt at a
+ * release that was tried again fails (install_failed:<version>:skipped).
  *
  * A failure is recorded before OWA can say so: by the copy, in the process
  * that may load nothing more; by the next run of cli.php putting the
@@ -31,15 +32,30 @@ class InstallNotices {
             return;
         }
 
-        $body = $error . "\n\n" . ( empty( $failure['booted'] )
-            ? sprintf( CoreAPI::t( 'The installed release runs as before. Automatic updates skip OWA %1$s; a newer release installs as usual. To try it again: php cli.php cmd=core-install --version=%1$s' ), $v )
-            : CoreAPI::t( 'Its files are installed, and its schema updates did not complete. Until they do, tracking is queued and reports wait: fix the cause, then run php cli.php cmd=core-update-schema' ) );
+        $retry = (int) ( $failure['retry_after'] ?? 0 );
+
+        if ( ! empty( $failure['booted'] ) ) {
+
+            $next = CoreAPI::t( 'Its files are installed, and its schema updates did not complete. Until they do, tracking is queued and reports wait: fix the cause, then run php cli.php cmd=core-update-schema' );
+
+        } elseif ( $retry > 0 ) {
+
+            $next = sprintf( CoreAPI::t( 'The installed release runs as before. Automatic updates try OWA %1$s again after %2$s UTC, %3$d attempts in all. To try it now: php cli.php cmd=core-install --version=%1$s' ),
+                $v, gmdate( 'Y-m-d H:i', $retry ), (int) Downloads::updater()['retries'] );
+
+        } else {
+
+            $next = sprintf( CoreAPI::t( 'The installed release runs as before. Automatic updates skip OWA %1$s; a newer release installs as usual. To try it again: php cli.php cmd=core-install --version=%1$s' ), $v );
+        }
+
+        // Once for the first failure, and once more when the last attempt fails.
+        $final = $retry === 0 && (int) ( $failure['attempts'] ?? 1 ) > 1;
 
         $notify( [
             'source'     => ReleaseCheck::SOURCE,
-            'source_key' => 'install_failed:' . $v,
+            'source_key' => 'install_failed:' . $v . ( $final ? ':skipped' : '' ),
             'title'      => sprintf( CoreAPI::t( 'Installing OWA %s failed' ), $v ),
-            'body'       => $body,
+            'body'       => $error . "\n\n" . $next,
             'severity'   => 'warning',
             'email'      => true,
         ] );

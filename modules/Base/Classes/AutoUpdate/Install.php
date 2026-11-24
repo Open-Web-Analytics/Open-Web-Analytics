@@ -26,7 +26,8 @@ use OWA\Core\CoreAPI;
  * (updater.php `preboot`, Finish). A copy that fails is put back at once from
  * the installed release's tarball, one that is killed by the next run of
  * cli.php, and either is recorded in last-failure.json: automatic updates
- * skip that release until a newer one, or an install by hand.
+ * try that release again 6 hours on, 3 attempts in all, then skip it until
+ * a newer one, or an install by hand (updater.php `recordFailure`).
  */
 class Install {
 
@@ -76,6 +77,13 @@ class Install {
             $u['unlock']( $hold );
 
             return self::answer( self::BUSY, sprintf( 'This run started with OWA %1$s, and Core/Env.php now says %2$s: nothing was done.', $installed, $on_disk ?? 'no release version' ) );
+        }
+
+        if ( ! $downloads->canRecord() ) {
+
+            $u['unlock']( $hold );
+
+            return self::answer( self::FAILED, sprintf( 'Installing %s failed before anything changed: the updates directory cannot be written (is the disk full?), so a failed install could not be recorded.', $v ) );
         }
 
         try {
@@ -286,7 +294,7 @@ class Install {
         } catch ( \RuntimeException $e ) {
 
             @unlink( $u['marker']( $root ) );
-            $u['recordFailure']( $p['updates'], $p['from'], $p['to'], $e->getMessage() . ' Nothing was installed.' );
+            $u['recordFailure']( $p['updates'], $marker, $e->getMessage() . ' Nothing was installed.' );
             $u['unlock']( $p['hold'] );
             fwrite( STDERR, sprintf( "Installing OWA %s failed: %s Nothing was installed.\n", $p['to'], $e->getMessage() ) );
 
@@ -335,13 +343,13 @@ class Install {
 
                 $u['apply']( $root, $p['from_h'], $p['to_files'] );
                 @unlink( $u['marker']( $root ) );
-                $u['recordFailure']( $p['updates'], $p['from'], $p['to'], sprintf( '%s OWA %s was put back.', $why, $p['from'] ) );
+                $u['recordFailure']( $p['updates'], $marker, sprintf( '%s OWA %s was put back.', $why, $p['from'] ) );
                 fwrite( STDERR, sprintf( "Installing OWA %s failed: %s OWA %s was put back.\n", $p['to'], $why, $p['from'] ) );
 
             } catch ( \Throwable $back ) {
 
                 // The marker stays, saying copying: the next run of cli.php tries again.
-                $u['recordFailure']( $p['updates'], $p['from'], $p['to'], sprintf( '%s Putting OWA %s back failed too: %s', $why, $p['from'], $back->getMessage() ) );
+                $u['recordFailure']( $p['updates'], $marker, sprintf( '%s Putting OWA %s back failed too: %s', $why, $p['from'], $back->getMessage() ) );
                 fwrite( STDERR, sprintf( "Installing OWA %s failed: %s Putting OWA %s back failed too: %s\n", $p['to'], $why, $p['from'], $back->getMessage() ) );
             }
 
