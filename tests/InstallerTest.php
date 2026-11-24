@@ -155,20 +155,20 @@ final class InstallerTest extends TestCase
         $this->assertTrue(is_link($this->root . '/owa-data/logs/index.php'), 'left as it is');
     }
 
-    /** A file the updater creates is never one that is there: a link is refused, or replaced by the rename, never written through; its mode is its own whatever the umask. */
+    /** updater.php's own writes, which load no class: a link at last-failure.json or the marker is replaced, never written through; modes are their own whatever the umask; a link named like the updates directory is not it. */
     public function testNoWriteFollowsALink(): void
     {
         $victim = $this->tmp . '/victim.php';
         file_put_contents($victim, 'the cron user\'s');
         chmod($victim, 0640);
-        symlink($victim, $this->data . '/link');
-
-        $this->assertFalse($this->u['createFile']($this->data . '/link', 0600), 'never one that is there');
-        $this->assertNotSame($this->u['fresh']('a'), $this->u['fresh']('a'), 'so the names are made afresh: PHP follows a link, a dangling one too, to open');
+        symlink($victim, $this->updates . '/last-failure.json');
+        symlink($victim, $this->root . '/owa-update.php');
 
         $umask = umask(0077);
         try {
-            $this->u['writeFile']($this->data . '/link', 'written');
+            $this->u['recordFailure']($this->updates, '2.0.0', '2.0.1', 'a test');
+            $this->marker('copying');
+            mkdir($this->tmp . '/other');
             $dir = (string) $this->u['updatesDir']($this->tmp . '/other', true);
         } finally {
             umask($umask);
@@ -176,24 +176,17 @@ final class InstallerTest extends TestCase
 
         $this->assertSame('the cron user\'s', file_get_contents($victim));
         $this->assertSame('0640', sprintf('%04o', fileperms($victim) & 0777));
-        $this->assertFalse(is_link($this->data . '/link'));
-        $this->assertSame('written', file_get_contents($this->data . '/link'));
-        $this->assertSame('0644', sprintf('%04o', fileperms($this->data . '/link') & 0777), 'readable by the web user, whatever the umask');
-        $this->assertSame([], glob($this->data . '/link.tmp*'));
-        $this->assertSame('', $dir, 'no data directory there');
-
-        mkdir($this->tmp . '/other');
-        umask(0077);
-        try {
-            $dir = (string) $this->u['updatesDir']($this->tmp . '/other', true);
-        } finally {
-            umask($umask);
+        foreach ([$this->updates . '/last-failure.json', $this->root . '/owa-update.php'] as $file) {
+            $this->assertFalse(is_link($file), $file);
+            $this->assertSame('0644', sprintf('%04o', fileperms($file) & 0777), 'readable by the web user, whatever the umask');
         }
+        $this->assertSame('a test', $this->failure()['error']);
+        $this->assertSame('copying', $this->u['readMarker']($this->root)['phase']);
+        $this->assertSame([], $this->leftovers());
         $this->assertSame('0711', sprintf('%04o', fileperms($dir) & 0777), 'whatever the umask');
 
-        // A link named like the updates directory is not it.
-        symlink($this->tmp . '/elsewhere', $this->tmp . '/other/updates-' . str_repeat('d', 32));
         mkdir($this->tmp . '/elsewhere');
+        symlink($this->tmp . '/elsewhere', $this->tmp . '/other/updates-' . str_repeat('d', 32));
         $this->assertSame($dir, $this->u['updatesDir']($this->tmp . '/other'));
     }
 

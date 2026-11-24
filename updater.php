@@ -90,6 +90,7 @@ return ( static function () {
      * follows it. Made with $mode through the umask, not chmod() after,
      * which follows a link; where umask() is disabled, with the process's
      * own (on Windows it changes nothing, and neither would chmod()).
+     * OWA\Core\SafeFile does the same for booted code; this file loads no class.
      */
     $fresh = static function ( $path ) {
 
@@ -782,9 +783,6 @@ return ( static function () {
         'unlock'      => $unlock,
         'touchLock'   => $touchLock,
         'remove'      => $remove,
-        'fresh'       => $fresh,
-        'createFile'  => $createFile,
-        'writeFile'   => $writeFile,
         'copies'      => $copies,
         'apply'       => $apply,
         'marker'      => $marker,

@@ -90,4 +90,26 @@ final class ErrorLogFilePermissionTest extends TestCase
             umask($old_umask);
         }
     }
+
+    /**
+     * The web server's user writes the data directory: a link it puts at the
+     * log's name, where the CLI's user writes too, is never written through.
+     */
+    public function testALinkAtTheLogsNameIsNotWrittenThrough()
+    {
+        $victim = sys_get_temp_dir() . '/owa-log-victim-' . bin2hex(random_bytes(4));
+        file_put_contents($victim, 'the cron user\'s');
+        symlink($victim, $this->path);
+
+        try {
+            $e = new \OWA\Module\Base\Classes\Error();
+            $e->setHandler('production');
+            $e->notice('through a link');
+
+            $this->assertSame('the cron user\'s', file_get_contents($victim));
+        } finally {
+            unlink($this->path);
+            unlink($victim);
+        }
+    }
 }
