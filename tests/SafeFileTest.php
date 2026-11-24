@@ -130,6 +130,45 @@ final class SafeFileTest extends TestCase
         fclose($h);
     }
 
+    /** makeDir() makes the directory with its mode whatever the umask, and refuses a name that is there, a link included. */
+    public function testMakeDir(): void
+    {
+        $umask = umask(0077);
+        try {
+            $this->assertTrue(SafeFile::makeDir($this->dir . '/shared/queue', 0775));
+        } finally {
+            umask($umask);
+        }
+        $this->assertSame('0775', $this->mode($this->dir . '/shared/queue'));
+
+        symlink($this->dir . '/elsewhere', $this->dir . '/shared/link');
+        $this->assertFalse(SafeFile::makeDir($this->dir . '/shared/link', 0775));
+        $this->assertDirectoryDoesNotExist($this->dir . '/elsewhere');
+    }
+
+    /** A file renamed away between the open and the lock, as a reader rotates one, is not written: the next try writes to the file at the name. */
+    public function testAppendFollowsARotation(): void
+    {
+        $path = $this->dir . '/shared/events.txt';
+        file_put_contents($path, '');
+
+        // Holding the lock, rename it away and put a new one there: the appender opens the old, waits, then finds it renamed.
+        $old = fopen($path, 'rb');
+        flock($old, LOCK_EX);
+        $code = sprintf('require %s; OWA\\Core\\SafeFile::append(%s, "line\\n");',
+            var_export(dirname(__DIR__) . '/vendor/autoload.php', true), var_export($path, true));
+        $proc = proc_open([PHP_BINARY, '-r', $code], [], $pipes);
+        sleep(1);
+        rename($path, $this->dir . '/shared/rotated.txt');
+        file_put_contents($path, '');
+        flock($old, LOCK_UN);
+        fclose($old);
+        $this->assertSame(0, proc_close($proc));
+
+        $this->assertSame('', file_get_contents($this->dir . '/shared/rotated.txt'));
+        $this->assertSame("line\n", file_get_contents($path));
+    }
+
     private function mode(string $path): string
     {
         clearstatcache();
