@@ -18,6 +18,43 @@ use OWA\Core\CoreAPI;
 class InstallNotices {
 
     /**
+     * Raise an automatic update's notice, its body without the install's
+     * paths (withoutPaths()): notices go to the bell and are e-mailed.
+     *
+     * @param  array<string, mixed> $notice NotificationManager::notify()'s
+     * @return mixed its answer
+     */
+    public static function send( array $notice ) {
+
+        return \OWA\Module\Base\Classes\NotificationManager::notify(
+            [ 'body' => self::withoutPaths( (string) ( $notice['body'] ?? '' ) ) ] + $notice );
+    }
+
+    /**
+     * $text with paths in the OWA directory given relative to it, and paths in
+     * a data directory elsewhere relative to "the data directory".
+     *
+     * @param  string      $text
+     * @param  string|null $root a test's; else OWA's
+     * @param  string|null $data a test's; else OWA's
+     * @return string
+     */
+    public static function withoutPaths( $text, $root = null, $data = null ) {
+
+        $root = rtrim( $root ?? \OWA\Core\Env::root(), '/' );
+        $data = rtrim( $data ?? \OWA\Core\Env::dataDir(), '/' );
+        $map  = [ $root . '/' => '', $root => CoreAPI::t( 'the OWA directory' ) ];
+
+        if ( strpos( $data . '/', $root . '/' ) !== 0 ) {
+
+            $map += [ $data . '/' => CoreAPI::t( 'the data directory' ) . '/', $data => CoreAPI::t( 'the data directory' ) ];
+        }
+
+        // strtr() replaces the longest match first: the data directory inside a path before the root.
+        return strtr( (string) $text, $map );
+    }
+
+    /**
      * @param  array<string, mixed>                  $failure last-failure.json
      * @param  callable(array<string, mixed>): mixed $notify  NotificationManager::notify() or a stand-in
      * @return void
@@ -75,7 +112,7 @@ class InstallNotices {
 
             if ( $failure ) {
 
-                self::forFailure( $failure, static fn ( array $n ) => \OWA\Module\Base\Classes\NotificationManager::notify( $n ) );
+                self::forFailure( $failure, [ self::class, 'send' ] );
             }
 
         } catch ( \Throwable $e ) {
