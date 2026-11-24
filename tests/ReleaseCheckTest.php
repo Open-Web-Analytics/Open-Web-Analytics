@@ -201,7 +201,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(['owa_2.0.0_packaged.tar', 'owa_2.0.0_packaged.tar.sig', 'owa_2.1.0_packaged.tar', 'owa_2.1.0_packaged.tar.sig'],
             array_map('basename', glob($d->root() . '/*')), 'nothing half downloaded');
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $d->root());
-        $this->assertSame('0711', sprintf('%04o', fileperms($d->root()) & 0777));
+        $this->assertSame('0755', sprintf('%04o', fileperms($d->root()) & 0777));
         $this->assertSame('0600', sprintf('%04o', fileperms($d->tarball('2.1.0')) & 0777));
         $this->assertNull(Install::$pending);
 
@@ -605,7 +605,7 @@ final class ReleaseCheckTest extends TestCase
         try {
             $result = $this->check(['2.0.1'], ['window' => '']);
         } finally {
-            chmod($dir, 0711);
+            chmod($dir, 0755);
         }
 
         $this->assertSame(ReleaseCheck::FAILED, $result['outcome']);

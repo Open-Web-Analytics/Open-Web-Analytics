@@ -10,7 +10,7 @@ use OWA\Core\SafeFile;
  * `updatesDir`) and kept in the updates_dir setting for the rest of the
  * process.
  *
- *   updates-<id>/                0711
+ *   updates-<id>/                0755: listed by the Updates screen (UpdatesState)
  *     owa_<v>_packaged.tar       0600: a release tarball, there only once its SHA-256
  *     owa_<v>_packaged.tar.sig         matched GitHub's digest and its signature a trusted
  *                                      key (Signature). Two at most: the installed
@@ -135,7 +135,7 @@ class Downloads {
         // A directory named outright is made where it was named, never in OWA's data directory.
         if ( $this->named ) {
 
-            if ( ! @mkdir( $this->root, 0711, true ) && ! is_dir( $this->root ) ) {
+            if ( ! @mkdir( $this->root, 0755, true ) && ! is_dir( $this->root ) ) {
 
                 throw new \RuntimeException( sprintf( 'Could not create %s.', $this->root ) );
             }
