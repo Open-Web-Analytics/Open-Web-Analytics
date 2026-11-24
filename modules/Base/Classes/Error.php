@@ -100,44 +100,6 @@ class Error {
     }
 
     /**
-     * Append one line to a file, creating it group-writable.
-     *
-     * Both the web server user and the account running the CLI write to this
-     * path, so the mode is set rather than left to whichever umask creates the
-     * file: a 0644 file from a shell's 022 would shut the web server out. The
-     * path embeds the instance hash, so a new file -- and a new race over who
-     * creates it -- appears on every credential rotation.
-     *
-     * @param  string $path
-     * @param  string $line
-     * @return bool
-     */
-    private static function appendToFile( $path, $line ) {
-
-        $created = ! file_exists( $path );
-
-        $fh = @fopen( $path, 'a' );
-
-        if ( ! $fh ) {
-
-            return false;
-        }
-
-        if ( $created ) {
-
-            @chmod( $path, 0664 );
-        }
-
-        // One line at a time from many processes: lock, so lines never interleave.
-        @flock( $fh, LOCK_EX );
-        $ok = @fwrite( $fh, $line ) !== false;
-        @flock( $fh, LOCK_UN );
-        fclose( $fh );
-
-        return $ok;
-    }
-
-    /**
      * Record an exception nothing else caught, and answer with a server error.
      *
      * Registered by the production handler too, so an uncaught exception is
@@ -299,7 +261,8 @@ class Error {
 
             if ( $sink['path'] !== null ) {
 
-                self::appendToFile( $sink['path'], $line );
+                // Both the web server's user and the CLI's append: group-writable, whatever the umask of the one that makes it.
+                \OWA\Core\SafeFile::append( $sink['path'], $line, 0664 );
 
             } elseif ( is_resource( $sink['stream'] ) ) {
 

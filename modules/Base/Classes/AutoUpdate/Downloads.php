@@ -2,6 +2,7 @@
 namespace OWA\Module\Base\Classes\AutoUpdate;
 
 use OWA\Core\CoreAPI;
+use OWA\Core\SafeFile;
 
 /**
  * The updates directory, owa-data/updates-<32 hex>/: the release tarballs
@@ -485,9 +486,8 @@ class Downloads {
 
         $this->ensureRoot();
 
-        $u    = self::updater();
         $tar  = $this->tarball( $release['version'] );
-        $part = $u['fresh']( $tar . '.part' );
+        $part = SafeFile::fresh( $tar . '.part' );
 
         // What a download that was killed left (unlink() removes a link, never what it names).
         foreach ( (array) glob( $tar . '.part*' ) as $left ) {
@@ -510,7 +510,7 @@ class Downloads {
             }
 
             // Opened here under a fresh name, which no link can be waiting at: the fetch writes into it.
-            $sink = $u['createFile']( $part, 0600 );
+            $sink = SafeFile::create( $part, 0600 );
 
             if ( $sink === false ) {
 
@@ -548,7 +548,7 @@ class Downloads {
                 throw new \RuntimeException( sprintf( '%s\'s release.php says it is %s.', $release['version'], var_export( is_array( $info ) ? $info['version'] ?? null : null, true ) ) );
             }
 
-            $u['writeFile']( $tar . '.sig', trim( $sig ) . "\n" );
+            SafeFile::replace( $tar . '.sig', trim( $sig ) . "\n" );
 
             if ( ! @rename( $part, $tar ) ) {
 
@@ -597,6 +597,6 @@ class Downloads {
     public function writeJson( $path, array $data ) {
 
         // Readable by the web user (the Updates screen); written by the owner alone, never through a link.
-        self::updater()['writeFile']( $path, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
+        SafeFile::replace( $path, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
     }
 }
