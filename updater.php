@@ -229,8 +229,9 @@ return ( static function () {
     /*
      * The updates directory, or null: none, or more than one (System Health
      * says so, and nothing installs). With $create, made when there is none:
-     * mode 0711, a name mkdir() refuses to reuse, and looked for again after,
-     * so it is the only one.
+     * mode 0755 (the web user lists the downloads for the Updates screen and
+     * writes nothing), a name mkdir() refuses to reuse, and looked for again
+     * after, so it is the only one.
      */
     $updatesDir = static function ( $data, $create = false ) use ( $updatesDirs ) {
 
@@ -249,8 +250,8 @@ return ( static function () {
         $dir = rtrim( (string) $data, '/' ) . '/updates-' . bin2hex( random_bytes( 16 ) );
 
         // The mode through the umask: chmod() after would follow a link put there in between.
-        $umask = function_exists( 'umask' ) ? umask( 0066 ) : null;
-        $made  = @mkdir( $dir, 0711 );
+        $umask = function_exists( 'umask' ) ? umask( 0022 ) : null;
+        $made  = @mkdir( $dir, 0755 );
 
         if ( $umask !== null ) {
 

@@ -95,7 +95,7 @@ final class InstallerTest extends TestCase
     public function testTheUpdatesDirectoryIsFoundNotGuessed(): void
     {
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $this->updates);
-        $this->assertSame('0711', sprintf('%04o', fileperms($this->updates) & 0777), 'others open a name they know, list nothing');
+        $this->assertSame('0755', sprintf('%04o', fileperms($this->updates) & 0777), 'the web user lists it, for the Updates screen, and writes nothing');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data), 'found again, never derived');
         $this->assertSame($this->updates, $this->u['updatesDir']($this->data, true), 'created once');
 
@@ -183,7 +183,7 @@ final class InstallerTest extends TestCase
         $this->assertSame('a test', $this->failure()['error']);
         $this->assertSame('copying', $this->u['readMarker']($this->root)['phase']);
         $this->assertSame([], $this->leftovers());
-        $this->assertSame('0711', sprintf('%04o', fileperms($dir) & 0777), 'whatever the umask');
+        $this->assertSame('0755', sprintf('%04o', fileperms($dir) & 0777), 'whatever the umask');
 
         mkdir($this->tmp . '/elsewhere');
         symlink($this->tmp . '/elsewhere', $this->tmp . '/other/updates-' . str_repeat('d', 32));

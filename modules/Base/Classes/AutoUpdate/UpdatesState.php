@@ -5,9 +5,9 @@ use OWA\Core\CoreAPI;
 
 /**
  * What the Updates screen says about automatic updates, from what the web
- * user can read: the release tarballs downloaded, last-failure.json (0644 in
- * the updates directory), the install marker, the installed version and the
- * settings. The screen changes nothing itself: its actions are jobs the
+ * user can read: the names of the release tarballs downloaded (the updates
+ * directory is 0755, the tarballs 0600), last-failure.json (0644), the
+ * install marker, the installed version and the settings. The screen changes nothing itself: its actions are jobs the
  * scheduler runs as the install owner (Controller\UpdatesRun).
  */
 class UpdatesState {
