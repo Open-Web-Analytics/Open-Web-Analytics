@@ -64,7 +64,14 @@ final class InstallFinishTest extends CliControllerTestCase
         InstallNotices::forFailure(['booted' => true, 'error' => 'cmd=core-update-schema did not complete'] + $failed, $notify);
         InstallNotices::forFailure(['error' => ''] + $failed, $notify);
 
-        $this->assertCount(2, $raised, 'nothing for a record without an error');
+        InstallNotices::forFailure(['attempts' => 1, 'retry_after' => 1800000000] + $failed, $notify);
+        InstallNotices::forFailure(['attempts' => 3, 'retry_after' => null] + $failed, $notify);
+
+        $this->assertCount(4, $raised, 'nothing for a record without an error');
+        $this->assertSame('install_failed:2.0.3', $raised[2]['source_key'], 'tried again: the first failure\'s notice');
+        $this->assertStringContainsString('try OWA 2.0.3 again after 2027-01-15 08:00 UTC, 3 attempts in all', $raised[2]['body']);
+        $this->assertSame('install_failed:2.0.3:skipped', $raised[3]['source_key'], 'the last attempt failed: one more');
+        $this->assertStringContainsString('Automatic updates skip OWA 2.0.3', $raised[3]['body']);
         $this->assertSame(['install_failed:2.0.3', 'warning', true], [$raised[0]['source_key'], $raised[0]['severity'], $raised[0]['email']]);
         $this->assertStringContainsString('The installed release runs as before. Automatic updates skip OWA 2.0.3', $raised[0]['body'], 'put back: the old release runs');
         $this->assertStringContainsString('php cli.php cmd=core-install --version=2.0.3', $raised[0]['body']);

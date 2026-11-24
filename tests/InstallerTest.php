@@ -166,7 +166,7 @@ final class InstallerTest extends TestCase
 
         $umask = umask(0077);
         try {
-            $this->u['recordFailure']($this->updates, '2.0.0', '2.0.1', 'a test');
+            $this->u['recordFailure']($this->updates, ['from' => '2.0.0', 'to' => '2.0.1', 'since' => 1], 'a test');
             $this->marker('copying');
             mkdir($this->tmp . '/other');
             $dir = (string) $this->u['updatesDir']($this->tmp . '/other', true);
@@ -241,6 +241,54 @@ final class InstallerTest extends TestCase
         }
     }
 
+    /** A failed install is tried again, 3 attempts in all; one install recorded twice counts once. */
+    public function testAFailedInstallIsTriedAgainThreeTimesInAll(): void
+    {
+        $at = fn (int $since): array => ['from' => '2.0.0', 'to' => '2.0.1', 'since' => $since];
+
+        $this->u['recordFailure']($this->updates, $at(1), 'first');
+        $this->assertSame(1, $this->failure()['attempts']);
+        $this->assertNotNull($this->failure()['retry_after']);
+
+        $this->u['recordFailure']($this->updates, $at(1), 'the same install, put back by the next run');
+        $this->assertSame(1, $this->failure()['attempts'], 'one install counts once');
+
+        $this->u['recordFailure']($this->updates, $at(2), 'second');
+        $this->assertSame([2, true], [$this->failure()['attempts'], $this->failure()['retry_after'] !== null]);
+
+        $this->u['recordFailure']($this->updates, $at(3), 'third');
+        $this->assertSame([3, null], [$this->failure()['attempts'], $this->failure()['retry_after']], 'skipped after the third');
+
+        $this->u['recordFailure']($this->updates, ['from' => '2.0.0', 'to' => '2.0.2', 'since' => 4], 'another release');
+        $this->assertSame(1, $this->failure()['attempts'], 'counted per release');
+
+        $this->u['recordFailure']($this->updates, $at(5), 'not retried', false);
+        $this->assertSame([1, null], [$this->failure()['attempts'], $this->failure()['retry_after']]);
+    }
+
+    /** Booted, Finish dying: run again twice, then the failure is recorded and OWA runs with its schema updates pending. */
+    public function testFinishIsRunThreeTimesInAll(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('booted');
+
+        foreach ([1, 2] as $finishes) {
+            $finish = $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']);
+            $this->assertIsArray($finish, "run $finishes");
+            $this->assertSame($finishes, $this->u['readMarker']($this->root)['finishes']);
+            // Finish dies: the process ends, and the kernel lets the lock go.
+            flock($finish['hold']['handle'], LOCK_UN);
+            fclose($finish['hold']['handle']);
+        }
+
+        $this->assertNull($this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']), 'OWA boots');
+        $this->assertFileDoesNotExist($this->u['marker']($this->root));
+        $this->assertFalse($this->u['isLocked']($this->data));
+        $this->assertSame(self::NEW['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'), 'nothing is undone once it booted');
+        $this->assertSame([true, null], [$this->failure()['booted'], $this->failure()['retry_after']]);
+        $this->assertStringContainsString('stopped three times', $this->failure()['error']);
+    }
+
     /** Waiting for the other runs to end: every run of cli.php that starts stops, and the web and beacons carry on, as nothing has changed. */
     public function testWhileTheInstallerWaitsEveryRunStops(): void
     {
@@ -301,8 +349,9 @@ final class InstallerTest extends TestCase
         $this->assertFileDoesNotExist($this->root . '/modules/Base/Added.php', 'what 2.0.1 shipped and 2.0.0 does not goes');
         $this->assertFileDoesNotExist($this->u['marker']($this->root));
         $this->assertFalse($this->u['isLocked']($this->data));
-        $this->assertSame(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished. OWA 2.0.0 was put back.', 'booted' => false],
-            array_intersect_key($this->failure(), ['version' => 1, 'from' => 1, 'error' => 1, 'booted' => 1]), 'automatic updates skip 2.0.1 now');
+        $this->assertSame(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished. OWA 2.0.0 was put back.', 'booted' => false, 'attempts' => 1],
+            array_intersect_key($this->failure(), ['version' => 1, 'from' => 1, 'error' => 1, 'booted' => 1, 'attempts' => 1]));
+        $this->assertGreaterThanOrEqual(time() + 21600 - 5, $this->failure()['retry_after'], 'tried again 6 hours on');
     }
 
     /** Copied: the next two runs boot it, counting; the third puts the installed release back. Booted: finish, uncounted. */
@@ -326,6 +375,7 @@ final class InstallerTest extends TestCase
         $this->assertSame(0, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
         $this->assertSame($before, $this->snapshot());
         $this->assertSame('OWA 2.0.1 did not boot. OWA 2.0.0 was put back.', $this->failure()['error']);
+        $this->assertNull($this->failure()['retry_after'], 'a release that does not boot is not tried again');
 
         $this->marker('booted', ['boots' => 2]);
         $finish = $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']);

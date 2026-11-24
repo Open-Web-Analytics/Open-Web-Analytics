@@ -40,7 +40,7 @@
  * is, however the server's users and directories are arranged.
  *
  *   {format, from, to, phase, since, lock, updates, from_tar, to_tar,
- *    from_sha256, to_sha256, boots, schema_lease}
+ *    from_sha256, to_sha256, boots, schema_lease, finishes}
  *   phase  waiting  nothing has changed: the installer waits for the runs
  *                   of cli.php already going to end (running), and every
  *                   run that starts stops. With the lock free, the
@@ -52,6 +52,9 @@
  *                   boots counts the runs of cli.php that tried; at the third
  *                   the installed release is put back.
  *          booted   the new release booted; Finish has not completed.
+ *                   finishes counts the runs of cli.php that ran it again;
+ *                   after the third stops, the failure is recorded and the
+ *                   marker deleted.
  *                   schema_lease is the owner of the updates-apply lease
  *                   its schema updates hold, so a Finish run again after
  *                   one was killed takes that lease back.
@@ -148,14 +151,43 @@ return ( static function () {
         $writeFile( $marker( $root ), "<?php exit; ?>\n" . json_encode( $data, JSON_UNESCAPED_SLASHES ) . "\n" );
     };
 
-    /* A failed install, in the updates directory's last-failure.json (Downloads): automatic updates skip that release. */
-    $recordFailure = static function ( $updates, $from, $to, $error, $booted = false ) use ( $writeFile ) {
+    /*
+     * A failed install of the marker $m, in the updates directory's
+     * last-failure.json (Downloads). Automatic updates try that release again
+     * after retry_after, up to $retries attempts, $retry_wait seconds apart;
+     * with retry_after null they skip it until a newer release, or an install
+     * by hand. Not retried: a release that did not boot ($retry false), and
+     * one that booted. attempt is the marker's since: one install recorded
+     * twice (the copy failed, and putting back did too) counts once.
+     */
+    $retries    = 3;
+    $retry_wait = 21600;
 
-        $failure = [ 'format' => 1, 'version' => (string) $to, 'from' => (string) $from, 'error' => (string) $error, 'at' => time(), 'booted' => (bool) $booted ];
+    $recordFailure = static function ( $updates, array $m, $error, $retry = true, $booted = false ) use ( $writeFile, $retries, $retry_wait ) {
+
+        $file  = rtrim( (string) $updates, '/' ) . '/last-failure.json';
+        $was   = is_link( $file ) ? null : json_decode( (string) @file_get_contents( $file ), true );
+        $from  = (string) ( $m['from'] ?? '' );
+        $to    = (string) ( $m['to'] ?? '' );
+        $since = (int) ( $m['since'] ?? 0 );
+        $same  = is_array( $was ) && ( $was['version'] ?? null ) === $to && ( $was['from'] ?? null ) === $from && empty( $was['booted'] );
+        $tries = $same ? (int) ( $was['attempts'] ?? 1 ) + ( (int) ( $was['attempt'] ?? 0 ) === $since ? 0 : 1 ) : 1;
+
+        $failure = [
+            'format'      => 1,
+            'version'     => $to,
+            'from'        => $from,
+            'error'       => (string) $error,
+            'at'          => time(),
+            'booted'      => (bool) $booted,
+            'attempts'    => $tries,
+            'attempt'     => $since,
+            'retry_after' => $retry && ! $booted && $tries < $retries ? time() + $retry_wait : null,
+        ];
 
         try {
 
-            $writeFile( rtrim( (string) $updates, '/' ) . '/last-failure.json', json_encode( $failure, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
+            $writeFile( $file, json_encode( $failure, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
 
         } catch ( \RuntimeException $e ) {
 
@@ -758,7 +790,7 @@ return ( static function () {
      * ships and from_tar does not deleted, when to_tar's checks too. Holding
      * the lock. Returns the exit code; the marker goes once it is done.
      */
-    $putBack = static function ( $root, array $m, $why ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure ) {
+    $putBack = static function ( $root, array $m, $why, $retry = true ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure ) {
 
         $from = (string) ( $m['from'] ?? '' );
         $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'putting back %s', $from ) );
@@ -844,7 +876,7 @@ return ( static function () {
         }
 
         @unlink( $marker( $root ) );
-        $recordFailure( (string) ( $m['updates'] ?? '' ), $from, (string) ( $m['to'] ?? '' ), sprintf( '%s OWA %s was put back.', $why, $from ) );
+        $recordFailure( (string) ( $m['updates'] ?? '' ), $m, sprintf( '%s OWA %s was put back.', $why, $from ), $retry );
         $unlock( $hold );
         fwrite( STDERR, sprintf( "Installing OWA %s failed: %s OWA %s was put back.\n", $m['to'] ?? '', $why, $from ) );
 
@@ -871,6 +903,7 @@ return ( static function () {
         'readMarker'  => $readMarker,
         'writeMarker' => $writeMarker,
         'recordFailure' => $recordFailure,
+        'retries'     => $retries,
         'putBack'     => $putBack,
 
         /* The installed release's version, read as text from Core/Env.php; null when it is not a release version (a checkout says master). */
@@ -886,7 +919,7 @@ return ( static function () {
          * code to end with, or ['finish' => marker, 'hold' => lock] to boot
          * and run Finish first, whatever the command.
          */
-        'preboot' => static function ( $root, array $argv ) use ( $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker ) {
+        'preboot' => static function ( $root, array $argv ) use ( $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker, $recordFailure ) {
 
             $m = $readMarker( $root );
 
@@ -937,7 +970,7 @@ return ( static function () {
 
             if ( $phase === 'copied' && (int) ( $m['boots'] ?? 0 ) >= 2 ) {
 
-                return $putBack( $root, $m, sprintf( 'OWA %s did not boot.', $m['to'] ?? '' ) );
+                return $putBack( $root, $m, sprintf( 'OWA %s did not boot.', $m['to'] ?? '' ), false );
             }
 
             $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'finishing %s', $m['to'] ?? '' ) );
@@ -947,21 +980,33 @@ return ( static function () {
                 return $busy();
             }
 
-            if ( $phase === 'copied' ) {
+            // Booted: Finish ran and died. Run again twice; then the failure is
+            // recorded, the marker goes, and OWA runs with its schema updates
+            // pending, as after any failed schema update.
+            if ( $phase === 'booted' && (int) ( $m['finishes'] ?? 0 ) >= 2 ) {
 
-                $m['boots'] = (int) ( $m['boots'] ?? 0 ) + 1;
+                $error = sprintf( 'Finishing the install of OWA %s stopped three times before it completed.', $m['to'] ?? '' );
+                $recordFailure( (string) ( $m['updates'] ?? '' ), $m, $error, false, true );
+                @unlink( $marker( $root ) );
+                $unlock( $hold );
+                fwrite( STDERR, $error . "\n" );
 
-                try {
+                return null;
+            }
 
-                    $writeMarker( $root, $m );
+            $count       = $phase === 'copied' ? 'boots' : 'finishes';
+            $m[ $count ] = (int) ( $m[ $count ] ?? 0 ) + 1;
 
-                } catch ( \RuntimeException $e ) {
+            try {
 
-                    $unlock( $hold );
-                    fwrite( STDERR, $e->getMessage() . "\n" );
+                $writeMarker( $root, $m );
 
-                    return 1;
-                }
+            } catch ( \RuntimeException $e ) {
+
+                $unlock( $hold );
+                fwrite( STDERR, $e->getMessage() . "\n" );
+
+                return 1;
             }
 
             return [ 'finish' => $m, 'hold' => $hold ];

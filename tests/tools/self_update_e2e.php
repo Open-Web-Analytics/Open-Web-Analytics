@@ -36,8 +36,9 @@
  * asset-replaced, unwritable-directory, config-names-a-class, manual-install,
  * two-updates-directories, major-release, passwordless-database, copy-fails,
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
- * 2.0.90 put back and the retry), newer-release-after-a-failure and
- * installed-past.
+ * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
+ * finish-killed-in-the-schema-updates, newer-release-after-a-failure and
+ * installed-past. copy-fails runs out of its 3 attempts.
  *
  * Every listing it serves has 2.0.90 too: a failed install puts the
  * installed release back from its tarball, which the release check downloads.
@@ -552,6 +553,15 @@ function downloaded( $site, $version ) {
     return $dir !== null && is_file( "$dir/owa_{$version}_packaged.tar" ) && is_file( "$dir/owa_{$version}_packaged.tar.sig" );
 }
 
+/** Six hours on, for the failure recorded: its retry is due. */
+function due( $site ) {
+
+    $file = updatesDir( $site ) . '/last-failure.json';
+    $f    = json( $file );
+    check( is_array( $f ) && ! empty( $f['retry_after'] ), 'the failure is not to be tried again: ' . json_encode( $f ) );
+    file_put_contents( $file, json_encode( [ 'retry_after' => time() - 1 ] + $f ) );
+}
+
 function failure( $site ) {
 
     $dir = updatesDir( $site );
@@ -1035,8 +1045,22 @@ $scenarios = [
         check( $code === 0, "the restored release does not run:\n$out" );
         check( hasNotice( notices( $db ), 'install_failed:' . TO ), 'no "failed" notice' );
 
+        // Tried again 6 hours on, 3 attempts in all; then skipped.
         [ , $out ] = release_check( $site, $ca );
-        check( envVersion( $site ) === FROM && str_contains( $out, 'skipped' ), "the failed release was tried again:\n$out" );
+        check( envVersion( $site ) === FROM && str_contains( $out, 'it is tried again after' ), "the failed release was tried again at once:\n$out" );
+
+        foreach ( [ 2, 3 ] as $attempt ) {
+
+            due( $site );
+            release_check( $site, $ca );
+            check( envVersion( $site ) === FROM && ( failure( $site )['attempts'] ?? 0 ) === $attempt, "attempt $attempt was not made, or not put back: " . json_encode( failure( $site ) ) );
+        }
+
+        check( failure( $site )['retry_after'] === null, 'it is still to be tried again after the third attempt' );
+        [ , $out ] = release_check( $site, $ca );
+        check( str_contains( $out, 'failed before, so it is skipped' ), "the release was not skipped after 3 attempts:\n$out" );
+        next_run( $site, $ca );
+        check( hasNotice( notices( $db ), 'install_failed:' . TO . ':skipped' ), 'no notice that it is skipped now' );
 
         // Fixed: install it by hand, as the notice says.
         rmdir( $blocker );
@@ -1092,17 +1116,17 @@ $scenarios = [
         unlink( $fifo );
         file_put_contents( $fifo, 'half written' );
 
-        // The next run puts the installed release back, and it is skipped after.
+        // The next run puts the installed release back, and it is tried again 6 hours on.
         [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
         check( $code === 0 && envVersion( $site ) === FROM && ! file_exists( $marker ), "the run after the kill did not put " . FROM . " back (exit $code):\n$out" );
         check( str_contains( (string) ( failure( $site )['error'] ?? '' ), 'The copy stopped before it finished' ), 'last-failure.json does not say the copy was killed: ' . json_encode( failure( $site ) ) );
 
         [ , $out ] = release_check( $site, $ca );
-        check( envVersion( $site ) === FROM && str_contains( $out, 'skipped' ), "the killed install was tried again on its own:\n$out" );
+        check( envVersion( $site ) === FROM && str_contains( $out, 'it is tried again after' ), "the killed install was tried again at once:\n$out" );
 
-        // By hand, it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
-        check( $code === 0, "core-install --version exited $code:\n$out" );
+        due( $site );
+        [ $code, $out ] = release_check( $site, $ca );
+        check( $code === 0 && envVersion( $site ) === TO, "the killed install was not tried again when due (exit $code):\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },

@@ -235,6 +235,34 @@ class Downloads {
         $this->writeJson( $this->root . '/' . self::FAILURE, [ 'format' => self::FORMAT ] + $failure );
     }
 
+    /**
+     * Whether a failure could be recorded here now: a block written and
+     * deleted beside last-failure.json. An install whose failure could not be
+     * recorded would be tried again every hour.
+     *
+     * @return bool
+     */
+    public function canRecord() {
+
+        if ( $this->root === '' ) {
+
+            return false;
+        }
+
+        $probe = \OWA\Core\SafeFile::fresh( $this->root . '/write-test' );
+        $h     = \OWA\Core\SafeFile::create( $probe, 0600 );
+        $ok    = $h !== false && @fwrite( $h, str_repeat( "\0", 4096 ) ) === 4096 && fflush( $h );
+
+        if ( $h !== false ) {
+
+            fclose( $h );
+        }
+
+        @unlink( $probe );
+
+        return $ok;
+    }
+
     /** @return void */
     public function clearFailure() {
 
