@@ -70,7 +70,9 @@ final class ReleaseCheckTest extends TestCase
             if ($sink === null) {
                 return (string) file_get_contents($this->served[$url]);
             }
-            copy($this->served[$url], $sink);
+            $in = fopen($this->served[$url], 'rb');
+            stream_copy_to_stream($in, $sink);
+            fclose($in);
 
             return '';
         };
@@ -284,6 +286,36 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame([], array_values(array_filter($asked, fn ($u) => preg_match('#^https://example\.test/\d#', $u))), 'never the listing\'s address');
         $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar', $asked);
         $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar.sig', $asked);
+    }
+
+    /** Links the web user puts at the names a download writes, or as the updates directory, are replaced or passed over, never written through. */
+    public function testADownloadNeverWritesThroughALink(): void
+    {
+        $d = $this->downloads();
+        $d->ensureRoot();
+        $root   = $d->root();
+        $victim = $this->tmp . '/victim.php';
+        file_put_contents($victim, 'the cron user\'s');
+        $names = ['owa_2.1.0_packaged.tar.part', 'owa_2.1.0_packaged.tar', 'owa_2.1.0_packaged.tar.sig', Downloads::FAILURE];
+        foreach ($names as $name) {
+            symlink($victim, "$root/$name");
+        }
+
+        $result = $this->check(['2.1.0']);
+        $this->downloads()->writeFailure(['version' => '2.1.0', 'error' => 'a test']);
+
+        $this->assertSame(ReleaseCheck::WAITING, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertSame('the cron user\'s', file_get_contents($victim));
+        foreach ($names as $name) {
+            $this->assertFalse(is_link("$root/$name"), $name);
+        }
+        $this->assertTrue($this->downloads()->has('2.1.0'));
+
+        // The setting, or a directory found, that is a link is not the updates directory.
+        mkdir($this->tmp . '/elsewhere');
+        \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', $this->tmp . '/data/updates-' . str_repeat('e', 32));
+        symlink($this->tmp . '/elsewhere', $this->tmp . '/data/updates-' . str_repeat('e', 32));
+        $this->assertSame($root, $this->downloads()->root());
     }
 
     /** A proved tarball is a private copy: rewriting or replacing the file afterwards changes nothing that is read or installed. */

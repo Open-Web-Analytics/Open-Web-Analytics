@@ -111,7 +111,11 @@ final class ReleaseListingNetworkTest extends TestCase
         // Through the update host's /download/, which redirects to GitHub, as every download goes.
         $via = Releases::via($release, (string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_download_url'));
         $this->assertStringStartsWith('https://updates.openwebanalytics.com/download/', $via['asset_url']);
-        Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $tar);
+        $sink = fopen($tar, 'xb');
+        Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $sink);
+        if (is_resource($sink)) {
+            fclose($sink);
+        }
         $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
         unlink($tar);
 

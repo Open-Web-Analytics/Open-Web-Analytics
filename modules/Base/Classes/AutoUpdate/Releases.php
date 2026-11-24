@@ -76,7 +76,7 @@ class Releases {
     /**
      * Tests only: answers get() in place of the network, given its arguments.
      *
-     * @var (callable(string, int, string|null): string)|null
+     * @var (callable(string, int, resource|null): string)|null
      */
     public static $fetcher = null;
 
@@ -263,9 +263,9 @@ class Releases {
     /**
      * A GET's body, or a RuntimeException saying why there is none.
      *
-     * @param  string      $url
-     * @param  int         $timeout seconds
-     * @param  string|null $sink    a file to stream the body into instead
+     * @param  string        $url
+     * @param  int           $timeout seconds
+     * @param  resource|null $sink    an open file to stream the body into instead
      * @return string the body; '' when sunk to a file
      */
     public static function get( $url, $timeout, $sink = null ) {

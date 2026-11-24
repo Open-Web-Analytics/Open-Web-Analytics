@@ -81,17 +81,54 @@ return ( static function () {
         return is_array( $data ) ? $data : [];
     };
 
-    /* Write a JSON file under a temporary name and rename it into place; readable by the web user. */
-    $writeFile = static function ( $file, $contents ) {
+    /*
+     * A new file, opened with $flags ('x': never one that is there). $path is
+     * a name made afresh ($fresh): PHP resolves links in a path before it
+     * opens it, so a link the web user put at a name known in advance would
+     * be followed, a dangling one to create the file where it points. The
+     * file is renamed into place after: rename() replaces a link, never
+     * follows it. Made with $mode through the umask, not chmod() after,
+     * which follows a link; where umask() is disabled, with the process's
+     * own (on Windows it changes nothing, and neither would chmod()).
+     */
+    $fresh = static function ( $path ) {
 
-        $tmp = $file . '.tmp' . getmypid();
+        return $path . '-' . bin2hex( random_bytes( 16 ) );
+    };
 
-        if ( @file_put_contents( $tmp, $contents ) === false || ! @chmod( $tmp, 0644 ) || ! @rename( $tmp, $file ) ) {
+    $createFile = static function ( $path, $mode, $flags = 'xb' ) {
+
+        $umask = function_exists( 'umask' ) ? umask( 0777 & ~ $mode ) : null;
+        $h     = @fopen( (string) $path, $flags );
+
+        if ( $umask !== null ) {
+
+            umask( $umask );
+        }
+
+        return $h;
+    };
+
+    /* Write a file under a fresh name and rename it into place. */
+    $writeFile = static function ( $file, $contents, $mode = 0644 ) use ( $createFile, $fresh ) {
+
+        $tmp = $fresh( $file . '.tmp' );
+        $h   = $createFile( $tmp, $mode );
+        $ok  = $h !== false && @fwrite( $h, $contents ) === strlen( $contents );
+        $ok  = $h !== false && fclose( $h ) && $ok;
+
+        if ( ! $ok || ! @rename( $tmp, $file ) ) {
 
             @unlink( $tmp );
 
             throw new \RuntimeException( sprintf( 'Could not write %s.', $file ) );
         }
+    };
+
+    /* Whether the copy writes $rel: not owa-data/, the installation's own, which the web user writes too (a new installation unpacks it from the tarball). */
+    $copies = static function ( $rel ) {
+
+        return $rel !== 'owa-data' && strncmp( (string) $rel, 'owa-data/', 9 ) !== 0;
     };
 
     $writeMarker = static function ( $root, array $data ) use ( $marker, $writeFile ) {
@@ -138,11 +175,11 @@ return ( static function () {
         return @rmdir( $dir );
     };
 
-    /* Every updates-<32 hex>/ in the data directory; there should be one at most. */
+    /* Every updates-<32 hex>/ in the data directory, not a link; there should be one at most. */
     $updatesDirs = static function ( $data ) {
 
         return array_values( array_filter( (array) glob( rtrim( (string) $data, '/' ) . '/updates-*', GLOB_ONLYDIR ),
-            static fn ( $d ) => (bool) preg_match( '#/updates-[0-9a-f]{32}$#', (string) $d ) ) );
+            static fn ( $d ) => ! is_link( (string) $d ) && (bool) preg_match( '#/updates-[0-9a-f]{32}$#', (string) $d ) ) );
     };
 
     /*
@@ -167,12 +204,19 @@ return ( static function () {
 
         $dir = rtrim( (string) $data, '/' ) . '/updates-' . bin2hex( random_bytes( 16 ) );
 
-        if ( ! @mkdir( $dir, 0711 ) ) {
+        // The mode through the umask: chmod() after would follow a link put there in between.
+        $umask = function_exists( 'umask' ) ? umask( 0066 ) : null;
+        $made  = @mkdir( $dir, 0711 );
+
+        if ( $umask !== null ) {
+
+            umask( $umask );
+        }
+
+        if ( ! $made ) {
 
             return null;
         }
-
-        @chmod( $dir, 0711 );
         $found = $updatesDirs( $data );
 
         return count( $found ) === 1 ? (string) $found[0] : null;
@@ -270,7 +314,7 @@ return ( static function () {
      * for the operator: "install 2.0.1", "release check". $no_flock: as where
      * the filesystem has none (a test's).
      */
-    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine ) {
+    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine, $createFile ) {
 
         $file  = rtrim( (string) $data, '/' ) . '/updating';
         $stale = false;
@@ -365,14 +409,12 @@ return ( static function () {
         $token = bin2hex( random_bytes( 8 ) );
         $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
         $tmp   = $file . '.new-' . bin2hex( random_bytes( 8 ) );
-        $h     = @fopen( $tmp, 'x+' );
+        $h     = $createFile( $tmp, 0644, 'x+' );
 
         if ( $h === false ) {
 
             return null;
         }
-
-        @chmod( $tmp, 0644 );
 
         fwrite( $h, $line );
         fflush( $h );
@@ -386,14 +428,12 @@ return ( static function () {
         if ( ! $placed && ! file_exists( $file ) && ! is_link( $file ) ) {
 
             fclose( $h );
-            $h = @fopen( $file, 'x+' );
+            $h = $createFile( $file, 0644, 'x+' );
 
             if ( $h === false ) {
 
                 return null;
             }
-
-            @chmod( $file, 0644 );
 
             fwrite( $h, $line );
             fflush( $h );
@@ -471,14 +511,14 @@ return ( static function () {
      * its target and renamed over it (keeping the target's mode), then each
      * of $old_files the release does not ship deleted, with the directories
      * that leaves empty; Core/Env.php, which says the version, renamed into
-     * place last.
+     * place last. Nothing in owa-data/ is written or deleted ($copies).
      * $tar is a handle, read from the start; Tar is loaded by the caller.
      * Throws at the first failure, leaving the files mixed.
      *
      * @param resource     $tar
      * @param list<string> $old_files the replaced release's files, relative to $root
      */
-    $apply = static function ( $root, $tar, array $old_files ) {
+    $apply = static function ( $root, $tar, array $old_files ) use ( $copies, $createFile, $fresh ) {
 
         $root  = rtrim( (string) $root, '/' );
         $files = [];
@@ -494,7 +534,12 @@ return ( static function () {
 
         try {
 
-            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env ) {
+            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env, $copies, $createFile, $fresh ) {
+
+                if ( ! $copies( $rel ) ) {
+
+                    return;
+                }
 
                 $target = $root . '/' . $rel;
 
@@ -537,8 +582,8 @@ return ( static function () {
                     throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
                 }
 
-                $tmp = $target . '.owa-update';
-                $out = @fopen( $tmp, 'wb' );
+                $tmp = $fresh( $target . '.owa-update' );
+                $out = $createFile( $tmp, 0600 );
 
                 if ( $out === false ) {
 
@@ -591,7 +636,7 @@ return ( static function () {
 
                 $rel = (string) $rel;
 
-                if ( isset( $files[ $rel ] ) || $rel === '' || str_contains( '/' . $rel . '/', '/../' ) ) {
+                if ( isset( $files[ $rel ] ) || $rel === '' || str_contains( '/' . $rel . '/', '/../' ) || ! $copies( $rel ) ) {
 
                     continue;
                 }
@@ -735,6 +780,10 @@ return ( static function () {
         'unlock'      => $unlock,
         'touchLock'   => $touchLock,
         'remove'      => $remove,
+        'fresh'       => $fresh,
+        'createFile'  => $createFile,
+        'writeFile'   => $writeFile,
+        'copies'      => $copies,
         'apply'       => $apply,
         'marker'      => $marker,
         'readMarker'  => $readMarker,

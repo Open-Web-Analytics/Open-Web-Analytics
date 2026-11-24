@@ -131,6 +131,72 @@ final class InstallerTest extends TestCase
         $this->assertSame([], $this->leftovers(), 'no temporary file left');
     }
 
+    /** owa-data/ is the installation's, and the web user writes it: the copy neither writes nor deletes there, so a link planted in it leads nowhere. */
+    public function testTheCopyLeavesOwaDataAlone(): void
+    {
+        $this->release('2.0.2', self::NEW + [
+            'owa-data/index.php'      => '<?php // the release\'s stub',
+            'owa-data/logs/index.php' => '<?php // the release\'s stub',
+            'owa-data/geo/index.php'  => '<?php // the release\'s stub',
+        ]);
+        file_put_contents($this->tmp . '/victim.php', 'the cron user\'s');
+        mkdir($this->tmp . '/elsewhere');
+        symlink($this->tmp . '/victim.php', $this->root . '/owa-data/index.php.owa-update');
+        symlink($this->tmp . '/victim.php', $this->root . '/owa-data/logs/index.php');
+        symlink($this->tmp . '/elsewhere', $this->root . '/owa-data/geo');
+
+        $this->u['apply']($this->root, $this->open('2.0.2'), array_merge(Tar::files($this->open('2.0.0')), ['owa-data/logs/errors.txt']));
+
+        $this->assertSame('new cli', file_get_contents($this->root . '/cli.php'));
+        $this->assertSame('the cron user\'s', file_get_contents($this->tmp . '/victim.php'));
+        $this->assertSame([], array_diff((array) scandir($this->tmp . '/elsewhere'), ['.', '..']));
+        $this->assertFileDoesNotExist($this->root . '/owa-data/index.php', 'not written');
+        $this->assertFileExists($this->root . '/owa-data/logs/errors.txt', 'not deleted, though the old release is said to ship it');
+        $this->assertTrue(is_link($this->root . '/owa-data/logs/index.php'), 'left as it is');
+    }
+
+    /** A file the updater creates is never one that is there: a link is refused, or replaced by the rename, never written through; its mode is its own whatever the umask. */
+    public function testNoWriteFollowsALink(): void
+    {
+        $victim = $this->tmp . '/victim.php';
+        file_put_contents($victim, 'the cron user\'s');
+        chmod($victim, 0640);
+        symlink($victim, $this->data . '/link');
+
+        $this->assertFalse($this->u['createFile']($this->data . '/link', 0600), 'never one that is there');
+        $this->assertNotSame($this->u['fresh']('a'), $this->u['fresh']('a'), 'so the names are made afresh: PHP follows a link, a dangling one too, to open');
+
+        $umask = umask(0077);
+        try {
+            $this->u['writeFile']($this->data . '/link', 'written');
+            $dir = (string) $this->u['updatesDir']($this->tmp . '/other', true);
+        } finally {
+            umask($umask);
+        }
+
+        $this->assertSame('the cron user\'s', file_get_contents($victim));
+        $this->assertSame('0640', sprintf('%04o', fileperms($victim) & 0777));
+        $this->assertFalse(is_link($this->data . '/link'));
+        $this->assertSame('written', file_get_contents($this->data . '/link'));
+        $this->assertSame('0644', sprintf('%04o', fileperms($this->data . '/link') & 0777), 'readable by the web user, whatever the umask');
+        $this->assertSame([], glob($this->data . '/link.tmp*'));
+        $this->assertSame('', $dir, 'no data directory there');
+
+        mkdir($this->tmp . '/other');
+        umask(0077);
+        try {
+            $dir = (string) $this->u['updatesDir']($this->tmp . '/other', true);
+        } finally {
+            umask($umask);
+        }
+        $this->assertSame('0711', sprintf('%04o', fileperms($dir) & 0777), 'whatever the umask');
+
+        // A link named like the updates directory is not it.
+        symlink($this->tmp . '/elsewhere', $this->tmp . '/other/updates-' . str_repeat('d', 32));
+        mkdir($this->tmp . '/elsewhere');
+        $this->assertSame($dir, $this->u['updatesDir']($this->tmp . '/other'));
+    }
+
     /** A copy that cannot write is put back from the installed release's tarball by the same closure: only what it changed is written. */
     public function testAFailedCopyIsPutBack(): void
     {
@@ -516,7 +582,7 @@ final class InstallerTest extends TestCase
 
     private function leftovers(): array
     {
-        return array_values(array_filter(array_keys($this->snapshot()), static fn ($p) => str_ends_with($p, '.owa-update') || str_contains($p, '.tmp')));
+        return array_values(array_filter(array_keys($this->snapshot()), static fn ($p) => str_contains($p, '.owa-update') || str_contains($p, '.tmp')));
     }
 
     private function failure(): array
