@@ -1,5 +1,10 @@
 <?php
 
+// Automatic updates: the 503 maintenance page index.php serves, before any OWA file loads (updater.php).
+if ((require __DIR__ . '/updater.php')['serveMaintenance'](__DIR__)) {
+    exit;
+}
+
 require_once(__DIR__ . '/owa.php');
 
 /**
