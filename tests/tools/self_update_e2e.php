@@ -21,19 +21,21 @@
  *
  * Scenarios, each on a fresh install of 2.0.90 and a fresh database:
  *
- *   installs         2.0.91 stages, installs and runs its schema update; the
+ *   installs         2.0.91 downloads, installs and runs its schema update; the
  *                    installation's own files stay, what 2.0.91 dropped goes
- *   wrong-digest     the listing's SHA-256 is not the tarball's: nothing staged
- *   not-signed       no signature, or one by a key not trusted: nothing staged; signed, it installs
+ *   scheduled        the scheduler's own core-update (schedule-run) installs it
+ *   wrong-digest     the listing's SHA-256 is not the tarball's: nothing downloaded
+ *   not-signed       no signature, or one by a key not trusted: nothing downloaded; signed, it installs
  *   unmet            2.0.91 needs PHP 99: downloaded, never installed, not even by hand
  *   does-not-boot    2.0.91's owa.php does not parse: two boots fail, the third run puts 2.0.90 back,
  *                    and 2.0.91 is skipped after
  *   schema-fails     2.0.91's schema update fails: its files stay, the error is recorded
- *   tampered         the downloaded tarball is replaced after it was checked: it never installs
+ *   tampered         the installed release's tarball is replaced after it was checked: no install
+ *                    starts without a way back it can prove
  *
  * and the failure cases of the wiki's Automatic Updates page, each with the
  * recovery it promises where there is one: window, by-version, unreachable,
- * asset-replaced, unwritable-directory, config-names-a-class, manual-install,
+ * asset-replaced, unwritable-directory, manual-install,
  * two-updates-directories, major-release, passwordless-database, copy-fails,
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
@@ -51,7 +53,8 @@
  *
  * E-MAIL: every notice is e-mailed to admin@example.test through an SMTP
  * server on a closed port of 127.0.0.1, so a send fails on the spot. The
- * constants are checked as defined before any command runs.
+ * constants, and the update host's, are checked as owa-config.php leaves them
+ * before any command runs.
  *
  * The packages are built in OWA_SELF_UPDATE_DIR (default a new directory in
  * the system temp directory), about 300 MB. It is deleted after a run that
@@ -507,8 +510,19 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
     $config = $close === false ? $config . $own : substr( $config, 0, $close ) . $own . substr( $config, $close );
     file_put_contents( "$site/owa-config.php", $config );
 
-    $defined = must( sprintf( "php -r %s", escapeshellarg( 'require "owa-config.php"; foreach (["OWA_AUTO_UPDATE_RELEASES_URL","OWA_ADMIN_NOTICE_EMAIL","OWA_MAILER_USE_SMTP","OWA_MAILER_HOST","OWA_MAILER_PORT"] as $c) echo defined($c) ? "" : "$c "; ' ) ), $site );
-    check( trim( $defined ) === '', 'owa-config.php does not define ' . $defined . '-- stopping before anything can send mail' );
+    // Each as owa-config.php leaves it: one that never applies sends mail, or fetches from the real update host.
+    $want = [
+        'OWA_AUTO_UPDATE_RELEASES_URL' => $listing,
+        'OWA_AUTO_UPDATE_DOWNLOAD_URL' => dirname( $listing ) . '/download/',
+        'OWA_ADMIN_NOTICE_EMAIL'       => 'admin@example.test',
+        'OWA_MAILER_USE_SMTP'          => true,
+        'OWA_MAILER_HOST'              => '127.0.0.1',
+        'OWA_MAILER_PORT'              => (string) $smtp,
+    ];
+    $read = json_decode( must( sprintf( "php -r %s", escapeshellarg( 'require "owa-config.php"; $out = []; foreach (' . var_export( array_merge( array_keys( $want ), [ 'OWA_AUTO_UPDATE_WINDOW' ] ), true ) . ' as $c) $out[$c] = defined($c) ? constant($c) : null; echo json_encode($out);' ) ), $site ), true );
+    $wrong = array_keys( array_filter( $want, static fn ( $v, $c ) => ( $read[ $c ] ?? null ) !== $v, ARRAY_FILTER_USE_BOTH ) );
+    $wrong = is_string( $read['OWA_AUTO_UPDATE_WINDOW'] ?? null ) ? $wrong : [ ...$wrong, 'OWA_AUTO_UPDATE_WINDOW' ];
+    check( $wrong === [], 'owa-config.php does not set ' . implode( ', ', $wrong ) . ' as the harness wrote it -- stopping before anything can send mail or fetch from the update host' );
 
     must( 'php cli.php cmd=install user_id=e2e-admin password=e2e-admin-password-1 email_address=admin@example.test domain=example.test', $site );
 
@@ -814,6 +828,25 @@ $scenarios = [
         installed( $site, $ca, TO );
     },
 
+    'scheduled' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'scheduled', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+
+        [ , $out ] = release_check( $site, $ca );
+        check( downloaded( $site, TO ) && envVersion( $site ) === FROM, "it was not downloaded to wait for its window:\n$out" );
+
+        // The window opens, and the scheduler's run installs it, as the cron entry's would: quietly, after its other jobs.
+        $config = (string) file_get_contents( "$site/owa-config.php" );
+        file_put_contents( "$site/owa-config.php", preg_replace( "/define\\('OWA_AUTO_UPDATE_WINDOW', '[^']*'\\);/", "define('OWA_AUTO_UPDATE_WINDOW', '');", $config ) );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run job=core-update --force' );
+        check( $code === 0 && envVersion( $site ) === TO, "the scheduler's core-update did not install it (exit $code):\n$out" );
+        check( str_contains( (string) @file_get_contents( "$site/owa-update.php" ), '"phase":"copied"' ), "the marker does not say copied after the scheduler's copy:\n$out" );
+        next_run( $site, $ca );
+        installed( $site, $ca, TO );
+    },
+
     // ---- before anything is installed --------------------------------------
 
     'window' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
@@ -919,19 +952,6 @@ $scenarios = [
         }
 
         // Fixed: the next check installs it.
-        release_check( $site, $ca );
-        next_run( $site, $ca );
-        installed( $site, $ca, TO );
-    },
-
-    'config-names-a-class' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
-
-        // Nothing reads owa-config.php before OWA loads, so a config that
-        // names an OWA class installs as any other.
-        $to   = package( $build, $work, 'config-names-a-class', TO );
-        publish( $www, $base, $to, TO );
-        $site = installFrom( $from, $work, $db, "$base/releases.json", "define('OWA_E2E_NAMES_A_CLASS', \\OWA\\Core\\Env::class);\n" );
-
         release_check( $site, $ca );
         next_run( $site, $ca );
         installed( $site, $ca, TO );

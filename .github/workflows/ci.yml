@@ -82,9 +82,9 @@ jobs:
       - name: Unit tests (PHPUnit)
         run: composer run-script test
 
-      # The release check against the real GitHub releases: tags, the tarball
-      # asset's name and digest, and a download that matches it. Once, not per
-      # PHP version: runners share the API's rate limit.
+      # The release check against the real listing, through the update host:
+      # tags, the tarball asset's name and digest, and a download that matches
+      # it. Once, not per PHP version: runners share GitHub's rate limit behind it.
       - name: Release listing (network)
         if: matrix.php == '8.2'
         env:
@@ -415,7 +415,7 @@ jobs:
           npm ci
           npm run build
 
-      - name: Stage, install and recover
+      - name: Download, install and recover
         run: php tests/tools/self_update_e2e.php
 
   e2e:
