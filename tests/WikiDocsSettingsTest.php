@@ -123,6 +123,12 @@ final class WikiDocsSettingsTest extends TestCase
         $this->assertGreaterThan( 90, $checked );
     }
 
+    /** A placeholder such as <version> is a description's text, not a tag to strip; escaped, so the wiki shows it. */
+    public function testAPlaceholderInADescriptionIsKept(): void
+    {
+        $this->assertStringContainsString( '&lt;this>/&lt;version>/owa_&lt;version>_packaged.tar', self::generate( 'settings' ) );
+    }
+
     public function testInternalSettingsAreLeftOut(): void
     {
         $out = self::generate( 'settings' );

@@ -269,11 +269,10 @@ return ( static function () {
 
     /*
      * The install lock, owa-data/updating. It exists while a process holds
-     * it: the installer from its checks to the end of the copy, Finish, a
-     * release being put back, or Step 1 while it writes staged.json or
-     * deletes a staging. Its one line says who ("install 2.0.1, pid 4242,
-     * since ..."). Whoever finds it held stops and tries again on a later
-     * run.
+     * it: the installer from its checks to the end of the copy, Finish, or a
+     * release being put back. Its one line says who ("install 2.0.1, pid
+     * 4242, since ..."). Whoever finds it held stops and tries again on a
+     * later run.
      *
      * Taken by creating it, which only one process can do (link() of a file
      * made and flocked under a temporary name, which fails when updating

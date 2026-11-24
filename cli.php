@@ -24,7 +24,7 @@ if (!OWA_CLI)
 
 // Automatic updates (updater.php `preboot`), before any OWA file loads: an
 // install the marker says is under way is waited for, put back, or finished.
-// Finishing boots the new release and runs Step 4 before the command.
+// Finishing boots the new release and runs Finish before the command.
 // $owa_running, taken first, is held until this run ends: an install copies
 // only once no other run of cli.php holds it (updater.php `running`).
 // Mid-copy, the updater.php beside a new cli.php may be one without it.
@@ -49,7 +49,9 @@ unset($owa_update);
 // Parse the command line. See Lib::parseCliArgs() for the accepted forms.
 $params = \OWA\Core\Lib::parseCliArgs($_SERVER['argv'] ?? []);
 
-// Exit codes: 0 done, 1 the command failed, 2 the command line is wrong.
+// Exit codes: 0 done, 1 the command failed, 2 the command line is wrong. Before
+// this, updater.php `preboot` exits 75 while an install runs, and 1 when
+// putting a release back failed or the marker cannot be read.
 if (!is_array($params)) {
     fwrite(STDERR, $params . "\n");
     exit(2);
@@ -89,7 +91,7 @@ $config = [
 
 $owa = $owa ?? new owa( $config );
 
-// A failed install leaves its error in its install.json; the notices it calls
+// A failed install leaves its error in last-failure.json; the notices it calls
 // for are raised once each, by whichever booted run comes next.
 \OWA\Module\Base\Classes\AutoUpdate\InstallNotices::fromDisk();
 
@@ -140,7 +142,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
 }
 
-// An install cmd=core-update proved: the copy, last, once the
+// An install cmd=core-update or cmd=core-install proved: the copy, last, once the
 // command and every job have finished. It exits (Classes\AutoUpdate\Install).
 \OWA\Module\Base\Classes\AutoUpdate\Install::run($owa_running);
 

@@ -8,7 +8,7 @@ use OWA\Module\Base\Classes\AutoUpdate\InstallNotices;
 use OWA\Module\Base\Classes\AutoUpdate\Downloads;
 
 /**
- * Step 4: finish, the parts that run without a fresh process: the clean-up
+ * Finish, the parts that run without a fresh process: the clean-up
  * after a successful install, the notices a failing one raises, and
  * cmd=core-update-schema keeping out of an install's way.
  */
@@ -80,7 +80,7 @@ final class InstallFinishTest extends CliControllerTestCase
     }
 
     /** cmd=core-update-schema by hand waits for an install and takes no lock of its own; the installer itself runs it. */
-    public function testCmdUpdateWaitsForAnInstall(): void
+    public function testCoreUpdateSchemaWaitsForAnInstall(): void
     {
         $h = fopen(InstallLock::$path, 'c');
         flock($h, LOCK_EX);

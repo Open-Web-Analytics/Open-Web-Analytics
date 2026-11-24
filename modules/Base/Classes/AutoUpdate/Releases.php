@@ -146,8 +146,9 @@ class Releases {
     }
 
     /**
-     * One named release, for an operator who chose it: not a draft, and
-     * shipping the tarball; a pre-release is theirs to choose.
+     * The installed release in the listing (ReleaseCheck::ensureInstalled()):
+     * not a draft, and shipping the tarball; a pre-release too, since it is
+     * what is installed.
      *
      * @param  array<int, mixed> $releases decoded from the listing
      * @param  string            $version

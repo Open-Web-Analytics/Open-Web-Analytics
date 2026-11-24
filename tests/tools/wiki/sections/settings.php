@@ -130,11 +130,12 @@ return function ( $arg = null ) {
         $s = preg_replace( '#<br\s*/?>#i', ' ', $s );
         $s = preg_replace( '#</?(strong|b)>#i', '**', $s );
         $s = preg_replace( '#</?(em|i)>#i', '_', $s );
-        $s = strip_tags( $s );
+        // HTML tags go; a placeholder such as <version> stays, escaped, or the wiki hides it as a tag.
+        $s = preg_replace( '#</?(?:a|abbr|code|div|li|ol|p|small|span|ul)\b[^>]*>#i', '', $s );
         $s = html_entity_decode( $s, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
         $s = preg_replace( '/\s+/', ' ', $s );
 
-        return str_replace( '|', '\\|', trim( $s ) );
+        return str_replace( [ '|', '<' ], [ '\\|', '&lt;' ], trim( $s ) );
     };
 
     $value = function ( $v ) {

@@ -125,8 +125,10 @@ class Install {
     /**
      * cmd=core-install --version=<x.y.z> [--force]: that release installed
      * now, whatever the automatic update settings say, its tarball and
-     * signature fetched from the download URL by its version every time,
-     * with no listing (Releases::byTag()). One not newer than the installed
+     * signature fetched from the download URL by its version every time
+     * (Releases::byTag()); the listing is read only when the installed
+     * release's tarball, which a failed install puts back, must be
+     * downloaded too (ReleaseCheck::ensureInstalled()). One not newer than the installed
      * release only with $force, and never one older than the database
      * schema. A failure recorded for it is cleared: whoever installs by hand
      * has dealt with it. A release refused after its download is deleted.

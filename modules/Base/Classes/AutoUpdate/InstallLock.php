@@ -7,8 +7,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  *
  * It exists while one process holds it, and its line says who: an install
  * from its checks to the end of the copy (Install), Finish, a release being
- * put back (updater.php `preboot`), or Step 1: release check while it writes
- * staged.json or deletes a staging. Whoever finds it held stops and tries
+ * put back (updater.php `preboot`). Whoever finds it held stops and tries
  * again on a later run, cmd=core-update-schema by hand included.
  */
 class InstallLock {

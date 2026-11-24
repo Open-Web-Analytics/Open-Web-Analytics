@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 /**
  * Saves the install's Updates page. The release check reads the settings at
- * its next run, within six hours, or at once with "Check now".
+ * its next run, within an hour, or at once with "Check now".
  */
 class OptionsUpdatesUpdate extends OptionsUpdate {
 
