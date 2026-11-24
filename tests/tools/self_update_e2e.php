@@ -1099,6 +1099,8 @@ $scenarios = [
 
         [ $status, $body ] = web( $webPort, 'index.php' );
         check( $status === 503 && str_contains( $body, 'OWA is updating' ), "index.php answered $status during the install" );
+        [ $status, $body ] = web( $webPort, 'install.php' );
+        check( $status === 503 && str_contains( $body, 'OWA is updating' ), "install.php answered $status during the install" );
         [ $status, $body ] = web( $webPort, 'api/index.php' );
         check( $status === 503 && str_contains( $body, '"busy"' ), "the REST API answered $status during the install" );
         [ $status, $body ] = web( $webPort, 'owa-update.php' );
