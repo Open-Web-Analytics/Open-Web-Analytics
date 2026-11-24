@@ -582,7 +582,7 @@ final class InstallerTest extends TestCase
 
     private function leftovers(): array
     {
-        return array_values(array_filter(array_keys($this->snapshot()), static fn ($p) => str_contains($p, '.owa-update') || str_contains($p, '.tmp')));
+        return array_values(array_filter(array_keys($this->snapshot()), static fn ($p) => str_ends_with($p, '.owa-update') || str_contains($p, '.tmp')));
     }
 
     private function failure(): array

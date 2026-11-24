@@ -35,19 +35,29 @@ final class ReleaseListingNetworkTest extends TestCase
             $agent = (string) \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent');
             Releases::$fetcher = static function ($url, $timeout, $sink) use ($token, $agent) {
                 $client = new \GuzzleHttp\Client(['timeout' => $timeout, 'allow_redirects' => false]);
+                // As Releases::get(): one stream, emptied for each response, the handle left open.
+                $body = $sink === null ? null : new \GuzzleHttp\Psr7\Stream($sink);
 
-                for ($hops = 0; $hops < 5; $hops++) {
-                    $host = (string) parse_url($url, PHP_URL_HOST);
-                    $r    = $client->request('GET', $url, array_filter([
-                        'headers' => ['User-Agent' => $agent, 'Accept' => 'application/vnd.github+json, */*;q=0.1']
-                            + ($host === 'api.github.com' ? ['Authorization' => 'Bearer ' . $token] : []),
-                        'sink'    => $sink,
-                    ]));
+                try {
+                    for ($hops = 0; $hops < 5; $hops++) {
+                        if ($sink !== null) {
+                            ftruncate($sink, 0);
+                            rewind($sink);
+                        }
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        $r    = $client->request('GET', $url, array_filter([
+                            'headers' => ['User-Agent' => $agent, 'Accept' => 'application/vnd.github+json, */*;q=0.1']
+                                + ($host === 'api.github.com' ? ['Authorization' => 'Bearer ' . $token] : []),
+                            'sink'    => $body,
+                        ]));
 
-                    if ($r->getStatusCode() < 300 || $r->getStatusCode() >= 400) {
-                        return $sink === null ? (string) $r->getBody() : '';
+                        if ($r->getStatusCode() < 300 || $r->getStatusCode() >= 400) {
+                            return $sink === null ? (string) $r->getBody() : '';
+                        }
+                        $url = $r->getHeaderLine('Location');
                     }
-                    $url = $r->getHeaderLine('Location');
+                } finally {
+                    $body?->detach();
                 }
 
                 throw new \RuntimeException("Fetching $url failed: too many redirects");
@@ -113,9 +123,7 @@ final class ReleaseListingNetworkTest extends TestCase
         $this->assertStringStartsWith('https://updates.openwebanalytics.com/download/', $via['asset_url']);
         $sink = fopen($tar, 'xb');
         Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $sink);
-        if (is_resource($sink)) {
-            fclose($sink);
-        }
+        fclose($sink);
         $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
         unlink($tar);
 

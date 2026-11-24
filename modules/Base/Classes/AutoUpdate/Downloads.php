@@ -523,11 +523,7 @@ class Downloads {
 
             } finally {
 
-                // Guzzle closes it with the response; a test's fetcher may not.
-                if ( is_resource( $sink ) ) {
-
-                    fclose( $sink );
-                }
+                fclose( $sink );
             }
 
             $actual = (string) hash_file( 'sha256', $part );

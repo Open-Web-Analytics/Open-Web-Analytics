@@ -511,14 +511,16 @@ return ( static function () {
      * its target and renamed over it (keeping the target's mode), then each
      * of $old_files the release does not ship deleted, with the directories
      * that leaves empty; Core/Env.php, which says the version, renamed into
-     * place last. Nothing in owa-data/ is written or deleted ($copies).
+     * place last. Nothing in owa-data/ is written or deleted ($copies): the
+     * web user writes there. Everywhere else is OWA's code, which the cron
+     * user alone writes where the web server runs as another user.
      * $tar is a handle, read from the start; Tar is loaded by the caller.
      * Throws at the first failure, leaving the files mixed.
      *
      * @param resource     $tar
      * @param list<string> $old_files the replaced release's files, relative to $root
      */
-    $apply = static function ( $root, $tar, array $old_files ) use ( $copies, $createFile, $fresh ) {
+    $apply = static function ( $root, $tar, array $old_files ) use ( $copies ) {
 
         $root  = rtrim( (string) $root, '/' );
         $files = [];
@@ -534,7 +536,7 @@ return ( static function () {
 
         try {
 
-            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env, $copies, $createFile, $fresh ) {
+            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env, $copies ) {
 
                 if ( ! $copies( $rel ) ) {
 
@@ -582,8 +584,8 @@ return ( static function () {
                     throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
                 }
 
-                $tmp = $fresh( $target . '.owa-update' );
-                $out = $createFile( $tmp, 0600 );
+                $tmp = $target . '.owa-update';
+                $out = @fopen( $tmp, 'wb' );
 
                 if ( $out === false ) {
 
