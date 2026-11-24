@@ -298,7 +298,7 @@ class ReleaseCheck {
             ? array_merge( [ sprintf( CoreAPI::t( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:' ), $v ) ], $judged['rollback'] )
             : [];
         $problems = array_merge( $judged['problems'], $rollback, $missing === null ? [] : [ $missing ] );
-        $url      = sprintf( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/%s', $v );
+        $url      = Releases::page( $v );
 
         if ( $problems ) {
 

@@ -192,7 +192,8 @@ class NotificationManager {
                 // exists and is what people call it anyway.
                 'title'        => (string) ( $release['name'] ?? $release['tag_name'] ?? \OWA\Core\CoreAPI::t( 'Release' ) ),
                 'body'         => (string) ( $release['body'] ?? '' ),
-                'url'          => (string) ( $release['html_url'] ?? '' ),
+                // The update host's address for the release's page, not GitHub's.
+                'url'          => isset( $release['tag_name'] ) ? AutoUpdate\Releases::page( (string) $release['tag_name'] ) : '',
                 'published_at' => $published ?: 0,
             ];
         }

@@ -194,6 +194,7 @@ final class ReleaseCheckTest extends TestCase
 
         $this->assertSame(ReleaseCheck::WAITING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('2.1.0 installs between 02:00 and 06:00 (Europe/London), Sat, Sun.', implode("\n", $result['lines']));
+        $this->assertStringContainsString('(a minor release): https://updates.openwebanalytics.com/tag/2.1.0', implode("\n", $result['lines']), 'its page on the update host, not the listing\'s GitHub address');
         $d = $this->downloads();
         $this->assertSame('new cli', Tar::member($d->tarball('2.1.0'), 'cli.php'), 'the tarball itself, not unpacked');
         $this->assertTrue($d->has('2.0.0'), 'the installed release\'s tarball, which a failed install puts back');
@@ -224,6 +225,15 @@ final class ReleaseCheckTest extends TestCase
 
         $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.1.0'], ['window' => ''])['outcome'], 'no window: at once');
         $this->dropPending();
+    }
+
+    /** By version, with no listing: its downloads and its page are the update host's. */
+    public function testAReleaseByVersionIsTheUpdateHosts(): void
+    {
+        $r = Releases::byTag('2.1.0', '2.0.0', 'https://updates.openwebanalytics.com/download/');
+
+        $this->assertSame('https://updates.openwebanalytics.com/download/2.1.0/owa_2.1.0_packaged.tar', $r['asset_url']);
+        $this->assertSame('https://updates.openwebanalytics.com/tag/2.1.0', $r['url']);
     }
 
     /** A run that started before an install finished runs the release it replaced: it installs nothing. */
