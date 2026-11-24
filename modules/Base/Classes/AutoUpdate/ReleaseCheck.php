@@ -294,7 +294,10 @@ class ReleaseCheck {
         }
 
         $judged   = $this->judge( $v );
-        $problems = array_merge( $judged['problems'], $missing === null ? [] : [ $missing ] );
+        $rollback = $judged['rollback']
+            ? array_merge( [ sprintf( CoreAPI::t( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:' ), $v ) ], $judged['rollback'] )
+            : [];
+        $problems = array_merge( $judged['problems'], $rollback, $missing === null ? [] : [ $missing ] );
         $url      = sprintf( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/%s', $v );
 
         if ( $problems ) {
@@ -466,6 +469,7 @@ class ReleaseCheck {
             $lines[] = $marker === []
                 ? 'owa-update.php, the install marker, cannot be read.'
                 : sprintf( 'Installing %s over %s: %s since %s UTC.', $marker['to'] ?? '?', $marker['from'] ?? '?', [
+                    'waiting' => 'waiting for the other runs of cli.php to end',
                     'copying' => 'copying the files',
                     'copied'  => 'copied, waiting for the next run of cli.php to boot it',
                     'booted'  => 'booted, finishing',

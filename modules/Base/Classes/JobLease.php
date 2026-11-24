@@ -26,15 +26,16 @@ class JobLease {
     protected $expires_at = 0;
 
     /**
-     * @param string $job_name
+     * @param string      $job_name
+     * @param string|null $owner one this lease's holder kept, to take back what a run of it that died left
      */
-    public function __construct( $job_name ) {
+    public function __construct( $job_name, $owner = null ) {
 
         $this->job_name = (string) $job_name;
 
         // Unique per attempt, so a taker-over and the original holder can never
         // be confused for one another.
-        $this->owner = bin2hex( random_bytes( 8 ) );
+        $this->owner = $owner === null ? bin2hex( random_bytes( 8 ) ) : (string) $owner;
     }
 
     /**

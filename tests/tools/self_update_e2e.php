@@ -299,9 +299,9 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
 }
 
 /** A schema update for Base in the release, one past the release's own: up() returns $succeeds; $manual is its manual_install. */
-function withSchemaUpdate( $succeeds, $manual = '' ) {
+function withSchemaUpdate( $succeeds, $manual = '', $first = '' ) {
 
-    return static function ( $tree ) use ( $succeeds, $manual ) {
+    return static function ( $tree ) use ( $succeeds, $manual, $first ) {
 
         $module = (string) file_get_contents( "$tree/modules/Base/Module.php" );
         check( preg_match( '/public \$required_schema_version = (\d+);/', $module, $m ) === 1, 'Base declares no required_schema_version' );
@@ -321,6 +321,7 @@ class Update%03d extends \OWA\Core\Update {
 
     public function up( $force = false ) {
 
+        %s
         return %s;
     }
 
@@ -330,7 +331,7 @@ class Update%03d extends \OWA\Core\Update {
     }
 }
 
-PHP, $next, $next, var_export( $manual, true ), $succeeds ? 'true' : 'false' ) );
+PHP, $next, $next, var_export( $manual, true ), $first, $succeeds ? 'true' : 'false' ) );
     };
 }
 
@@ -1106,7 +1107,81 @@ $scenarios = [
         installed( $site, $ca, TO );
     },
 
+    'waits-for-other-runs' => function () use ( $build, $work, $db, $from, $www, $base, $ca, $server ) {
+
+        $to   = package( $build, $work, 'waits', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        // Another run of cli.php, going on: it holds cli.php as every run does, until $go.
+        $go    = "$work/waits-go";
+        $other = proc_open( [ PHP_BINARY, '-r', sprintf( '$h = (require %s)["running"](%s); echo is_resource($h) ? "held\n" : "not held\n"; while (!is_file(%s)) usleep(100000);',
+            var_export( "$site/updater.php", true ), var_export( $site, true ), var_export( $go, true ) ) ], [ 1 => [ 'pipe', 'w' ] ], $other_pipes );
+        check( fgets( $other_pipes[1] ) === "held\n", 'the other run does not hold cli.php' );
+
+        $proc   = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
+        $marker = "$site/owa-update.php";
+
+        for ( $i = 0; $i < 300 && ! str_contains( (string) @file_get_contents( $marker ), '"phase":"waiting"' ); $i++ ) {
+
+            usleep( 100000 );
+        }
+
+        check( str_contains( (string) @file_get_contents( $marker ), '"phase":"waiting"' ), 'the install does not wait for the other run' );
+
+        // While it waits nothing has changed: the web serves as before, and a run that starts stops.
+        $webPort     = freePort();
+        $server->web = proc_open( [ PHP_BINARY, '-S', "127.0.0.1:$webPort", '-t', $site ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes2 );
+        usleep( 500000 );
+        [ $status ] = web( $webPort, 'index.php' );
+        check( $status !== 503, 'index.php answered 503 while nothing had changed' );
+        proc_terminate( $server->web );
+
+        [ $code, $out ] = next_run( $site, $ca );
+        check( $code === 75 && str_contains( $out, 'OWA is installing an update' ), "a CLI command while the install waits exited $code:\n$out" );
+        check( envVersion( $site ) === FROM, 'the files changed while another run was going' );
+
+        // The other run ends: the install copies, and the next run finishes it.
+        touch( $go );
+        proc_close( $other );
+        check( proc_close( $proc ) === 0, 'the install exited with an error once the other run had ended' );
+        check( str_contains( (string) @file_get_contents( $marker ), '"phase":"copied"' ), 'the install did not copy once the other run had ended' );
+        next_run( $site, $ca );
+        installed( $site, $ca, TO );
+    },
+
     // ---- after the new release has started -----------------------------------
+
+    'finish-killed-in-the-schema-updates' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // The release's schema update says it has started, then waits while e2e-hold is there.
+        $to   = package( $build, $work, 'finish-killed', TO, withSchemaUpdate( true, '',
+            'touch( dirname( __DIR__, 3 ) . "/e2e-in-update" ); while ( is_file( dirname( __DIR__, 3 ) . "/e2e-hold" ) ) { usleep( 100000 ); }' ) );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+        touch( "$site/e2e-hold" );
+
+        release_check( $site, $ca );
+        check( envVersion( $site ) === TO, 'the files were not copied' );
+
+        $proc = proc_open( [ PHP_BINARY, '-d', "curl.cainfo=$ca", 'cli.php', 'cmd=core-update-status' ], [ 1 => [ 'file', '/dev/null', 'w' ], 2 => [ 'file', '/dev/null', 'w' ] ], $pipes, $site );
+
+        for ( $i = 0; $i < 300 && ! is_file( "$site/e2e-in-update" ); $i++ ) {
+
+            usleep( 100000 );
+        }
+
+        check( is_file( "$site/e2e-in-update" ), 'Finish did not reach the schema update' );
+
+        // Killed holding the schema updates' lease, which lasts an hour.
+        posix_kill( (int) proc_get_status( $proc )['pid'], 9 );
+        proc_close( $proc );
+        unlink( "$site/e2e-hold" );
+
+        [ $code, $out ] = next_run( $site, $ca );
+        check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the run after Finish was killed did not finish the install (exit $code):\n$out" );
+        installed( $site, $ca, TO );
+    },
 
     'newer-release-after-a-failure' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 

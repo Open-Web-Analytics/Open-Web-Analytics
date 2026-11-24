@@ -1654,6 +1654,7 @@ return [
     'This Property is' => 'This Property is',
     'This Property\'s cube has not been built yet, so there is nothing to count the funnel against. Run a build and reload.' => 'This Property\'s cube has not been built yet, so there is nothing to count the funnel against. Run a build and reload.',
     'This action cannot be undone from this screen.' => 'This action cannot be undone from this screen.',
+    'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:' => 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:',
     'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest MariaDB release still supported -- or MySQL %s or later.' => 'This database server is MariaDB %s. OWA needs MariaDB %s or later -- the oldest MariaDB release still supported -- or MySQL %s or later.',
     'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build uses JSON_VALUE and window functions -- or MariaDB %s or later.' => 'This database server is MySQL %s. OWA needs MySQL %s or later -- its reporting build uses JSON_VALUE and window functions -- or MariaDB %s or later.',
     'This form is no longer valid' => 'This form is no longer valid',

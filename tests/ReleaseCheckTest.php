@@ -226,6 +226,29 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
+    /** A run that started before an install finished runs the release it replaced: it installs nothing. */
+    public function testARunOfTheReplacedReleaseInstallsNothing(): void
+    {
+        $result = $this->check(['2.1.0'], ['window' => '', 'on_disk' => '2.1.0']);
+
+        $this->assertSame(ReleaseCheck::BUSY, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertStringContainsString('This run started with OWA 2.0.0, and Core/Env.php now says 2.1.0: nothing was done.', implode("\n", $result['lines']));
+        $this->assertNull(Install::$pending);
+        $this->assertFalse(InstallLock::isHeld(), 'the lock is let go');
+    }
+
+    /** A database newer than the release expects is not installed over: the rollbacks come first. */
+    public function testADatabaseNewerThanTheReleaseIsNotInstalledOver(): void
+    {
+        $this->schema['base'] = 96;
+        $result = $this->check(['2.1.0'], ['window' => '']);
+
+        $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertStringContainsString('This database is newer than 2.1.0 expects.', implode("\n", $result['lines']));
+        $this->assertStringContainsString('php cli.php cmd=core-update-schema rollback=base.096', implode("\n", $result['lines']));
+        $this->assertNull(Install::$pending);
+    }
+
     public function testWhatIsInTheWindow(): void
     {
         $sat3   = (new DateTimeImmutable('2026-11-21 03:00', new DateTimeZone('Europe/London')))->getTimestamp();
@@ -985,6 +1008,8 @@ final class ReleaseCheckTest extends TestCase
             }
         }
 
+        $this->installed((string) ($context['on_disk'] ?? $installed));
+
         $check = new ReleaseCheck($this->downloads(), $context + [
             'root'      => $this->tmp . '/owa',
             'installed' => '2.0.0',
@@ -1034,6 +1059,8 @@ final class ReleaseCheckTest extends TestCase
             $list[] = $this->listed($v, 'https://example.test/' . $v . '.tar', hash_file('sha256', $tar));
         }
 
+        $this->installed($installed);
+
         return Install::byHand($version, $force, $this->downloads(), $context + [
             'root'      => $this->tmp . '/owa',
             'installed' => '2.0.0',
@@ -1045,6 +1072,13 @@ final class ReleaseCheckTest extends TestCase
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
         ]);
+    }
+
+    /** The installed release's Core/Env.php, which Install::prepare() reads. */
+    private function installed(string $v): void
+    {
+        @mkdir($this->tmp . '/owa/Core', 0755, true);
+        file_put_contents($this->tmp . '/owa/Core/Env.php', "<?php\nfinal class Env {\n    const VERSION = '$v';\n}\n");
     }
 
     /** A release tarball as the packager makes it: release.php inside, members ./... */

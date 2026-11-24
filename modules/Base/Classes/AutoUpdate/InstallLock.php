@@ -30,6 +30,9 @@ class InstallLock {
     /** @var array<string, mixed>|null Finish's hold, which it touches as it goes */
     public static $hold = null;
 
+    /** @var string|null the owner of the updates-apply lease Finish's schema updates hold (the marker's schema_lease) */
+    public static $schema_lease = null;
+
     /** @return string */
     public static function path() {
 

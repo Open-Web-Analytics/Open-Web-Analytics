@@ -27,8 +27,9 @@ final class InstallFinishTest extends CliControllerTestCase
 
     protected function tearDown(): void
     {
-        InstallLock::$path      = null;
-        InstallLock::$held_here = false;
+        InstallLock::$path         = null;
+        InstallLock::$held_here    = false;
+        InstallLock::$schema_lease = null;
         exec('rm -rf ' . escapeshellarg($this->tmp));
 
         parent::tearDown();
@@ -98,6 +99,32 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->updates([]);
         $this->assertFalse(InstallLock::$held_here, 'a hand run never counts as the installer');
         $this->assertFalse(InstallLock::isHeld(), 'and leaves no lock behind');
+    }
+
+    /** A Finish killed during the schema updates left their lease held for an hour: the next takes it back, and no other run's. */
+    public function testAKilledFinishsLeaseIsTakenBack(): void
+    {
+        $lock = \OWA\Module\Base\Controller\UpdatesApply::LOCK;
+        $dead = new \OWA\Module\Base\Classes\JobLease($lock, 'aaaaaaaaaaaaaaaa');
+        $this->assertTrue($dead->acquire(3600));
+        $h = fopen(InstallLock::$path, 'c');
+        flock($h, LOCK_EX);
+        InstallLock::$held_here = true;
+
+        try {
+            InstallLock::$schema_lease = 'bbbbbbbbbbbbbbbb';
+            $cli = $this->updates([]);
+            $this->assertStringContainsString('Updates are already being applied by another run', $cli->getCliOutcome()['message'], 'another owner\'s lease stays');
+
+            InstallLock::$schema_lease = 'aaaaaaaaaaaaaaaa';
+            $cli = $this->updates([]);
+            $this->assertStringNotContainsString('already being applied', $cli->getCliOutcome()['message'], 'the install\'s own is taken back');
+            $this->assertEmpty(\OWA\Core\CoreAPI::dbSingleton()->getJobLock($lock), 'and let go after');
+        } finally {
+            flock($h, LOCK_UN);
+            fclose($h);
+            $dead->release();
+        }
     }
 
     private function updates(array $params): \OWA\Module\Base\Controller\CoreUpdateSchemaCli

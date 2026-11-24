@@ -15,11 +15,13 @@ use OWA\Core\CoreAPI;
  * the process: cli.php calls run() once the command, and the scheduler's
  * other jobs, have finished and recorded what they did.
  *
- * PHP cannot unload a class, so once the copy starts this process loads
- * nothing more: run() saves the settings, restores PHP's own error and
- * exception handlers, registers an autoloader ahead of Composer's that
- * refuses every class, writes the install marker, copies with the
- * updater.php closures it loaded before the copy began (`apply`), and exits.
+ * PHP cannot unload a class, so neither this process nor any other run of
+ * cli.php loads one from the new release while it runs the old: run() saves
+ * the settings, writes the install marker and waits for the other runs of
+ * cli.php to end, restores PHP's own error and exception handlers, registers
+ * an autoloader ahead of Composer's that refuses every class, copies with
+ * the updater.php closures it loaded before the copy began (`apply`), and
+ * exits.
  * The next run of cli.php boots the new release and finishes the install
  * (updater.php `preboot`, Finish). A copy that fails is put back at once from
  * the installed release's tarball, one that is killed by the next run of
@@ -35,6 +37,9 @@ class Install {
 
     /** @var array<string, mixed>|null what run() installs, once prepare() has proved it */
     public static $pending = null;
+
+    /** Seconds run() waits for the other runs of cli.php to end before it copies. */
+    const WAIT = 300;
 
     /**
      * Take the lock and prove both tarballs; set $pending. The caller has
@@ -61,6 +66,16 @@ class Install {
         if ( $hold === null ) {
 
             return self::answer( self::BUSY, 'Another install holds the install lock; try again in a minute.' );
+        }
+
+        // A run that started before an install finished still runs the release that install replaced.
+        $on_disk = $u['installedVersion']( $root );
+
+        if ( $on_disk !== (string) $installed ) {
+
+            $u['unlock']( $hold );
+
+            return self::answer( self::BUSY, sprintf( 'This run started with OWA %1$s, and Core/Env.php now says %2$s: nothing was done.', $installed, $on_disk ?? 'no release version' ) );
         }
 
         try {
@@ -207,9 +222,16 @@ class Install {
      * The copy, at the end of the process, then exit. Nothing when nothing
      * is pending. Never returns otherwise.
      *
+     * No other run of cli.php may be going when the files change. The
+     * marker says waiting, which stops every run that starts, and it waits
+     * up to WAIT seconds for those already going to end (updater.php
+     * `running`, `alone`); when they have not, it installs nothing, for the
+     * next release check to try again.
+     *
+     * @param  resource|false|null $running this run's, as updater.php `running` gave it
      * @return void
      */
-    public static function run() {
+    public static function run( $running = null ) {
 
         $p = self::$pending;
 
@@ -236,7 +258,7 @@ class Install {
             'format'      => 1,
             'from'        => $p['from'],
             'to'          => $p['to'],
-            'phase'       => 'copying',
+            'phase'       => 'waiting',
             'since'       => time(),
             'lock'        => $p['hold']['file'],
             'updates'     => $p['updates'],
@@ -253,14 +275,44 @@ class Install {
         try {
 
             $u['writeMarker']( $root, $marker );
+            $alone = $u['alone']( $running, self::WAIT );
+
+            if ( $alone ) {
+
+                $marker['phase'] = 'copying';
+                $u['writeMarker']( $root, $marker );
+            }
 
         } catch ( \RuntimeException $e ) {
 
+            @unlink( $u['marker']( $root ) );
             $u['recordFailure']( $p['updates'], $p['from'], $p['to'], $e->getMessage() . ' Nothing was installed.' );
             $u['unlock']( $p['hold'] );
             fwrite( STDERR, sprintf( "Installing OWA %s failed: %s Nothing was installed.\n", $p['to'], $e->getMessage() ) );
 
             exit( 1 );
+        }
+
+        if ( ! $alone ) {
+
+            @unlink( $u['marker']( $root ) );
+            $u['unlock']( $p['hold'] );
+            $why = sprintf( 'Other runs of cli.php were still going after %d seconds, so OWA %s was not installed; the next release check tries again.', self::WAIT, $p['to'] );
+            CoreAPI::notice( $why );
+
+            if ( ! $p['quiet'] ) {
+
+                fwrite( STDERR, $why . "\n" );
+            }
+
+            exit( $p['quiet'] ? 0 : 75 );
+        }
+
+        // cli.php is let go: the copy may replace it, and Windows renames nothing held open.
+        if ( is_resource( $running ) ) {
+
+            flock( $running, LOCK_UN );
+            fclose( $running );
         }
 
         // From here this process loads nothing: whatever it would load is the new release's.

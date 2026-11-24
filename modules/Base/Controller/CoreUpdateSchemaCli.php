@@ -56,7 +56,16 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
             return $this->fail( \OWA\Core\CoreAPI::t( 'An automatic update is being installed; it runs the schema updates itself. Try again once it has finished.' ) );
         }
 
-        $lock = new \OWA\Module\Base\Classes\JobLease( UpdatesApply::LOCK );
+        // Inside the install the lease is the install's own (Finish): what a
+        // Finish killed during the updates left is taken back.
+        $owner = \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here
+            ? \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$schema_lease : null;
+        $lock  = new \OWA\Module\Base\Classes\JobLease( UpdatesApply::LOCK, $owner );
+
+        if ( $owner !== null ) {
+
+            $lock->release();
+        }
 
         if ( ! $lock->acquire( UpdatesApply::LOCK_SECONDS ) ) {
 
