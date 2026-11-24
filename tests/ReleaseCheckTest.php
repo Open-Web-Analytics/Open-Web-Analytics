@@ -844,8 +844,8 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('The release has no updater.php', implode("\n", $result['problems']));
     }
 
-    /** Signed by no key this installation trusts, unsigned, or a signature of another release: nothing is staged, and the bell says why. */
-    public function testOnlyAReleaseSignedByATrustedKeyIsStaged(): void
+    /** Signed by no key this installation trusts, unsigned, or a signature of another release: nothing is downloaded, and the bell says why. */
+    public function testOnlyAReleaseSignedByATrustedKeyIsDownloaded(): void
     {
         $other = base64_encode(sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()));
         $tar   = $this->build('2.0.1', null);
@@ -1030,11 +1030,10 @@ final class ReleaseCheckTest extends TestCase
     /**
      * One run of ReleaseCheck against listed releases built here.
      *
-     * @param list<string>|null $versions released, null for a listing that fails
-     */
-    /**
      * $sign: the signature file for a release in place of a good one, given its version and tarball.
      * $withInstalled: the installed release is listed too, as GitHub lists every release.
+     *
+     * @param list<string>|null $versions released, null for a listing that fails
      */
     private function check(?array $versions, array $context = [], ?callable $edit = null, ?callable $tamper = null, bool $dry = false, bool $noUpdater = false, ?callable $sign = null, bool $withInstalled = true): array
     {
@@ -1082,7 +1081,6 @@ final class ReleaseCheckTest extends TestCase
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
             'sleep'     => static function ($s) {},
-            'data_dir'  => $this->tmp . '/data/',
         ]);
 
         if ($versions === null) {
@@ -1163,8 +1161,10 @@ final class ReleaseCheckTest extends TestCase
         return $tar;
     }
 
-    /** The tarball at https://example.test/<v>.tar and its signature beside it, as the packager publishes them. */
-    /** Also where a release is fetched by its version: https://example.test/download/<v>/<file>. */
+    /**
+     * The tarball at https://example.test/<v>.tar and its signature beside it, as the packager publishes them;
+     * also where a release is fetched by its version: https://example.test/download/<v>/<file>.
+     */
     private function serve(string $v, string $tar, ?string $signature = null): void
     {
         $this->served["https://example.test/$v.tar"] = $tar;

@@ -68,7 +68,7 @@ class ScheduleRunCli extends SchedulerCli {
         // check and would render the update view once per job, recording each
         // as refused and so satisfied. The schema only: a new release not yet
         // applied leaves it as the jobs expect. Only a job registered to run
-        // while updates are pending runs (the release check, which may stage
+        // while updates are pending runs (core-update, which may install
         // the release that fixes them); the others stay due, unrecorded.
         $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 

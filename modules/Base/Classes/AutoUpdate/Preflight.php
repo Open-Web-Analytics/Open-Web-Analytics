@@ -2,7 +2,8 @@
 namespace OWA\Module\Base\Classes\AutoUpdate;
 
 /**
- * Whether a staged release can be installed here: Step 1's preflight.
+ * Whether a downloaded release can be installed here: ReleaseCheck's
+ * judgement of it, and Install::byHand()'s.
  *
  * Two halves. requirements() judges the release's release.php requirements
  * (Core\Requirements::toArray() as that release wrote it) against this

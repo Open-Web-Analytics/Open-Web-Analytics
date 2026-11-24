@@ -34,7 +34,7 @@ use OWA\Core\CoreAPI;
  *      it installs (Install): the files are copied when this run of the
  *      scheduler has finished, and the next run finishes the install.
  *
- * Without a listing (GitHub unreachable, or not a listing hour) only 3 and 4
+ * Without a listing (the update host unreachable, or not a listing hour) only 3 and 4
  * apply, to what was downloaded before.
  *
  * @phpstan-import-type Release from Releases
@@ -102,8 +102,9 @@ class ReleaseCheck {
             // The scheduler's run: it lists only in its listing hours, and says nothing after the copy.
             'scheduled' => false,
             // What fixes this installation's listing hour and second: its auth
-            // secret, which differs per installation however it was cloned,
-            // and is only hashed here, never sent.
+            // secret, its public URL and its directory, only hashed here, never
+            // sent. A clone copies owa-config.php, so the URL and the
+            // directory are what set it apart.
             'seed'      => hash( 'sha256', 'owa-release-listing|' . ( defined( 'OWA_AUTH_KEY' ) ? (string) constant( 'OWA_AUTH_KEY' ) : '' )
                 . '|' . (string) CoreAPI::getSetting( 'base', 'public_url' ) . '|' . \OWA\Core\Env::root() ),
             'sleep'     => static fn ( $seconds ) => sleep( (int) $seconds ),
@@ -425,7 +426,7 @@ class ReleaseCheck {
 
         } elseif ( ! $c['enabled'] ) {
 
-            $lines[] = 'Automatic updates: off (OWA_AUTO_UPDATE).';
+            $lines[] = 'Automatic updates: off (the auto_update setting).';
 
         } else {
 
@@ -657,13 +658,13 @@ class ReleaseCheck {
 
             $this->notify( 'download_failing:' . $v, 'info',
                 sprintf( CoreAPI::t( 'OWA %s could not be downloaded' ), $v ),
-                $why . "\n\n" . CoreAPI::t( 'Automatic updates try again every six hours.' ), $url, false );
+                $why . "\n\n" . CoreAPI::t( 'Automatic updates try again every hour.' ), $url, false );
 
         } elseif ( (int) $this->context['now'] - $first >= self::FAILING_FOR ) {
 
             $this->notify( 'download_failed:' . $v, 'warning',
                 sprintf( CoreAPI::t( 'OWA %s has not downloaded for a week' ), $v ),
-                $why . "\n\n" . CoreAPI::t( 'Automatic updates keep trying every six hours.' ), $url );
+                $why . "\n\n" . CoreAPI::t( 'Automatic updates keep trying every hour.' ), $url );
         }
     }
 

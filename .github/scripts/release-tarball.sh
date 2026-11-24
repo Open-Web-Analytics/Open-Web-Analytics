@@ -60,7 +60,10 @@ tar --directory ./ \
     -pcvf "./owa_${VERSION}_packaged.tar" ./
 
 # What an installed release relies on to install this one: release.php,
-# which npm run build wrote, and updater.php. What proves the tarball is its
-# signature (.github/scripts/release-sign.php), made after this.
-tar -tf "./owa_${VERSION}_packaged.tar" | grep -x './release.php' > /dev/null
-tar -tf "./owa_${VERSION}_packaged.tar" | grep -x './updater.php' > /dev/null
+# which npm run build wrote, and the files ReleaseCheck::judge() requires.
+# What proves the tarball is its signature (.github/scripts/release-sign.php),
+# made after this.
+listing=$(tar -tf "./owa_${VERSION}_packaged.tar")
+for f in release.php updater.php cli.php owa_env.php Core/Env.php modules/Base/Classes/AutoUpdate/Tar.php; do
+    grep -qx "./$f" <<< "$listing" || { echo "The tarball has no $f." >&2; exit 1; }
+done

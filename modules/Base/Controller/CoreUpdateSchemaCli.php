@@ -48,8 +48,8 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
         }
 
         // An install runs the schema updates itself: cmd=core-update-schema by hand waits
-        // for it, as every other CLI run does. Inside the install (Step 4:
-        // finish) this process holds the lock.
+        // for it, as every other CLI run does. Inside the install (Finish)
+        // this process holds the lock.
         if ( ! \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here
                 && \OWA\Module\Base\Classes\AutoUpdate\InstallLock::isHeld() ) {
 

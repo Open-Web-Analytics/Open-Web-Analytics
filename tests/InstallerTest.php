@@ -608,7 +608,7 @@ final class InstallerTest extends TestCase
 
     // ---------------------------------------------------------------------
 
-    /** A release's tarball and signature in the updates directory, as Step 1 leaves them. */
+    /** A release's tarball and signature in the updates directory, as the release check leaves them. */
     private function release(string $v, array $files): void
     {
         $dir = $this->tmp . "/build-$v";
@@ -654,7 +654,7 @@ final class InstallerTest extends TestCase
         return $served ? $out : false;
     }
 
-    /** Every file under the OWA directory but the marker and updater.php, with its contents. */
+    /** Every file under the OWA directory but the marker, with its contents. */
     private function snapshot(): array
     {
         $out = [];

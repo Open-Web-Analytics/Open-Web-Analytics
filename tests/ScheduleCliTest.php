@@ -362,7 +362,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
     /**
      * No bundle job ships (PLAN 2.30.7): a save publishes its own, and a
-     * release is applied with cmd=core-update-schema, which republishes what it changed.
+     * release republishes them once installed (Finish, Base\Module::update()).
      * publish-trackers stays a command, and the job queue runs it for a
      * change above one Profile.
      */
@@ -449,7 +449,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /**
      * No default job may fire at midnight.
      *
-     * core-update calls a THIRD PARTY. A fixed every-six-hours expression
+     * core-update calls a THIRD PARTY. A fixed hourly expression
      * would have every install call it at the same instants, and most servers keep UTC so
      * timezones would not spread it either. Each install derives its own
      * minute and hours from something stable about itself.
@@ -465,7 +465,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertMatchesRegularExpression('/^\d{1,2} \* \* \* \*$/', \OWA\Core\Cron::hourlySpreadFor('a', 1), 'an interval of one hour is every hour');
     }
 
-    /** Every six hours, at a minute and hour offset the install keeps. */
+    /** Every N hours, at a minute and hour offset the install keeps (Cron::hourlySpreadFor()). */
     public function testTheHourlySpread()
     {
         $this->assertSame(\OWA\Core\Cron::hourlySpreadFor('a'), \OWA\Core\Cron::hourlySpreadFor('a'), 'stable');

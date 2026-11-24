@@ -38,8 +38,8 @@
  *
  * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes its
  * own -- a Profile's at once, anything wider as a queued publish-trackers job
- * -- and a new release is applied with cmd=core-update-schema, which republishes what it
- * changed (Base\Module::update()).
+ * -- and an installed release republishes them once its schema updates are
+ * applied (Classes\AutoUpdate\Finish, Base\Module::update()).
  */
 return [
 
