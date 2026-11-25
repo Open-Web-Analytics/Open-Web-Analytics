@@ -1,40 +1,57 @@
 name: Release Packager
-on: 
+on:
   workflow_dispatch:
     inputs:
       version:
         description: The version name of the release (e.g. 1.1.5)
         required: true
         default: ''
+
+# Three jobs, so the signing key is never in a job that runs a dependency's
+# code: npm's and composer's install scripts and third-party actions run in
+# `build`, which has no secret and a read-only token. `sign` holds the key and
+# runs only GitHub's own actions, the runner's PHP and gh. Every action is
+# pinned to a commit, and the version reaches each shell as $VERSION, never
+# pasted into the script. A job gets only the permissions it declares.
+permissions: {}
+
 jobs:
-  tag:
-    name: Generate new release package
+  branch:
+    name: Create the release branch
     runs-on: ubuntu-latest
-    # The release-signing environment holds OWA_RELEASE_SIGNING_KEY and needs
-    # a maintainer's approval before this job runs: only an approved run can
-    # sign a release that installations will install.
-    environment: release-signing
+    permissions:
+      contents: write
     env:
-      VERSION: ${{ github.event.inputs.version }}
+      VERSION: ${{ inputs.version }}
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
+    # The same rule as release-sign.php, checked before anything uses it.
+    - name: Check the version
+      run: |
+        if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::The version must be three numbers, such as 2.0.3."
+          exit 1
+        fi
     # The branch the workflow is run on: master for a 2.x release once v2 is
     # merged into it, the 1.x branch for a 1.x release, or a hotfix branch for a
-    # patch release. It checked out master whatever it was run on.
+    # patch release.
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         ref: ${{ github.ref }}
     # create a release branch and bump version in appropriate files.
     - name: Create release branch
+      id: commit
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git -C ./ checkout -b release-${{ env.VERSION }}
+        git -C ./ checkout -b "release-$VERSION"
         echo changing version string in Core/Env.php
-        sed -i "s/const VERSION = 'master';/const VERSION = '${{ env.VERSION }}';/" Core/Env.php
-        grep -q "const VERSION = '${{ env.VERSION }}';" Core/Env.php
+        sed -i "s/const VERSION = 'master';/const VERSION = '$VERSION';/" Core/Env.php
+        grep -q "const VERSION = '$VERSION';" Core/Env.php
         echo changing version string in package.json
-        sed -i 's/"version": "1.0.0",/"version": "${{ env.VERSION }}",/g' package.json
+        sed -i "s/\"version\": \"1.0.0\",/\"version\": \"$VERSION\",/g" package.json
         grep -n "const VERSION" Core/Env.php
         cat ./package.json
         echo Committing local changes
@@ -43,7 +60,23 @@ jobs:
         git -C ./ add package.json
         git -C ./ commit -m "Updating version string."
         echo Pushing change into Branch
-        git -C ./ push --set-upstream origin release-${{ env.VERSION }}
+        git -C ./ push --set-upstream origin "release-$VERSION"
+        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build the release tarball
+    needs: branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+    - name: Checkout the release branch
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      with:
+        ref: ${{ needs.branch.outputs.sha }}
+        persist-credentials: false
     # install the composer vendor directory (production deps only — keep the
     # test/static-analysis tooling in require-dev out of the shipped vendor/).
     #
@@ -60,8 +93,8 @@ jobs:
     - name: Install Composer Dependancies
       run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
     # setup node and build js/asset bundles
-    - name: Setup Node/npm 
-      uses: actions/setup-node@v5
+    - name: Setup Node/npm
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
       with:
         node-version: '22'
     - name: Build Javascript/Asset Packages
@@ -72,24 +105,57 @@ jobs:
     # release needs to install it. The exclusions are in the script, which the
     # automatic-update end-to-end test packs its releases with too.
     - name: Generate Release Tarball
-      run: bash .github/scripts/release-tarball.sh "${{ env.VERSION }}"
+      run: bash .github/scripts/release-tarball.sh "$VERSION"
+    - name: Keep the tarball for signing
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      with:
+        name: tarball
+        path: owa_${{ inputs.version }}_packaged.tar
+        if-no-files-found: error
+        retention-days: 1
+
+  # The release-signing environment holds OWA_RELEASE_SIGNING_KEY and needs a
+  # maintainer's approval before this job runs: only an approved run can sign a
+  # release that installations will install. The checkout is the commit
+  # `branch` pushed, for the signing script and the keys it checks against;
+  # the tarball is only read and hashed.
+  sign:
+    name: Sign the tarball and draft the release
+    needs: [branch, build]
+    # The image's own PHP, so no setup action runs beside the key.
+    runs-on: ubuntu-24.04
+    environment: release-signing
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+    - name: Checkout the release branch
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      with:
+        ref: ${{ needs.branch.outputs.sha }}
+        persist-credentials: false
+    - name: Fetch the tarball
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      with:
+        name: tarball
     # The signature installations check before they stage the release
     # (Classes\AutoUpdate\Signature). Checked against this checkout's trusted
     # keys before it is kept.
     - name: Sign Release Tarball
       env:
         OWA_RELEASE_SIGNING_KEY: ${{ secrets.OWA_RELEASE_SIGNING_KEY }}
-      run: php .github/scripts/release-sign.php "${{ env.VERSION }}"
+      run: php .github/scripts/release-sign.php "$VERSION"
     # A draft release of the release branch, with the tarball attached. The tag
     # is created when the draft is published.
     - name: Create Draft Github Release
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
       run: |
-        gh release create "${{ env.VERSION }}" "./owa_${{ env.VERSION }}_packaged.tar" "./owa_${{ env.VERSION }}_packaged.tar.sig" \
+        gh release create "$VERSION" "./owa_${VERSION}_packaged.tar" "./owa_${VERSION}_packaged.tar.sig" \
           --draft \
-          --target "release-${{ env.VERSION }}" \
-          --title "Release ${{ env.VERSION }}" \
+          --target "release-$VERSION" \
+          --title "Release $VERSION" \
           --notes "Changes in this Release
          - First Change
          - Second Change"

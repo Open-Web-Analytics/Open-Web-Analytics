@@ -95,7 +95,7 @@ final class EnvTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('~[.*\[\]^$\\\\]~', $m[1]);
 
         $source  = (string) file_get_contents(Env::root() . '/Core/Env.php');
-        $stamped = str_replace($m[1], str_replace('${{ env.VERSION }}', '2.0.0', $m[2]), $source);
+        $stamped = str_replace($m[1], str_replace('$VERSION', '2.0.0', $m[2]), $source);
 
         $this->assertSame(1, substr_count($source, $m[1]), 'the pattern must match exactly one line');
         $this->assertSame(1, preg_match("~const VERSION = '([^']*)';~", $stamped, $v));
