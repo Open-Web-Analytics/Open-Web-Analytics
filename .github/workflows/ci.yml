@@ -431,7 +431,7 @@ jobs:
       # saying so, until there is a 2.x tag.
       - name: Install from the last release
         env:
-          OWA_E2E_FROM_REF: 03ec6057
+          OWA_E2E_FROM_REF: release
         run: php tests/tools/self_update_e2e.php
 
   e2e:
