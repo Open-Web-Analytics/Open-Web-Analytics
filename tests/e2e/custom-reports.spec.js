@@ -550,8 +550,8 @@ test.describe('custom reports', () => {
             await startWidget(page, 'grid');
             await chooseField(page, 'dlgMetrics', 'pageViews');
 
-            // A dimension, and deliberately no value.
-            await fillFilter(page, { dimension: 'sessionMedium' });
+            // A dimension and a condition, and deliberately no value.
+            await fillFilter(page, { dimension: 'sessionMedium', operator: 'is' });
 
             await expect(page.locator('#dlgFilterAdd')).toBeDisabled();
             await expect(dialogSave(page)).toBeDisabled();
