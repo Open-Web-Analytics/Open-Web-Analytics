@@ -71,4 +71,20 @@ class Version {
 
         return $f[1] !== $t[1] ? self::MINOR : self::PATCH;
     }
+
+    /**
+     * Whether automatic updates at $level (PATCH or MINOR) go from $from to
+     * $to: a higher release, never another major, a minor one only at MINOR.
+     *
+     * @param  string $level
+     * @param  string $from
+     * @param  string $to
+     * @return bool
+     */
+    public static function allows( $level, $from, $to ) {
+
+        $step = self::step( $from, $to );
+
+        return $step === self::PATCH || ( $step === self::MINOR && $level === self::MINOR );
+    }
 }

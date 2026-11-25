@@ -140,6 +140,86 @@ return ( static function () {
         }
     };
 
+    /*
+     * $file read once into php://temp (memory, then a temporary file only
+     * this process holds) while its SHA-256 is taken: [the copy, rewound, its
+     * SHA-256]. Only a plain file, no link, at most $max bytes. What is read
+     * after is the copy, never the file again, which the web user may
+     * rewrite. Downloads::privateCopy() and putting a release back both use it.
+     */
+    $privateCopy = static function ( $file, $max ) {
+
+        $file = (string) $file;
+        $name = basename( $file );
+        clearstatcache( true, $file );
+
+        if ( ! file_exists( $file ) && ! is_link( $file ) ) {
+
+            throw new \RuntimeException( sprintf( '%s has not been downloaded.', $name ) );
+        }
+
+        // Never opened unless it is a plain file: opening a FIFO would wait for a writer.
+        $in = is_link( $file ) || ! is_file( $file ) ? false : @fopen( $file, 'rb' );
+        $st = $in === false ? false : fstat( $in );
+
+        if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
+
+            if ( $in !== false ) {
+
+                fclose( $in );
+            }
+
+            throw new \RuntimeException( sprintf( '%s is not a plain file.', $name ) );
+        }
+
+        $copy  = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
+        $ctx   = hash_init( 'sha256' );
+        $bytes = 0;
+
+        try {
+
+            while ( ! feof( $in ) ) {
+
+                $chunk = fread( $in, 1048576 );
+
+                if ( $chunk === false ) {
+
+                    throw new \RuntimeException( sprintf( 'Reading %s failed.', $name ) );
+                }
+
+                $bytes += strlen( $chunk );
+
+                if ( $bytes > $max ) {
+
+                    throw new \RuntimeException( sprintf( '%s is larger than %d MB, which no release is.', $name, $max >> 20 ) );
+                }
+
+                hash_update( $ctx, $chunk );
+
+                if ( fwrite( $copy, $chunk ) !== strlen( $chunk ) ) {
+
+                    throw new \RuntimeException( sprintf( 'Copying %s failed; the disk holding PHP\'s temporary directory may be full.', $name ) );
+                }
+            }
+
+            if ( ! rewind( $copy ) ) {
+
+                throw new \RuntimeException( sprintf( 'The copy of %s cannot be read from the start.', $name ) );
+            }
+
+        } catch ( \Throwable $e ) {
+
+            fclose( $in );
+            fclose( $copy );
+
+            throw $e;
+        }
+
+        fclose( $in );
+
+        return [ $copy, hash_final( $ctx ) ];
+    };
+
     /* Whether the copy writes $rel: not owa-data/, the installation's own, which the web user writes too (a new installation unpacks it from the tarball). */
     $copies = static function ( $rel ) {
 
@@ -165,6 +245,13 @@ return ( static function () {
 
     $recordFailure = static function ( $updates, array $m, $error, $retry = true, $booted = false ) use ( $writeFile, $retries, $retry_wait ) {
 
+        if ( (string) $updates === '' ) {
+
+            fwrite( STDERR, "There is no updates directory to record the failure in.\n" );
+
+            return;
+        }
+
         $file  = rtrim( (string) $updates, '/' ) . '/last-failure.json';
         $was   = is_link( $file ) ? null : json_decode( (string) @file_get_contents( $file ), true );
         $from  = (string) ( $m['from'] ?? '' );
@@ -173,6 +260,7 @@ return ( static function () {
         $same  = is_array( $was ) && ( $was['version'] ?? null ) === $to && ( $was['from'] ?? null ) === $from && empty( $was['booted'] );
         $tries = $same ? (int) ( $was['attempts'] ?? 1 ) + ( (int) ( $was['attempt'] ?? 0 ) === $since ? 0 : 1 ) : 1;
 
+        // format: raised only when a field changes meaning or goes.
         $failure = [
             'format'      => 1,
             'version'     => $to,
@@ -334,7 +422,10 @@ return ( static function () {
      * for the operator: "install 2.0.1", "release check". $no_flock: as where
      * the filesystem has none (a test's).
      */
-    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine, $createFile ) {
+    /* What the lock file says: who holds it, since when, and the token that tells this holder from a later one. */
+    $lockLine = static fn ( $who, $token ) => sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
+
+    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine, $createFile, $lockLine ) {
 
         $file  = rtrim( (string) $data, '/' ) . '/updating';
         $stale = false;
@@ -359,7 +450,7 @@ return ( static function () {
                 }
 
                 $token = bin2hex( random_bytes( 8 ) );
-                $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
+                $line  = $lockLine( $who, $token );
                 $h     = @fopen( $file, 'r+' );
 
                 if ( $h !== false ) {
@@ -427,7 +518,7 @@ return ( static function () {
         }
 
         $token = bin2hex( random_bytes( 8 ) );
-        $line  = sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
+        $line  = $lockLine( $who, $token );
         $tmp   = $file . '.new-' . bin2hex( random_bytes( 8 ) );
         $h     = $createFile( $tmp, 0644, 'x+' );
 
@@ -766,7 +857,7 @@ return ( static function () {
      * ships and from_tar does not deleted, when to_tar's checks too. Holding
      * the lock. Returns the exit code; the marker goes once it is done.
      */
-    $putBack = static function ( $root, array $m, $why, $retry = true ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure ) {
+    $putBack = static function ( $root, array $m, $why, $retry = true ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure, $privateCopy ) {
 
         $from = (string) ( $m['from'] ?? '' );
         $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'putting back %s', $from ) );
@@ -787,40 +878,16 @@ return ( static function () {
 
             // Read once into memory or a temporary file only this process holds,
             // hashed as it is read: what is unpacked is what was checked.
-            $open = static function ( $tar, $version, $sha256 ) {
+            // Each tarball read once into a private copy, which must be the one the marker names.
+            $open = static function ( $tar, $version, $sha256 ) use ( $privateCopy ) {
 
-                clearstatcache( true, (string) $tar );
-                // Never opened unless it is a plain file: opening a FIFO would wait for a writer.
-                $in = is_link( (string) $tar ) || ! is_file( (string) $tar ) ? false : @fopen( (string) $tar, 'rb' );
-                $st = $in === false ? false : fstat( $in );
+                [ $copy, $actual ] = $privateCopy( $tar, PHP_INT_MAX );
 
-                if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
-
-                    throw new \RuntimeException( sprintf( '%s is missing, or is not a plain file.', $tar ) );
-                }
-
-                $copy = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
-                $ctx  = hash_init( 'sha256' );
-                $ok   = true;
-
-                while ( $ok && ! feof( $in ) ) {
-
-                    $chunk = fread( $in, 1048576 );
-                    $ok    = $chunk !== false && fwrite( $copy, $chunk ) === strlen( $chunk );
-                    $ok && hash_update( $ctx, $chunk );
-                }
-
-                fclose( $in );
-                $actual = hash_final( $ctx );
-
-                // A read or write that failed leaves a copy whose SHA-256 is not the one recorded.
-                if ( ! $ok || ! rewind( $copy ) || ! hash_equals( strtolower( (string) $sha256 ), $actual ) ) {
+                if ( ! hash_equals( strtolower( (string) $sha256 ), $actual ) ) {
 
                     fclose( $copy );
 
-                    throw new \RuntimeException( $ok
-                        ? sprintf( '%s is not the tarball OWA %s was installed from: its SHA-256 is %s.', $tar, $version, $actual )
-                        : sprintf( 'Copying %s failed; the disk holding PHP\'s temporary directory may be full.', $tar ) );
+                    throw new \RuntimeException( sprintf( '%s is not the tarball OWA %s was installed from: its SHA-256 is %s.', $tar, $version, $actual ) );
                 }
 
                 return $copy;
@@ -880,6 +947,7 @@ return ( static function () {
         'recordFailure' => $recordFailure,
         'retries'     => $retries,
         'putBack'     => $putBack,
+        'privateCopy' => $privateCopy,
 
         /* The installed release's version, read as text from Core/Env.php; null when it is not a release version (a checkout says master). */
         'installedVersion' => static function ( $root ) {

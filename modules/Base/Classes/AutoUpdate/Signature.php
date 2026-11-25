@@ -27,11 +27,11 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  */
 class Signature {
 
-    /** The tarball, as Releases::ASSET names it (a test holds them equal). */
+    /** A release's tarball; %s is the version. Plain PHP, for updater.php: Releases::ASSET is this. */
     const TARBALL = 'owa_%s_packaged.tar';
 
     /** The signature asset beside a release's tarball. */
-    const ASSET = 'owa_%s_packaged.tar.sig';
+    const ASSET = self::TARBALL . '.sig';
 
     /**
      * The public keys, base64, a release must be signed by one of. Two: the

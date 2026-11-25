@@ -333,7 +333,7 @@ final class ReleaseCheckTest extends TestCase
         }
 
         $result = $this->check(['2.1.0']);
-        $this->downloads()->writeFailure(['version' => '2.1.0', 'error' => 'a test']);
+        Downloads::updater()['recordFailure']($root, ['to' => '2.1.0', 'from' => '2.0.0', 'since' => 1], 'a test');
 
         $this->assertSame(ReleaseCheck::WAITING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertSame('the cron user\'s', file_get_contents($victim));
@@ -560,7 +560,7 @@ final class ReleaseCheckTest extends TestCase
     public function testAReleaseWhoseInstallFailedIsSkipped(): void
     {
         $this->check(['2.0.1']);
-        $this->downloads()->writeFailure(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => $this->now]);
+        $this->failed(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => $this->now]);
 
         $result = $this->check(['2.0.1'], ['window' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
@@ -581,14 +581,14 @@ final class ReleaseCheckTest extends TestCase
         $this->check(['2.0.1']);
         $failure = ['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished.', 'at' => $this->now, 'attempts' => 1];
 
-        $this->downloads()->writeFailure($failure + ['retry_after' => $this->now + 3600]);
+        $this->failed($failure + ['retry_after' => $this->now + 3600]);
         $result = $this->check(['2.0.1'], ['window' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
         $this->assertStringContainsString('Installing 2.0.1 failed; it is tried again after 2027-01-15 09:00 UTC.', implode("\n", $result['lines']));
         $this->assertStringContainsString('try OWA 2.0.1 again after 2027-01-15 09:00 UTC, 3 attempts in all', $this->notices['install_failed:2.0.1']['body']);
         $this->assertNull(Install::$pending);
 
-        $this->downloads()->writeFailure($failure + ['retry_after' => $this->now]);
+        $this->failed($failure + ['retry_after' => $this->now]);
         $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1'], ['window' => ''])['outcome'], 'its time has come');
         $this->dropPending();
     }
@@ -743,7 +743,7 @@ final class ReleaseCheckTest extends TestCase
     public function testInstallByHand(): void
     {
         $this->downloads()->ensureRoot();
-        $this->downloads()->writeFailure(['version' => '2.0.2', 'from' => '2.0.0', 'error' => 'it failed']);
+        $this->failed(['version' => '2.0.2', 'from' => '2.0.0', 'error' => 'it failed']);
 
         $result = $this->hand('2.0.2', ['2.0.1', '2.0.2'], ['enabled' => false]);
         $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
@@ -835,7 +835,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('It needs PHP 8.2 or later', $lines);
         $this->assertStringContainsString('; can be installed.', $status($this->env()), 'judged now, not remembered');
 
-        $this->downloads()->writeFailure(['version' => '2.1.0', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => 1800000000]);
+        $this->failed(['version' => '2.1.0', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => 1800000000]);
         $this->assertStringContainsString('Installing 2.1.0 over 2.0.0 failed, 2027-01-15 08:00 UTC: Could not write Core/Env.php.', $status($this->env()));
         $this->assertStringContainsString('skipped, its install failed', $status($this->env()));
 
@@ -1109,6 +1109,14 @@ final class ReleaseCheckTest extends TestCase
         }
 
         return $check->run($dry);
+    }
+
+    /** A failure record as updater.php `recordFailure` writes one, its fields as given. */
+    private function failed(array $failure): void
+    {
+        $d = $this->downloads();
+        $d->ensureRoot();
+        file_put_contents($d->root() . '/' . Downloads::FAILURE, json_encode(['format' => 1] + $failure));
     }
 
     /** Install::byHand() against listed releases built here. */

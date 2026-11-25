@@ -84,19 +84,12 @@ class Finish {
 
         } catch ( \Throwable $e ) {
 
-            $failed  = true;
-            $failure = [ 'version' => $v, 'from' => (string) ( $marker['from'] ?? '' ), 'error' => $e->getMessage(), 'at' => time(), 'booted' => true ];
+            $failed = true;
 
-            try {
-
-                $downloads->writeFailure( $failure );
-
-            } catch ( \RuntimeException $write ) {
-
-                CoreAPI::debug( 'Recording the install\'s error: ' . $write->getMessage() );
-            }
-
-            InstallNotices::forFailure( $failure, $notify );
+            // The one writer of last-failure.json, the installer's too; a write that fails says so on STDERR.
+            $u['recordFailure']( $downloads->root(), $marker, $e->getMessage(), false, true );
+            InstallNotices::forFailure( $downloads->failure()
+                ?? [ 'version' => $v, 'from' => (string) ( $marker['from'] ?? '' ), 'error' => $e->getMessage(), 'booted' => true ], $notify );
             fwrite( STDERR, sprintf( "Finishing the install of OWA %s: %s\n", $v, $e->getMessage() ) );
         }
 
