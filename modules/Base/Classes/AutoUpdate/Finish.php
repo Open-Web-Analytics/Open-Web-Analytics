@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 use OWA\Core\CoreAPI;
 
 /**
- * Step 4: finish. The new release's code, in the first run of cli.php after
+ * Finishing an install. The new release's code, in the first run of cli.php after
  * the copy (updater.php `preboot`), which booted it before the command it
  * was asked for.
  *
@@ -76,7 +76,7 @@ class Finish {
                 'source'     => ReleaseCheck::SOURCE,
                 'source_key' => 'installed:' . $v,
                 'title'      => sprintf( CoreAPI::t( 'OWA %s is installed' ), $v ),
-                'body'       => sprintf( CoreAPI::t( 'Automatic updates installed OWA %s.' ), $v )
+                'body'       => sprintf( CoreAPI::t( 'OWA %s is installed and its schema updates are applied.' ), $v )
                     . ( $publish['outcome'] === 'ok' ? '' : ' ' . sprintf( CoreAPI::t( 'Republishing the tracking bundles failed (%s); run php cli.php cmd=publish-trackers.' ), $publish['message'] ) ),
                 'severity'   => 'info',
                 'email'      => (bool) CoreAPI::getSetting( 'base', 'auto_update_email_success' ),

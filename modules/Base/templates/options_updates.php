@@ -30,8 +30,8 @@ foreach ( $view->settings_fieldsets as $set ) {
     echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set ); // trusted: SettingsForm escapes what it prints
 }
 ?>
-    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'A change takes effect at the next release check, within an hour, or at once with Check now. Install now installs the newest release, whatever these settings say.' ) ); ?></p>
-    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'The release check lists OWA\'s releases every six hours, with automatic updates on or off, from OWA\'s update host unless owa-config.php names another. It sends the installed OWA version and nothing else about this installation.' ) ); ?></p>
+    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'A change takes effect at the next release check, within an hour, or at once with Check now. Install now installs the newest downloaded release at once, whatever the update window says; these settings choose which releases are downloaded.' ) ); ?></p>
+    <p><?php $view->out( \OWA\Core\CoreAPI::t( 'The release check lists OWA\'s releases four times a day, with automatic updates on or off, from OWA\'s update host unless owa-config.php names another. It sends the installed OWA version and nothing else about this installation.' ) ); ?></p>
     <?php echo $view->createNonceFormField( 'base.optionsUpdatesUpdate' );?>
     <input type="hidden" name="module" value="base">
     <BUTTON class="owa-button" type="submit" name="action" value="base.optionsUpdatesUpdate"><?php $view->out( \OWA\Core\CoreAPI::t( 'Save' ) ); ?></BUTTON>

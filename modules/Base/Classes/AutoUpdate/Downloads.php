@@ -11,9 +11,9 @@ use OWA\Core\SafeFile;
  * process.
  *
  *   updates-<id>/                0755: listed by the Updates screen (UpdatesState)
- *     owa_<v>_packaged.tar       0600: a release tarball, there only once its SHA-256
- *     owa_<v>_packaged.tar.sig         matched GitHub's digest and its signature a trusted
- *                                      key (Signature). Two at most: the installed
+ *     owa_<v>_packaged.tar       0600: a release tarball, there only once its signature
+ *     owa_<v>_packaged.tar.sig   0644  checked by a trusted key (Signature), and its SHA-256
+ *                                      the listing's digest where it has one. Two at most: the installed
  *                                      release's, which a failed install puts back, and
  *                                      the one the release check chose, until it installs.
  *     last-failure.json          0644: the release whose install failed and was put back,
