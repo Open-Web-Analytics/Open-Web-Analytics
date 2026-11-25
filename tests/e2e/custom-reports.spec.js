@@ -17,7 +17,7 @@
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, loginAs, ui } = require('./fixtures');
-const { pickField, selectCondition } = require('./field-chooser.js');
+const { fieldChooser, pickField, selectCondition } = require('./field-chooser.js');
 
 /** A name unique to this run, so reruns do not collide on the roster. */
 const reportName = (label) => `E2E ${label} ${Date.now()}`;
@@ -99,65 +99,14 @@ async function buildOne(page, label, shared = false) {
 }
 
 /**
- * Pick a value in a Chosen control, by driving the control.
- *
- * Chosen hides the native <select> and renders its own field, so
- * page.selectOption() cannot reach it -- and a test that set the hidden select
- * directly would pass with the visible control broken, which is the only part
- * an author touches.
- *
- * So: open it, type to filter, click the result. That is the interaction, and
- * it also proves the filtering works.
+ * Add a field to the widget's Metrics or Dimensions, by driving the control:
+ * "+ Add" opens the field chooser, which is searched and the name clicked
+ * (field-chooser.js). The hidden <select> that holds the choice is then read,
+ * so a click on the wrong field cannot pass.
  */
-async function chooseInChosen(page, selectId, name) {
-    const container = page.locator(`#${selectId}_chosen`);
+async function chooseField(page, selectId, name) {
+    await pickField(page, page.locator(`#${selectId}Add`), name);
 
-    /*
-     * Into the search field, NOT the middle of the box. Once there are pills
-     * the middle can be a pill's X -- where it lands depends on how wide the
-     * fonts draw the labels -- and clicking it removed the metric the test
-     * had just chosen.
-     */
-    if (await container.locator('.chosen-choices').count()) {
-        await container.locator('.chosen-choices .search-field input').click();
-    } else {
-        await container.locator('.chosen-single').click();
-    }
-
-    const search = container.locator('.chosen-choices input, .chosen-search input').first();
-
-    /*
-     * pressSequentially, NOT fill.
-     *
-     * Chosen filters on goal events. fill() sets the value and fires `input`,
-     * which Chosen does not listen for -- so the list stayed unfiltered and
-     * clicking "the first result" picked whatever came first alphabetically.
-     * Typing "pageViews" selected "actions", and every assertion here counted
-     * pills rather than reading them, so the suite went green on it.
-     */
-    await search.pressSequentially(name);
-
-    /*
-     * The option whose MACHINE NAME is the one asked for, not the first match.
-     *
-     * Every option renders as `label + ' (' + name + ')'`, so the parenthesised
-     * name identifies it exactly. Taking .first() assumed the filtered list put
-     * the wanted dimension at the top, which held only while no other dimension
-     * label contained this one as a substring -- adding "Acquisition Medium"
-     * put it above "Medium" alphabetically and broke a search for `medium`.
-     * Ordering was never the thing being asserted.
-     */
-    const result = page
-        .locator(`#${selectId}_chosen .chosen-results li.active-result`)
-        .filter({ hasText: `(${name})` })
-        .first();
-
-    await expect(result).toBeVisible({ timeout: 5_000 });
-
-    await result.click();
-
-    // ...and it is the one that ended up selected. Without this the helper can
-    // click something and report success for a different choice.
     await expect(page.locator(`#${selectId} option[value="${name}"]`))
         .toHaveJSProperty('selected', true);
 }
@@ -171,9 +120,9 @@ function dialogCancel(page) {
     return page.locator('#dlgCancel');
 }
 
-/** The pills currently shown by a Chosen control. */
-function chosenPills(page, selectId) {
-    return page.locator(`#${selectId}_chosen .search-choice`);
+/** The chips a Metrics or Dimensions field shows, one per field picked. */
+function fieldChips(page, selectId) {
+    return page.locator(`#${selectId}Chips`).getByRole('listitem');
 }
 
 /**
@@ -220,8 +169,8 @@ async function fillWidget(page, opts) {
     if (opts.colspan)             { await page.click(`label[for="dlgWidth-${opts.colspan}"]`); }
     if (opts.rowspan)             { await page.click(`label[for="dlgHeight-${opts.rowspan}"]`); }
 
-    for (const metric of opts.metrics || [])       { await chooseInChosen(page, 'dlgMetrics', metric); }
-    for (const dim of opts.dimensions || [])       { await chooseInChosen(page, 'dlgDimensions', dim); }
+    for (const metric of opts.metrics || [])       { await chooseField(page, 'dlgMetrics', metric); }
+    for (const dim of opts.dimensions || [])       { await chooseField(page, 'dlgDimensions', dim); }
 
     // AFTER the dimensions: the row-link destinations are per dimension, so
     // the select is rebuilt every time one changes.
@@ -374,8 +323,8 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('#dlgChangeType')).toBeFocused();
             await expect(page.locator('#dlgTitle')).toHaveValue('Pages');
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
-            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(1);
+            await expect(fieldChips(page, 'dlgDimensions')).toHaveCount(1);
             await expect(page.locator('#dlgColspanField')).toBeVisible();
             await expect(page.locator('#dlgWidth-6')).toBeChecked();
 
@@ -415,46 +364,37 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * The pickers are the searchable pill control -- the same one the
-         * grid's secondary dimension picker uses -- and not a raw multi-select.
-         *
-         * Asserted on the control chosen BUILDS, because that is the part an
-         * author sees. The native select is still there underneath, hidden, and
-         * checking it would pass with the visible control broken.
-         *
-         * The width matters enough to assert: chosen-js sizes itself at
-         * enhancement time, and inside a hidden dialog that measurement is zero
-         * -- the pickers enhance to a couple of pixels and cannot be used.
+         * The pickers are chips and "+ Add", which opens the field chooser on
+         * the group names. The <select> that holds the choice is hidden.
          */
-        test('the metric picker is a searchable pill control, not a multi-select', async ({ page }) => {
+        test('the metric picker is chips and an Add button that opens the field chooser', async ({ page }) => {
             await openBuilderOnGrid(page);
 
-            const chosen = page.locator('#dlgMetrics_chosen');
-
-            await expect(chosen).toBeVisible();
             await expect(page.locator('#dlgMetrics')).toBeHidden();
 
-            const box = await chosen.boundingBox();
+            const add = page.getByRole('button', { name: '+ Add metric' });
 
-            expect(box.width).toBeGreaterThan(100);
+            await expect(add).toBeVisible();
+            await add.click();
+            await expect(fieldChooser(page).getByRole('option').first()).toBeVisible();
         });
 
         /** Typing filters the list, and choosing turns the value into a pill. */
         test('choosing a metric turns it into a pill that can be removed', async ({ page }) => {
             await openBuilderOnGrid(page);
 
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(0);
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(0);
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(1);
 
             // Several pills in the one field, which is the point of it.
-            await chooseInChosen(page, 'dlgMetrics', 'sessions');
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(2);
+            await chooseField(page, 'dlgMetrics', 'sessions');
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(2);
 
-            // Each pill carries its own remove.
-            await chosenPills(page, 'dlgMetrics').first().locator('.search-choice-close').click();
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
+            // Each chip carries its own remove.
+            await fieldChips(page, 'dlgMetrics').first().getByRole('button', { name: /^Remove / }).click();
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(1);
         });
 
         /**
@@ -608,7 +548,7 @@ test.describe('custom reports', () => {
             await page.fill('#customReportName', reportName('Constraint'));
 
             await startWidget(page, 'grid');
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
 
             // A dimension and a condition, and deliberately no value.
             await fillFilter(page, { dimension: 'sessionMedium', operator: 'is' });
@@ -657,7 +597,7 @@ test.describe('custom reports', () => {
             await page.fill('#customReportName', reportName('IsSet'));
 
             await startWidget(page, 'grid');
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
 
             await fillFilter(page, { dimension: 'sessionCampaign', operator: 'has a value' });
 
@@ -749,7 +689,7 @@ test.describe('custom reports', () => {
             await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('at least one metric');
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
 
             await expect(dialogSave(page)).toBeEnabled();
             await expect(page.locator('#dlgError')).toBeHidden();
@@ -766,12 +706,12 @@ test.describe('custom reports', () => {
             await openBuilder(page);
 
             await startWidget(page, 'pie');
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
 
             await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('dimension');
 
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
 
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
@@ -792,8 +732,8 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'grid');
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
 
             await expect(page.locator('#dlgSortBy')).toHaveValue('pageViews');
             await expect(page.locator('#dlgSortDir')).toHaveValue('desc');
@@ -1112,8 +1052,8 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'grid');
 
-            await chooseInChosen(page, 'dlgMetrics', 'sessions');
-            await chooseInChosen(page, 'dlgDimensions', 'browserType');
+            await chooseField(page, 'dlgMetrics', 'sessions');
+            await chooseField(page, 'dlgDimensions', 'browserType');
 
             await fillFilter(page, { dimension: 'sessionMedium', operator: 'contains', value: 'organic' });
             await page.click('#dlgFilterAdd');
@@ -1422,10 +1362,10 @@ test.describe('custom reports', () => {
             await openBuilderOnGrid(page);
 
             for (const m of ['sessions', 'totalUsers', 'pageViews', 'engagedSessions']) {
-                await chooseInChosen(page, 'dlgMetrics', m);
+                await chooseField(page, 'dlgMetrics', m);
             }
 
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(4);
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(4);
 
             // Nothing further is offered, rather than offered and then refused
             // on save.
@@ -1538,8 +1478,8 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'grid-card');
             await page.fill('#dlgTitle', 'Top pages');
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
             await fillFilter(page, { dimension: 'pagePath', operator: 'contains', value: '/blog/' });
             await page.click('#dlgFilterAdd');
             await dialogSave(page).click();
@@ -1895,18 +1835,18 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'grid-card');
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
 
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
-            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(1);
+            await expect(fieldChips(page, 'dlgDimensions')).toHaveCount(1);
 
             /*
              * At the cap the pickers offer NOTHING further, rather than
              * offering a second and refusing it on save. Asserted on the
-             * options the select holds, because that is what chosen renders its
-             * list from -- an option left in place but unusable would still
-             * turn up in the search results.
+             * options the select holds, because that is what the field chooser
+             * offers -- an option left in place but unusable would still turn
+             * up in it.
              */
             const spare = async (id) => page.locator(`#${id} option`).evaluateAll(
                 (opts) => opts.filter((o) => !o.selected).length);
@@ -1937,8 +1877,8 @@ test.describe('custom reports', () => {
             // Nothing to link from yet.
             await expect(page.locator('#dlgLinkField')).toBeHidden();
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
 
             await expect(page.locator('#dlgLinkField')).toBeVisible();
 
@@ -1965,8 +1905,8 @@ test.describe('custom reports', () => {
             // Nothing shown yet, so there is no "more of the same thing".
             await expect(page.locator('#dlgMoreField')).toBeHidden();
 
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
 
             await expect(page.locator('#dlgMoreField')).toBeVisible();
 

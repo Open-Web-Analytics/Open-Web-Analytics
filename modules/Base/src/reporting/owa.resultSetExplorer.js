@@ -2709,118 +2709,82 @@ OWA.dataGrid.prototype = {
     /**
      * The dimensions to choose from for one heading: slot is the index of the
      * dimension it replaces, or the count of them to add one.
+     *
+     * Adding one opens the field chooser (OWA.fieldChooser) on the heading's
+     * plus. A heading's own dimension opens a popover of its sorts and a field
+     * button that opens the chooser to change it. The dimensions other
+     * headings show are not offered.
      */
     openDimensions : function ( $trigger, rs, slot ) {
 
         var that   = this;
         var lists  = this.dimensionLists( rs );
         var mine   = lists.shown[ slot ];
-        var $box   = jQuery( '<div class="owa_gridDimPop"></div>' );
+        var fields = OWA.fieldChooser.fromGroups( 'dimension', rs.relatedDimensions ).filter( function ( f ) {
+            return f.name === mine || lists.shown.indexOf( f.name ) === -1;
+        } );
 
-        var $search = jQuery( '<input type="search" class="owa_gridPopSearch">' )
-            .attr( 'placeholder', OWA.l( 'Search dimensions' ) )
-            .attr( 'aria-label', OWA.l( 'Search dimensions' ) );
+        var change = function ( name ) {
 
-        var $list = jQuery( '<div class="owa_gridPopList"></div>' );
+            if ( name === mine ) {
+                return;
+            }
 
-        $box.append( $search ).append( $list );
+            var shown = lists.shown.slice();
 
-        // Replacing a heading's dimension can also sort by it.
-        if ( mine ) {
+            shown[ slot ] = name;
+            that.emit( 'dimension_list_change', [ shown.concat( lists.hidden ) ] );
+        };
 
-            var $sorts = jQuery( '<div class="owa_gridPopSorts"></div>' );
+        if ( ! mine ) {
 
-            [ [ 'asc', OWA.l( 'Sort A to Z' ) ], [ 'desc', OWA.l( 'Sort Z to A' ) ] ].forEach( function ( s ) {
+            this.closePopover();
 
-                var on = rs.sortColumn === mine && ( rs.sortOrder === 'desc' ) === ( s[0] === 'desc' );
+            // The plus again closes it.
+            if ( this.adding && this.adding.isOpen() ) {
+                this.adding.close();
+                return;
+            }
 
-                $sorts.append( jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
-                    .toggleClass( 'is-current', on )
-                    .attr( 'aria-pressed', on ? 'true' : 'false' )
-                    .text( s[1] )
-                    .on( 'click', function () { that.emit( 'sort_column_change', [ mine, s[0] ] ); } ) );
-            } );
+            this.adding = new OWA.fieldChooser( fields, { title: OWA.l( 'Add a dimension' ), onPick: change } );
+            this.adding.open( $trigger[0] );
 
-            $box.prepend( $sorts );
+            return;
         }
 
-        jQuery.each( rs.relatedDimensions || {}, function ( family, dims ) {
+        var $box   = jQuery( '<div class="owa_gridDimPop"></div>' );
+        var $sorts = jQuery( '<div class="owa_gridPopSorts"></div>' );
 
-            var $group = jQuery( '<div class="owa_gridPopGroup"></div>' );
+        [ [ 'asc', OWA.l( 'Sort A to Z' ) ], [ 'desc', OWA.l( 'Sort Z to A' ) ] ].forEach( function ( s ) {
 
-            $group.append( jQuery( '<div class="owa_gridPopHeading"></div>' ).text( family ) );
+            var on = rs.sortColumn === mine && ( rs.sortOrder === 'desc' ) === ( s[0] === 'desc' );
 
-            jQuery.each( dims || [], function ( i, dim ) {
-
-                if ( ! dim || ! dim.name ) {
-                    return;
-                }
-
-                var current = dim.name === mine;
-                var inUse   = ! current && lists.shown.indexOf( dim.name ) !== -1;
-
-                var $opt = jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
-                    .attr( 'data-name', dim.name )
-                    .text( dim.label || dim.name )
-                    .toggleClass( 'is-current', current )
-                    .prop( 'disabled', inUse );
-
-                if ( current || inUse ) {
-                    $opt.append( jQuery( '<span class="owa_gridPopNote"></span>' )
-                        .text( current ? OWA.l( 'shown' ) : OWA.l( 'in use' ) ) );
-                }
-
-                $opt.on( 'click', function () {
-
-                    if ( current ) {
-                        that.closePopover( true );
-                        return;
-                    }
-
-                    var shown = lists.shown.slice();
-
-                    shown[ slot ] = dim.name;
-                    that.emit( 'dimension_list_change', [ shown.concat( lists.hidden ) ] );
-                } );
-
-                $group.append( $opt );
-            } );
-
-            if ( $group.children( '.owa_gridPopOption' ).length ) {
-                $list.append( $group );
-            }
+            $sorts.append( jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
+                .toggleClass( 'is-current', on )
+                .attr( 'aria-pressed', on ? 'true' : 'false' )
+                .text( s[1] )
+                .on( 'click', function () { that.emit( 'sort_column_change', [ mine, s[0] ] ); } ) );
         } );
 
-        $search.on( 'input', function () {
+        var id     = 'owa_gridDim-' + this.dom_id;
+        var $field = jQuery( '<button type="button" class="owa_gridFilterField"></button>' )
+            .attr( { id: id + '-field', 'aria-labelledby': id + '-label ' + id + '-field' } );
 
-            var q = String( jQuery( this ).val() || '' ).toLowerCase();
+        $box.append( $sorts )
+            .append( jQuery( '<span class="owa_gridFieldLabel"></span>' ).attr( 'id', id + '-label' ).text( OWA.l( 'Dimension' ) ) )
+            .append( $field );
 
-            $list.children( '.owa_gridPopGroup' ).each( function () {
-
-                var $g   = jQuery( this );
-                var seen = 0;
-
-                $g.children( '.owa_gridPopOption' ).each( function () {
-                    var hit = jQuery( this ).text().toLowerCase().indexOf( q ) !== -1;
-                    jQuery( this ).toggle( hit );
-                    seen += hit ? 1 : 0;
-                } );
-
-                $g.toggle( seen > 0 );
-            } );
-
-        } ).on( 'keydown', function ( e ) {
-
-            if ( e.key === 'Enter' ) {
-                e.preventDefault();
-                $list.find( '.owa_gridPopOption:visible:enabled' ).first().trigger( 'click' );
-            }
+        OWA.fieldChooser.attach( $field, {
+            fields: fields,
+            value: mine,
+            title: OWA.l( 'Change dimension' ),
+            onPick: change
         } );
 
-        var $pop = this.openPopover( $trigger, mine ? OWA.l( 'Change dimension' ) : OWA.l( 'Add a dimension' ), $box );
+        var $pop = this.openPopover( $trigger, OWA.l( 'Change dimension' ), $box );
 
         if ( $pop ) {
-            $search.trigger( 'focus' );
+            $field.trigger( 'focus' );
         }
     },
 

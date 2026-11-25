@@ -2061,36 +2061,46 @@ li.constraintRow {
     outline-offset: 1px;
 }
 
-/* Metrics and dimensions: chosen's pills. */
-.owa .owa_widgetPanel .chosen-container-multi .chosen-choices {
-    min-height: 40px;
-    padding: 4px 6px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: none;
+/* Metrics and dimensions: a chip per field picked, and "+ Add" (owa.customReportEdit.js). */
+.owa .owa_fieldPicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
 }
 
-.owa .owa_widgetPanel .chosen-container-active .chosen-choices {
-    border-color: #1874CD;
-    box-shadow: 0 0 0 1px #1874CD;
+.owa .owa_fieldChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.owa .owa_widgetPanel .chosen-container-multi .chosen-choices li.search-choice {
-    margin: 2px 4px 2px 0;
-    padding: 5px 26px 5px 10px;
-    border: 0;
-    border-radius: 14px;
-    background: #eef4fb;
-    box-shadow: none;
+.owa .owa_fieldChips:empty {
+    display: none;
+}
+
+.owa .owa_fieldChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 3px 3px 10px;
+    border-radius: 999px;
+    background: #fdf0e4;
     font-size: 0.8125rem;
-    line-height: 1.125rem;
-    color: #0f4f8f;
 }
 
-.owa .owa_widgetPanel .chosen-container-multi .chosen-choices li.search-choice .search-choice-close {
-    top: 7px;
-    right: 8px;
+.owa .owa_fieldChipRemove {
+    padding: 0 6px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--owa-text-muted);
+    cursor: pointer;
+}
+
+.owa .owa_fieldChipRemove:hover,
+.owa .owa_fieldChipRemove:focus-visible {
+    background: #f6dcc4;
 }
 
 .owa .owa_widgetPanel .chosen-container-single .chosen-single {

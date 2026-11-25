@@ -260,8 +260,9 @@ class CustomReportEdit extends \OWA\Core\ReportController {
     }
 
     /**
-     * A registry map reduced to what the chooser shows, sorted by what a
-     * person reads: the name and label, the description, the group (a
+     * A registry map reduced to what the chooser shows, in the registry's
+     * order (the field chooser groups them, in the order the groups first
+     * come): the name and label, the description, the group (a
      * dimension's family, a metric's group) and its name, and the type (a
      * dimension's data_type, a metric's metric_type).
      *
@@ -270,7 +271,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * put the query internals into the page source.
      *
      * @param mixed $registry
-     * @return list<array{name: string, label: string, description: string, group: string, group_label: string, type: string}> sorted by label
+     * @return list<array{name: string, label: string, description: string, group: string, group_label: string, type: string}>
      */
     private static function choices( $registry ) {
 
@@ -309,11 +310,6 @@ class CustomReportEdit extends \OWA\Core\ReportController {
                 'type'        => $type,
             ];
         }
-
-        usort( $out, static function ( $a, $b ) {
-
-            return strcasecmp( $a['label'], $b['label'] );
-        } );
 
         return $out;
     }
