@@ -61,6 +61,26 @@ class SafeFile {
     }
 
     /**
+     * $dir and every missing directory above it, each made with $mode
+     * (makeDir()).
+     *
+     * @param  string $dir
+     * @param  int    $mode
+     * @return bool whether $dir is there
+     */
+    public static function makeDirs( $dir, $mode ) {
+
+        $dir = rtrim( (string) $dir, '/' );
+
+        if ( $dir === '' || is_dir( $dir ) ) {
+
+            return $dir !== '';
+        }
+
+        return self::makeDirs( dirname( $dir ), $mode ) && ( self::makeDir( $dir, $mode ) || is_dir( $dir ) );
+    }
+
+    /**
      * $path's contents replaced whole: written under a fresh name and renamed
      * over it.
      *

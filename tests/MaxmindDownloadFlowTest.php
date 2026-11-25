@@ -222,6 +222,44 @@ final class MaxmindDownloadFlowTest extends TestCase {
     }
 
     /**
+     * Another user can write the database's directory (the data directory's
+     * maxmind/ was shared): a link it puts at a name this command writes is
+     * never written through, and the working directory is one this run made.
+     */
+    public function testNothingIsWrittenThroughALinkPutInTheDirectory(): void {
+
+        $victim = sys_get_temp_dir() . '/owa-geoip-victim-' . bin2hex( random_bytes( 4 ) );
+        symlink( $victim, $this->dir . '.GeoLite2-City.download-attempt' );
+
+        $c = $this->controller( [ 'params' => $this->withKey() ] );
+        $c->action();
+
+        $this->assertSame( 'ok', $c->outcomeIs() );
+        $this->assertFileDoesNotExist( $victim, 'the attempt marker was not written through the link' );
+        $this->assertSame( '0644', sprintf( '%04o', fileperms( $this->dir . 'GeoLite2-City.mmdb' ) & 0777 ),
+            'readable by the web server, set before it was moved into place' );
+        @unlink( $victim );
+    }
+
+    /** removeTree() deletes nothing through a link: the iterator would follow it. */
+    public function testRemovingATreeNeverFollowsALink(): void {
+
+        $target = sys_get_temp_dir() . '/owa-geoip-keep-' . bin2hex( random_bytes( 4 ) );
+        mkdir( $target );
+        file_put_contents( $target . '/keep.txt', 'x' );
+        symlink( $target, $this->dir . 'link' );
+
+        $cli = ( new ReflectionClass( \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::class ) )->newInstanceWithoutConstructor();
+        ( new ReflectionMethod( $cli, 'removeTree' ) )->invoke( $cli, $this->dir . 'link/' );
+
+        $this->assertFileExists( $target . '/keep.txt' );
+
+        unlink( $this->dir . 'link' );
+        unlink( $target . '/keep.txt' );
+        rmdir( $target );
+    }
+
+    /**
      * The other bug: asking what would happen must not cost what doing it
      * costs. MaxMind rate-limit downloads.
      */

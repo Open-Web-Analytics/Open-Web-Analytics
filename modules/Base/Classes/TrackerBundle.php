@@ -518,7 +518,9 @@ class TrackerBundle {
         $path     = self::path( $site_id );
         $manifest = self::buildManifest();
 
-        if ( ! $path || ! $manifest || ! is_readable( $path ) ) {
+        // Read only as the plain file a publish leaves: the web server and the
+        // CLI both write this directory, and a FIFO here would hang the run.
+        if ( ! $path || ! $manifest || ! is_file( $path ) || is_link( $path ) || ! is_readable( $path ) ) {
 
             return false;
         }
@@ -569,22 +571,19 @@ class TrackerBundle {
             return false;
         }
 
-        $tmp = $path . '.' . getmypid() . '.tmp';
+        /*
+         * Under a fresh name, its mode set as it is made, then renamed over
+         * the bundle (SafeFile::replace()): the web server and the CLI both
+         * write here, so neither may write through a link the other could
+         * have put at a name it knows.
+         */
+        try {
 
-        if ( @file_put_contents( $tmp, $source ) !== strlen( $source ) ) {
+            \OWA\Core\SafeFile::replace( $path, $source, 0644 );
 
-            @unlink( $tmp );
-            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot write $tmp." );
+        } catch ( \RuntimeException $e ) {
 
-            return false;
-        }
-
-        @chmod( $tmp, 0644 );
-
-        if ( ! @rename( $tmp, $path ) ) {
-
-            @unlink( $tmp );
-            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot move the bundle into $path." );
+            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot write $path: " . $e->getMessage() );
 
             return false;
         }
