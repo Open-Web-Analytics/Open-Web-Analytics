@@ -270,6 +270,21 @@ class ResultSetManager extends \OWA\Core\Base {
                     }
                 }
 
+                // A Yes/No dimension takes Yes or No, with is or is not (booleanConstraint()).
+                $entry = $this->isDimension( $constraint['name'] ) ? ( $this->dimensionRegistry()->all()[ $constraint['name'] ] ?? null ) : null;
+
+                if ( ( $entry['data_type'] ?? null ) === 'boolean' && ! self::emptyTestFor( $constraint ) ) {
+
+                    $flag = self::booleanConstraint( $constraint['operator'] ?? '', $constraint['value'] );
+
+                    if ( ! is_array( $flag ) ) {
+
+                        $this->addRequestError( sprintf( $flag, $entry['label'] ?? $constraint['name'] ) );
+
+                        continue;
+                    }
+                }
+
                 if ( in_array( $constraint['operator'] ?? '', [ '=~', '!~' ], true ) ) {
 
                     $problem = self::regexProblem( (string) $constraint['value'] );
@@ -1087,6 +1102,20 @@ class ResultSetManager extends \OWA\Core\Base {
 
             $dim = $this->lookupDimension($constraint['name'], $entity);
 
+            // A Yes/No dimension, filtered in the words its cells show; a request's is checked in setConstraints().
+            if ( ! $unary && ( $dim['data_type'] ?? null ) === 'boolean' ) {
+
+                $flag = self::booleanConstraint( $constraint['operator'], $constraint['value'] );
+
+                if ( ! is_array( $flag ) ) {
+
+                    $this->addError( sprintf( $flag, $dim['label'] ?? $constraint['name'] ) );
+                    return;
+                }
+
+                [ $constraint['operator'], $constraint['value'] ] = $flag;
+            }
+
             $col = $dim['column'];
             $constraint['name'] = $col;
 
@@ -1106,6 +1135,40 @@ class ResultSetManager extends \OWA\Core\Base {
                 $this->addError( \OWA\Core\CoreAPI::t( 'A calculated metric cannot be a constraint.' ) );
             }
         }
+    }
+
+    /**
+     * A constraint on a boolean dimension as the column holds it: [operator,
+     * value], or why it is refused, a sprintf() format for the dimension's label.
+     *
+     * The value is what its cells show: Yes or No (in the page's language and
+     * in English), or true and false, or 1 and 0, in any case. The flags hold
+     * 1 for true and 0 or NULL for false, so Yes is `== 1` and No is `!= 1`,
+     * which Db::where() widens to NULL. Compared as written, "Yes" against an
+     * integer column is cast to 0, and the filter selected the false rows.
+     * Only is and is not mean anything here.
+     *
+     * @param  string $operator
+     * @param  mixed  $value
+     * @return array{0: string, 1: int}|string
+     */
+    public static function booleanConstraint( $operator, $value ) {
+
+        $v   = mb_strtolower( trim( (string) $value ) );
+        $yes = in_array( $v, [ '1', 'true', 'yes', mb_strtolower( \OWA\Core\CoreAPI::t( 'Yes' ) ) ], true );
+        $no  = in_array( $v, [ '0', 'false', 'no', mb_strtolower( \OWA\Core\CoreAPI::t( 'No' ) ) ], true );
+
+        if ( ! in_array( $operator, [ '==', '=', '!=' ], true ) ) {
+
+            return \OWA\Core\CoreAPI::t( '%s is Yes or No, so it can only be filtered with is or is not.' );
+        }
+
+        if ( $yes === $no ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( '%%s is Yes or No; "%s" is neither.' ), str_replace( '%', '%%', (string) $value ) );
+        }
+
+        return ( $yes xor $operator === '!=' ) ? [ '==', 1 ] : [ '!=', 1 ];
     }
 
     /**
