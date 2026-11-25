@@ -157,7 +157,8 @@ final class InstallFinishTest extends CliControllerTestCase
      * A hand run of cmd=core-update-schema after a broken install runs the
      * rest of Finish: the tracking bundles (written here under a test
      * public_path), the self-test (its listing unreachable, as a network
-     * failure it shrugs off), the notice and the clean-up.
+     * failure it shrugs off), the notice and the clean-up; a step that fails
+     * again is recorded at that step, the install's log carried on.
      */
     public function testAHandRunThatCompletesClearsTheFailedFinish(): void
     {
@@ -181,8 +182,17 @@ final class InstallFinishTest extends CliControllerTestCase
             file_put_contents($d->tarball('0.9.0'), 'the replaced release');
             file_put_contents($d->tarball('0.9.0') . '.sig', 'its signature');
             $this->updates([]);
-            $this->assertNull($d->failure());
-            $this->assertFileDoesNotExist($d->tarball('0.9.0'), 'cleaned up as Finish would have');
+
+            // On to the bundles, which publish only where the tracker is built (not every CI job builds it;
+            // the e2e's finish-trackers-fail finishes it for real): complete, or broken there, never left as it was.
+            $after = $d->failure();
+
+            if ($after === null) {
+                $this->assertFileDoesNotExist($d->tarball('0.9.0'), 'cleaned up as Finish would have');
+            } else {
+                $this->assertSame('trackers', $after['step'], 'the hand run carried on to the bundles');
+                $this->assertStringContainsString('cmd=core-update-schema, by hand', $after['log'][0]);
+            }
 
             // The bundles cannot be written: broken again, at the step after the schema updates.
             $this->failed($d, ['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'the bundles', 'booted' => true, 'step' => 'trackers', 'log' => ['earlier']]);
