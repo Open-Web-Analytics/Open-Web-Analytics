@@ -274,9 +274,9 @@ function buildTree( $repo, $work ) {
 
 /**
  * A release package: the build at $version, changed by $edit, its release.php
- * written as npm run build writes it, then $after (for release.php itself).
- * Checked as the packager checks it before signing (release-verify.sh),
- * against HEAD changed the same way.
+ * written as npm run build writes it, then $after (for release.php itself, or
+ * a file cmd=version-info could not boot with). Checked as the packager checks
+ * it before signing (release-verify.sh), against HEAD changed the same way.
  *
  * @return array{file: string, sha256: string, size: int}
  */
@@ -308,17 +308,20 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
 
     must( 'php cli.php cmd=version-info --file=release.php', $tree );
 
-    if ( $after ) {
-
-        $after( $tree );
-    }
-
-    must( sprintf( 'bash %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-tarball.sh' ), escapeshellarg( $version ) ), $tree );
-
     $ref = "$work/ref-$name";
     must( 'rm -rf ' . escapeshellarg( $ref ) );
     must( sprintf( 'cp -a %s %s', escapeshellarg( "$work/clean" ), escapeshellarg( $ref ) ) );
     $prepare( $ref );
+    copy( "$tree/release.php", "$ref/release.php" );
+
+    if ( $after ) {
+
+        $after( $tree );
+        $after( $ref );
+    }
+
+    must( sprintf( 'bash %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-tarball.sh' ), escapeshellarg( $version ) ), $tree );
+
     must( sprintf( 'bash %s %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-verify.sh' ), escapeshellarg( $version ),
         escapeshellarg( "$tree/owa_{$version}_packaged.tar" ) ), $ref );
     must( 'rm -rf ' . escapeshellarg( $ref ) );
