@@ -415,6 +415,15 @@ final class SystemHealthTest extends TestCase
         $this->assertStringContainsString('The install is broken and needs attention now', $broken['detail']);
     }
 
+    /** What stops a release before anything changes: yellow, from the first check that finds it. */
+    public function testAProblemBeforeTheCopyIsShownFromTheStart(): void
+    {
+        $finding = SystemHealth::updateProblem(['stage' => 'requirements', 'version' => '2.0.3', 'from' => '2.0.2', 'error' => 'It needs PHP 8.2 or later',
+            'first_at' => 1800000000, 'at' => 1800000000]);
+        $this->assertSame(['yellow', 'OWA 2.0.3 cannot be installed yet'], [$finding['level'], $finding['label']]);
+        $this->assertStringContainsString("OWA 2.0.3's requirements are not met: It needs PHP 8.2 or later. Nothing was changed: OWA 2.0.2 runs as before.", $finding['detail']);
+    }
+
     public function testTheInstallationNamesTheServerRole(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');

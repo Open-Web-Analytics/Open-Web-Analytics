@@ -731,7 +731,10 @@ $scenarios = [
 
         [ , $out ] = release_check( $site, $ca );
         check( ! downloaded( $site, TO ) && envVersion( $site ) === FROM, "a release that fails its SHA-256 was kept or installed:\n$out" );
-        check( hasNotice( notices( $db ), 'download_failing:' . TO ), 'no "could not be downloaded" notice' );
+        // Kept and shown from the first check; a notice only once it has lasted 12 hours.
+        [ , $status ] = next_run( $site, $ca );
+        check( ! hasNotice( notices( $db ), 'cannot_install:' ) && str_contains( $status, 'OWA ' . TO . ' cannot be installed yet: Downloading OWA ' . TO . ' failed: ' ),
+            "a notice at the first failed download, or core-update-status does not show it:\n$status" );
     },
 
     'not-signed' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
@@ -771,7 +774,9 @@ $scenarios = [
 
         [ , $out ] = release_check( $site, $ca );
         check( downloaded( $site, TO ) && envVersion( $site ) === FROM, "it was not downloaded, or it installed:\n$out" );
-        check( str_contains( $out, 'cannot be installed here yet' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no \"cannot be installed automatically yet\" notice:\n$out" );
+        [ , $status ] = next_run( $site, $ca );
+        check( str_contains( $out, 'cannot be installed here yet' ) && ! hasNotice( notices( $db ), 'cannot_install:' )
+            && str_contains( $status, 'OWA ' . TO . '\'s requirements are not met: ' ), "the unmet requirement is noticed at once, or not shown:\n$out\n$status" );
 
         // Nor by hand: what it needs is not met.
         [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
@@ -1468,7 +1473,8 @@ $scenarios = [
 
         [ , $out ] = release_check( $site, $ca );
         check( envVersion( $site ) === FROM && downloaded( $site, TO ), "a release without updater.php was installed, or not downloaded:\n$out" );
-        check( str_contains( $out, 'The release has no updater.php' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no notice naming the missing file:\n$out" );
+        [ , $status ] = next_run( $site, $ca );
+        check( str_contains( $out, 'The release has no updater.php' ) && str_contains( $status, 'The release has no updater.php' ), "core-update-status does not name the missing file:\n$out\n$status" );
     },
 
 ];

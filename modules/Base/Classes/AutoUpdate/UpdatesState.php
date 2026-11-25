@@ -51,7 +51,7 @@ class UpdatesState {
 
         return self::describe( $downloads->versions(), $downloads->failure(), \OWA\Core\Env::version(),
             Vcs::checkout( \OWA\Core\Env::root() ), (bool) CoreAPI::getSetting( 'base', 'auto_update' ), $downloads->count(),
-            $check->window(), Downloads::updater()['readMarker']( \OWA\Core\Env::root() ) );
+            $check->window(), Downloads::updater()['readMarker']( \OWA\Core\Env::root() ), Problem::stored() );
     }
 
     /**
@@ -65,9 +65,10 @@ class UpdatesState {
      * @param  int                                                                       $dirs       updates-* directories found
      * @param  array{days: list<int>, start: string, end: string, timezone: string}|null $window
      * @param  array<string, mixed>|null                                                 $marker     the install marker, while an install is under way
+     * @param  array<string, mixed>|null                                                 $problem    what stops a release before anything changes (Problem)
      * @return array{lines: list<string>, actions: list<string>}
      */
-    public static function describe( array $downloaded, $failure, $installed, $checkout, $enabled, $dirs, $window, $marker = null ) {
+    public static function describe( array $downloaded, $failure, $installed, $checkout, $enabled, $dirs, $window, $marker = null, $problem = null ) {
 
         $lines = [ sprintf( CoreAPI::t( 'Installed: OWA %s.' ), $installed ) ];
 
@@ -104,6 +105,12 @@ class UpdatesState {
         if ( trim( (string) ( $failure['error'] ?? '' ) ) !== '' ) {
 
             $d       = InstallNotices::describe( (array) $failure );
+            $lines[] = $d['title'] . ': ' . implode( ' ', $d['lines'] );
+        }
+
+        if ( $problem ) {
+
+            $d       = Problem::describe( (array) $problem );
             $lines[] = $d['title'] . ': ' . implode( ' ', $d['lines'] );
         }
 

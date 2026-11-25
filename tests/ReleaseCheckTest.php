@@ -5,6 +5,7 @@ use OWA\Module\Base\Classes\AutoUpdate\Downloads;
 use OWA\Module\Base\Classes\AutoUpdate\Install;
 use OWA\Module\Base\Classes\AutoUpdate\InstallLock;
 use OWA\Module\Base\Classes\AutoUpdate\Preflight;
+use OWA\Module\Base\Classes\AutoUpdate\Problem;
 use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
 use OWA\Module\Base\Classes\AutoUpdate\Releases;
 use OWA\Module\Base\Classes\AutoUpdate\Signature;
@@ -36,6 +37,9 @@ final class ReleaseCheckTest extends TestCase
 
     /** @var array<string, int> source_key => when first raised */
     private array $raised = [];
+
+    /** @var array<string, mixed>|null what stops a release before anything changes, as base.auto_update_problem keeps it */
+    private ?array $problem = null;
 
     /** @var array<string, int> module => stored schema */
     private array $schema = ['base' => 95];
@@ -669,20 +673,44 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame([2, 2, 2], $this->feeds, 'not when the listing fails, nor on a dry run');
     }
 
-    public function testAnUnmetRequirementIsAnnouncedOncePerSetOfProblems(): void
+    /**
+     * An unmet requirement is kept from the first check, and noticed only once
+     * it has lasted 12 hours (three checks six hours apart), once; checking
+     * goes on, and a check that gets past it clears it.
+     */
+    public function testAnUnmetRequirementIsNoticedOnlyAfterTwelveHours(): void
     {
         $old = ['php' => '8.1.0'] + $this->env();
         $this->check(['2.0.1'], ['env' => $old]);
-        $this->check(['2.0.1'], ['env' => $old]);
-        $this->check(['2.0.1'], ['env' => ['database' => '8.0.11'] + $old]);
 
-        $unmet = array_values(array_filter(array_keys($this->notices), fn ($k) => str_starts_with($k, 'unmet:2.0.1:')));
-        $this->assertCount(2, $unmet, 'a new problem is a new notice; the same one is not repeated');
-        $this->assertSame('warning', $this->notices[$unmet[0]]['severity']);
-        $this->assertStringContainsString('PHP 8.2 or later', $this->notices[$unmet[0]]['body']);
+        $this->assertSame(['requirements', '2.0.1', $this->now], [$this->problem['stage'], $this->problem['version'], $this->problem['first_at']]);
+        $this->assertStringContainsString('PHP 8.2 or later', $this->problem['error']);
+        $this->assertSame([], $this->notices, 'no notice yet');
+
+        $this->check(['2.0.1'], ['env' => ['database' => '8.0.11'] + $old, 'now' => $this->now + Problem::NOTICE_AFTER - 1]);
+        $this->assertSame($this->now, $this->problem['first_at'], 'the same stage and release: when it started is kept');
+        $this->assertSame([], $this->notices);
+
+        $this->check(['2.0.1'], ['env' => $old, 'now' => $this->now + Problem::NOTICE_AFTER]);
+        $key = 'cannot_install:requirements:2.0.1:' . $this->now;
+        $this->assertSame([$key], array_keys($this->notices));
+        $this->assertSame(['OWA 2.0.1 cannot be installed yet', 'warning', true], [$this->notices[$key]['title'], $this->notices[$key]['severity'], $this->notices[$key]['email']]);
+        $this->assertStringStartsWith("OWA 2.0.1's requirements are not met: ", $this->notices[$key]['body']);
+        $this->assertStringContainsString('Nothing was changed: OWA 2.0.0 runs as before. It has failed since 2027-01-15 08:00 UTC. Automatic updates keep checking every hour, and install OWA 2.0.1 once this is fixed.', $this->notices[$key]['body']);
+        $this->assertStringContainsString("What the check did:\n", $this->notices[$key]['body']);
+        $this->assertTrue($this->problem['noticed']);
+
+        $this->notices = [];
+        $this->check(['2.0.1'], ['env' => $old, 'now' => $this->now + 2 * Problem::NOTICE_AFTER]);
+        $this->assertSame([], $this->notices, 'noticed once');
+
+        // Fixed: it waits for its window now, and the problem is gone.
+        $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.0.1'], ['now' => $this->now + 2 * Problem::NOTICE_AFTER])['outcome']);
+        $this->assertNull($this->problem);
     }
 
-    public function testAFailingDownloadIsInTheBellThenMailedAfterAWeek(): void
+    /** A failing download, tried at each listing: noticed after 12 hours; a run that did not list does not clear it. */
+    public function testAFailingDownloadIsNoticedOnlyAfterTwelveHours(): void
     {
         $bad = function ($r) {
             $r['assets'][0]['digest'] = 'sha256:' . str_repeat('0', 64);
@@ -691,17 +719,34 @@ final class ReleaseCheckTest extends TestCase
         };
 
         $this->check(['2.0.1'], [], $bad);
-        $this->assertSame(['download_failing:2.0.1'], array_keys($this->notices));
-        $this->assertFalse($this->notices['download_failing:2.0.1']['email'], 'the bell only, at first');
+        $this->assertSame(['download', '2.0.1'], [$this->problem['stage'], $this->problem['version']]);
+        $this->assertStringContainsString('SHA-256', $this->problem['error']);
+        $this->assertSame([], $this->notices);
 
-        $this->now += ReleaseCheck::FAILING_FOR - 1;
-        $this->check(['2.0.1'], ['now' => $this->now], $bad);
-        $this->assertArrayNotHasKey('download_failed:2.0.1', $this->notices);
+        // The scheduler, outside its listing hours: nothing listed, so nothing said about the download.
+        $seed  = 'https://owa.example.test/|core-update';
+        $quiet = $this->now + 3600;
+        while ((new ReleaseCheck($this->downloads(), ['seed' => $seed, 'now' => $quiet]))->listingHour()) {
+            $quiet += 3600;
+        }
+        $this->check(['2.0.1'], ['scheduled' => true, 'seed' => $seed, 'now' => $quiet], $bad);
+        $this->assertSame('download', $this->problem['stage'] ?? null, 'a run that did not list keeps it');
 
-        $this->now += 1;
-        $this->check(['2.0.1'], ['now' => $this->now], $bad);
-        $this->assertTrue($this->notices['download_failed:2.0.1']['email']);
-        $this->assertSame('warning', $this->notices['download_failed:2.0.1']['severity']);
+        $this->check(['2.0.1'], ['now' => $this->now + Problem::NOTICE_AFTER], $bad);
+        $key = 'cannot_install:download:2.0.1:' . $this->now;
+        $this->assertArrayHasKey($key, $this->notices);
+        $this->assertStringStartsWith('Downloading OWA 2.0.1 failed: ', $this->notices[$key]['body']);
+        $this->assertStringContainsString('keep trying four times a day', $this->notices[$key]['body']);
+    }
+
+    /** A listing that fails, and another user's files: kept and shown, with no release to name. */
+    public function testWhatStopsEveryReleaseIsKeptToo(): void
+    {
+        $this->check(['2.0.1'], ['releases' => null, 'url' => 'http://127.0.0.1:9/releases']);
+        $this->assertSame('listing', $this->problem['stage'] ?? null);
+        $this->assertNull($this->problem['version'], 'no release to name');
+        $this->assertStringStartsWith('The releases could not be listed: ', Problem::describe($this->problem)['lines'][0]);
+        $this->assertSame('Automatic updates cannot run', Problem::describe($this->problem)['title']);
     }
 
     /** An update this install would run that must be installed by hand: downloaded and announced, never installing itself. */
@@ -925,7 +970,7 @@ final class ReleaseCheckTest extends TestCase
             $this->assertSame(ReleaseCheck::FAILED, $result['outcome'], $case);
             $this->assertSame([$why], $result['problems'], $case);
             $this->assertFalse($this->downloads()->has('2.0.1'), "$case: nothing kept");
-            $this->assertArrayHasKey('download_failing:2.0.1', $this->notices, $case);
+            $this->assertSame(['download', $why], [$this->problem['stage'] ?? null, $this->problem['error'] ?? null], $case);
         }
 
         // No signature asset at all.
@@ -1141,6 +1186,8 @@ final class ReleaseCheckTest extends TestCase
                 }
             },
             'raised_at' => fn ($key) => $this->raised[$key] ?? null,
+            'problem_get' => fn () => $this->problem,
+            'problem_set' => function ($p) { $this->problem = $p; },
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
             'sleep'     => static function ($s) {},

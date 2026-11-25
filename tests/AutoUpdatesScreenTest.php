@@ -47,6 +47,15 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
         $this->assertSame('Installing OWA 2.1.0 failed: Its schema updates did not complete: cmd=core-update-schema did not complete. The install is broken and needs attention now: OWA 2.1.0\'s files are installed, and until its schema updates complete, tracking is queued and reports wait. Fix the cause, then run php cli.php cmd=core-update-schema, which finishes the install.', end($booted['lines']));
     }
 
+    /** What stops a release before anything changes is on the screen from the first check that finds it. */
+    public function testAProblemBeforeTheCopySaysWhy(): void
+    {
+        $state = UpdatesState::describe([], null, '2.0.2', null, true, 1, null, null,
+            ['stage' => 'download', 'version' => '2.0.3', 'from' => '2.0.2', 'error' => 'Fetching it failed', 'first_at' => self::NOW, 'at' => self::NOW]);
+
+        $this->assertSame('OWA 2.0.3 cannot be installed yet: Downloading OWA 2.0.3 failed: Fetching it failed. Nothing was changed: OWA 2.0.2 runs as before. It has failed since 2027-01-15 08:00 UTC. Automatic updates keep trying four times a day, and install OWA 2.0.3 once this is fixed.', end($state['lines']));
+    }
+
     /** While the install marker is there the files may be mixed: the screen says so and offers only a check. */
     public function testAnInstallUnderWayOffersNothingButACheck(): void
     {

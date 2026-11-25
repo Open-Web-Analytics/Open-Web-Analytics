@@ -62,9 +62,6 @@ class ReleaseCheck {
     /** The notices' source (NotificationManager). */
     const SOURCE = 'auto_update';
 
-    /** How long a download may keep failing before the admins are e-mailed. */
-    const FAILING_FOR = 604800;
-
     /** Hours between listings in the scheduler's runs. */
     const LISTING_EVERY = 6;
 
@@ -84,6 +81,15 @@ class ReleaseCheck {
 
     /** @var list<string> */
     private $lines = [];
+
+    /** @var bool whether this run listed the releases */
+    private $listed = false;
+
+    /** @var string|null where a failed run failed, when its outcome does not say (Problem::STAGES) */
+    private $stage = null;
+
+    /** @var string what failed and why, for a run whose problems do not say it */
+    private $why = '';
 
     /** @var array<string, mixed> settings, facts and services a test replaces */
     public $context;
@@ -132,6 +138,9 @@ class ReleaseCheck {
             },
             'notify'    => [ InstallNotices::class, 'send' ],
             'raised_at' => static fn ( $key ) => \OWA\Module\Base\Classes\NotificationManager::raisedAt( self::SOURCE, $key ),
+            // What stops a release before anything changes, while it lasts.
+            'problem_get' => [ Problem::class, 'stored' ],
+            'problem_set' => [ Problem::class, 'store' ],
             'schema'    => static function ( $module ) {
 
                 $v = CoreAPI::getSetting( $module, 'schema_version' );
@@ -148,6 +157,71 @@ class ReleaseCheck {
      * @return Outcome
      */
     public function run( $dry_run = false ) {
+
+        $this->listed = false;
+        $this->stage  = null;
+        $this->why    = '';
+        $result       = $this->check( $dry_run );
+
+        if ( ! $dry_run ) {
+
+            $this->problem( $result );
+        }
+
+        return $result;
+    }
+
+    /**
+     * A failure before the copy (Problem): kept from the check that finds it,
+     * noticed once it has lasted, cleared by a check that gets past it.
+     *
+     * @param  array<string, mixed> $result
+     * @return void
+     */
+    private function problem( array $result ) {
+
+        $was   = ( $this->context['problem_get'] )();
+        $stage = $this->stage ?? ( Problem::STAGES[ $result['outcome'] ] ?? null );
+
+        if ( $stage === null ) {
+
+            // An install under way decides nothing; a run that did not list cannot say a listing or download works again.
+            if ( $was === null || $result['outcome'] === self::BUSY
+                || ( ! $this->listed && in_array( $was['stage'] ?? '', Problem::LISTING, true ) ) ) {
+
+                return;
+            }
+
+            ( $this->context['problem_set'] )( null );
+
+            return;
+        }
+
+        $installed = (string) $this->context['installed'];
+        $u         = Downloads::updater();
+        $log       = array_reduce( array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $result['lines'] ),
+            static fn ( $m, $line ) => $u['logged']( $m, $line ), [] )['log'];
+
+        $lines = array_values( array_filter( $result['lines'], static fn ( $l ) => strpos( (string) $l, '  ' ) !== 0 ) );
+        $error = $stage === 'listing' ? $this->why
+            : ( $result['problems'] ? implode( ' ', array_map( 'trim', $result['problems'] ) ) : (string) end( $lines ) );
+
+        $p = Problem::next( $was, $stage, $result['version'], $installed, $error, $log, (int) $this->context['now'] );
+
+        if ( Problem::describe( $p )['notify'] ) {
+
+            Problem::notify( $p, $this->context['notify'] );
+            $p['noticed'] = true;
+        }
+
+        ( $this->context['problem_set'] )( $p );
+    }
+
+    /**
+     * @param  bool $dry_run
+     * @return Outcome
+     */
+    private function check( $dry_run ) {
 
         $installed = (string) $this->context['installed'];
         $listed    = $dry_run || ! $this->context['scheduled'] || $this->listingHour();
@@ -167,9 +241,13 @@ class ReleaseCheck {
 
             } catch ( \RuntimeException $e ) {
 
-                $error = $e->getMessage();
+                $error     = $e->getMessage();
+                $this->why = $error;
             }
         }
+
+        // Listed, and it worked: only such a run says a listing or download problem is over.
+        $this->listed = $list !== null;
 
         if ( $list !== null && ! $dry_run ) {
 
@@ -285,8 +363,6 @@ class ReleaseCheck {
 
                 } catch ( \RuntimeException $e ) {
 
-                    $this->downloadFailed( $v, $e->getMessage(), $release['url'] );
-
                     return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
                 }
 
@@ -325,10 +401,6 @@ class ReleaseCheck {
 
         if ( $problems ) {
 
-            $this->notify( sprintf( 'unmet:%s:%s', $v, substr( md5( implode( "\n", $problems ) ), 0, 12 ) ), 'warning',
-                sprintf( CoreAPI::t( 'OWA %s cannot be installed automatically yet' ), $v ),
-                implode( "\n", $problems ) . "\n\n" . CoreAPI::t( 'It is checked again every hour, and installs once these are fixed.' ), $url );
-
             return $this->outcome( self::UNMET, $v, $problems, sprintf( '%s cannot be installed here yet; it is judged again at the next run.', $v ) );
         }
 
@@ -352,6 +424,11 @@ class ReleaseCheck {
 
         $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
             array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ) );
+
+        if ( $result['outcome'] !== Install::OK && $result['outcome'] !== Install::BUSY ) {
+
+            $this->stage = 'prepare';
+        }
 
         return $this->outcome( $result['outcome'] === Install::OK ? self::INSTALLING : ( $result['outcome'] === Install::BUSY ? self::BUSY : self::FAILED ),
             $v, $result['lines'], $result['message'] );
@@ -487,6 +564,15 @@ class ReleaseCheck {
             $d     = InstallNotices::describe( $failure );
             $lines = array_merge( $lines, [ sprintf( '%s (%s UTC): %s', $d['title'], gmdate( 'Y-m-d H:i', (int) ( $failure['at'] ?? 0 ) ), implode( ' ', $d['lines'] ) ) ],
                 $d['log'] ? array_merge( [ 'What the install did:' ], array_map( static fn ( $l ) => '  ' . $l, $d['log'] ) ) : [] );
+        }
+
+        $problem = ( $c['problem_get'] )();
+
+        if ( $problem ) {
+
+            $d     = Problem::describe( $problem );
+            $lines = array_merge( $lines, [ sprintf( '%s: %s', $d['title'], implode( ' ', $d['lines'] ) ) ],
+                $d['log'] ? array_merge( [ 'What the last check did:' ], array_map( static fn ( $l ) => '  ' . $l, $d['log'] ) ) : [] );
         }
 
         $marker = Downloads::updater()['readMarker']( $this->root );
@@ -669,33 +755,6 @@ class ReleaseCheck {
         }
 
         return $out;
-    }
-
-    /**
-     * A download that failed: a notice in the bell the first time, and an
-     * e-mail once it has kept failing for FAILING_FOR.
-     *
-     * @param  string $v
-     * @param  string $why
-     * @param  string $url
-     * @return void
-     */
-    private function downloadFailed( $v, $why, $url ) {
-
-        $first = ( $this->context['raised_at'] )( 'download_failing:' . $v );
-
-        if ( $first === null ) {
-
-            $this->notify( 'download_failing:' . $v, 'info',
-                sprintf( CoreAPI::t( 'OWA %s could not be downloaded' ), $v ),
-                $why . "\n\n" . CoreAPI::t( 'Automatic updates try again every hour.' ), $url, false );
-
-        } elseif ( (int) $this->context['now'] - $first >= self::FAILING_FOR ) {
-
-            $this->notify( 'download_failed:' . $v, 'warning',
-                sprintf( CoreAPI::t( 'OWA %s has not downloaded for a week' ), $v ),
-                $why . "\n\n" . CoreAPI::t( 'Automatic updates keep trying every hour.' ), $url );
-        }
     }
 
     /**

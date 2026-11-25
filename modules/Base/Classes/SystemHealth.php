@@ -669,6 +669,13 @@ class SystemHealth {
             $findings[] = $failed;
         }
 
+        $problem = self::updateProblem();
+
+        if ( $problem ) {
+
+            $findings[] = $problem;
+        }
+
         $backup = self::backupDir();
 
         if ( $backup ) {
@@ -729,6 +736,29 @@ class SystemHealth {
         $d = \OWA\Module\Base\Classes\AutoUpdate\InstallNotices::describe( (array) $failure );
 
         return self::finding( $d['broken'] ? 'red' : 'yellow', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update-status' );
+    }
+
+    /**
+     * What stops a release before anything changes (AutoUpdate\Problem),
+     * from the first check that finds it until one gets past it: yellow, as
+     * the installed release runs as before. Its words are the notice's,
+     * which is raised only once it has lasted twelve hours.
+     *
+     * @param  array<string, mixed>|null $problem a test's; else the one kept
+     * @return Finding|null
+     */
+    public static function updateProblem( $problem = null ) {
+
+        $problem = $problem ?? \OWA\Module\Base\Classes\AutoUpdate\Problem::stored();
+
+        if ( ! $problem ) {
+
+            return null;
+        }
+
+        $d = \OWA\Module\Base\Classes\AutoUpdate\Problem::describe( (array) $problem );
+
+        return self::finding( 'yellow', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update' );
     }
 
     /**
