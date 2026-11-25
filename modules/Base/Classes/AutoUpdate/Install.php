@@ -175,6 +175,13 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
+        $foreign = $check->foreignProblems();
+
+        if ( $foreign ) {
+
+            return self::answer( self::FAILED, implode( ' ', $foreign ) );
+        }
+
         try {
 
             $downloads->download( Releases::byTag( $v, $installed, (string) $c['download'] ) );
