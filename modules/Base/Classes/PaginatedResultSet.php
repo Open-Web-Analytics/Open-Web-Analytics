@@ -9,8 +9,8 @@ namespace OWA\Module\Base\Classes;
  * @phpstan-import-type Readiness from \OWA\Module\Base\Classes\Cube\Status
  * @phpstan-type Cell array<string, mixed>
  * @phpstan-type ResultRow array<string, Cell>
- * @phpstan-type RelatedDimensions array<string, list<array{name: string, label: string}>>
- * @phpstan-type RelatedMetrics array<string, list<array{name: string, label: string, description: string, group: string, metric_type: string}>>
+ * @phpstan-type RelatedDimensions array<string, list<array{name: string, label: string, description: string, group_label: string, data_type: string}>>
+ * @phpstan-type RelatedMetrics array<string, list<array{name: string, label: string, description: string, group: string, group_label: string, metric_type: string}>>
  */
 class PaginatedResultSet {
 

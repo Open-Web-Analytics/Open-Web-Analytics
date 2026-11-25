@@ -236,7 +236,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * when it refuses a definition, and a second list built somewhere else
      * would eventually disagree with this one.
      *
-     * @return list<array{name: string, label: string}>
+     * @return list<array{name: string, label: string, description: string, group: string, group_label: string, type: string}>
      */
     public static function metricChoices() {
 
@@ -250,7 +250,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * element anchor).
      *
      * @param  string|null $property_id null for the modules' dimensions alone
-     * @return list<array{name: string, label: string}>
+     * @return list<array{name: string, label: string, description: string, group: string, group_label: string, type: string}>
      */
     public static function dimensionChoices( $property_id ) {
 
@@ -260,14 +260,17 @@ class CustomReportEdit extends \OWA\Core\ReportController {
     }
 
     /**
-     * A registry map reduced to {name, label}, sorted by what a person reads.
+     * A registry map reduced to what the chooser shows, sorted by what a
+     * person reads: the name and label, the description, the group (a
+     * dimension's family, a metric's group) and its name, and the type (a
+     * dimension's data_type, a metric's metric_type).
      *
      * The registry entries carry far more than the picker needs -- the SQL
      * expression among it -- and handing the whole thing to a template would
      * put the query internals into the page source.
      *
      * @param mixed $registry
-     * @return list<array{name: string, label: string}> sorted by label
+     * @return list<array{name: string, label: string, description: string, group: string, group_label: string, type: string}> sorted by label
      */
     private static function choices( $registry ) {
 
@@ -294,9 +297,16 @@ class CustomReportEdit extends \OWA\Core\ReportController {
                 }
             }
 
+            $group = (string) ( $entry['family'] ?? $entry['group'] ?? '' );
+            $type  = (string) ( $entry['params']['metric_type'] ?? $entry['metric_type'] ?? $entry['data_type'] ?? '' );
+
             $out[] = [
-                'name'  => (string) $name,
-                'label' => $label !== '' ? $label : (string) $name,
+                'name'        => (string) $name,
+                'label'       => $label !== '' ? $label : (string) $name,
+                'description' => (string) ( $entry['description'] ?? '' ),
+                'group'       => $group,
+                'group_label' => \OWA\Module\Base\Classes\FieldGroups::label( $group ),
+                'type'        => $type,
             ];
         }
 
