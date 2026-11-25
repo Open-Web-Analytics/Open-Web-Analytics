@@ -32,6 +32,9 @@ final class ReleaseCheckTest extends TestCase
     /** @var list<int> releases each feed was given */
     private array $feeds = [];
 
+    /** @var list<list<string>> the tags each feed was given */
+    private array $fed = [];
+
     /** @var array<string, array<string, mixed>> source_key => notice, each raised once as notify() does */
     private array $notices = [];
 
@@ -300,7 +303,7 @@ final class ReleaseCheckTest extends TestCase
         $quiet = ($hours[0] + 1) % 24;
         $result = $this->check(['2.0.1', '2.0.2'], ['scheduled' => true, 'seed' => 'https://owa.example.test/|core-update', 'now' => gmmktime($quiet, 17, 0, 11, 23, 2026)]);
         $this->assertFalse($this->downloads()->has('2.0.2'), 'not a listing hour: nothing listed, nothing downloaded');
-        $this->assertSame([2, 2], $this->feeds, 'nor the bell fed: only the listing hour\'s run and the run by hand fed it');
+        $this->assertSame([1, 1], $this->feeds, 'nor the bell fed: only the listing hour\'s run and the run by hand fed it (2.0.0; 2.0.1 installs itself)');
         $this->assertSame('2.0.1', $result['version'], 'what was downloaded is still judged');
     }
 
@@ -657,6 +660,20 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(ReleaseCheck::OFF, $this->check(['2.0.1'], ['enabled' => false])['outcome']);
         $this->assertSame(ReleaseCheck::ROLE, $this->check(['2.0.1'], ['role' => 'collector'])['outcome']);
         $this->assertSame([], $this->downloads()->versions());
+    }
+
+    /** A release automatic updates will install is not announced: the notice is the one that says it installed. The rest are. */
+    public function testAReleaseThatInstallsItselfIsNotAnnounced(): void
+    {
+        $this->check(['2.0.1', '2.1.0', '3.0.0'], ['level' => 'patch']);
+        $this->check(['2.0.1', '2.1.0', '3.0.0'], ['level' => 'minor']);
+        $this->check(['2.0.1', '2.1.0', '3.0.0'], ['enabled' => false]);
+
+        $this->assertSame([
+            ['2.0.0', '2.1.0', '3.0.0'],
+            ['2.0.0', '3.0.0'],
+            ['2.0.0', '2.0.1', '2.1.0', '3.0.0'],
+        ], array_map(function ($tags) { sort($tags); return $tags; }, $this->fed), 'patches only: a minor is announced; minors too: only the major; off: all');
     }
 
     /** The bell's release feed comes from the listing on every run: off, a checkout or another role. */
@@ -1178,7 +1195,7 @@ final class ReleaseCheckTest extends TestCase
             'download'  => 'https://example.test/download/',
             'releases'  => $list,
             'env'       => $this->env(),
-            'feed'      => function (array $list) { $this->feeds[] = count($list); return 0; },
+            'feed'      => function (array $list) { $this->feeds[] = count($list); $this->fed[] = array_column($list, 'tag_name'); return 0; },
             'notify'    => function (array $n) {
                 if (!isset($this->notices[$n['source_key']])) {
                     $this->notices[$n['source_key']] = $n;

@@ -113,34 +113,36 @@ class Releases {
 
         foreach ( $releases as $r ) {
 
-            $r = is_array( $r ) ? $r : [];
+            $release = self::installable( is_array( $r ) ? $r : [], $installed, $level );
 
-            if ( ! empty( $r['draft'] ) || ! empty( $r['prerelease'] ) ) {
-
-                continue;
-            }
-
-            $version = (string) ( $r['tag_name'] ?? '' );
-
-            if ( Version::parse( $version ) === null ) {
-
-                continue;
-            }
-
-            if ( ! Version::allows( $level, $installed, $version ) ) {
-
-                continue;
-            }
-
-            $release = self::describe( $r, $version, (string) Version::step( $installed, $version ) );
-
-            if ( $release && ( $best === null || Version::compare( $version, $best['version'] ) > 0 ) ) {
+            if ( $release && ( $best === null || Version::compare( $release['version'], $best['version'] ) > 0 ) ) {
 
                 $best = $release;
             }
         }
 
         return $best;
+    }
+
+    /**
+     * $r as choose() would take it, or null: not a draft or a pre-release, a
+     * step $level allows from $installed, shipping the tarball.
+     *
+     * @param  array<string, mixed> $r         one release from the listing
+     * @param  string               $installed
+     * @param  string               $level
+     * @return Release|null
+     */
+    public static function installable( array $r, $installed, $level ) {
+
+        $version = (string) ( $r['tag_name'] ?? '' );
+
+        if ( ! empty( $r['draft'] ) || ! empty( $r['prerelease'] ) || Version::parse( $version ) === null || ! Version::allows( $level, $installed, $version ) ) {
+
+            return null;
+        }
+
+        return self::describe( $r, $version, (string) Version::step( $installed, $version ) );
     }
 
     /**
