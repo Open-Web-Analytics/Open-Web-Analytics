@@ -682,7 +682,7 @@ function installed( $site, $ca, $version ) {
     $dir = updatesDir( $site );
     check( failure( $site ) === null, 'last-failure.json was left behind: ' . json_encode( failure( $site ) ) );
     check( ! file_exists( "$site/owa-update.php" ), 'the install marker was left behind: ' . @file_get_contents( "$site/owa-update.php" ) );
-    check( ! file_exists( "$site/owa-data/updating" ), 'the lock file was left behind' );
+    check( ! file_exists( "$site/owa-update-lock.php" ), 'the lock file was left behind' );
     check( array_map( 'basename', glob( "$dir/*" ) ?: [] ) === [ "owa_{$version}_packaged.tar", "owa_{$version}_packaged.tar.sig" ],
         'the updates directory does not hold just the installed release\'s tarball: ' . implode( ', ', array_map( 'basename', glob( "$dir/*" ) ?: [] ) ) );
 }

@@ -22,7 +22,7 @@ final class InstallFinishTest extends CliControllerTestCase
 
         $this->tmp = sys_get_temp_dir() . '/owa-finish-' . bin2hex(random_bytes(4));
         mkdir($this->tmp . '/updates', 0700, true);
-        InstallLock::$path = $this->tmp . '/updating';
+        InstallLock::$path = $this->tmp . '/owa-update-lock.php';
     }
 
     protected function tearDown(): void

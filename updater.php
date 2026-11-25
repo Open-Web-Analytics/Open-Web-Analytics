@@ -25,7 +25,7 @@
  *   updatesDirs, updatesDir
  *               the updates directory, owa-data/updates-<32 hex>/ (Downloads).
  *   tryLock, unlock, isLocked, lockState, stillMine, touchLock
- *               the install lock, owa-data/updating (InstallLock).
+ *               the install lock, owa-update-lock.php (InstallLock).
  *   running, alone
  *               the shared flock() every run of cli.php holds on cli.php,
  *               which the installer holds alone before it copies.
@@ -267,7 +267,8 @@ return ( static function () {
 
     $recordFailure = static function ( $updates, array $m, $error, $retry = true, $booted = false ) use ( $writeFile, $retries, $retry_wait, $logged ) {
 
-        if ( (string) $updates === '' ) {
+        // The web server can rename the updates directory and put a link in its place.
+        if ( (string) $updates === '' || is_link( rtrim( (string) $updates, '/' ) ) ) {
 
             fwrite( STDERR, "There is no updates directory to record the failure in.\n" );
 
@@ -275,7 +276,9 @@ return ( static function () {
         }
 
         $file  = rtrim( (string) $updates, '/' ) . '/last-failure.json';
-        $was   = is_link( $file ) ? null : json_decode( (string) @file_get_contents( $file ), true );
+
+        // Read only as the plain file it should be: a FIFO there would hang this run, which holds the lock.
+        $was   = is_file( $file ) && ! is_link( $file ) ? json_decode( (string) @file_get_contents( $file ), true ) : null;
         $from  = (string) ( $m['from'] ?? '' );
         $to    = (string) ( $m['to'] ?? '' );
         $since = (int) ( $m['since'] ?? 0 );
@@ -359,7 +362,12 @@ return ( static function () {
     };
 
     /*
-     * The install lock, owa-data/updating. It exists while a process holds
+     * The install lock, owa-update-lock.php in the OWA directory, beside the
+     * marker. In the OWA directory, not the data directory: only the cron
+     * user takes it, and where the web server runs as another user it cannot
+     * make or delete a file there, which is what the copy relies on too. A
+     * PHP file that exits first, so a request for it shows nothing. It exists
+     * while a process holds
      * it: the installer from its checks to the end of the copy, Finish, or a
      * release being put back. Its one line says who ("install 2.0.1, pid
      * 4242, since ..."). Whoever finds it held stops and tries again on a
@@ -387,6 +395,9 @@ return ( static function () {
      * instant would do.
      */
     $lock_stale = 600;
+
+    /* The lock's name, in the directory tryLock() and isLocked() are given. */
+    $lock_name = 'owa-update-lock.php';
 
     /* 'free' (no file), 'held', or 'left' (its holder is gone). */
     $lockState = static function ( $file, $no_flock = false ) use ( $lock_stale ) {
@@ -431,7 +442,7 @@ return ( static function () {
         return $time !== false && time() - $time < $lock_stale ? 'held' : 'left';
     };
 
-    $isLocked = static fn ( $data ) => $lockState( rtrim( (string) $data, '/' ) . '/updating' ) === 'held';
+    $isLocked = static fn ( $dir ) => $lockState( rtrim( (string) $dir, '/' ) . '/' . $lock_name ) === 'held';
 
     /* Whether the lock file is still this holder's (its token), $wait seconds on. */
     $stillMine = static function ( array $hold, $wait = 0 ) {
@@ -449,12 +460,16 @@ return ( static function () {
      * for the operator: "install 2.0.1", "release check". $no_flock: as where
      * the filesystem has none (a test's).
      */
-    /* What the lock file says: who holds it, since when, and the token that tells this holder from a later one. */
-    $lockLine = static fn ( $who, $token ) => sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
+    /*
+     * What the lock file says, after the line that exits when it is
+     * requested: who holds it, since when, and the token that tells this
+     * holder from a later one.
+     */
+    $lockLine = static fn ( $who, $token ) => "<?php exit; ?>\n" . sprintf( "%s, pid %d, since %s UTC, token %s\n", $who, getmypid(), gmdate( 'Y-m-d H:i:s' ), $token );
 
-    $tryLock = static function ( $data, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine, $createFile, $lockLine ) {
+    $tryLock = static function ( $dir, $who = 'install', $no_flock = false ) use ( $lockState, $stillMine, $createFile, $lockLine, $lock_name ) {
 
-        $file  = rtrim( (string) $data, '/' ) . '/updating';
+        $file  = rtrim( (string) $dir, '/' ) . '/' . $lock_name;
         $stale = false;
 
         switch ( $lockState( $file, $no_flock ) ) {

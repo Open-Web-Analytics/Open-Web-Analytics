@@ -94,7 +94,7 @@ Install::$pending = [
     'from_h'     => 'from',
     'to_files'   => [],
     'from_files' => [],
-    'hold'       => [ 'file' => "$root/owa-data/updating" ],
+    'hold'       => [ 'file' => "$root/owa-update-lock.php" ],
     'updates'    => "$root/owa-data/updates-test",
     'from_tar'   => "$root/owa-data/updates-test/owa_2.0.1_packaged.tar",
     'to_tar'     => "$root/owa-data/updates-test/owa_2.0.2_packaged.tar",

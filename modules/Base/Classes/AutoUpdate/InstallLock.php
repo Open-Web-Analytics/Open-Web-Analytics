@@ -2,8 +2,10 @@
 namespace OWA\Module\Base\Classes\AutoUpdate;
 
 /**
- * owa-data/updating, the install lock, for booted code: updater.php's
- * isLocked, tryLock, unlock and touchLock, which say how it works.
+ * owa-update-lock.php in the OWA directory, the install lock, for booted
+ * code: updater.php's isLocked, tryLock, unlock and touchLock, which say how
+ * it works, and why it is in the OWA directory rather than the data
+ * directory.
  *
  * It exists while one process holds it, and its line says who: an install
  * from its checks to the end of the copy (Install), Finish, a release being
@@ -12,7 +14,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  */
 class InstallLock {
 
-    const FILE = 'updating';
+    const FILE = 'owa-update-lock.php';
 
     /** @var string|null a test names its own */
     public static $path = null;
@@ -35,7 +37,7 @@ class InstallLock {
     /** @return string */
     public static function path() {
 
-        return self::$path ?? \OWA\Core\Env::dataDir() . self::FILE;
+        return self::$path ?? \OWA\Core\Env::root() . '/' . self::FILE;
     }
 
     /** @return bool whether another process holds the lock now */
