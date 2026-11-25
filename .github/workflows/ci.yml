@@ -398,6 +398,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        # The release tags and their commits, for the run from the last release.
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -421,6 +424,14 @@ jobs:
           npm run build
 
       - name: Download, install and recover
+        run: php tests/tools/self_update_e2e.php
+
+      # The installed release built from the newest 2.x release tag, so the
+      # installer that hands over to this commit is a released one. Skipped,
+      # saying so, until there is a 2.x tag.
+      - name: Install from the last release
+        env:
+          OWA_E2E_FROM_REF: 03ec6057
         run: php tests/tools/self_update_e2e.php
 
   e2e:

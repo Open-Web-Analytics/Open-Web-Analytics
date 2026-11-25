@@ -65,6 +65,11 @@
  * passes, unless OWA_SELF_UPDATE_KEEP is set.
  *
  * Usage, from the repository root: php tests/tools/self_update_e2e.php [scenario ...]
+ *
+ * Cross-version: OWA_E2E_FROM_REF builds the installed release from older
+ * code, so its installer is the one that hands over to HEAD: "release" for the
+ * newest 2.x.y tag (the run is skipped while there is none), or any tag or
+ * commit. Only CROSS_VERSION's scenarios run then, unless others are named.
  */
 
 require __DIR__ . '/scratch_guard.php';
@@ -244,24 +249,26 @@ function maintenance( $site ) {
 // ---- the build -------------------------------------------------------------
 
 /**
- * HEAD as the Release Packager checks it out, with production vendor/ and this
- * checkout's build output. $work/clean is HEAD alone, which each package's
- * tarball is checked against (package()).
+ * $ref (HEAD, or the installed release's: fromRef()) as the Release Packager
+ * checks it out, with production vendor/ from its own composer.lock, and this
+ * checkout's build output: an older release's JavaScript is not built again.
+ * "<build>-clean" is $ref alone, which each package's tarball is checked
+ * against (package()).
  */
-function buildTree( $repo, $work ) {
+function buildTree( $repo, $work, $ref = 'HEAD', $name = 'build' ) {
 
-    $build = "$work/build";
+    $build = "$work/$name";
 
-    if ( is_file( "$build/.complete" ) && is_dir( "$work/clean" ) ) {
+    if ( is_file( "$build/.complete" ) && is_dir( "$build-clean" ) ) {
 
         return $build;
     }
 
-    foreach ( [ $build, "$work/clean" ] as $dir ) {
+    foreach ( [ $build, "$build-clean" ] as $dir ) {
 
         must( 'rm -rf ' . escapeshellarg( $dir ) );
         mkdir( $dir, 0755, true );
-        must( sprintf( 'git -C %s archive --format=tar HEAD | tar -x -C %s', escapeshellarg( $repo ), escapeshellarg( $dir ) ) );
+        must( sprintf( 'git -C %s archive --format=tar %s | tar -x -C %s', escapeshellarg( $repo ), escapeshellarg( $ref ), escapeshellarg( $dir ) ) );
     }
     must( sprintf( 'composer install --no-dev --optimize-autoloader --no-interaction --no-progress --quiet --working-dir=%s', escapeshellarg( $build ) ) );
 
@@ -273,6 +280,47 @@ function buildTree( $repo, $work ) {
     touch( "$build/.complete" );
 
     return $build;
+}
+
+/**
+ * The scenarios run when the installed release is not HEAD: those whose
+ * checks are of what the install does, not of how the installed release
+ * reports it, which older code words its own way.
+ */
+const CROSS_VERSION = [ 'installs' ];
+
+/**
+ * What the installed release is built from: OWA_E2E_FROM_REF, a tag or
+ * commit; "release", the newest 2.x.y release tag (false while there is
+ * none); unset, HEAD.
+ *
+ * @return string|false
+ */
+function fromRef( $repo ) {
+
+    $ref = trim( (string) getenv( 'OWA_E2E_FROM_REF' ) );
+
+    if ( $ref === '' ) {
+
+        return 'HEAD';
+    }
+
+    if ( $ref === 'release' ) {
+
+        foreach ( preg_split( '/\R/', must( sprintf( 'git -C %s tag -l %s --sort=-v:refname', escapeshellarg( $repo ), escapeshellarg( '2.*' ) ) ) ) as $tag ) {
+
+            if ( preg_match( '/^2\.\d+\.\d+$/', trim( $tag ) ) ) {
+
+                return trim( $tag );
+            }
+        }
+
+        return false;
+    }
+
+    must( sprintf( 'git -C %s rev-parse --verify --quiet %s', escapeshellarg( $repo ), escapeshellarg( $ref . '^{commit}' ) ) );
+
+    return $ref;
 }
 
 /**
@@ -297,9 +345,10 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
         check( preg_match( '/const TRUSTED = \[[^\]]*\];/', (string) file_get_contents( $sig ) ) === 1, 'Signature declares no TRUSTED keys to replace' );
         file_put_contents( $sig, preg_replace( '/const TRUSTED = \[[^\]]*\];/', "const TRUSTED = [ '" . E2E_SIGNING_PUBLIC . "' ];", (string) file_get_contents( $sig ) ) );
 
+        // master in a checkout; a release tag's own version in an installed release built from one.
         $env = (string) file_get_contents( "$tree/Core/Env.php" );
-        check( str_contains( $env, "const VERSION = 'master';" ), 'Core/Env.php does not say master, so it cannot be versioned as the packager does' );
-        file_put_contents( "$tree/Core/Env.php", str_replace( "const VERSION = 'master';", "const VERSION = '$version';", $env ) );
+        check( preg_match_all( "/const VERSION = '[^']*';/", $env ) === 1, 'Core/Env.php does not declare its VERSION once, so it cannot be versioned as the packager does' );
+        file_put_contents( "$tree/Core/Env.php", preg_replace( "/const VERSION = '[^']*';/", "const VERSION = '$version';", $env ) );
 
         if ( $edit ) {
 
@@ -313,7 +362,7 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
 
     $ref = "$work/ref-$name";
     must( 'rm -rf ' . escapeshellarg( $ref ) );
-    must( sprintf( 'cp -a %s %s', escapeshellarg( "$work/clean" ), escapeshellarg( $ref ) ) );
+    must( sprintf( 'cp -a %s %s', escapeshellarg( "$build-clean" ), escapeshellarg( $ref ) ) );
     $prepare( $ref );
     copy( "$tree/release.php", "$ref/release.php" );
 
@@ -666,15 +715,32 @@ function web( $port, $path ) {
 
 // ---- the scenarios ---------------------------------------------------------
 
+// The installed release: HEAD, as the rest of the run, or older code (fromRef()), so
+// that an installed release's installer hands over to this one as it will in the field.
+$fromRef = fromRef( $repo );
+
+if ( $fromRef === false ) {
+
+    say( 'SKIP cross-version: there is no 2.x release tag yet to install from.' );
+    exit( 0 );
+}
+
 $build = buildTree( $repo, $work );
 say( "Built HEAD in $build" );
+
+$fromBuild = $fromRef === 'HEAD' ? $build : buildTree( $repo, $work, $fromRef, 'build-from' );
+
+if ( $fromRef !== 'HEAD' ) {
+
+    say( "Built the installed release from $fromRef in $fromBuild: only " . implode( ', ', CROSS_VERSION ) . ' run' );
+}
 
 $dropped = static function ( $tree ) {
 
     file_put_contents( "$tree/modules/Base/e2e-only-in-" . FROM . '.txt', 'a file the next release does not ship' );
 };
 
-$from = package( $build, $work, 'from', FROM, $dropped );
+$from = package( $fromBuild, $work, 'from', FROM, $dropped );
 $GLOBALS['e2e_from'] = $from;
 $tls  = tls( $work );
 $port = freePort();
@@ -1479,7 +1545,7 @@ $scenarios = [
 
 ];
 
-$only = array_slice( $argv, 1 );
+$only = array_slice( $argv, 1 ) ?: ( $fromRef === 'HEAD' ? [] : CROSS_VERSION );
 
 foreach ( $scenarios as $name => $scenario ) {
 
