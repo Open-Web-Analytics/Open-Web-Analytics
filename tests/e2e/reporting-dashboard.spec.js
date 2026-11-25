@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
-const { pickField } = require('./field-chooser.js');
+const { fieldChooser, pickField } = require('./field-chooser.js');
 
 /**
  * A visits table's Visit Start cells, asserting it is the first column after
@@ -1028,7 +1028,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         expect(await change.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
     });
 
-    test('a dimension heading opens the dimensions to choose from, by family', async ({ page }) => {
+    test('a dimension heading opens its sorts, and the field chooser on the groups', async ({ page }) => {
         const pick = page.locator('.owa_gridDimButton').first();
 
         await expect(pick).toHaveText('Browser');
@@ -1038,14 +1038,27 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         await expect(pop).toBeVisible();
         await expect(pick).toHaveAttribute('aria-expanded', 'true');
-        await expect(pop.locator('.owa_gridPopSearch')).toBeFocused();
-        expect(await pop.locator('.owa_gridPopHeading').count()).toBeGreaterThanOrEqual(2);
-        await expect(pop.locator('.owa_gridPopOption.is-current')).toContainText('Browser');
+        await expect(pop.getByRole('button', { name: 'Sort A to Z' })).toBeVisible();
 
-        // The list is in the window, however near the foot of it the heading is.
-        const box = await pop.boundingBox();
+        const field = pop.locator('.owa_gridFilterField');
+
+        await expect(field).toBeFocused();
+        await expect(field).toHaveText('Browser');
+        await field.click();
+
+        const chooser = fieldChooser(page);
+
+        await expect(chooser).toBeVisible();
+        expect(await chooser.locator('[role="option"][data-key^="g:"]').count()).toBeGreaterThanOrEqual(2);
+
+        // The chooser is in the window, however near the foot of it the heading is.
+        const box = await chooser.boundingBox();
         expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height);
 
+        // Escape closes the chooser, then the popover.
+        await page.keyboard.press('Escape');
+        await expect(chooser).toHaveCount(0);
+        await expect(field).toBeFocused();
         await page.keyboard.press('Escape');
         await expect(pop).toHaveCount(0);
         await expect(pick).toBeFocused();
@@ -1108,8 +1121,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
          * ADD a dimension. The heading's own picker holds browserType, and
          * choosing in it would REPLACE rather than add; the plus beside it adds.
          */
-        await page.locator('.owa_gridDimAdd').first().click();
-        await page.locator('.owa_gridPop .owa_gridPopOption[data-name="date"]').click();
+        await pickField(page, page.locator('.owa_gridDimAdd').first(), 'date');
 
         // The requery must add a "Date" column and split into one row per seeded day.
         await expect
@@ -1222,8 +1234,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
     test('Rows per page and the pager requery the grid', async ({ page }) => {
         // Split by date first, so there is more than a page of rows to page through.
-        await page.locator('.owa_gridDimAdd').first().click();
-        await page.locator('.owa_gridPop .owa_gridPopOption[data-name="date"]').click();
+        await pickField(page, page.locator('.owa_gridDimAdd').first(), 'date');
         await expect(page.locator('tr.owa_gridRow')).toHaveCount(7, { timeout: 15_000 });
 
         let request = page.waitForRequest((r) => r.url().includes('resultsPerPage=10'));
