@@ -3815,7 +3815,8 @@ class CoreAPI {
     }
     
     /**
-     * @param  string $file_name   under conf/, overlaid by the same name under the data directory
+     * @param  string $file_name   under conf/, merged with its override in the
+     *                             data directory's conf/ (Overrides), when OWA may run that
      * @param  string $filter_name 'conf.'.$file_name when empty
      * @return mixed the conf array, through the filter
      */
@@ -3829,10 +3830,10 @@ class CoreAPI {
             $conf = include( $conf_file);
         }
         
-        $sup_file = \OWA\Core\Env::dataDir() . $file_name;
-        
-        if ( file_exists( $sup_file ) ) {
-            
+        $sup_file = \OWA\Core\Overrides::file( $file_name );
+
+        if ( $sup_file !== null ) {
+
             $sup_conf = include( $sup_file );
             
             if ( is_array( $sup_conf) ) {

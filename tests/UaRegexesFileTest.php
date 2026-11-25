@@ -14,12 +14,18 @@ use PHPUnit\Framework\TestCase;
  * the library is, and bumping the composer constraint does not help: there is
  * nothing newer to bump to. cmd=ua-update-definitions replaces them.
  *
- * It writes to owa-data/ua-parser/, outside the source tree, which survives an
- * upgrade -- the same arrangement the Maxmind module uses for its database, for
- * the same reason. Writing inside vendor/ would last until the next composer
- * install.
+ * It writes to owa-data/conf/ua-parser/ (Core\Overrides), which updates leave
+ * alone. Writing inside vendor/ would last until the next composer install.
+ * The file is PHP the cron user runs, so it is used only when nobody but the
+ * owner of OWA's files can write it and the directories above it.
+ *
+ * Run against a temporary data directory, so a real refreshed file on the
+ * machine running the tests is neither required nor disturbed.
  */
 final class UaRegexesFileTest extends TestCase {
+
+    /** @var string the temporary data directory */
+    private $data;
 
     /** @var string */
     private $dir;
@@ -34,34 +40,33 @@ final class UaRegexesFileTest extends TestCase {
 
     protected function setUp(): void {
 
-        $this->dir  = \OWA\Core\Env::dataDir() . 'ua-parser/';
+        $this->data = sys_get_temp_dir() . '/owa-ua-data-' . bin2hex( random_bytes( 4 ) ) . '/';
+        $this->dir  = $this->data . 'conf/ua-parser/';
         $this->file = $this->dir . 'regexes.php';
+
+        $old = umask( 022 );
+        mkdir( $this->dir, 0755, true );
+        umask( $old );
     }
 
-    /**
-     * Runs against a temporary copy so a real refreshed file on the machine
-     * running the tests is neither required nor disturbed.
-     */
+    protected function tearDown(): void {
+
+        @chmod( $this->file, 0644 );
+        @unlink( $this->file );
+        @rmdir( $this->dir );
+        @rmdir( $this->data . 'conf' );
+        @unlink( $this->data . 'ua-parser/regexes.php' );
+        @rmdir( $this->data . 'ua-parser' );
+        @rmdir( $this->data );
+    }
+
     private function withMaintainedFile( callable $test ): void {
 
-        $existed = file_exists( $this->file );
-        $backup  = $existed ? file_get_contents( $this->file ) : null;
-
-        if ( ! is_dir( $this->dir ) ) {
-            mkdir( $this->dir, 0755, true );
-        }
-
+        $old = umask( 022 );
         file_put_contents( $this->file, "<?php return ['user_agent_parsers' => []];" );
+        umask( $old );
 
-        try {
-            $test();
-        } finally {
-            if ( $existed ) {
-                file_put_contents( $this->file, $backup );
-            } else {
-                @unlink( $this->file );
-            }
-        }
+        $test();
     }
 
     /**
@@ -74,20 +79,42 @@ final class UaRegexesFileTest extends TestCase {
 
             $this->assertSame(
                 $this->file,
-                \OWA\Module\Base\Classes\Browscap::regexesFile(),
+                \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ),
                 'a refreshed file must be picked up without configuration'
             );
         } );
     }
 
+    /** One the web server could have written is not run: the bundled copy is used. */
+    public function testAFileOthersCanWriteIsNotUsed(): void {
+
+        $this->withMaintainedFile( function () {
+
+            chmod( $this->dir, 0775 );
+
+            $this->assertNull( \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ) );
+
+            chmod( $this->dir, 0755 );
+            chmod( $this->file, 0666 );
+
+            $this->assertNull( \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ) );
+        } );
+    }
+
+    /** Where 2.0's first builds and 1.x put it, the data directory itself, it is no longer read. */
+    public function testTheOldLocationIsNotRead(): void {
+
+        mkdir( $this->data . 'ua-parser', 0755 );
+        file_put_contents( $this->data . 'ua-parser/regexes.php', "<?php return ['user_agent_parsers' => []];" );
+
+        $this->assertNull( \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ) );
+        $this->assertContains( $this->data . 'ua-parser/regexes.php', \OWA\Core\Overrides::misplaced( $this->data ) );
+    }
+
     public function testTheBundledCopyIsUsedWhenNothingHasBeenRefreshed(): void {
 
-        if ( file_exists( $this->file ) ) {
-            $this->markTestSkipped( 'this installation has a refreshed file in place' );
-        }
-
         $this->assertNull(
-            \OWA\Module\Base\Classes\Browscap::regexesFile(),
+            \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ),
             'with nothing installed the library falls back to its own copy'
         );
     }
@@ -104,7 +131,7 @@ final class UaRegexesFileTest extends TestCase {
                 $this->markTestSkipped( 'cannot make a file unreadable as this user' );
             }
 
-            $resolved = \OWA\Module\Base\Classes\Browscap::regexesFile();
+            $resolved = \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data );
 
             chmod( $this->file, 0644 );
 
@@ -149,11 +176,13 @@ final class UaRegexesFileTest extends TestCase {
      */
     public function testARefreshedFileParsesIfOneIsPresent(): void {
 
-        if ( ! is_readable( $this->file ) ) {
-            $this->markTestSkipped( 'no refreshed patterns file on this installation' );
+        $installed = \OWA\Module\Base\Classes\Browscap::regexesFile();
+
+        if ( $installed === null ) {
+            $this->markTestSkipped( 'no refreshed patterns file in use on this installation' );
         }
 
-        $parser = UAParser\Parser::create( $this->file );
+        $parser = UAParser\Parser::create( $installed );
         $result = $parser->parse( 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' );
 
         $this->assertSame( 'Spider', $result->device->family,
@@ -179,15 +208,15 @@ final class UaRegexesFileTest extends TestCase {
     /**
      * Permissions are checked BEFORE the download.
      *
-     * The installer checks owa-data/logs/ and owa-data/caches/, but not
-     * owa-data itself -- nothing needed to create a directory there until this
-     * command did. So a passing install check does not imply this will work,
-     * and it has to ask for itself.
+     * The installer checks owa-data/logs/, but not where this command writes.
+     * So a passing install check does not imply this will work, and it has to
+     * ask for itself.
      */
     public function testAWritableDestinationIsAccepted(): void {
 
-        $this->assertNull( $this->whyNotWritable( $this->dir ),
-            'owa-data is writable on a working installation, so this must pass' );
+        $this->assertNull( $this->whyNotWritable( $this->dir ) );
+        $this->assertNull( $this->whyNotWritable( $this->data . 'conf/not-yet/ua-parser/' ),
+            'a missing directory is made, from the nearest one there' );
     }
 
     public function testAnUnwritableParentIsRefusedWithTheReasonAndThePath(): void {

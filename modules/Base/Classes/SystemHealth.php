@@ -691,6 +691,13 @@ class SystemHealth {
             $findings[] = $writable;
         }
 
+        $overrides = self::overrides();
+
+        if ( $overrides ) {
+
+            $findings[] = $overrides;
+        }
+
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
     }
 
@@ -832,6 +839,42 @@ class SystemHealth {
         return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'OWA\'s files' ), sprintf( \OWA\Core\CoreAPI::t(
             'The web server can change OWA\'s code (%s), so whatever compromises PHP can change OWA. Remove world write from OWA\'s files and directories, and either remove group write or take the web server user out of their group. Keep them writable by the user the scheduler runs as, who installs updates.' ),
             implode( ', ', $writable ) ) );
+    }
+
+    /**
+     * Overrides of conf/ files that are not used (Core\Overrides): yellow
+     * when one in the data directory's conf/ could have been written by
+     * someone other than the owner of OWA's files, so OWA does not run it, or
+     * when one is still where OWA read them before 2.0, the data directory
+     * itself, which it no longer reads.
+     *
+     * @param  string|null $data_dir a test's; else the installation's
+     * @return Finding|null
+     */
+    public static function overrides( $data_dir = null ) {
+
+        $lines = [];
+
+        foreach ( \OWA\Core\Overrides::skipped( $data_dir ) as $file => $why ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( '%1$s is not used: %2$s' ), $file, $why );
+        }
+
+        if ( $lines ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'OWA runs an override only when nobody but the owner of OWA\'s files can write it and the directories above it, up to %s; the web server writes only its logs/.' ),
+                \OWA\Core\Env::withSlash( $data_dir ?? \OWA\Core\Env::dataDir() ) );
+        }
+
+        $misplaced = \OWA\Core\Overrides::misplaced( $data_dir );
+
+        if ( $misplaced ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'No longer read where they are: %1$s. Move them to %2$s; run cmd=ua-update-definitions again for user-agent patterns.' ),
+                implode( ', ', $misplaced ), \OWA\Core\Overrides::dir( $data_dir ) );
+        }
+
+        return $lines ? self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Overrides' ), implode( ' ', $lines ) ) : null;
     }
 
     /**

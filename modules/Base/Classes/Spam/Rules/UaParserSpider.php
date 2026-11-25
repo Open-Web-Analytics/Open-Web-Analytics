@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * would think to include.
  *
  * The answer comes from the regexes file (Browscap::regexesFile()), so a newer
- * file in owa-data/ua-parser/ changes what this catches.
+ * file in owa-data/conf/ua-parser/ changes what this catches.
  */
 class UaParserSpider extends \OWA\Module\Base\Classes\Spam\Rule {
 
