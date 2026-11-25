@@ -1097,6 +1097,91 @@ test.describe('custom reports', () => {
             expect(JSON.parse(definition).widgets[0]).not.toHaveProperty('constraints');
         });
 
+        /**
+         * TWO filters on a table widget, and more added on the report.
+         *
+         * Reported as "adding a second filter to a table grid widget doesn't
+         * work". Every step is checked where it lands: two pills in the panel,
+         * both clauses in the stored definition, and the report's grid asking
+         * for both -- and then for a third and a fourth added from the grid's
+         * own Filter button, each added to those already there.
+         */
+        test('a table widget takes a second filter, and its grid adds more', async ({ page }) => {
+            const name = reportName('two-filters');
+            const asked = [];
+
+            page.on('request', (r) => {
+                const u = decodeURIComponent(r.url().replace(/\+/g, ' '));
+                if (u.includes('constraints=')) { asked.push(u); }
+            });
+
+            const askedFor = (...clauses) => expect.poll(
+                () => asked.some((u) => clauses.every((c) => u.includes(c))),
+                { timeout: 15_000, message: `a grid request with ${clauses.join(' and ')}` }).toBe(true);
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+            await startWidget(page, 'grid');
+            await chooseField(page, 'dlgMetrics', 'pageViews');
+            await chooseField(page, 'dlgDimensions', 'pagePath');
+
+            // Every seeded page view is Chrome, and every path has a slash.
+            await fillFilter(page, { dimension: 'pagePath', operator: 'contains', value: '/' });
+            await page.click('#dlgFilterAdd');
+            await fillFilter(page, { dimension: 'browserType', operator: 'is', value: 'Chrome' });
+            await page.click('#dlgFilterAdd');
+
+            await expect(page.locator('#dlgFilters .owa_filterPill')).toHaveCount(2);
+
+            await dialogSave(page).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm').dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0].constraints).toBe('pagePath=@/,browserType==Chrome');
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+            await expect(page.locator('.owa_reportTitle')).toContainText(name);
+
+            const grid = page.locator('.owa_grid').first();
+
+            await askedFor('pagePath=@/', 'browserType==Chrome');
+            await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 15_000 });
+
+            // The grid shows every filter its query has as a chip, the widget's too.
+            await expect(grid.locator('.owa_gridChip')).toHaveCount(2);
+
+            // A third, from the grid's Filter: added to the widget's two.
+            await grid.locator('.owa_gridFilterButton').click();
+
+            let pop = grid.locator('.owa_gridPop');
+
+            await pickField(page, pop.locator('.owa_gridFilterField'), 'pageViews');
+            await pop.locator('.owa_gridFilterOps input[value=">"]').check();
+            await pop.getByLabel('Value', { exact: true }).fill('0');
+            await pop.locator('.owa_gridPrimary').click();
+
+            await askedFor('pagePath=@/', 'browserType==Chrome', 'pageViews>0');
+            await expect(grid.locator('.owa_gridChip')).toHaveCount(3, { timeout: 15_000 });
+
+            // A fourth: the grid's second filter of its own.
+            await grid.locator('.owa_gridFilterButton').click();
+            pop = grid.locator('.owa_gridPop');
+
+            await pickField(page, pop.locator('.owa_gridFilterField'), 'browserType');
+            await pop.locator('.owa_gridFilterOps input[value="!="]').check();
+            await pop.getByLabel('Value', { exact: true }).fill('Firefox');
+            await pop.locator('.owa_gridPrimary').click();
+
+            await askedFor('pagePath=@/', 'browserType==Chrome', 'pageViews>0', 'browserType!=Firefox');
+            await expect(grid.locator('.owa_gridChip')).toHaveCount(4, { timeout: 15_000 });
+            await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible();
+        });
+
         test('a report can be built, saved, and opens showing its own name', async ({ page }) => {
             const name = await buildOne(page, 'Built');
 
