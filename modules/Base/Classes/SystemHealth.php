@@ -10,8 +10,9 @@ namespace OWA\Module\Base\Classes;
  * One source for the System Health screen and cmd=schedule-status, so the
  * two say the same thing about the same state. A finding is
  *
- *   level    'red' (someone must act), 'yellow' (time or the next run will
- *            resolve it, or it is worth a look), 'green'
+ *   level    'red' (something failed, or someone must act), 'yellow' (it
+ *            works, but not as it should, or time or the next run will
+ *            resolve it), 'green'
  *   label    what it is about
  *   detail   what is true, in a sentence
  *   command  what to run about it, or null
@@ -716,8 +717,8 @@ class SystemHealth {
 
     /**
      * A failed automatic update, from the moment it is recorded and as long
-     * as the record stays (last-failure.json): yellow when the install was
-     * reverted, red when it is broken. Its words are the notice's
+     * as the record stays (last-failure.json): red, reverted or broken. Its
+     * words are the notice's
      * (InstallNotices::describe()), which is raised only once it is not
      * tried again, or broken.
      *
@@ -735,13 +736,13 @@ class SystemHealth {
 
         $d = \OWA\Module\Base\Classes\AutoUpdate\InstallNotices::describe( (array) $failure );
 
-        return self::finding( $d['broken'] ? 'red' : 'yellow', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update-status' );
+        return self::finding( 'red', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update-status' );
     }
 
     /**
      * What stops a release before anything changes (AutoUpdate\Problem),
-     * from the first check that finds it until one gets past it: yellow, as
-     * the installed release runs as before. Its words are the notice's,
+     * from the first check that finds it until one gets past it: red, as the
+     * release did not install. Its words are the notice's,
      * which is raised only once it has lasted twelve hours.
      *
      * @param  array<string, mixed>|null $problem a test's; else the one kept
@@ -758,7 +759,7 @@ class SystemHealth {
 
         $d = \OWA\Module\Base\Classes\AutoUpdate\Problem::describe( (array) $problem );
 
-        return self::finding( 'yellow', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update' );
+        return self::finding( 'red', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update' );
     }
 
     /**
