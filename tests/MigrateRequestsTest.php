@@ -124,6 +124,29 @@ final class MigrateRequestsTest extends TestCase
         return new RequestMigrator(V1Schema::PREFIX, $batch);
     }
 
+    /** A read the database refuses stops the migration; it read as the end of the site's history and marked the site complete. */
+    public function testARefusedReadStopsTheSiteRatherThanCompletingIt(): void
+    {
+        $this->visit();
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $source = \OWA\Module\Base\Classes\Migration\V1Tables::name('request', V1Schema::PREFIX);
+        $db->query("ALTER TABLE $source RENAME TO {$source}_away");
+
+        try {
+            $this->migrator()->migrateSite(self::SITE);
+            $this->fail('a refused read throws');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('the database refused a query', $e->getMessage());
+        } finally {
+            $db->query("ALTER TABLE {$source}_away RENAME TO $source");
+        }
+
+        $progress = $this->migrator()->migrateSite(self::SITE, 0);
+        $this->assertEmpty($progress['completed_at'], 'the site is not complete');
+        $this->assertSame([], $this->rows());
+    }
+
     public function testAPageViewCarriesWhatV1Recorded(): void
     {
         $this->visit();

@@ -1648,6 +1648,30 @@ final class CubeBuildTest extends TestCase
         }
     }
 
+    /** A candidate page the database refuses fails the build, and the cube is unchanged; it read as the last page. */
+    public function testARefusedCandidatePageFailsTheBuild(): void
+    {
+        $builder = new class(self::PROPERTY) extends \OWA\Module\Base\Classes\Cube\Builder {
+
+            protected function siteFilter($alias)
+            {
+                $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] ?? '';
+
+                return $caller === 'candidatePages' ? ' AND no_such_column_phpunit = 1' : parent::siteFilter($alias);
+            }
+        };
+
+        $count = fn () => (int) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT COUNT(*) AS n FROM %s WHERE yyyymmdd = %d', $this->cube(), $this->yyyymmdd)))['n'];
+        $before = $count();
+
+        $result = $this->today($builder);
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('candidate query', (string) $result['error']);
+        $this->assertSame($before, $count(), 'the cube is unchanged');
+    }
+
     public function testTheCandidateQueryExcludesRowsSqlAlreadyAnswers(): void
     {
         // A tagged arrival that also carries an engine query. It is not a

@@ -168,6 +168,22 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'the response says why there is nothing to answer');
     }
 
+    /** A statement the database refuses or times out answers 503 with the reason, not 200 with rows that read as zeros. */
+    public function testARefusedQueryIs503NotZeros(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            ReportsRestWithARefusedStatement::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(true)]
+        );
+
+        $this->assertEnvelope($resp, 503);
+        $this->assertNotEmpty($resp['data']['unavailable'] ?? null, 'the response says why');
+        $this->assertEmpty($resp['data']['resultsRows'] ?? [], 'and carries no rows');
+    }
+
     /**
      * A request naming neither propertyId nor siteId is refused: the REST API
      * infers no Property, and does not read the lpr cookie.
@@ -692,5 +708,17 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             self::compared($this->comparedGrid($site, ['constraints' => 'pageViews>=1'])));
         $this->assertSame([['/a', 3, 1], ['/b', 1, null], ['/c', 0, 5]],
             self::compared($this->comparedGrid($site, ['constraints' => 'pagePath!=/d'])));
+    }
+}
+
+/** ReportsRest, with a statement the database refuses while the answer is built. */
+final class ReportsRestWithARefusedStatement extends \OWA\Module\Base\Controller\ReportsRest
+{
+    public function getResultSet()
+    {
+        $rs = parent::getResultSet();
+        \OWA\Core\CoreAPI::dbSingleton()->query('SELECT 1 FROM owa_no_such_table_phpunit');
+
+        return $rs;
     }
 }

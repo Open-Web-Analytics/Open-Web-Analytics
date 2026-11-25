@@ -62,7 +62,7 @@ class RequestMigrator extends FactMigrator {
 
         $integer = $this->integerColumn( self::SOURCE, 'session_id' );
 
-        $rows = (array) $this->db()->get_results( sprintf(
+        $rows = $this->results( sprintf(
             'SELECT session_id, id, timestamp, visitor_id, yyyymmdd FROM %s WHERE session_id IN (%s)',
             $this->v1Table( self::SOURCE ),
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),

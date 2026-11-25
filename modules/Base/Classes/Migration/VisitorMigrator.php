@@ -169,7 +169,7 @@ class VisitorMigrator extends FactMigrator {
      */
     private function present_rows( $table, array $ids ) {
 
-        return (int) ( ( (array) $this->db()->get_row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE visitor_id IN (%s)',
+        return (int) ( ( $this->row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE visitor_id IN (%s)',
             $table, implode( ',', $ids ) ) ) )['n'] ?? 0 );
     }
 

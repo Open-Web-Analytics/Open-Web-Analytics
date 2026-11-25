@@ -105,7 +105,7 @@ class GoalMigrator extends FactMigrator {
                 $day  = (int) $r['yyyymmdd'];
                 $next = (int) date( 'Ymd', strtotime( (string) $day . ' +1 day' ) );
 
-                $trigger = (array) $this->db()->get_row( sprintf(
+                $trigger = $this->row( sprintf(
                     'SELECT e.id, e.yyyymmdd, e.site_id, e.visitor_id, e.session_id, e.ts FROM %s e'
                     . ' WHERE e.site_id = ? AND e.visitor_id = ? AND e.session_id = ?'
                     . ' AND e.yyyymmdd BETWEEN ? AND ? AND e.is_goal_event = 0 AND %s ORDER BY e.ts, e.id LIMIT 1',
@@ -368,7 +368,7 @@ class GoalMigrator extends FactMigrator {
 
         if ( ! array_key_exists( $property, $this->renamed ) ) {
 
-            $rows = array_map( function ( $r ) { return (array) $r; }, (array) $this->db()->get_results( sprintf(
+            $rows = array_map( function ( $r ) { return (array) $r; }, $this->results( sprintf(
                 'SELECT id, property_id, name FROM %s WHERE property_id = ? ORDER BY id', $goal->getTableName() ),
                 [ $property ] ) );
 
