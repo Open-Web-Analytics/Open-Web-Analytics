@@ -594,6 +594,8 @@ return [
          */
         // Publishing's last read-back of the cache header a bundle is served with. No screen edits it.
         'tracker_cache_headers' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // What stops a release before anything changes, while it lasts (Classes\AutoUpdate\Problem).
+        'auto_update_problem' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'tracker_page_views' => [
             'default'  => true,
             'storable' => true,
