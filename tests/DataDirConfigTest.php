@@ -36,12 +36,17 @@ final class DataDirConfigTest extends TestCase
 
         $this->dir = sys_get_temp_dir() . '/owa-data-dir-' . getmypid() . '-' . bin2hex(random_bytes(4));
 
-        foreach (['logs', 'ua-parser'] as $sub) {
-            mkdir($this->dir . '/' . $sub, 0777, true);
-        }
+        // logs/ writable by all, as the web server writes it; the rest only
+        // by this process, which owns OWA's files here, so the user-agent
+        // patterns in conf/ are used (Core\Overrides).
+        $old = umask(022);
+        mkdir($this->dir . '/conf/ua-parser', 0755, true);
+        mkdir($this->dir . '/logs', 0777);
+        chmod($this->dir . '/logs', 0777);
 
         // A stand-in: only its location is under test.
-        file_put_contents($this->dir . '/ua-parser/regexes.php', "<?php return array();\n");
+        file_put_contents($this->dir . '/conf/ua-parser/regexes.php', "<?php return array();\n");
+        umask($old);
     }
 
     protected function tearDown(): void
@@ -99,7 +104,7 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('OWA_DATA_DIR', $r['constant']);
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
-        $this->assertSame($data . 'ua-parser/regexes.php', $r['ua_regexes']);
+        $this->assertSame($data . 'conf/ua-parser/regexes.php', $r['ua_regexes']);
 
         foreach (['error_log_file', 'async_log_dir', 'queue_dir', 'archive_dir', 'dead_letter', 'fallback_dir'] as $key) {
             $this->assertSame(self::followed((string) $d[$key], $data), $r[$key], "$key follows the data directory unless the config pins it");

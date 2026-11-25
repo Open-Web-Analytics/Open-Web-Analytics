@@ -204,7 +204,7 @@ return [
         // A Property's last cube build: partition, built_at and milliseconds (Cube\Builder::recordBuild()). No screen edits it.
         'cube_last_build' => [ 'default' => [], 'storable' => true, 'internal' => true, 'scopes' => [ 'property' ] ],
         'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
-        'data_dir' => [ 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
+        'data_dir' => [ 'description' => 'The directory OWA keeps its own files in: logs and the file event queue (logs/, the one folder the web server writes), downloads for automatic updates, GeoIP data, and overrides of conf/ files with the user-agent patterns (conf/). Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [
             'default'  => 90,
             'storable' => true,
@@ -493,7 +493,7 @@ return [
         'tracking_url'        => [ 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ],
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => [ 'default' => 'ui', 'internal' => true ],
-        'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/ua-parser/.' ],
+        'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/conf/ua-parser/. Used only when nobody but the owner of OWA\'s files can write it.' ],
 
         /*
          * The tracking intake (PLAN 2.30.3), OWA_QUEUE_TRACKING_EVENTS.

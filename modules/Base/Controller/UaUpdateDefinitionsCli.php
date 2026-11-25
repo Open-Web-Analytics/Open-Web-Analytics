@@ -23,10 +23,10 @@ use UAParser\Util\Fetcher;
  * is invisible until the file is replaced.
  *
  * WHERE IT PUTS THE FILE
- * owa-data/ua-parser/, which is outside the source tree and survives an
- * upgrade. Same arrangement as the Maxmind module's database directory, and for
- * the same reason: it is data the installation maintains, not code that ships.
- * Writing inside vendor/ would work until the next composer install erased it.
+ * owa-data/conf/ua-parser/ (Core\Overrides), which updates leave alone. It is
+ * PHP the cron user runs, so it goes where only the owner of OWA's files can
+ * write, and is used only while that holds: run this as that owner. Writing
+ * inside vendor/ would work until the next composer install erased it.
  *
  * Browscap prefers this file whenever it exists, so a successful run takes
  * effect immediately with nothing to configure.
@@ -37,7 +37,7 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Downloads the latest user-agent patterns OWA identifies browsers and crawlers with, into owa-data/ua-parser/.',
+            'description' => 'Downloads the latest user-agent patterns OWA identifies browsers and crawlers with, into owa-data/conf/ua-parser/.',
             'arguments'   => [
                 '--dry-run' => 'Report what would be downloaded, and write nothing.',
             ],
@@ -73,8 +73,10 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
-        $file = $dir . 'regexes.php';
+        $configured = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' );
+        $dir        = $configured !== '' ? \OWA\Core\Env::withSlash( $configured ) : \OWA\Core\Overrides::dir() . 'ua-parser/';
+        $top        = $configured !== '' ? $dir : \OWA\Core\Env::dataDir();
+        $file       = $dir . 'regexes.php';
 
         // Permissions BEFORE the download. Finding out that owa-data cannot be
         // written after fetching 200KB is a worse experience than being told
@@ -120,7 +122,12 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
                 'Dry run: %s would be written. Nothing was changed.', $file ) );
         }
 
-        if ( ! \OWA\Core\Lib::makeSharedDir( $dir ) ) {
+        /*
+         * Made 0755, not shared: the patterns are PHP the cron user runs, so
+         * only this user (the owner of OWA's files) may write where they are
+         * (Core\Overrides).
+         */
+        if ( ! $this->makeDirs( $dir ) ) {
 
             // Reachable despite the preflight: something else could have
             // changed underneath, and a race is not a reason to write a
@@ -146,6 +153,15 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
                 'The conversion reported success but %s is not there.', $file ) );
         }
 
+        $untrusted = \OWA\Core\SafeFile::trustProblem( $file, $top );
+
+        if ( $untrusted !== null ) {
+
+            return $this->fail( sprintf(
+                '%s was written, but OWA will not use it: %s Only the owner of OWA\'s files may be able '
+              . 'to write it and the directories above it, up to %s.', $file, $untrusted, $top ) );
+        }
+
         $this->write( sprintf(
             'Done. %s now holds %s of patterns, and Browscap will prefer it over the bundled copy '
           . 'from the next request onward.',
@@ -154,6 +170,24 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
         ) );
 
         return;
+    }
+
+    /**
+     * $dir and any directory above it that is missing, each 0755.
+     *
+     * @param  string $dir
+     * @return bool whether $dir is there
+     */
+    protected function makeDirs( $dir ) {
+
+        $dir = rtrim( $dir, '/' );
+
+        if ( is_dir( $dir ) ) {
+
+            return true;
+        }
+
+        return $this->makeDirs( dirname( $dir ) ) && ( \OWA\Core\SafeFile::makeDir( $dir, 0755 ) || is_dir( $dir ) );
     }
 
     /**
@@ -182,16 +216,15 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! is_dir( $dir ) ) {
 
-            // The directory's OWN parent, not the data directory. They are usually
-            // the same, but the location is configurable, and checking a
-            // different directory than the one mkdir will use gives a confident
-            // answer about the wrong thing.
+            // The nearest directory that exists, not the data directory: the
+            // location is configurable, and conf/ under the data directory may
+            // be missing too. Checking a different directory than the one the
+            // first mkdir will use gives a confident answer about the wrong thing.
             $parent = dirname( rtrim( $dir, DIRECTORY_SEPARATOR ) );
 
-            if ( ! is_dir( $parent ) ) {
+            while ( ! is_dir( $parent ) && dirname( $parent ) !== $parent ) {
 
-                return sprintf( '%s does not exist, so %s cannot be created inside it.',
-                    $parent, $dir );
+                $parent = dirname( $parent );
             }
 
             if ( ! is_writable( $parent ) ) {

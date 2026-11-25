@@ -61,6 +61,84 @@ class SafeFile {
     }
 
     /**
+     * Why $file may not be run as OWA's code, or null when it may: it, and
+     * every directory from its own up to $top, must belong to the owner of
+     * OWA's files (codeOwner()) or to root, and none may be writable by group
+     * or others. Then only whoever can write OWA's code could have written it,
+     * and the cron user, which runs as that owner, never runs what the web
+     * server put there. A link below $top is refused; $top itself is followed,
+     * as an admin may mount the data directory elsewhere.
+     *
+     * Nothing to ask on Windows, where these modes do not exist.
+     *
+     * @param  string $file
+     * @param  string $top  a directory $file is under
+     * @return string|null
+     */
+    public static function trustProblem( $file, $top ) {
+
+        if ( PHP_OS_FAMILY === 'Windows' ) {
+
+            return null;
+        }
+
+        $owner = self::codeOwner();
+        $top   = rtrim( (string) $top, '/' );
+        $path  = rtrim( (string) $file, '/' );
+
+        if ( strpos( $path, $top . '/' ) !== 0 ) {
+
+            return sprintf( CoreAPI::t( '%1$s is not under %2$s.' ), $file, $top );
+        }
+
+        while ( true ) {
+
+            clearstatcache( true, $path );
+
+            $at_top = $path === $top;
+            $st     = $at_top ? @stat( $path ) : @lstat( $path );
+
+            if ( $st === false ) {
+
+                return sprintf( CoreAPI::t( '%s cannot be read.' ), $path );
+            }
+
+            if ( ( $st['mode'] & 0170000 ) === 0120000 ) {
+
+                return sprintf( CoreAPI::t( '%s is a link.' ), $path );
+            }
+
+            if ( $st['uid'] !== $owner && $st['uid'] !== 0 ) {
+
+                return sprintf( CoreAPI::t( '%1$s belongs to user %2$d, not to the owner of OWA\'s files (user %3$d).' ),
+                    $path, $st['uid'], $owner );
+            }
+
+            if ( $st['mode'] & 0022 ) {
+
+                return sprintf( CoreAPI::t( '%s is writable by group or others.' ), $path );
+            }
+
+            if ( $at_top ) {
+
+                return null;
+            }
+
+            $path = dirname( $path );
+        }
+    }
+
+    /**
+     * The user OWA's files belong to: who installs and updates them.
+     *
+     * @return int
+     */
+    public static function codeOwner() {
+
+        return (int) @fileowner( Env::root() . '/owa.php' );
+    }
+
+    /**
      * $path's contents replaced whole: written under a fresh name and renamed
      * over it.
      *
