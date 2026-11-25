@@ -267,6 +267,39 @@ final class InstallerTest extends TestCase
         $this->assertSame([1, null], [$this->failure()['attempts'], $this->failure()['retry_after']]);
     }
 
+    /** The record says where the install stopped: its stage from the marker's phase, Finish's step, and the install's log with the failure last. */
+    public function testAFailureRecordsWhereTheInstallStopped(): void
+    {
+        $m = $this->u['logged'](['from' => '2.0.0', 'to' => '2.0.1', 'since' => 1], 'Release check (by hand), OWA 2.0.0 installed.');
+        $m = $this->u['logged']($m, 'Copying OWA 2.0.1\'s files over 2.0.0\'s.');
+
+        foreach ([['waiting', 'copy', null], ['copying', 'copy', null], ['copied', 'boot', null]] as [$phase, $stage, $step]) {
+            $this->u['recordFailure']($this->updates, ['phase' => $phase] + $m, 'it failed');
+            $this->assertSame([$stage, $step], [$this->failure()['stage'], $this->failure()['step']], $phase);
+        }
+
+        $this->u['recordFailure']($this->updates, ['phase' => 'booted', 'step' => 'trackers'] + $m, 'the bundles were not published', false, true);
+        $this->assertSame(['finish', 'trackers'], [$this->failure()['stage'], $this->failure()['step']]);
+
+        $log = $this->failure()['log'];
+        $this->assertCount(3, $log);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC Release check \(by hand\)/', $log[0]);
+        $this->assertStringEndsWith('UTC Failed: the bundles were not published', $log[2]);
+    }
+
+    /** The log keeps its last 100 lines, one line each. */
+    public function testTheLogIsBounded(): void
+    {
+        $m = [];
+
+        for ($i = 1; $i <= 105; $i++) {
+            $m = $this->u['logged']($m, "step $i\nwith a second line");
+        }
+
+        $this->assertCount(100, $m['log']);
+        $this->assertStringEndsWith('UTC step 6 with a second line', $m['log'][0]);
+    }
+
     /** Booted, Finish dying: run again twice, then the failure is recorded and OWA runs with its schema updates pending. */
     public function testFinishIsRunThreeTimesInAll(): void
     {
@@ -288,6 +321,8 @@ final class InstallerTest extends TestCase
         $this->assertSame(self::NEW['Core/Env.php'], file_get_contents($this->root . '/Core/Env.php'), 'nothing is undone once it booted');
         $this->assertSame([true, null], [$this->failure()['booted'], $this->failure()['retry_after']]);
         $this->assertStringContainsString('stopped three times', $this->failure()['error']);
+        $this->assertSame(['finish', 'schema'], [$this->failure()['stage'], $this->failure()['step']], 'a marker naming no step: the schema updates, the first');
+        $this->assertCount(2, preg_grep('/Finishing the install of OWA 2\.0\.1 again \(try [12] of 2\)/', $this->failure()['log']), 'each run is in the log');
     }
 
     /** Waiting for the other runs to end: every run of cli.php that starts stops, and the web and beacons carry on, as nothing has changed. */

@@ -350,7 +350,8 @@ class ReleaseCheck {
             return $this->outcome( self::WAITING, $v, [], sprintf( '%s installs %s.', $v, self::describeWindow( $window ) ) );
         }
 
-        $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'] );
+        $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
+            array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ) );
 
         return $this->outcome( $result['outcome'] === Install::OK ? self::INSTALLING : ( $result['outcome'] === Install::BUSY ? self::BUSY : self::FAILED ),
             $v, $result['lines'], $result['message'] );
@@ -483,8 +484,9 @@ class ReleaseCheck {
 
         if ( $failure ) {
 
-            $lines[] = sprintf( 'Installing %s over %s failed, %s UTC: %s', $failure['version'] ?? '?', $failure['from'] ?? '?',
-                gmdate( 'Y-m-d H:i', (int) ( $failure['at'] ?? 0 ) ), $failure['error'] ?? '' );
+            $d     = InstallNotices::describe( $failure );
+            $lines = array_merge( $lines, [ sprintf( '%s (%s UTC): %s', $d['title'], gmdate( 'Y-m-d H:i', (int) ( $failure['at'] ?? 0 ) ), implode( ' ', $d['lines'] ) ) ],
+                $d['log'] ? array_merge( [ 'What the install did:' ], array_map( static fn ( $l ) => '  ' . $l, $d['log'] ) ) : [] );
         }
 
         $marker = Downloads::updater()['readMarker']( $this->root );

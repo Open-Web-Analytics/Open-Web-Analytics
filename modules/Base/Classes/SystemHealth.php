@@ -662,6 +662,13 @@ class SystemHealth {
             $findings[] = $foreign;
         }
 
+        $failed = self::failedInstall();
+
+        if ( $failed ) {
+
+            $findings[] = $failed;
+        }
+
         $backup = self::backupDir();
 
         if ( $backup ) {
@@ -698,6 +705,30 @@ class SystemHealth {
         return self::finding( 'red', \OWA\Core\CoreAPI::t( 'Automatic updates' ), sprintf( \OWA\Core\CoreAPI::t(
             'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.' ),
             count( $dirs ), implode( ', ', array_map( 'basename', $dirs ) ) ) );
+    }
+
+    /**
+     * A failed automatic update, from the moment it is recorded and as long
+     * as the record stays (last-failure.json): yellow when the install was
+     * reverted, red when it is broken. Its words are the notice's
+     * (InstallNotices::describe()), which is raised only once it is not
+     * tried again, or broken.
+     *
+     * @param  array<string, mixed>|null $failure a test's; else the one on disk
+     * @return Finding|null
+     */
+    public static function failedInstall( $failure = null ) {
+
+        $failure = $failure ?? ( new \OWA\Module\Base\Classes\AutoUpdate\Downloads() )->failure();
+
+        if ( ! $failure || trim( (string) ( $failure['error'] ?? '' ) ) === '' ) {
+
+            return null;
+        }
+
+        $d = \OWA\Module\Base\Classes\AutoUpdate\InstallNotices::describe( (array) $failure );
+
+        return self::finding( $d['broken'] ? 'red' : 'yellow', $d['title'], implode( ' ', $d['lines'] ), 'php cli.php cmd=core-update-status' );
     }
 
     /**

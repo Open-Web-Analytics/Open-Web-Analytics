@@ -86,6 +86,9 @@ final class InstallRunTest extends TestCase
         $this->assertSame([300], array_slice($r['calls'][1], 1), 'it waits Install::WAIT seconds for other runs');
         $this->assertSame('copied', $this->marker()['phase']);
         $this->assertSame(str_repeat('b', 64), $this->marker()['to_sha256'], 'the marker carries what the put-back checks');
+        $this->assertSame(['Release check (by hand), OWA 2.0.1 installed.', 'Waiting up to 300 seconds for other runs of cli.php to end.',
+            'Copying OWA 2.0.2\'s files over 2.0.1\'s.', 'Copied. The next run of cli.php starts it.'],
+            array_map(fn ($l) => preg_replace('/^\S+ \S+ UTC /', '', $l), $this->marker()['log']), 'the marker carries the install\'s log');
         $this->assertStringContainsString("OWA 2.0.2's files are in place.", $r['out']);
         $this->assertSame('', $r['err']);
     }

@@ -54,29 +54,48 @@ final class InstallFinishTest extends CliControllerTestCase
     }
 
     /** One notice per failed release; what it says depends on whether the new release had booted. */
-    public function testTheNoticeOfAFailedInstall(): void
+    /**
+     * A reverted install is noticed once it is not tried again; a broken one
+     * at once. Each says what failed and why, reverted or broken and what
+     * to do, and what the install did.
+     */
+    public function testTheNoticesOfAFailedInstall(): void
     {
         $raised = [];
         $notify = function (array $n) use (&$raised) { $raised[] = $n; };
-        $failed = ['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'Could not write Core/Env.php. OWA 2.0.2 was put back.'];
-
-        InstallNotices::forFailure($failed, $notify);
-        InstallNotices::forFailure(['booted' => true, 'error' => 'cmd=core-update-schema did not complete'] + $failed, $notify);
-        InstallNotices::forFailure(['error' => ''] + $failed, $notify);
+        $log    = ['2026-11-25 10:00:00 UTC Release check (the scheduler\'s), OWA 2.0.2 installed.', '2026-11-25 10:00:01 UTC Copying OWA 2.0.3\'s files over 2.0.2\'s.'];
+        $failed = ['version' => '2.0.3', 'from' => '2.0.2', 'stage' => 'copy', 'error' => 'Could not write Core/Env.php. OWA 2.0.2 was put back.', 'log' => $log];
 
         InstallNotices::forFailure(['attempts' => 1, 'retry_after' => 1800000000] + $failed, $notify);
-        InstallNotices::forFailure(['attempts' => 3, 'retry_after' => null] + $failed, $notify);
+        $this->assertSame([], $raised, 'tried again: no notice yet');
+        $this->assertStringContainsString('The install was reverted: OWA 2.0.2 runs as before. It is tried again after 2027-01-15 08:00 UTC, 3 attempts in all',
+            InstallNotices::describe(['retry_after' => 1800000000] + $failed)['lines'][1]);
 
-        $this->assertCount(4, $raised, 'nothing for a record without an error');
-        $this->assertSame('install_failed:2.0.3', $raised[2]['source_key'], 'tried again: the first failure\'s notice');
-        $this->assertStringContainsString('try OWA 2.0.3 again after 2027-01-15 08:00 UTC, 3 attempts in all', $raised[2]['body']);
-        $this->assertSame('install_failed:2.0.3:skipped', $raised[3]['source_key'], 'the last attempt failed: one more');
-        $this->assertStringContainsString('Automatic updates skip OWA 2.0.3', $raised[3]['body']);
-        $this->assertSame(['install_failed:2.0.3', 'warning', true], [$raised[0]['source_key'], $raised[0]['severity'], $raised[0]['email']]);
-        $this->assertStringContainsString('The installed release runs as before. Automatic updates skip OWA 2.0.3', $raised[0]['body'], 'put back: the old release runs');
+        InstallNotices::forFailure(['error' => '', 'retry_after' => null] + $failed, $notify);
+        $this->assertSame([], $raised, 'nothing for a record without an error');
+
+        InstallNotices::forFailure(['attempts' => 3, 'retry_after' => null] + $failed, $notify);
+        $this->assertCount(1, $raised);
+        $this->assertSame(['install_failed:2.0.3', 'Installing OWA 2.0.3 failed', 'warning', true],
+            [$raised[0]['source_key'], $raised[0]['title'], $raised[0]['severity'], $raised[0]['email']]);
+        $this->assertStringStartsWith("Could not write Core/Env.php. OWA 2.0.2 was put back.\n\nThe install was reverted: OWA 2.0.2 runs as before. It is not tried again", $raised[0]['body']);
         $this->assertStringContainsString('php cli.php cmd=core-install --version=2.0.3', $raised[0]['body']);
-        $this->assertStringContainsString('tracking is queued and reports wait', $raised[1]['body'], 'booted: the schema is behind');
-        $this->assertStringContainsString('php cli.php cmd=core-update-schema', $raised[1]['body']);
+        $this->assertStringEndsWith("What the install did:\n" . implode("\n", $log), $raised[0]['body'], 'where it stopped');
+
+        foreach ([
+            'schema'    => ['Its schema updates did not complete: Update 095 failed.', 'tracking is queued and reports wait', 'php cli.php cmd=core-update-schema'],
+            'trackers'  => ['Republishing its tracking bundles failed: Update 095 failed.', 'its tracking bundles were not republished', 'php cli.php cmd=core-update-schema'],
+            'self_test' => ['Its own release check failed: Update 095 failed.', 'it may not install the release that fixes this', 'php cli.php cmd=core-install --version=<version>'],
+        ] as $step => [$what, $state, $todo]) {
+            $raised = [];
+            InstallNotices::forFailure(['booted' => true, 'stage' => 'finish', 'step' => $step, 'error' => 'Update 095 failed', 'retry_after' => null] + $failed, $notify);
+
+            $this->assertCount(1, $raised, "broken at $step: at once");
+            $this->assertSame(["install_broken:2.0.3:$step", 'critical', true], [$raised[0]['source_key'], $raised[0]['severity'], $raised[0]['email']], $step);
+            $this->assertStringStartsWith($what . "\n\nThe install is broken and needs attention now: ", $raised[0]['body'], $step);
+            $this->assertStringContainsString($state, $raised[0]['body'], $step);
+            $this->assertStringContainsString($todo, $raised[0]['body'], $step);
+        }
     }
 
     /** cmd=core-update-schema by hand waits for an install and takes no lock of its own; the installer itself runs it. */
@@ -134,9 +153,20 @@ final class InstallFinishTest extends CliControllerTestCase
     }
 
     /** Once nothing is pending, a hand run finishes the installed release's failed Finish -- its record and the old tarballs go -- and no other. */
+    /**
+     * A hand run of cmd=core-update-schema after a broken install runs the
+     * rest of Finish: the tracking bundles (written here under a test
+     * public_path), the self-test (its listing unreachable, as a network
+     * failure it shrugs off), the notice and the clean-up; a step that fails
+     * again is recorded at that step, the install's log carried on.
+     */
     public function testAHandRunThatCompletesClearsTheFailedFinish(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', $this->tmp . '/updates');
+        $was = [\OWA\Core\CoreAPI::getSetting('base', 'public_path'), \OWA\Core\CoreAPI::getSetting('base', 'auto_update_releases_url')];
+        mkdir($this->tmp . '/public', 0755);
+        \OWA\Core\CoreAPI::setSetting('base', 'public_path', $this->tmp . '/public');
+        \OWA\Core\CoreAPI::setSetting('base', 'auto_update_releases_url', 'http://127.0.0.1:9/releases');
         $d = new Downloads($this->tmp . '/updates');
 
         try {
@@ -152,10 +182,33 @@ final class InstallFinishTest extends CliControllerTestCase
             file_put_contents($d->tarball('0.9.0'), 'the replaced release');
             file_put_contents($d->tarball('0.9.0') . '.sig', 'its signature');
             $this->updates([]);
-            $this->assertNull($d->failure());
-            $this->assertFileDoesNotExist($d->tarball('0.9.0'), 'cleaned up as Finish would have');
+
+            // On to the bundles, which publish only where the tracker is built (not every CI job builds it;
+            // the e2e's finish-trackers-fail finishes it for real): complete, or broken there, never left as it was.
+            $after = $d->failure();
+
+            if ($after === null) {
+                $this->assertFileDoesNotExist($d->tarball('0.9.0'), 'cleaned up as Finish would have');
+            } else {
+                $this->assertSame('trackers', $after['step'], 'the hand run carried on to the bundles');
+                $this->assertStringContainsString('cmd=core-update-schema, by hand', $after['log'][0]);
+            }
+
+            // The bundles cannot be written: broken again, at the step after the schema updates.
+            $this->failed($d, ['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'the bundles', 'booted' => true, 'step' => 'trackers', 'log' => ['earlier']]);
+            array_map('unlink', glob($this->tmp . '/public/tracker/*.js') ?: []);
+            @mkdir($this->tmp . '/public/tracker', 0755);
+            chmod($this->tmp . '/public/tracker', 0555);
+            $this->updates([]);
+            chmod($this->tmp . '/public/tracker', 0755);
+            $this->assertSame(['finish', 'trackers', true], [$d->failure()['stage'] ?? null, $d->failure()['step'] ?? null, $d->failure()['booted'] ?? null]);
+            $this->assertSame('earlier', $d->failure()['log'][0], 'the install\'s log, carried on');
+            $this->assertStringContainsString('Republishing its tracking bundles (cmd=publish-trackers).', implode("\n", $d->failure()['log']));
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
+            \OWA\Core\CoreAPI::setSetting('base', 'public_path', $was[0]);
+            \OWA\Core\CoreAPI::setSetting('base', 'auto_update_releases_url', $was[1]);
+            @chmod($this->tmp . '/public/tracker', 0755);
         }
     }
 

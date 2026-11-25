@@ -99,28 +99,50 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * Once a run leaves no update pending, an install whose schema updates
-     * did not complete (Finish) is finished: its failure record and the
-     * tarballs Finish would have deleted go (Finish::cleanup()), and the
-     * Updates screen and core-update-status stop saying to run this. Inside
-     * the install Finish does it itself.
+     * Once a run leaves no update pending, an install that broke in Finish
+     * is finished: the steps after the schema updates run as Finish runs
+     * them (Finish::rest()), then its notice and clean-up (Finish::done()),
+     * which deletes the failure record. A step that fails again is recorded
+     * as Finish records it, with where. Inside the install Finish does it
+     * itself.
      *
      * @return void
      */
-    protected function clearFinishedFailure() {
+    protected function finishFailedInstall() {
 
         if ( \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here ) {
 
             return;
         }
 
+        $Finish    = \OWA\Module\Base\Classes\AutoUpdate\Finish::class;
         $downloads = new \OWA\Module\Base\Classes\AutoUpdate\Downloads();
         $failure   = $downloads->failure();
+        $v         = \OWA\Core\Env::version();
 
-        // This run finished the install: what Finish would have cleaned up goes.
-        if ( ! empty( $failure['booted'] ) && ( $failure['version'] ?? null ) === \OWA\Core\Env::version() ) {
+        if ( empty( $failure['booted'] ) || ( $failure['version'] ?? null ) !== $v ) {
 
-            \OWA\Module\Base\Classes\AutoUpdate\Finish::cleanup( $downloads, \OWA\Core\Env::version() );
+            return;
+        }
+
+        // The schema is current: the rest of Finish, as it would have run it, logged after what the install did.
+        $u = \OWA\Module\Base\Classes\AutoUpdate\Downloads::updater();
+        $m = $u['logged']( [ 'to' => $v, 'from' => (string) ( $failure['from'] ?? '' ), 'log' => (array) ( $failure['log'] ?? [] ) ],
+            'php cli.php cmd=core-update-schema, by hand: the schema updates are applied.' );
+
+        try {
+
+            $Finish::rest( static function ( $step ) use ( &$m, $u, $Finish ) {
+
+                $m['step'] = $step;
+                $m         = $u['logged']( $m, $Finish::STEPS[ $step ] );
+            } );
+
+            $Finish::done( $downloads, $v );
+
+        } catch ( \Throwable $e ) {
+
+            $Finish::failed( $downloads, $m, $e->getMessage() );
         }
     }
 
@@ -224,11 +246,11 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
                 
                 // add data to container
                 \OWA\Core\CoreAPI::notice( $this->getMsg( 3308 )['message'] );
-                $this->clearFinishedFailure();
+                $this->finishFailedInstall();
             }
         } else {
             \OWA\Core\CoreAPI::notice("There are no modules with pending updates to apply.");
-            $this->clearFinishedFailure();
+            $this->finishFailedInstall();
         }
 
         return null;

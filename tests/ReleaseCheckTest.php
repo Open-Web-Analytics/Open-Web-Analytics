@@ -589,7 +589,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check(['2.0.1'], ['window' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
         $this->assertStringContainsString('Installing 2.0.1 failed; it is tried again after 2027-01-15 09:00 UTC.', implode("\n", $result['lines']));
-        $this->assertStringContainsString('try OWA 2.0.1 again after 2027-01-15 09:00 UTC, 3 attempts in all', $this->notices['install_failed:2.0.1']['body']);
+        $this->assertArrayNotHasKey('install_failed:2.0.1', $this->notices, 'no notice while it is tried again');
         $this->assertNull(Install::$pending);
 
         $this->failed($failure + ['retry_after' => $this->now]);
@@ -877,7 +877,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('; can be installed.', $status($this->env()), 'judged now, not remembered');
 
         $this->failed(['version' => '2.1.0', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => 1800000000]);
-        $this->assertStringContainsString('Installing 2.1.0 over 2.0.0 failed, 2027-01-15 08:00 UTC: Could not write Core/Env.php.', $status($this->env()));
+        $this->assertStringContainsString('Installing OWA 2.1.0 failed (2027-01-15 08:00 UTC): Could not write Core/Env.php. OWA 2.0.0 was put back. The install was reverted: OWA 2.0.0 runs as before.', $status($this->env()));
         $this->assertStringContainsString('skipped, its install failed', $status($this->env()));
 
         file_put_contents($this->tmp . '/owa/owa-update.php', "<?php exit; ?>\n" . json_encode(['phase' => 'copied', 'from' => '2.0.0', 'to' => '2.1.0', 'since' => 1800000000]) . "\n");

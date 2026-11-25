@@ -232,6 +232,23 @@ return ( static function () {
     };
 
     /*
+     * The install's log: a line for each check and step, in memory, carried
+     * from process to process in the install marker (its log), and kept in
+     * the failure record, so a failure says where the install stopped. $m with
+     * $line added; the last $log_lines are kept.
+     */
+    $log_lines = 100;
+
+    $logged = static function ( array $m, $line ) use ( $log_lines ) {
+
+        $m['log']   = array_values( (array) ( $m['log'] ?? [] ) );
+        $m['log'][] = gmdate( 'Y-m-d H:i:s' ) . ' UTC ' . str_replace( [ "\r", "\n" ], ' ', (string) $line );
+        $m['log']   = array_slice( $m['log'], - $log_lines );
+
+        return $m;
+    };
+
+    /*
      * A failed install of the marker $m, in the updates directory's
      * last-failure.json (Downloads). Automatic updates try that release again
      * after retry_after, up to $retries attempts, $retry_wait seconds apart;
@@ -239,11 +256,16 @@ return ( static function () {
      * by hand. Not retried: a release that did not boot ($retry false), and
      * one that booted. attempt is the marker's since: one install recorded
      * twice (the copy failed, and putting back did too) counts once.
+     *
+     * stage, from the marker's phase: copy (before and during it), boot (the
+     * copied release did not start) or finish (it started: Finish, whose step
+     * the marker names). A finish failure is a broken install
+     * (InstallNotices::describe()).
      */
     $retries    = 3;
     $retry_wait = 21600;
 
-    $recordFailure = static function ( $updates, array $m, $error, $retry = true, $booted = false ) use ( $writeFile, $retries, $retry_wait ) {
+    $recordFailure = static function ( $updates, array $m, $error, $retry = true, $booted = false ) use ( $writeFile, $retries, $retry_wait, $logged ) {
 
         if ( (string) $updates === '' ) {
 
@@ -261,10 +283,13 @@ return ( static function () {
         $tries = $same ? (int) ( $was['attempts'] ?? 1 ) + ( (int) ( $was['attempt'] ?? 0 ) === $since ? 0 : 1 ) : 1;
 
         // format: raised only when a field changes meaning or goes.
+        $phase   = (string) ( $m['phase'] ?? '' );
         $failure = [
             'format'      => 1,
             'version'     => $to,
             'from'        => $from,
+            'stage'       => $booted || $phase === 'booted' ? 'finish' : ( $phase === 'copied' ? 'boot' : 'copy' ),
+            'step'        => $booted || $phase === 'booted' ? (string) ( $m['step'] ?? 'schema' ) : null,
             'error'       => (string) $error,
             'at'          => time(),
             'booted'      => (bool) $booted,
@@ -272,6 +297,8 @@ return ( static function () {
             'attempt'     => $since,
             'retry_after' => $retry && ! $booted && $tries < $retries ? time() + $retry_wait : null,
         ];
+
+        $failure['log'] = $logged( $m, 'Failed: ' . $error )['log'];
 
         try {
 
@@ -943,6 +970,7 @@ return ( static function () {
         'apply'       => $apply,
         'marker'      => $marker,
         'readMarker'  => $readMarker,
+        'logged'      => $logged,
         'writeMarker' => $writeMarker,
         'recordFailure' => $recordFailure,
         'retries'     => $retries,
@@ -962,7 +990,7 @@ return ( static function () {
          * code to end with, or ['finish' => marker, 'hold' => lock] to boot
          * and run Finish first, whatever the command.
          */
-        'preboot' => static function ( $root, array $argv ) use ( $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker, $recordFailure ) {
+        'preboot' => static function ( $root, array $argv ) use ( $logged, $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker, $recordFailure ) {
 
             $m = $readMarker( $root );
 
@@ -1040,6 +1068,8 @@ return ( static function () {
 
             $count       = $phase === 'copied' ? 'boots' : 'finishes';
             $m[ $count ] = (int) ( $m[ $count ] ?? 0 ) + 1;
+            $m           = $logged( $m, sprintf( $count === 'boots' ? 'Starting OWA %s (try %d of 2).' : 'Finishing the install of OWA %s again (try %d of 2).',
+                $m['to'] ?? '', $m[ $count ] ) );
 
             try {
 

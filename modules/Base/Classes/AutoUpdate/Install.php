@@ -50,10 +50,11 @@ class Install {
      * @param  string    $v         the release to install, downloaded
      * @param  string    $installed the installed release, downloaded
      * @param  string    $root      the OWA directory
-     * @param  bool      $quiet     say nothing after the copy (the scheduler's runs)
+     * @param  bool         $quiet     say nothing after the copy (the scheduler's runs)
+     * @param  list<string> $log       what the check did, which starts the install's log (the marker's)
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet ) {
+    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet, array $log = [] ) {
 
         $u = Downloads::updater();
 
@@ -117,6 +118,8 @@ class Install {
             'to_sha'     => $downloads->sha256( $v ),
             'quiet'      => (bool) $quiet,
             'u'          => $u,
+            'log'        => array_reduce( array_merge( $log, [ sprintf( 'Installing OWA %s over %s: both tarballs proved, the install lock held.', $v, $installed ) ] ),
+                static fn ( $m, $line ) => $u['logged']( $m, $line ), [] )['log'],
         ];
 
         return self::answer( self::OK, sprintf( 'Installing OWA %s over %s: the files are copied when this run has finished, and the next run of cli.php finishes the install.', $v, $installed ) );
@@ -223,7 +226,8 @@ class Install {
             return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
         }
 
-        $result = self::prepare( $downloads, $v, $installed, $root, false );
+        $result = self::prepare( $downloads, $v, $installed, $root, false,
+            [ sprintf( 'php cli.php cmd=core-install --version=%s%s, by hand.', $v, $force ? ' --force' : '' ) ] );
 
         if ( $result['outcome'] !== self::OK ) {
 
@@ -287,16 +291,19 @@ class Install {
             'from_sha256' => $p['from_sha'],
             'to_sha256'   => $p['to_sha'],
             'boots'       => 0,
+            'log'         => $p['log'] ?? [],
         ];
 
         try {
 
+            $marker = $u['logged']( $marker, sprintf( 'Waiting up to %d seconds for other runs of cli.php to end.', self::WAIT ) );
             $u['writeMarker']( $root, $marker );
             $alone = $u['alone']( $running, self::WAIT );
 
             if ( $alone ) {
 
                 $marker['phase'] = 'copying';
+                $marker          = $u['logged']( $marker, sprintf( 'Copying OWA %s\'s files over %s\'s.', $p['to'], $p['from'] ) );
                 $u['writeMarker']( $root, $marker );
             }
 
@@ -368,6 +375,7 @@ class Install {
         }
 
         $marker['phase'] = 'copied';
+        $marker          = $u['logged']( $marker, 'Copied. The next run of cli.php starts it.' );
 
         try {
 
