@@ -53,4 +53,30 @@ final class CliInvocation {
             && is_numeric( $server['argc'] )
             && $server['argc'] > 0;
     }
+
+    /**
+     * Why cli.php must not run, as root, or null when it may.
+     *
+     * Every run includes PHP the web server's user may have been able to
+     * write (modules, overrides), and as root any of it would control the
+     * whole server. So root is refused, as WP-CLI refuses it, unless asked
+     * for with --allow-root or OWA_CLI_ALLOW_ROOT set to something true.
+     * Asked before anything loads, the updater included.
+     *
+     * @param  int          $euid  posix_geteuid(), or -1 where it is unknown
+     * @param  list<string> $argv  $_SERVER['argv']
+     * @param  string|false $allow getenv( 'OWA_CLI_ALLOW_ROOT' )
+     * @param  string       $owner the name of the user OWA's files belong to
+     * @return string|null
+     */
+    public static function rootRefusal( $euid, array $argv, $allow, $owner ) {
+
+        if ( $euid !== 0 || in_array( '--allow-root', $argv, true ) || ( $allow !== false && $allow !== '' && $allow !== '0' ) ) {
+
+            return null;
+        }
+
+        return sprintf( "cli.php is running as root, so any code OWA loads would control the whole server. Run it as the user OWA's files belong to%s, or add --allow-root to run as root anyway.",
+            $owner !== '' && $owner !== 'root' ? sprintf( ', for example: sudo -u %s php cli.php ...', $owner ) : '' );
+    }
 }

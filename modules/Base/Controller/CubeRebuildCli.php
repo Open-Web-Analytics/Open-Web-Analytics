@@ -82,6 +82,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
+    /** May be queued (JobQueue::isQueueable()): Retention and a late beacon for a settled day queue rebuilds. */
+    const QUEUEABLE = true;
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 

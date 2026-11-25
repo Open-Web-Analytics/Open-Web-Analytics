@@ -22,6 +22,9 @@ namespace OWA\Module\Base\Controller;
  */
 class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
+    /** May be queued (JobQueue::isQueueable()): A settings save queues a republish (TrackerBundle). */
+    const QUEUEABLE = true;
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
