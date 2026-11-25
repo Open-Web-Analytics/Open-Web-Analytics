@@ -383,6 +383,24 @@ final class SystemHealthTest extends TestCase
         }
     }
 
+    /** An automatic updates file that is not cli.php's owner's: red, naming it. */
+    public function testAnUpdateFileOfAnotherUserIsShown(): void
+    {
+        \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$path = $lock = sys_get_temp_dir() . '/owa-foreign-' . bin2hex(random_bytes(4));
+
+        try {
+            touch($lock);
+            $this->assertNull(SystemHealth::foreignUpdateFiles(fileowner($lock)), 'its own');
+
+            $finding = SystemHealth::foreignUpdateFiles(fileowner($lock) + 1);
+            $this->assertSame('red', $finding['level']);
+            $this->assertStringContainsString(basename($lock) . ' belongs to', $finding['detail']);
+        } finally {
+            @unlink($lock);
+            \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$path = null;
+        }
+    }
+
     public function testTheInstallationNamesTheServerRole(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');

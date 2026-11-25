@@ -655,6 +655,13 @@ class SystemHealth {
             $findings[] = $updates;
         }
 
+        $foreign = self::foreignUpdateFiles();
+
+        if ( $foreign ) {
+
+            $findings[] = $foreign;
+        }
+
         $backup = self::backupDir();
 
         if ( $backup ) {
@@ -691,6 +698,31 @@ class SystemHealth {
         return self::finding( 'red', \OWA\Core\CoreAPI::t( 'Automatic updates' ), sprintf( \OWA\Core\CoreAPI::t(
             'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.' ),
             count( $dirs ), implode( ', ', array_map( 'basename', $dirs ) ) ) );
+    }
+
+    /**
+     * Red when an automatic updates file -- the install lock, an updates
+     * directory, a failure record -- belongs to another user than cli.php's
+     * owner, the user the scheduler runs as and installs updates as
+     * (Downloads::foreign()). The web server can make them, and core-update
+     * then fails every hour; this says so before it has run.
+     *
+     * @param  int|null $owner a test's; else cli.php's owner
+     * @return Finding|null
+     */
+    public static function foreignUpdateFiles( $owner = null ) {
+
+        $owner = $owner ?? @fileowner( \OWA\Core\Env::root() . '/cli.php' );
+
+        if ( $owner === false ) {
+
+            return null;
+        }
+
+        $problems = \OWA\Module\Base\Classes\AutoUpdate\Downloads::foreignProblems(
+            ( new \OWA\Module\Base\Classes\AutoUpdate\Downloads() )->foreign( $owner ), $owner );
+
+        return $problems ? self::finding( 'red', \OWA\Core\CoreAPI::t( 'Automatic updates' ), implode( ' ', $problems ) ) : null;
     }
 
     /**

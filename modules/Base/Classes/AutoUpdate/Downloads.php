@@ -103,6 +103,66 @@ class Downloads {
         return $found;
     }
 
+    /**
+     * The automatic updates files the user $uid did not make, and who did:
+     * the install lock, each updates directory and its last-failure.json.
+     * The web user can write the data directory, so it can make any of them,
+     * and each stops updates: a lock that cannot be taken over, a directory
+     * that cannot be written, a failure that was never recorded.
+     *
+     * @param  int $uid the user that installs updates
+     * @return array<string, int> owner by path
+     */
+    public function foreign( $uid ) {
+
+        $paths = [ InstallLock::path() ];
+
+        foreach ( self::updater()['updatesDirs']( $this->data ) as $dir ) {
+
+            array_push( $paths, (string) $dir, $dir . '/' . self::FAILURE );
+        }
+
+        $out = [];
+
+        foreach ( $paths as $path ) {
+
+            $stat = @lstat( $path );
+
+            if ( $stat !== false && (int) $stat['uid'] !== (int) $uid ) {
+
+                $out[ $path ] = (int) $stat['uid'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * What foreign() found, as problems to show: one sentence each.
+     *
+     * @param  array<string, int> $foreign
+     * @param  int                $uid
+     * @return list<string>
+     */
+    public static function foreignProblems( array $foreign, $uid ) {
+
+        $name = static function ( $id ) {
+
+            $user = function_exists( 'posix_getpwuid' ) ? @posix_getpwuid( (int) $id ) : false;
+
+            return is_array( $user ) ? (string) $user['name'] : sprintf( CoreAPI::t( 'user %d' ), $id );
+        };
+        $out  = [];
+
+        foreach ( $foreign as $path => $owner ) {
+
+            $out[] = sprintf( CoreAPI::t( '%1$s belongs to %2$s, not to %3$s, the user that installs updates: no update installs while it is there. If no install is running, delete it.' ),
+                InstallNotices::withoutPaths( $path ), $name( $owner ), $name( $uid ) );
+        }
+
+        return $out;
+    }
+
     /** @return int how many updates directories there are; more than one stops installs */
     public function count() {
 
