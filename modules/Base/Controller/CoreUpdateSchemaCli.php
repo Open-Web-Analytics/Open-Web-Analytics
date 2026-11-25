@@ -99,10 +99,11 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * Once a run leaves no update pending, the record of an install whose
-     * schema updates did not complete (Finish) goes: the Updates screen and
-     * core-update-status stop saying to run this. Inside the install Finish
-     * clears it itself.
+     * Once a run leaves no update pending, an install whose schema updates
+     * did not complete (Finish) is finished: its failure record and the
+     * tarballs Finish would have deleted go (Finish::cleanup()), and the
+     * Updates screen and core-update-status stop saying to run this. Inside
+     * the install Finish does it itself.
      *
      * @return void
      */
@@ -116,9 +117,10 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
         $downloads = new \OWA\Module\Base\Classes\AutoUpdate\Downloads();
         $failure   = $downloads->failure();
 
+        // This run finished the install: what Finish would have cleaned up goes.
         if ( ! empty( $failure['booted'] ) && ( $failure['version'] ?? null ) === \OWA\Core\Env::version() ) {
 
-            $downloads->clearFailure();
+            \OWA\Module\Base\Classes\AutoUpdate\Finish::cleanup( $downloads, \OWA\Core\Env::version() );
         }
     }
 

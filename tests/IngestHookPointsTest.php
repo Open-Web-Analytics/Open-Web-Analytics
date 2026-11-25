@@ -63,8 +63,10 @@ final class IngestHookPointsTest extends TestCase
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_GET = [ 'owa_e_t' => 'page_view', 'owa_page_url' => 'https://www.example.com/a',
     'owa_site_id' => 'no such site' ];
-// Called once the response has ended, before OWA boots.
+// Called once the response has ended, before OWA boots, and before log.php loads the
+// autoloader (after the install gate): PHP's own needs none, this stand-in does.
 function fastcgi_finish_request() {
+    require_once dirname( $_SERVER['SCRIPT_FILENAME'] ) . '/owa_env.php';
     foreach ( \OWA\Module\Base\Classes\Ingest::points() as $i => $point ) {
         eval( "function owa_test_point_$i( \$value ) {
             file_put_contents( getenv( 'OWA_POINTS_RECORD' ), '$point' . \"\\n\", FILE_APPEND );
