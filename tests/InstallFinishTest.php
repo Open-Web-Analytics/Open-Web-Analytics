@@ -46,7 +46,7 @@ final class InstallFinishTest extends CliControllerTestCase
 
         $tarred('2.0.2');
         $tarred('2.0.3');
-        $d->writeFailure(['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'an earlier attempt']);
+        $this->failed($d, ['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'an earlier attempt']);
 
         Finish::cleanup($d, '2.0.3');
         $this->assertNull($d->failure());
@@ -141,20 +141,26 @@ final class InstallFinishTest extends CliControllerTestCase
         $d = new Downloads($this->tmp . '/updates');
 
         try {
-            $d->writeFailure(['version' => '1.0.0', 'from' => '0.9.0', 'error' => 'another release', 'booted' => true]);
+            $this->failed($d, ['version' => '1.0.0', 'from' => '0.9.0', 'error' => 'another release', 'booted' => true]);
             $this->updates([]);
             $this->assertNotNull($d->failure(), 'another release\'s record stays');
 
-            $d->writeFailure(['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'put back', 'booted' => false]);
+            $this->failed($d, ['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'put back', 'booted' => false]);
             $this->updates([]);
             $this->assertNotNull($d->failure(), 'a release put back is not this one finishing');
 
-            $d->writeFailure(['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'cmd=core-update-schema did not complete', 'booted' => true]);
+            $this->failed($d, ['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'cmd=core-update-schema did not complete', 'booted' => true]);
             $this->updates([]);
             $this->assertNull($d->failure());
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
         }
+    }
+
+    /** A failure record as updater.php `recordFailure` writes one, its fields as given. */
+    private function failed(Downloads $d, array $failure): void
+    {
+        file_put_contents($d->root() . '/' . Downloads::FAILURE, json_encode(['format' => 1] + $failure));
     }
 
     private function updates(array $params): \OWA\Module\Base\Controller\CoreUpdateSchemaCli

@@ -131,7 +131,7 @@ return [
             'label'    => \OWA\Core\CoreAPI::t( 'Update Days' ),
             'description' =>
                 \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun. Empty: any day.' ),
-            'pattern'  => '/^$|^(mon|tue|wed|thu|fri|sat|sun)(\s*,\s*(mon|tue|wed|thu|fri|sat|sun))*$/i',
+            'pattern'  => '/^$|^' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . '(\s*,\s*' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . ')*$/i',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Days is a list of days such as sat,sun: mon, tue, wed, thu, fri, sat or sun, separated by commas.' ),
         ],
         'auto_update_window' => [
@@ -143,7 +143,7 @@ return [
             'label'    => \OWA\Core\CoreAPI::t( 'Update Window' ),
             'description' =>
                 \OWA\Core\CoreAPI::t( 'The time an update may start in, such as 02:00-06:00, in this installation\'s timezone; patches wait for it too. Empty: any time, as soon as a release is downloaded.' ),
-            'pattern'  => '/^$|^([01][0-9]|2[0-3]):[0-5][0-9]-([01][0-9]|2[0-3]):[0-5][0-9]$/',
+            'pattern'  => '/^$|^' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::WINDOW . '$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Window is two times, HH:MM-HH:MM, such as 02:00-06:00.' ),
         ],
         'auto_update_email_success' => [

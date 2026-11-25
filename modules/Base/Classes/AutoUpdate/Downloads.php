@@ -18,7 +18,7 @@ use OWA\Core\SafeFile;
  *                                      the one the release check chose, until it installs.
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
- *                                installs: {format, version, from, error, at, booted}
+ *                                installs; written by updater.php `recordFailure` alone
  *
  * Nothing here is trusted for what it holds: the web user can write the data
  * directory, so it may have replaced any of it. A tarball is read once, into
@@ -34,9 +34,6 @@ use OWA\Core\SafeFile;
 class Downloads {
 
     const FAILURE = 'last-failure.json';
-
-    /** last-failure.json's format: raised only when a field changes meaning or goes. */
-    const FORMAT = 1;
 
     /** Seconds a tarball download may take. */
     const DOWNLOAD_TIMEOUT = 600;
@@ -180,11 +177,15 @@ class Downloads {
 
         $out = [];
 
-        foreach ( $this->root === '' ? [] : (array) glob( $this->root . '/owa_*_packaged.tar' ) as $file ) {
+        [ $before, $after ] = explode( '%s', Releases::ASSET );
 
-            if ( preg_match( '/^owa_(\d+\.\d+\.\d+)_packaged\.tar$/', basename( (string) $file ), $m ) && $this->has( $m[1] ) ) {
+        foreach ( $this->root === '' ? [] : (array) glob( $this->root . '/' . sprintf( Releases::ASSET, '*' ) ) as $file ) {
 
-                $out[] = $m[1];
+            $v = substr( basename( (string) $file ), strlen( $before ), - strlen( $after ) );
+
+            if ( Version::parse( $v ) !== null && $this->has( $v ) ) {
+
+                $out[] = $v;
             }
         }
 
@@ -224,15 +225,6 @@ class Downloads {
     public function failure() {
 
         return $this->root === '' ? null : $this->readJson( $this->root . '/' . self::FAILURE );
-    }
-
-    /**
-     * @param  array<string, mixed> $failure
-     * @return void
-     */
-    public function writeFailure( array $failure ) {
-
-        $this->writeJson( $this->root . '/' . self::FAILURE, [ 'format' => self::FORMAT ] + $failure );
     }
 
     /**
@@ -420,83 +412,7 @@ class Downloads {
      */
     public static function privateCopy( $file ) {
 
-        clearstatcache( true, $file );
-
-        if ( ! file_exists( $file ) && ! is_link( $file ) ) {
-
-            throw new \RuntimeException( sprintf( '%s has not been downloaded.', basename( $file ) ) );
-        }
-
-        // Never opened unless it is a plain file: opening a FIFO would wait for a writer.
-        $in = is_link( $file ) || ! is_file( $file ) ? false : @fopen( $file, 'rb' );
-        $st = $in === false ? false : fstat( $in );
-
-        if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
-
-            if ( $in !== false ) {
-
-                fclose( $in );
-            }
-
-            throw new \RuntimeException( sprintf( '%s is not a plain file.', basename( $file ) ) );
-        }
-
-        $copy  = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
-        $ctx   = hash_init( 'sha256' );
-        $bytes = 0;
-
-        try {
-
-            while ( ! feof( $in ) ) {
-
-                $chunk = fread( $in, 1048576 );
-
-                if ( $chunk === false ) {
-
-                    throw new \RuntimeException( sprintf( 'Reading %s failed.', basename( $file ) ) );
-                }
-
-                $bytes += strlen( $chunk );
-
-                if ( $bytes > self::MAX_TARBALL ) {
-
-                    throw new \RuntimeException( sprintf( '%s is larger than %d MB, which no release is.', basename( $file ), self::MAX_TARBALL >> 20 ) );
-                }
-
-                hash_update( $ctx, $chunk );
-
-                if ( fwrite( $copy, $chunk ) !== strlen( $chunk ) ) {
-
-                    throw new \RuntimeException( 'Copying the tarball failed; the disk holding the temporary directory may be full.' );
-                }
-            }
-
-        } catch ( \Throwable $e ) {
-
-            fclose( $in );
-            fclose( $copy );
-
-            throw $e;
-        }
-
-        fclose( $in );
-
-        return [ self::rewound( $copy ), hash_final( $ctx ) ];
-    }
-
-    /**
-     * @param  resource $h
-     * @return resource
-     * @throws \RuntimeException
-     */
-    private static function rewound( $h ) {
-
-        if ( ! rewind( $h ) ) {
-
-            throw new \RuntimeException( 'The tarball\'s copy cannot be read from the start.' );
-        }
-
-        return $h;
+        return self::updater()['privateCopy']( $file, self::MAX_TARBALL );
     }
 
     /**
@@ -604,16 +520,5 @@ class Downloads {
         $data = is_file( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : null;
 
         return is_array( $data ) ? $data : null;
-    }
-
-    /**
-     * @param  string               $path
-     * @param  array<string, mixed> $data
-     * @return void
-     */
-    private function writeJson( $path, array $data ) {
-
-        // Readable by the web user (the Updates screen); written by the owner alone, never through a link.
-        SafeFile::replace( $path, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
     }
 }

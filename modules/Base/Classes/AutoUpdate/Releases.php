@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
 class Releases {
 
     /** The tarball's name; %s is the version. */
-    const ASSET = 'owa_%s_packaged.tar';
+    const ASSET = Signature::TARBALL;
 
     /** Lines of "<sha256>  <asset name>", for a release whose asset has no digest. */
     const SUMS_ASSET = 'SHA256SUMS';
@@ -127,14 +127,12 @@ class Releases {
                 continue;
             }
 
-            $step = Version::step( $installed, $version );
-
-            if ( $step === null || $step === Version::MAJOR || ( $step === Version::MINOR && $level !== Version::MINOR ) ) {
+            if ( ! Version::allows( $level, $installed, $version ) ) {
 
                 continue;
             }
 
-            $release = self::describe( $r, $version, $step );
+            $release = self::describe( $r, $version, (string) Version::step( $installed, $version ) );
 
             if ( $release && ( $best === null || Version::compare( $version, $best['version'] ) > 0 ) ) {
 

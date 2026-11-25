@@ -74,7 +74,7 @@ final class ReleaseSignatureTest extends TestCase
     public function testWhatIsSigned(): void
     {
         $this->assertSame('OWA release 2.0.3, owa_2.0.3_packaged.tar, SHA-256 ' . $this->sha, Signature::message('2.0.3', strtoupper($this->sha)));
-        $this->assertSame(Releases::ASSET, Signature::TARBALL, 'the packager script loads Signature alone, so it has its own copy');
+        $this->assertSame(Releases::ASSET, Signature::TARBALL, 'Releases names the tarball by Signature\'s name, which updater.php and the packager script load alone');
         $this->assertSame(Releases::ASSET . '.sig', Signature::ASSET);
     }
 

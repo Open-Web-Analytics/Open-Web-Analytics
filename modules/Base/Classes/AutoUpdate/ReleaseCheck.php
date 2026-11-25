@@ -69,6 +69,12 @@ class ReleaseCheck {
 
     const DAYS = [ 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7 ];
 
+    /** An update window, HH:MM-HH:MM, as a regular expression's body: the auto_update_window setting's pattern too. */
+    const WINDOW = '([01][0-9]|2[0-3]):([0-5][0-9])-([01][0-9]|2[0-3]):([0-5][0-9])';
+
+    /** A day of DAYS, as a regular expression's body: the auto_update_days setting's pattern too. */
+    const DAY = '(mon|tue|wed|thu|fri|sat|sun)';
+
     /** @var Downloads */
     private $downloads;
 
@@ -379,9 +385,7 @@ class ReleaseCheck {
 
         foreach ( $this->downloads->versions() as $v ) {
 
-            $step = Version::step( $installed, $v );
-
-            if ( $step !== null && $step !== Version::MAJOR && ( $level !== Version::PATCH || $step === Version::PATCH ) && ! $this->skips( $v ) ) {
+            if ( Version::allows( $level, $installed, $v ) && ! $this->skips( $v ) ) {
 
                 return $v;
             }
@@ -700,7 +704,7 @@ class ReleaseCheck {
 
         $window = (string) ( $this->context['window'] ?: '' );
 
-        if ( ! preg_match( '/^([01][0-9]|2[0-3]):([0-5][0-9])-([01][0-9]|2[0-3]):([0-5][0-9])$/', $window ) ) {
+        if ( ! preg_match( '/^' . self::WINDOW . '$/', $window ) ) {
 
             return null;
         }
