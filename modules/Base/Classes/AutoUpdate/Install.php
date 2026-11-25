@@ -375,8 +375,12 @@ class Install {
 
         } catch ( \RuntimeException $e ) {
 
-            // Still saying copying, with the lock let go: the next run puts the installed release back.
-            fwrite( STDERR, $e->getMessage() . "\n" );
+            // Still saying copying, with the lock let go: the next run puts the installed release back, and records why.
+            $u['unlock']( $p['hold'] );
+            fwrite( STDERR, sprintf( "OWA %s's files are in place, but the install marker could not say so: %s The next run of cli.php puts OWA %s back.\n",
+                $p['to'], rtrim( $e->getMessage(), '.' ) . '.', $p['from'] ) );
+
+            exit( 1 );
         }
 
         $u['unlock']( $p['hold'] );

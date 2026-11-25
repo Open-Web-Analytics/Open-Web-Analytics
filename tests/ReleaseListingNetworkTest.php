@@ -29,8 +29,8 @@ final class ReleaseListingNetworkTest extends TestCase
         $token = (string) getenv('GITHUB_TOKEN');
 
         if ($token !== '') {
-            // Redirects followed here, so the token goes to api.github.com
-            // behind the update host and nowhere else.
+            // For the listing, an API call. Redirects followed here, so the
+            // token goes to api.github.com behind the update host and nowhere else.
             // The user agent OWA sends: the update host's WAF lets only that through.
             $agent = (string) \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent');
             Releases::$fetcher = static function ($url, $timeout, $sink) use ($token, $agent) {
@@ -121,9 +121,18 @@ final class ReleaseListingNetworkTest extends TestCase
         // Through the update host's /download/, which redirects to GitHub, as every download goes.
         $via = Releases::via($release, (string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_download_url'));
         $this->assertStringStartsWith('https://updates.openwebanalytics.com/download/', $via['asset_url']);
-        $sink = fopen($tar, 'xb');
-        Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $sink);
-        fclose($sink);
+        // The production client, whatever setUp() put in its place for the listing: a
+        // release asset is no API call, so it needs no token and spends no rate limit.
+        $fetcher           = Releases::$fetcher;
+        Releases::$fetcher = null;
+        $sink              = fopen($tar, 'xb');
+
+        try {
+            Releases::get($via['asset_url'], Downloads::DOWNLOAD_TIMEOUT, $sink);
+        } finally {
+            fclose($sink);
+            Releases::$fetcher = $fetcher;
+        }
         $this->assertSame($release['sha256'], hash_file('sha256', $tar), 'the file the listing names');
         unlink($tar);
 

@@ -40,8 +40,11 @@
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
  * finish-killed-in-the-schema-updates, newer-release-after-a-failure,
- * installed-past, installed-tarball-missing and no-updater. copy-fails runs
- * out of its 3 attempts; schema-fails is recovered as its notice says.
+ * installed-past, installed-tarball-missing, no-updater, install-now (the
+ * Updates screen's button, a job the scheduler runs) and finish-partly-fails
+ * (installed, with the bundles not republished, a broken release check and
+ * no success e-mail). copy-fails runs out of its 3 attempts; schema-fails is
+ * recovered as its notice says.
  *
  * Every listing it serves has 2.0.90 too: a failed install puts the
  * installed release back from its tarball, which the release check downloads.
@@ -1337,6 +1340,85 @@ $scenarios = [
         publish( $www, $base, $to, TO );
         release_check( $site, $ca );
         next_run( $site, $ca );
+        installed( $site, $ca, TO );
+    },
+
+    // The Updates screen's Install now: a job naming the release downloaded, which the scheduler runs as core-install.
+    'install-now' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'install-now', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+
+        [ , $out ] = release_check( $site, $ca );
+        check( downloaded( $site, TO ) && envVersion( $site ) === FROM, "it was not downloaded to wait for its window:\n$out" );
+
+        // The click, as the screen's controller takes it (its capability and nonce are AutoUpdatesScreenTest's).
+        $said = must( sprintf( 'php -r %s', escapeshellarg( 'require "owa.php"; new owa(["request_type" => "cli"]);'
+            . ' $c = new \OWA\Module\Base\Controller\UpdatesRun(["run" => "install"]); $c->action();'
+            . ' $d = (new ReflectionProperty(\OWA\Core\Controller::class, "data"))->getValue($c); echo json_encode($d["status_code"] ?? $d["error_code"] ?? null);' ) ), $site );
+        check( trim( $said ) === '3314', "Install now was not queued: $said" );
+
+        $m    = sql( $db );
+        $jobs = $m->query( sprintf( "SELECT command, params FROM `%s`.owa_job_queue WHERE status = 'pending'", $db['name'] ) )->fetch_all( MYSQLI_ASSOC );
+        $m->close();
+        check( in_array( [ 'command' => 'core-install', 'params' => json_encode( [ 'version' => TO ] ) ], $jobs, true ), 'no core-install job naming ' . TO . ': ' . json_encode( $jobs ) );
+
+        // The scheduler's next minute: outside the window, as the button means.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
+        check( $code === 0 && envVersion( $site ) === TO, "the queued core-install did not install it (exit $code):\n$out" );
+        next_run( $site, $ca );
+        installed( $site, $ca, TO );
+    },
+
+    // Finishing goes partly wrong without failing: the bundles cannot be republished, the new
+    // release's own release check is broken, and the operator wants no success e-mail.
+    'finish-partly-fails' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to = package( $build, $work, 'finish-partly-fails', TO, static function ( $tree ) {
+
+            $f   = "$tree/modules/Base/Classes/AutoUpdate/ReleaseCheck.php";
+            $src = (string) file_get_contents( $f );
+            $at  = 'public function run( $dry_run = false ) {';
+            check( substr_count( $src, $at ) === 1, 'ReleaseCheck::run() is not where this scenario breaks it' );
+            file_put_contents( $f, str_replace( $at, $at . "\n\n        throw new \\LogicException( 'e2e: this release check is broken.' );\n", $src ) );
+        } );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", "define('OWA_AUTO_UPDATE_EMAIL_SUCCESS', false);\n" );
+
+        [ $code, $out ] = release_check( $site, $ca );
+        check( $code === 0 && envVersion( $site ) === TO, "core-update did not copy it (exit $code):\n$out" );
+
+        // The bundles are gone, so all are stale, and their directory cannot be written.
+        $bundles = glob( "$site/public/tracker/*.js" );
+        check( $bundles !== [], 'the installation has no tracking bundle to republish' );
+        array_map( 'unlink', $bundles );
+        chmod( "$site/public/tracker", 0555 );
+
+        try {
+
+            [ $code, $out ] = next_run( $site, $ca );
+
+        } finally {
+
+            chmod( "$site/public/tracker", 0755 );
+        }
+
+        check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the install did not finish (exit $code):\n$out" );
+
+        $n    = notices( $db );
+        $done = $n[ 'installed:' . TO ] ?? null;
+        check( $done !== null && str_contains( (string) $done['body'], 'Republishing the tracking bundles failed' ) && str_contains( (string) $done['body'], 'cmd=publish-trackers' ),
+            'the "is installed" notice does not say the bundles were not republished: ' . json_encode( $done ) );
+        check( $done['email_status'] === '', 'the "is installed" notice was e-mailed with OWA_AUTO_UPDATE_EMAIL_SUCCESS false: ' . $done['email_status'] );
+
+        $self = $n[ 'self_test:' . TO ] ?? null;
+        check( $self !== null && $self['severity'] === 'critical' && str_contains( (string) $self['body'], 'e2e: this release check is broken.' ) && $self['email_status'] !== '',
+            'no critical, e-mailed notice that the new release cannot check for its own updates: ' . json_encode( $self ) );
+
+        // As the notice says.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=publish-trackers' );
+        check( $code === 0 && count( glob( "$site/public/tracker/*.js" ) ) === count( $bundles ), "publish-trackers did not republish the bundles (exit $code):\n$out" );
         installed( $site, $ca, TO );
     },
 
