@@ -102,6 +102,27 @@ final class ConstraintRefusalTest extends TestCase
         $this->assertSame([], $this->errorsOf($rsm));
     }
 
+    /** A Yes/No dimension takes the words its cells show; anything else is refused, not compared with the flag. */
+    public function testABooleanDimensionTakesYesOrNo(): void
+    {
+        foreach (['isOutbound==Yes', 'isOutbound!=no', 'isOutbound==1', 'isOutbound==(not set)'] as $clause) {
+            $rsm = $this->rsm();
+            $rsm->setConstraints($rsm->constraintsStringToArray($clause));
+
+            $this->assertContains('isOutbound', $this->appliedNames($rsm), $clause);
+            $this->assertFalse($rsm->hasRequestErrors(), $clause);
+        }
+
+        foreach (['isOutbound==Maybe' => 'is Yes or No; "Maybe" is neither', 'isOutbound=@Ye' => 'can only be filtered with is or is not'] as $clause => $why) {
+            $rsm = $this->rsm();
+            $rsm->setConstraints($rsm->constraintsStringToArray($clause));
+
+            $this->assertTrue($rsm->hasRequestErrors(), $clause);
+            $this->assertNotContains('isOutbound', $this->appliedNames($rsm), $clause);
+            $this->assertStringContainsString($why, implode(' ', $this->errorsOf($rsm)), $clause);
+        }
+    }
+
     /**
      * "(not set)" is an empty test, which only a dimension has. Applied at
      * query time it was dropped, and the query ran without it.
