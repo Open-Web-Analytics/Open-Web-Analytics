@@ -179,8 +179,10 @@ function owa_test_built_event( $event ) {
     file_put_contents( getenv( 'OWA_LOG_TEST_RECORD' ), json_encode( $event->getProperties() ) );
     exit( 0 );
 }
-// Called once the response has ended, before OWA boots.
+// Called once the response has ended, before OWA boots, and before log.php loads the
+// autoloader (after the install gate): PHP's own needs none, this stand-in does.
 function fastcgi_finish_request() {
+    require_once dirname( $_SERVER['SCRIPT_FILENAME'] ) . '/owa_env.php';
     \OWA\Core\CoreAPI::registerFilter( \OWA\Module\Base\Classes\Ingest::REQUEST_POST, 'owa_test_built_event' );
     return true;
 }

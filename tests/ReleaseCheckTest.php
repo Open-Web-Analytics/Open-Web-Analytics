@@ -572,7 +572,11 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame('2.0.2', Install::$pending['to']);
         $this->dropPending();
 
-        $this->assertSame(ReleaseCheck::CURRENT, $this->check(['2.0.1'], ['installed' => '2.0.2'])['outcome'], 'the failure was of 2.0.1 over 2.0.0 only');
+        // Only over the release it failed from: 2.0.2 failed over 2.0.1, so over 2.0.0 it installs.
+        $this->failed(['version' => '2.0.2', 'from' => '2.0.1', 'error' => 'it failed', 'at' => $this->now]);
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.2'], ['window' => ''])['outcome'], 'it failed over 2.0.1, not 2.0.0');
+        $this->dropPending();
+        $this->assertSame(ReleaseCheck::SKIPPED, $this->check(['2.0.2'], ['window' => '', 'installed' => '2.0.1'])['outcome'], 'over 2.0.1 it is skipped');
     }
 
     /** A failure to be tried again: skipped until retry_after, then installed. */
@@ -633,22 +637,6 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
         $this->assertFalse(InstallLock::isHeld());
         $this->assertSame([], glob($dir . '/write-test*'), 'the test file goes');
-    }
-
-    public function testNothingChangesWhileAnInstallHoldsTheLock(): void
-    {
-        $this->check(['2.0.1']);
-        $h = fopen(InstallLock::$path, 'c');
-        flock($h, LOCK_EX);
-
-        try {
-            $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'])['outcome']);
-            $this->assertTrue($this->downloads()->has('2.0.1'));
-            $this->assertFalse($this->downloads()->has('2.0.2'));
-        } finally {
-            flock($h, LOCK_UN);
-            fclose($h);
-        }
     }
 
     public function testNoAutomaticUpdateFromACheckoutOrWhenOff(): void
@@ -814,9 +802,62 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('Downloading 2.0.9 failed: Fetching https://example.test/download/2.0.9/owa_2.0.9_packaged.tar failed', $this->hand('2.0.9', ['2.0.1'])['message'], 'not published');
         $this->assertStringContainsString('cannot be installed here', $this->hand('2.0.1', ['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env()])['message']);
 
+        $this->assertStringContainsString('OWA is installed from a full server only', $this->hand('2.0.1', ['2.0.1'], ['role' => \OWA\Core\ServerRole::WORKER])['message']);
+        $this->assertStringContainsString('must be release versions', $this->hand('2.0.1-beta', ['2.0.1'])['message']);
+        $this->assertStringContainsString('must be release versions', $this->hand('2.0.1', ['2.0.1'], ['installed' => 'master'])['message']);
+
+        // An install under way: its marker, or another run holding the lock.
+        file_put_contents($this->tmp . '/owa/owa-update.php', "<?php exit; ?>\n" . json_encode(['phase' => 'copied', 'from' => '2.0.0', 'to' => '2.0.1']) . "\n");
+        $this->assertSame(Install::BUSY, $this->hand('2.0.1', ['2.0.1'])['outcome']);
+        unlink($this->tmp . '/owa/owa-update.php');
+        $h = fopen(InstallLock::$path, 'c');
+        flock($h, LOCK_EX);
+        try {
+            $this->assertSame(Install::BUSY, $this->hand('2.0.1', ['2.0.1'])['outcome']);
+        } finally {
+            flock($h, LOCK_UN);
+            fclose($h);
+        }
+
         file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
         $this->assertStringContainsString('version control checkout', $this->hand('2.0.1', ['2.0.1'])['message']);
         $this->assertNull(Install::$pending);
+    }
+
+    /** The installed release again, with --force: it installs, and its tarball, the way back, is kept. */
+    public function testReinstallingTheInstalledReleaseKeepsItsTarball(): void
+    {
+        $this->assertSame(Install::REFUSED, $this->hand('2.0.0', [])['outcome'], 'not without --force');
+
+        $result = $this->hand('2.0.0', [], [], true);
+        $this->assertSame(Install::OK, $result['outcome'], $result['message']);
+        $this->assertSame('2.0.0', Install::$pending['to']);
+        $this->assertTrue($this->downloads()->has('2.0.0'));
+        $this->dropPending();
+    }
+
+    /** No way back: when the installed release's tarball cannot be downloaded, nothing installs, automatically or by hand. */
+    public function testWithoutTheInstalledReleasesTarballNothingInstalls(): void
+    {
+        $result = $this->check(['2.0.1'], ['window' => ''], null, null, false, false, null, false);
+        $this->assertNotSame(ReleaseCheck::INSTALLING, $result['outcome']);
+        $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded', implode("\n", array_merge($result['lines'], $result['problems'])));
+        $this->assertNull(Install::$pending);
+        $this->assertFalse($this->downloads()->has('2.0.0'));
+    }
+
+    /** The downloaded tarball rewritten while it waits for its window: it is downloaded again, and what installs is the release's. */
+    public function testATarballRewrittenWhileItWaitsIsDownloadedAgain(): void
+    {
+        $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.0.1'], ['window' => '02:00-06:00'])['outcome']);
+        $listed = hash_file('sha256', $this->downloads()->tarball('2.0.1'));
+        copy($this->downloads()->tarball('2.0.0'), $this->downloads()->tarball('2.0.1'));
+
+        $result = $this->check(['2.0.1'], ['window' => '']);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertStringContainsString('as the release\'s asset was replaced', implode("\n", $result['lines']));
+        $this->assertSame($listed, Install::$pending['to_sha']);
+        $this->dropPending();
     }
 
     public function testStatus(): void
@@ -1042,7 +1083,9 @@ final class ReleaseCheckTest extends TestCase
 
         if ($p !== null) {
             fclose($p['to_h']);
-            fclose($p['from_h']);
+            if ($p['from_h'] !== $p['to_h']) {
+                fclose($p['from_h']); // the same copy when the installed release is installed again
+            }
             $p['u']['unlock']($p['hold']);
         }
     }

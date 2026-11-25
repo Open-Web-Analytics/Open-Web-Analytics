@@ -1,8 +1,5 @@
 <?php
 
-include_once(__DIR__ . '/owa_env.php');
-
-
 /**
  * Special HTTP Requests Controler
  */
@@ -97,6 +94,7 @@ if ((require __DIR__ . '/updater.php')['dropsBeacon'](__DIR__)) {
 }
 
 // Create instance of OWA
+include_once(__DIR__ . '/owa_env.php');
 require_once(__DIR__ . '/owa.php');
 $config = [
 

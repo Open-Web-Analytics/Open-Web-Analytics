@@ -119,7 +119,8 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
         foreach (['auto_update', 'auto_update_level', 'auto_update_days', 'auto_update_window', 'auto_update_email_success', 'admin_notice_email'] as $name) {
             $this->assertStringContainsString('base.' . $name, $html, $name);
         }
-        $this->assertStringNotContainsString('auto_update_releases_url', $html, 'config-only: a web admin cannot repoint the download');
+        $this->assertStringNotContainsString('auto_update_releases_url', $html, 'config-only: a web admin cannot repoint the listing');
+        $this->assertStringNotContainsString('auto_update_download_url', $html, 'config-only: nor the download');
     }
 
     /** The settings are stored from the screen; the window and days are checked on save; the releases URL is config-only. */
@@ -138,5 +139,6 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
             $this->assertTrue($settings[$name]['storable'] ?? false, $name);
         }
         $this->assertArrayNotHasKey('storable', $settings['auto_update_releases_url']);
+        $this->assertArrayNotHasKey('storable', $settings['auto_update_download_url']);
     }
 }

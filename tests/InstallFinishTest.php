@@ -95,8 +95,7 @@ final class InstallFinishTest extends CliControllerTestCase
 
             InstallLock::$held_here = true;
             $cli = $this->updates([]);
-            $this->assertNotSame('An automatic update is being installed; it runs the schema updates itself. Try again once it has finished.',
-                $cli->getCliOutcome()['message'], 'the installer holds it already');
+            $this->assertSame('ok', $cli->getCliOutcome()['outcome'], 'the installer holds it already: the run goes ahead, ' . $cli->getCliOutcome()['message']);
         } finally {
             flock($h, LOCK_UN);
             fclose($h);
@@ -134,7 +133,7 @@ final class InstallFinishTest extends CliControllerTestCase
         }
     }
 
-    /** Once nothing is pending, a hand run clears the record of the installed release's Finish that failed, and no other. */
+    /** Once nothing is pending, a hand run finishes the installed release's failed Finish -- its record and the old tarballs go -- and no other. */
     public function testAHandRunThatCompletesClearsTheFailedFinish(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', $this->tmp . '/updates');
@@ -150,8 +149,11 @@ final class InstallFinishTest extends CliControllerTestCase
             $this->assertNotNull($d->failure(), 'a release put back is not this one finishing');
 
             $this->failed($d, ['version' => \OWA\Core\Env::version(), 'from' => '0.9.0', 'error' => 'cmd=core-update-schema did not complete', 'booted' => true]);
+            file_put_contents($d->tarball('0.9.0'), 'the replaced release');
+            file_put_contents($d->tarball('0.9.0') . '.sig', 'its signature');
             $this->updates([]);
             $this->assertNull($d->failure());
+            $this->assertFileDoesNotExist($d->tarball('0.9.0'), 'cleaned up as Finish would have');
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
         }

@@ -39,8 +39,9 @@
  * two-updates-directories, major-release, passwordless-database, copy-fails,
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
- * finish-killed-in-the-schema-updates, newer-release-after-a-failure and
- * installed-past. copy-fails runs out of its 3 attempts.
+ * finish-killed-in-the-schema-updates, newer-release-after-a-failure,
+ * installed-past, installed-tarball-missing and no-updater. copy-fails runs
+ * out of its 3 attempts; schema-fails is recovered as its notice says.
  *
  * Every listing it serves has 2.0.90 too: a failed install puts the
  * installed release back from its tarball, which the release check downloads.
@@ -222,9 +223,19 @@ function updatesDir( $site ) {
     return $dirs[0] ?? null;
 }
 
-function json( $file ) {
+/** A JSON file's contents, or null; $marker: the install marker, JSON after its <?php exit; ?> line. */
+function json( $file, $marker = false ) {
 
-    return is_file( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : null;
+    $raw = is_file( $file ) ? (string) file_get_contents( $file ) : null;
+
+    return $raw === null ? null : json_decode( $marker ? substr( $raw, (int) strpos( $raw, "\n" ) + 1 ) : $raw, true );
+}
+
+/** Whether the site's web entry points answer 503 now, asked as index.php asks (updater.php). */
+function maintenance( $site ) {
+
+    return trim( (string) shell_exec( sprintf( 'php -r %s', escapeshellarg( sprintf( 'ob_start(); $r = (require %s)["serveMaintenance"](%s); ob_end_clean(); echo $r ? "503" : "boots";',
+        var_export( "$site/updater.php", true ), var_export( $site, true ) ) ) ) ) ) === '503';
 }
 
 // ---- the build -------------------------------------------------------------
@@ -754,11 +765,13 @@ $scenarios = [
         [ $code, $out ] = release_check( $site, $ca );
         check( $code === 0 && envVersion( $site ) === TO, "the copy did not complete (exit $code):\n$out" );
 
-        // Two runs try to boot it; the third puts the installed release back.
+        // Two runs try to boot it, each counted in the marker, and the web answers 503 between them; the third puts the installed release back.
         foreach ( [ 1, 2 ] as $boot ) {
 
             [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
             check( $code !== 0, "boot $boot of a release that does not parse reported success:\n$out" );
+            check( (int) ( json( "$site/owa-update.php", true )['boots'] ?? -1 ) === $boot, "the marker does not count boot $boot" );
+            check( maintenance( $site ), "the web did not answer 503 after boot $boot" );
         }
 
         [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
@@ -793,6 +806,16 @@ $scenarios = [
 
         $n = notices( $db );
         check( hasNotice( $n, 'install_failed:' . TO ) && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'tracking is queued' ), 'no "failed" notice saying tracking is queued' );
+
+        // The recovery the notice gives: fix the cause, then cmd=core-update-schema. The failure record goes with it.
+        $updates = glob( "$site/modules/Base/Update/Update*.php" );
+        sort( $updates );
+        $update = (string) end( $updates );
+        file_put_contents( $update, str_replace( 'return false;', 'return true;', (string) file_get_contents( $update ) ) );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-schema' );
+        check( $code === 0, "cmd=core-update-schema after the fix exited $code:\n$out" );
+        check( failure( $site ) === null, 'the failure record stayed after the schema updates were applied: ' . json_encode( failure( $site ) ) );
+        installed( $site, $ca, TO );
     },
 
     'tampered' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
@@ -1121,6 +1144,8 @@ $scenarios = [
         check( $status === 503 && str_contains( $body, 'OWA is updating' ), "index.php answered $status during the install" );
         [ $status, $body ] = web( $webPort, 'install.php' );
         check( $status === 503 && str_contains( $body, 'OWA is updating' ), "install.php answered $status during the install" );
+        [ $status ] = web( $webPort, 'log.php' );
+        check( $status > 0 && $status < 500, "log.php answered $status during the install" );
         [ $status, $body ] = web( $webPort, 'api/index.php' );
         check( $status === 503 && str_contains( $body, '"busy"' ), "the REST API answered $status during the install" );
         [ $status, $body ] = web( $webPort, 'owa-update.php' );
@@ -1266,6 +1291,43 @@ $scenarios = [
         [ , $out ] = release_check( $site, $ca );
         check( envVersion( $site ) === '2.0.92', "the older " . TO . " was installed over 2.0.92:\n$out" );
         check( ! downloaded( $site, TO ), "the downloaded " . TO . ", older than what is installed, was kept:\n$out" );
+    },
+
+    'installed-tarball-missing' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to   = package( $build, $work, 'installed-missing', TO );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        // The update host has no 2.0.90: neither listed nor at its download URL.
+        $listing = json_decode( (string) file_get_contents( "$www/releases.json" ), true );
+        file_put_contents( "$www/releases.json", json_encode( array_values( array_filter( $listing, static fn ( $r ) => $r['tag_name'] !== FROM ) ) ) );
+        must( 'rm -rf ' . escapeshellarg( "$www/download/" . FROM ) );
+
+        [ , $out ] = release_check( $site, $ca );
+        check( envVersion( $site ) === FROM && ! file_exists( "$site/owa-update.php" ), "it installed without a way back:\n$out" );
+        check( str_contains( $out, 'The installed release, ' . FROM . ', could not be downloaded' ), "it does not say why it waits:\n$out" );
+
+        // Served again: the next check downloads it, and installs.
+        publish( $www, $base, $to, TO );
+        release_check( $site, $ca );
+        next_run( $site, $ca );
+        installed( $site, $ca, TO );
+    },
+
+    'no-updater' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // The packager refuses a tree without it, so it goes from the signed tarball, which is signed again.
+        $to = package( $build, $work, 'no-updater', TO );
+        must( sprintf( 'tar --delete -f %s ./updater.php', escapeshellarg( $to['file'] ) ) );
+        $to = [ 'sha256' => hash_file( 'sha256', $to['file'] ), 'size' => filesize( $to['file'] ) ] + $to;
+        $to['sig'] = \OWA\Module\Base\Classes\AutoUpdate\Signature::sign( TO, $to['sha256'], E2E_SIGNING_SECRET ) . "\n";
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        [ , $out ] = release_check( $site, $ca );
+        check( envVersion( $site ) === FROM && downloaded( $site, TO ), "a release without updater.php was installed, or not downloaded:\n$out" );
+        check( str_contains( $out, 'The release has no updater.php' ) && hasNotice( notices( $db ), 'unmet:' . TO ), "no notice naming the missing file:\n$out" );
     },
 
 ];

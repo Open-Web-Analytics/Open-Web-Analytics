@@ -454,6 +454,91 @@ final class InstallerTest extends TestCase
 
         $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
         $this->assertTrue($this->u['dropsBeacon']($this->root));
+        $this->assertNotFalse($this->serve(false), 'the web answers 503 too');
+    }
+
+    /** Each web entry point asks updater.php before it loads any other file: mid-copy, any other may be the new release's. */
+    public function testEveryWebEntryPointAsksTheUpdaterFirst(): void
+    {
+        foreach (['index.php', 'install.php', 'log.php', 'api/index.php'] as $entry) {
+            preg_match_all('/\b(?:require|include)(?:_once)?\b[^;]*;/', (string) file_get_contents(dirname(__DIR__) . '/' . $entry), $m);
+            $this->assertNotEmpty($m[0], $entry);
+            $this->assertStringContainsString("/updater.php')['", $m[0][0], "$entry loads something before updater.php");
+            $this->assertMatchesRegularExpression("/\\['(serveMaintenance|dropsBeacon)'\\]/", $m[0][0], $entry);
+        }
+    }
+
+    /** The 503 says when to come back, and is never cached. */
+    public function testTheMaintenancePageSaysWhenToTryAgain(): void
+    {
+        $cgi = trim((string) shell_exec('command -v php-cgi 2>/dev/null'));
+        if ($cgi === '') {
+            $this->markTestSkipped('php-cgi is not installed');
+        }
+
+        $this->marker('copying');
+        $script = $this->tmp . '/serve.php';
+        file_put_contents($script, sprintf("<?php\n\$u = require %s;\n\$u['serveMaintenance'](%s);\n", var_export(dirname(__DIR__) . '/updater.php', true), var_export($this->root, true)));
+
+        $proc = proc_open([$cgi, '-d', 'display_errors=0'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->tmp,
+            ['REQUEST_METHOD' => 'GET', 'SCRIPT_FILENAME' => $script, 'REDIRECT_STATUS' => '200', 'PATH' => (string) getenv('PATH')]);
+        fclose($pipes[0]);
+        $out = (string) stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+        $headers = (string) strstr($out, "\r\n\r\n", true);
+
+        $this->assertStringContainsString('Status: 503', $headers);
+        $this->assertStringContainsString('Retry-After: 60', $headers);
+        $this->assertStringContainsString('Cache-Control: no-store', $headers);
+    }
+
+    /** Putting back waits for whoever holds the lock: nothing changes, and the run says try again. */
+    public function testAPutBackWaitsForTheLock(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copied', ['boots' => 2]);
+        $after = $this->snapshot();
+        $hold  = $this->u['tryLock']($this->data, 'another run');
+
+        try {
+            $this->assertSame(75, $this->u['preboot']($this->root, ['cli.php', 'cmd=core-update-status']));
+            $this->assertSame($after, $this->snapshot());
+            $this->assertFileExists($this->u['marker']($this->root));
+        } finally {
+            $this->u['unlock']($hold);
+        }
+    }
+
+    /** No installed release's tarball to put back: nothing is unpacked, and the marker stays, so OWA does not run on the mixed tree. */
+    public function testAPutBackWithoutTheInstalledTarballLeavesTheMarker(): void
+    {
+        $this->u['apply']($this->root, $this->open('2.0.1'), Tar::files($this->open('2.0.0')));
+        $this->marker('copying');
+        $after = $this->snapshot();
+        unlink($this->updates . '/owa_2.0.0_packaged.tar');
+
+        $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=schedule-run']));
+        $this->assertSame($after, $this->snapshot());
+        $this->assertFileExists($this->u['marker']($this->root));
+        $this->assertFalse($this->u['isLocked']($this->data));
+    }
+
+    /** A boot that cannot count itself stops: counting is what ends a release that never boots. */
+    public function testABootThatCannotWriteTheMarkerStops(): void
+    {
+        $this->marker('copied');
+        chmod($this->root, 0555);
+
+        try {
+            $this->assertSame(1, $this->u['preboot']($this->root, ['cli.php', 'cmd=core-update-status']));
+        } finally {
+            chmod($this->root, 0755);
+        }
+
+        $this->assertSame(0, $this->u['readMarker']($this->root)['boots']);
+        $this->assertFalse($this->u['isLocked']($this->data));
     }
 
     /** Until the new release has booted: the copy, and the runs that try to boot it. */
