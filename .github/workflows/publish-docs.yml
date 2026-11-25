@@ -21,6 +21,8 @@ on:
         description: The release tag to generate from (e.g. 2.0.0)
         required: true
 
+# Write, for the wiki push. The token is given to that step alone: composer's
+# install scripts and the generator run with none on disk.
 permissions:
   contents: write
 
@@ -28,12 +30,15 @@ jobs:
   publish:
     name: Regenerate the reference sections of the wiki
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
 
     steps:
       - name: Checkout the released code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+          ref: ${{ env.TAG }}
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -52,8 +57,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       - name: Check out the wiki
-        run: |
-          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" /tmp/wiki
+        run: git clone "https://github.com/$GITHUB_REPOSITORY.wiki.git" /tmp/wiki
 
       # Only the text between a page's named BEGIN/END GENERATED markers is
       # replaced; the rest of each page is written by hand. A marker naming a
@@ -64,6 +68,8 @@ jobs:
 
       - name: Commit, if anything changed
         working-directory: /tmp/wiki
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet; then
             echo "The wiki already matches this release. Nothing to do."
@@ -71,5 +77,5 @@ jobs:
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "Regenerate reference sections for ${{ github.event.inputs.tag || github.event.release.tag_name }}"
-          git push
+          git commit -am "Regenerate reference sections for $TAG"
+          git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.wiki.git" HEAD

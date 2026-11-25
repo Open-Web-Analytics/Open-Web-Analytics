@@ -240,19 +240,26 @@ function maintenance( $site ) {
 
 // ---- the build -------------------------------------------------------------
 
-/** HEAD as the Release Packager checks it out, with production vendor/ and this checkout's build output. */
+/**
+ * HEAD as the Release Packager checks it out, with production vendor/ and this
+ * checkout's build output. $work/clean is HEAD alone, which each package's
+ * tarball is checked against (package()).
+ */
 function buildTree( $repo, $work ) {
 
     $build = "$work/build";
 
-    if ( is_file( "$build/.complete" ) ) {
+    if ( is_file( "$build/.complete" ) && is_dir( "$work/clean" ) ) {
 
         return $build;
     }
 
-    must( 'rm -rf ' . escapeshellarg( $build ) );
-    mkdir( $build, 0755, true );
-    must( sprintf( 'git -C %s archive --format=tar HEAD | tar -x -C %s', escapeshellarg( $repo ), escapeshellarg( $build ) ) );
+    foreach ( [ $build, "$work/clean" ] as $dir ) {
+
+        must( 'rm -rf ' . escapeshellarg( $dir ) );
+        mkdir( $dir, 0755, true );
+        must( sprintf( 'git -C %s archive --format=tar HEAD | tar -x -C %s', escapeshellarg( $repo ), escapeshellarg( $dir ) ) );
+    }
     must( sprintf( 'composer install --no-dev --optimize-autoloader --no-interaction --no-progress --quiet --working-dir=%s', escapeshellarg( $build ) ) );
 
     // public/ and the tracker manifest are build output, as npm run build leaves them; the bundles are an installation's.
@@ -267,7 +274,9 @@ function buildTree( $repo, $work ) {
 
 /**
  * A release package: the build at $version, changed by $edit, its release.php
- * written as npm run build writes it, then $after (for release.php itself).
+ * written as npm run build writes it, then $after (for release.php itself, or
+ * a file cmd=version-info could not boot with). Checked as the packager checks
+ * it before signing (release-verify.sh), against HEAD changed the same way.
  *
  * @return array{file: string, sha256: string, size: int}
  */
@@ -278,28 +287,44 @@ function package( $build, $work, $name, $version, ?callable $edit = null, ?calla
     must( sprintf( 'cp -a %s %s', escapeshellarg( $build ), escapeshellarg( $tree ) ) );
     @unlink( "$tree/.complete" );
 
-    // The release trusts the run's key, in place of the maintainers'.
-    $sig = "$tree/modules/Base/Classes/AutoUpdate/Signature.php";
-    check( preg_match( '/const TRUSTED = \[[^\]]*\];/', (string) file_get_contents( $sig ) ) === 1, 'Signature declares no TRUSTED keys to replace' );
-    file_put_contents( $sig, preg_replace( '/const TRUSTED = \[[^\]]*\];/', "const TRUSTED = [ '" . E2E_SIGNING_PUBLIC . "' ];", (string) file_get_contents( $sig ) ) );
+    $prepare = static function ( $tree ) use ( $version, $edit ) {
 
-    $env = (string) file_get_contents( "$tree/Core/Env.php" );
-    check( str_contains( $env, "const VERSION = 'master';" ), 'Core/Env.php does not say master, so it cannot be versioned as the packager does' );
-    file_put_contents( "$tree/Core/Env.php", str_replace( "const VERSION = 'master';", "const VERSION = '$version';", $env ) );
+        // The release trusts the run's key, in place of the maintainers'.
+        $sig = "$tree/modules/Base/Classes/AutoUpdate/Signature.php";
+        check( preg_match( '/const TRUSTED = \[[^\]]*\];/', (string) file_get_contents( $sig ) ) === 1, 'Signature declares no TRUSTED keys to replace' );
+        file_put_contents( $sig, preg_replace( '/const TRUSTED = \[[^\]]*\];/', "const TRUSTED = [ '" . E2E_SIGNING_PUBLIC . "' ];", (string) file_get_contents( $sig ) ) );
 
-    if ( $edit ) {
+        $env = (string) file_get_contents( "$tree/Core/Env.php" );
+        check( str_contains( $env, "const VERSION = 'master';" ), 'Core/Env.php does not say master, so it cannot be versioned as the packager does' );
+        file_put_contents( "$tree/Core/Env.php", str_replace( "const VERSION = 'master';", "const VERSION = '$version';", $env ) );
 
-        $edit( $tree );
-    }
+        if ( $edit ) {
+
+            $edit( $tree );
+        }
+    };
+
+    $prepare( $tree );
 
     must( 'php cli.php cmd=version-info --file=release.php', $tree );
+
+    $ref = "$work/ref-$name";
+    must( 'rm -rf ' . escapeshellarg( $ref ) );
+    must( sprintf( 'cp -a %s %s', escapeshellarg( "$work/clean" ), escapeshellarg( $ref ) ) );
+    $prepare( $ref );
+    copy( "$tree/release.php", "$ref/release.php" );
 
     if ( $after ) {
 
         $after( $tree );
+        $after( $ref );
     }
 
     must( sprintf( 'bash %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-tarball.sh' ), escapeshellarg( $version ) ), $tree );
+
+    must( sprintf( 'bash %s %s %s', escapeshellarg( dirname( __DIR__, 2 ) . '/.github/scripts/release-verify.sh' ), escapeshellarg( $version ),
+        escapeshellarg( "$tree/owa_{$version}_packaged.tar" ) ), $ref );
+    must( 'rm -rf ' . escapeshellarg( $ref ) );
 
     // Signed as the packager signs it: its script, checked against the keys this tree trusts.
     must( sprintf( 'OWA_RELEASE_SIGNING_KEY=%s php .github/scripts/release-sign.php %s', escapeshellarg( E2E_SIGNING_SECRET ), escapeshellarg( $version ) ), $tree );
