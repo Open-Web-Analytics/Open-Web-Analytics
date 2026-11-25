@@ -667,6 +667,24 @@ final class InstallerTest extends TestCase
         $this->assertSame([], glob($file . '*'), 'nothing left, nothing aside');
     }
 
+    /** Without flock(): a stale lock taken over, then written by another process in the second before the second look, is that process's. */
+    public function testATakeoverWithoutFlockThatAnotherProcessOvertakesIsGivenUp(): void
+    {
+        $file = $this->data . '/updating';
+        file_put_contents($file, "install 2.0.1, pid 1, since 2026-11-22 10:00:00 UTC, token 0000000000000000\n");
+        touch($file, time() - 601);
+
+        // Once the takeover's line is in the file, the other process writes its own.
+        $other = proc_open([PHP_BINARY, '-r', sprintf(
+            '$f = %s; for ($i = 0; $i < 300; $i++) { if (str_starts_with((string) @file_get_contents($f), "release check, ")) { file_put_contents($f, "another run, pid 2, since 2026-11-22 10:00:00 UTC, token 1111111111111111\n"); exit(0); } usleep(10000); } exit(1);',
+            var_export($file, true)
+        )], [], $pipes);
+
+        $this->assertNull($this->u['tryLock']($this->data, 'release check', true));
+        $this->assertSame(0, proc_close($other), 'the other process never saw the takeover');
+        $this->assertStringStartsWith('another run, ', (string) file_get_contents($file), 'left as the other process wrote it');
+    }
+
     /** The second look: a holder whose line has gone from the file no longer holds the lock. */
     public function testStillMine(): void
     {
