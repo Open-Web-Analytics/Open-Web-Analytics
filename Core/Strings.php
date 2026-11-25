@@ -93,6 +93,7 @@ class Strings {
         'Requirements::RETIRED_CONSTANTS',
         'GoalVocabulary::LABELS',
         'GoalVocabulary::DESCRIPTIONS',
+        'FieldGroups::LABELS',
         'TimePeriod::COMPARE_PERIODS',
         'Requirements::PHP_EXTENSIONS',
     ];

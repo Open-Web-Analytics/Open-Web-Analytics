@@ -3231,7 +3231,8 @@ class ResultSetManager extends \OWA\Core\Base {
     }
 
     /**
-     * The dimensions a query can group by, by family.
+     * The dimensions a query can group by, by family, each with what the
+     * choosers show: its description, its family's name and its value type.
      *
      * @return RelatedDimensions
      */
@@ -3241,7 +3242,13 @@ class ResultSetManager extends \OWA\Core\Base {
 
         foreach ( $this->dimensionRegistry()->onEntity( \OWA\Core\Module::FACT_ENTITY ) as $ddim ) {
 
-            $dims[ $ddim['family'] ][] = [ 'name' => $ddim['name'], 'label' => $ddim['label'] ];
+            $dims[ $ddim['family'] ][] = [
+                'name'        => $ddim['name'],
+                'label'       => $ddim['label'],
+                'description' => (string) ( $ddim['description'] ?? '' ),
+                'group_label' => FieldGroups::label( $ddim['family'] ),
+                'data_type'   => (string) ( $ddim['data_type'] ?? '' ),
+            ];
         }
 
         return $dims;
@@ -3291,6 +3298,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 'label'       => $implementation['label'],
                 'description' => $implementation['description'],
                 'group'       => $implementation['group'],
+                'group_label' => FieldGroups::label( $implementation['group'] ),
                 'metric_type' => $implementation['params']['metric_type'] ?? ''
             ];
         }
