@@ -168,6 +168,7 @@ return [
     'Previous and next pages',
     'Previous month',
     'Previous page',
+    'Property',
     'Ratio',
     'Relative <small>to today</small>',
     'Relative period',

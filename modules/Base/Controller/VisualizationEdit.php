@@ -176,7 +176,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * Property's custom dimensions added to each list.
      *
      * @param  list<DimensionEntry> $customDimensions  DimensionRegistry::custom()
-     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried }
+     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried, group, group_label }
      */
     public static function vocabulary( array $customDimensions ) {
 
@@ -194,7 +194,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * The custom dimensions as picker entries.
      *
      * @param  list<DimensionEntry> $customDimensions
-     * @return list<array{name: string, label: string, description: string, carried: bool}>
+     * @return list<array{name: string, label: string, description: string, carried: bool, group: string, group_label: string}>
      */
     private static function customProperties( array $customDimensions ) {
 
@@ -203,7 +203,8 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         foreach ( $customDimensions as $dimension ) {
 
             $out[] = [ 'name' => (string) $dimension['column'], 'label' => (string) $dimension['label'],
-                'description' => (string) $dimension['description'], 'carried' => true ];
+                'description' => (string) $dimension['description'], 'carried' => true,
+                'group' => 'custom', 'group_label' => \OWA\Module\Base\Classes\FieldGroups::label( 'custom' ) ];
         }
 
         return $out;

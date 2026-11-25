@@ -43,10 +43,9 @@ export const STEP_CLASSES = {
     custom: 'owa_funnelStepCustomEvent',
     condition: 'owa_funnelCondition',
     property: 'owa_funnelConditionProperty',
+    button: 'owa_funnelConditionPropertyButton',
     help: 'owa_funnelConditionHelp',
     warning: 'owa_funnelConditionWarning',
-    optionName: 'owa_funnelOptionName',
-    optionDescription: 'owa_funnelOptionDescription',
 };
 
 /** What a new step matches: a page, by its path. FunnelStep::DEFAULT_EVENT. */
@@ -159,7 +158,8 @@ OWA.funnelBuilder = {
      * Without any widget a row's select was enhanced into: a chosen box is
      * markup bound to the ORIGINAL select, so a cloned one opens the first
      * row's list. The list gets an `owa:rowadded` on the new row and enhances
-     * it itself (owa.goalbuilder.js).
+     * it itself (owa.goalbuilder.js). A condition's field-chooser button is
+     * kept: its clicks are delegated, and it reads the <select> before it.
      */
     blankCopy: function ( $row ) {
 

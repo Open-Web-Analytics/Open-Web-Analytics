@@ -160,6 +160,28 @@ class GoalVocabulary {
     ];
 
     /**
+     * The group a column is under in the builder's field chooser, where no
+     * report dimension reads it (group()): a dimension family, as
+     * FieldGroups names them.
+     */
+    const GROUPS = [
+        'raw_ua'                   => 'device',
+        'engagement_msec'          => 'event',
+        'page_height'              => 'event',
+        'referer_query'            => 'traffic source',
+        'tagged_ad'                => 'traffic source',
+        'tagged_search_terms'      => 'traffic source',
+        'prior_touch_source'       => 'traffic source',
+        'prior_touch_medium'       => 'traffic source',
+        'prior_touch_campaign'     => 'traffic source',
+        'prior_touch_ad'           => 'traffic source',
+        'prior_touch_referer_host' => 'traffic source',
+        'revenue'                  => 'commerce',
+        'tax'                      => 'commerce',
+        'shipping'                 => 'commerce',
+    ];
+
+    /**
      * v1 property names that no longer exist, and the v2 column that means what
      * they meant.
      *
@@ -321,6 +343,9 @@ class GoalVocabulary {
     /** @var array<string, string>|null column => description, from the dimension registry */
     private static $registryDescriptions = null;
 
+    /** @var array<string, string>|null column => family, from the dimension registry */
+    private static $registryFamilies = null;
+
     /**
      * Forget the descriptions description() read from the dimension registry.
      * CoreAPI::forgetSingletons() calls this.
@@ -330,6 +355,37 @@ class GoalVocabulary {
     public static function forgetDescriptions() {
 
         self::$registryDescriptions = null;
+        self::$registryFamilies     = null;
+    }
+
+    /**
+     * The group a column is under in the builder's field chooser: the family
+     * of the report dimension that reads it, as for its description, else
+     * GROUPS.
+     *
+     * @param  string $column
+     * @return string a dimension family, or '' for a column with neither (one a module added)
+     */
+    public static function group( $column ) {
+
+        if ( self::$registryFamilies === null ) {
+
+            self::$registryFamilies = [];
+
+            foreach ( DimensionRegistry::forProperty( null )->all() as $dim ) {
+
+                $col = (string) ( $dim['column'] ?? '' );
+
+                if ( $col !== '' && ( $dim['entity'] ?? '' ) === 'base.event' && ! isset( self::$registryFamilies[ $col ] ) ) {
+
+                    self::$registryFamilies[ $col ] = (string) ( $dim['family'] ?? '' );
+                }
+            }
+        }
+
+        $column = (string) $column;
+
+        return self::$registryFamilies[ $column ] ?? self::GROUPS[ $column ] ?? '';
     }
 
     /**

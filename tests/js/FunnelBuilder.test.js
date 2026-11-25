@@ -10,7 +10,7 @@ jest.mock('jquery', () => {
 
 import { readStep, isBlankStep, renumber, bindStep, STEP_CLASSES, DEFAULT_EVENT }
     from '../../modules/Base/src/reporting/owa.funnelbuilder.js';
-import { formatResult, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
+import { CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
 
 const $ = require('jquery');
 
@@ -177,15 +177,24 @@ test('a saved property the new event does not carry is kept and flagged', () => 
     expect(row.querySelector('.owa_funnelConditionHelp').classList.contains(STEP_CLASSES.warning)).toBe(true);
 });
 
-test('an open-list item splits under the funnel\'s own class names', () => {
-    const li = document.createElement('li');
-    li.innerHTML = 'Plan' + SEPARATOR + 'Custom dimension.';
+test('a condition\'s property is picked in the field chooser, from the button after its select', () => {
+    const row = stepRow();
 
-    formatResult(li, STEP_CLASSES);
+    bindStep(row);
 
-    expect(li.querySelector('.owa_funnelOptionName').textContent).toBe('Plan');
-    expect(li.querySelector('.owa_funnelOptionDescription').textContent).toBe('Custom dimension.');
-    expect(li.querySelector('.owa_goalOptionName')).toBeNull();
+    const button = row.querySelector('.' + STEP_CLASSES.button);
+
+    expect(property(row).hidden).toBe(true);
+    expect(button.textContent.trim()).toBe('Page path');
+
+    $(button).trigger('click');
+    $('.owa_fieldChooser .owa_fieldSearch').val('plan').trigger('input');
+    $('.owa_fieldChooser .owa_fieldOption[data-name="cd_plan"]').trigger('click');
+
+    expect(property(row).value).toBe('cd_plan');
+    expect(button.textContent.trim()).toBe('Plan');
+    expect(row.querySelector('.owa_funnelConditionHelp').textContent).toBe('Custom dimension.');
+    expect($('.owa_fieldChooser')).toHaveLength(0);
 });
 
 function property(row) {

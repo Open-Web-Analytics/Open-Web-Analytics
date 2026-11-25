@@ -21,6 +21,19 @@ final class GoalEventDefinitionEditVocabularyTest extends TestCase
         }
     }
 
+    /** Each is in the field chooser's group of the dimension that reads it, named. */
+    public function testEachPropertyIsGrouped(): void
+    {
+        $props = array_column(GoalEventDefinitionEdit::conditionProperties('click'), null, 'name');
+
+        $this->assertSame(['event', 'Event'], [$props['is_outbound']['group'], $props['is_outbound']['group_label']]);
+        $this->assertSame(['device', 'Device'], [$props['browser_type']['group'], $props['browser_type']['group_label']]);
+
+        foreach ($props as $p) {
+            $this->assertNotSame('', $p['group_label'], $p['name']);
+        }
+    }
+
     public function testAPropertyInUseIsKeptAndFlaggedWhenTheTriggerDoesNotCarryIt(): void
     {
         $props = array_column(GoalEventDefinitionEdit::conditionProperties('click',
@@ -30,5 +43,6 @@ final class GoalEventDefinitionEditVocabularyTest extends TestCase
         $this->assertFalse($props['tagged_source']['carried']);
         $this->assertStringContainsString('not carried by click', $props['tagged_source']['label']);
         $this->assertNotSame('', $props['tagged_source']['description']);
+        $this->assertSame('traffic source', $props['tagged_source']['group'], 'a kept property keeps its group');
     }
 }

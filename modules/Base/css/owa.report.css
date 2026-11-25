@@ -4883,51 +4883,11 @@ dialog.owa_typeDialogFrame {
     color: #b0461b;
 }
 
-/* "Label -- description" in the list: wide enough to read, and wrapping. */
-.owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop,
-.owa .owa_funnelConditions .constraintRow .chosen-container .chosen-drop {
-    min-width: 420px;
-}
-
-.owa .owa_goalBuilder .chosen-results li,
-.owa .owa_funnelConditions .chosen-results li {
-    white-space: normal;
-    line-height: 1.35;
-}
-
-/* Each item is two lines: the property's name, then what it holds, quieter. */
-.owa .owa_goalBuilder .chosen-results .owa_goalOptionName,
-.owa .owa_funnelConditions .chosen-results .owa_funnelOptionName {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #303030;
-}
-
-.owa .owa_goalBuilder .chosen-results .owa_goalOptionDescription,
-.owa .owa_funnelConditions .chosen-results .owa_funnelOptionDescription {
-    display: block;
-    margin-top: 1px;
-    font-size: 0.6875rem;
-    color: #707070;
-}
-
-.owa .owa_goalBuilder .chosen-results li,
-.owa .owa_funnelConditions .chosen-results li {
-    padding-top: 6px;
-    padding-bottom: 6px;
-}
-
-.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionName,
-.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription,
-.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionName,
-.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionDescription {
-    color: #ffffff;
-}
-
-.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription,
-.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionDescription {
-    opacity: 0.85;
+/* A condition's property: a button that opens the field chooser (owa.goalbuilder.js). */
+.owa .owa_goalPropertyButton,
+.owa .owa_funnelConditionPropertyButton {
+    width: 260px;
+    max-width: 100%;
 }
 
 /* The event picker is part of the sentence's text, not a pill. */

@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, adminLogin } = require('./fixtures');
+const { fieldChooser } = require('./field-chooser.js');
 
 /**
  * Goal event definitions: the screens. They list what exists, so "counts nothing
@@ -14,13 +15,27 @@ async function gotoAction(page, doName, extra = '') {
 /**
  * Pick from a chosen widget the way a person does: open it, type, take the
  * first match. The <select> under it is hidden, so selectOption() on it is not
- * what anyone can do.
+ * what anyone can do. The event picker is one.
  */
 async function choose(scope, selectSelector, text) {
     const box = scope.locator(selectSelector).locator('xpath=following-sibling::div[contains(@class,"chosen-container")][1]');
     await box.locator('.chosen-single').click();
     await box.locator('.chosen-search input').pressSequentially(text);
     await box.locator('.chosen-results li.active-result').first().click();
+}
+
+/**
+ * Pick a condition's property the way a person does: its button opens the
+ * field chooser, which is searched and the label clicked.
+ */
+async function chooseProperty(row, label) {
+    await row.locator('.owa_goalPropertyButton').click();
+
+    const chooser = fieldChooser(row.page());
+
+    await chooser.getByRole('combobox').pressSequentially(label);
+    await chooser.getByRole('option', { name: label, exact: true }).click();
+    await expect(chooser).toHaveCount(0);
 }
 
 /** The property names a condition's picker offers, in order. */
@@ -80,7 +95,7 @@ test.describe('goal event definitions', () => {
         await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
 
         await page.fill('input[name="name"]', name);
-        await choose(condition, 'select.owa_goalProperty', 'Page path');
+        await chooseProperty(condition, 'Page path');
         await expect(page.locator('select[name="conditionProperty[]"]')).toHaveValue('page_path');
         await page.selectOption('select[name="conditionOperator[]"]', 'begins');
         await page.fill('input[name="conditionValue[]"]', '/thanks');
@@ -253,13 +268,13 @@ test.describe('goal event definitions', () => {
 
         const row = page.locator('.owa_goalCondition').first();
 
-        await choose(row, 'select.owa_goalProperty', 'Source (from the URL)');
+        await chooseProperty(row, 'Source (from the URL)');
         await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
 
         await choose(page, 'select.owa_goalTrigger', 'click');
 
         await expect(row.locator('select.owa_goalProperty')).not.toHaveValue('tagged_source');
-        await expect(row.locator('.chosen-single')).not.toContainText('not carried');
+        await expect(row.locator('.owa_goalPropertyButton')).not.toContainText('not carried');
         await expect(row.locator('.owa_goalConditionHelp')).not.toHaveClass(/owa_goalConditionWarning/);
         expect(await offered(row)).not.toContain('tagged_source');
     });
@@ -276,7 +291,7 @@ test.describe('goal event definitions', () => {
         await page.fill('input[name="name"]', name);
 
         const fresh = page.locator('.owa_goalCondition').first();
-        await choose(fresh, 'select.owa_goalProperty', 'Source (from the URL)');
+        await chooseProperty(fresh, 'Source (from the URL)');
         await fresh.locator('input.constraintValueField').fill('newsletter');
 
         await Promise.all([
@@ -298,7 +313,7 @@ test.describe('goal event definitions', () => {
         await choose(page, 'select.owa_goalTrigger', 'click');
 
         await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
-        await expect(row.locator('.chosen-single')).toContainText('not carried by click');
+        await expect(row.locator('.owa_goalPropertyButton')).toContainText('not carried by click');
         await expect(row.locator('.owa_goalConditionHelp')).toContainText('does not carry this');
         await expect(row.locator('.owa_goalConditionHelp')).toHaveClass(/owa_goalConditionWarning/);
 
@@ -322,7 +337,7 @@ test.describe('goal event definitions', () => {
 
         await page.fill('input[name="name"]', 'E2E_Refused_' + Date.now());
         const fresh = page.locator('.owa_goalCondition').first();
-        await choose(fresh, 'select.owa_goalProperty', 'Source (from the URL)');
+        await chooseProperty(fresh, 'Source (from the URL)');
 
         // No value: refused.
         await Promise.all([
@@ -344,39 +359,40 @@ test.describe('goal event definitions', () => {
     });
 
     /**
-     * Each property says what it holds: in the list, where it is searched, and
-     * under the row once chosen -- where the picker itself shows only the name.
+     * Each property says what it holds: in the field chooser's detail, where
+     * it is searched too, and under the row once chosen -- where the button
+     * shows only the name. The chooser opens on the groups.
      */
     test('the picker describes what it offers', async ({ page }) => {
         await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);
         await choose(page, 'select.owa_goalTrigger', 'click');
 
         const row = page.locator('.owa_goalCondition').first();
-        const box = row.locator('.chosen-container');
 
-        // Open, each item is two lines: the name, then the description.
-        await box.locator('.chosen-single').click();
-        const first = box.locator('.chosen-results li.active-result').first();
-        await expect(first.locator('.owa_goalOptionName')).toHaveCount(1);
-        await expect(first.locator('.owa_goalOptionDescription')).not.toHaveText('');
+        await row.locator('.owa_goalPropertyButton').click();
+
+        const chooser = fieldChooser(page);
+
+        await expect(chooser.getByRole('option', { name: /^Event, / })).toBeVisible();
 
         // Searching the DESCRIPTION finds it: no label says "other than the page".
-        // chosen redraws the list as it filters, and the split survives that.
-        await box.locator('.chosen-search input').pressSequentially('other than the page');
-        const hit = box.locator('.chosen-results li.active-result');
-        await expect(hit).toHaveCount(1);
-        await expect(hit.locator('.owa_goalOptionName')).toHaveText('Outbound click');
-        await expect(hit.locator('.owa_goalOptionDescription em')).toHaveText('other than the page');
+        await chooser.getByRole('combobox').pressSequentially('other than the page');
+
+        const hit = chooser.getByRole('option', { name: 'Outbound click', exact: true });
+
+        await expect(chooser.locator('[role="option"][data-name]')).toHaveCount(1);
+        await hit.hover();
+        await expect(chooser).toContainText('Whether the click went to a host other than the page it was on.');
         await hit.click();
 
-        await expect(row.locator('.chosen-single')).toHaveText('Outbound click');
+        await expect(row.locator('.owa_goalPropertyButton')).toHaveText('Outbound click');
         await expect(row.locator('.owa_goalConditionHelp'))
             .toHaveText('Whether the click went to a host other than the page it was on.');
 
-        // Every option carries one.
+        // Every option carries a description and a group.
         const blank = await row.locator('select.owa_goalProperty option')
-            .evaluateAll((o) => o.filter((x) => !x.dataset.description).map((x) => x.value));
-        expect(blank, 'properties offered with no description').toEqual([]);
+            .evaluateAll((o) => o.filter((x) => !x.dataset.description || !x.dataset.group).map((x) => x.value));
+        expect(blank, 'properties offered with no description or group').toEqual([]);
     });
 
     /** An added row gets a picker of its own, not a copy bound to the first. */
@@ -385,17 +401,17 @@ test.describe('goal event definitions', () => {
         await choose(page, 'select.owa_goalTrigger', 'click');
 
         const rows = page.locator('.owa_goalCondition');
-        await choose(rows.first(), 'select.owa_goalProperty', 'Outbound click');
+        await chooseProperty(rows.first(), 'Outbound click');
 
         await rows.first().locator('.constraintAddButton').click();
         await expect(rows).toHaveCount(2);
-        await expect(rows.nth(1).locator('.chosen-container')).toHaveCount(1);
+        await expect(rows.nth(1).locator('.owa_goalPropertyButton')).toHaveCount(1);
 
-        await choose(rows.nth(1), 'select.owa_goalProperty', 'Target host');
+        await chooseProperty(rows.nth(1), 'Target host');
 
         await expect(rows.nth(1).locator('select.owa_goalProperty')).toHaveValue('target_host');
         await expect(rows.first().locator('select.owa_goalProperty')).toHaveValue('is_outbound');
-        await expect(rows.first().locator('.chosen-single')).toHaveText('Outbound click');
+        await expect(rows.first().locator('.owa_goalPropertyButton')).toHaveText('Outbound click');
     });
 
     /**
