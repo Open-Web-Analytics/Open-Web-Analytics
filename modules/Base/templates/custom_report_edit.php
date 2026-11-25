@@ -227,19 +227,20 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_builderField" id="dlgMetricsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgMetrics" id="dlgMetricsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Metrics' ) ); ?></label>
+                <label for="dlgMetricsAdd" id="dlgMetricsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Metrics' ) ); ?></label>
                 <span class="owa_builderRequired" id="dlgMetricsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
-            <select id="dlgMetrics" class="owa_builderChosen" multiple="multiple"></select>
+            <?php /* Holds the choice; owa.customReportEdit.js draws its chips and "+ Add" after it. */ ?>
+            <select id="dlgMetrics" multiple="multiple" hidden></select>
             <div class="owa_builderHelp" id="dlgMetricsHelp"></div>
         </div>
 
         <div class="owa_builderField" id="dlgDimensionsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgDimensions" id="dlgDimensionsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimensions' ) ); ?></label>
+                <label for="dlgDimensionsAdd" id="dlgDimensionsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimensions' ) ); ?></label>
                 <span class="owa_builderRequired" id="dlgDimensionsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
-            <select id="dlgDimensions" class="owa_builderChosen" multiple="multiple"></select>
+            <select id="dlgDimensions" multiple="multiple" hidden></select>
             <div class="owa_builderHelp" id="dlgDimensionsHelp"></div>
         </div>
 

@@ -198,16 +198,21 @@ OWA.fieldChooser.prototype = {
         this.sheet   = !! ( window.matchMedia && window.matchMedia( OWA.fieldChooser.PHONE ).matches );
         this.mount();
 
+        // A modal <dialog> makes the rest of the page inert, so inside one the chooser goes in it.
+        var $host = this.trigger ? jQuery( this.trigger ).closest( 'dialog[open]' ) : jQuery();
+
+        $host = $host.length ? $host : jQuery( 'body' );
+
         if ( this.sheet ) {
 
             this.scrim = jQuery( '<div class="owa_fieldScrim"></div>' ).on( 'click', function () { that.close(); } );
             this.$root.addClass( 'owa_fieldSheet' ).attr( { role: 'dialog', 'aria-label': this.options.title } );
-            jQuery( 'body' ).append( this.scrim, this.$root );
+            $host.append( this.scrim, this.$root );
 
         } else {
 
             this.$root.addClass( 'owa_fieldPop' );
-            jQuery( 'body' ).append( this.$root );
+            $host.append( this.$root );
             this.place = function () { that.fit(); };
             this.fit();
             window.addEventListener( 'scroll', this.place, true );

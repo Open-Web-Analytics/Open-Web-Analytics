@@ -413,12 +413,18 @@ describe('the headings', () => {
         const $pop = $root.find('.owa_gridPop');
 
         expect($pop.length).toBe(1);
-        expect($pop.find('.owa_gridPopOption.is-current').attr('data-name')).toBe('browserType');
+        expect(texts($pop.find('.owa_gridPopSorts .owa_gridPopOption'))).toEqual(['Sort A to Z', 'Sort Z to A']);
+        expect($pop.find('.owa_gridFilterField').text()).toBe('Browser');
 
-        $pop.find('.owa_gridPopOption[data-name="osName"]').trigger('click');
+        $pop.find('.owa_gridFilterField').trigger('click');
+        $('.owa_fieldChooser .owa_fieldGroup').first().trigger('click');
+
+        // The heading's own is marked; the others are offered.
+        expect($('.owa_fieldChooser .owa_fieldOption[data-name="browserType"]').attr('aria-selected')).toBe('true');
+
+        $('.owa_fieldChooser .owa_fieldOption[data-name="osName"]').trigger('click');
 
         expect(events).toEqual([['dimension_list_change', ['osName', 'medium']]]);
-        expect($root.find('.owa_gridPop').length).toBe(0);
     });
 
     test('adding a dimension appends it, and one in use cannot be picked twice', () => {
@@ -426,25 +432,33 @@ describe('the headings', () => {
 
         $root.find('.owa_gridDimAdd').trigger('click');
 
-        const $pop = $root.find('.owa_gridPop');
+        // The plus opens the field chooser itself, without the dimensions shown.
+        expect($root.find('.owa_gridPop').length).toBe(0);
+        expect($('.owa_fieldChooser')).toHaveLength(1);
 
-        expect($pop.find('.owa_gridPopOption[data-name="browserType"]').prop('disabled')).toBe(true);
+        $('.owa_fieldChooser .owa_fieldGroup').first().trigger('click');
 
-        $pop.find('.owa_gridPopOption[data-name="medium"]').trigger('click');
+        expect($('.owa_fieldChooser .owa_fieldOption[data-name]').map((i, e) => e.getAttribute('data-name')).get()).toEqual(['osName']);
+
+        $('.owa_fieldChooser .owa_fieldBack').trigger('click');
+        $('.owa_fieldChooser .owa_fieldGroup').last().trigger('click');
+        $('.owa_fieldChooser .owa_fieldOption[data-name="medium"]').trigger('click');
 
         expect(events).toEqual([['dimension_list_change', ['browserType', 'medium']]]);
+        expect($('.owa_fieldChooser')).toHaveLength(0);
     });
 
-    test('the search narrows the list', () => {
+    test('the search covers every group', () => {
         const { $root } = draw(resultSet());
 
         $root.find('.owa_gridDimAdd').trigger('click');
-        $root.find('.owa_gridPopSearch').val('oper').trigger('input');
+        $('.owa_fieldChooser .owa_fieldSearch').val('oper').trigger('input');
 
-        const shown = $root.find('.owa_gridPopList .owa_gridPopOption')
-            .filter((i, el) => el.style.display !== 'none');
+        expect(texts($('.owa_fieldChooser .owa_fieldOption .owa_fieldLabel'))).toEqual(['Operating System']);
 
-        expect(texts(shown)).toEqual(['Operating System']);
+        $root.find('.owa_gridDimAdd').trigger('click');
+
+        expect($('.owa_fieldChooser')).toHaveLength(0);
     });
 });
 
@@ -1088,16 +1102,16 @@ describe('popovers', () => {
         const { $root } = draw(resultSet());
 
         $root.find('.owa_gridFilterButton').trigger('click');
-        $root.find('.owa_gridDimAdd').trigger('click');
+        $root.find('.owa_gridDimButton').trigger('click');
 
         expect($root.find('.owa_gridPop').length).toBe(1);
-        expect($root.find('.owa_gridDimAdd').attr('aria-expanded')).toBe('true');
+        expect($root.find('.owa_gridDimButton').attr('aria-expanded')).toBe('true');
         expect($root.find('.owa_gridFilterButton').attr('aria-expanded')).toBe('false');
 
         $root.find('.owa_gridPop')[0].dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
 
         expect($root.find('.owa_gridPop').length).toBe(0);
-        expect($root.find('.owa_gridDimAdd').attr('aria-expanded')).toBe('false');
+        expect($root.find('.owa_gridDimButton').attr('aria-expanded')).toBe('false');
     });
 
     test('a refetch redraws the grid and closes an open popover', () => {

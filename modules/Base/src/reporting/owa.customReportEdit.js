@@ -582,9 +582,8 @@ export function start( config ) {
      *
      * narrowMetrics() refills the select each time one is picked, and
      * `$select.val()` answers in OPTION order. Putting the selected block first
-     * covers both halves: `.val()` answers in that order, and chosen renders its pills from the options, so
-     * the pills read in the author's order too. It costs nothing in the drop --
-     * chosen hides an already-selected option from the list.
+     * covers both halves: `.val()` answers in that order, and the picker draws
+     * its chips from `.val()`, so the chips read in the author's order too.
      */
     function fillChoices( $select, choices, selected ) {
 
@@ -656,15 +655,14 @@ export function start( config ) {
 
         fillChoices( $select, allowed, selected );
 
-        chosenSync( '#dlgDimensions' );
+        syncPicker( '#dlgDimensions' );
     }
 
     /**
      * Narrow a metric picker to what can still be added: nothing at the cap.
      *
-     * Rebuilt rather than disabled item by item, because chosen renders its own
-     * list from the select and only re-reads it on chosen:updated. An option
-     * left in place but unusable would still appear in the search results.
+     * Rebuilt rather than disabled item by item: the field chooser offers the
+     * select's options, so one left in place would still be offered.
      */
     function narrowMetrics() {
 
@@ -687,39 +685,105 @@ export function start( config ) {
 
         fillChoices( $select, allowed, selected );
 
-        chosenSync( '#dlgMetrics' );
+        syncPicker( '#dlgMetrics' );
     }
 
-    /**
-     * Enhance a <select multiple> into the searchable pill control.
+    /*
+     * The widget's Metrics and Dimensions: a chip per field picked, in the
+     * author's order, each with its X, and "+ Add" opening the field chooser
+     * (OWA.fieldChooser) on what can still be added. A pick adds one and
+     * closes the chooser; at the widget's limit "+ Add" is disabled and says
+     * why.
      *
-     * CHOSEN, the same widget the grid's secondary dimension picker uses.
-     *
-     * The explicit width is not decoration. chosen-js 1.x sizes its container
-     * from the select's offsetWidth AT ENHANCEMENT TIME, which is 0 inside a
-     * display:none parent -- and the widget panel is hidden until it is
-     * opened, so without this its two pickers enhance to a couple of pixels
-     * wide and are unusable. The same trap is documented on the constraint
-     * builder's dimension picker, which enhances inside a hidden .builder.
+     * The <select multiple> under them, hidden, still holds the choice: the
+     * rest of the panel reads it, and fillChoices() narrows its options to
+     * what can be added (none past the cap, no time dimension on a trend).
      */
-    function chosenify( selector ) {
+    var pickers = {};
 
-        jQuery( selector ).chosen( {
-            width: '100%',
-            no_results_text: OWA.l( 'Name not found.' ),
-            placeholder_text_multiple: OWA.l( 'Type to search…' ),
+    function makePicker( selector, kind ) {
+
+        var $select = jQuery( selector ).prop( 'hidden', true );
+        var id      = $select.attr( 'id' );
+        var all     = kind === 'metric' ? METRICS : DIMENSIONS;
+        var max     = kind === 'metric' ? maxMetrics : maxDimensions;
+        var $chips  = jQuery( '<div class="owa_fieldChips" role="list"></div>' )
+            .attr( { id: id + 'Chips', 'aria-labelledby': id + 'Label' } );
+        var $add    = jQuery( '<button type="button" class="owa_button owa_fieldAdd"></button>' )
+            .attr( 'id', id + 'Add' )
+            .text( kind === 'metric' ? OWA.l( '+ Add metric' ) : OWA.l( '+ Add dimension' ) );
+        var open    = null;
+
+        $select.after( jQuery( '<div class="owa_fieldPicker"></div>' ).append( $chips, $add ) );
+
+        var option = function ( name ) {
+            return $select.children( 'option' ).filter( function () { return this.value === name; } );
+        };
+
+        $add.on( 'click', function () {
+
+            if ( open ) {
+                open.close();
+                return;
+            }
+
+            var offered = $select.children( 'option' ).map( function () { return this.value; } ).get();
+
+            open = new OWA.fieldChooser(
+                OWA.fieldChooser.fromChoices( kind, all.filter( function ( c ) { return offered.indexOf( c.name ) !== -1; } ) ), {
+                    title: jQuery( '#' + id + 'Label' ).text(),
+                    selected: $select.val() || [],
+                    onPick: function ( name ) {
+                        if ( ! option( name ).prop( 'selected' ) ) {
+                            option( name ).prop( 'selected', true );
+                            $select.trigger( 'change' );
+                        }
+                    },
+                    onClose: function () { open = null; }
+                } );
+
+            open.open( $add[0] );
         } );
+
+        return {
+            /** Draw the chips and the state of "+ Add" from the select. */
+            sync: function () {
+
+                var picked = $select.val() || [];
+
+                $chips.empty();
+
+                picked.forEach( function ( name ) {
+
+                    var c     = OWA.fieldChooser.find( all, name );
+                    var label = c ? c.label : name;
+
+                    $chips.append( jQuery( '<span class="owa_fieldChip" role="listitem"></span>' )
+                        .append( jQuery( '<span></span>' ).text( label ) )
+                        .append( jQuery( '<button type="button" class="owa_fieldChipRemove"></button>' )
+                            .attr( 'aria-label', say( OWA.l( 'Remove %s' ), label ) )
+                            .append( '<i class="fas fa-times" aria-hidden="true"></i>' )
+                            .on( 'click', function () {
+                                option( name ).prop( 'selected', false );
+                                $select.trigger( 'change' );
+                                $add.trigger( 'focus' );
+                            } ) ) );
+                } );
+
+                var full = picked.length >= max();
+
+                $add.prop( 'disabled', full )
+                    .attr( 'title', full ? say( OWA.l( 'The limit of %s is reached. Remove one to add another.' ), max() ) : null );
+            }
+        };
     }
 
-    /**
-     * Re-sync a chosen control to its select after setting values in code.
-     *
-     * chosen-js 1.x ignores a programmatic .val() until told with
-     * chosen:updated.
-     */
-    function chosenSync( selector ) {
+    /** Redraw a picker after its select changed in code. */
+    function syncPicker( selector ) {
 
-        jQuery( selector ).trigger( 'chosen:updated' );
+        if ( pickers[ selector ] ) {
+            pickers[ selector ].sync();
+        }
     }
 
     // ------------------------------------------------------------------
@@ -957,8 +1021,8 @@ export function start( config ) {
 
         fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, chosenDimensions );
 
-        chosenSync( '#dlgMetrics' );
-        chosenSync( '#dlgDimensions' );
+        syncPicker( '#dlgMetrics' );
+        syncPicker( '#dlgDimensions' );
 
         // After the selections are loaded, not before: applyTypeRules() trims
         // to the type's cap, and run any earlier it would be trimming the
@@ -1063,8 +1127,8 @@ export function start( config ) {
 
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, metrics );
         fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, dims );
-        chosenSync( '#dlgMetrics' );
-        chosenSync( '#dlgDimensions' );
+        syncPicker( '#dlgMetrics' );
+        syncPicker( '#dlgDimensions' );
 
         renderTypePill( type );
         renderSpanChoices();
@@ -1443,8 +1507,8 @@ export function start( config ) {
         return true;
     }
 
-    chosenify( '#dlgMetrics' );
-    chosenify( '#dlgDimensions' );
+    pickers['#dlgMetrics']    = makePicker( '#dlgMetrics', 'metric' );
+    pickers['#dlgDimensions'] = makePicker( '#dlgDimensions', 'dimension' );
 
     filters = new OWA.filterPills( {
         pills: 'dlgFilters', add: 'dlgAddFilter', form: 'dlgFilterForm',
@@ -1542,11 +1606,12 @@ export function start( config ) {
 
     jQuery( '#widgetDialog' ).on( 'keydown', function ( e ) {
 
-        if ( e.key !== 'Escape' || jQuery( e.target ).closest( '.chosen-container' ).length ) {
+        if ( e.key !== 'Escape' ) {
             return;
         }
 
-        // The filter form's own Escape is handled, and stopped, by OWA.filterPills.
+        // The filter form's own Escape is handled, and stopped, by OWA.filterPills;
+        // a field chooser's by the chooser, which is not inside the panel.
         e.preventDefault();
         closePanel();
     } );
