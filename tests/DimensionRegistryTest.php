@@ -186,9 +186,10 @@ final class DimensionRegistryTest extends TestCase
 
         $this->assertTrue($a->isDimension('cd_plan'));
         $this->assertFalse($a->isDimension('cd_seat'));
-        $this->assertContains(['name' => 'cd_plan', 'label' => 'Plan'],
-            (array) ($a->relatedDimensions()['custom'] ?? []),
+        $this->assertContains('Plan',
+            array_column((array) ($a->relatedDimensions()['custom'] ?? []), 'label', 'name'),
             'the grid offers it under custom');
+        $this->assertArrayHasKey('cd_plan', array_column((array) ($a->relatedDimensions()['custom'] ?? []), 'label', 'name'));
 
         $bySite = new ResultSetManager;
         $bySite->setSiteId(self::SITE_A);

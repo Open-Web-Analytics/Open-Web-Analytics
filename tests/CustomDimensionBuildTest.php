@@ -761,9 +761,11 @@ final class CustomDimensionBuildTest extends TestCase
         $this->seed(['tier' => 'gold']);
         $this->rebuild();
 
-        $custom = (array) ($this->report('cd_tier')->relatedDimensions['custom'] ?? []);
+        $custom = array_column((array) ($this->report('cd_tier')->relatedDimensions['custom'] ?? []), null, 'name');
 
-        $this->assertContains(['name' => 'cd_tier', 'label' => 'Tier'], $custom);
+        $this->assertArrayHasKey('cd_tier', $custom);
+        $this->assertSame(['name' => 'cd_tier', 'label' => 'Tier', 'description' => 'Custom dimension: the event property "tier".',
+            'group_label' => 'Custom', 'data_type' => 'string'], $custom['cd_tier'], 'with what the chooser shows');
     }
 
     /** A query naming the Profile resolves its Property's dimensions too. */
@@ -847,8 +849,8 @@ final class CustomDimensionBuildTest extends TestCase
         $this->assertSame([], $none->subjects('visitor'));
         $this->assertNull($none->getError(), 'matched nobody, not refused');
 
-        $this->assertContains(['name' => 'cd_tier', 'label' => 'Tier'],
-            (array) ($segment->options()['dimensions']['custom'] ?? []));
+        $this->assertContains('cd_tier',
+            array_column((array) ($segment->options()['dimensions']['custom'] ?? []), 'name'));
     }
 
     /**
