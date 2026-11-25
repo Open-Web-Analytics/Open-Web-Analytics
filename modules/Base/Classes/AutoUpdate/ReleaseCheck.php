@@ -251,7 +251,14 @@ class ReleaseCheck {
 
         if ( $list !== null && ! $dry_run ) {
 
-            $created = (int) ( $this->context['feed'] )( $list );
+            // A release automatic updates will install is not announced: its notice is the one that says it installed.
+            $level    = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
+            $installs = $this->context['enabled'] && $this->context['role'] === \OWA\Core\ServerRole::FULL
+                && Vcs::checkout( $this->root ) === null && Version::parse( $installed ) !== null;
+            $announce = $installs ? array_values( array_filter( $list,
+                static fn ( $r ) => Releases::installable( is_array( $r ) ? $r : [], $installed, $level ) === null ) ) : $list;
+
+            $created = (int) ( $this->context['feed'] )( $announce );
             $this->lines[] = sprintf( '%d new release notification%s.', $created, $created === 1 ? '' : 's' );
         }
 
