@@ -101,22 +101,10 @@ class UpdatesState {
             $lines[] = sprintf( CoreAPI::t( 'OWA %s is downloaded and checked.' ), $newer );
         }
 
-        $err = trim( (string) ( $failure['error'] ?? '' ) );
+        if ( trim( (string) ( $failure['error'] ?? '' ) ) !== '' ) {
 
-        if ( $err !== '' && ! empty( $failure['booted'] ) ) {
-
-            $lines[] = sprintf( CoreAPI::t( 'OWA %1$s is installed, and finishing it failed: %2$s Fix the cause, then run php cli.php cmd=core-update-schema' ),
-                (string) ( $failure['version'] ?? '' ), rtrim( $err, '.' ) . '.' );
-
-        } elseif ( $err !== '' && ! empty( $failure['retry_after'] ) ) {
-
-            $lines[] = sprintf( CoreAPI::t( 'Installing OWA %1$s failed: %2$s Automatic updates try it again after %3$s UTC.' ),
-                (string) ( $failure['version'] ?? '' ), rtrim( $err, '.' ) . '.', gmdate( 'Y-m-d H:i', (int) $failure['retry_after'] ) );
-
-        } elseif ( $err !== '' ) {
-
-            $lines[] = sprintf( CoreAPI::t( 'Installing OWA %1$s failed: %2$s Automatic updates skip it until a newer release.' ),
-                (string) ( $failure['version'] ?? '' ), rtrim( $err, '.' ) . '.' );
+            $d       = InstallNotices::describe( (array) $failure );
+            $lines[] = $d['title'] . ': ' . implode( ' ', $d['lines'] );
         }
 
         return [ 'lines' => $lines, 'actions' => $newer === null ? [ 'check' ] : [ 'check', 'install' ] ];

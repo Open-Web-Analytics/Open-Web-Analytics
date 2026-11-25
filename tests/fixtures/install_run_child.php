@@ -41,6 +41,8 @@ $say  = static function ( ...$call ) {
 } );
 
 $u = [
+    // The real one: plain PHP, nothing to stand in for.
+    'logged'      => ( require dirname( __DIR__, 2 ) . '/updater.php' )['logged'],
     'writeMarker' => static function ( $root, array $marker ) use ( $say, $plan ) {
 
         $say( 'writeMarker', $marker['phase'] );
@@ -100,6 +102,7 @@ Install::$pending = [
     'to_sha'     => str_repeat( 'b', 64 ),
     'quiet'      => ! empty( $plan['quiet'] ),
     'u'          => $u,
+    'log'        => $u['logged']( [], 'Release check (by hand), OWA 2.0.1 installed.' )['log'],
 ];
 
 Install::run( null );

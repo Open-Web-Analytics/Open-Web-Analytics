@@ -41,9 +41,9 @@
  * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
  * finish-killed-in-the-schema-updates, newer-release-after-a-failure,
  * installed-past, installed-tarball-missing, no-updater, install-now (the
- * Updates screen's button, a job the scheduler runs) and finish-partly-fails
- * (installed, with the bundles not republished, a broken release check and
- * no success e-mail). copy-fails runs out of its 3 attempts; schema-fails is
+ * Updates screen's button, a job the scheduler runs), finish-trackers-fail
+ * (broken at the bundles, then finished by hand, with no success e-mail) and
+ * finish-self-test-fails (broken at its own release check). copy-fails runs out of its 3 attempts; schema-fails is
  * recovered as its notice says.
  *
  * Every listing it serves has 2.0.90 too: a failed install puts the
@@ -812,7 +812,10 @@ $scenarios = [
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0, "the restored release does not run:\n$out" );
         $n = notices( $db );
-        check( hasNotice( $n, 'install_failed:' . TO ) && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'runs as before' ), 'no "failed" notice saying the installed release runs' );
+        // Not tried again, so noticed at once: reverted, and where it stopped.
+        check( hasNotice( $n, 'install_failed:' . TO ) && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'The install was reverted: OWA ' . FROM . ' runs as before' )
+            && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'Starting OWA ' . TO . ' (try 2 of 2).' ),
+            'no "failed" notice saying it was reverted, with the boots in its log: ' . json_encode( $n[ 'install_failed:' . TO ] ?? null ) );
 
         [ , $out ] = release_check( $site, $ca );
         check( envVersion( $site ) === FROM && str_contains( $out, 'failed before, so it is skipped' ), "a release that failed was tried again:\n$out" );
@@ -827,13 +830,18 @@ $scenarios = [
         release_check( $site, $ca );
         [ , $out ] = next_run( $site, $ca );
         check( envVersion( $site ) === TO, 'the files were undone after the new release booted' );
-        check( str_contains( $out, 'cmd=core-update-schema did not complete' ), "the run that finishes does not say the schema update failed:\n$out" );
-        check( ! empty( failure( $site )['booted'] ) && str_contains( (string) ( failure( $site )['error'] ?? '' ), 'cmd=core-update-schema did not complete' ),
-            'last-failure.json does not record the failure: ' . json_encode( failure( $site ) ) );
+        check( str_contains( $out, 'Its schema updates did not complete: ' ) && str_contains( $out, 'The install is broken and needs attention now' ),
+            "the run that finishes does not say the schema update failed:\n$out" );
+        check( ! empty( failure( $site )['booted'] ) && ( failure( $site )['step'] ?? null ) === 'schema',
+            'last-failure.json does not record the failure at the schema updates: ' . json_encode( failure( $site ) ) );
         check( ! file_exists( "$site/owa-update.php" ), 'the marker stayed after the new release booted' );
 
         $n = notices( $db );
-        check( hasNotice( $n, 'install_failed:' . TO ) && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'tracking is queued' ), 'no "failed" notice saying tracking is queued' );
+        // Broken: noticed at once, critical, with what the install did up to the step that failed.
+        $broken = $n[ 'install_broken:' . TO . ':schema' ] ?? null;
+        check( $broken !== null && $broken['severity'] === 'critical' && str_contains( (string) $broken['body'], 'tracking is queued' )
+            && str_contains( (string) $broken['body'], 'Copying OWA ' . TO ) && str_contains( (string) $broken['body'], 'Applying its schema updates' ),
+            'no critical notice saying tracking is queued, with the install\'s log: ' . json_encode( $broken ) );
 
         // The recovery the notice gives: fix the cause, then cmd=core-update-schema. The failure record goes with it.
         $updates = glob( "$site/modules/Base/Update/Update*.php" );
@@ -1114,7 +1122,7 @@ $scenarios = [
 
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0, "the restored release does not run:\n$out" );
-        check( hasNotice( notices( $db ), 'install_failed:' . TO ), 'no "failed" notice' );
+        check( ! hasNotice( notices( $db ), 'install_failed:' . TO ), 'a notice before the attempts are used up' );
 
         // Tried again 6 hours on, 3 attempts in all; then skipped.
         [ , $out ] = release_check( $site, $ca );
@@ -1131,7 +1139,10 @@ $scenarios = [
         [ , $out ] = release_check( $site, $ca );
         check( str_contains( $out, 'failed before, so it is skipped' ), "the release was not skipped after 3 attempts:\n$out" );
         next_run( $site, $ca );
-        check( hasNotice( notices( $db ), 'install_failed:' . TO . ':skipped' ), 'no notice that it is skipped now' );
+        $n = notices( $db );
+        check( hasNotice( $n, 'install_failed:' . TO ) && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'It is not tried again' )
+            && str_contains( (string) $n[ 'install_failed:' . TO ]['body'], 'Failed: Could not write Core/Env.php' ),
+            'no notice, once the attempts are used up, that it is skipped, with the failure in its log: ' . json_encode( $n[ 'install_failed:' . TO ] ?? null ) );
 
         // Fixed: install it by hand, as the notice says.
         rmdir( $blocker );
@@ -1371,18 +1382,11 @@ $scenarios = [
         installed( $site, $ca, TO );
     },
 
-    // Finishing goes partly wrong without failing: the bundles cannot be republished, the new
-    // release's own release check is broken, and the operator wants no success e-mail.
-    'finish-partly-fails' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+    // A step of Finish fails: the bundles cannot be republished. The install is broken, noticed at once,
+    // and cmd=core-update-schema finishes it, as the notice says; the success e-mail is off.
+    'finish-trackers-fail' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        $to = package( $build, $work, 'finish-partly-fails', TO, static function ( $tree ) {
-
-            $f   = "$tree/modules/Base/Classes/AutoUpdate/ReleaseCheck.php";
-            $src = (string) file_get_contents( $f );
-            $at  = 'public function run( $dry_run = false ) {';
-            check( substr_count( $src, $at ) === 1, 'ReleaseCheck::run() is not where this scenario breaks it' );
-            file_put_contents( $f, str_replace( $at, $at . "\n\n        throw new \\LogicException( 'e2e: this release check is broken.' );\n", $src ) );
-        } );
+        $to = package( $build, $work, 'finish-trackers-fail', TO );
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json", "define('OWA_AUTO_UPDATE_EMAIL_SUCCESS', false);\n" );
 
@@ -1404,23 +1408,52 @@ $scenarios = [
             chmod( "$site/public/tracker", 0755 );
         }
 
-        // Not the exit code: the failed publish-trackers inside Finish sets it, so the command that finished the install exits 1.
-        check( str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the install did not finish (exit $code):\n$out" );
+        check( $code === 1 && str_contains( $out, 'Republishing its tracking bundles failed' ) && ! str_contains( $out, 'is installed.' ),
+            "the run that finishes does not fail, saying where (exit $code):\n$out" );
+        check( ( failure( $site )['step'] ?? null ) === 'trackers' && ! empty( failure( $site )['booted'] ), 'last-failure.json does not say the bundles failed: ' . json_encode( failure( $site ) ) );
 
-        $n    = notices( $db );
-        $done = $n[ 'installed:' . TO ] ?? null;
-        check( $done !== null && str_contains( (string) $done['body'], 'Republishing the tracking bundles failed' ) && str_contains( (string) $done['body'], 'cmd=publish-trackers' ),
-            'the "is installed" notice does not say the bundles were not republished: ' . json_encode( $done ) );
-        check( $done['email_status'] === '', 'the "is installed" notice was e-mailed with OWA_AUTO_UPDATE_EMAIL_SUCCESS false: ' . $done['email_status'] );
-
-        $self = $n[ 'self_test:' . TO ] ?? null;
-        check( $self !== null && $self['severity'] === 'critical' && str_contains( (string) $self['body'], 'e2e: this release check is broken.' ) && $self['email_status'] !== '',
-            'no critical, e-mailed notice that the new release cannot check for its own updates: ' . json_encode( $self ) );
+        $n      = notices( $db );
+        $broken = $n[ 'install_broken:' . TO . ':trackers' ] ?? null;
+        check( $broken !== null && $broken['severity'] === 'critical' && $broken['email_status'] !== ''
+            && str_contains( (string) $broken['body'], 'The install is broken and needs attention now' ) && str_contains( (string) $broken['body'], 'cmd=core-update-schema' )
+            && str_contains( (string) $broken['body'], 'Republishing its tracking bundles (cmd=publish-trackers).' ),
+            'no critical, e-mailed notice saying where it stopped and what to do: ' . json_encode( $broken ) );
+        check( ! hasNotice( $n, 'installed:' . TO ), 'an "is installed" notice for a broken install' );
 
         // As the notice says.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=publish-trackers' );
-        check( $code === 0 && count( glob( "$site/public/tracker/*.js" ) ) === count( $bundles ), "publish-trackers did not republish the bundles (exit $code):\n$out" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-update-schema' );
+        check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "cmd=core-update-schema did not finish the install (exit $code):\n$out" );
+        check( count( glob( "$site/public/tracker/*.js" ) ) === count( $bundles ), 'the bundles were not republished' );
+
+        $done = notices( $db )[ 'installed:' . TO ] ?? null;
+        check( $done !== null && $done['email_status'] === '', 'no "is installed" notice, or it was e-mailed with OWA_AUTO_UPDATE_EMAIL_SUCCESS false: ' . json_encode( $done ) );
         installed( $site, $ca, TO );
+    },
+
+    // The new release's own release check is broken: the install is broken, and says to install the fix by hand.
+    'finish-self-test-fails' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        $to = package( $build, $work, 'finish-self-test-fails', TO, static function ( $tree ) {
+
+            $f   = "$tree/modules/Base/Classes/AutoUpdate/ReleaseCheck.php";
+            $src = (string) file_get_contents( $f );
+            $at  = 'public function run( $dry_run = false ) {';
+            check( substr_count( $src, $at ) === 1, 'ReleaseCheck::run() is not where this scenario breaks it' );
+            file_put_contents( $f, str_replace( $at, $at . "\n\n        throw new \\LogicException( 'e2e: this release check is broken.' );\n", $src ) );
+        } );
+        publish( $www, $base, $to, TO );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
+
+        release_check( $site, $ca );
+        [ $code, $out ] = next_run( $site, $ca );
+        check( $code === 1 && str_contains( $out, 'Its own release check failed: e2e: this release check is broken.' ), "the run that finishes does not fail, saying where (exit $code):\n$out" );
+
+        $broken = notices( $db )[ 'install_broken:' . TO . ':self_test' ] ?? null;
+        check( $broken !== null && $broken['severity'] === 'critical' && $broken['email_status'] !== ''
+            && str_contains( (string) $broken['body'], 'it may not install the release that fixes this' ) && str_contains( (string) $broken['body'], 'cmd=core-install --version=' ),
+            'no critical, e-mailed notice saying to install the fix by hand: ' . json_encode( $broken ) );
+        check( ! hasNotice( notices( $db ), 'installed:' . TO ), 'an "is installed" notice for a broken install' );
+        check( envVersion( $site ) === TO, 'the files were undone after the new release booted' );
     },
 
     'no-updater' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {

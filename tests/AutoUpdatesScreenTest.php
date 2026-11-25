@@ -40,11 +40,11 @@ final class AutoUpdatesScreenTest extends RestControllerTestCase
     {
         $state = $this->state(['2.1.0', '2.0.0'], ['version' => '2.1.0', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.']);
 
-        $this->assertSame('Installing OWA 2.1.0 failed: Could not write Core/Env.php. OWA 2.0.0 was put back. Automatic updates skip it until a newer release.', end($state['lines']));
+        $this->assertSame('Installing OWA 2.1.0 failed: Could not write Core/Env.php. OWA 2.0.0 was put back. The install was reverted: OWA 2.0.0 runs as before. It is not tried again: automatic updates skip OWA 2.1.0 until a newer release. To try it again: php cli.php cmd=core-install --version=2.1.0', end($state['lines']));
         $this->assertSame(['check', 'install'], $state['actions'], 'the installed release runs: installing it by hand is the way to try again');
 
         $booted = $this->state([], ['version' => '2.1.0', 'booted' => true, 'error' => 'cmd=core-update-schema did not complete'], ['installed' => '2.1.0']);
-        $this->assertSame('OWA 2.1.0 is installed, and finishing it failed: cmd=core-update-schema did not complete. Fix the cause, then run php cli.php cmd=core-update-schema', end($booted['lines']));
+        $this->assertSame('Installing OWA 2.1.0 failed: Its schema updates did not complete: cmd=core-update-schema did not complete. The install is broken and needs attention now: OWA 2.1.0\'s files are installed, and until its schema updates complete, tracking is queued and reports wait. Fix the cause, then run php cli.php cmd=core-update-schema, which finishes the install.', end($booted['lines']));
     }
 
     /** While the install marker is there the files may be mixed: the screen says so and offers only a check. */

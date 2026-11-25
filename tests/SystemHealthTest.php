@@ -401,6 +401,20 @@ final class SystemHealthTest extends TestCase
         }
     }
 
+    /** A failed install, from the moment it is recorded: yellow while the installed release runs as before, red when it is broken. */
+    public function testAFailedInstallIsShownFromTheStart(): void
+    {
+        $this->assertNull(SystemHealth::failedInstall(['version' => '2.0.3', 'error' => '']));
+
+        $reverted = SystemHealth::failedInstall(['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'Could not write Core/Env.php.', 'attempts' => 1, 'retry_after' => 1800000000]);
+        $this->assertSame(['yellow', 'Installing OWA 2.0.3 failed'], [$reverted['level'], $reverted['label']]);
+        $this->assertStringContainsString('The install was reverted: OWA 2.0.2 runs as before. It is tried again after', $reverted['detail'], 'before any notice is raised');
+
+        $broken = SystemHealth::failedInstall(['version' => '2.0.3', 'from' => '2.0.2', 'error' => 'Update 095 failed', 'booted' => true, 'step' => 'schema']);
+        $this->assertSame('red', $broken['level']);
+        $this->assertStringContainsString('The install is broken and needs attention now', $broken['detail']);
+    }
+
     public function testTheInstallationNamesTheServerRole(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
