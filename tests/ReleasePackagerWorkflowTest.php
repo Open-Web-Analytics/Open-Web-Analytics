@@ -90,6 +90,26 @@ final class ReleasePackagerWorkflowTest extends TestCase
         }
     }
 
+    /** The build job's dependencies can change the tarball; what is signed must be the commit's files (release-verify.sh). */
+    public function testTheTarballIsCheckedAgainstTheCommitBeforeItIsSigned(): void {
+
+        $runs = array_map( function ( $s ) {
+            return (string) ( $s['run'] ?? '' );
+        }, self::jobs()['sign']['steps'] );
+
+        $find = function ( $script ) use ( $runs ) {
+            foreach ( $runs as $i => $run ) {
+                if ( strpos( $run, $script ) !== false ) {
+                    return $i;
+                }
+            }
+            return null;
+        };
+
+        $this->assertNotNull( $find( 'release-verify.sh' ) );
+        $this->assertLessThan( $find( 'release-sign.php' ), $find( 'release-verify.sh' ) );
+    }
+
     public function testEveryActionIsPinnedToACommit(): void {
 
         foreach ( self::steps() as $step ) {

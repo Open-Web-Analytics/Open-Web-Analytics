@@ -6,6 +6,11 @@ on:
     branches: [ master, v2 ]
   pull_request:
 
+# CI reads the repository and writes nothing to it, so the token every step can
+# reach, composer's and npm's install scripts included, can do no more.
+permissions:
+  contents: read
+
 # One run per branch. Pushing again while a run is in flight cancels the older
 # one, which is almost always what you want while iterating on a pull request --
 # and it stops superseded runs sitting on the runners. Three hung e2e jobs on

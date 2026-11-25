@@ -139,6 +139,10 @@ jobs:
       uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         name: tarball
+    # Whatever the build's dependencies did, the tarball holds this commit's
+    # files unchanged, and beyond them only build output.
+    - name: Check the tarball against the release commit
+      run: bash .github/scripts/release-verify.sh "$VERSION"
     # The signature installations check before they stage the release
     # (Classes\AutoUpdate\Signature). Checked against this checkout's trusted
     # keys before it is kept.
