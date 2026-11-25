@@ -92,8 +92,8 @@ class ChannelStep extends Step {
     }
 
     /**
-     * The configured rules: conf/channels.php, or the data directory's file of
-     * the same name in its place.
+     * The configured rules: conf/channels.php, or its override in the data
+     * directory's conf/ (Core\Overrides) in its place, when OWA may run that.
      *
      * REPLACED, NOT MERGED, unlike the site lists: the order is the rule set,
      * and a merge could only append.
@@ -104,9 +104,7 @@ class ChannelStep extends Step {
      */
     public static function definitions( $data_dir = null ) {
 
-        $data_dir = $data_dir ?? \OWA\Core\Env::dataDir();
-
-        $file = file_exists( $data_dir . 'channels.php' ) ? $data_dir . 'channels.php' : \OWA\Core\Env::confDir() . 'channels.php';
+        $file = \OWA\Core\Overrides::file( 'channels.php', $data_dir ) ?? \OWA\Core\Env::confDir() . 'channels.php';
 
         return self::validate( include $file );
     }

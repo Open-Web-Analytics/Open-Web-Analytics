@@ -210,24 +210,34 @@ final class ChannelRulesTest extends TestCase
         $this->assertSame(['Partners', 'Newsletters', 'Search', 'Literal', 'Unassigned'], ChannelStep::channels($rules));
     }
 
-    /** A file of the same name in the data directory replaces the shipped rules. */
-    public function testTheDataDirectoryFileReplacesTheShippedOne(): void
+    /**
+     * Its override in the data directory's conf/ replaces the shipped rules,
+     * when nobody but the owner of OWA's files can write it (Core\Overrides).
+     */
+    public function testTheOverrideReplacesTheShippedOne(): void
     {
         $dir = sys_get_temp_dir() . '/owa-channels-' . bin2hex(random_bytes(4)) . '/';
-        mkdir($dir);
-        file_put_contents($dir . 'channels.php',
+        $old = umask(022);
+        mkdir($dir . 'conf', 0755, true);
+        file_put_contents($dir . 'conf/channels.php',
             "<?php return [['channel' => 'Everything', 'any' => [['medium', 'contains', '']]]];");
+        umask($old);
+
+        $shipped = include \OWA\Core\Env::confDir() . 'channels.php';
 
         try {
             $this->assertSame([['channel' => 'Everything', 'any' => [['medium', 'contains', '']]]],
                 ChannelStep::definitions($dir));
+
+            chmod($dir, 0775);
+            $this->assertSame($shipped, ChannelStep::definitions($dir), 'not run when the web server could have written it');
         } finally {
-            unlink($dir . 'channels.php');
+            unlink($dir . 'conf/channels.php');
+            rmdir($dir . 'conf');
             rmdir($dir);
         }
 
-        $this->assertSame(include \OWA\Core\Env::confDir() . 'channels.php', ChannelStep::definitions($dir),
-            'without one, the shipped rules');
+        $this->assertSame($shipped, ChannelStep::definitions($dir), 'without one, the shipped rules');
     }
 
     /** @return array case => [rules, what the refusal names] */

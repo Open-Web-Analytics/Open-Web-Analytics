@@ -76,7 +76,8 @@ class Browscap extends \OWA\Core\Base {
      *
      *   1. the `ua-regexes` setting, for an installation that keeps the file
      *      somewhere of its own choosing
-     *   2. owa-data/ua-parser/regexes.php, where cmd=ua-update-definitions puts it
+     *   2. owa-data/conf/ua-parser/regexes.php (or ua_regexes_dir's), where
+     *      cmd=ua-update-definitions puts it
      *   3. nothing, meaning the copy bundled with the library
      *
      * The second is the point. The bundled copy is only as new as the PHP
@@ -86,9 +87,10 @@ class Browscap extends \OWA\Core\Base {
      * arrangement the Maxmind module uses for its database: a known directory
      * under owa-data, read if it is there.
      *
+     * @param  string|null $data_dir a test's; else the installation's
      * @return string|null
      */
-    public static function regexesFile() {
+    public static function regexesFile( $data_dir = null ) {
 
         $configured = \OWA\Core\CoreAPI::getSetting( 'base', 'ua-regexes' );
 
@@ -97,18 +99,26 @@ class Browscap extends \OWA\Core\Base {
             return $configured;
         }
 
-        $dir = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
+        $dir = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' );
 
-        $maintained = $dir . 'regexes.php';
+        /*
+         * PHP, which the parser includes, and the cron user parses user agents
+         * when it drains the queue: run only if nobody but the owner of OWA's
+         * files could have written it (Core\Overrides). Readable too: an
+         * unreadable file would otherwise take precedence over a bundled copy
+         * that works.
+         */
+        if ( $dir === '' ) {
 
-        // Readable, not merely present: an unreadable file here would otherwise
-        // take precedence over a bundled copy that works.
-        if ( is_readable( $maintained ) ) {
+            $maintained = \OWA\Core\Overrides::file( \OWA\Core\Overrides::UA_PATTERNS, $data_dir );
 
-            return $maintained;
+        } else {
+
+            $maintained = \OWA\Core\Env::withSlash( $dir ) . 'regexes.php';
+            $maintained = file_exists( $maintained ) && \OWA\Core\SafeFile::trustProblem( $maintained, $dir ) === null ? $maintained : null;
         }
 
-        return null;
+        return $maintained !== null && is_readable( $maintained ) ? $maintained : null;
     }
 
     /**
