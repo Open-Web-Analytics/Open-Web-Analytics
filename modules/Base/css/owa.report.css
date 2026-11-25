@@ -5037,7 +5037,7 @@ dialog.owa_typeDialogFrame {
 
 .owa_fieldSearch:focus-visible {
     outline: none;
-    box-shadow: inset 0 -2px 0 var(--owa-focus);
+    box-shadow: inset 0 -2px 0 #1874CD;
 }
 
 .owa_fieldList {
@@ -5048,6 +5048,7 @@ dialog.owa_typeDialogFrame {
 
 .owa_fieldList:focus-visible {
     outline: none;
+    box-shadow: inset 0 0 0 2px #1874CD;
 }
 
 .owa_fieldHeading,
