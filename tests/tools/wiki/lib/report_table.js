@@ -34,14 +34,23 @@ function either( words ) {
     return words.length > 1 ? words.slice( 0, -1 ).join( ', ' ) + ' or ' + words[ words.length - 1 ] : words.join( '' );
 }
 
-/** Field | Conditions: what Add a filter offers for a dimension and for a metric. */
+/** What each kind of value (OWA.dataGrid.valueKind()) is called in the table. */
+const FIELDS = {
+    text: 'A text dimension',
+    number: 'A number dimension',
+    date: 'A date dimension',
+    boolean: 'A Yes/No dimension',
+    metric: 'A metric',
+};
+
+/** Field | Conditions: what a filter form offers, by the kind of value the field takes. */
 function renderConditions() {
 
     const conditions = gridConstant( 'CONDITIONS' );
     let out = '| Field | Conditions |\n|---|---|\n';
 
-    for ( const field of Object.keys( conditions ) ) {
-        out += '| A ' + field + ' | ' + conditions[ field ].map( ( c ) => '**' + c[1] + '**' ).join( ', ' ) + ' |\n';
+    for ( const kind of Object.keys( conditions ) ) {
+        out += '| ' + ( FIELDS[ kind ] || kind ) + ' | ' + conditions[ kind ].map( ( c ) => '**' + c[1] + '**' ).join( ', ' ) + ' |\n';
     }
 
     return out;
@@ -55,4 +64,4 @@ function renderLimits() {
         + '| Dimension pickers in the headings | On a table grouped by up to ' + gridConstant( 'MAX_DIMENSIONS' ) + ' dimensions |\n';
 }
 
-module.exports = { gridConstant, renderConditions, renderLimits, SOURCE };
+module.exports = { gridConstant, renderConditions, renderLimits, SOURCE, FIELDS };

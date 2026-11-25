@@ -1,10 +1,13 @@
 // OWA is defined by owa.format.js; this module augments it (OWA.filterPills = ...).
 import * as jQuery from 'jquery';
 import { OWA } from './owa.format.js';
+import './owa.fieldchooser.js';
 
 /**
  * Filters as pills: a Filter button, a pill per filter, and a small form
- * (dimension, condition, value) that Add filter turns into a pill. Pressing a
+ * (field, condition, value) that Add filter turns into a pill. The field is
+ * picked with OWA.fieldChooser; the conditions and the value box follow the
+ * kind of value it takes (OWA.dataGrid.conditionsFor(), valueInput()). Pressing a
  * pill opens the form on that filter, to change it; its X removes it. Used by
  * the report editor's widget panel, the funnel builder, and the segment
  * filters of the funnel and recordings reports, over the markup in
@@ -16,32 +19,36 @@ import { OWA } from './owa.format.js';
  *
  *   ids         the element ids: pills, add, form, dimension, operator,
  *               value, addFilter, cancel
- *   dimensions  [{name, label, group}], what may be filtered on; group is
- *               optional, and puts the choice under that heading
+ *   dimensions  what may be filtered on: chooser fields ({name, label,
+ *               description, group, group_label, type, kind}), or the report
+ *               editor's lists ({name, label, group, ...}), taken as dimensions
  *   onChange    called whenever the filters or the form change
  */
 OWA.filterPills = function ( ids, dimensions, onChange ) {
 
     this.ids        = ids;
-    this.dimensions = dimensions || [];
+    this.dimensions = ( dimensions || [] ).map( function ( d ) {
+        return d.kind ? d : OWA.fieldChooser.fromChoices( 'dimension', [ d ] )[0];
+    } );
     this.onChange   = onChange || function () {};
     this.filters    = [];
     this.editing    = null;
     this.addText    = this.$( 'addFilter' ).text();
+    this.value      = null;
 
     var that = this;
 
-    this.$( 'dimension' ).chosen( {
-        width: '100%',
-        no_results_text: OWA.l( 'Name not found.' ),
-        placeholder_text_single: OWA.l( 'Choose a dimension' )
-    } );
-
-    // chosen draws its own control after the <select>.
-    this.$( 'dimension' ).next( '.chosen-container' ).attr( 'data-ui', 'filter:dimension' );
-
-    OWA.filterPills.OFFERED.concat( Object.keys( OWA.dataGrid.EMPTY_TESTS ) ).forEach( function ( op ) {
-        that.$( 'operator' ).append( jQuery( '<option>' ).attr( 'value', op ).text( OWA.filterPills.phrase( op ) ) );
+    this.field = OWA.fieldChooser.attach( this.$( 'dimension' ), {
+        fields: this.dimensions,
+        placeholder: OWA.l( 'Choose a field' ),
+        title: OWA.l( 'Filter on' ),
+        filtering: true,
+        onPick: function () {
+            that.conditions( '' );
+            that.valueBox( '' );
+            that.sync();
+            that.onChange();
+        }
     } );
 
     // While a pill is being changed, Filter starts a new filter instead.
@@ -54,19 +61,14 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
         that.onChange();
     } );
 
-    this.$( 'dimension' ).add( this.$( 'operator' ) ).on( 'change', function () { that.sync(); } );
+    this.$( 'operator' ).on( 'change', function () { that.sync(); } );
 
-    this.$( 'value' )
-        .on( 'input', function () {
-            that.sync();
-            that.onChange();
-        } )
-        .on( 'keydown', function ( e ) {
-            if ( e.key === 'Enter' ) {
-                e.preventDefault();
-                that.$( 'addFilter' ).trigger( 'click' );
-            }
-        } );
+    this.$( 'form' ).on( 'keydown', 'input', function ( e ) {
+        if ( e.key === 'Enter' ) {
+            e.preventDefault();
+            that.$( 'addFilter' ).trigger( 'click' );
+        }
+    } );
 
     this.$( 'addFilter' ).on( 'click', function () {
 
@@ -121,7 +123,7 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
 
     this.$( 'form' ).on( 'keydown', function ( e ) {
 
-        if ( e.key !== 'Escape' || jQuery( e.target ).closest( '.chosen-container' ).length ) {
+        if ( e.key !== 'Escape' ) {
             return;
         }
 
@@ -132,32 +134,15 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
     } );
 };
 
-/*
- * The operators the form offers, then the empty tests
- * (OWA.dataGrid.EMPTY_TESTS), each worded as the grid's chips word it. A
- * stored clause may use any operator the server parses.
- */
-OWA.filterPills.OFFERED = [ '==', '!=', '=@', '>', '<' ];
-
 /**
- * What may be filtered on, from lists by group as a result set gives them
- * ({group: [{name, label}]}): [{name, label, group}], in the order given.
+ * What may be filtered on, from a result set's lists by group (dimensions,
+ * then metrics, as relatedDimensions and relatedMetrics give them), as chooser
+ * fields, in the order given.
  */
-OWA.filterPills.choices = function () {
+OWA.filterPills.choices = function ( dimensions, metrics ) {
 
-    var out = [];
-
-    Array.prototype.forEach.call( arguments, function ( groups ) {
-
-        jQuery.each( groups || {}, function ( group, list ) {
-
-            ( list || [] ).forEach( function ( c ) {
-                out.push( { name: c.name, label: c.label, group: group } );
-            } );
-        } );
-    } );
-
-    return out;
+    return OWA.fieldChooser.fromGroups( 'dimension', dimensions )
+        .concat( OWA.fieldChooser.fromGroups( 'metric', metrics ) );
 };
 
 /**
@@ -191,20 +176,19 @@ OWA.filterPills.stringify = function ( filters ) {
     } ).join( ',' );
 };
 
-/** How an operator reads on a pill and in the form: as the report grid's chips say it. */
-OWA.filterPills.phrase = function ( op ) {
+/** How an operator reads on a pill: as the report grid's chips say it, for field when given. */
+OWA.filterPills.phrase = function ( op, field ) {
 
-    var phrase = OWA.dataGrid.EMPTY_TESTS[ op ] || OWA.dataGrid.OPERATOR_PHRASES[ op ];
-
-    return phrase ? OWA.translate( phrase ) : op;
+    return OWA.dataGrid.phrase( op, field || null );
 };
 
 /**
  * A filter as the report grid's chip words it: "%1$s %2$s %3$s" (field,
  * condition, value), or "%1$s %2$s" for an empty test -- as the parts of the
  * sentence either side of the value, which the caller puts between them.
+ * fieldOf, when given, finds the filter's chooser field ("Date before ...").
  */
-OWA.filterPills.sentence = function ( f, labelOf ) {
+OWA.filterPills.sentence = function ( f, labelOf, fieldOf ) {
 
     var empty = OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( f.op );
     var form  = empty
@@ -212,7 +196,7 @@ OWA.filterPills.sentence = function ( f, labelOf ) {
         : OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' );
 
     var label  = labelOf ? labelOf( f.name ) : f.name;
-    var phrase = OWA.filterPills.phrase( f.op );
+    var phrase = OWA.filterPills.phrase( f.op, fieldOf ? fieldOf( f.name ) : null );
 
     return form.split( '%3$s' ).map( function ( part ) {
         return OWA.util.sprintf( part, label, phrase );
@@ -220,9 +204,11 @@ OWA.filterPills.sentence = function ( f, labelOf ) {
 };
 
 /** "Page Path contains /blog/", with labelOf() naming the dimension. */
-OWA.filterPills.words = function ( f, labelOf ) {
+OWA.filterPills.words = function ( f, labelOf, fieldOf ) {
 
-    return OWA.filterPills.sentence( f, labelOf ).join( f.value );
+    var field = fieldOf ? fieldOf( f.name ) : null;
+
+    return OWA.filterPills.sentence( f, labelOf, fieldOf ).join( OWA.dataGrid.shownValue( f.value, field ) );
 };
 
 OWA.filterPills.prototype = {
@@ -238,13 +224,47 @@ OWA.filterPills.prototype = {
 
     labelOf : function ( name ) {
 
-        for ( var i = 0; i < this.dimensions.length; i++ ) {
-            if ( this.dimensions[ i ].name === name ) {
-                return this.dimensions[ i ].label;
-            }
+        var f = this.fieldOf( name );
+
+        return f ? f.label : name;
+    },
+
+    fieldOf : function ( name ) {
+
+        return OWA.fieldChooser.find( this.dimensions, name );
+    },
+
+    /**
+     * The conditions the field picked takes, op selected; a stored operator
+     * the form does not offer for it is kept as one more.
+     */
+    conditions : function ( op ) {
+
+        var $op = this.$( 'operator' ).empty();
+
+        OWA.dataGrid.conditionsFor( this.field.field() ).forEach( function ( c ) {
+            $op.append( jQuery( '<option>' ).attr( 'value', c[0] ).text( OWA.translate( c[1] ) ) );
+        } );
+
+        if ( op && ! this.hasOption( $op, op ) ) {
+            $op.append( jQuery( '<option data-stored="">' ).attr( 'value', op ).text( OWA.filterPills.phrase( op ) ) );
         }
 
-        return name;
+        $op.val( op || $op.children().first().val() );
+    },
+
+    /** The value box the field picked takes, holding value. */
+    valueBox : function ( value ) {
+
+        var that = this;
+
+        this.value = OWA.dataGrid.valueInput( this.field.field(), this.ids.value );
+        this.$( 'value' ).replaceWith( this.value.$el );
+        this.value.set( value );
+        this.value.on( function () {
+            that.sync();
+            that.onChange();
+        } );
     },
 
     /** Show these filters, from the stored string, with the form shut. */
@@ -268,7 +288,7 @@ OWA.filterPills.prototype = {
 
         this.filters.forEach( function ( f, i ) {
 
-            var words = OWA.filterPills.words( f, that.labelOf.bind( that ) );
+            var words = OWA.filterPills.words( f, that.labelOf.bind( that ), that.fieldOf.bind( that ) );
             var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i );
             var $edit = jQuery( '<button type="button" class="owa_filterPillEdit" aria-expanded="false">' )
                 .attr( {
@@ -278,10 +298,10 @@ OWA.filterPills.prototype = {
                 } );
 
             // The value in bold where the sentence puts it.
-            OWA.filterPills.sentence( f, that.labelOf.bind( that ) ).forEach( function ( part, k ) {
+            OWA.filterPills.sentence( f, that.labelOf.bind( that ), that.fieldOf.bind( that ) ).forEach( function ( part, k ) {
 
                 if ( k > 0 ) {
-                    $edit.append( jQuery( '<strong>' ).text( f.value ) );
+                    $edit.append( jQuery( '<strong>' ).text( OWA.dataGrid.shownValue( f.value, that.fieldOf( f.name ) ) ) );
                 }
 
                 if ( part !== '' ) {
@@ -304,44 +324,12 @@ OWA.filterPills.prototype = {
     open : function ( index ) {
 
         var editing = index === undefined ? null : index;
-        var f       = editing === null ? { name: '', op: '==', value: '' } : this.filters[ editing ];
-        var groups  = Object.create( null );
-        var $dim    = this.$( 'dimension' ).empty()
-            .append( jQuery( '<option value="">' ).text( OWA.l( 'Choose a dimension' ) ) );
+        var f       = editing === null ? { name: '', op: '', value: '' } : this.filters[ editing ];
 
-        this.dimensions.forEach( function ( choice ) {
-
-            var $option = jQuery( '<option>' ).attr( 'value', choice.name )
-                .text( choice.label + ' (' + choice.name + ')' );
-
-            if ( ! choice.group ) {
-                $dim.append( $option );
-                return;
-            }
-
-            if ( ! groups[ choice.group ] ) {
-                groups[ choice.group ] = jQuery( '<optgroup>' ).attr( 'label', choice.group ).appendTo( $dim );
-            }
-
-            groups[ choice.group ].append( $option );
-        } );
-
-        // A stored filter may name a dimension, or use an operator, the form does not offer.
-        if ( f.name && ! this.hasOption( $dim, f.name ) ) {
-            $dim.append( jQuery( '<option>' ).attr( 'value', f.name ).text( f.name ) );
-        }
-
-        var $op = this.$( 'operator' );
-
-        $op.children( '[data-stored]' ).remove();
-
-        if ( ! this.hasOption( $op, f.op ) ) {
-            $op.append( jQuery( '<option data-stored="">' ).attr( 'value', f.op ).text( OWA.filterPills.phrase( f.op ) ) );
-        }
-
-        $dim.val( f.name ).trigger( 'chosen:updated' );
-        $op.val( f.op );
-        this.$( 'value' ).val( f.value );
+        // A stored filter may name a field the form does not offer; it shows by name.
+        this.field.set( f.name );
+        this.conditions( f.op );
+        this.valueBox( f.value );
 
         this.editing = editing;
         this.$( 'addFilter' ).text( editing === null ? this.addText : OWA.l( 'Update filter' ) );
@@ -353,7 +341,7 @@ OWA.filterPills.prototype = {
 
         this.sync();
 
-        $dim.trigger( 'chosen:activate' );
+        this.$( 'dimension' ).trigger( 'focus' );
     },
 
     close : function () {
@@ -380,9 +368,9 @@ OWA.filterPills.prototype = {
     read : function () {
 
         var f = {
-            name:  this.$( 'dimension' ).val() || '',
+            name:  this.field.get(),
             op:    this.$( 'operator' ).val() || '==',
-            value: jQuery.trim( this.$( 'value' ).val() || '' )
+            value: this.value ? this.value.get() : ''
         };
 
         if ( ! f.name || ( ! f.value && ! OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( f.op ) ) ) {
@@ -402,6 +390,7 @@ OWA.filterPills.prototype = {
         var empty = OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( this.$( 'operator' ).val() );
 
         this.$( 'value' ).toggle( ! empty );
+        this.$( 'value' ).prev( 'label' ).toggle( ! empty );
         this.$( 'addFilter' ).prop( 'disabled', ! this.read() );
     },
 
@@ -416,7 +405,7 @@ OWA.filterPills.prototype = {
             return '';
         }
 
-        if ( String( this.$( 'value' ).val() ).indexOf( ',' ) !== -1 ) {
+        if ( this.value && this.value.get().indexOf( ',' ) !== -1 ) {
             return OWA.l( 'A filter value cannot contain a comma.' );
         }
 

@@ -34,11 +34,11 @@ describe('wiki report table reference', () => {
         const md = table.renderConditions();
         const fields = Object.keys(OWA.dataGrid.CONDITIONS);
 
-        expect(fields).toEqual(['dimension', 'metric']);
+        expect(fields).toEqual(['text', 'number', 'date', 'boolean', 'metric']);
 
         for (const field of fields) {
 
-            const row = md.split('\n').find((line) => line.startsWith('| A ' + field + ' |'));
+            const row = md.split('\n').find((line) => line.startsWith('| ' + table.FIELDS[field] + ' |'));
 
             expect(row).toBeDefined();
 

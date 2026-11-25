@@ -84,28 +84,36 @@ describe('a metric box', () => {
 
 describe('the filter pills', () => {
 
-    test('show their groups and dimensions as text, and keep each name as its value', () => {
+    test('show their groups and fields as text, in the field chooser, and keep each name as its value', () => {
         document.body.innerHTML = `
             <div id="p"></div><button id="a"></button>
-            <div id="f"><select id="d"></select><select id="o"></select><input id="v"><button id="af"></button></div>`;
-        $.fn.chosen = function () { return this; };
+            <div id="f"><button type="button" id="d"></button><select id="o"></select><input id="v"><button id="af"></button></div>`;
 
         const pills = new OWA.filterPills(
             { pills: 'p', add: 'a', form: 'f', dimension: 'd', operator: 'o', value: 'v', addFilter: 'af', cancel: 'c' },
             OWA.filterPills.choices({
                 ['Custom <i data-probe="1">x</i>']: [
-                    { name: 'cd_plan"><b data-probe="1">', label: MARKUP },
+                    { name: 'cd_plan"><b data-probe="1">', label: MARKUP, description: MARKUP },
                 ],
             }));
 
         pills.open();
+        $('#d').trigger('click');
 
-        const group  = document.querySelector('#d optgroup');
-        const option = document.querySelector('#d optgroup option');
+        expect(document.querySelector('.owa_fieldGroup .owa_fieldLabel').textContent).toBe('Custom <i data-probe="1">x</i>');
 
-        expect(group.getAttribute('label')).toBe('Custom <i data-probe="1">x</i>');
-        expect(option.value).toBe('cd_plan"><b data-probe="1">');
-        expect(option.textContent).toBe(MARKUP + ' (cd_plan"><b data-probe="1">)');
+        $('.owa_fieldGroup').trigger('click');
+
+        const option = document.querySelector('.owa_fieldOption[data-name]');
+
+        expect(option.getAttribute('data-name')).toBe('cd_plan"><b data-probe="1">');
+        expect(option.querySelector('.owa_fieldLabel').textContent).toBe(MARKUP);
+        expect(document.querySelector('.owa_fieldDescription').textContent).toBe(MARKUP);
+
+        $(option).trigger('click');
+
+        expect(pills.field.get()).toBe('cd_plan"><b data-probe="1">');
+        expect(document.querySelector('#d').textContent).toBe(MARKUP);
         expect(document.querySelector('[data-probe]')).toBeNull();
     });
 });

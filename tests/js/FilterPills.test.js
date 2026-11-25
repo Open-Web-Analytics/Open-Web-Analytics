@@ -13,6 +13,7 @@ const $ = require('jquery');
 global.jQuery = global.$ = $;
 
 require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
+require('../../modules/Base/src/reporting/owa.fieldchooser.js');
 require('../../modules/Base/src/reporting/owa.filterpills.js');
 
 /**
@@ -122,15 +123,7 @@ describe('in a translated locale', () => {
     });
 
     function pills() {
-        document.body.innerHTML = `
-            <div id="p"></div><button id="a"></button>
-            <div id="f"><select id="d"></select><select id="o"></select><input id="v"><button id="af"></button></div>`;
-        $.fn.chosen = function () { return this; };
-
-        return new OWA.filterPills(
-            { pills: 'p', add: 'a', form: 'f', dimension: 'd', operator: 'o', value: 'v', addFilter: 'af', cancel: 'c' },
-            [{ name: 'medium', label: 'Medium' }],
-            () => {});
+        return page([{ name: 'medium', label: 'Medium', type: 'string' }]);
     }
 
     test('the words follow the translated sentence and condition', () => {
@@ -163,15 +156,16 @@ describe('in a translated locale', () => {
     });
 
     test('the form offers its conditions translated', () => {
-        OWA.config.strings = { 'contains': 'contient', 'has a value': 'a une valeur' };
+        OWA.config.strings = { 'Contains': 'Contient', 'Has a value': 'A une valeur' };
 
-        pills();
+        pills().open();
+        pick('medium');
 
         const labels = $('#o option').map((i, o) => $(o).text()).get();
 
-        expect(labels).toContain('contient');
-        expect(labels).toContain('a une valeur');
-        expect($('#o option[value="=@"]').text()).toBe('contient');
+        expect(labels).toContain('Contient');
+        expect(labels).toContain('A une valeur');
+        expect($('#o option[value="=@"]').text()).toBe('Contient');
     });
 });
 
@@ -179,14 +173,26 @@ describe('in a translated locale', () => {
 function page(dimensions, onChange = () => {}) {
     document.body.innerHTML = `
         <div id="p"></div><button id="a"></button>
-        <div id="f"><select id="d"></select><select id="o"></select><input id="v">
+        <div id="f"><button type="button" id="d"></button><select id="o"></select><label for="v">Value</label><input id="v">
             <button id="c">Cancel</button><button id="af">Add filter</button></div>`;
-    $.fn.chosen = function () { return this; };
 
     return new OWA.filterPills(
         { pills: 'p', add: 'a', form: 'f', dimension: 'd', operator: 'o', value: 'v', addFilter: 'af', cancel: 'c' },
-        dimensions || [{ name: 'medium', label: 'Medium' }, { name: 'source', label: 'Source' }],
+        dimensions || [
+            { name: 'medium', label: 'Medium', group: 'traffic source', type: 'string' },
+            { name: 'source', label: 'Source', group: 'traffic source', type: 'string' },
+            { name: 'isOutbound', label: 'Outbound Click', group: 'event', type: 'boolean' },
+            { name: 'date', label: 'Date', group: 'time', type: 'yyyymmdd' },
+            { name: 'pageDepth', label: 'Page Depth', group: 'visit', type: 'integer' },
+        ],
         onChange);
+}
+
+/** Pick a field in the form's chooser, as a person does: open it, search, click the name. */
+function pick(name) {
+    $('#d').trigger('click');
+    $('.owa_fieldChooser .owa_fieldSearch').val(name).trigger('input');
+    $('.owa_fieldChooser .owa_fieldOption[data-name="' + name + '"]').trigger('click');
 }
 
 describe('the form', () => {
@@ -195,36 +201,74 @@ describe('the form', () => {
         document.body.innerHTML = '';
     });
 
-    test('offers the operators, then the empty tests, worded as the grid words them', () => {
-        page();
+    test('offers a text field its conditions, worded as the grid words them', () => {
+        page().open();
+        pick('medium');
 
         expect($('#o option').map((i, o) => [[o.value, $(o).text()]]).get()).toEqual([
-            ['==', 'is'],
-            ['!=', 'is not'],
-            ['=@', 'contains'],
-            ['>', 'greater than'],
-            ['<', 'less than'],
-            ['!=(not set)', 'has a value'],
-            ['==(not set)', 'is not set'],
+            ['=@', 'Contains'],
+            ['==', 'Is'],
+            ['!=', 'Is not'],
+            ['!=(not set)', 'Has a value'],
+            ['==(not set)', 'Is not set'],
         ]);
+        expect($('#d').text()).toBe('Medium');
     });
 
-    test('puts each choice under its group, in the order given', () => {
-        const p = page(OWA.filterPills.choices(
-            { 'traffic source': [{ name: 'medium', label: 'Medium' }], site: [{ name: 'siteId', label: 'Profile' }] },
-            { 'Site Usage': [{ name: 'pageViews', label: 'Page Views' }] }));
+    test('a Yes/No field is Yes or No, never free text', () => {
+        const p = page();
 
         p.open();
+        pick('isOutbound');
 
-        expect($('#d optgroup').map((i, g) => [[g.label, $(g).children('option').map((k, o) => o.value).get()]]).get())
-            .toEqual([['traffic source', ['medium']], ['site', ['siteId']], ['Site Usage', ['pageViews']]]);
+        expect($('#o option').map((i, o) => o.value).get()).toEqual(['==']);
+        expect($('#v').attr('role')).toBe('radiogroup');
+
+        $('#v input[value="No"]').prop('checked', true).trigger('change');
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('isOutbound==No');
+        expect($('#p .owa_filterPillEdit').text()).toBe('Outbound Click is No');
     });
 
-    test('lists a choice with no group at the top level', () => {
-        page().open();
+    test('a date is picked as a date and stored as yyyymmdd, and compared before or after', () => {
+        const p = page();
 
-        expect($('#d > option').map((i, o) => o.value).get()).toEqual(['', 'medium', 'source']);
-        expect($('#d optgroup')).toHaveLength(0);
+        p.open();
+        pick('date');
+
+        expect($('#v').attr('type')).toBe('date');
+        expect($('#o option').map((i, o) => $(o).text()).get()).toEqual(['Is', 'Before', 'After']);
+
+        $('#o').val('<').trigger('change');
+        $('#v').val('2026-11-01').trigger('input');
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('date<20261101');
+        expect($('#p .owa_filterPillEdit').text()).toBe('Date before 20261101');
+
+        $('#p .owa_filterPillEdit').trigger('click');
+        expect($('#v').val()).toBe('2026-11-01');
+    });
+
+    test('a number is a number box', () => {
+        page().open();
+        pick('pageDepth');
+
+        expect($('#v').attr('type')).toBe('number');
+        expect($('#o option').map((i, o) => o.value).get()).toEqual(['==', '!=', '>', '<']);
+    });
+
+    test('lists dimensions and then metrics, each under its group', () => {
+        const p = page(OWA.filterPills.choices(
+            { 'traffic source': [{ name: 'medium', label: 'Medium', group_label: 'Traffic Source' }], site: [{ name: 'siteId', label: 'Profile' }] },
+            { 'Site Usage': [{ name: 'pageViews', label: 'Page Views', metric_type: 'count' }] }));
+
+        p.open();
+        $('#d').trigger('click');
+
+        expect($('.owa_fieldChooser').children().first().find('.owa_fieldHeading, .owa_fieldGroup .owa_fieldLabel').map((i, e) => $(e).text()).get())
+            .toEqual(['Dimensions', 'Traffic Source', 'site', 'Metrics', 'Site Usage']);
     });
 });
 
@@ -241,7 +285,7 @@ describe('a pill', () => {
         p.set('medium==organic,source=@news');
         $('#p .owa_filterPill').eq(0).find('.owa_filterPillEdit').trigger('click');
 
-        expect($('#d').val()).toBe('medium');
+        expect($('#d').text()).toBe('Medium');
         expect($('#o').val()).toBe('==');
         expect($('#v').val()).toBe('organic');
         expect($('#af').text()).toBe('Update filter');
@@ -271,13 +315,21 @@ describe('a pill', () => {
         expect($('#p .owa_filterPillRemove').attr('aria-label')).toBe('Remove the filter Medium is organic');
     });
 
+    test('a stored Yes/No value reads as Yes or No, however it was written', () => {
+        const p = page();
+
+        p.set('isOutbound==1');
+
+        expect($('#p .owa_filterPillEdit').text()).toBe('Outbound Click is Yes');
+    });
+
     test('keeps a stored operator the form does not offer, and a name it does not list', () => {
         const p = page();
 
         p.set('pageViews>=5');
         $('#p .owa_filterPillEdit').trigger('click');
 
-        expect($('#d').val()).toBe('pageViews');
+        expect($('#d').text()).toBe('pageViews');
         expect($('#o').val()).toBe('>=');
         expect($('#o option[value=">="]').text()).toBe('at least');
 
@@ -309,10 +361,11 @@ describe('a pill', () => {
         $('#p .owa_filterPillEdit').trigger('click');
         $('#a').trigger('click');
 
-        expect($('#d').val()).toBe('');
+        expect($('#d .owa_fieldTriggerText').hasClass('is-placeholder')).toBe(true);
         expect($('#af').text()).toBe('Add filter');
 
-        $('#d').val('source').trigger('change');
+        pick('source');
+        $('#o').val('==').trigger('change');
         $('#v').val('news').trigger('input');
         $('#af').trigger('click');
 
@@ -329,8 +382,8 @@ describe('a pill', () => {
     });
 });
 
-test('choices() reads lists by group, and an empty list as nothing', () => {
-    expect(OWA.filterPills.choices({ a: [{ name: 'x', label: 'X', description: 'd' }] }, [], null)).toEqual([
-        { name: 'x', label: 'X', group: 'a' },
+test('choices() reads lists by group as chooser fields, and an empty list as nothing', () => {
+    expect(OWA.filterPills.choices({ a: [{ name: 'x', label: 'X', description: 'd', group_label: 'A', data_type: 'string' }] }, [], null)).toEqual([
+        { name: 'x', label: 'X', description: 'd', group: 'a', group_label: 'A', type: 'string', kind: 'dimension' },
     ]);
 });

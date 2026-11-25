@@ -1330,7 +1330,7 @@ export function start( config ) {
     var filters = null;   // made once the script below has the dimensions
 
     function filterWords( f ) {
-        return OWA.filterPills.words( f, labelOf );
+        return OWA.filterPills.words( f, labelOf, filters ? filters.fieldOf.bind( filters ) : null );
     }
 
     /*

@@ -17,8 +17,10 @@ $owa_fp = $owa_fp ?? [];
             class="fas fa-filter" aria-hidden="true"></i> <?php $view->out( \OWA\Core\CoreAPI::t( 'Filter' ) ); ?></button>
 </div>
 <div class="owa_filterForm" id="<?php $view->out( $owa_fp['form'] ); ?>" data-ui="filter:form" style="display:none;">
-    <label for="<?php $view->out( $owa_fp['dimension'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimension' ) ); ?></label>
-    <select id="<?php $view->out( $owa_fp['dimension'] ); ?>"></select>
+    <?php /* The field is picked with OWA.fieldChooser, which this button opens. */ ?>
+    <span id="<?php $view->out( $owa_fp['dimension'] ); ?>Label" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Field' ) ); ?></span>
+    <button type="button" id="<?php $view->out( $owa_fp['dimension'] ); ?>" data-ui="filter:dimension"
+            aria-labelledby="<?php $view->out( $owa_fp['dimension'] ); ?>Label <?php $view->out( $owa_fp['dimension'] ); ?>"></button>
     <label for="<?php $view->out( $owa_fp['operator'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Condition' ) ); ?></label>
     <select id="<?php $view->out( $owa_fp['operator'] ); ?>"></select>
     <label for="<?php $view->out( $owa_fp['value'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?></label>

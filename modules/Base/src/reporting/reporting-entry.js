@@ -66,6 +66,7 @@ import './owa.dialog.js';
 import './owa.tabs.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';
+import './owa.fieldchooser.js';
 import './owa.sparkline.js';
 import './owa.realtime.js';
 import './owa.areachart.js';

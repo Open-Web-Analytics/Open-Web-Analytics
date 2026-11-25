@@ -17,6 +17,7 @@ const { FIXTURE, login } = require('./fixtures');
 const {
     filterPills, filterForm, pillButton, openFilterForm, fillFilter, offeredDimensions, reloadedBy,
 } = require('./filter-pills');
+const { fieldChooser } = require('./field-chooser.js');
 
 const VIZ = FIXTURE.funnelVisualization;
 
@@ -319,7 +320,7 @@ test.describe('visualization: funnel', () => {
 
         const form = filterForm(page);
 
-        await expect(form.getByLabel('Dimension', { exact: true })).toHaveValue('sessionMedium');
+        await expect(form.getByRole('button', { name: 'Field Medium' })).toBeVisible();
         await expect(form.getByLabel('Condition', { exact: true })).toHaveValue('==');
         await expect(form.getByLabel('Value', { exact: true })).toHaveValue('organic');
 
@@ -420,37 +421,27 @@ test.describe('visualization: funnel', () => {
     });
 
     /*
-     * chosen-js 1.x sizes its container from the <select>'s width when it is
-     * enhanced, which is 0 inside a hidden form. The pills give it an explicit
-     * width.
+     * The field button fills its place in the form, and opens the field
+     * chooser on the group names, styled: fixed to the window, so no box it is
+     * opened from clips it, and over the page.
      */
-    test("the filter's dimension list opens at a usable width", async ({ page }) => {
+    test("the filter's field chooser opens styled, on the group names", async ({ page }) => {
         await openFunnel(page);
         await openFilterForm(page);
 
-        const box = filterForm(page).locator('[data-ui="filter:dimension"]');
-        const width = (await box.boundingBox())?.width ?? 0;
+        const button = filterForm(page).locator('[data-ui="filter:dimension"]');
+        const width = (await button.boundingBox())?.width ?? 0;
 
         expect(width).toBeGreaterThanOrEqual(150);
 
-        await box.click();
-        await expect(box.getByRole('textbox')).toBeVisible();
-    });
+        await button.click();
 
-    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
-        // chosen-js 1.8.7's JS emits .chosen-* markup, so the served CSS must carry
-        // .chosen-* rules or the widget renders as a bare unstyled list. So assert the
-        // stylesheet actually takes effect: the sprite-driven dropdown arrow paints a
-        // background image. On the funnel, whose filter's dimension list is a chosen
-        // widget.
-        await openFunnel(page);
+        const chooser = fieldChooser(page);
 
-        const arrowBg = await page.evaluate(() => {
-            const b = document.querySelector('.chosen-container .chosen-single div b');
-            return b ? getComputedStyle(b).backgroundImage : null;
-        });
-        expect(arrowBg).not.toBeNull();
-        expect(arrowBg).toContain('chosen-sprite');
+        await expect(chooser).toBeVisible();
+        await expect(chooser.getByRole('option').first()).toBeVisible();
+        expect(await chooser.evaluate((el) => getComputedStyle(el).position)).toBe('fixed');
+        expect((await chooser.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(300);
     });
 
     /**
