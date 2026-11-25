@@ -95,8 +95,7 @@ final class InstallFinishTest extends CliControllerTestCase
 
             InstallLock::$held_here = true;
             $cli = $this->updates([]);
-            $this->assertNotSame('An automatic update is being installed; it runs the schema updates itself. Try again once it has finished.',
-                $cli->getCliOutcome()['message'], 'the installer holds it already');
+            $this->assertSame('ok', $cli->getCliOutcome()['outcome'], 'the installer holds it already: the run goes ahead, ' . $cli->getCliOutcome()['message']);
         } finally {
             flock($h, LOCK_UN);
             fclose($h);
