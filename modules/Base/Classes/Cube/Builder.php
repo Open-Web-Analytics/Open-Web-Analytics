@@ -1155,6 +1155,8 @@ class Builder {
             $from = $after === null ? '' : sprintf( ' AND (r.yyyymmdd > %d OR (r.yyyymmdd = %d AND r.id > %d))',
                 $after[0], $after[0], $after[1] );
 
+            $refused = $this->db->queryErrorCount();
+
             $rows = (array) $this->db->get_results( sprintf(
                 'SELECT %s FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s%s AND (%s)'
               . ' ORDER BY r.yyyymmdd, r.id LIMIT %d',
@@ -1167,6 +1169,13 @@ class Builder {
                 implode( ' OR ', $where ),
                 max( 1, (int) $this->candidate_page )
             ) );
+
+            // Refused, the page read as no rows: the last page, and the
+            // partition built without the rest of its candidates.
+            if ( $this->db->queryErrorCount() !== $refused ) {
+
+                throw new \RuntimeException( sprintf( 'the candidate query on %s was refused', $this->tables['raw'] ) );
+            }
 
             if ( $rows ) {
 

@@ -116,7 +116,7 @@ abstract class FactMigrator {
             return [ 'site_id' => (string) $r['site_id'], 'year' => (int) $r['year'], 'rows' => (int) $r['n'],
                 'known' => isset( $known[ (string) $r['site_id'] ] ) ];
 
-        }, (array) $this->db()->get_results( sprintf(
+        }, $this->results( sprintf(
             'SELECT site_id, FLOOR(yyyymmdd / 10000) AS year, COUNT(*) AS n FROM %s'
             . ' GROUP BY site_id, FLOOR(yyyymmdd / 10000) ORDER BY site_id, year',
             V1Tables::name( static::SOURCE, $this->prefix ) ) ) );
@@ -132,7 +132,7 @@ abstract class FactMigrator {
      */
     public function earliestDay() {
 
-        $row = (array) $this->db()->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s WHERE yyyymmdd >= %d',
+        $row = $this->row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s WHERE yyyymmdd >= %d',
             V1Tables::name( static::SOURCE, $this->prefix ), max( 19700101, (int) $this->since ) ) );
 
         return empty( $row['d'] ) ? null : (int) $row['d'];
@@ -149,7 +149,7 @@ abstract class FactMigrator {
      */
     public function sites() {
 
-        $rows = (array) $this->db()->get_results( sprintf(
+        $rows = $this->results( sprintf(
             'SELECT DISTINCT site_id FROM %s', V1Tables::name( static::SOURCE, $this->prefix ) ) );
 
         $known = $this->knownSites();
@@ -164,6 +164,54 @@ abstract class FactMigrator {
         } ) );
     }
 
+    /**
+     * get_results(), but a statement the database refused throws rather than
+     * reading as no rows: a failed read of a batch read as the end of a
+     * site's history marked the site complete, and a failed tally read made
+     * the reconcile find nothing wrong. Update062 turns the throw into a
+     * failed update, which is run again.
+     *
+     * @param  string       $sql
+     * @param  array<mixed> $params
+     * @return array<mixed>
+     * @throws \RuntimeException
+     */
+    protected function results( $sql, array $params = [] ) {
+
+        $db     = $this->db();
+        $before = $db->queryErrorCount();
+        $rows   = $db->get_results( $sql, $params );
+
+        if ( $db->queryErrorCount() !== $before ) {
+
+            throw new \RuntimeException( 'v1 migration: the database refused a query, so nothing was read: ' . substr( $sql, 0, 160 ) );
+        }
+
+        return (array) $rows;
+    }
+
+    /**
+     * get_row(), with results()'s rule.
+     *
+     * @param  string       $sql
+     * @param  array<mixed> $params
+     * @return array<mixed>
+     * @throws \RuntimeException
+     */
+    protected function row( $sql, array $params = [] ) {
+
+        $db     = $this->db();
+        $before = $db->queryErrorCount();
+        $row    = $db->get_row( $sql, $params );
+
+        if ( $db->queryErrorCount() !== $before ) {
+
+            throw new \RuntimeException( 'v1 migration: the database refused a query, so nothing was read: ' . substr( $sql, 0, 160 ) );
+        }
+
+        return (array) $row;
+    }
+
     /** @return array<int|string, true> site_id => true, for every site row there is */
     protected function knownSites() {
 
@@ -171,7 +219,7 @@ abstract class FactMigrator {
 
         $known = [];
 
-        foreach ( (array) $this->db()->get_results( sprintf( 'SELECT site_id FROM %s', $table ) ) as $r ) {
+        foreach ( $this->results( sprintf( 'SELECT site_id FROM %s', $table ) ) as $r ) {
 
             $known[ (string) ( (array) $r )['site_id'] ] = true;
         }
@@ -569,7 +617,7 @@ abstract class FactMigrator {
             }
         };
 
-        foreach ( (array) $this->db()->get_results( sprintf(
+        foreach ( $this->results( sprintf(
                 'SELECT yyyymmdd, kind, name, n, revenue, items, max_ts FROM %s WHERE source = ? AND site_id = ?',
                 \OWA\Core\CoreAPI::entityFactory( 'base.migration_tally' )->getTableName() ),
                 [ $source, $site_id ] ) as $row ) {
@@ -597,7 +645,7 @@ abstract class FactMigrator {
             }
         }
 
-        foreach ( (array) $this->db()->get_results( sprintf(
+        foreach ( $this->results( sprintf(
                 'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE source = ? AND site_id = ? GROUP BY yyyymmdd',
                 \OWA\Core\CoreAPI::entityFactory( 'base.migration_day_visitor' )->getTableName() ),
                 [ $source, $site_id ] ) as $row ) {
@@ -615,7 +663,7 @@ abstract class FactMigrator {
                 $in, $bound, min( $span ), max( $span ) );
             $args  = array_merge( [ $site_id ], array_keys( $types ) );
 
-            foreach ( (array) $this->db()->get_results( sprintf(
+            foreach ( $this->results( sprintf(
                     "SELECT yyyymmdd, event_type, COUNT(*) AS n, SUM(COALESCE(revenue, 0)) AS revenue,"
                   . " SUM(COALESCE(JSON_LENGTH(params, '$.items'), 0)) AS items FROM %s WHERE %s"
                   . ' GROUP BY yyyymmdd, event_type', $raw, $where ), $args ) as $row ) {
@@ -630,7 +678,7 @@ abstract class FactMigrator {
                 $days[ $d ]['types'][ $type ]['items_present']   = (int) $row['items'];
             }
 
-            foreach ( (array) $this->db()->get_results( sprintf(
+            foreach ( $this->results( sprintf(
                     'SELECT yyyymmdd, COUNT(DISTINCT visitor_id) AS n FROM %s WHERE %s GROUP BY yyyymmdd', $raw, $where ),
                     $args ) as $row ) {
 
@@ -1197,7 +1245,7 @@ abstract class FactMigrator {
         $ids     = array_keys( $visitors );
         $integer = $this->integerColumn( 'session', 'visitor_id' );
 
-        $sessions = (array) $this->db()->get_results( sprintf(
+        $sessions = $this->results( sprintf(
             'SELECT id, site_id, visitor_id, timestamp FROM %s WHERE visitor_id IN (%s)',
             $this->v1Table( 'session' ),
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
@@ -1205,7 +1253,7 @@ abstract class FactMigrator {
 
         $integer = $this->integerColumn( self::REQUESTS, 'visitor_id' );
 
-        $viewed = (array) $this->db()->get_results( sprintf(
+        $viewed = $this->results( sprintf(
             'SELECT session_id AS id, site_id, visitor_id, MIN(timestamp) AS timestamp FROM %s'
             . ' WHERE visitor_id IN (%s) AND timestamp > 0 GROUP BY site_id, visitor_id, session_id',
             $this->v1Table( self::REQUESTS ),
@@ -1299,7 +1347,7 @@ abstract class FactMigrator {
 
         $out = [];
 
-        foreach ( (array) $this->db()->get_results( $sql, $params ) as $row ) {
+        foreach ( $this->results( $sql, $params ) as $row ) {
 
             $row = (array) $row;
             $out[ (string) $row['id'] ] = $row;
@@ -1406,7 +1454,7 @@ abstract class FactMigrator {
         // column's type. A VARCHAR id sorted as text would skip rows on resume.
         $order = $this->integerKey( static::SOURCE ) ? 'id' : 'CAST(id AS SIGNED)';
 
-        return array_map( function ( $r ) { return (array) $r; }, (array) $this->db()->get_results(
+        return array_map( function ( $r ) { return (array) $r; }, $this->results(
             sprintf( 'SELECT * FROM %s WHERE %s ORDER BY %s LIMIT %d', $name, $where, $order, $this->batch ),
             [ (string) $site_id ] ) );
     }

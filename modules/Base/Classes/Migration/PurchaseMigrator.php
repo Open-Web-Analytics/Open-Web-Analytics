@@ -85,7 +85,7 @@ class PurchaseMigrator extends FactMigrator {
 
         $site = (string) $rows[0]['site_id'];
 
-        $found = (array) $this->db()->get_results( sprintf(
+        $found = $this->results( sprintf(
             'SELECT order_id, sku, product_name, category, unit_price, quantity FROM %s'
           . ' WHERE site_id = ? AND order_id IN (%s) ORDER BY id',
             $table, implode( ',', array_fill( 0, count( $orders ), '?' ) ) ),
