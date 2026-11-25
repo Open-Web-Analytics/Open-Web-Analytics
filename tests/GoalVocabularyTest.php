@@ -229,6 +229,40 @@ final class GoalVocabularyTest extends TestCase
         }
     }
 
+    /**
+     * Every offered column is under a named group in the field chooser: the
+     * family of the report dimension that reads it, or the one GROUPS gives a
+     * column no dimension reads.
+     */
+    public function testEveryOfferedColumnIsInANamedGroup(): void
+    {
+        $ungrouped = [];
+
+        foreach ( Vocab::columns() as $column ) {
+
+            $group = Vocab::group( $column );
+
+            if ( ! isset( \OWA\Module\Base\Classes\FieldGroups::LABELS[ $group ] ) ) {
+
+                $ungrouped[ $column ] = $group;
+            }
+        }
+
+        $this->assertSame( [], $ungrouped, 'column => group, for columns under no named group' );
+        $this->assertSame( 'traffic source', Vocab::group( 'prior_touch_source' ), 'from GROUPS' );
+        $this->assertSame( 'device', Vocab::group( 'browser_type' ), 'from the Browser dimension' );
+        $this->assertSame( '', Vocab::group( 'not_a_column' ) );
+    }
+
+    /** GROUPS is for columns a condition may name and no dimension reads. */
+    public function testEveryWrittenGroupIsForAnOfferableColumn(): void
+    {
+        foreach ( array_keys( Vocab::GROUPS ) as $column ) {
+
+            $this->assertTrue( Vocab::has( $column ), "$column is grouped but cannot be named" );
+        }
+    }
+
     /* ---------------- the legacy map ---------------- */
 
     /**

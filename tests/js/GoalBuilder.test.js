@@ -1,4 +1,4 @@
-import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerName, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
+import { optionsFor, helpText, fill, fieldsOf, setText, triggerName, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
 
 /**
  * The goal event definition builder's picker (owa.goalbuilder.js): what it
@@ -8,12 +8,12 @@ import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerN
 
 const VOCAB = {
     page_view: [
-        { name: 'page_path', label: 'Page path', description: 'The path.', carried: true },
-        { name: 'tagged_source', label: 'Source (from the URL)', description: 'The tagged source.', carried: true },
+        { name: 'page_path', label: 'Page path', description: 'The path.', carried: true, group: 'content', group_label: 'Content' },
+        { name: 'tagged_source', label: 'Source (from the URL)', description: 'The tagged source.', carried: true, group: 'traffic source', group_label: 'Traffic Source' },
     ],
     click: [
-        { name: 'page_path', label: 'Page path', description: 'The path.', carried: true },
-        { name: 'is_outbound', label: 'Outbound click', description: 'Whether it left.', carried: true },
+        { name: 'page_path', label: 'Page path', description: 'The path.', carried: true, group: 'content', group_label: 'Content' },
+        { name: 'is_outbound', label: 'Outbound click', description: 'Whether it left.', carried: true, group: 'event', group_label: 'Event' },
     ],
 };
 
@@ -28,6 +28,7 @@ test('a property in use the event does not carry is kept, flagged, still describ
     expect(kept.carried).toBe(false);
     expect(kept.label).toBe('Source (from the URL) -- not carried by click');
     expect(kept.description).toBe('The tagged source.');
+    expect(kept.group_label).toBe('Traffic Source');
 });
 
 /*
@@ -53,8 +54,7 @@ test('a carried property in use is not duplicated', () => {
     expect(optionsFor(VOCAB, 'click', 'is_outbound').filter((p) => p.name === 'is_outbound')).toHaveLength(1);
 });
 
-test('an option reads label then description; the help line says why a flagged one cannot match', () => {
-    expect(optionText(VOCAB.click[1])).toBe('Outbound click' + SEPARATOR + 'Whether it left.');
+test('the help line describes the property, or says why a flagged one cannot match', () => {
     expect(helpText(VOCAB.click[1], 'click')).toBe('Whether it left.');
     expect(helpText({ name: 'x', label: 'X', carried: false }, 'click')).toBe('A click event does not carry this property.');
 });
@@ -71,26 +71,16 @@ test('filling a select keeps the selection where it survives and falls back to t
     expect(select.value).toBe('page_path');
 });
 
-test('an open-list item is split into a name line and a description line, keeping the search match', () => {
-    const li = document.createElement('li');
-    li.innerHTML = 'Outbound <em>click</em>' + SEPARATOR + 'Whether it left the &amp; site.';
+test('an option is the label alone, and the chooser reads its description and group from it', () => {
+    const select = document.createElement('select');
 
-    formatResult(li);
+    fill(select, optionsFor(VOCAB, 'click', ''), 'is_outbound');
 
-    expect(li.querySelector('.owa_goalOptionName').innerHTML).toBe('Outbound <em>click</em>');
-    expect(li.querySelector('.owa_goalOptionDescription').textContent).toBe('Whether it left the & site.');
-
-    // Again is a no-op.
-    const before = li.innerHTML;
-    formatResult(li);
-    expect(li.innerHTML).toBe(before);
-});
-
-test('an item with no description is left as it is', () => {
-    const li = document.createElement('li');
-    li.textContent = 'Page path';
-    formatResult(li);
-    expect(li.innerHTML).toBe('Page path');
+    expect(select.options[1].text).toBe('Outbound click');
+    expect(fieldsOf(select)[1]).toEqual({
+        name: 'is_outbound', label: 'Outbound click', description: 'Whether it left.',
+        group: 'event', group_label: 'Event', type: '', kind: 'dimension',
+    });
 });
 
 test('the page\'s translated patterns replace the English ones', () => {

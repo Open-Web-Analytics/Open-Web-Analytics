@@ -95,7 +95,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * it changes (owa.goalbuilder.js). Both screens that render the form set it
      * -- this one and GoalEventDefinitionSave's refused-form path -- from here.
      *
-     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried }
+     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried, group, group_label }
      */
     public static function vocabulary() {
 
@@ -184,7 +184,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      *
      * @param  string $event_name  the trigger event
      * @param  array<mixed> $conditions  this definition's stored conditions
-     * @return list<array<string, mixed>> list of { name, label, description, carried }
+     * @return list<array<string, mixed>> list of { name, label, description, carried, group, group_label }
      */
     public static function conditionProperties( $event_name, array $conditions = [] ) {
 
@@ -194,8 +194,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
 
         foreach ( $available as $name => $label ) {
 
-            $out[] = [ 'name' => $name, 'label' => $label, 'carried' => true,
-                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ) ];
+            $out[] = self::property( $name, $label, true );
         }
 
         foreach ( $conditions as $condition ) {
@@ -207,15 +206,33 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
                 continue;
             }
 
-            $out[] = [
-                'name'        => $name,
-                'label'       => sprintf( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ),
-                                 \OWA\Module\Base\Classes\GoalVocabulary::label( $name ), $event_name ),
-                'carried'     => false,
-                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ),
-            ];
+            $out[] = self::property( $name, sprintf( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ),
+                \OWA\Module\Base\Classes\GoalVocabulary::label( $name ), $event_name ), false );
         }
 
         return $out;
+    }
+
+    /**
+     * One property as the builder's field chooser takes it.
+     *
+     * @param  string $name
+     * @param  string $label
+     * @param  bool   $carried
+     * @return array{name: string, label: string, carried: bool, description: string, group: string, group_label: string}
+     */
+    private static function property( $name, $label, $carried ) {
+
+        // A column a module added, which nothing groups, is an event's.
+        $group = \OWA\Module\Base\Classes\GoalVocabulary::group( $name ) ?: 'event';
+
+        return [
+            'name'        => (string) $name,
+            'label'       => (string) $label,
+            'carried'     => (bool) $carried,
+            'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ),
+            'group'       => $group,
+            'group_label' => \OWA\Module\Base\Classes\FieldGroups::label( $group ),
+        ];
     }
 }

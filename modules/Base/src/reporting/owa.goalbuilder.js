@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { OWA } from './owa.format.js';
+import './owa.fieldchooser.js';
 
 /**
  * A condition builder: the property list follows the event. A goal event
@@ -21,15 +22,15 @@ import { OWA } from './owa.format.js';
  * new event's list without a warning. The saved property is on the row as
  * data-saved-property; a new or added row has none.
  *
- * The pickers are chosen widgets, searchable, and each option reads
- * "Label -- description" in the list so both are searched and seen. The
- * selected property shows its label alone, with the description on the line
- * under the row.
+ * A row's property is picked in the field chooser (OWA.fieldChooser), opened
+ * from a button after the row's <select>, which stays, hidden, as what the
+ * form posts. The chooser groups the properties and describes each one; the
+ * property picked shows its label on the button and its description on the
+ * line under the row. The event picker stays a chosen widget: it picks an
+ * event, not a field.
  *
- *   <script type="application/json" id="owa_goalVocabulary">{ event: [ {name, label, description, carried} ] }</script>
+ *   <script type="application/json" id="owa_goalVocabulary">{ event: [ {name, label, description, carried, group, group_label} ] }</script>
  */
-
-export const SEPARATOR = ' — ';
 
 /**
  * The class names one builder's parts carry. The goal event definition form's
@@ -38,19 +39,18 @@ export const SEPARATOR = ' — ';
  *   trigger            the event picker
  *   custom             the field naming "another event of yours"
  *   condition          a condition row
- *   property           a condition row's property picker
+ *   property           a condition row's property <select>, hidden
+ *   button             the button after it that opens the field chooser
  *   help, warning      the line under a row, and its class when it warns
- *   optionName, optionDescription  the two lines of a picker's list item
  */
 export const GOAL_CLASSES = {
     trigger: 'owa_goalTrigger',
     custom: 'owa_goalCustomTrigger',
     condition: 'owa_goalCondition',
     property: 'owa_goalProperty',
+    button: 'owa_goalPropertyButton',
     help: 'owa_goalConditionHelp',
     warning: 'owa_goalConditionWarning',
-    optionName: 'owa_goalOptionName',
-    optionDescription: 'owa_goalOptionDescription',
 };
 
 /**
@@ -134,15 +134,14 @@ export function optionsFor( vocabulary, event, saved ) {
 
     if ( saved && ! list.some( ( p ) => p.name === saved ) ) {
 
-        let description = '';
+        let hit = null;
 
         for ( const e of Object.keys( vocabulary ) ) {
 
-            const hit = ( vocabulary[ e ] || [] ).find( ( p ) => p.name === saved );
+            hit = ( vocabulary[ e ] || [] ).find( ( p ) => p.name === saved );
 
             if ( hit ) {
 
-                description = hit.description || '';
                 break;
             }
         }
@@ -150,18 +149,14 @@ export function optionsFor( vocabulary, event, saved ) {
         list.push( {
             name: saved,
             label: format( pattern( 'notCarriedLabel' ), plainLabel( vocabulary, saved ), event ),
-            description: description,
+            description: hit ? hit.description || '' : '',
+            group: hit ? hit.group || '' : '',
+            group_label: hit ? hit.group_label || '' : '',
             carried: false,
         } );
     }
 
     return list;
-}
-
-/** What a picker's option reads in the list: the label, then what it holds. */
-export function optionText( property ) {
-
-    return property.description ? property.label + SEPARATOR + property.description : property.label;
 }
 
 /** The line under a row: the description, or why the condition cannot match. */
@@ -180,61 +175,6 @@ export function helpText( property, event ) {
     return property.description || '';
 }
 
-/**
- * One item of chosen's open list, as two lines: the name, then what it holds.
- *
- * An <option> holds text only, so the list item arrives as "Label -- description"
- * in one run. chosen writes it from the option, already escaped and with any
- * search match wrapped in <em>, so the split is on that markup and keeps the
- * highlighting. Idempotent: an item already split is left alone.
- *
- * @param {HTMLElement} li
- * @param {Object}      classes  the builder's class names (GOAL_CLASSES)
- */
-export function formatResult( li, classes = GOAL_CLASSES ) {
-
-    if ( li.querySelector( '.' + classes.optionName ) ) {
-
-        return;
-    }
-
-    const html = li.innerHTML;
-    const at = html.indexOf( SEPARATOR );
-
-    if ( at < 0 ) {
-
-        return;
-    }
-
-    li.innerHTML = '<span class="' + classes.optionName + '">' + html.slice( 0, at ) + '</span>'
-        + '<span class="' + classes.optionDescription + '">' + html.slice( at + SEPARATOR.length ) + '</span>';
-}
-
-/**
- * Keep a picker's list split while chosen redraws it.
- *
- * chosen rewrites every item on each keystroke of a search, and says nothing
- * when it does, so the list is watched rather than hooked.
- */
-function splitResults( select, classes ) {
-
-    const container = select.nextElementSibling;
-    const results = container && container.querySelector( '.chosen-results' );
-
-    if ( ! results || results.dataset.owaSplit || typeof MutationObserver === 'undefined' ) {
-
-        return;
-    }
-
-    results.dataset.owaSplit = '1';
-
-    new MutationObserver( () => {
-
-        results.querySelectorAll( 'li.active-result' ).forEach( ( li ) => formatResult( li, classes ) );
-
-    } ).observe( results, { childList: true, subtree: true } );
-}
-
 /** Replace a <select>'s options, keeping its selection where it survives. */
 export function fill( select, options, selected ) {
 
@@ -245,10 +185,12 @@ export function fill( select, options, selected ) {
 
     for ( const p of options ) {
 
-        const option = new Option( optionText( p ), p.name, false, p.name === selected );
+        const option = new Option( p.label, p.name, false, p.name === selected );
 
         option.dataset.label = p.label;
         option.dataset.description = p.description || '';
+        option.dataset.group = p.group || '';
+        option.dataset.groupLabel = p.group_label || p.group || '';
         option.dataset.carried = p.carried === false ? '0' : '1';
         select.add( option );
     }
@@ -272,6 +214,53 @@ function selectedProperty( select ) {
     } : null;
 }
 
+/** A <select>'s options as the field chooser takes them. */
+export function fieldsOf( select ) {
+
+    return Array.from( select.options ).map( ( o ) => ( {
+        name: o.value,
+        label: o.dataset.label || o.text,
+        description: o.dataset.description || '',
+        group: o.dataset.group || '',
+        group_label: o.dataset.groupLabel || o.dataset.group || '',
+        type: '',
+        kind: 'dimension',
+    } ) );
+}
+
+/**
+ * The button after a row's <select> that opens the field chooser, made the
+ * first time; a copied row brings its own. The <select>'s accessible name is
+ * the button's too.
+ */
+function propertyButton( select, classes ) {
+
+    let button = select.nextElementSibling;
+
+    if ( ! button || ! button.classList.contains( classes.button ) ) {
+
+        button = document.createElement( 'button' );
+        button.type = 'button';
+        button.className = classes.button + ' owa_fieldTrigger';
+        button.setAttribute( 'aria-haspopup', 'listbox' );
+        button.setAttribute( 'aria-expanded', 'false' );
+
+        for ( const attr of [ 'aria-label', 'aria-labelledby' ] ) {
+
+            if ( select.hasAttribute( attr ) ) {
+
+                button.setAttribute( attr, select.getAttribute( attr ) );
+            }
+        }
+
+        select.after( button );
+    }
+
+    select.hidden = true;
+
+    return button;
+}
+
 /** The vocabulary a page carries as JSON in the element with this id, or null. */
 export function readVocabulary( id = 'owa_goalVocabulary' ) {
 
@@ -292,12 +281,7 @@ export function readVocabulary( id = 'owa_goalVocabulary' ) {
     }
 }
 
-/**
- * Show the selected property as its label, and its description under the row.
- *
- * chosen copies the option's text into its closed box, and the text carries the
- * description so the list can show and search it; the box gets the label back.
- */
+/** Show the selected property's label on the button, and its description under the row. */
 function syncRow( row, event, classes ) {
 
     const select = row.querySelector( 'select.' + classes.property );
@@ -308,12 +292,10 @@ function syncRow( row, event, classes ) {
     }
 
     const property = selectedProperty( select );
-    const shown = row.querySelector( '.chosen-single > span' );
+    const button = propertyButton( select, classes );
 
-    if ( shown && property ) {
-
-        shown.textContent = property.label;
-    }
+    button.textContent = property ? property.label : '';
+    button.insertAdjacentHTML( 'beforeend', ' <i class="fas fa-caret-down" aria-hidden="true"></i>' );
 
     const help = row.querySelector( '.' + classes.help );
 
@@ -332,11 +314,6 @@ function enhance( select, options ) {
 
         $select.chosen( options );
     }
-}
-
-function refresh( select ) {
-
-    $( select ).trigger( 'chosen:updated' );
 }
 
 /**
@@ -362,15 +339,6 @@ function buildRow( row, vocabulary, event, classes, onLoad = false ) {
     const keep = onLoad || current === saved ? current : '';
 
     fill( select, optionsFor( vocabulary, event, keep ), current );
-
-    if ( ! select.nextElementSibling || ! select.nextElementSibling.classList.contains( 'chosen-container' ) ) {
-
-        enhance( select, { search_contains: true, width: '260px' } );
-        splitResults( select, classes );
-    } else {
-
-        refresh( select );
-    }
 
     syncRow( row, event, classes );
 }
@@ -429,6 +397,42 @@ export function bindBuilder( builder, vocabulary, classes = GOAL_CLASSES ) {
     $( builder ).on( 'change', 'select.' + classes.property, function () {
 
         syncRow( this.closest( '.' + classes.condition ), event(), classes );
+    } );
+
+    /*
+     * A row's button opens the field chooser on its <select>'s options; a pick
+     * sets the <select>. Delegated, so a row copied from another works too.
+     */
+    let open = null;
+
+    $( builder ).on( 'click', '.' + classes.button, function () {
+
+        const button = this;
+        const select = button.previousElementSibling;
+
+        if ( open && open.isOpen() ) {
+
+            const same = open.trigger === button;
+
+            open.close();
+
+            if ( same ) {
+
+                return;
+            }
+        }
+
+        open = new OWA.fieldChooser( fieldsOf( select ), {
+            title: button.getAttribute( 'aria-label' ) || OWA.l( 'Property' ),
+            selected: select.value ? [ select.value ] : [],
+            onPick: ( name ) => {
+
+                select.value = name;
+                $( select ).trigger( 'change' );
+            },
+        } );
+
+        open.open( button );
     } );
 
     // A row the + button added: a fresh picker on the first property.
