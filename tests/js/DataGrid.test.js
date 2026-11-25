@@ -13,6 +13,7 @@ const $ = require('jquery');
 global.jQuery = global.$ = $;
 
 require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
+require('../../modules/Base/src/reporting/owa.fieldchooser.js');
 
 /**
  * The report grid (OWA.dataGrid): a table drawn from a result set, with the
@@ -661,22 +662,56 @@ describe('the bar', () => {
 
         const $pop = $root.find('.owa_gridPop');
 
-        expect($pop.find('.owa_gridFilterField').val()).toBe('browserType');
+        expect($pop.find('.owa_gridFilterField').text()).toBe('Browser');
 
         $pop.find('input[type="radio"][value="=="]').prop('checked', true).trigger('change');
-        $pop.find('.owa_gridFilterValue').val('Firefox').trigger('input');
+        $pop.find('.owa_gridFilterInput').val('Firefox').trigger('input');
         $pop.find('form').trigger('submit');
 
         expect(events).toEqual([['constraint_change', 'sessions>5,browserType==Firefox']]);
     });
 
-    test('a metric is filtered by greater or less than', () => {
+    test('a metric is filtered by greater or less than, picked in the field chooser', () => {
         const { $root } = draw(resultSet());
 
         $root.find('.owa_gridFilterButton').trigger('click');
-        $root.find('.owa_gridFilterField').val('sessions').trigger('change');
+        $root.find('.owa_gridFilterField').trigger('click');
 
+        // Dimensions and metrics, each under its group.
+        expect($('.owa_fieldChooser .owa_fieldHeading').map((i, e) => $(e).text()).get()).toEqual(['Dimensions', 'Metrics']);
+
+        $('.owa_fieldChooser .owa_fieldGroup').last().trigger('click');
+        $('.owa_fieldChooser .owa_fieldOption[data-name="sessions"]').trigger('click');
+
+        expect($root.find('.owa_gridFilterField').text()).toBe('Sessions');
         expect($root.find('.owa_gridFilterOps input').map((i, el) => el.value).get()).toEqual(['>', '<', '==']);
+        expect($root.find('.owa_gridFilterInput').attr('type')).toBe('number');
+        // The grid's Filter stays open while its field is picked.
+        expect($root.find('.owa_gridPop')).toHaveLength(1);
+    });
+
+    test('a Yes/No dimension is filtered by Yes or No, and its chip says so', () => {
+        const { $root, events } = draw(resultSet({ rs: { relatedDimensions: {
+            event: [{ name: 'isOutbound', label: 'Outbound Click', data_type: 'boolean' }],
+        } } }));
+
+        $root.find('.owa_gridFilterButton').trigger('click');
+        $root.find('.owa_gridFilterField').trigger('click');
+        $('.owa_fieldChooser .owa_fieldSearch').val('outbound').trigger('input');
+        $('.owa_fieldChooser .owa_fieldOption[data-name="isOutbound"]').trigger('click');
+
+        expect($root.find('.owa_gridFilterOps input').map((i, el) => el.value).get()).toEqual(['==']);
+
+        $root.find('.owa_filterYesNo input[value="No"]').prop('checked', true).trigger('change');
+        $root.find('form').trigger('submit');
+
+        expect(events).toEqual([['constraint_change', 'isOutbound==No']]);
+
+        const { $root: $after } = draw(resultSet({ constraints: 'isOutbound==1', rs: { relatedDimensions: {
+            event: [{ name: 'isOutbound', label: 'Outbound Click', data_type: 'boolean' }],
+        } } }));
+
+        expect($after.find('.owa_gridChipText').text()).toBe('Outbound Click is Yes');
     });
 
     test('an empty test needs no value, and a comma is refused', () => {
@@ -688,7 +723,7 @@ describe('the bar', () => {
 
         expect($apply.prop('disabled')).toBe(true);
 
-        $root.find('.owa_gridFilterValue').val('a,b').trigger('input');
+        $root.find('.owa_gridFilterInput').val('a,b').trigger('input');
         expect($apply.prop('disabled')).toBe(true);
         expect($root.find('.owa_gridPopHint').text()).toBe('A value cannot contain a comma.');
 

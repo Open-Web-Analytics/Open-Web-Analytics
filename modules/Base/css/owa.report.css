@@ -2301,9 +2301,11 @@ li.constraintRow {
 .owa .owa_funnelStep select,
 .owa .owa_funnelStep input[type=text],
 .owa .owa_funnelEditor .owa_filterForm select,
-.owa .owa_funnelEditor .owa_filterForm input[type=text],
+.owa .owa_funnelEditor .owa_filterForm input:not([type=radio]),
+.owa .owa_funnelEditor .owa_filterForm .owa_fieldTrigger,
 .owa .owa_reportFilters .owa_filterForm select,
-.owa .owa_reportFilters .owa_filterForm input[type=text] {
+.owa .owa_reportFilters .owa_filterForm input:not([type=radio]),
+.owa .owa_reportFilters .owa_filterForm .owa_fieldTrigger {
     box-sizing: border-box;
     height: 40px;
     padding: 0 12px;
@@ -4948,4 +4950,355 @@ dialog.owa_typeDialogFrame {
     .owa_reportNavRail {
         transition: none;
     }
+}
+
+/* ---------------------------------------------------------------------------
+ * The metric and dimension chooser (owa.fieldchooser.js).
+ *
+ * Not under .owa: it is appended to the page's body, fixed to the window, so
+ * that no box it is opened from (the grid's Filter is itself a popover) clips
+ * it. A 320px list; once a group is open, a detail pane on its right. Below
+ * 700px a sheet from the bottom, with the detail under the list.
+ * ------------------------------------------------------------------------- */
+
+.owa_fieldTrigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.owa_fieldTrigger .is-placeholder,
+.owa_fieldTrigger .fa-caret-down {
+    color: var(--owa-text-muted);
+}
+
+.owa_fieldTrigger:focus-visible,
+.owa_fieldChooser :focus-visible {
+    outline: 2px solid var(--owa-focus);
+    outline-offset: 1px;
+}
+
+.owa_fieldChooser {
+    z-index: 1100;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+    color: #111827;
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.owa_fieldPop {
+    position: fixed;
+    display: grid;
+    grid-template-columns: 320px 300px;
+}
+
+.owa_fieldPop.is-atGroups {
+    grid-template-columns: 320px;
+}
+
+.owa_fieldChooser.is-atGroups .owa_fieldDetail {
+    display: none;
+}
+
+.owa_fieldMain {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.owa_fieldSearch {
+    width: 100%;
+    box-sizing: border-box;
+    border: 0;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 10px 10px 0 0;
+    padding: 9px 12px;
+    font: inherit;
+    background: #ffffff;
+    color: #111827;
+}
+
+.owa_fieldSearch:focus-visible {
+    outline: none;
+    box-shadow: inset 0 -2px 0 #1874CD;
+}
+
+.owa_fieldList {
+    max-height: 330px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.owa_fieldList:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px #1874CD;
+}
+
+.owa_fieldHeading,
+.owa_fieldGroupHead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 5px 12px;
+    background: #f3f4f6;
+    color: var(--owa-text-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.owa_fieldOption {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+}
+
+.owa_fieldGroup {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.owa_fieldOption.is-active {
+    background: #e8f1fb;
+}
+
+.owa_fieldOption[aria-selected="true"] {
+    border-left-color: var(--owa-accent);
+}
+
+.owa_fieldCheck {
+    color: var(--owa-accent-fill);
+    font-size: 0.75rem;
+}
+
+.owa_fieldCount {
+    color: var(--owa-text-muted);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.owa_fieldChevron {
+    color: var(--owa-text-muted);
+    font-size: 0.75rem;
+}
+
+.owa_fieldBack {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.owa_fieldBack .owa_fieldCount {
+    margin-left: auto;
+    font-weight: 400;
+}
+
+.owa_fieldEmpty {
+    padding: 14px 12px;
+    color: var(--owa-text-muted);
+}
+
+.owa_fieldDetail {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 14px 16px;
+    border-left: 1px solid #e5e7eb;
+    font-size: 0.8125rem;
+}
+
+.owa_fieldDetailHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.owa_fieldDetailLabel {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.owa_fieldSecondary {
+    display: grid;
+    gap: 6px;
+}
+
+.owa_fieldBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.owa_fieldBadge {
+    padding: 0 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    color: var(--owa-text-muted);
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+
+.owa_fieldNote {
+    color: var(--owa-text-muted);
+    font-size: 0.75rem;
+}
+
+.owa_fieldNote code {
+    padding: 0 4px;
+    border-radius: 3px;
+    background: #f3f4f6;
+    font-size: 0.6875rem;
+}
+
+.owa_fieldInfo,
+.owa_fieldMore {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin-right: -6px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--owa-text-muted);
+    cursor: pointer;
+}
+
+.owa_fieldInfo[aria-pressed="true"],
+.owa_fieldMore[aria-expanded="true"] {
+    background: #f3f4f6;
+    color: var(--owa-focus);
+}
+
+.owa_fieldMore .fa-chevron-down {
+    transition: transform 0.15s;
+}
+
+.owa_fieldMore[aria-expanded="true"] .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* The phone's sheet. */
+.owa_fieldSheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1101;
+    display: flex;
+    flex-direction: column;
+    max-height: 82vh;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.owa_fieldSheet .owa_fieldMain {
+    flex: 1;
+    min-height: 0;
+}
+
+.owa_fieldSheet .owa_fieldList {
+    flex: 1;
+    max-height: none;
+}
+
+.owa_fieldSheet .owa_fieldSearch {
+    border-radius: 0;
+}
+
+.owa_fieldSheet .owa_fieldDetail {
+    flex-shrink: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 10px 12px 12px;
+    border-left: 0;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 10px rgba(17, 24, 39, 0.06);
+}
+
+.owa_fieldSheet .owa_fieldDetail:empty {
+    display: none;
+}
+
+.owa_fieldGrip {
+    width: 36px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 4px;
+    background: #d1d5db;
+}
+
+.owa_fieldTitle {
+    padding: 8px 12px 6px;
+    font-weight: 600;
+}
+
+.owa_fieldScrim {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(15, 20, 26, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .owa_fieldMore .fa-chevron-down {
+        transition: none;
+    }
+}
+
+/* A Yes/No field's value: two choices, not free text. */
+.owa_filterYesNo {
+    display: inline-flex;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.owa_filterYesNoOption {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.owa_filterYesNoOption + .owa_filterYesNoOption {
+    border-left: 1px solid #d1d5db;
+}
+
+.owa_filterYesNoOption:has(input:checked) {
+    background: #e8f1fb;
 }

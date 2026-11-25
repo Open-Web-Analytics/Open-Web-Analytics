@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, adminLogin } = require('./fixtures');
+const { pickField, selectCondition } = require('./field-chooser.js');
 
 /**
  * Visualizations: the fork for things that COMPUTE rather than configure.
@@ -509,12 +510,8 @@ test.describe('visualizations', () => {
 
         await page.click('#owa_funnelAddFilter');
 
-        const chosen = page.locator('#owa_funnelFilterDimension_chosen');
-
-        await chosen.locator('.chosen-single').click();
-        await chosen.locator('.chosen-search input').pressSequentially('pagePath');
-        await chosen.locator('.chosen-results li.active-result', { hasText: '(pagePath)' }).first().click();
-        await page.selectOption('#owa_funnelFilterOperator', { label: 'contains' });
+        await pickField(page, page.locator('#owa_funnelFilterDimension'), 'pagePath');
+        await selectCondition(page.locator('#owa_funnelFilterOperator'), 'contains');
         await page.fill('#owa_funnelFilterValue', '/');
 
         // Save waits while the filter is half done.

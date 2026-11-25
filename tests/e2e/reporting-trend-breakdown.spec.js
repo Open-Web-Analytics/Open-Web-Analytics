@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, loginAs } = require('./fixtures');
+const { pickField } = require('./field-chooser.js');
 
 /**
  * A trend, and the grid of the rows behind it.
@@ -254,9 +255,9 @@ test.describe('a broken-out trend and its companion grid', () => {
 
             const pop = grid.locator('.owa_gridPop');
 
-            await pop.locator('.owa_gridFilterField').selectOption('pagePath');
+            await pickField(page, pop.locator('.owa_gridFilterField'), 'pagePath');
             await pop.locator('.owa_gridFilterOps input[value="=@"]').check();
-            await pop.locator('.owa_gridFilterValue').fill(value);
+            await pop.getByLabel('Value', { exact: true }).fill(value);
             await pop.locator('.owa_gridPrimary').click();
         };
 

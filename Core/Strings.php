@@ -56,6 +56,9 @@ class Strings {
         'OWA.dataGrid.EMPTY_TESTS',
         'OWA.dataGrid.OPERATOR_PHRASES',
         'OWA.dataGrid.CONDITIONS',
+        'OWA.dataGrid.DATE_PHRASES',
+        'OWA.fieldChooser.TYPES',
+        'OWA.fieldChooser.ADDS',
     ];
 
     /**

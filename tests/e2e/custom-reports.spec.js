@@ -17,6 +17,7 @@
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, loginAs, ui } = require('./fixtures');
+const { pickField, selectCondition } = require('./field-chooser.js');
 
 /** A name unique to this run, so reruns do not collide on the roster. */
 const reportName = (label) => `E2E ${label} ${Date.now()}`;
@@ -54,9 +55,8 @@ async function openRoster(page) {
 /**
  * Write a filter in the panel's filter form, opening the form if it is shut.
  *
- * The dimension is a chosen widget, so its native <select> is hidden and
- * page.selectOption() cannot reach it -- and setting the hidden select would
- * pass with the visible control broken. Same reasoning as chooseInChosen().
+ * The field is picked in the field chooser, opened from the form's field
+ * button (field-chooser.js).
  *
  * @param dimension the dimension's machine name
  * @param operator  the condition's words, e.g. 'contains' or 'has a value'
@@ -67,16 +67,10 @@ async function fillFilter(page, { dimension, operator, value }) {
     }
 
     if (dimension) {
-        const chosen = page.locator('#dlgFilterDimension_chosen');
-
-        await chosen.locator('.chosen-single').click();
-        await chosen.locator('.chosen-search input').pressSequentially(dimension);
-        await chosen.locator('.chosen-results li.active-result', { hasText: `(${dimension})` })
-            .first().click();
-        await expect(page.locator('#dlgFilterDimension')).toHaveValue(dimension);
+        await pickField(page, page.locator('#dlgFilterDimension'), dimension);
     }
 
-    if (operator) { await page.selectOption('#dlgFilterOperator', { label: operator }); }
+    if (operator) { await selectCondition(page.locator('#dlgFilterOperator'), operator); }
     if (value !== undefined) { await page.fill('#dlgFilterValue', value); }
 }
 
@@ -616,8 +610,8 @@ test.describe('custom reports', () => {
             await startWidget(page, 'grid');
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
-            // A dimension, and deliberately no value.
-            await fillFilter(page, { dimension: 'sessionMedium' });
+            // A dimension and a condition, and deliberately no value.
+            await fillFilter(page, { dimension: 'sessionMedium', operator: 'is' });
 
             await expect(page.locator('#dlgFilterAdd')).toBeDisabled();
             await expect(dialogSave(page)).toBeDisabled();

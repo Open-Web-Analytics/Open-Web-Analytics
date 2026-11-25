@@ -6,6 +6,7 @@
 // was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.format.js';
+import './owa.fieldchooser.js';
 import { closeMetricInfo, describeMetric } from './owa.metricinfo.js';
 import { describeChange } from './owa.periodpicker.js';
 
@@ -1062,13 +1063,13 @@ OWA.dataGrid.OPERATOR_PHRASES = {
 
 /**
  * A filter in words, as its chip reads: "Medium is referral", "Visit Start
- * has a value". labelOf names the dimension.
+ * has a value". labelOf names the dimension; fieldOf, when given, finds its
+ * chooser field, for words that depend on its type ("Date before 20261101",
+ * "Outbound Click is Yes").
  */
-OWA.dataGrid.filterWords = function ( c, labelOf ) {
+OWA.dataGrid.filterWords = function ( c, labelOf, fieldOf ) {
 
-    var phrase = OWA.dataGrid.EMPTY_TESTS[ c.operator ]
-              || OWA.dataGrid.OPERATOR_PHRASES[ c.operator ]
-              || c.operator;
+    var field = fieldOf ? fieldOf( c.name ) : null;
 
     var form = c.value !== ''
         ? OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' )
@@ -1076,8 +1077,8 @@ OWA.dataGrid.filterWords = function ( c, labelOf ) {
 
     // The value goes where the sentence puts %3$s, after the rest is filled.
     return form.split( '%3$s' ).map( function ( part ) {
-        return OWA.util.sprintf( part, labelOf( c.name ), OWA.translate( phrase ) );
-    } ).join( c.value );
+        return OWA.util.sprintf( part, labelOf( c.name ), OWA.dataGrid.phrase( c.operator, field ) );
+    } ).join( OWA.dataGrid.shownValue( c.value, field ) );
 };
 
 /**
@@ -1142,20 +1143,165 @@ OWA.dataGrid.menuKey = function ( $items, e ) {
     return true;
 };
 
-/** What the Add a filter dialog offers, for a dimension and for a metric. */
+/**
+ * What a filter form offers (the grid's Filter, the filter pills), by the kind
+ * of value the field takes (valueKind()). A Yes/No column is never empty, so
+ * it has no empty tests.
+ */
 OWA.dataGrid.CONDITIONS = {
-    dimension: [
+    text: [
         [ '=@', 'Contains' ],
-        [ '==', 'Exactly matches' ],
-        [ '!=', "Doesn't match" ],
+        [ '==', 'Is' ],
+        [ '!=', 'Is not' ],
         [ '!=(not set)', 'Has a value' ],
         [ '==(not set)', 'Is not set' ]
+    ],
+    number: [
+        [ '==', 'Is' ],
+        [ '!=', 'Is not' ],
+        [ '>', 'Greater than' ],
+        [ '<', 'Less than' ]
+    ],
+    date: [
+        [ '==', 'Is' ],
+        [ '<', 'Before' ],
+        [ '>', 'After' ]
+    ],
+    boolean: [
+        [ '==', 'Is' ]
     ],
     metric: [
         [ '>', 'Greater than' ],
         [ '<', 'Less than' ],
         [ '==', 'Equals' ]
     ]
+};
+
+/** How a chip words a comparison of dates. */
+OWA.dataGrid.DATE_PHRASES = { '<': 'before', '>': 'after' };
+
+/**
+ * The kind of value a field takes, which decides its conditions and its value
+ * box: 'metric', 'boolean', 'number', 'date' or 'text'. field is a chooser
+ * field ({kind, type}); none is text.
+ */
+OWA.dataGrid.valueKind = function ( field ) {
+
+    if ( ! field ) {
+        return 'text';
+    }
+
+    if ( field.kind === 'metric' ) {
+        return 'metric';
+    }
+
+    switch ( field.type ) {
+        case 'boolean':
+            return 'boolean';
+        case 'integer':
+        case 'decimal':
+            return 'number';
+        case 'yyyymmdd':
+        case 'yyyymm':
+        case 'yyyymmddhh':
+        case 'datetime':
+            return 'date';
+    }
+
+    return 'text';
+};
+
+/** The [operator, label] pairs a form offers for field. */
+OWA.dataGrid.conditionsFor = function ( field ) {
+
+    return OWA.dataGrid.CONDITIONS[ OWA.dataGrid.valueKind( field ) ];
+};
+
+/** An operator in words, translated, as a chip reads it for field. */
+OWA.dataGrid.phrase = function ( operator, field ) {
+
+    var phrase = OWA.dataGrid.EMPTY_TESTS[ operator ]
+              || ( OWA.dataGrid.valueKind( field ) === 'date' && OWA.dataGrid.DATE_PHRASES[ operator ] )
+              || OWA.dataGrid.OPERATOR_PHRASES[ operator ];
+
+    return phrase ? OWA.translate( phrase ) : operator;
+};
+
+/** A stored value as a chip shows it: a Yes/No field's in words. */
+OWA.dataGrid.shownValue = function ( value, field ) {
+
+    if ( OWA.dataGrid.valueKind( field ) === 'boolean' ) {
+
+        if ( /^(1|true|yes)$/i.test( value ) ) {
+            return OWA.l( 'Yes' );
+        }
+
+        if ( /^(0|false|no)$/i.test( value ) ) {
+            return OWA.l( 'No' );
+        }
+    }
+
+    return value;
+};
+
+/**
+ * The value box for field, as {$el, get, set, on}: Yes and No for a Yes/No
+ * field, a date or month picker for a date or month, a number box for a number
+ * or a metric, else text. get() returns the value as it is stored (a date as
+ * yyyymmdd, Yes or No), set() takes it so.
+ */
+OWA.dataGrid.valueInput = function ( field, id ) {
+
+    var type = field ? field.type : '';
+    var kind = OWA.dataGrid.valueKind( field );
+
+    if ( kind === 'boolean' ) {
+
+        var $group = jQuery( '<span class="owa_filterYesNo" role="radiogroup"></span>' )
+            .attr( { id: id, 'aria-label': OWA.l( 'Value' ) } );
+
+        [ [ 'Yes', OWA.l( 'Yes' ) ], [ 'No', OWA.l( 'No' ) ] ].forEach( function ( v, i ) {
+            $group.append( jQuery( '<label class="owa_filterYesNoOption"></label>' )
+                .append( jQuery( '<input type="radio">' ).attr( { name: id + '-yesno', value: v[0] } ).prop( 'checked', i === 0 ) )
+                .append( jQuery( '<span></span>' ).text( v[1] ) ) );
+        } );
+
+        return {
+            $el: $group,
+            get: function () { return $group.find( 'input:checked' ).val() || 'Yes'; },
+            set: function ( v ) { $group.find( 'input[value="' + ( /^(0|false|no)$/i.test( v || '' ) ? 'No' : 'Yes' ) + '"]' ).prop( 'checked', true ); },
+            on: function ( fn ) { $group.on( 'change', fn ); }
+        };
+    }
+
+    var html = kind === 'number' || kind === 'metric' ? 'number'
+        : type === 'yyyymmdd' ? 'date'
+        : type === 'yyyymm' ? 'month'
+        : 'text';
+
+    var $input = jQuery( '<input autocomplete="off">' ).attr( { type: html, id: id } );
+
+    if ( html === 'number' ) {
+        $input.attr( 'step', 'any' );
+    }
+
+    return {
+        $el: $input,
+        get: function () {
+            var v = jQuery.trim( String( $input.val() || '' ) );
+            return html === 'date' || html === 'month' ? v.replace( /-/g, '' ) : v;
+        },
+        set: function ( v ) {
+            v = String( v || '' );
+            if ( html === 'date' && /^\d{8}$/.test( v ) ) {
+                v = v.slice( 0, 4 ) + '-' + v.slice( 4, 6 ) + '-' + v.slice( 6 );
+            } else if ( html === 'month' && /^\d{6}$/.test( v ) ) {
+                v = v.slice( 0, 4 ) + '-' + v.slice( 4 );
+            }
+            $input.val( v );
+        },
+        on: function ( fn ) { $input.on( 'input change', fn ); }
+    };
 };
 
 /**
@@ -1582,7 +1728,7 @@ OWA.dataGrid.prototype = {
             : labelOf( metric );
 
         var filters = OWA.dataGrid.parseConstraints( this.options.ownConstraints || '' ).map( function ( c ) {
-            return OWA.dataGrid.filterWords( c, labelOf );
+            return OWA.dataGrid.filterWords( c, labelOf, function ( name ) { return that.fieldOf( rs, name ); } );
         } );
 
         if ( filters.length ) {
@@ -1687,6 +1833,19 @@ OWA.dataGrid.prototype = {
         } );
 
         return info;
+    },
+
+    /** The fields a result set can be filtered or grouped on, as the chooser takes them. */
+    fields : function ( rs ) {
+
+        return OWA.fieldChooser.fromGroups( 'dimension', rs.relatedDimensions )
+            .concat( OWA.fieldChooser.fromGroups( 'metric', rs.relatedMetrics ) );
+    },
+
+    /** The chooser field called name, or null. */
+    fieldOf : function ( rs, name ) {
+
+        return OWA.fieldChooser ? OWA.fieldChooser.find( this.fields( rs ), name ) : null;
     },
 
     /** A dimension's or metric's label, for a chip or a heading. */
@@ -1829,9 +1988,8 @@ OWA.dataGrid.prototype = {
     chip : function ( rs, c, index ) {
 
         var that   = this;
-        var phrase = OWA.dataGrid.EMPTY_TESTS[ c.operator ]
-                  || OWA.dataGrid.OPERATOR_PHRASES[ c.operator ]
-                  || c.operator;
+        var field  = this.fieldOf( rs, c.name );
+        var phrase = OWA.dataGrid.phrase( c.operator, field );
 
         // The value is drawn in bold where the sentence puts %3$s.
         var parts = ( c.value !== ''
@@ -1843,10 +2001,10 @@ OWA.dataGrid.prototype = {
         parts.forEach( function ( part, i ) {
 
             if ( i > 0 ) {
-                $text.append( jQuery( '<strong></strong>' ).text( c.value ) );
+                $text.append( jQuery( '<strong></strong>' ).text( OWA.dataGrid.shownValue( c.value, field ) ) );
             }
 
-            $text.append( document.createTextNode( OWA.util.sprintf( part, label, OWA.translate( phrase ) ) ) );
+            $text.append( document.createTextNode( OWA.util.sprintf( part, label, phrase ) ) );
         } );
 
         var $remove = jQuery( '<button type="button" class="owa_gridChipRemove">'
@@ -2495,7 +2653,9 @@ OWA.dataGrid.prototype = {
 
         var outside = function ( e ) {
 
-            if ( ! $pop[0].contains( e.target ) && ! $trigger[0].contains( e.target ) ) {
+            // A field chooser opened from it sits outside it, on the page.
+            if ( ! $pop[0].contains( e.target ) && ! $trigger[0].contains( e.target )
+              && ! jQuery( e.target ).closest( '.owa_fieldChooser, .owa_fieldScrim' ).length ) {
                 that.closePopover();
             }
         };
@@ -2664,56 +2824,36 @@ OWA.dataGrid.prototype = {
         }
     },
 
-    /** Add a filter: a field, a condition and a value. */
+    /**
+     * Add a filter: a field (OWA.fieldChooser, dimensions and metrics), a
+     * condition and a value, both by the kind of value the field takes.
+     */
     openFilter : function ( $trigger ) {
 
-        var that = this;
-        var rs   = this.resultSet;
-        var $box = jQuery( '<form class="owa_gridFilterPop" novalidate></form>' );
-        var id   = 'owa_gridFilter-' + this.dom_id;
+        var that   = this;
+        var rs     = this.resultSet;
+        var $box   = jQuery( '<form class="owa_gridFilterPop" novalidate></form>' );
+        var id     = 'owa_gridFilter-' + this.dom_id;
+        var fields = this.fields( rs );
 
         $box.append( jQuery( '<div class="owa_gridPopTitle"></div>' ).text( OWA.l( 'Add a filter' ) ) );
 
-        var $field = jQuery( '<select class="owa_gridFilterField"></select>' ).attr( 'id', id + '-field' );
-        var kinds  = {};
-
-        jQuery.each( [ [ 'dimension', rs.relatedDimensions ], [ 'metric', rs.relatedMetrics ] ], function ( i, pair ) {
-
-            jQuery.each( pair[1] || {}, function ( family, list ) {
-
-                var $group = jQuery( '<optgroup></optgroup>' ).attr( 'label', family );
-
-                jQuery.each( list || [], function ( j, d ) {
-
-                    if ( d && d.name && ! kinds[ d.name ] ) {
-                        kinds[ d.name ] = pair[0];
-                        $group.append( jQuery( '<option></option>' ).val( d.name ).text( d.label || d.name ) );
-                    }
-                } );
-
-                if ( $group.children().length ) {
-                    $field.append( $group );
-                }
-            } );
-        } );
-
         // The grid's own first dimension, which is what a filter is usually of.
-        var first = this.dimensionLists( rs ).shown[ 0 ];
+        var first  = this.dimensionLists( rs ).shown[ 0 ];
+        var $field = jQuery( '<button type="button" class="owa_gridFilterField"></button>' )
+            .attr( { id: id + '-field', 'aria-labelledby': id + '-fieldLabel ' + id + '-field' } );
 
-        if ( first && kinds[ first ] ) {
-            $field.val( first );
-        }
-
-        $box.append( jQuery( '<label class="owa_gridFieldLabel"></label>' ).attr( 'for', id + '-field' ).text( OWA.l( 'Field' ) ) )
+        $box.append( jQuery( '<span class="owa_gridFieldLabel"></span>' ).attr( 'id', id + '-fieldLabel' ).text( OWA.l( 'Field' ) ) )
             .append( $field );
 
         var $ops = jQuery( '<fieldset class="owa_gridFilterOps"></fieldset>' )
             .append( jQuery( '<legend class="owa_gridFieldLabel"></legend>' ).text( OWA.l( 'Condition' ) ) );
 
         var $valueLabel = jQuery( '<label class="owa_gridFieldLabel"></label>' ).attr( 'for', id + '-value' ).text( OWA.l( 'Value' ) );
-        var $value      = jQuery( '<input type="text" class="owa_gridFilterValue" autocomplete="off">' ).attr( 'id', id + '-value' );
+        var $valueHolder = jQuery( '<div class="owa_gridFilterValue"></div>' );
         var $hint       = jQuery( '<p class="owa_gridPopHint"></p>' );
         var $apply      = jQuery( '<button type="submit" class="owa_gridButton owa_gridPrimary"></button>' ).text( OWA.l( 'Add filter' ) );
+        var value       = null;
 
         var operator = function () {
             return $ops.find( 'input:checked' ).val();
@@ -2722,40 +2862,52 @@ OWA.dataGrid.prototype = {
         var sync = function () {
 
             var empty = OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( operator() );
-            var value = String( $value.val() || '' );
-            var comma = value.indexOf( ',' ) !== -1;
+            var v     = value ? value.get() : '';
+            var comma = v.indexOf( ',' ) !== -1;
 
             $valueLabel.toggle( ! empty );
-            $value.toggle( ! empty );
+            $valueHolder.toggle( ! empty );
 
             $hint.text( comma
                 ? OWA.l( 'A value cannot contain a comma.' )
                 : OWA.l( 'Rows must match every filter.' ) );
 
-            $apply.prop( 'disabled', ! $field.val() || ( ! empty && ( value === '' || comma ) ) );
+            $apply.prop( 'disabled', ! chooser.get() || ( ! empty && ( v === '' || comma ) ) );
         };
 
         var conditions = function () {
 
-            var kind = kinds[ $field.val() ] === 'metric' ? 'metric' : 'dimension';
+            var field = chooser.field();
 
             $ops.children( '.owa_gridFilterOp' ).remove();
 
-            OWA.dataGrid.CONDITIONS[ kind ].forEach( function ( c, i ) {
+            OWA.dataGrid.conditionsFor( field ).forEach( function ( c, i ) {
 
                 $ops.append( jQuery( '<label class="owa_gridFilterOp"></label>' )
                     .append( jQuery( '<input type="radio">' ).attr( 'name', id + '-op' ).val( c[0] ).prop( 'checked', i === 0 ) )
                     .append( jQuery( '<span></span>' ).text( OWA.translate( c[1] ) ) ) );
             } );
 
+            value = OWA.dataGrid.valueInput( field, id + '-value' );
+            value.$el.addClass( 'owa_gridFilterInput' );
+            value.on( sync );
+            $valueHolder.empty().append( value.$el );
+
             sync();
         };
 
-        $field.on( 'change', conditions );
-        $ops.on( 'change', sync );
-        $value.on( 'input', sync );
+        var chooser = OWA.fieldChooser.attach( $field, {
+            fields: fields,
+            value: first && OWA.fieldChooser.find( fields, first ) ? first : '',
+            placeholder: OWA.l( 'Choose a field' ),
+            title: OWA.l( 'Filter on' ),
+            filtering: true,
+            onPick: conditions
+        } );
 
-        $box.append( $ops ).append( $valueLabel ).append( $value ).append( $hint );
+        $ops.on( 'change', sync );
+
+        $box.append( $ops ).append( $valueLabel ).append( $valueHolder ).append( $hint );
 
         $box.append( jQuery( '<div class="owa_gridPopActions"></div>' )
             .append( jQuery( '<button type="button" class="owa_gridButton owa_gridQuiet"></button>' )
@@ -2775,9 +2927,9 @@ OWA.dataGrid.prototype = {
             var list = that.constraints( rs );
 
             list.push( {
-                name: $field.val(),
+                name: chooser.get(),
                 operator: op,
-                value: OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( op ) ? '' : String( $value.val() )
+                value: OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( op ) ? '' : value.get()
             } );
 
             that.emit( 'constraint_change', [ OWA.dataGrid.formatConstraints( list ) ] );

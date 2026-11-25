@@ -4,10 +4,11 @@
  * drives them: by role and label, and by data-ui where those cannot single a
  * part out.
  *
- * The dimension is a chosen widget, so it is opened and searched. Setting its
- * hidden <select> would pass with the visible control broken.
+ * The field is picked in the field chooser (field-chooser.js), opened from
+ * the form's field button.
  */
 const { expect } = require('@playwright/test');
+const { pickField, offeredFields, selectCondition } = require('./field-chooser.js');
 
 /** The Filter button and a pill per filter. */
 function filterPills(page) {
@@ -42,19 +43,11 @@ async function fillFilter(page, { dimension, condition, value }) {
     const form = filterForm(page);
 
     if (dimension) {
-        const box = form.locator('[data-ui="filter:dimension"]');
-
-        await box.click();
-
-        const search = box.getByRole('textbox');
-
-        await search.pressSequentially(dimension);
-        await search.press('Enter');
-        await expect(form.getByLabel('Dimension', { exact: true })).toHaveValue(dimension);
+        await pickField(page, form.locator('[data-ui="filter:dimension"]'), dimension);
     }
 
     if (condition) {
-        await form.getByLabel('Condition', { exact: true }).selectOption({ label: condition });
+        await selectCondition(form.getByLabel('Condition', { exact: true }), condition);
     }
 
     if (value !== undefined) {
@@ -62,14 +55,11 @@ async function fillFilter(page, { dimension, condition, value }) {
     }
 }
 
-/** The names the Dimension list offers, and the groups it puts them in. */
+/** The names the field chooser offers, and the keys of the groups it puts them in. */
 async function offeredDimensions(page) {
     await openFilterForm(page);
 
-    return filterForm(page).getByLabel('Dimension', { exact: true }).evaluate((select) => ({
-        names: Array.from(select.options).map((o) => o.value).filter(Boolean),
-        groups: Array.from(select.querySelectorAll('optgroup')).map((g) => g.label),
-    }));
+    return offeredFields(page, filterForm(page).locator('[data-ui="filter:dimension"]'));
 }
 
 /**

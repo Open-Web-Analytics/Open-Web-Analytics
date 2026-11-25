@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
+const { pickField } = require('./field-chooser.js');
 
 /**
  * A visits table's Visit Start cells, asserting it is the first column after
@@ -1153,14 +1154,14 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const pop = page.locator('.owa_gridPop');
 
         await expect(pop).toBeVisible();
-        await pop.locator('.owa_gridFilterField').selectOption(field);
+        await pickField(page, pop.locator('.owa_gridFilterField'), field);
 
         if (op) {
             await pop.locator(`.owa_gridFilterOps input[value="${op}"]`).check();
         }
 
         if (value !== undefined) {
-            await pop.locator('.owa_gridFilterValue').fill(value);
+            await pop.getByLabel('Value', { exact: true }).fill(value);
         }
 
         const request = page.waitForRequest((r) => r.url().includes('constraints='));
