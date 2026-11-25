@@ -15,6 +15,12 @@ use OWA\Module\Base\Classes\AutoUpdate\Install;
  */
 class CoreInstallCli extends \OWA\Core\Controller\Cli {
 
+    /** A release is installed from a full server only (Install::byHand()). */
+    public static function serverRoles() {
+
+        return [ \OWA\Core\ServerRole::FULL ];
+    }
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 

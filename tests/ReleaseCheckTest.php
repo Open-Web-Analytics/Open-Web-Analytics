@@ -135,7 +135,7 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /** As the Release Packager builds it: members named ./..., GNU format, names over 100 characters. */
-    public function testTheTarReaderUnpacksAPackagerArchive(): void
+    public function testTheTarReaderReadsAPackagerArchive(): void
     {
         $src  = $this->tmp . '/src';
         $deep = $src . '/' . str_repeat('directory/', 12) . 'file.php';
@@ -146,16 +146,18 @@ final class ReleaseCheckTest extends TestCase
         mkdir($src . '/empty');
 
         exec(sprintf('tar --format=gnu -C %s -cf %s/a.tar ./ 2>&1', escapeshellarg($src), escapeshellarg($this->tmp)));
-        mkdir($this->tmp . '/out');
 
-        $this->assertSame(2, Tar::extract($this->tmp . '/a.tar', $this->tmp . '/out'));
-        $this->assertSame('deep', file_get_contents(str_replace($src, $this->tmp . '/out', $deep)));
-        $this->assertDirectoryExists($this->tmp . '/out/empty');
-        $this->assertSame('0700', sprintf('%04o', fileperms($this->tmp . '/out/cli.php') & 0777));
+        $seen  = [];
+        $files = Tar::each($this->tmp . '/a.tar', function ($rel, $type, $mode) use (&$seen) {
+            $seen[$rel] = [$type, sprintf('%04o', $mode & 0777)];
+        });
+        $this->assertSame(2, $files);
+        $this->assertSame('deep', Tar::member($this->tmp . '/a.tar', substr($deep, strlen($src) + 1)), 'a GNU long name');
+        $this->assertSame('dir', $seen['empty'][0]);
+        $this->assertSame(['file', '0700'], $seen['cli.php']);
 
         exec(sprintf('tar --format=posix -C %s -cf %s/p.tar . 2>&1', escapeshellarg($src), escapeshellarg($this->tmp)));
-        mkdir($this->tmp . '/out2');
-        $this->assertSame(2, Tar::extract($this->tmp . '/p.tar', $this->tmp . '/out2'), 'pax headers too');
+        $this->assertSame(Tar::files($this->tmp . '/a.tar'), Tar::files($this->tmp . '/p.tar'), 'pax headers too');
     }
 
     public function testTheTarReaderRefusesWhatAReleaseDoesNotShip(): void
@@ -170,21 +172,17 @@ final class ReleaseCheckTest extends TestCase
             } elseif ($tar === 'abs.tar') {
                 file_put_contents($this->tmp . '/' . $tar, $this->member('/tmp/escape.php', 'x') . str_repeat("\0", 1024));
             }
-            @mkdir($this->tmp . '/o-' . $tar);
-
             try {
-                Tar::extract($this->tmp . '/' . $tar, $this->tmp . '/o-' . $tar);
-                $this->fail("$tar was unpacked");
+                Tar::files($this->tmp . '/' . $tar);
+                $this->fail("$tar was read");
             } catch (\RuntimeException $e) {
                 $this->assertStringContainsString($why, $e->getMessage(), $tar);
             }
         }
 
-        $this->assertFileDoesNotExist($this->tmp . '/escape.php');
         file_put_contents($this->tmp . '/cut.tar', substr($this->member('./a.php', str_repeat('x', 2000)), 0, 1200));
-        mkdir($this->tmp . '/o-cut');
         $this->expectExceptionMessage('ends inside a member');
-        Tar::extract($this->tmp . '/cut.tar', $this->tmp . '/o-cut');
+        Tar::files($this->tmp . '/cut.tar');
     }
 
     /** Listed, downloaded, proved and judged; outside its window it waits, with both tarballs kept. */
@@ -435,7 +433,7 @@ final class ReleaseCheckTest extends TestCase
         $first = hash_file('sha256', $this->downloads()->tarball('2.0.1'));
 
         unlink($this->tmp . '/owa_2.0.1_packaged.tar');
-        Downloads::remove($this->tmp . '/build-2.0.1');
+        exec('rm -rf ' . escapeshellarg($this->tmp . '/build-2.0.1'));
         $result = $this->check(['2.0.1'], [], null, fn ($dir) => file_put_contents($dir . '/cli.php', 'rebuilt'));
 
         $this->assertNotSame($first, hash_file('sha256', $this->downloads()->tarball('2.0.1')));
@@ -779,7 +777,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertFalse($this->downloads()->has('2.0.1'), 'refused after its download: deleted');
         $this->assertTrue($this->downloads()->has('2.0.4'), 'the installed release\'s stays');
 
-        Downloads::remove($this->tmp . '/build-2.0.1');
+        exec('rm -rf ' . escapeshellarg($this->tmp . '/build-2.0.1'));
         @unlink($this->tmp . '/owa_2.0.1_packaged.tar');
         @unlink($this->downloads()->tarball('2.0.1'));
         $this->releaseJson['2.0.1'] = ['modules' => ['base' => 95]];

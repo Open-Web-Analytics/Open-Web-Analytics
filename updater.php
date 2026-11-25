@@ -195,30 +195,6 @@ return ( static function () {
         }
     };
 
-    /* Delete a directory and everything in it; links are removed, not followed. */
-    $remove = static function ( $dir ) {
-
-        if ( is_link( $dir ) || is_file( $dir ) ) {
-
-            return @unlink( $dir );
-        }
-
-        if ( ! is_dir( $dir ) ) {
-
-            return true;
-        }
-
-        $it = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ),
-            \RecursiveIteratorIterator::CHILD_FIRST );
-
-        foreach ( $it as $path => $info ) {
-
-            $info->isDir() && ! $info->isLink() ? @rmdir( (string) $path ) : @unlink( (string) $path );
-        }
-
-        return @rmdir( $dir );
-    };
-
     /* Every updates-<32 hex>/ in the data directory, not a link; there should be one at most. */
     $updatesDirs = static function ( $data ) {
 
@@ -896,7 +872,6 @@ return ( static function () {
         'touchLock'   => $touchLock,
         'running'     => $running,
         'alone'       => $alone,
-        'remove'      => $remove,
         'copies'      => $copies,
         'apply'       => $apply,
         'marker'      => $marker,
@@ -928,7 +903,8 @@ return ( static function () {
                 return null;
             }
 
-            $quiet = in_array( 'cmd=schedule-run', $argv, true );
+            // cmd=schedule-run as the cron entry writes it, or --cmd=schedule-run, which cli.php accepts too.
+            $quiet = (bool) preg_grep( '/^-*cmd=schedule-run$/', array_map( 'strval', $argv ) );
             $busy  = static function () use ( $quiet ) {
 
                 if ( ! $quiet ) {

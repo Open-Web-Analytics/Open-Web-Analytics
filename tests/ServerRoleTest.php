@@ -95,6 +95,7 @@ final class ServerRoleTest extends TestCase
         $this->assertFalse((new ServerRole('console'))->mayRun($default));
         $this->assertFalse((new ServerRole('collector'))->mayRun($default));
         $this->assertTrue((new ServerRole('console,api'))->mayRun(['api']));
+        $this->assertSame(['full'], \OWA\Module\Base\Controller\CoreInstallCli::serverRoles(), 'a release installs from a full server only');
     }
 
     // ---------------------------------------------------------------------

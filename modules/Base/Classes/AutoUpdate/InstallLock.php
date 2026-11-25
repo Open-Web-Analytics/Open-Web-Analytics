@@ -45,35 +45,6 @@ class InstallLock {
     }
 
     /**
-     * Run $fn holding the lock, if it is free now.
-     *
-     * @param  callable $fn
-     * @param  string   $who what the lock file says holds it
-     * @return bool false when the lock is held and $fn did not run
-     */
-    public static function tryExclusive( callable $fn, $who = 'release check' ) {
-
-        $u    = Downloads::updater();
-        $hold = $u['tryLock']( dirname( self::path() ), $who );
-
-        if ( $hold === null ) {
-
-            return false;
-        }
-
-        try {
-
-            $fn();
-
-            return true;
-
-        } finally {
-
-            $u['unlock']( $hold );
-        }
-    }
-
-    /**
      * Finish, between steps: the lock file's time says the install is still
      * moving, and where there is no flock() it keeps it from going stale.
      *

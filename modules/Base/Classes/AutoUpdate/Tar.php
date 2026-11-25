@@ -150,53 +150,6 @@ class Tar {
     }
 
     /**
-     * Unpack into $dest, an empty directory. Modes keep at most 0755.
-     *
-     * @param  string|resource $tar
-     * @param  string          $dest
-     * @return int files written
-     * @throws \RuntimeException
-     */
-    public static function extract( $tar, $dest ) {
-
-        $dest = rtrim( (string) $dest, '/' );
-
-        return self::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $dest ) {
-
-            $path = $dest . '/' . $rel;
-            $dir  = $type === 'dir' ? $path : dirname( $path );
-
-            if ( ! is_dir( $dir ) && ! @mkdir( $dir, 0755, true ) ) {
-
-                throw new \RuntimeException( sprintf( 'Could not create %s.', $dir ) );
-            }
-
-            if ( $type === 'dir' ) {
-
-                return;
-            }
-
-            $out = @fopen( $path, 'xb' );
-
-            if ( $out === false ) {
-
-                throw new \RuntimeException( sprintf( 'Could not create %s.', $path ) );
-            }
-
-            try {
-
-                $read( $out );
-
-            } finally {
-
-                fclose( $out );
-            }
-
-            chmod( $path, $mode & 0755 );
-        } );
-    }
-
-    /**
      * Every file's path, relative to the root, checked as each() checks.
      *
      * @param  string|resource $tar

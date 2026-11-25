@@ -596,21 +596,10 @@ class Downloads {
     }
 
     /**
-     * Delete a directory and everything in it. Links are removed, not followed.
-     *
-     * @param  string $dir
-     * @return void
-     */
-    public static function remove( $dir ) {
-
-        self::updater()['remove']( (string) $dir );
-    }
-
-    /**
      * @param  string $path
      * @return array<string, mixed>|null
      */
-    public function readJson( $path ) {
+    private function readJson( $path ) {
 
         $data = is_file( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : null;
 
@@ -622,7 +611,7 @@ class Downloads {
      * @param  array<string, mixed> $data
      * @return void
      */
-    public function writeJson( $path, array $data ) {
+    private function writeJson( $path, array $data ) {
 
         // Readable by the web user (the Updates screen); written by the owner alone, never through a link.
         SafeFile::replace( $path, json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );

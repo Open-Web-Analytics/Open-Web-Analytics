@@ -754,15 +754,10 @@ class ReleaseCheck {
     }
 
     /**
-     * @param  array<string, mixed>|null $window
+     * @param  array<string, mixed> $window
      * @return string
      */
-    public static function describeWindow( $window ) {
-
-        if ( ! $window ) {
-
-            return CoreAPI::t( 'at the next scheduler run' );
-        }
+    public static function describeWindow( array $window ) {
 
         $names = array_flip( self::DAYS );
         $days  = count( (array) $window['days'] ) === 7 ? CoreAPI::t( 'any day' )

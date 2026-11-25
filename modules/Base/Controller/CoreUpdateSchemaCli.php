@@ -99,6 +99,30 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * Once a run leaves no update pending, the record of an install whose
+     * schema updates did not complete (Finish) goes: the Updates screen and
+     * core-update-status stop saying to run this. Inside the install Finish
+     * clears it itself.
+     *
+     * @return void
+     */
+    protected function clearFinishedFailure() {
+
+        if ( \OWA\Module\Base\Classes\AutoUpdate\InstallLock::$held_here ) {
+
+            return;
+        }
+
+        $downloads = new \OWA\Module\Base\Classes\AutoUpdate\Downloads();
+        $failure   = $downloads->failure();
+
+        if ( ! empty( $failure['booted'] ) && ( $failure['version'] ?? null ) === \OWA\Core\Env::version() ) {
+
+            $downloads->clearFailure();
+        }
+    }
+
+    /**
      * Renew the lease, so a run of many updates never outlives it. Called after
      * each update a module applies and between modules.
      *
@@ -198,9 +222,11 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
                 
                 // add data to container
                 \OWA\Core\CoreAPI::notice( $this->getMsg( 3308 )['message'] );
+                $this->clearFinishedFailure();
             }
         } else {
             \OWA\Core\CoreAPI::notice("There are no modules with pending updates to apply.");
+            $this->clearFinishedFailure();
         }
 
         return null;
