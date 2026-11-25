@@ -18,6 +18,9 @@ use OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck;
  */
 class CoreUpdateCli extends \OWA\Core\Controller\Cli {
 
+    /** May be queued (JobQueue::isQueueable()): The Updates screen's Check queues it. */
+    const QUEUEABLE = true;
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 

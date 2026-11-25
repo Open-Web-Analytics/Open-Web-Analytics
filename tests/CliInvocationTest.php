@@ -159,4 +159,25 @@ final class CliInvocationTest extends TestCase {
             'the request must be refused before the script looks for a command'
         );
     }
+
+    /**
+     * Never as root unless asked, as WP-CLI refuses it: every run includes PHP
+     * the web server's user may have been able to write.
+     */
+    public function testRootIsRefusedUnlessAskedFor(): void {
+
+        $refused = \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php', 'cmd=update' ], false, 'owa' );
+
+        $this->assertStringContainsString( 'running as root', (string) $refused );
+        $this->assertStringContainsString( 'sudo -u owa php cli.php', (string) $refused );
+        $this->assertStringContainsString( '--allow-root', (string) $refused );
+
+        $this->assertNull( \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php', 'cmd=update', '--allow-root' ], false, 'owa' ) );
+        $this->assertNull( \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php' ], '1', 'owa' ) );
+        $this->assertNotNull( \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php' ], '0', 'owa' ), 'OWA_CLI_ALLOW_ROOT=0 is not asking' );
+        $this->assertNotNull( \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php', 'allow-root=1' ], false, 'owa' ), 'only the switch' );
+        $this->assertNull( \OWA\Core\CliInvocation::rootRefusal( 1000, [ 'cli.php' ], false, 'owa' ), 'any other user' );
+        $this->assertNull( \OWA\Core\CliInvocation::rootRefusal( -1, [ 'cli.php' ], false, '' ), 'unknown without posix' );
+        $this->assertStringNotContainsString( 'sudo -u root', (string) \OWA\Core\CliInvocation::rootRefusal( 0, [ 'cli.php' ], false, 'root' ) );
+    }
 }

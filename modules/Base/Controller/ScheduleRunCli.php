@@ -169,6 +169,14 @@ class ScheduleRunCli extends SchedulerCli {
                     return [ 'outcome' => 'failed', 'message' => 'controller could not be constructed' ];
                 }
 
+                // The command takes only the arguments its usage() declares, as a scheduled job and cli.php.
+                $undeclared = \OWA\Core\Controller\Cli::undeclaredArguments( get_class( $controller ), $params );
+
+                if ( $undeclared ) {
+
+                    return [ 'outcome' => 'failed', 'message' => sprintf( '%s does not take %s', $command, implode( ', ', $undeclared ) ) ];
+                }
+
                 $controller->setJobLease(
                     new \OWA\Module\Base\Classes\JobQueueLease( $row['id'], $row['lease_seconds'] ) );
 

@@ -28,8 +28,9 @@ final class SystemHealthTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query('DROP TABLE IF EXISTS ' . self::JOBS);
         $db->query('CREATE TABLE ' . self::JOBS . ' LIKE owa_job_queue');
-        JobQueue::$table     = self::JOBS;
-        JobQueue::$frozen_at = time();
+        JobQueue::$table          = self::JOBS;
+        JobQueue::$frozen_at      = time();
+        JobQueue::$also_queueable = ['partition-status', 'jobs-prune'];
 
         $this->intakeDir = sys_get_temp_dir() . '/owa-health-' . bin2hex(random_bytes(4)) . '/';
         TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $this->intakeDir]);
@@ -37,8 +38,9 @@ final class SystemHealthTest extends TestCase
 
     protected function tearDown(): void
     {
-        JobQueue::$table     = null;
-        JobQueue::$frozen_at = null;
+        JobQueue::$table          = null;
+        JobQueue::$frozen_at      = null;
+        JobQueue::$also_queueable = [];
         TrackerIngest::$queue   = null;
         TrackerIngest::$backend = null;
         \OWA\Core\Strings::useTranslations(null);
