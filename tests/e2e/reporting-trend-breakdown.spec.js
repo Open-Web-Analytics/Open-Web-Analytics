@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, loginAs } = require('./fixtures');
-const { pickField } = require('./field-chooser.js');
+const { fieldChooser, pickField } = require('./field-chooser.js');
 
 /**
  * A trend, and the grid of the rows behind it.
@@ -85,12 +85,22 @@ async function breakdownColumns(page) {
 }
 
 /**
- * Choose a dimension in the grid's open dimension list: a heading's picker
- * (to replace that dimension) or the plus beside it (to add one).
+ * Choose a dimension, by its label, after a heading's picker was opened (to
+ * replace that dimension: its popover's field button opens the field chooser)
+ * or the plus beside it (to add one: it opens the chooser itself).
  */
 async function pickDimension(page, label) {
-    await page.locator('#trend-breakdown .owa_gridPop .owa_gridPopOption',
-        { hasText: new RegExp(`^${label}$`) }).first().click();
+    const pop = page.locator('#trend-breakdown .owa_gridPop');
+
+    if (await pop.count()) {
+        await pop.locator('.owa_gridFilterField').click();
+    }
+
+    const chooser = fieldChooser(page);
+
+    await chooser.getByRole('combobox').pressSequentially(label);
+    await chooser.getByRole('option', { name: label, exact: true }).first().click();
+    await expect(chooser).toHaveCount(0);
 }
 
 async function openContent(page) {

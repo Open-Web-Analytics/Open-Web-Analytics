@@ -227,7 +227,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_builderField" id="dlgMetricsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgMetricsAdd" id="dlgMetricsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Metrics' ) ); ?></label>
+                <?php /* Names the chips (aria-labelledby); "+ Add" is named by its own words. */ ?>
+                <label id="dlgMetricsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Metrics' ) ); ?></label>
                 <span class="owa_builderRequired" id="dlgMetricsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <?php /* Holds the choice; owa.customReportEdit.js draws its chips and "+ Add" after it. */ ?>
@@ -237,7 +238,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_builderField" id="dlgDimensionsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgDimensionsAdd" id="dlgDimensionsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimensions' ) ); ?></label>
+                <label id="dlgDimensionsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimensions' ) ); ?></label>
                 <span class="owa_builderRequired" id="dlgDimensionsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <select id="dlgDimensions" multiple="multiple" hidden></select>
