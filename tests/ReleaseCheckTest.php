@@ -594,6 +594,28 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /** A failure that could not be recorded would be tried every hour: nothing installs while the updates directory cannot be written. */
+    /** The web user can write the data directory: an update file another user made stops every run, which says so and fails. */
+    public function testUpdateFilesOfAnotherUserStopEveryRun(): void
+    {
+        $this->check(['2.0.1'], ['window' => '02:00-06:00']);
+        $mine = fileowner($this->downloads()->root());
+        touch(InstallLock::$path);
+
+        try {
+            $this->assertSame([], $this->downloads()->foreign($mine), 'its own files');
+            $this->assertSame([InstallLock::$path, $this->downloads()->root()], array_keys($this->downloads()->foreign($mine + 1)));
+
+            $result = $this->check(['2.0.1'], ['uid' => $mine + 1]);
+            $this->assertSame(ReleaseCheck::FOREIGN, $result['outcome']);
+            $this->assertCount(2, $result['problems']);
+            $this->assertStringContainsString('the user that installs updates: no update installs while it is there', $result['problems'][0]);
+
+            $this->assertSame(Install::FAILED, $this->hand('2.0.1', ['2.0.1'], ['uid' => $mine + 1])['outcome'], 'nor by hand');
+        } finally {
+            unlink(InstallLock::$path);
+        }
+    }
+
     public function testNothingInstallsWhereAFailureCouldNotBeRecorded(): void
     {
         $this->check(['2.0.1']);

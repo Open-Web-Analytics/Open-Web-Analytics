@@ -57,6 +57,7 @@ class ReleaseCheck {
     const WAITING    = 'waiting_for_window';
     const INSTALLING = 'installing';
     const NO_TEMP    = 'temp_dir_unwritable';
+    const FOREIGN    = 'files_of_another_user';
 
     /** The notices' source (NotificationManager). */
     const SOURCE = 'auto_update';
@@ -108,6 +109,8 @@ class ReleaseCheck {
             'seed'      => hash( 'sha256', 'owa-release-listing|' . ( defined( 'OWA_AUTH_KEY' ) ? (string) constant( 'OWA_AUTH_KEY' ) : '' )
                 . '|' . (string) CoreAPI::getSetting( 'base', 'public_url' ) . '|' . \OWA\Core\Env::root() ),
             'sleep'     => static fn ( $seconds ) => sleep( (int) $seconds ),
+            // Who runs this: the files automatic updates keep must be this user's (Downloads::foreign()).
+            'uid'       => function_exists( 'posix_geteuid' ) ? posix_geteuid() : null,
             'releases'  => null,
             'env'       => null,
             // Preflight::temp()'s problems, for a test; null tries PHP's own.
@@ -183,6 +186,14 @@ class ReleaseCheck {
         if ( Version::parse( $installed ) === null ) {
 
             return $this->outcome( self::UNKNOWN, null, [], sprintf( 'This installation\'s version, %s, is not a release version.', $installed ) );
+        }
+
+        // Before anything here is read: a failure record another user wrote was never this installation's.
+        $foreign = $this->foreignProblems();
+
+        if ( $foreign ) {
+
+            return $this->outcome( self::FOREIGN, null, $foreign, 'Automatic updates cannot run:' );
         }
 
         $failure = $this->downloads->failure();
@@ -574,6 +585,19 @@ class ReleaseCheck {
 
             return sprintf( CoreAPI::t( 'The installed release, %1$s, could not be downloaded: %2$s. A failed install puts it back, so nothing installs until it is.' ), $installed, rtrim( $e->getMessage(), '.' ) );
         }
+    }
+
+    /**
+     * The update files another user made (Downloads::foreign()), as problems;
+     * none without the posix extension, which says who runs this.
+     *
+     * @return list<string>
+     */
+    public function foreignProblems() {
+
+        $uid = $this->context['uid'];
+
+        return $uid === null ? [] : Downloads::foreignProblems( $this->downloads->foreign( (int) $uid ), (int) $uid );
     }
 
     /** @return bool whether an install is under way: the install marker, or the lock */

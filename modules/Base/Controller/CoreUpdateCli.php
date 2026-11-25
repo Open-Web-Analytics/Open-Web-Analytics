@@ -53,7 +53,7 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
             $this->write( $result['lines'] );
         }
 
-        if ( in_array( $result['outcome'], [ ReleaseCheck::FAILED, ReleaseCheck::UNREACHED, ReleaseCheck::NO_TEMP ], true ) ) {
+        if ( in_array( $result['outcome'], [ ReleaseCheck::FAILED, ReleaseCheck::UNREACHED, ReleaseCheck::NO_TEMP, ReleaseCheck::FOREIGN ], true ) ) {
 
             return $this->fail( sprintf( 'Release check: %s. %s', $result['outcome'], implode( ' ', $result['problems'] ) ) );
         }
