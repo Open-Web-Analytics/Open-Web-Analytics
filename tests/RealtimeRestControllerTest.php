@@ -50,8 +50,13 @@ final class RealtimeRestControllerTest extends RestControllerTestCase
             $this->assertArrayHasKey($card, (array) $resp['data'], $card);
         }
 
-        $this->assertSame(0, $resp['data']['activeUsers']['last30']);
-        $this->assertCount(30, $resp['data']['perMinute']);
+        $this->assertSame(0, $resp['data']['activeUsers']['window']);
+        $this->assertSame(0, $resp['data']['activeUsers']['recent']);
+        $this->assertCount(\OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES, $resp['data']['perMinute']);
+        $this->assertSame(
+            [\OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES, \OWA\Module\Base\Classes\Realtime::RECENT_MINUTES],
+            [$resp['data']['window']['minutes'], $resp['data']['window']['recentMinutes']],
+            'the answer says the spans its two counts cover');
     }
 
     public function testOneVisitorsEventsAreReturned(): void

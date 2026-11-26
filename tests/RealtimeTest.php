@@ -154,8 +154,8 @@ final class RealtimeTest extends TestCase
 
         $users = $this->realtime()->summary()['activeUsers'];
 
-        $this->assertSame(3, $users['last30']);
-        $this->assertSame(2, $users['last5']);
+        $this->assertSame(3, $users['window']);
+        $this->assertSame(2, $users['recent']);
     }
 
     /** Realtime is of the Property: every Profile of it is counted. */
@@ -164,7 +164,7 @@ final class RealtimeTest extends TestCase
         $this->event(1, 1);
         $this->event(2, 2, ['site_id' => self::SIBLING]);
 
-        $this->assertSame(2, $this->realtime()->summary()['activeUsers']['last30'],
+        $this->assertSame(2, $this->realtime()->summary()['activeUsers']['window'],
             'a visitor on the sibling Profile is missing');
     }
 
@@ -175,7 +175,7 @@ final class RealtimeTest extends TestCase
 
         $realtime = new Realtime('7789000000000099', $this->end);
 
-        $this->assertSame(0, $realtime->summary()['activeUsers']['last30']);
+        $this->assertSame(0, $realtime->summary()['activeUsers']['window']);
         $this->assertStringContainsString('1 = 0', $realtime->statements[0]);
     }
 
@@ -256,7 +256,7 @@ final class RealtimeTest extends TestCase
             ['code' => 'FR', 'name' => 'france', 'users' => 1],
         ], $s['countries']);
         $this->assertSame(3, $s['located']);
-        $this->assertSame(4, $s['activeUsers']['last30']);
+        $this->assertSame(4, $s['activeUsers']['window']);
     }
 
     /**

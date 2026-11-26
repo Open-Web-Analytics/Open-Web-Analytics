@@ -54,7 +54,7 @@ test.describe('the realtime screen', () => {
         // No period picker: the window is always the last thirty minutes.
         await expect(page.locator('#owa_timePeriodControl')).toHaveCount(0);
 
-        await expect.poll(async () => Number((await page.locator('.owa_realtimeUsers30').textContent()).replace(/\D/g, '')),
+        await expect.poll(async () => Number((await page.locator('.owa_realtimeUsersWindow').textContent()).replace(/\D/g, '')),
             { timeout: 20_000 }).toBeGreaterThan(0);
 
         await expect(page.locator('.owa_realtimeTable[data-card="events"] tbody'))
