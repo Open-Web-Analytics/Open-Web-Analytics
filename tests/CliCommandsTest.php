@@ -174,7 +174,7 @@ final class CliCommandsTest extends CliControllerTestCase
             ['domain' => 'https://owatest-cli-denied-' . $this->tok . '.example.com']
         );
 
-        $this->assertNotCapable($result, 'add-site requires edit_sites.');
+        $this->assertNotCapable($result, 'add-site making a Property requires create_properties.');
 
         // And nothing was written: a domain is stored without its scheme.
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
