@@ -357,14 +357,14 @@ final class CustomReportsTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * FOUR, written out rather than taken from the constant.
+     * SIX metrics and FOUR dimensions, written out rather than taken from the constants.
      *
      * A fixture built from the constant under test follows it anywhere it
      * moves, so raising the cap would leave the test passing.
      */
-    public function testAtMostFourMetricsAndFourDimensions(): void
+    public function testAtMostSixMetricsAndFourDimensions(): void
     {
-        $this->assertSame(4, CustomReports::MAX_METRICS);
+        $this->assertSame(6, CustomReports::MAX_METRICS);
         $this->assertSame(4, CustomReports::MAX_DIMENSIONS);
 
         /*
@@ -377,13 +377,13 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalEvents';
-        $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime,engagementRate';
+        $this->assertSame('', CustomReports::validate($definition), 'six metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime';
-        $this->assertStringContainsString('the most is 4',
-            CustomReports::validate($definition), 'five metrics is refused');
+            'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime,engagementRate,pageViewsPerSession';
+        $this->assertStringContainsString('the most is 6',
+            CustomReports::validate($definition), 'seven metrics is refused');
 
         $definition = $this->definition();
         $definition['widgets'][1]['query']['metrics'] = 'pageViews';
