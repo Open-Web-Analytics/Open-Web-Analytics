@@ -289,14 +289,6 @@ class Util {
         return Util.dechex(Util.crc32(domain));
     }
 
-    /**
-     * Left-pad a number with zeros to a fixed width.
-     */
-    static zeroFill ( number, length ) {
-
-        return String( number ).padStart( length, '0' );
-    }
-      
     /** Whether a value is an object: not null, and not an array. */
     static is_object ( mixed_var ) {
 
@@ -351,19 +343,6 @@ class Util {
     
     }
     
-    
-    // strips www. from begining of domain if present
-    // otherwise returns the domain as is.
-    static stripWwwFromDomain ( domain ) {
-        
-        var fp = domain.split('.')[0];
-            
-        if (fp === 'www') {
-            return domain.substring(4);
-        } else {
-            return domain;
-        }
-    }
     
     static getCurrentUnixTimestamp () {
 	    
