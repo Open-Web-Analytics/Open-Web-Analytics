@@ -81,8 +81,13 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
  *
  * Only in a PHPUnit process: a child PHP a test starts loads this file too,
  * and must not wait on leases its parent holds. A job running when the suite
- * starts is waited for. The lease outlives a crashed run by at most LEASE
- * seconds, after which the scheduler takes the jobs back on its own.
+ * starts is waited for.
+ *
+ * A run that is killed never runs its shutdown function, and its leases held
+ * every job off the scheduler for the whole lease. So each is owned as
+ * phpunit:<host>:<pid> (owa_test_lease_owner()), and a lease whose PHPUnit
+ * on this host has gone is taken back at the next run's start
+ * (owa_test_lease_is_orphaned()). One held elsewhere waits out its lease.
  */
 function owa_test_pause_scheduler(): void
 {
@@ -92,9 +97,17 @@ function owa_test_pause_scheduler(): void
 
     $lease = 3 * 3600;
     $held  = [];
+    $db    = \OWA\Core\CoreAPI::dbSingleton();
 
     foreach (array_keys(\OWA\Module\Base\Classes\JobStatus::jobs()) as $name) {
-        $lock = new \OWA\Module\Base\Classes\JobLease($name);
+        $lock = new \OWA\Module\Base\Classes\JobLease($name, owa_test_lease_owner());
+
+        $holder = (string) ($db->getJobLock($name)['owner'] ?? '');
+
+        if (owa_test_lease_is_orphaned($holder)) {
+            fwrite(STDERR, "bootstrap: took back \"$name\" from $holder, a run that has ended.\n");
+            $db->releaseJobLock($name, $holder);
+        }
 
         for ($waited = 0; !$lock->acquire($lease); $waited += 2) {
             if ($waited >= 120) {
@@ -114,6 +127,32 @@ function owa_test_pause_scheduler(): void
             $lock->release();
         }
     });
+}
+
+/** The owner this PHPUnit process holds the scheduled jobs' leases as. */
+function owa_test_lease_owner(): string
+{
+    return 'phpunit:' . gethostname() . ':' . getmypid();
+}
+
+/**
+ * Whether a lease's owner is a PHPUnit run on this host that has ended: its
+ * pid no longer runs, or runs something other than PHPUnit (the pid reused).
+ */
+function owa_test_lease_is_orphaned(string $owner): bool
+{
+    if (!preg_match('/^phpunit:(.+):(\d+)$/', $owner, $m) || $m[1] !== gethostname() || (int) $m[2] === getmypid()) {
+        return false;
+    }
+
+    $cmdline = @file_get_contents('/proc/' . $m[2] . '/cmdline');
+
+    if ($cmdline === false) {
+        // No /proc: only a pid signal 0 cannot reach is known to be gone.
+        return function_exists('posix_kill') && !@posix_kill((int) $m[2], 0) && posix_get_last_error() === 3;
+    }
+
+    return strpos($cmdline, 'phpunit') === false;
 }
 
 /**
