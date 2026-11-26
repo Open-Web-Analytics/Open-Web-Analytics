@@ -392,8 +392,18 @@ class Controller extends \OWA\Core\Base {
      */
      
     // second conditional is needed to force an authentication even when capability is added to "everyone" role.
-    // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the
-    // earliest it can happen. The u and p params will only be present if the user has logged in.
+    /**
+     * Sign the user in when $capability needs a user, then check this
+     * controller's own capability (isCurrentUserCapable(), which asks
+     * getRequiredCapability()), not $capability. Report::renderCustom() passes
+     * view_reports only to require sign-in; the report it draws checks
+     * view_reports on its Property.
+     *
+     * The u and p params are present only once the user has signed in.
+     *
+     * @param  string|null $capability
+     * @return bool
+     */
     protected function checkCapabilityAndAuthenticateUser($capability) {
         $needs_user = ! empty( $capability ) && ! \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
 
