@@ -104,6 +104,10 @@ class Event extends EventRaw {
         // cube it would only slow every build's staging insert.
         unset( $this->_tableProperties['composite_indexes']['site_ts'] );
 
+        // NOR SITE_TRANSACTION. Ingest looks a purchase up on raw; nothing
+        // reads a cube by transaction id (Update096).
+        unset( $this->_tableProperties['composite_indexes']['site_transaction'] );
+
         /*
          * THE ALIAS STAYS, and is the same for every Property.
          *
