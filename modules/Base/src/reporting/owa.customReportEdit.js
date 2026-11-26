@@ -190,6 +190,12 @@ export function typeRules( config ) {
                 return rules.fixedExtra( type );
             }
 
+            // A full-width table may list more: rows of near-unique values are what a list is.
+            if ( rules.isFullWidth( type ) && config.fullWidthMaxDimensions ) {
+
+                return Number( config.fullWidthMaxDimensions );
+            }
+
             return rules.isSingleField( type ) ? 1 : Number( config.maxDimensions );
         },
 
@@ -472,7 +478,6 @@ export function start( config ) {
     var TYPES          = config.types || {};
     var MAX            = Number( config.maxWidgets );
     var MAX_METRICS    = Number( config.maxMetrics );
-    var MAX_DIMENSIONS = Number( config.maxDimensions );
     var WIDTHS         = config.widths || [];
     var HEIGHTS        = config.heights || [];
     var LINK_TARGETS   = config.linkTargets || {};
@@ -1116,7 +1121,7 @@ export function start( config ) {
             dims = dims.filter( function ( d ) { return ! rules.isTimeDimension( d ); } )
                 .slice( 0, rules.fixedExtra( type ) );
         } else {
-            dims = dims.slice( 0, isSingleField( type ) ? 1 : MAX_DIMENSIONS );
+            dims = dims.slice( 0, rules.maxDimensions( type ) );
         }
 
         if ( isFullWidth( type ) ) {
@@ -1276,7 +1281,7 @@ export function start( config ) {
 
             jQuery( '#dlgDimensionsHelp' ).text( single
                 ? OWA.l( 'The one dimension its rows are grouped by.' )
-                : say( OWA.l( 'Up to %s. Each one is another column.' ), MAX_DIMENSIONS ) );
+                : say( OWA.l( 'Up to %s. Each one is another column.' ), rules.maxDimensions( type ) ) );
         }
 
         jQuery( '#dlgDimensionNote' )
