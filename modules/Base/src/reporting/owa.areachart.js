@@ -303,8 +303,9 @@ OWA.areaChart.prototype = {
                     h_text.substring( 6, 8 ) * 1, h_text.substring( 8, 10 ) * 1, 0, 0, 0 );
                 break;
 
+            // Minor units, by the currency's exponent: ¥1,500 is 1500, not 15.00.
             case 'currency':
-                value = value/100;
+                value = value / Math.pow( 10, this.currencyExponent === undefined ? 2 : this.currencyExponent );
         }
         
         return value;
@@ -434,6 +435,10 @@ OWA.areaChart.prototype = {
      * Main method for displaying an area chart
      */
     generate : function( resultSet, series, dom_id ) {
+
+        // What formatValue() divides a currency value by: the Property's currency's.
+        this.currencyExponent = resultSet && resultSet.currencyExponent !== undefined
+            ? parseInt( resultSet.currencyExponent, 10 ) || 0 : 2;
         OWA.debug('generating area chart for ' + dom_id);
         // set dom_id just in case.
         if ( dom_id ) {
@@ -1581,7 +1586,7 @@ OWA.areaChart.prototype = {
 
                 return {
                     min: floor,
-                    tickDecimals: 2,
+                    tickDecimals: this.currencyExponent,
                     tickFormatter: function ( value, axis ) {
 
                         return money.prefix
