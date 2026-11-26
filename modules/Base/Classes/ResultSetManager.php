@@ -1233,6 +1233,13 @@ class ResultSetManager extends \OWA\Core\Base {
                 $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
                     '"%s" is a metric; a segment can select only on dimensions.' ), $item['name'] ) );
 
+            } elseif ( in_array( $item['operator'] ?? '', [ '=~', '!~' ], true )
+                    && ( $problem = self::regexProblem( (string) $item['value'] ) ) !== null ) {
+
+                // Run in the database as a filter's pattern is, so refused as one is (setConstraints()).
+                $this->addRequestError( sprintf(
+                    \OWA\Core\CoreAPI::t( 'The "%1$s" pattern was refused: %2$s' ), $item['name'], $problem ) );
+
             } elseif ($this->isDimension( $item['name'] ) ) {
                 $dimensions[$item['name']] = $item;
 
