@@ -156,11 +156,22 @@ function openAddDialog( opener ) {
         }
     ];
 
-    // Enter in the name field.
+    // Enter in a field. With two fields and no submit button the browser
+    // no longer submits the form itself (implicit submission), so Enter is
+    // handled here; the submit handler stays for anything that submits it.
     $form.off( 'submit.owaAppPassword' ).on( 'submit.owaAppPassword', function ( event ) {
 
         event.preventDefault();
         create();
+    } );
+
+    $form.off( 'keydown.owaAppPassword' ).on( 'keydown.owaAppPassword', 'input', function ( event ) {
+
+        if ( event.key === 'Enter' ) {
+
+            event.preventDefault();
+            create();
+        }
     } );
 
     if ( ! addDialog ) {
