@@ -347,7 +347,9 @@ class Update062 extends \OWA\Core\Update {
      */
     private static function v1QueueFiles( $dir ) {
 
-        return array_values( array_filter( array_merge( [ $dir . 'events.txt' ], (array) glob( $dir . 'unprocessed/*' ) ), 'is_file' ) );
+        // Plain files only: the web server writes this directory, and a link here could name any file of this user's.
+        return array_values( array_filter( array_merge( [ $dir . 'events.txt' ], (array) glob( $dir . 'unprocessed/*' ) ),
+            static fn ( $f ) => is_file( $f ) && ! is_link( $f ) ) );
     }
 
     /**
@@ -415,7 +417,9 @@ class Update062 extends \OWA\Core\Update {
 
             if ( $v1 ) {
 
-                $ok = @file_put_contents( $path, implode( "\n", $v1 ) . "\n", FILE_APPEND | LOCK_EX ) !== false;
+                // Appended through SafeFile, which never writes through a link at the name: the
+                // web server can write this directory, and the name can be guessed to the second.
+                $ok = \OWA\Core\SafeFile::append( $path, implode( "\n", $v1 ) . "\n", 0600 );
 
                 if ( $ok ) {
 
