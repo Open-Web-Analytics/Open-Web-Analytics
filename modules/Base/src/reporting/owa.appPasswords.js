@@ -73,6 +73,13 @@ function openAddDialog( opener ) {
             return;
         }
 
+        if ( ! $form.find( '[name="password"]' ).val() ) {
+
+            showError( OWA.l( 'Enter your password.' ) );
+            $form.find( '[name="password"]' ).trigger( 'focus' );
+            return;
+        }
+
         busy = true;
         $error.prop( 'hidden', true );
         $( '.owa_appPasswordCreate' ).prop( 'disabled', true );
@@ -96,8 +103,16 @@ function openAddDialog( opener ) {
                 if ( ! res.ok || ! res.json.data || ! res.json.data.token ) {
 
                     showError( res.json.error || fallbackError() );
+
+                    if ( res.json.error && $form.find( '[name="password"]' ).val() ) {
+
+                        $form.find( '[name="password"]' ).val( '' ).trigger( 'focus' );
+                    }
+
                     return;
                 }
+
+                $form.find( '[name="password"]' ).val( '' );
 
                 var made = res.json.data;
 

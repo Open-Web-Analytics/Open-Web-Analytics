@@ -69,6 +69,7 @@ test.describe('application password screens @selfhost-only', () => {
         await expect(dialog).toBeVisible();
         await dialog.locator('input[name="name"]').fill('e2e screen');
         await dialog.locator('select[name="scope"]').selectOption('full');
+        await dialog.getByLabel('Your password').fill(fx.password);
         const [response] = await Promise.all([
             page.waitForResponse((r) => r.url().includes('base.myAppPasswordCreateAjax')),
             page.click('.owa_appPasswordCreate'),
@@ -149,8 +150,16 @@ test.describe('application password screens @selfhost-only', () => {
         await expect(dialog.locator('.owa_appPasswordError')).toHaveText('Give the application password a name.');
         await expect(dialog.locator('.owa_appPasswordToken')).toBeHidden();
 
+        // The password is asked again; a wrong one makes nothing, and is cleared.
         await dialog.locator('input[name="name"]').fill('e2e escape');
+        await dialog.getByLabel('Your password').fill('not-the-password');
         await dialog.locator('input[name="name"]').press('Enter');
+        await expect(dialog.locator('.owa_appPasswordError')).toHaveText('That is not your password.');
+        await expect(dialog.getByLabel('Your password')).toHaveValue('');
+        await expect(dialog.getByLabel('Your password')).toBeFocused();
+
+        await dialog.getByLabel('Your password').fill(fx.password);
+        await dialog.getByLabel('Your password').press('Enter');
         await expect(dialog.locator('.owa_appPasswordToken')).toBeVisible();
         const token = await dialog.locator('.owa_appPasswordToken').inputValue();
 

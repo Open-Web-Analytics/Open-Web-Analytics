@@ -697,6 +697,23 @@ class Auth extends \OWA\Core\Base {
     const LEGACY_API_KEY_HEADERS = [ 'HTTP_X_API_KEY', 'HTTP_X_SIGNATURE' ];
 
     /**
+     * Whether $typed is the password of the account $user_id names, as
+     * sign-in checks it (passwordMatches()). For a step a session alone may
+     * not take: changing the password, making an application password.
+     *
+     * @param  string $user_id
+     * @param  mixed  $typed
+     * @return bool
+     */
+    public function isAccountPassword( $user_id, $typed ) {
+
+        $u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+        $u->load( (string) $user_id, 'user_id' );
+
+        return (string) $u->get( 'user_id' ) !== '' && $this->passwordMatches( $typed, (string) $u->get( 'password' ) );
+    }
+
+    /**
      * Whether a typed password is the account's: the stored hash, or, for an
      * account whose password 1.x stored unsalted, the whole of that hash.
      *

@@ -206,12 +206,8 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
         $current = (string) $this->getParam( 'current_password' );
 
-        /*
-         * password_verify against the stored hash, the same check Auth uses to
-         * sign somebody in. Not encryptPassword() and compare: password_hash
-         * salts, so two hashes of one password never match as strings.
-         */
-        if ( ! password_verify( $current, (string) $entity->get( 'password' ) ) ) {
+        // The check sign-in makes, a password 1.x stored included.
+        if ( ! \OWA\Core\Auth::get_instance()->isAccountPassword( $user_id, $current ) ) {
 
             return 3236;
         }
