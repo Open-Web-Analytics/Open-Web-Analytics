@@ -247,6 +247,75 @@ class AppPasswords {
         return self::$table ?: \OWA\Core\CoreAPI::entityFactory( 'base.app_password' )->getTableName();
     }
 
+    /** What a revoke link's key is an HMAC of, before the password's. */
+    const REVOKE_CONTEXT = 'owa-app-password-revoke:';
+
+    /**
+     * The key of the link that revokes $row, as the creation e-mail carries
+     * it (announce()): an HMAC of its lookup id, user and creation time. Used
+     * once, as revoking removes the row.
+     *
+     * @param  array<string, mixed> $row lookup_id, user_id, created_at
+     * @return string
+     */
+    public static function revokeKey( array $row ) {
+
+        return hash_hmac( 'sha256', self::REVOKE_CONTEXT . $row['lookup_id'] . '|' . $row['user_id'] . '|' . (int) $row['created_at'], self::key() );
+    }
+
+    /**
+     * The password a revoke link names, when its key is that password's
+     * (revokeKey()); null otherwise, or when it is gone.
+     *
+     * @param  string $lookup_id
+     * @param  string $key
+     * @return Row|null without its hash
+     */
+    public static function forRevokeLink( $lookup_id, $key ) {
+
+        if ( ! self::key() || ! is_string( $key ) || $key === '' ) {
+
+            return null;
+        }
+
+        $row = self::db()->get_row( sprintf( 'SELECT %s FROM %s WHERE lookup_id = ?', self::PUBLIC_COLUMNS, self::table() ),
+            [ (string) $lookup_id ] );
+
+        return $row && hash_equals( self::revokeKey( (array) $row ), $key ) ? (array) $row : null;
+    }
+
+    /**
+     * Tell the account a password was made for it: an e-mail with what was
+     * made, from where, and a link that revokes it signed out
+     * (base.appPasswordRevokeLink). When the mail is not sent, a notice in
+     * the account's bell instead.
+     *
+     * @param  array<string, mixed> $made create()'s answer
+     * @param  string               $user_id
+     * @param  string               $from     the client address, or '' for the command line
+     * @return bool whether the mail was sent
+     */
+    public static function announce( array $made, $user_id, $from ) {
+
+        $made += [ 'user_id' => (string) $user_id ];
+
+        $sent = \OWA\Core\CoreAPI::performAction( 'base.appPasswordCreatedMail', [
+            'made' => $made, 'from' => (string) $from, 'key' => self::revokeKey( $made ) ] ) === true;
+
+        if ( ! $sent ) {
+
+            NotificationManager::record( [ [
+                'source_key'   => (string) $made['lookup_id'],
+                'title'        => sprintf( \OWA\Core\CoreAPI::t( 'An application password, %s, was made for your account.' ), $made['name'] ),
+                'body'         => \OWA\Core\CoreAPI::t( 'If you did not make it, revoke it under My application passwords.' ),
+                'url'          => '',
+                'published_at' => (int) $made['created_at'],
+            ] ], 'app_password', (string) $user_id );
+        }
+
+        return $sent;
+    }
+
     /**
      * HMAC of a whole token, hex.
      *
