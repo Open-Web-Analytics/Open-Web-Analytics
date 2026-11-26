@@ -73,6 +73,13 @@ function openAddDialog( opener ) {
             return;
         }
 
+        if ( ! $form.find( '[name="password"]' ).val() ) {
+
+            showError( OWA.l( 'Enter your password.' ) );
+            $form.find( '[name="password"]' ).trigger( 'focus' );
+            return;
+        }
+
         busy = true;
         $error.prop( 'hidden', true );
         $( '.owa_appPasswordCreate' ).prop( 'disabled', true );
@@ -96,8 +103,16 @@ function openAddDialog( opener ) {
                 if ( ! res.ok || ! res.json.data || ! res.json.data.token ) {
 
                     showError( res.json.error || fallbackError() );
+
+                    if ( res.json.error && $form.find( '[name="password"]' ).val() ) {
+
+                        $form.find( '[name="password"]' ).val( '' ).trigger( 'focus' );
+                    }
+
                     return;
                 }
+
+                $form.find( '[name="password"]' ).val( '' );
 
                 var made = res.json.data;
 
@@ -141,11 +156,22 @@ function openAddDialog( opener ) {
         }
     ];
 
-    // Enter in the name field.
+    // Enter in a field. With two fields and no submit button the browser
+    // no longer submits the form itself (implicit submission), so Enter is
+    // handled here; the submit handler stays for anything that submits it.
     $form.off( 'submit.owaAppPassword' ).on( 'submit.owaAppPassword', function ( event ) {
 
         event.preventDefault();
         create();
+    } );
+
+    $form.off( 'keydown.owaAppPassword' ).on( 'keydown.owaAppPassword', 'input', function ( event ) {
+
+        if ( event.key === 'Enter' ) {
+
+            event.preventDefault();
+            create();
+        }
     } );
 
     if ( ! addDialog ) {

@@ -184,9 +184,11 @@ class CoreAPI {
         } else {
             
             \OWA\Core\CoreAPI::error("$type is not a supported database.");
+
+            return false;
         }
 
-         return true;
+        return true;
 
     }
     /**

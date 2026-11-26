@@ -164,4 +164,10 @@ final class DbDriverResolutionTest extends TestCase {
             spl_autoload_unregister( $loader );
         }
     }
+
+    /** An empty type is no database: set up fails here, not as a fatal on a class named owa_db_. */
+    public function testNoTypeIsNotASupportedDatabase(): void
+    {
+        $this->assertFalse( \OWA\Core\CoreAPI::setupStorageEngine( '' ) );
+    }
 }
