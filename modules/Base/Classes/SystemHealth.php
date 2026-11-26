@@ -258,6 +258,7 @@ class SystemHealth {
             $main     = $intake->stats();
             $dlq      = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
             $held     = method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : [];
+            $unremoved = method_exists( $intake, 'failedBatches' ) ? $intake->failedBatches() : [];
             $fallback = TrackerIngest::fallback();
             $kept     = $fallback ? $fallback->stats() : null;
 
@@ -328,6 +329,19 @@ class SystemHealth {
                     . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid, $batch['host'] )
                 : sprintf( \OWA\Core\CoreAPI::t( 'Batch %1$s has been held for %2$s by process %3$s. If that process is hung, end it and the next '
                     . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid ) );
+        }
+
+        // Drained, every event ingested, and not removable: retried, then set aside.
+        foreach ( $unremoved as $batch ) {
+
+            $findings[] = $batch['set_aside']
+                ? self::finding( 'red', \OWA\Core\CoreAPI::t( 'Batch set aside' ), sprintf( \OWA\Core\CoreAPI::t(
+                    'Batch %1$s was drained, and could not be archived or deleted after %2$d tries: %3$s. Its events are ingested. '
+                  . 'Fix the cause -- the permissions of the queue\'s processing directory, or disk space -- then delete it.' ),
+                    $batch['batch'], $batch['attempts'], $batch['reason'] ) )
+                : self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Batch not removed' ), sprintf( \OWA\Core\CoreAPI::t(
+                    'Batch %1$s was drained, but could not be archived or deleted: %2$s. Tried %3$d of %4$d times; the next drain tries again.' ),
+                    $batch['batch'], $batch['reason'], $batch['attempts'], FileEventQueue::MAX_REMOVE_ATTEMPTS ) );
         }
 
         $backend = TrackerIngest::backend();

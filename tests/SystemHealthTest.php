@@ -122,6 +122,37 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('red', self::levels(SystemHealth::intake())['Backlog']);
     }
 
+    /** A drained batch that cannot be archived is yellow while it is retried, red once it is set aside. */
+    public function testABatchNotRemovedIsYellowThenSetAsideIsRed(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('base', 'archive_old_events');
+        \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', true);
+
+        $q = TrackerIngest::$queue;
+        $q->send(['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1]);
+        $got = $q->receive(10, 300);
+
+        @mkdir($this->intakeDir . 'archive', 0775, true);
+        chmod($this->intakeDir . 'archive', 0555);
+
+        try {
+            ob_start();
+            $q->ack($got[0]);
+            ob_end_clean();
+
+            $this->assertSame('yellow', self::levels(SystemHealth::intake())['Batch not removed']);
+
+            for ($i = 2; $i <= \OWA\Module\Base\Classes\FileEventQueue::MAX_REMOVE_ATTEMPTS; $i++) {
+                (new \OWA\Module\Base\Classes\FileEventQueue(['path' => $this->intakeDir]))->receive(10, 300);
+            }
+
+            $this->assertSame('red', self::levels(SystemHealth::intake())['Batch set aside']);
+        } finally {
+            chmod($this->intakeDir . 'archive', 0775);
+            \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', $was);
+        }
+    }
+
     public function testEveryRegisteredJobIsListed(): void
     {
         $jobs = SystemHealth::recurringJobs();
