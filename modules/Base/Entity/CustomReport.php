@@ -125,6 +125,24 @@ class CustomReport extends \OWA\Core\Entity {
 
         $last_updated_timestamp = new \OWA\Module\Base\Classes\DbColumn( 'last_updated_timestamp', OWA_DTD_INT );
         $this->setProperty( $last_updated_timestamp );
+
+        /*
+         * A user's own version of a SHIPPED report (Classes\ReportOverrides):
+         * the report id it replaces, for its author, on its Property. Empty
+         * for every other row. Such a row is not on the roster; it is drawn
+         * in the shipped report's place.
+         *
+         * Last, with replaces_hash, in the order Update097 appends them.
+         */
+        $replaces = new \OWA\Module\Base\Classes\DbColumn( 'replaces', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $replaces );
+
+        /*
+         * The SHA-256 of the shipped definition when the override was saved,
+         * so the report can say when the default has changed since.
+         */
+        $replaces_hash = new \OWA\Module\Base\Classes\DbColumn( 'replaces_hash', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $replaces_hash );
     }
 
     /** What a report is. Falsy reads as a report. */

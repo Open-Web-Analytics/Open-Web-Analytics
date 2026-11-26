@@ -17,6 +17,8 @@ $owa_name       = (string) $view->get('custom_report_name');
 $owa_definition = (array) $view->get('custom_report_definition');
 $owa_is_shared  = (bool) $view->get('custom_report_is_shared');
 $owa_error      = (string) $view->get('custom_report_error');
+// A user's own version of this shipped report (ReportOverrides); '' for a custom report.
+$owa_replaces   = (string) $view->get('report_replaces');
 $owa_types      = (array) $view->get('widget_types');
 $owa_max        = (int) $view->get('max_widgets');
 ?>
@@ -30,6 +32,7 @@ $owa_max        = (int) $view->get('max_widgets');
     <?php echo $view->createNonceFormField( 'base.customReportSave' ); ?>
 
     <input type="hidden" name="customReportId" value="<?php $view->out( $owa_id ); ?>" />
+    <input type="hidden" name="replaces" value="<?php $view->out( $owa_replaces ); ?>" />
 
     <?php
         /*
@@ -75,6 +78,8 @@ $owa_max        = (int) $view->get('max_widgets');
              * (CustomReports::mayView()).
              */
         ?>
+        <?php // Your version of a shipped report is yours alone: nothing to share. ?>
+        <?php if ( $owa_replaces === '' ): ?>
         <label class="owa_switch" for="isShared">
             <input type="checkbox" role="switch" id="isShared" name="isShared" value="1"
                    aria-describedby="isSharedHint"
@@ -83,11 +88,16 @@ $owa_max        = (int) $view->get('max_widgets');
             <?php $view->out( \OWA\Core\CoreAPI::t( 'Shared in everyone\'s list' ) ); ?>
         </label>
         <span id="isSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Off, it opens only for you and administrators, even from a link you have already sent.' ) ); ?></span>
+        <?php else: ?>
+        <p class="owa_builderNote" data-ui="custom-report-editor:override-note"><?php $view->out( \OWA\Core\CoreAPI::t( 'Your version of this report, on this Property. Others still see the default.' ) ); ?></p>
+        <?php endif; ?>
 
         <div class="owa_editorActions">
-            <a class="owa_button" id="customReportCancel" href="<?php echo $owa_id
-                ? $view->makeLink( [ 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ], true )
-                : $view->makeLink( [ 'do' => 'base.customReports' ], true ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
+            <a class="owa_button" id="customReportCancel" href="<?php echo $owa_replaces !== ''
+                ? $view->makeLink( [ 'do' => 'base.report', 'reportId' => $owa_replaces ], true )
+                : ( $owa_id
+                    ? $view->makeLink( [ 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ], true )
+                    : $view->makeLink( [ 'do' => 'base.customReports' ], true ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
             <?php
                 /*
                  * Disabled in the MARKUP as well as by draw(), so a new report
@@ -134,7 +144,19 @@ $owa_max        = (int) $view->get('max_widgets');
     <div id="customReportCanvas" class="owa_builderCanvas"></div>
     <p id="customReportMoved" class="owa_srOnly" aria-live="polite"></p>
 
-    <?php if ( $owa_id ): ?>
+    <?php if ( $owa_id && $owa_replaces !== '' ): ?>
+    <div class="owa_editorFoot">
+        <?php // Reset: deletes your version; base.customReportDelete sends you back to the default. ?>
+        <a class="owa_builderDelete" data-ui="custom-report-editor:reset" href="<?php echo $view->makeLink( [
+            'do'             => 'base.customReportDelete',
+            'customReportId' => $owa_id,
+        ], false, '', false, true ); ?>"
+           data-owa-confirm
+           data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Reset this report to its default?' ) ); ?>"
+           data-owa-confirm-body="<?php $view->out( \OWA\Core\CoreAPI::t( 'Your version is deleted, and you see the report as it ships.' ) ); ?>"
+           data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Reset to default' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Reset to default' ) ); ?></a>
+    </div>
+    <?php elseif ( $owa_id ): ?>
     <div class="owa_editorFoot">
         <?php // 5th arg = $add_nonce: base.customReportDelete is setNonceRequired(). ?>
         <a class="owa_builderDelete" href="<?php echo $view->makeLink( [

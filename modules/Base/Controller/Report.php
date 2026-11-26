@@ -172,7 +172,73 @@ class Report extends \OWA\Core\AdminController {
 
         $target->setDefinition( $definition );
 
-        return $target->doAction();
+        // The reader's own version of it, if they made one (ReportOverrides).
+        $target->setShippedReport( $id );
+
+        return $this->withOverrideActions( (array) $target->doAction(), $id );
+    }
+
+    /**
+     * On a shipped report the builder could have made: a pencil to edit the
+     * reader's own version of it, and a tag when that is what is drawn.
+     *
+     * Offered with edit_reports, the capability the builder asks for. The tag
+     * says when the shipped report has changed since the edit, and when the
+     * edit cannot be drawn on this Property, in which case the shipped report
+     * is.
+     *
+     * @param  array<mixed> $data what the target controller returned
+     * @param  string       $id   the shipped report
+     * @return array<mixed>
+     */
+    private function withOverrideActions( array $data, $id ) {
+
+        if ( empty( $data['view'] ) ) {
+
+            return $data;
+        }
+
+        $override = $data['report_override'] ?? null;
+
+        if ( is_array( $override ) ) {
+
+            $tag = $override['error'] !== ''
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Your edited version is not drawn here: %s' ), $override['error'] )
+                : ( $override['stale']
+                    ? \OWA\Core\CoreAPI::t( 'Edited; the default has changed since' )
+                    : \OWA\Core\CoreAPI::t( 'Edited' ) );
+
+            $data['title_tags'] = array_merge( (array) ( $data['title_tags'] ?? [] ), [ $tag ] );
+        }
+
+        // On this Property, as the builder asks it (Controller::checkCapabilityAndAuthenticateUser()).
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $site = $user->siteIdForProperty( (string) ( $data['currentPropertyId'] ?? '' ) );
+
+        if ( ! ( $user->isAdmin() || $user->isCapable( 'edit_reports', $site ) )
+             || ! \OWA\Module\Base\Classes\ReportOverrides::isEditable( $id ) ) {
+
+            return $data;
+        }
+
+        $state = array_intersect_key( $this->params, array_flip( \OWA\Core\View::LINK_STATE_KEYS ) );
+
+        if ( ! empty( $data['currentPropertyId'] ) ) {
+
+            $state['propertyId'] = (string) $data['currentPropertyId'];
+        }
+
+        $data['title_actions'] = array_merge( (array) ( $data['title_actions'] ?? [] ), [
+            [
+                'url'      => ( new \OWA\Core\Template( null, [ 'link_state' => $state ] ) )
+                                  ->makeLink( [ 'do' => 'base.customReportEdit', 'replaces' => $id ], true ),
+                'label'    => \OWA\Core\CoreAPI::t( 'Edit your version of this report' ),
+                'icon'     => 'fas fa-pencil-alt',
+                'iconOnly' => true,
+            ],
+        ] );
+
+        return $data;
     }
 
     /**

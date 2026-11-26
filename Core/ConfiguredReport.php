@@ -95,6 +95,23 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     /** @var array<string, mixed> the decoded definition */
     private $definition = [];
 
+    /** @var string the shipped report this is, whose reader's own version is drawn instead; '' for none */
+    private $shipped_id = '';
+
+    /**
+     * Draw the reader's own version of this shipped report, when they have
+     * one on the Property being drawn (Classes\ReportOverrides). Decided in
+     * action(), once pre() has signed the reader in and resolved the
+     * Property.
+     *
+     * @param  string $report_id
+     * @return void
+     */
+    public function setShippedReport( $report_id ) {
+
+        $this->shipped_id = (string) $report_id;
+    }
+
     /**
      * The definition's `capability`, when it names one, replaces view_reports
      * as the capability a reader needs. A module's report may declare its own.
@@ -682,6 +699,33 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * @return void
      */
     public function action() {
+
+        /*
+         * The reader's own version, in the shipped one's place. The shipped
+         * definition's capability still applies: setDefinition() took it, and
+         * an override cannot declare one (CustomReports::validate()).
+         */
+        if ( $this->shipped_id !== '' ) {
+
+            $override = \OWA\Module\Base\Classes\ReportOverrides::forReader(
+                $this->shipped_id,
+                (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ),
+                (string) $this->get( 'currentPropertyId' ) );
+
+            if ( $override !== null ) {
+
+                if ( $override['definition'] ) {
+
+                    $this->definition = $override['definition'];
+                }
+
+                $this->set( 'report_override', [
+                    'id'    => $override['id'],
+                    'stale' => $override['stale'],
+                    'error' => $override['error'],
+                ] );
+            }
+        }
 
         $d = self::translated( $this->definition );
 
