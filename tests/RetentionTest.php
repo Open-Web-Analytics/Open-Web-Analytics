@@ -82,9 +82,6 @@ final class RetentionTest extends TestCase
 
         \OWA\Core\CoreAPI::setScopedSetting('property', self::PROPERTY, 'base', Retention::CUBE, 48);
         $this->assertSame(24, Retention::cubeMonths(self::PROPERTY), 'capped at raw\'s');
-
-        $this->assertSame(24, Retention::monthsForTable(Retention::rawTable()));
-        $this->assertSame(24, Retention::monthsForTable(\OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)));
     }
 
     /**

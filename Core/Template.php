@@ -398,7 +398,20 @@ class Template extends TemplateEngine {
                 $state = array_intersect_key($state, array_flip($add_state));
             }
 
-            $all_params = array_merge($all_params, $state);
+            /*
+             * URL-encoded here, as the request's own values: one carrying & = or
+             * # would otherwise add parameters to every link on the screen, or
+             * cut them short. $params are the caller's, which encodes what it
+             * means to (ConfiguredReport::buildConstraints(), the heatmap's
+             * constraints).
+             */
+            $encoded = [];
+
+            foreach ($state as $n => $v) {
+                $encoded[rawurlencode((string) $n)] = is_scalar($v) ? rawurlencode((string) $v) : $v;
+            }
+
+            $all_params = array_merge($all_params, $encoded);
         }
 
         // Load overrides

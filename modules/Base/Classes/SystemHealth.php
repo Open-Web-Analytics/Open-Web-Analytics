@@ -331,6 +331,21 @@ class SystemHealth {
                     . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid ) );
         }
 
+        // The queue's own directory is the drain's alone: one the web server could write lets it steer the drain's renames.
+        if ( $intake instanceof FileEventQueue && $intake->inbox_dir !== null ) {
+
+            $data    = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'data_dir' ), '/' );
+            $problem = strpos( $intake->queue_dir, $data . '/' ) === 0
+                ? \OWA\Core\SafeFile::trustProblem( rtrim( $intake->queue_dir, '/' ), $data ) : null;
+
+            if ( $problem !== null && is_dir( $intake->queue_dir ) ) {
+
+                $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Queue directory not private' ), sprintf( \OWA\Core\CoreAPI::t(
+                    'The tracking queue\'s directory must be writable by the owner of OWA\'s files only: %1$s The web server writes '
+                  . 'beacons to its inbox, %2$s, and nothing else.' ), $problem, $intake->inbox_dir ) );
+            }
+        }
+
         // Drained, every event ingested, and not removable: set aside, or where even that failed, in the way.
         foreach ( $unremoved as $batch ) {
 

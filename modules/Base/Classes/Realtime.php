@@ -22,9 +22,14 @@ namespace OWA\Module\Base\Classes;
  */
 class Realtime {
 
+    /** The window every card covers, and the screen's words name. */
     const WINDOW_MINUTES = 30;
 
+    /** The second active-users count: the end of the window. */
     const RECENT_MINUTES = 5;
+
+    /** How often the screen asks again while its tab is open. */
+    const POLL_SECONDS = 15;
 
     /**
      * Rows per card: the busiest, not all of them.
@@ -81,10 +86,12 @@ class Realtime {
         $recent_start = $this->end - self::RECENT_MINUTES * 60 * 1000000;
 
         return [
-            'window'      => [ 'start' => $this->start, 'end' => $this->end, 'minutes' => self::WINDOW_MINUTES ],
+            'window'      => [ 'start' => $this->start, 'end' => $this->end,
+                               'minutes' => self::WINDOW_MINUTES, 'recentMinutes' => self::RECENT_MINUTES ],
+            // Over the window, and over its last recentMinutes.
             'activeUsers' => [
-                'last30' => $this->users( $this->start ),
-                'last5'  => $this->users( $recent_start ),
+                'window' => $this->users( $this->start ),
+                'recent' => $this->users( $recent_start ),
             ],
             'perMinute'   => $this->perMinute(),
             'pages'       => $this->pages(),

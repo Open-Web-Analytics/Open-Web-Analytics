@@ -14,7 +14,7 @@ $owa_realtimeApi = $view->makeApiLink( [
 <div id="owa_realtime" class="owa_realtime">
 
     <p class="owa_realtimeLead">
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'The last 30 minutes, as events arrive. Refreshes every 15 seconds while this tab is open. Sources are shown as collected; channels are classified when reports are built.' ) );?>
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'The last %1$d minutes, as events arrive. Refreshes every %2$d seconds while this tab is open. Sources are shown as collected; channels are classified when reports are built.' ), \OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES, \OWA\Module\Base\Classes\Realtime::POLL_SECONDS ) );?>
     </p>
 
     <p class="owa_realtimeStatus" role="status" hidden></p>
@@ -27,12 +27,12 @@ $owa_realtimeApi = $view->makeApiLink( [
 
         <div class="owa_realtimeHead">
             <div class="owa_realtimeKpi">
-                <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Active users, last 30 minutes' ) );?></div>
-                <div class="owa_realtimeKpiValue owa_realtimeUsers30">&hellip;</div>
+                <div class="owa_realtimeKpiLabel"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Active users, last %d minutes' ), \OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES ) );?></div>
+                <div class="owa_realtimeKpiValue owa_realtimeUsersWindow">&hellip;</div>
             </div>
             <div class="owa_realtimeKpi">
-                <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Last 5 minutes' ) );?></div>
-                <div class="owa_realtimeKpiValue owa_realtimeUsers5">&hellip;</div>
+                <div class="owa_realtimeKpiLabel"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Last %d minutes' ), \OWA\Module\Base\Classes\Realtime::RECENT_MINUTES ) );?></div>
+                <div class="owa_realtimeKpiValue owa_realtimeUsersRecent">&hellip;</div>
             </div>
             <div class="owa_realtimePerMinute">
                 <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Active users per minute' ) );?></div>
@@ -98,7 +98,7 @@ $owa_realtimeApi = $view->makeApiLink( [
 
         <section class="owa_realtimeCard owa_realtimeRecentCard">
             <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Recent events' ) );?></h3>
-            <p class="owa_realtimeHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Select an event to see that visitor’s last 30 minutes.' ) );?></p>
+            <p class="owa_realtimeHint"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Select an event to see that visitor’s last %d minutes.' ), \OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES ) );?></p>
             <ol class="owa_realtimeEvents owa_realtimeRecent"></ol>
         </section>
     </div>
@@ -115,4 +115,6 @@ $owa_realtimeApi = $view->makeApiLink( [
     'apiUrl'   => $owa_realtimeApi,
     'mapUrl'   => $view->makeImageLink( 'base/i/world-110m.svg' ),
     'timezone' => (string) $view->get( 'realtime_timezone' ),
+    'minutes'  => \OWA\Module\Base\Classes\Realtime::WINDOW_MINUTES,
+    'interval' => \OWA\Module\Base\Classes\Realtime::POLL_SECONDS * 1000,
 ] ); ?></script>

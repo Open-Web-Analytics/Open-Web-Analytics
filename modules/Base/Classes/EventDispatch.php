@@ -30,9 +30,6 @@ class EventDispatch {
      */
     public $listenersByFilterType = [];
 
-    /** @var array{} nothing reads or writes it */
-    public $queues    = [];
-
 
     /**
      * Singleton

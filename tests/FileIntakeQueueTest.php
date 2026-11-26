@@ -115,7 +115,7 @@ final class FileIntakeQueueTest extends TestCase
         $q->ack($q->receive(10, 300)[0]);
 
         $this->assertCount(1, glob($this->dir . 'archive/*.txt'));
-        $this->assertSame([], glob($this->dir . 'processing/*'));
+        $this->assertSame([], glob($this->dir . 'processing/*.txt'));
     }
 
     /** A message sent with a delay waits for its minute. */
@@ -489,7 +489,8 @@ final class FileIntakeQueueTest extends TestCase
         touch($this->dir . 'dead-letter/archive/old.txt', time() - 7200);
 
         $this->assertSame(2, $q->pruneArchive(3600));
-        $this->assertSame([$this->dir . 'archive/new.txt'], glob($this->dir . 'archive/*'));
+        $this->assertSame([$this->dir . 'archive/new.txt'], glob($this->dir . 'archive/*.txt'));
+        $this->assertFileExists($this->dir . 'archive/index.php', 'its guard is not pruned');
     }
 
     /**

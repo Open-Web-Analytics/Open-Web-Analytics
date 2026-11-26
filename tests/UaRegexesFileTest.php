@@ -85,6 +85,42 @@ final class UaRegexesFileTest extends TestCase {
         } );
     }
 
+    /** cmd=instance-info reports on the file the parser uses: where ua-update-definitions writes it. */
+    public function testInstanceInfoReportsTheFileInConf(): void {
+
+        $this->withMaintainedFile( function () {
+
+            $report = $this->instanceInfoFreshness();
+
+            $this->assertStringContainsString( 'updated ' . date( 'Y-m-d' ), $report );
+            $this->assertStringNotContainsString( 'never updated', $report );
+        } );
+    }
+
+    /** A file at the old location is not used, so instance-info says the bundled copy is. */
+    public function testInstanceInfoIgnoresTheOldLocation(): void {
+
+        $old = umask( 022 );
+        mkdir( $this->data . 'ua-parser', 0755 );
+        file_put_contents( $this->data . 'ua-parser/regexes.php', "<?php return ['user_agent_parsers' => []];" );
+        umask( $old );
+
+        $this->assertStringContainsString( 'never updated (using the bundled copy)', $this->instanceInfoFreshness() );
+    }
+
+    private function instanceInfoFreshness(): string {
+
+        $cli = ( new ReflectionClass( \OWA\Module\Base\Controller\InstanceInfoCli::class ) )
+            ->newInstanceWithoutConstructor();
+
+        $rows = ( new ReflectionMethod( $cli, 'freshness' ) )->invoke( $cli, $this->data );
+
+        return implode( "\n", array_filter( (array) $rows, static function ( $row ) {
+
+            return strpos( (string) $row, 'User-agent patterns' ) !== false;
+        } ) );
+    }
+
     /** One the web server could have written is not run: the bundled copy is used. */
     public function testAFileOthersCanWriteIsNotUsed(): void {
 

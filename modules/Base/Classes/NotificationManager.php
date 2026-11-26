@@ -755,8 +755,8 @@ class NotificationManager {
      *
      * Not the length of the list. Reading something clears it from the count
      * while leaving it on screen, which is the whole point of separating the
-     * two states -- so the badge and the list deliberately disagree, and the
-     * client must not compute one from the other.
+     * two states. The header counts the unread rows it holds
+     * (owa.header.js paintBadge()), so nothing in OWA calls this; tests do.
      *
      * @param  string $userId
      * @return int

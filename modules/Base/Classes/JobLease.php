@@ -39,6 +39,9 @@ class JobLease {
     }
 
     /**
+     * The owner the lease is held as. Read by tests, which compare it with the
+     * lock row.
+     *
      * @return string
      */
     public function getOwner() {

@@ -1,10 +1,9 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<script>
-OWA.items['<?php $view->out( $view->dom_id );?>'] = new OWA.report();
-OWA.items['<?php $view->out( $view->dom_id );?>'].dom_id = "<?php $view->out( $view->dom_id );?>";
-OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view->makeJson($view->params);?>;
-
-</script>
+<?php // The report's object, made by the bundle when it is first asked for (OWA.report.item()). ?>
+<script type="application/json" data-ui="report:item"><?php echo \OWA\Core\Template::scriptJson( [
+    'dom_id'     => (string) $view->dom_id,
+    'properties' => (object) (array) $view->params,
+], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE ); ?></script>
 
 <div id="<?php $view->out( $view->dom_id );?>" class="owa_reportContainer">
 

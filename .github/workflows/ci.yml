@@ -144,7 +144,7 @@ jobs:
     # This job is deterministic where randomised ordering is not.
     #
     # It is also where both database drivers are proven. PDO is the default
-    # wherever pdo_mysql is present, but mysqli remains supported until v2, and
+    # wherever pdo_mysql is present, but mysqli is still supported, and
     # an installation without pdo_mysql falls back to it -- so a suite that only
     # ever ran on one of them would let the other rot silently while still being
     # what some installations use. 'mysql' selects PDO, 'mysqli' names the

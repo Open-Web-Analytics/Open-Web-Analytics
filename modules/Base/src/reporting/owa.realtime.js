@@ -13,6 +13,8 @@ OWA.realtime = function ( root, options ) {
     this.apiUrl   = options.apiUrl;
     this.timezone = options.timezone || undefined;
     this.interval = options.interval || 15000;
+    // The window's length, for the words; Classes\Realtime::WINDOW_MINUTES.
+    this.minutes  = options.minutes || 30;
     this.timer    = null;
     this.visitor  = null;
     this.last     = null;
@@ -134,8 +136,8 @@ OWA.realtime.prototype = {
 
         this.show( 'summary' );
 
-        this.text( '.owa_realtimeUsers30', this.number( d.activeUsers.last30 ) );
-        this.text( '.owa_realtimeUsers5', this.number( d.activeUsers.last5 ) );
+        this.text( '.owa_realtimeUsersWindow', this.number( d.activeUsers.window ) );
+        this.text( '.owa_realtimeUsersRecent', this.number( d.activeUsers.recent ) );
 
         this.bars( d.perMinute || [] );
         this.map.shade( d.countries || [] );
@@ -170,10 +172,10 @@ OWA.realtime.prototype = {
 
         this.events( '.owa_realtimeRecent', d.recent || [], true );
 
-        var unknown = d.activeUsers.last30 - ( d.located || 0 );
+        var unknown = d.activeUsers.window - ( d.located || 0 );
         var note    = '';
 
-        if ( d.activeUsers.last30 > 0 && ! d.located ) {
+        if ( d.activeUsers.window > 0 && ! d.located ) {
 
             note = OWA.l( 'No locations: they need the MaxMind GeoIP module.' );
 
@@ -181,7 +183,7 @@ OWA.realtime.prototype = {
 
             note = OWA.util.sprintf(
                 OWA.ln( '%1$s of %2$s users has no known location.', '%1$s of %2$s users have no known location.', unknown ),
-                this.number( unknown ), this.number( d.activeUsers.last30 ) );
+                this.number( unknown ), this.number( d.activeUsers.window ) );
         }
 
         this.text( '.owa_realtimeMapNote', note );
@@ -230,7 +232,7 @@ OWA.realtime.prototype = {
 
             cell.colSpan     = body.parentNode.querySelectorAll( 'thead th' ).length || 1;
             cell.className   = 'owa_realtimeEmpty';
-            cell.textContent = OWA.l( 'None in the last 30 minutes' );
+            cell.textContent = OWA.util.sprintf( OWA.l( 'None in the last %s minutes' ), this.minutes );
             empty.appendChild( cell );
             body.appendChild( empty );
 
@@ -280,7 +282,7 @@ OWA.realtime.prototype = {
             var li = document.createElement( 'li' );
 
             li.className   = 'owa_realtimeEmpty';
-            li.textContent = OWA.l( 'No events in the last 30 minutes' );
+            li.textContent = OWA.util.sprintf( OWA.l( 'No events in the last %s minutes' ), this.minutes );
             list.appendChild( li );
 
             return;
@@ -391,7 +393,7 @@ OWA.realtime.prototype = {
 /**
  * The realtime report starts from the data report_realtime.php hands over:
  *
- *   <script type="application/json" data-ui="realtime:config">{ "apiUrl", "mapUrl", "timezone" }</script>
+ *   <script type="application/json" data-ui="realtime:config">{ "apiUrl", "mapUrl", "timezone", "minutes", "interval" }</script>
  */
 export const REALTIME_SELECTOR = '[data-ui="realtime:config"]';
 

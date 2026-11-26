@@ -356,7 +356,7 @@ final class Update062Test extends TestCase
         $this->savedLogDir = (string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir');
         $this->logDir = sys_get_temp_dir() . '/owa-v1q-' . bin2hex(random_bytes(4)) . '/';
         mkdir($this->logDir . 'unprocessed', 0700, true);
-        \OWA\Core\CoreAPI::setSetting('base', 'async_log_dir', $this->logDir);
+        $this->update->v1_queue_dir = $this->logDir;
 
         return $this->logDir;
     }

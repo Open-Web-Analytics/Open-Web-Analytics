@@ -415,16 +415,18 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     /**
      * The two datasets that rot without erroring.
      *
+     * The patterns are the file the parser uses (Browscap::regexesFile()).
+     *
+     * @param  string|null $data_dir a test's; else the installation's
      * @return list<string> report lines
      */
-    private function freshness() {
+    private function freshness( $data_dir = null ) {
 
         $rows = [];
 
-        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
-        $file = $dir . 'regexes.php';
+        $file = \OWA\Module\Base\Classes\Browscap::regexesFile( $data_dir );
 
-        if ( file_exists( $file ) ) {
+        if ( $file !== null ) {
 
             $age = (int) floor( ( time() - filemtime( $file ) ) / 86400 );
 

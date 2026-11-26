@@ -3029,13 +3029,15 @@ namespace OWA\Module\Base\Classes;
             $this->set(
                 'base',
                 'error_log_file',
-                $this->get( 'base', 'data_dir' ) . 'logs/errors_' . \OWA\Core\CoreAPI::generateInstanceSpecificHash() . '.txt'
+                $this->get( 'base', 'data_dir' ) . 'logs/' . \OWA\Core\PrivateFiles::name( 'errors', '.txt' )
             );
         }
 
+        // The file queue's own directory, which only the drain writes: the
+        // web server writes its inbox, in logs/ (TrackerIngest::inboxDir()).
         if ( ! $this->get( 'base', 'async_log_dir' ) ) {
 
-            $this->set( 'base', 'async_log_dir', $this->get( 'base', 'data_dir' ) . 'logs/' );
+            $this->set( 'base', 'async_log_dir', $this->get( 'base', 'data_dir' ) . 'queue/' );
         }
 
         \OWA\Core\CoreAPI::debug('check for http host');

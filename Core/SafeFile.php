@@ -77,7 +77,19 @@ class SafeFile {
             return $dir !== '';
         }
 
-        return self::makeDirs( dirname( $dir ), $mode ) && ( self::makeDir( $dir, $mode ) || is_dir( $dir ) );
+        if ( ! self::makeDirs( dirname( $dir ), $mode ) ) {
+
+            return false;
+        }
+
+        if ( self::makeDir( $dir, $mode ) ) {
+
+            PrivateFiles::guard( $dir );
+
+            return true;
+        }
+
+        return is_dir( $dir );
     }
 
     /**
@@ -250,7 +262,7 @@ class SafeFile {
      * @param  string   $path
      * @return bool
      */
-    private static function isNamed( $h, $path ) {
+    public static function isNamed( $h, $path ) {
 
         $open = @fstat( $h );
         clearstatcache( true, $path );

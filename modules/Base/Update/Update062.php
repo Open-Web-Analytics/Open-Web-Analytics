@@ -336,6 +336,25 @@ class Update062 extends \OWA\Core\Update {
         return true;
     }
 
+    /** @var string|null 1.x's queue directory; null for v1QueueDir()'s. TESTS ONLY. */
+    public $v1_queue_dir = null;
+
+    /**
+     * Where 1.x's file queue is: OWA_ASYNC_LOG_DIR when the config file sets
+     * it, else owa-data/logs/, 1.x's default. Not async_log_dir's default,
+     * which is v2's own queue directory (logs/queue_<instance hash>/).
+     *
+     * @return string with a trailing slash
+     */
+    private function v1QueueDir() {
+
+        $dir = $this->v1_queue_dir ?? ( defined( 'OWA_ASYNC_LOG_DIR' ) && (string) OWA_ASYNC_LOG_DIR !== ''
+            ? (string) OWA_ASYNC_LOG_DIR
+            : (string) \OWA\Core\CoreAPI::getSetting( 'base', 'data_dir' ) . 'logs/' );
+
+        return rtrim( $dir, '/' ) . '/';
+    }
+
     /** @var string|null the archive's file name; null to name it by the time. TESTS ONLY. */
     public $archive_name = null;
 
@@ -379,7 +398,7 @@ class Update062 extends \OWA\Core\Update {
      */
     public function archiveV1Queue() {
 
-        $dir  = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
+        $dir  = $this->v1QueueDir();
         $path = $dir . ( $this->archive_name ?: 'update062-v1-queue-' . date( 'Ymd-His' ) . '.txt' );
 
         $moved = [ 'lines' => 0, 'files' => 0, 'path' => $path ];
@@ -457,7 +476,7 @@ class Update062 extends \OWA\Core\Update {
      */
     public function undrainedV1Queue() {
 
-        $dir   = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
+        $dir   = $this->v1QueueDir();
         $lines = 0;
 
         foreach ( self::v1QueueFiles( $dir ) as $file ) {

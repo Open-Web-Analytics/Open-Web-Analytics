@@ -259,14 +259,10 @@ class RequestContainer {
          * spellings into one pass keeps each param in the position it arrived
          * in.
          *
-         * The gate matters too. stripParams() does not just rename keys, it
-         * FILTERS: anything without the prefix is dropped. That is what stops a
-         * host application's query string reaching OWA's dispatcher when OWA is
-         * embedded in someone else's request -- WordPress's own 'action' param
-         * is exactly the collision the namespace was invented for. So bare
-         * names are accepted only for entry points that own their whole query
-         * string, and a caller that sets no request_type -- which is every
-         * embedded integration -- keeps the prefixed-only behaviour.
+         * Bare names are always read: OWA owns the whole query string of every
+         * entry point, as embedding OWA in another application's request is not
+         * supported. Cookies and the session are still read prefixed-only
+         * (stripParams()).
          */
         $ns_len = strlen( (string) $ns );
 
@@ -426,6 +422,8 @@ class RequestContainer {
      * Seconds in, because that is what every caller has and it is the coarser of
      * the two: multiplying up cannot invent precision, where truncating down would
      * throw some away.
+     *
+     * Nothing in OWA calls it; tests use it to fix the request's time.
      *
      * @param  int $seconds
      * @return void

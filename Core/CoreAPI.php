@@ -2524,6 +2524,9 @@ class CoreAPI {
     }
 
     /**
+     * Set a parameter on the current request. Nothing in OWA calls it; tests
+     * use it to stage a request.
+     *
      * @param  string $name
      * @param  mixed  $value
      * @return true

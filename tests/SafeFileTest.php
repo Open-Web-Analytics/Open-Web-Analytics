@@ -60,9 +60,9 @@ final class SafeFileTest extends TestCase
         $this->assertTrue(SafeFile::makeDirs($deep, 0750), 'there already');
         umask($old);
 
-        rmdir($deep);
-        rmdir($this->dir . '/a/b');
-        rmdir($this->dir . '/a');
+        // Each made is guarded (PrivateFiles::guard()), so it is not empty.
+        $this->assertFileExists($deep . '/index.php');
+        exec('rm -rf ' . escapeshellarg($this->dir . '/a'));
     }
 
     public function testReplace(): void

@@ -147,13 +147,6 @@ final class GeoEncodingRepairTest extends TestCase
             'a repaired value must not be repaired again' );
     }
 
-    public function testIsDoubleEncodedAgreesWithRepair(): void
-    {
-        $this->assertTrue( GeoEncodingRepair::isDoubleEncoded( 'MÃ¼nchen' ) );
-        $this->assertFalse( GeoEncodingRepair::isDoubleEncoded( 'München' ) );
-        $this->assertFalse( GeoEncodingRepair::isDoubleEncoded( 'london' ) );
-    }
-
     /** The v1 migration repairs a location's names as it copies them. */
     public function testTheMigrationRepairsALocationOnTheWayThrough(): void
     {

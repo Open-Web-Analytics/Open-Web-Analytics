@@ -1490,14 +1490,12 @@ class Entity {
     }
 
     /**
-     * How many partitions this table's lead needs.
+     * How many partitions this table's lead needs: a cube about 73 -- two
+     * months of daily plus the coarse remainder -- where an ordinary fact
+     * table needs a dozen.
      *
-     * ASKED OF THE TABLE, because the answer differs by kind and the caller
-     * cannot know it: a cube wants about 73 -- two months of daily plus the
-     * coarse remainder -- where an ordinary fact table wants a dozen. Dividing
-     * one allowance equally between them gives the small tables far more than
-     * they use and the cube less than it needs, and refuses configurations the
-     * server can hold.
+     * The partition commands do not ask it: they hold every table to one
+     * ceiling (PartitionsCli::partitionLimit()). Tests read it.
      *
      * The lead only. History is compaction's business, and what it leaves
      * depends on how much there is.
