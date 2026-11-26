@@ -2969,6 +2969,62 @@ class CoreAPI {
         return $service->request->getServerParam($name);
     }
 
+    /** @var list<callable(): void> what afterResponse() was given, not yet run */
+    private static $after_response = [];
+
+    /**
+     * Run $fn once the response has gone to the browser: after
+     * fastcgi_finish_request() where PHP-FPM serves the request, otherwise at
+     * shutdown, which the browser still waits for. For work whose time must
+     * not show in the reply's, such as mail sent only for a known address.
+     *
+     * @param  callable(): void $fn
+     * @return void
+     */
+    public static function afterResponse( callable $fn ) {
+
+        if ( ! self::$after_response ) {
+
+            register_shutdown_function( [ self::class, 'runAfterResponse' ] );
+        }
+
+        self::$after_response[] = $fn;
+    }
+
+    /**
+     * What afterResponse() was given, run now. The shutdown function's; a
+     * test's to run them itself.
+     *
+     * @return void
+     */
+    public static function runAfterResponse() {
+
+        $fns = self::$after_response;
+        self::$after_response = [];
+
+        if ( ! $fns ) {
+
+            return;
+        }
+
+        if ( function_exists( 'fastcgi_finish_request' ) ) {
+
+            fastcgi_finish_request();
+        }
+
+        foreach ( $fns as $fn ) {
+
+            try {
+
+                $fn();
+
+            } catch ( \Throwable $e ) {
+
+                self::error( 'After the response: ' . $e->getMessage() );
+            }
+        }
+    }
+
     /**
      * @param  string $store
      * @param  string $name

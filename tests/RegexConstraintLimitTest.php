@@ -134,4 +134,22 @@ final class RegexConstraintLimitTest extends TestCase
 
         $this->assertNotEmpty((array) $errors->getValue($rsm));
     }
+
+    /** A segment's pattern runs in the database as a filter's does, so it is refused as one is. */
+    public function testASegmentsRefusedPatternIsARequestErrorToo(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+        $rsm->setSegment('dynamic::pagePath=~(a+)+$');
+
+        $errors = (array) (new \ReflectionProperty($rsm, 'request_errors'))->getValue($rsm);
+
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString('"pagePath" pattern was refused', $errors[0]);
+        $this->assertSame([], $rsm->getSegment()['dimensions'], 'and the condition is not kept');
+
+        $ok = new \OWA\Module\Base\Classes\ResultSetManager();
+        $ok->setSegment('dynamic::pagePath=~^/blog/');
+        $this->assertSame([], (array) (new \ReflectionProperty($ok, 'request_errors'))->getValue($ok));
+        $this->assertArrayHasKey('pagePath', $ok->getSegment()['dimensions']);
+    }
 }

@@ -6,8 +6,10 @@ namespace OWA\Module\Base\Controller;
  *
  * The funnel itself, counted the same way, from the steps and filter the
  * builder sends rather than from a stored row -- so the preview cannot count
- * differently from the funnel the author is about to save. A read, like the
- * funnel: it asks for view_reports on the Property and changes nothing.
+ * differently from the funnel the author is about to save. It changes
+ * nothing, and asks for edit_reports, as saving does: the steps are the
+ * caller's, so the query is too, run for as long as it is allowed
+ * (ResultSetManager::QUERY_SECONDS).
  *
  *   steps          JSON: [{name, event, match, conditions: [{property, operator, value}]}],
  *                  the event already the one named, for "another event of yours"
@@ -16,6 +18,13 @@ namespace OWA\Module\Base\Controller;
  * Answers {data: {scope, steps: [{name, reached}]}} or {error}.
  */
 class VisualizationPreview extends VisualizationFunnel {
+
+    public function __construct( $params ) {
+
+        parent::__construct( $params );
+
+        $this->setRequiredCapability( 'edit_reports' );
+    }
 
     /**
      * @return array{name: string, definition: array{steps: list<array<string, mixed>>, constraints: string}}
@@ -35,6 +44,17 @@ class VisualizationPreview extends VisualizationFunnel {
     }
 
     public function action() {
+
+        foreach ( $this->visualization()['definition']['steps'] as $i => $step ) {
+
+            $too_many = \OWA\Module\Base\Classes\FunnelStep::tooManyConditions( $step, $i + 1 );
+
+            if ( $too_many !== '' ) {
+
+                $this->set( 'ajax_error', $too_many );
+                return;
+            }
+        }
 
         $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
             (string) $this->getParam( 'funnelFilter' ), \OWA\Core\CoreAPI::t( 'The funnel' ),

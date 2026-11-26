@@ -49,6 +49,22 @@ final class SafeFileTest extends TestCase
     }
 
     /** replace() puts a new file in place of a link, and leaves no temporary file. */
+    public function testMakeDirsMakesEachMissingDirectoryWithItsMode(): void
+    {
+        $old = umask(0);
+        $deep = $this->dir . '/a/b/c';
+
+        $this->assertTrue(SafeFile::makeDirs($deep, 0750));
+        $this->assertSame('0750', sprintf('%04o', fileperms($this->dir . '/a') & 0777));
+        $this->assertSame('0750', sprintf('%04o', fileperms($deep) & 0777));
+        $this->assertTrue(SafeFile::makeDirs($deep, 0750), 'there already');
+        umask($old);
+
+        rmdir($deep);
+        rmdir($this->dir . '/a/b');
+        rmdir($this->dir . '/a');
+    }
+
     public function testReplace(): void
     {
         $path = $this->dir . '/shared/state.json';
