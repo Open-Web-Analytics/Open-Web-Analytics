@@ -59,4 +59,23 @@ final class ScheduleRetryBackoffTest extends TestCase
 
         $this->assertSame([60, 120, 240, 480, 960, 1920, 3600, 3600], $waits);
     }
+
+    private function satisfies(array $outcome): bool
+    {
+        return \OWA\Module\Base\Controller\ScheduleRunCli::satisfiesOccurrence($outcome);
+    }
+
+    /** ok and refused answer the occurrence; a failure is retried unless it says retrying cannot help. */
+    public function testOnlyAFailureThatAsksToBeRetriedLeavesTheJobDue(): void
+    {
+        $this->assertTrue($this->satisfies(['outcome' => 'ok']));
+        $this->assertTrue($this->satisfies(['outcome' => 'refused']));
+
+        $this->assertFalse($this->satisfies(['outcome' => 'failed', 'retry' => true]));
+        $this->assertFalse($this->satisfies(['outcome' => 'failed']),
+            'a dispatcher outcome without the key is the old failure: retried');
+
+        $this->assertTrue($this->satisfies(['outcome' => 'failed', 'retry' => false]),
+            'failUntilNextRun(): next attempt is the next occurrence');
+    }
 }

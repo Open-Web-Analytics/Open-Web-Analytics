@@ -120,6 +120,14 @@ class Cli extends \OWA\Core\AdminController {
     /** @var string */
     protected $cli_message = '';
 
+    /**
+     * Whether the scheduler retries this run's failure before the job's next
+     * occurrence. failUntilNextRun() clears it.
+     *
+     * @var bool
+     */
+    protected $cli_retry = true;
+
     /** The exit code of a command that failed. */
     const EXIT_FAILED = 1;
 
@@ -208,6 +216,34 @@ class Cli extends \OWA\Core\AdminController {
         $this->markFailed( $msg, self::EXIT_USAGE );
 
         \OWA\Core\CoreAPI::notice( $msg );
+
+        return null;
+    }
+
+    /**
+     * Failed, and retrying sooner cannot help: a rejected credential, say.
+     *
+     * Still a failure -- the exit code, System Health and the job's failure
+     * count all say so -- but the scheduler counts the occurrence as answered
+     * and does not retry it hourly. The next attempt is the job's next
+     * scheduled run.
+     *
+     * The first failure decides, as it decides the message: a failure that
+     * asked to be retried stays retried.
+     *
+     * @param string $msg
+     * @return null
+     */
+    protected function failUntilNextRun( $msg ) {
+
+        $first = $this->cli_outcome !== 'failed';
+
+        $this->fail( $msg );
+
+        if ( $first ) {
+
+            $this->cli_retry = false;
+        }
 
         return null;
     }
@@ -338,14 +374,17 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * The outcome, for the dispatcher. The FIRST message wins, so what is
      * recorded is the first thing that went wrong rather than the last.
+     * retry is false unless the run failed and may be retried before the
+     * job's next occurrence (failUntilNextRun()).
      *
-     * @return array{outcome: string, message: string}
+     * @return array{outcome: string, message: string, retry: bool}
      */
     public function getCliOutcome() {
 
         return [
             'outcome' => $this->cli_outcome,
             'message' => $this->cli_message,
+            'retry'   => $this->cli_outcome === 'failed' && $this->cli_retry,
         ];
     }
 

@@ -1167,6 +1167,43 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame('failed', (string) $this->callProtected($ctrl, 'state', [$name])->get('last_status'));
     }
 
+    /** A plain failure leaves the occurrence unanswered, so the job stays due for the back-off. */
+    public function testAFailedRunLeavesTheJobDue()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['fail' => 1]);
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertSame(0, (int) $state->get('last_run_slot'), 'a failure does not answer the occurrence');
+    }
+
+    /**
+     * failUntilNextRun(): recorded as a failure, but the occurrence is
+     * answered, so the next tick does not run it again.
+     */
+    public function testAFailureThatCannotBeHelpedByRetryingWaitsForTheNextRun()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['final' => 1]);
+
+        // Yearly, so the second tick below cannot land in a new occurrence.
+        $job['schedule'] = '0 0 1 1 *';
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertSame(1, (int) $state->get('failure_count'));
+        $this->assertSame('told to fail until the next run', (string) $state->get('last_message'));
+        $this->assertGreaterThan(0, (int) $state->get('last_run_slot'), 'the occurrence is answered');
+
+        OwaTestStateStubCli::$seen = null;
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $this->assertNull(OwaTestStateStubCli::$seen, 'not run again before its next occurrence');
+    }
+
     /** A job given an argument its command does not declare fails, and does not run. */
     public function testAJobGivenAnUndeclaredArgumentFailsWithoutRunning()
     {
@@ -1886,6 +1923,7 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
         return [ 'description' => 'A test stub that reads its own state row.', 'arguments' => [
             'job=<name>' => 'Its job name.',
             'fail=1'     => 'Fail.',
+            'final=1'    => 'Fail, and say retrying sooner cannot help.',
         ] ];
     }
 
@@ -1901,6 +1939,11 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
         self::$seen = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'SELECT last_run_at, last_finished_at FROM owa_scheduled_job WHERE job_name = ?',
             [ (string) $this->getParam( 'job' ) ] );
+
+        if ( $this->getParam( 'final' ) ) {
+
+            return $this->failUntilNextRun( 'told to fail until the next run' );
+        }
 
         if ( $this->getParam( 'fail' ) ) {
 

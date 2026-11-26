@@ -302,6 +302,28 @@ class ScheduleRunCli extends SchedulerCli {
         $this->runJob( $name, $job, $state, $slot );
     }
 
+    /**
+     * Whether a run's outcome answers its occurrence, so the job is next due
+     * at its next scheduled time rather than retried.
+     *
+     * ok and refused do: a refusal is an answer about the occurrence. A failure
+     * does not, so the job stays due and is retried (retryAfter()) -- unless
+     * the command said retrying sooner cannot help (Cli::failUntilNextRun()).
+     * That run is still recorded as failed.
+     *
+     * @param array{outcome: string, retry?: bool} $outcome
+     * @return bool
+     */
+    public static function satisfiesOccurrence( array $outcome ) {
+
+        if ( in_array( $outcome['outcome'], [ 'ok', 'refused' ], true ) ) {
+
+            return true;
+        }
+
+        return $outcome['outcome'] === 'failed' && isset( $outcome['retry'] ) && $outcome['retry'] === false;
+    }
+
     /** The longest a failing job waits between attempts. */
     const RETRY_MAX = 3600;
 
@@ -440,9 +462,7 @@ class ScheduleRunCli extends SchedulerCli {
             $outcome['message'],
             $began,
             time(),
-            // Only ok and refused satisfy the occurrence. A refusal is an answer
-            // about it; a failure is not, so the job stays due and is retried.
-            in_array( $outcome['outcome'], [ 'ok', 'refused' ], true ) ? $slot : null
+            self::satisfiesOccurrence( $outcome ) ? $slot : null
         );
     }
 
@@ -532,6 +552,7 @@ class ScheduleRunCli extends SchedulerCli {
             return [
                 'outcome' => isset( $outcome['outcome'] ) ? $outcome['outcome'] : 'ok',
                 'message' => isset( $outcome['message'] ) ? $outcome['message'] : '',
+                'retry'   => isset( $outcome['retry'] ) ? (bool) $outcome['retry'] : true,
             ];
         }
 
