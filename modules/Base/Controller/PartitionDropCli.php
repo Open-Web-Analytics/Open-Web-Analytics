@@ -82,9 +82,23 @@ class PartitionDropCli extends PartitionsCli {
             return;
         }
 
+        $unread = 0;
+
         foreach ( $tables as $table ) {
 
-            if ( ! $db->isPartitioned( $table ) ) {
+            $refused     = $db->queryErrorCount();
+            $partitioned = $db->isPartitioned( $table );
+
+            // Unread, not unpartitioned: a skip here kept data past the retention policy unsaid.
+            if ( $db->queryErrorCount() !== $refused ) {
+
+                $this->fail( sprintf( 'Could not read the partitions of %s; nothing was dropped from it.', $table ) );
+                $unread++;
+
+                continue;
+            }
+
+            if ( ! $partitioned ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf( '%s is not partitioned; skipping.', $table ) );
 
@@ -97,7 +111,7 @@ class PartitionDropCli extends PartitionsCli {
         }
 
         // Skipping everything is not success -- see partition-rotate.
-        if ( ! $touched ) {
+        if ( ! $touched && ! $unread ) {
 
             $this->refuse( 'Nothing to drop: no fact table is partitioned.' );
         }
