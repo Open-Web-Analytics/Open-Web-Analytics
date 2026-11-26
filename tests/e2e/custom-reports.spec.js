@@ -1443,14 +1443,14 @@ test.describe('custom reports', () => {
         });
 
         /** The metric picker offers nothing past its cap. */
-        test('the pickers stop at four', async ({ page }) => {
+        test('the pickers stop at six', async ({ page }) => {
             await openBuilderOnGrid(page);
 
-            for (const m of ['sessions', 'totalUsers', 'pageViews', 'engagedSessions']) {
+            for (const m of ['sessions', 'totalUsers', 'pageViews', 'engagedSessions', 'engagementRate', 'eventCount']) {
                 await chooseField(page, 'dlgMetrics', m);
             }
 
-            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(4);
+            await expect(fieldChips(page, 'dlgMetrics')).toHaveCount(6);
 
             // Nothing further is offered, rather than offered and then refused
             // on save.
