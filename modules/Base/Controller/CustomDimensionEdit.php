@@ -18,7 +18,6 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
 
         /* The same reach as the list: registering issues DDL against the cube. */
         $this->setRequiredCapability( 'edit_settings' );

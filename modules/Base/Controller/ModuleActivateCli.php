@@ -42,7 +42,7 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
              * The admin UI's "Activate" control has always called
              * installModule() -- it creates the module's tables, records its
              * schema version and then activates it. This command called
-             * activateModule(), which sets is_active and nothing else, so the
+             * Module::activate(), which sets is_active and nothing else, so the
              * same word did two different things depending on where it was
              * typed, and the CLI one left a module switched on with no tables
              * and no schema version. Nothing reported that: getSchemaVersion()

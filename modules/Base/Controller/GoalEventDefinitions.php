@@ -17,7 +17,6 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
     public function __construct( $params ) {
 
         parent::__construct( $params );
-        $this->type = 'options';
         $this->setRequiredCapability( 'edit_settings' );
     }
 
