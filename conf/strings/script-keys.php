@@ -203,6 +203,7 @@ return [
     'Sort by %s',
     'Source',
     'Start date',
+    'Step %s needs a path without its query string: test the part after the ? as the page query.',
     'Step %s needs a path, such as /basket, not a full web address.',
     'Step %s needs an event.',
     'Step moved to position %1$s of %2$s.',

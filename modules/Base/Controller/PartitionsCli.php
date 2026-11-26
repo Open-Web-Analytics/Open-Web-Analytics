@@ -176,7 +176,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * The ceiling every fact table is held to.
      *
      * Kept as its own name because five commands ask for it, and because it
-     * once varied with how many tables a run touched -- `table=owa_session`
+     * once varied with how many tables a run touched -- `table=owa_event_raw`
      * would then have permitted several times what the unfiltered command did.
      * A ceiling cannot vary that way, which is one of the things that makes it
      * a better answer than a budget.

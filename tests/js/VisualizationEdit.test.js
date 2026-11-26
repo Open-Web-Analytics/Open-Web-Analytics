@@ -7,8 +7,9 @@ jest.mock('jquery', () => {
     return jq;
 });
 
-import { stepsProblem, previewSteps, previewUrl, percent, sayEach, isFullUrl }
+import { stepsProblem, previewSteps, previewUrl, percent, sayEach, isFullUrl, pathProblem }
     from '../../modules/Base/src/reporting/owa.visualizationEdit.js';
+import PATH_CASES from '../fixtures/funnel_path_cases.json';
 import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 /**
@@ -40,6 +41,17 @@ describe('what stops a save', () => {
 
     test('a step without an event is named before a later web address', () => {
         expect(stepsProblem('F', [event(''), page('https://example.com/b')])).toBe('Step 1 needs an event.');
+    });
+
+    /* The cases FunnelStepValidationTest holds the save to. */
+    test.each(PATH_CASES.cases)('a page path, $operator "$value", is refused as the save refuses it ($problem)', (c) => {
+        expect(pathProblem({ property: 'page_path', operator: c.operator, value: c.value })).toBe(c.problem);
+    });
+
+    test('a query string under exact is stopped before the save', () => {
+        expect(stepsProblem('F', [page('/checkout?step=2')]))
+            .toBe('Step 1 needs a path without its query string: test the part after the ? as the page query.');
+        expect(previewSteps([page('/checkout?step=2')])).toBeNull();
     });
 
     test('blank rows are not steps', () => {

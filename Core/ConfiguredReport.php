@@ -61,7 +61,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * Column formatters a grid widget may name.
      *
      * A NAME, never a function. Formatters are implemented in the grid widget
-     * (jQuery.fn.fmatter in owa.resultSetExplorer.js) and a definition selects
+     * (OWA.dataGrid.formatters in owa.resultSetExplorer.js) and a definition selects
      * one; the definition cannot carry code, which is the gate on report
      * configuration ever being user-authored. Same reason excludeColumns is a
      * list of names rather than a fragment of script.

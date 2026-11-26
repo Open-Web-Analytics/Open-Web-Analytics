@@ -498,36 +498,27 @@ return array( 'metrics' => array( 'a' => array( 'label' => \$name, 'description'
     public function testThePageCarriesTheScriptsTranslationsAndRule(): void
     {
         Strings::useTranslations([]);
-        $this->assertStringNotContainsString('OWA.config.strings', $this->configDom());
+        $this->assertArrayNotHasKey('strings', $this->configDom()['config']);
 
         Strings::useTranslations(['Next page' => 'Page </script> suivante', 'Name is required.' => 'Le nom est obligatoire.'], 'french');
-        $js = $this->configDom();
+        $page = $this->configDom();
 
-        $this->assertSame(1, preg_match('/^OWA\.config\.strings = (.*);$/m', $js, $strings));
-        $this->assertStringNotContainsString('</script>', $strings[1]);
-        $this->assertSame(['Next page' => 'Page </script> suivante'], json_decode($strings[1], true));
-        $this->assertStringContainsString('OWA.config.plural_rule = "french";', $js);
+        $this->assertSame(1, substr_count($page['html'], '</script>'), 'a string closed the block early');
+        $this->assertSame(['Next page' => 'Page </script> suivante'], $page['config']['strings'] ?? null);
+        $this->assertSame('french', $page['config']['plural_rule'] ?? null);
     }
 
     /** config_dom.php gives the reporting JavaScript the locale as a language tag, for Intl (OWA.locale()). */
     public function testThePageCarriesTheLocaleAsALanguageTag(): void
     {
-        $this->assertStringContainsString(
-            'OWA.config.locale = ' . json_encode(Strings::htmlLang()) . ';',
-            $this->configDom()
-        );
+        $this->assertSame(Strings::htmlLang(), $this->configDom()['config']['locale'] ?? null);
     }
 
-    private function configDom(): string
+    /** @return array{html: string, config: array<string, mixed>} */
+    private function configDom(): array
     {
-        ob_start();
+        require_once __DIR__ . '/PageConfig.php';
 
-        try {
-            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
-        } finally {
-            $js = (string) ob_get_clean();
-        }
-
-        return $js;
+        return owa_test_page_config();
     }
 }

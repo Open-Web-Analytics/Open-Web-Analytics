@@ -84,14 +84,15 @@ final class Update057Test extends TestCase
 
     public function testEveryCubeGetsItAndLosesIt(): void
     {
-        $this->assertSame( [ 'site_id', 'transaction_id' ], $this->indexColumns( $this->cube() ),
-            'a fresh cube has it from the entity' );
-
         $this->assertTrue( $this->update->down() );
-        $this->assertSame( [], $this->indexColumns( $this->cube() ) );
+        $this->assertSame( [], $this->indexColumns( $this->cube() ),
+            'a fresh cube has none: Update096 takes it off every cube' );
 
         $this->assertTrue( $this->update->up() );
         $this->assertSame( [ 'site_id', 'transaction_id' ], $this->indexColumns( $this->cube() ) );
+
+        $this->assertTrue( $this->update->down() );
+        $this->assertSame( [], $this->indexColumns( $this->cube() ) );
     }
 
     /**

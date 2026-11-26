@@ -679,8 +679,8 @@ class StateManager {
      * a second tracker on the page resets a configured lifetime and nothing puts
      * it back. A value that is never copied cannot be lost that way.
      *
-     * A value that is not a whole number of days, or is less than one, is
-     * ignored rather than coerced. This runs on someone else's page, where the
+     * A value that is not a whole number of days, or is negative, is ignored
+     * rather than coerced. 0 is a cookie that ends when the browser closes. This runs on someone else's page, where the
      * honest failure mode for a malformed setting is "nothing changed" rather
      * than a cookie carrying a lifetime nobody chose.
      *
