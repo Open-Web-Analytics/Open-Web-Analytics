@@ -3270,19 +3270,10 @@ class TrackingEventHelpers {
         $url = \OWA\Core\Lib::unparseUrl( parse_url( $url ), [ 'port', 'user', 'pass', 'fragment' ] );
 
         \OWA\Core\CoreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
-        // The install's filters, then the site's, then OWA's own params.
-        $ns      = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-        $filters = array_merge(
-            explode( ',', (string) \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ) ),
-            explode( ',', (string) $site->getSiteSetting( 'query_string_filters' ) ) );
-
-        foreach ( [ 'source', 'medium', 'campaign', 'ad', 'ad_type', 'overlay', 'state',
-                         \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ) ] as $param ) {
-
-            $filters[] = $ns . $param;
-        }
+        // The list page_query and referer_query are filtered by: the campaign
+        // tags (utm_* among them where read), OWA's own and the filters.
+        $filters = self::droppedQueryParams( (string) $site_id );
 
         /*
          * Pair by pair, as page_query is (V2Event::filterQuery). The regex this

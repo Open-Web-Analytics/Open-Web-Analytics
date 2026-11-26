@@ -101,8 +101,6 @@
     height: 30px;
     padding:5px;
 }
-#owa_reportSiteFilterSelect {font-size: 0.75rem; width:200px; margin: 0px 20px; 0px 0px;}
-#owa_reportSiteFilterSelect span {font-size: 1.125rem; font-weight: bold; vertical-align: baseline; }
 
 /* The date range control, right of the report title. Below 600px it takes the
    whole width instead (see the narrow-screen rules). */

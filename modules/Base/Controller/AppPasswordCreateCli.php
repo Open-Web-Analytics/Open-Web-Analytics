@@ -58,6 +58,11 @@ class AppPasswordCreateCli extends AppPasswordsCli {
         \OWA\Core\CoreAPI::notice( sprintf( 'Application password %s (%s, %s) created for %s.',
             $made['lookup_id'], $made['name'], $made['scope'], $user_id ) );
 
+        if ( ! \OWA\Module\Base\Classes\AppPasswords::announce( $made, $user_id, '' ) ) {
+
+            \OWA\Core\CoreAPI::notice( 'The account was not e-mailed; a notice is in its bell instead.' );
+        }
+
         $this->write( [
             'Copy it now; it cannot be shown again:',
             $made['token'],

@@ -135,6 +135,8 @@ return [
     'base.myAppPasswords'               => 'OWA\\Module\\Base\\Controller\\MyAppPasswords',
     'base.myAppPasswordCreateAjax'      => 'OWA\\Module\\Base\\Controller\\MyAppPasswordCreateAjax',
     'base.myAppPasswordRevoke'          => 'OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke',
+    'base.appPasswordRevokeLink'        => 'OWA\\Module\\Base\\Controller\\AppPasswordRevokeLink',
+    'base.appPasswordCreatedMail'       => 'OWA\\Module\\Base\\Controller\\AppPasswordCreatedMail',
     'base.userAppPasswordRevoke'        => 'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke',
     'base.usersResetPassword'           => 'OWA\\Module\\Base\\Controller\\UsersResetPassword',
     'base.usersSetPassword'             => 'OWA\\Module\\Base\\Controller\\UsersSetPassword',

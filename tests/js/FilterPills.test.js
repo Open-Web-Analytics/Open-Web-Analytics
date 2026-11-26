@@ -110,6 +110,20 @@ test('a pill for an operator the form does not offer reads in words', () => {
     expect(OWA.filterPills.words({ name: 'medium', op: '==(not set)', value: '' })).toBe('medium is not set');
 });
 
+/* The pill and the grid's chip are one sentence: the pills call the grid's. */
+test.each([
+    'sessions>=5', 'pagePath=@/blog/', 'medium==(not set)', 'source!=(not set)', 'pagePath==',
+])('the pill for %s reads as the grid chip does', (clause) => {
+    const [c] = OWA.dataGrid.parseConstraints(clause);
+
+    expect(OWA.filterPills.words(asTheGridReadsIt(clause))).toBe(OWA.dataGrid.filterWords(c));
+});
+
+test('an operator with no value reads without one, on a pill as on a chip', () => {
+    expect(OWA.filterPills.words({ name: 'pagePath', op: '==', value: '' })).toBe('pagePath is');
+    expect(OWA.filterPills.sentence({ name: 'pagePath', op: '==', value: '' })).toEqual(['pagePath is']);
+});
+
 /**
  * A pill is the grid's chip sentence, and its condition labels are the
  * catalogued table labels (Strings::LABEL_TABLES), so a translation reaches
