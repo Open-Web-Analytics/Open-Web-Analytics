@@ -91,7 +91,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     private $batch;
 
     /**
-     * @var array{settled: int, in_hand: int|null, stuck: int, clean: bool, pid: int|false, host: string, held_since: int}|null its .state, null while no batch is held:
+     * @var array{settled: int, in_hand: int|null, stuck: int, clean: bool, pid: int|false, host: string, held_since: int, remove_failures?: int, remove_error?: string, failed_at?: int}|null its .state, null while no batch is held:
      *   settled     byte offset of the first line not yet settled
      *   in_hand     settled's offset once that line has been handed out, else null
      *   stuck       how many drains died with that line in hand
@@ -697,6 +697,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         foreach ( self::files( $this->processing_path, '.txt' ) as $name ) {
 
+            if ( isset( $this->unremovable[ $this->processing_path . $name ] ) ) {
+
+                continue;
+            }
+
             if ( $this->hold( $this->processing_path . $name ) ) {
 
                 return true;
@@ -768,6 +773,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             'host'       => (string) gethostname(),
             'held_since' => time(),
         ];
+
+        // The failed removals of a batch drained before (finishBatch()), still counting.
+        if ( ! empty( $state['remove_failures'] ) ) {
+
+            $this->state['remove_failures'] = (int) $state['remove_failures'];
+            $this->state['remove_error']    = (string) ( $state['remove_error'] ?? '' );
+        }
         $this->resumed_at  = $this->state['settled'];
 
         fseek( $fh, $this->state['settled'] );
@@ -816,8 +828,29 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
+    /** What a batch set aside is renamed with: no longer a .txt, so no drain takes it. */
+    const FAILED_SUFFIX = '.failed';
+
+    /**
+     * Batches this consumer drained and could neither remove nor set aside:
+     * not taken again by it (claimNext()), which would find each at its end
+     * again at once. The next drain tries once more.
+     *
+     * @var array<string, true>
+     */
+    private $unremovable = [];
+
     /**
      * Every line of the batch is settled: archive or delete it.
+     *
+     * Every event in it is already ingested, so a batch that cannot be
+     * removed is not dead-lettered: what failed is the housekeeping. It is
+     * renamed .failed where it is, at once -- a rename within processing/
+     * works whenever archive/ is what refused -- out of every drain's way,
+     * with its state beside it saying why, and System Health names it
+     * (failedBatches()). When processing/ itself refuses, it cannot be set
+     * aside either: its state, read to the end, keeps any drain from reading
+     * it again, and each drain tries once more.
      *
      * @return void
      */
@@ -831,16 +864,84 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->handle = null;
         $this->batch  = null;
 
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' ) ) {
+        $archive = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' );
+        $verb    = $archive ? 'archived' : 'deleted';
 
-            @rename( $path, $this->archive_path . basename( $path ) );
+        error_clear_last();
 
-        } else {
+        $gone = $archive ? @rename( $path, $this->archive_path . basename( $path ) ) : @unlink( $path );
 
-            @unlink( $path );
+        if ( $gone ) {
+
+            @unlink( $path . '.state' );
+
+            return;
         }
 
-        @unlink( $path . '.state' );
+        $reason = (string) ( error_get_last()['message'] ?? 'no reason given' );
+
+        $this->state['remove_failures'] = (int) ( $this->state['remove_failures'] ?? 0 ) + 1;
+        $this->state['remove_error']    = $reason;
+        $this->state['failed_at']       = time();
+        $this->state['clean']           = true;
+
+        try {
+
+            \OWA\Core\SafeFile::replace( $path . '.state', (string) json_encode( $this->state ), 0664 );
+
+        } catch ( \RuntimeException $e ) {
+
+            // processing/ refuses writes: the rename below fails too, and the batch is tried again.
+        }
+
+        if ( @rename( $path, $path . self::FAILED_SUFFIX ) ) {
+
+            @rename( $path . '.state', $path . self::FAILED_SUFFIX . '.state' );
+
+            \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s could not be %2$s (%3$s), and is set aside as %4$s. '
+                . 'Its events are ingested; fix the cause and delete it.', $path, $verb, $reason, basename( $path ) . self::FAILED_SUFFIX ) );
+
+            return;
+        }
+
+        $this->unremovable[ $path ] = true;
+
+        \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s was drained but could not be %2$s or set aside (%3$s); '
+            . 'it is tried again on the next drain.', $path, $verb, $reason ) );
+    }
+
+    /**
+     * Drained batches that could not be archived or deleted: set aside as
+     * .failed, or, where even that failed, still in processing/. For System
+     * Health.
+     *
+     * @return list<array{batch: string, attempts: int, reason: string, failed_at: int|null, set_aside: bool}>
+     */
+    public function failedBatches() {
+
+        $out = [];
+
+        foreach ( (array) glob( $this->processing_path . '*.state' ) as $state_path ) {
+
+            $state = json_decode( (string) @file_get_contents( $state_path ), true );
+
+            if ( ! is_array( $state ) || empty( $state['remove_failures'] ) ) {
+
+                continue;
+            }
+
+            $batch = substr( basename( $state_path ), 0, -strlen( '.state' ) );
+
+            $out[] = [
+                'batch'     => $batch,
+                'attempts'  => (int) $state['remove_failures'],
+                'reason'    => (string) ( $state['remove_error'] ?? '' ),
+                'failed_at' => isset( $state['failed_at'] ) ? (int) $state['failed_at'] : null,
+                'set_aside' => substr( $batch, -strlen( self::FAILED_SUFFIX ) ) === self::FAILED_SUFFIX,
+            ];
+        }
+
+        return $out;
     }
 
     /**

@@ -253,10 +253,9 @@ class ReportsRest extends \OWA\Core\ReportController {
     const COMPARE_ROW_LIMIT = 1000;
 
     /**
-     * The most rows a request may ask for a page of. The query fetches ten
-     * pages ahead to know whether there is a next one, into PHP, so an uncapped
-     * resultsPerPage let any reader of reports pull a table of any size through
-     * a small server. The widgets that need most ask for 1000.
+     * The most rows a request may ask for a page of. A page is read into PHP,
+     * so an uncapped resultsPerPage let any reader of reports pull a table of
+     * any size through a small server. The widgets that need most ask for 1000.
      */
     const MAX_RESULTS_PER_PAGE = 1000;
 
@@ -389,9 +388,11 @@ class ReportsRest extends \OWA\Core\ReportController {
      * (excludeGroupsOf()), from the row where this page's place falls past
      * the period's rows (setRowWindow()).
      *
-     * The period's rows are read ten pages ahead (ResultSetManager); short of
-     * that, where they end is known, and the rest of the read-ahead is filled
-     * from these. A page past them counts them (countGroups()).
+     * The period's rows are read a row past the page (ResultSetManager); short
+     * of that, where they end is known, and the rest of the page and a row
+     * past it are filled from these. A page past them counts them
+     * (countGroups()). The total counts them too, as far as the period's
+     * count goes (ResultSetManager::COUNT_PAGES_AHEAD).
      *
      * None when the request filters on a metric: that selects rows by the
      * period's numbers, which these do not have. None either when a query of
@@ -407,12 +408,28 @@ class ReportsRest extends \OWA\Core\ReportController {
 
         $per     = (int) $rsm->getLimit();
         $offset  = $per * ( max( 1, (int) $rsm->getPage() ) - 1 );
-        $ahead   = $per * 10;
+        $ahead   = $per + 1;
         $fetched = (int) $rs->resultsTotal;
 
-        if ( $per < 1 || $fetched >= $ahead || $rsm->metricConstraints()
+        if ( $per < 1 || $rsm->metricConstraints()
                 || ( $this->refused_before !== null
                      && \OWA\Core\CoreAPI::dbSingleton()->queryErrorCount() > $this->refused_before ) ) {
+
+            return $rs;
+        }
+
+        // The comparison's own groups are rows of the grid: counted into its total, within the same cap.
+        if ( $rs->totalRows !== null ) {
+
+            $cap     = $offset + $per * \OWA\Module\Base\Classes\ResultSetManager::COUNT_PAGES_AHEAD;
+            $counted = $this->resultSetManager( $over );
+            $counted->excludeGroupsOf( $rsm );
+            $n       = $rs->totalRows + $counted->countGroups( $cap );
+
+            $rs->setTotalRows( min( $n, $cap ), $rs->totalCapped || $n > $cap );
+        }
+
+        if ( $fetched >= $ahead ) {
 
             return $rs;
         }

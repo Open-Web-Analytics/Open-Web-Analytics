@@ -3000,7 +3000,8 @@ class TrackingEventHelpers {
             return null;
         }
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $refused = $db->queryErrorCount();
 
         $row = $db->get_row( sprintf(
             "SELECT revenue FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
@@ -3008,7 +3009,22 @@ class TrackingEventHelpers {
 
         $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
 
-        return is_numeric( $revenue ) ? (int) $revenue : null;
+        /*
+         * Stored without an amount, the refund leaves net revenue overstated for
+         * good: said so, by transaction. The purchase may not be ingested yet
+         * (the queue keeps no order), or the lookup was refused.
+         */
+        if ( ! is_numeric( $revenue ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'v2 ingest: refund of transaction %s on %s carries no amount, and %s; its revenue is stored as empty.',
+                $transaction, $site, $db->queryErrorCount() !== $refused
+                    ? 'the purchase could not be looked up' : 'no purchase with that transaction is stored' ) );
+
+            return null;
+        }
+
+        return (int) $revenue;
     }
 
     /**

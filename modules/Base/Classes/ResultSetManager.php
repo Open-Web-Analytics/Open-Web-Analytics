@@ -2670,17 +2670,23 @@ class ResultSetManager extends \OWA\Core\Base {
             $inner->selectFrom( $bm->getTableName(), $bm->getTableAlias() );
         }
 
+        // And the groups the rows are restricted to or exclude, so a count of them is the rows'.
+        $this->applyGroupConditions( $inner );
+
         $sql = $inner->generateSelectQuerySql();
 
         return [ $sql, $inner->getBindings() ];
     }
 
     /**
-     * How many groups -- rows, unpaged -- the query has.
+     * How many groups -- rows, unpaged -- the query has: at most $cap + 1
+     * when a cap is given, so a count past it costs no more than reading that
+     * far.
      *
+     * @param  int|null $cap
      * @return int
      */
-    public function countGroups() {
+    public function countGroups( $cap = null ) {
 
         $inner = $this->groupKeysQuery();
 
@@ -2689,12 +2695,50 @@ class ResultSetManager extends \OWA\Core\Base {
             return 0;
         }
 
+        $limit = $cap === null ? '' : ' LIMIT ' . ( max( 0, (int) $cap ) + 1 );
+
         $db  = \OWA\Core\CoreAPI::dbSingleton();
-        $row = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db, $inner ) {
-            return $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM (%s) owa_groups', $inner[0] ), $inner[1] );
+        $row = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db, $inner, $limit ) {
+            return $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM (%s%s) owa_groups', $inner[0], $limit ), $inner[1] );
         } );
 
         return (int) ( $row['n'] ?? 0 );
+    }
+
+    /** The pages a total is counted through, past the one asked for: as far as a pager offers to go. */
+    const COUNT_PAGES_AHEAD = 10;
+
+    /**
+     * The result set's total of rows (PaginatedResultSet::setTotalRows()): the
+     * rows to this page's end where there is no next, else the groups
+     * counted, up to COUNT_PAGES_AHEAD pages past this one.
+     *
+     * @return void
+     */
+    private function countPages() {
+
+        $per    = (int) $this->getLimit();
+        $offset = $per * ( max( 1, (int) $this->getPage() ) - 1 );
+
+        if ( $per < 1 ) {
+
+            return;
+        }
+
+        if ( ! $this->resultSet->more ) {
+
+            $returned = (int) $this->resultSet->resultsReturned;
+
+            // A page past the last row says nothing of where they end: counted.
+            $this->resultSet->setTotalRows( $returned || ! $offset ? $offset + $returned : $this->countGroups(), false );
+
+            return;
+        }
+
+        $cap = $offset + $per * self::COUNT_PAGES_AHEAD;
+        $n   = $this->countGroups( $cap );
+
+        $this->resultSet->setTotalRows( max( $offset + $per + 1, min( $n, $cap ) ), $n > $cap );
     }
 
     /** @var string[]|null the group keys the rows are restricted to; see restrictToGroups() */
@@ -2860,13 +2904,11 @@ class ResultSetManager extends \OWA\Core\Base {
             // setRowWindow(): these rows, no read-ahead.
             $this->db->limit( $this->row_window[1] );
 
-        // if there is a limit set then respect the limit and try to paginate the results by over querying
+        // A page, and one row past it to know there is a next. How many
+        // there are in all is counted apart (countPages()).
         } elseif ( $this->getLimit() ) {
-            
-            // query for more than we need
-            \OWA\Core\CoreAPI::debug('applying limit of: ' . $this->getLimit() );
-            
-            $this->db->limit( $this->getLimit() * 10 );
+
+            $this->db->limit( $this->getLimit() + 1 );
             
         } else {
           
@@ -3035,8 +3077,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 $dresults = (array) $this->computeDimensionalRows( $bm );
 
                 /*
-                 * The read-ahead is counted, not shown: generate() keeps the
-                 * first getLimit() rows, so only those are formatted.
+                 * The row past the page says there is a next, and is not shown:
+                 * generate() keeps the first getLimit() rows, so only those
+                 * are formatted.
                  */
                 $per      = (int) $this->getLimit();
                 $dresults = $per > 0
@@ -3050,6 +3093,8 @@ class ResultSetManager extends \OWA\Core\Base {
                     'resultsPerPage' => $this->getlimit(),
                     'page'           => $this->getPage()
                 ] );
+
+                $this->countPages();
                 
             }
 

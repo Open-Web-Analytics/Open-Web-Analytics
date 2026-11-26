@@ -106,6 +106,14 @@ $owa_password_row = function ( array $owa_row ) use ( $view, $owa_scopes ) {
                 </select>
             </div>
         </div>
+
+        <div class="setting">
+            <div class="title"><label for="owa_appPasswordConfirm"><?php $view->out( \OWA\Core\CoreAPI::t( 'Your password' ) ); ?></label></div>
+            <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'The one you sign in with, to confirm it is you.' ) ); ?></div>
+            <div class="field">
+                <input type="password" id="owa_appPasswordConfirm" size="30" name="password" autocomplete="current-password" required>
+            </div>
+        </div>
     </form>
 
     <div class="owa_appPasswordResult" hidden>
