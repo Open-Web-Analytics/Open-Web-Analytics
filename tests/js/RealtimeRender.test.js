@@ -11,7 +11,7 @@ const FRAME = `
 <div id="rt">
   <p class="owa_realtimeStatus" hidden></p><p class="owa_realtimeQueued" hidden></p>
   <div class="owa_realtimeSummary">
-    <span class="owa_realtimeUsers30"></span><span class="owa_realtimeUsers5"></span>
+    <span class="owa_realtimeUsersWindow"></span><span class="owa_realtimeUsersRecent"></span>
     <div class="owa_realtimeBars"></div>
     <div class="owa_realtimeMap"></div><p class="owa_realtimeMapNote"></p>
     <table class="owa_realtimeTable" data-card="sources"><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>
@@ -27,7 +27,7 @@ const FRAME = `
 </div>`;
 
 const ANSWER = {
-    activeUsers: { last30: 3, last5: 1 },
+    activeUsers: { window: 3, recent: 1 },
     perMinute: Array(29).fill(0).concat([3]),
     pages: [{ path: '/x', title: '<img src=x onerror=alert(1)>', views: 2, users: 1 }],
     events: [{ name: 'page_view', count: 2 }],
@@ -61,6 +61,15 @@ test('visitor-sent text is drawn as text, never as markup', () => {
     expect(root.querySelector('.owa_realtimePage').textContent).toBe('<script>x()</script>');
 });
 
+test('the empty-card words name the window the page is configured with', () => {
+    document.body.innerHTML = FRAME;
+    const rt = new OWA.realtime(document.getElementById('rt'), { apiUrl: 'api', mapUrl: '', minutes: 10 });
+
+    rt.render(ANSWER);
+
+    expect(document.querySelector('[data-card="devices"] tbody').textContent).toBe('None in the last 10 minutes');
+});
+
 test('no captured acquisition is (unknown), an empty column is (not set)', () => {
     const cells = [...widget().querySelectorAll('[data-card="sources"] tbody tr:first-child td')]
         .map((td) => td.textContent);
@@ -71,7 +80,7 @@ test('no captured acquisition is (unknown), an empty column is (not set)', () =>
 test('the counts, thirty bars, an empty card and the queue note', () => {
     const root = widget();
 
-    expect(root.querySelector('.owa_realtimeUsers30').textContent).toBe('3');
+    expect(root.querySelector('.owa_realtimeUsersWindow').textContent).toBe('3');
     expect(root.querySelectorAll('.owa_realtimeBar')).toHaveLength(30);
     expect(root.querySelector('.owa_realtimeBar:last-child').style.height).toBe('100%');
     expect(root.querySelector('[data-card="devices"] tbody').textContent).toBe('None in the last 30 minutes');
@@ -112,27 +121,27 @@ describe('in the install\'s language', () => {
         document.body.innerHTML = FRAME;
         const rt = new OWA.realtime(document.getElementById('rt'), { apiUrl: 'api', mapUrl: '' });
 
-        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 3, last5: 1 }, located: 2 }));
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { window: 3, recent: 1 }, located: 2 }));
         expect(document.querySelector('.owa_realtimeMapNote').textContent).toBe('1 of 3 users has no known location.');
 
-        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 1500, last5: 1 }, located: 2 }));
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { window: 1500, recent: 1 }, located: 2 }));
         expect(document.querySelector('.owa_realtimeMapNote').textContent).toBe('1,498 of 1,500 users have no known location.');
     });
 
     test('counts, minutes and words follow the install\'s locale and strings', () => {
         OWA.config.locale = 'de-DE';
         OWA.config.strings = {
-            'None in the last 30 minutes': 'Keine in den letzten 30 Minuten',
+            'None in the last %s minutes': 'Keine in den letzten %s Minuten',
             '%1$s user, %2$s': ['%1$s Nutzer, %2$s', '%1$s Nutzer, %2$s'],
         };
 
         document.body.innerHTML = FRAME;
         const rt = new OWA.realtime(document.getElementById('rt'), { apiUrl: 'api', mapUrl: '' });
-        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 1234, last5: 1 }, located: 1234 }));
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { window: 1234, recent: 1 }, located: 1234 }));
 
         const root = document.getElementById('rt');
 
-        expect(root.querySelector('.owa_realtimeUsers30').textContent).toBe('1.234');
+        expect(root.querySelector('.owa_realtimeUsersWindow').textContent).toBe('1.234');
         expect(root.querySelector('[data-card="devices"] tbody').textContent).toBe('Keine in den letzten 30 Minuten');
         expect(root.querySelectorAll('.owa_realtimeBar')[27].title).toBe('0 Nutzer, vor 2 Minuten');
     });
