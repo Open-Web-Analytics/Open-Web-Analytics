@@ -16,7 +16,6 @@ class OptionsGeoip extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
 
         // Same capability as every other settings page. Nothing here is more
         // dangerous than the rest of them, and a separate one would be a

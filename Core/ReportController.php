@@ -56,7 +56,6 @@ class ReportController extends \OWA\Core\AdminController {
      * @param array<mixed> $params
      */
     public function __construct($params) {
-        $this->setControllerType('report');
         $this->setRequiredCapability('view_reports');
         parent::__construct($params);
 

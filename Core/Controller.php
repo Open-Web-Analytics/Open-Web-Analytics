@@ -26,13 +26,6 @@ class Controller extends \OWA\Core\Base {
     public $params = [];
 
     /**
-     * Controller Type
-     *
-     * @var string
-     */
-    public $type;
-
-    /**
      * Is the controller for an admin function
      *
      * @var boolean
@@ -843,18 +836,6 @@ class Controller extends \OWA\Core\Base {
         $this->data[$name] = $value;
     }
     
-    /**
-     * Sets the type of controler
-     * @depricated
-     * @todo remove this
-     * @param  string $string
-     * @return void
-     */
-    public function setControllerType($string) {
-
-        $this->type = $string;
-
-    }
     
     /**
      * This request's type (Core\RequestType).
