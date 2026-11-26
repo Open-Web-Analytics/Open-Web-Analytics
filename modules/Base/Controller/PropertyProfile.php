@@ -10,8 +10,15 @@ namespace OWA\Module\Base\Controller;
  */
 class PropertyProfile extends \OWA\Core\AdminController {
 
-    // edit_sites on the Property acted on, not on the request's siteId.
+    // edit_sites on the Property acted on, not on the request's siteId;
+    // create_properties when there is none.
     use \OWA\Core\PropertyScopedAccess;
+
+    /** No propertyId: the form makes a new Property, whatever the siteId. */
+    protected function createsProperty() {
+
+        return (string) $this->getParam( 'propertyId' ) === '';
+    }
 
     public function __construct( $params ) {
 

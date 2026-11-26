@@ -7,6 +7,16 @@ namespace OWA\Module\Base\Controller;
 
 class SitesProfile extends \OWA\Core\AdminController {
 
+    // edit_sites on the Property of the Profile, or of the one a new Profile
+    // is added to; create_properties when there is neither.
+    use \OWA\Core\PropertyScopedAccess;
+
+    /** No siteId and no propertyId: the form's save makes a new Property. */
+    protected function createsProperty() {
+
+        return (string) $this->getParam( 'siteId' ) === '' && (string) $this->getParam( 'propertyId' ) === '';
+    }
+
     public function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
