@@ -644,40 +644,6 @@ OWA.resultSetExplorer.prototype = {
         }
     },
 
-    // move to resultSet obj?
-    formatValue : function(type, value) {
-
-        switch(type) {
-            // convery yyyymmdd to javascript timestamp as  flot requires that
-            case 'yyyymmdd':
-
-                var year = value.substring(0,4) * 1;
-                var month = (value.substring(4,6) * 1) -1;
-                var day = value.substring(6,8) * 1;
-                var d = Date.UTC(year,month,day,0,0,0,0);
-                value = d;
-                OWA.debug('year: %s, month: %s, day: %s, timestamp: %s',year,month,day,d);
-                break;
-
-            case 'currency':
-                value = value/100;
-        }
-
-        return value;
-    },
-
-    // move? check first to see if used by anyone other than area shart.
-    timestampFormatter : function(timestamp) {
-
-        var d = new Date(timestamp*1);
-        var curr_date = d.getUTCDate();
-        var curr_month = d.getUTCMonth() + 1;
-        var curr_year = d.getUTCFullYear();
-        var date =  curr_month + "/" + curr_date + "/" + curr_year;
-        return date;
-    },
-
-
     /**
      * Main method for displaying an area chart
      */

@@ -14,7 +14,6 @@ class CustomReportDelete extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
 
