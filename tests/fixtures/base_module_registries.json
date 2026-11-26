@@ -378,6 +378,12 @@
         "base.myAppPasswordRevoke": {
             "class_name": "OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke"
         },
+        "base.appPasswordRevokeLink": {
+            "class_name": "OWA\\Module\\Base\\Controller\\AppPasswordRevokeLink"
+        },
+        "base.appPasswordCreatedMail": {
+            "class_name": "OWA\\Module\\Base\\Controller\\AppPasswordCreatedMail"
+        },
         "base.userAppPasswordRevoke": {
             "class_name": "OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke"
         },

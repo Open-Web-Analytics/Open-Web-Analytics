@@ -25,9 +25,8 @@ class ProfileSettings extends \OWA\Core\AdminController {
         /*
          * Resolved, not taken raw.
          *
-         * getByColumn() throws "No value passed." on an empty value, and
-         * getEffectiveSettings() would throw for the same reason, so arriving
-         * here without a siteId -- a bookmark, a stale link, the nav before a
+         * getByColumn() throws "No value passed." on an empty value, so
+         * arriving here without a siteId -- a bookmark, a stale link, the nav before a
          * site is in context -- produced an uncaught exception rather than a
          * screen. resolveCurrentSiteId() is what the rest of this hierarchy
          * already uses to answer "which Profile are we looking at": it returns
