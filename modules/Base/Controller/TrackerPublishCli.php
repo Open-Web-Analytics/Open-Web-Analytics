@@ -3,13 +3,13 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Publish Profiles' tracking bundles (PLAN 2.24.5).
+ * Publish Profiles' tracking bundles.
  *
  *   cli.php cmd=publish-trackers               every bundle that is not current
  *   cli.php cmd=publish-trackers force=1       every bundle
  *   cli.php cmd=publish-trackers site=<id>     one Profile's
  *
- * What starts it (PLAN 2.30.7): a Profile's save publishes that Profile at
+ * What starts it: a Profile's save publishes that Profile at
  * once; a change above one Profile queues one run of this on the job queue;
  * cmd=core-update-schema republishes what a new release changed. Run it by hand after
  * anything none of those see -- a config-file constant such as

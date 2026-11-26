@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * The tag that loads a Profile's tracking bundle (PLAN 2.24), rendered by
+ * The tag that loads a Profile's tracking bundle, rendered by
  * CoreAPI::getJsTrackerBundleTag().
  *
  * Everything the Profile is configured to do is in the bundle, so the tag is a

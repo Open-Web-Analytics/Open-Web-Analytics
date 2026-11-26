@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * owa_job_queue: one-off admin jobs, run by the scheduler (PLAN 2.30.5).
+ * owa_job_queue: one-off admin jobs, run by the scheduler.
  */
 class Update067 extends \OWA\Core\Update {
 

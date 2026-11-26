@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * log.php answers before it works (PLAN 2.30.7): the pixel is sent and the
+ * log.php answers before it works: the pixel is sent and the
  * response ended before OWA is booted, so a visitor's browser never waits on
  * ingest or the database.
  *

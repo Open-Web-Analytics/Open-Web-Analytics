@@ -103,7 +103,7 @@ final class DomstreamModuleTest extends TestCase
     }
 
     /**
-     * A Profile that records starts the recorder from its tag config (PLAN 2.24).
+     * A Profile that records starts the recorder from its tag config.
      *
      * The Profile's recording is set here rather than read from the default:
      * run alone in a fresh install the module is inactive and its declared

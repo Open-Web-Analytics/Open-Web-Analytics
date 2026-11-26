@@ -157,9 +157,8 @@ class DimensionExpression {
      * decision baked in, so a part read from it cannot disagree with the
      * `date` dimension or with the partition the row lives in.
      *
-     * THE PLAN SAID `ts` FOR ALL OF THESE. It was written before the timezone
-     * question was asked, and nothing that follows from `ts` can answer it
-     * without either the server's timezone tables or a stored offset.
+     * NOT `ts`: nothing that follows from `ts` can answer the timezone
+     * question without either the server's timezone tables or a stored offset.
      *
      * Four of the seven are integer arithmetic on the INT itself, so no date
      * value is built and nothing dialect-specific is used. Only the three that

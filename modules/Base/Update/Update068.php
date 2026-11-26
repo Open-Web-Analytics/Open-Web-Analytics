@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * owa_queue_item goes (PLAN 2.30.6): the database event queue's table, which
+ * owa_queue_item goes: the database event queue's table, which
  * nothing reads on v2. Failed beacons are retried through the tracker-ingest
  * intake.
  *

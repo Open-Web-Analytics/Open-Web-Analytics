@@ -136,7 +136,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
             /*
              * Each module whose install-level settings were saved hears which
-             * (PLAN 2.30.4a): the SQS module creates its queues when its region
+             *: the SQS module creates its queues when its region
              * is saved. After save(), so a handler reads what was stored.
              */
             $d = \OWA\Core\CoreAPI::getEventDispatch();

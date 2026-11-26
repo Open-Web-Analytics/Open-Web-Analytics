@@ -192,9 +192,8 @@ return [
         /*
          * The two identity fields that became CUSTOM USER PROPERTIES.
          *
-         * user_name and user_email are not declared properties (PLAN.html
-         * §2.26.1 -- two scopes, and a value describing the person is the user
-         * one). So a beacon carrying
+         * user_name and user_email are not declared properties (there are two
+         * scopes, and a value describing the person is the user one). So a beacon carrying
          * either under its bare name names nothing, and admitRequestParams()
          * would drop it: the bare spellings are not registered and carry no `vps_`
          * prefix to be admitted by.

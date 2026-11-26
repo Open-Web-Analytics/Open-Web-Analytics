@@ -8,7 +8,7 @@ use OWA\Module\Base\Classes\TrackerBundle;
 use OWA\Module\Base\Classes\TrackerDefaults;
 
 /**
- * Profile tracking bundles (PLAN 2.24): composed from the build's own files,
+ * Profile tracking bundles: composed from the build's own files,
  * written atomically, and current exactly when the first line matches what
  * the Profile's settings and the build would write now.
  *
@@ -602,7 +602,7 @@ final class TrackerBundleTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
-    // What starts a publish (PLAN 2.30.7)
+    // What starts a publish
     // ---------------------------------------------------------------------
 
     /**
@@ -626,7 +626,7 @@ final class TrackerBundleTest extends TestCase
     }
 
     /**
-     * A new tracker is an update (PLAN 2.30.7): a recorded tracker build
+     * A new tracker is an update: a recorded tracker build
      * other than the one built here is an update pending, and the update publishes
      * every live Profile's bundle that is stale or missing -- which is how
      * Profiles from 1.x, which have none, get theirs on the upgrade.

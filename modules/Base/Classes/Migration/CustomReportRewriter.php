@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes\Migration;
 
 /**
- * A saved 1.14 custom report, rewritten into v2's names (PLAN.html 2.21).
+ * A saved 1.14 custom report, rewritten into v2's names.
  *
  * Per name, through V1Names: renamed where v2 has an equivalent, dropped where
  * it has none. A widget goes only when what is left cannot render -- no

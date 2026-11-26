@@ -209,7 +209,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
     /**
      * A new tracker not yet applied leaves the schema as the jobs expect, so
-     * they run; a schema behind stops them (PLAN 2.30.7). Without the split, a
+     * they run; a schema behind stops them. Without the split, a
      * release with a new tracker would pause the drain, the cube and the job
      * queue until someone applied the update.
      */
@@ -333,11 +333,11 @@ final class ScheduleCliTest extends CliControllerTestCase
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
         // (No bundle job: saves publish their own and cmd=core-update-schema republishes
-        // what a release changed, PLAN 2.30.7.) prune-job-queue deletes
-        // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
+        // what a release changed.) prune-job-queue deletes
+        // finished one-off jobs, which nothing else would, and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
         // and replay-tracker-ingest the only thing that brings a dead letter
-        // back without someone running it by hand (PLAN 2.30.4).
+        // back without someone running it by hand.
         // prune-tracker-ingest-archive holds the intake's archived batches to
         // raw_retention_months, and deletes nothing while that is unset.
         $this->assertSame(
@@ -361,7 +361,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * No bundle job ships (PLAN 2.30.7): a save publishes its own, and a
+     * No bundle job ships: a save publishes its own, and a
      * release republishes them once installed (Finish, Base\Module::update()).
      * publish-trackers stays a command, and the job queue runs it for a
      * change above one Profile.

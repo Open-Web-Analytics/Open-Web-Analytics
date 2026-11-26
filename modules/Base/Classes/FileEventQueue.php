@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * The file-backed tracking intake (PLAN 2.30.3), and the default one.
+ * The file-backed tracking intake, and the default one.
  *
  * MIRRORS THE SQS IMPLEMENTATION: a main queue with a dead-letter queue of its
  * own, a receive limit the queue enforces itself (SQS's redrive policy), and

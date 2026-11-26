@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Classes;
  * 400 days -- and with the row gone no first_visit is raised, so every new
  * event gets the sentinel. With a raw window of 14 months or more raw outlives
  * the cookie and this changes nothing; under a shorter one it holds rows for
- * visitors seen in the last 14 months (PLAN A.1.22 has the lifespans).
+ * visitors seen in the last 14 months.
  *
  * UNDATED ROWS ARE KEPT. last_seen 0 or NULL says nothing about age.
  */

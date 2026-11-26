@@ -7,7 +7,7 @@ namespace OWA\Module\Base\Controller;
  *   php cli.php cmd=v1-drop           what would be dropped, and what it holds
  *   php cli.php cmd=v1-drop --drop    drop them
  *
- * OPTIONAL (PLAN.html 2.21). The migration never writes v1's tables, so until
+ * OPTIONAL. The migration never writes v1's tables, so until
  * they are dropped an installation can still go back to 1.14. After, there is
  * nothing to go back to, and rows older than the migration's cutoff -- never
  * migrated -- are gone. Without --drop this only reports, so that is read

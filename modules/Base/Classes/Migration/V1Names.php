@@ -6,8 +6,7 @@ namespace OWA\Module\Base\Classes\Migration;
  *
  * Every name 1.14 registered is a key (read from the 1.14.0 tag). The value is
  * the v2 name, or null where v2 has no equivalent. There is no alias layer:
- * names resolve exactly, so a saved report is rewritten once, by the migration
- * (PLAN.html 2.21).
+ * names resolve exactly, so a saved report is rewritten once, by the migration.
  *
  * REDEFINED names keep or take a v2 name whose meaning differs; the rewrite
  * logs them so nobody reads the new numbers as the old.

@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Classes;
 
 /**
  * The last-touch evidence for history recorded before ingest wrote it
- * (Update066, PLAN 2.29): raw's prior_touch_* and the visitor store's
+ * (Update066): raw's prior_touch_* and the visitor store's
  * last_touch_*, worked out from the landings raw already holds.
  *
  * That history is v1's, migrated in by Update062 before these columns existed,

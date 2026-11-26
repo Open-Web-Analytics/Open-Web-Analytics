@@ -3,7 +3,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * What a site's last thirty minutes look like, read from raw (PLAN 1.6).
+ * What a site's last thirty minutes look like, read from raw.
  *
  * RAW, NOT THE CUBE. Reports read the cube and are as of the last build;
  * this is immediate, and reports only what is on the event or in the visitor
@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Classes;
  * The day range prunes raw's partitions; site_ts (Update064) makes the ts
  * range a range read, so the cost follows the window rather than the day.
  * The statements run are kept in $statements so a test can assert that on the
- * SQL itself (PLAN 2.16), which a timing test on a small fixture cannot.
+ * SQL itself, which a timing test on a small fixture cannot.
  *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-type RecentEvent array{ts: int, type: scalar|null, path: scalar|null, title: scalar|null, country: scalar|null, city: scalar|null, visitor: string}

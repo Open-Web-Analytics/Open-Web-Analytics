@@ -36,7 +36,7 @@
  * An installation that wants it adds it to OWA_SCHEDULED_JOBS, or runs
  * cli.php cmd=ua-update-definitions from its own cron.
  *
- * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes its
+ * No job for Profiles' tracking bundles. A save publishes its
  * own -- a Profile's at once, anything wider as a queued publish-trackers job
  * -- and an installed release republishes them once its schema updates are
  * applied (Classes\AutoUpdate\Finish, Base\Module::update()).
@@ -75,7 +75,7 @@ return [
     ],
 
     /*
-     * The tracking intake's drain (PLAN 2.30.4), every minute, on the servers
+     * The tracking intake's drain, every minute, on the servers
      * whose role runs the scheduler. A minute with nothing queued costs a few
      * stat() calls (isProbablyEmpty()).
      */
@@ -89,7 +89,7 @@ return [
     ],
 
     /*
-     * Dead letters back to the intake once each, daily (PLAN 2.30.4): a beacon
+     * Dead letters back to the intake once each, daily: a beacon
      * that died in an outage longer than the back-off gets one more round, and
      * one already replayed is kept for cmd=tracker-ingest-replay: on disk until
      * it is replayed, on SQS for the queue's fourteen-day retention. A dead
@@ -120,7 +120,7 @@ return [
           . 'event data is kept for. Deletes nothing when that is not set.',
     ],
 
-    // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
+    // Finished one-off jobs: done after 7 days, failed after 30.
     'prune-job-queue' => [
         'command'     => 'jobs-prune',
         'schedule'    => [ 'spread' => 'daily' ],

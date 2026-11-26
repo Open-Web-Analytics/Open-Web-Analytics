@@ -2,7 +2,7 @@
 namespace OWA\Core;
 
 /**
- * The tracking intake's contract (PLAN 2.30.3): what the tracker-ingest queue
+ * The tracking intake's contract: what the tracker-ingest queue
  * must do, whatever it runs on.
  *
  * Written to the strictest likely backend, AWS SQS, and every implementation

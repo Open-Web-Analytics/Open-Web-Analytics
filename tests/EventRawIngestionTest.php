@@ -715,9 +715,9 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * A display name is a custom USER property, and reaches the visitor store.
      *
-     * user_name and user_email are ordinary custom user properties (PLAN.html
-     * §2.26.1 -- v2 offers site authors event and user scope and nothing else, and
-     * a value describing the PERSON is the second), and log_visitor_pii gates
+     * user_name and user_email are ordinary custom user properties (v2 offers
+     * site authors event and user scope and nothing else, and a value
+     * describing the PERSON is the second), and log_visitor_pii gates
      * user_id, the identity field that has a column.
      *
      * So the path under test is the `vps_` one, the same path any other user

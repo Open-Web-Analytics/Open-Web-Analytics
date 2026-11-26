@@ -94,7 +94,7 @@ class Module extends \OWA\Core\Module {
 
     public function registerActions() {
 
-        // Its tag settings, beside Base's on every Tracking Tag screen (PLAN 2.24.4).
+        // Its tag settings, beside Base's on every Tracking Tag screen.
         $this->registerSettingsFieldSet( [
             'id'       => 'trackingTag',
             'group'    => 'tracking_tag',
@@ -128,7 +128,7 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * A Profile's tracking bundle records when the Profile says so (PLAN 2.24):
+     * A Profile's tracking bundle records when the Profile says so:
      * the sample rate among its options, trackDomStream among its features, and
      * the recorder's chunk inlined.
      *

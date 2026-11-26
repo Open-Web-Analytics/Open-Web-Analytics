@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Send the tracker-ingest dead letters back to the intake (PLAN 2.30.4).
+ * Send the tracker-ingest dead letters back to the intake.
  *
  *   cli.php cmd=tracker-ingest-replay      every dead letter that decodes, once its cause is fixed
  *

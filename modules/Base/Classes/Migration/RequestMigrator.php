@@ -7,7 +7,7 @@ namespace OWA\Module\Base\Classes\Migration;
  * A session's entry is its EARLIEST request -- by time, then id -- and it
  * carries the new-session flag, and the new-visitor flag where the visitor had
  * no earlier session (FactMigrator::priorSessions()), so ingest's own materialisers raise session_start and
- * first_visit exactly as for a live beacon (PLAN.html 2.21): once per session.
+ * first_visit exactly as for a live beacon: once per session.
  *
  * Not v1's is_entry_page. On a real 1.x install it was set on two or more of a
  * session's requests in 1,445 sessions -- each then counted again -- and on

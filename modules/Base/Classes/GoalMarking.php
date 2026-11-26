@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * A goal event for each goal event definition an event met (PLAN 1.3.2).
+ * A goal event for each goal event definition an event met.
  *
  * A CALLBACK ON Ingest::TRACKING_EVENTS_PRE_SAVE, at priority 100 -- after the
  * materializers at 10 -- so it is handed every event one beacon will be saved as

@@ -13,7 +13,7 @@ use OWA\Module\Sqs\Classes\Sqs;
 use OWA\Module\Sqs\Classes\SqsQueue;
 
 /**
- * The SQS tracking intake against the contract (PLAN 2.30.4a), each SDK call
+ * The SQS tracking intake against the contract, each SDK call
  * answered by Aws\MockHandler and recorded: what OWA asks SQS to do, without
  * AWS. tests/SqsLiveTest.php runs the same contract against real queues.
  *

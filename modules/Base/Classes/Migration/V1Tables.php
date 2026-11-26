@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Classes\Migration;
  * COLUMN NAMES ARE THE CONTRACT, NOT TYPES. Installations built at different
  * times hold the same columns with different types -- a dimension foreign key
  * is BIGINT on one and VARCHAR(255) on another -- so nothing reading these
- * tables may depend on a column's type. See PLAN.html 2.21.
+ * tables may depend on a column's type.
  */
 class V1Tables {
 

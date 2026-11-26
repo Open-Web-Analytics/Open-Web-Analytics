@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Update;
  * minutes without rewriting unchanged days.
  *
  * NOT ON THE CUBES. It is ingest provenance that no report reads, and adding a
- * column to a cube is a full rebuild of every cube (PLAN 2.7.3). The cube
+ * column to a cube is a full rebuild of every cube. The cube
  * entity drops it, so a fresh install's cubes are created without it too.
  *
  * AN UPDATE, NOT A SCHEMA EDIT, because owa_event_raw is on master (Update034).

@@ -9,8 +9,8 @@ namespace OWA\Module\Base\Controller;
  * "Goal event definition" rather than "goal": each one names the goal events,
  * rows added when a behaviour pattern matches.
  *
- * PLAN.html calls the same idea a KEY event. Keeping "goal" is deliberate: it
- * is the word 1.x users already have.
+ * Other tools call the same idea a key event. Keeping "goal" is deliberate:
+ * it is the word 1.x users already have.
  */
 class GoalEventDefinitions extends \OWA\Core\AdminController {
 

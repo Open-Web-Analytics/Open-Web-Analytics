@@ -8,7 +8,7 @@ use OWA\Module\Base\Classes\JobQueue;
 use OWA\Module\Base\Classes\JobQueueLease;
 
 /**
- * The one-off job queue (PLAN 2.30.5): leases, attempts, back-off, dedupe,
+ * The one-off job queue: leases, attempts, back-off, dedupe,
  * the run budget, and the management calls.
  *
  * Against a scratch copy of owa_job_queue (JobQueue::$table), so a test never

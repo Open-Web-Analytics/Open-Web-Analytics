@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use OWA\Module\Base\Classes\SettingsForm;
 
 /**
- * The tracking tag's settings (PLAN 2.24.4): declared once, shown at each level
+ * The tracking tag's settings: declared once, shown at each level
  * that may hold them, saved through the Override switch.
  */
 final class TagSettingsTest extends TestCase

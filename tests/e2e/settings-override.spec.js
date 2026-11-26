@@ -136,7 +136,7 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
 });
 
 /**
- * The Tracking Tag screen (PLAN 2.24.4): Base's two tag fieldsets first, a module's
+ * The Tracking Tag screen: Base's two tag fieldsets first, a module's
  * after it, and a setting saved through its switch at Profile scope.
  */
 test('the Tracking Tag screen saves a Profile override', async ({ page }) => {

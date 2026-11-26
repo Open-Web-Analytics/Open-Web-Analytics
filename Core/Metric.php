@@ -370,7 +370,7 @@ class Metric extends \OWA\Core\Base {
 
                     /*
                      * NULL counts as 0 here, which merges "false" with "not
-                     * recorded" (PLAN 1.12): the three-valued boolean is a 1.x
+                     * recorded": the three-valued boolean is a 1.x
                      * problem that v2's schema removes.
                      */
                     $statement = sprintf( OWA_SQL_COALESCE, sprintf(
@@ -556,7 +556,7 @@ class Metric extends \OWA\Core\Base {
      * Restrict what this metric counts to the rows matching one test.
      *
      * A definition names a column, an operator and a value; it never carries
-     * SQL. The same rule as a derived dimension naming a shape (PLAN 2.4), and
+     * SQL. The same rule as a derived dimension naming a shape, and
      * for the same reason -- a metric carrying an expression has to be rewritten
      * by hand if the reporting store ever changes.
      *

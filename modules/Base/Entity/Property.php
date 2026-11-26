@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Entity;
  * way.
  *
  * ACCESS IS GRANTED HERE, not on the profile: someone who may see a website
- * should see its measurements (PLAN.html §3.5).
+ * should see its measurements.
  */
 class Property extends \OWA\Core\Entity {
 

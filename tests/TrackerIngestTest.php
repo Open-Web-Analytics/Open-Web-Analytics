@@ -10,7 +10,7 @@ use OWA\Module\Base\Classes\Event;
 use OWA\Module\Base\Classes\TrackerIngest;
 
 /**
- * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): the envelope, which
+ * The tracker-ingest intake: the envelope, which
  * setting queues, which queue type is used, and what the drain does with each
  * message.
  *

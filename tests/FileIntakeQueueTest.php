@@ -9,7 +9,7 @@ use OWA\Core\IntakeMessage;
 use OWA\Module\Base\Classes\FileEventQueue;
 
 /**
- * The file-backed tracking intake against the contract (PLAN 2.30.3): what is
+ * The file-backed tracking intake against the contract: what is
  * sent is received, acked messages are gone, released ones come back counted,
  * and a consumer that dies leaves its batch to the next one.
  *
@@ -493,8 +493,8 @@ final class FileIntakeQueueTest extends TestCase
     }
 
     /**
-     * No vendor package on the tracking path (PLAN 2.30.3; the source-checkout
-     * boot constraint), and no shelling out: the queue sends, receives, acks,
+     * No vendor package on the tracking path (the source-checkout boot
+     * constraint), and no shelling out: the queue sends, receives, acks,
      * dead-letters and prunes in a process with only OWA's own autoloader and
      * with exec() and its kind disabled, and loads nothing from vendor/.
      */

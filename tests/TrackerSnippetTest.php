@@ -143,7 +143,7 @@ final class TrackerSnippetTest extends TestCase
 
     /**
      * The classic tag carries the Profile's commands: the ones its bundle would
-     * bake in, from its tag settings (PLAN 2.24.4), not a list of its own.
+     * bake in, from its tag settings, not a list of its own.
      */
     public function testTheClassicTagCarriesTheProfilesCommands(): void
     {

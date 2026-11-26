@@ -22,8 +22,8 @@ namespace OWA\Module\Base\Entity;
  * Resolutions -- source, medium, acq_* -- always produce a value or the
  * sentinel, so they are NOT NULL.
  *
- * Copies are never made NOT NULL by inventing a value for an absence, which
- * PLAN 2.11 forbids.
+ * Copies are never made NOT NULL by inventing a value for an absence: the
+ * invented value would read as one the visitor sent.
  *
  * campaign, ad and search_terms are copies despite being attribution: a
  * campaign exists only because a URL was tagged with one, so no tag is an
@@ -91,7 +91,7 @@ class Event extends EventRaw {
         $this->addCompositeIndex( 'site_date', [ 'site_id', 'yyyymmdd' ] );
 
         // NOR PRIOR_TOUCH_*. Evidence for attributed_* below, which is the
-        // cube's reading of it (PLAN 2.29).
+        // cube's reading of it.
         foreach ( [ 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ] as $part ) {
 
             unset( $this->properties[ 'prior_touch_' . $part ] );
@@ -279,7 +279,7 @@ class Event extends EventRaw {
          * or a referrer; otherwise the visitor's last non-direct touch within
          * the Property's lookback (attribution_lookback_days); otherwise
          * (direct). From the session's own evidence and prior_touch_*, by the
-         * same steps as source, medium, campaign and channel (PLAN 2.29).
+         * same steps as source, medium, campaign and channel.
          * Campaign is nullable like campaign -- a tagged touch with no campaign
          * is (not set). LAST: Update066 ADDs them.
          */

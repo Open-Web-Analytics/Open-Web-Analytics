@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * A Profile's tracking bundle (PLAN 2.24): one static file at
+ * A Profile's tracking bundle: one static file at
  * public/tracker/<site_id>.js holding the Profile's configuration, the lazy
  * chunks it uses, and the tracker.
  *
@@ -708,7 +708,7 @@ class TrackerBundle {
 
     /**
      * Publish one Profile's bundle now, as a save of its settings does
-     * (PLAN 2.30.7); if that cannot be done, queue it for the scheduler
+     *; if that cannot be done, queue it for the scheduler
      * rather than leave the Profile on its old settings.
      *
      * @param  string $site_id
@@ -728,7 +728,7 @@ class TrackerBundle {
     }
 
     /**
-     * Queue one publish-trackers run for every Profile (PLAN 2.30.7): what a
+     * Queue one publish-trackers run for every Profile: what a
      * save above a single Profile asks for -- a Property's or the install's
      * tag settings. Saves within the minute leave one job, and a run rewrites
      * only the bundles that are stale.
@@ -794,7 +794,7 @@ class TrackerBundle {
 
     /**
      * Fetch a bundle's URL and read back the cache header it is served with
-     * (PLAN 2.24.6). The .htaccess sets Cache-Control: no-cache where Apache
+     *. The .htaccess sets Cache-Control: no-cache where Apache
      * can, but a stock Apache may not read .htaccess or may lack the modules,
      * so the answer is whatever the server actually sent. Stored at install
      * scope for the Tracking Tag screen.

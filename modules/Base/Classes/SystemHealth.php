@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * Is the installation doing what it should (PLAN 2.30.5): the scheduler,
+ * Is the installation doing what it should: the scheduler,
  * its recurring jobs, the one-off job queue, the tracker-ingest intake, the
  * Profiles' tracking bundles, and the installation itself -- its versions and
  * the environment checks the installer runs -- each as findings with a level.
@@ -425,7 +425,7 @@ class SystemHealth {
     }
 
     /**
-     * The Profiles' tracking bundles (PLAN 2.24, 2.30.7): built, published
+     * The Profiles' tracking bundles: built, published
      * and current, and served so browsers revalidate them.
      *
      * @return Section

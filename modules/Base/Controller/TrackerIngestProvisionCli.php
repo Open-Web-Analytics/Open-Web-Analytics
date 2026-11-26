@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 /**
  * Create the tracker-ingest queue and its dead-letter queue, or find them
- * there (PLAN 2.30.3): directories for the file queue, queues for a module's
+ * there: directories for the file queue, queues for a module's
  * backend. Idempotent.
  *
  *   cli.php cmd=tracker-ingest-provision

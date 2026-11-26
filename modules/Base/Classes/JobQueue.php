@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * One-off admin jobs (PLAN 2.30.5): a registered CLI command and its arguments,
+ * One-off admin jobs: a registered CLI command and its arguments,
  * queued by whatever needs it run and drained by schedule-run.
  *
  * Reviewed against Laravel's database queue, and shaped by what the scheduler

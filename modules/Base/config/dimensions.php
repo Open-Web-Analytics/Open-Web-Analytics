@@ -11,8 +11,8 @@
  *
  * THREE KINDS: a column read (`column`), several columns joined (`parts`) and
  * a component of a date (`datePart`). Core\Module::registerDimensionsFromConfig()
- * renders the last two through DimensionExpression. The other computed kinds
- * PLAN 2.4.1 describes -- map, test, filtered -- are not supported.
+ * renders the last two through DimensionExpression. No other computed kind
+ * (a value map, a test, a filtered column) is supported.
  *
  * EVERY ONE IS DENORMALISED, structurally rather than by choice: the cube
  * carries its values as columns on the event row, so there is no dimension
@@ -20,7 +20,7 @@
  * read under.
  *
  * NAMES v1 USED ARE TAKEN rather than avoided: v1's history is migrated into
- * v2's raw store and there is no v1 reporting path (PLAN 2.23).
+ * v2's raw store and there is no v1 reporting path.
  *
  * `internal` => true KEEPS A DIMENSION OUT OF THE PICKERS -- the custom report
  * and visualization editors -- while the reports API still resolves it. For
@@ -197,7 +197,7 @@ return [
                 'separator' => ' / ', 'label' => 'Source / Medium',
                 'family' => 'traffic source', 'description' => 'Where this session came from and how it arrived, as one value.' ],
 
-            // ---- the last non-direct touch within the lookback (PLAN 2.29) ----
+            // ---- the last non-direct touch within the lookback ----
             'attributedSource' => [ 'column' => 'attributed_source', 'label' => 'Attributed Source',
                 'family' => 'traffic source', 'description' => "Where this session's credit goes: its own source if it arrived with tags or a referrer, otherwise the user's last campaign, search or referral visit within the attribution lookback, otherwise (direct)." ],
             'attributedMedium' => [ 'column' => 'attributed_medium', 'label' => 'Attributed Medium',

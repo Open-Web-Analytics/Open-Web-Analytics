@@ -5,7 +5,7 @@ namespace OWA\Module\Base\Entity;
  * owa_migration_progress: how far the v1 migration has got, per source table
  * and site.
  *
- * The migration is forced, blocking and resumable (PLAN.html 2.21), so it has
+ * The migration is forced, blocking and resumable, so it has
  * to know where it stopped. It also holds what validation reports -- rows read,
  * written and refused by reason -- and when each source finished, which is
  * what the optional v1 drop refuses without.

@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * The one-off job queue (PLAN 2.30.5), from the shell.
+ * The one-off job queue, from the shell.
  *
  *   cli.php cmd=jobs [status=pending|running|failed|done] [limit=50]
  *   cli.php cmd=jobs-retry id=<id>|all     a failed job, due now, attempts cleared

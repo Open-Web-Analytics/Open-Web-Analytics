@@ -49,7 +49,7 @@ class Context {
     /**
      * How far back a direct session may take the visitor's last non-direct
      * touch, in microseconds: the Property's attribution_lookback_days
-     * (AttributedStep, PLAN 2.29).
+     * (AttributedStep).
      *
      * @var int
      */

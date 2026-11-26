@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Ingest what the tracker-ingest intake holds (PLAN 2.30.4).
+ * Ingest what the tracker-ingest intake holds.
  *
  *   cli.php cmd=drain-tracker-ingest                 until empty, or 45 seconds
  *   cli.php cmd=drain-tracker-ingest seconds=600     a longer budget, by hand

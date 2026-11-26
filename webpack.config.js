@@ -30,7 +30,7 @@ const { PublicHtaccessPlugin } = require('./webpack.public-htaccess.js');
 // contribution to a package no manifest declares is an error.
 //
 // A manifest may also contribute a LAZY plugin: built as its own chunk and
-// loaded the first time one of its commands is called (PLAN 2.24.3).
+// loaded the first time one of its commands is called.
 //   "contributes_lazy": { "owa.tracker.js": [ { "name": "domstream",
 //       "chunk": "owa.domstream", "entry": "src/tracker/Recorder.js",
 //       "methods": ["trackDomStream"], "reservedEventNames": ["domstream"] } ] }

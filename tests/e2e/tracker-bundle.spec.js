@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * A Profile's tracking bundle in a real browser (PLAN 2.24): published by the
+ * A Profile's tracking bundle in a real browser: published by the
  * real CLI command, loaded by the minimal snippet, configured by its Profile.
  *
  * The page carries one script tag and, where it needs one, a page-level

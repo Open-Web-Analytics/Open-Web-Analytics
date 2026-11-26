@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes\Migration;
 
 /**
- * 32-bit ids in the tables v2 keeps, re-keyed to 64-bit (PLAN.html 2.21).
+ * 32-bit ids in the tables v2 keeps, re-keyed to 64-bit.
  *
  * 1.14 derived ids from content with crc32 until an administrator ran
  * rederive-dimension-ids, and that command never covered every table: rows
