@@ -17,19 +17,6 @@ class VisualizationSave extends \OWA\Core\AdminController {
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
-
-        /*
-         * The Property it is saved to: the one the form posts, else an existing
-         * visualization's own (CustomReports::requestProperty()). Set here, so
-         * validate() checks the steps against its custom dimensions.
-         */
-        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
-            (string) $this->getParam( 'visualizationId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
-
-        if ( $propertyId !== '' ) {
-
-            $this->setParam( 'propertyId', $propertyId );
-        }
     }
 
     /**
@@ -44,6 +31,21 @@ class VisualizationSave extends \OWA\Core\AdminController {
     const MAX_STEPS = 10;
 
     public function validate() {
+
+        /*
+         * The Property it is saved to: the one the form posts, else an existing
+         * visualization's own (CustomReports::requestProperty()). Resolved
+         * first, so the steps are checked against its custom dimensions:
+         * Controller::__construct() runs validate(), before anything a
+         * subclass's constructor does after it.
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'visualizationId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );

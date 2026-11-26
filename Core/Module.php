@@ -7,12 +7,10 @@ namespace OWA\Core;
  *
  * NavLink: one report nav link, as getLinkStruct() builds it. NavItem: a nav
  * subgroup, a NavLink with its links under `subgroup`; only `subgroup` when a
- * link was added before the subgroup was. ViewNavLink: a NavLink in one view's
- * named nav (addViewNavigationLink()).
+ * link was added before the subgroup was.
  *
  * @phpstan-type NavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string}
  * @phpstan-type NavItem array{ref?: string|array<string, string>, anchortext?: string, order?: int|null, priviledge?: string, icon_class?: string, subgroup?: list<NavLink>}
- * @phpstan-type ViewNavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string, view: string, nav_name: string}
  * @phpstan-type ActivationDeclaration array{activated_by: list<mixed>, intake_queue_type: string}
  * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string, while_updates_pending?: bool}
  */
@@ -85,14 +83,6 @@ abstract class Module {
      * @var array<string, array<string, NavItem>>|null
      */
     public $nav_links;
-
-    /**
-     * Links this module adds to views' named navs, for
-     * CoreAPI::getNavigation(); see addViewNavigationLink().
-     *
-     * @var list<ViewNavLink>
-     */
-    public $view_nav_links = [];
 
     /**
      * Whether registerReports() has run for this module this request.
@@ -302,35 +292,6 @@ abstract class Module {
     public function getNavigationLinks() {
 
         return $this->nav_links;
-    }
-
-    /**
-     * A link in one view's named nav: CoreAPI::getNavigation( $view, $nav_name )
-     * answers it. Called from registerNavigation(), as the report nav links are.
-     *
-     * @param string $view     the view whose nav it is in
-     * @param string $nav_name that view's nav
-     * @param string|array<string, string> $ref an action name, or link params (reportRef())
-     * @param string $anchortext
-     * @param int|null $order lowest first; omitted, after those that give one
-     * @param string $priviledge
-     * @return void
-     */
-    public function addViewNavigationLink( $view, $nav_name, $ref, $anchortext, $order = null, $priviledge = 'view_reports' ) {
-
-        $link = $this->getLinkStruct( $ref, $anchortext, $order, $priviledge );
-        $link['view']     = $view;
-        $link['nav_name'] = $nav_name;
-
-        $this->view_nav_links[] = $link;
-    }
-
-    /**
-     * @return list<ViewNavLink> addViewNavigationLink()'s, in the order added
-     */
-    public function getViewNavigationLinks() {
-
-        return $this->view_nav_links;
     }
 
     /**

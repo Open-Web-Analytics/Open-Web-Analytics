@@ -22,7 +22,7 @@ final class ForgetSingletonsTest extends TestCase
      */
     private const SLOTS = [
         \OWA\Core\CoreAPI::class => [
-            'api', 'db', 'config', 'error', 'service', 'cache', 'request',
+            'db', 'config', 'error', 'service', 'cache', 'request',
             'request_logged', 'event_queues', 'salts', 'warned_modules',
             'registered_sites', 'setting_row_cache', 'setting_scope_cache', 'setting_chain_cache',
         ],
@@ -112,7 +112,6 @@ final class ForgetSingletonsTest extends TestCase
     public static function singletons(): array
     {
         return [
-            'api'       => [ [ CoreAPI::class, 'singleton' ], CoreAPI::class ],
             'config'    => [ [ CoreAPI::class, 'configSingleton' ], \OWA\Module\Base\Classes\Settings::class ],
             'error'     => [ [ CoreAPI::class, 'errorSingleton' ], \OWA\Module\Base\Classes\Error::class ],
             'service'   => [ [ CoreAPI::class, 'serviceSingleton' ], \OWA\Module\Base\Classes\Service::class ],
