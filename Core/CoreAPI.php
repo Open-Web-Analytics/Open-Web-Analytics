@@ -3556,11 +3556,13 @@ class CoreAPI {
      * @param  array<mixed> $params  its arguments
      * @param  string|null $key      at most one pending job per key
      * @param  int         $delay    seconds before it may run
+     * @param  array<string, mixed>|null $retry  this job's retry policy (Classes\RetryPolicy);
+     *                             null for its command's, else the one-off default
      * @return string|false  the job's id
      */
-    public static function enqueueJob( $command, array $params = [], $key = null, $delay = 0 ) {
+    public static function enqueueJob( $command, array $params = [], $key = null, $delay = 0, $retry = null ) {
 
-        return \OWA\Module\Base\Classes\JobQueue::enqueue( $command, $params, $key, $delay );
+        return \OWA\Module\Base\Classes\JobQueue::enqueue( $command, $params, $key, $delay, $retry );
     }
 
     /**

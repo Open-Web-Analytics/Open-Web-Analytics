@@ -174,7 +174,9 @@ class ScheduleRunCli extends SchedulerCli {
 
                 if ( $undeclared ) {
 
-                    return [ 'outcome' => 'failed', 'message' => sprintf( '%s does not take %s', $command, implode( ', ', $undeclared ) ) ];
+                    // Final: the row's arguments are the same on every attempt.
+                    return [ 'outcome' => 'failed', 'final' => true,
+                             'message' => sprintf( '%s does not take %s', $command, implode( ', ', $undeclared ) ) ];
                 }
 
                 $controller->setJobLease(
@@ -276,14 +278,33 @@ class ScheduleRunCli extends SchedulerCli {
                 return;
             }
 
-            $retry_at = $state ? self::retryAfter( $state ) : null;
+            // A failed attempt at this occurrence: the next waits for its window.
+            if ( $state && (string) $state->get( 'last_status' ) === 'failed' ) {
 
-            if ( $retry_at !== null && time() < $retry_at ) {
+                $policy  = self::retryPolicyFor( $job );
+                $attempt = \OWA\Module\Base\Classes\RetryPolicy::attemptOf( $policy, $slot, (int) $state->get( 'last_run_at' ) );
 
-                \OWA\Core\CoreAPI::debug( sprintf( 'Job "%s" failed last time; next attempt after %s.',
-                    $name, date( 'c', $retry_at ) ) );
+                // Spent but unanswered: the policy was tightened after the
+                // attempt. The occurrence has had its attempts.
+                if ( $attempt > 0 && \OWA\Module\Base\Classes\RetryPolicy::attemptsSpent( $policy, $attempt ) && ! $dry_run ) {
 
-                return;
+                    $state->set( 'last_run_slot', $slot );
+                    $state->update();
+
+                    return;
+                }
+
+                $next = $attempt > 0
+                    ? \OWA\Module\Base\Classes\RetryPolicy::windowOpens( $policy, $slot, $attempt + 1 )
+                    : 0;
+
+                if ( time() < $next ) {
+
+                    \OWA\Core\CoreAPI::debug( sprintf( 'Job "%s" failed attempt %d; attempt %d after %s.',
+                        $name, $attempt, $attempt + 1, date( 'c', $next ) ) );
+
+                    return;
+                }
             }
         }
 
@@ -303,74 +324,54 @@ class ScheduleRunCli extends SchedulerCli {
     }
 
     /**
-     * Whether a run's outcome answers its occurrence, so the job is next due
-     * at its next scheduled time rather than retried.
+     * The retry policy a registered job runs under (Classes\RetryPolicy).
      *
-     * ok and refused do: a refusal is an answer about the occurrence. A failure
-     * does not, so the job stays due and is retried (retryAfter()) -- unless
-     * the command said retrying sooner cannot help (Cli::failUntilNextRun()).
-     * That run is still recorded as failed.
-     *
-     * @param array{outcome: string, retry?: bool} $outcome
-     * @return bool
+     * @param JobRegistration $job
+     * @return array{max_attempts: int|null, backoff: list<int>}
      */
-    public static function satisfiesOccurrence( array $outcome ) {
+    public static function retryPolicyFor( $job ) {
+
+        return \OWA\Module\Base\Classes\RetryPolicy::resolve(
+            \OWA\Module\Base\Classes\RetryPolicy::KIND_RECURRING, (string) $job['command'], $job['retry'] ?? null );
+    }
+
+    /**
+     * Whether a run's outcome answers its occurrence, so the job is next due
+     * at its next scheduled time rather than retried, and what to record.
+     *
+     * ok and refused answer it: a refusal is an answer about the occurrence.
+     * A failure leaves it due, to be retried as the job's retry policy says,
+     * unless the run gave up (Cli::fail( $msg, true )) or was the policy's
+     * last attempt. Either way it is still recorded as failed, and the
+     * message says it is not retried.
+     *
+     * @param array{outcome: string, message?: string, final?: bool} $outcome
+     * @param array{max_attempts: int|null, backoff: list<int>} $policy
+     * @param int   $attempt  which attempt at the occurrence this was; 0 for a forced run
+     * @return array{answered: bool, message: string}
+     */
+    public static function settle( array $outcome, array $policy, $attempt ) {
+
+        $message = (string) ( $outcome['message'] ?? '' );
 
         if ( in_array( $outcome['outcome'], [ 'ok', 'refused' ], true ) ) {
 
-            return true;
+            return [ 'answered' => true, 'message' => $message ];
         }
 
-        return $outcome['outcome'] === 'failed' && isset( $outcome['retry'] ) && $outcome['retry'] === false;
-    }
+        if ( ! empty( $outcome['final'] ) ) {
 
-    /** The longest a failing job waits between attempts. */
-    const RETRY_MAX = 3600;
-
-    /** The shortest: the scheduler's own tick. */
-    const RETRY_MIN = 60;
-
-    /**
-     * When a job whose last run failed may run again, or null when it did not
-     * fail.
-     *
-     * A failed run does not satisfy its occurrence, so the job stays due, and
-     * it ran again on every tick: a daily job that kept failing ran 1,440 times
-     * a day. It now waits as long as it has been failing, between RETRY_MIN
-     * and RETRY_MAX, which doubles the wait with each attempt. A job that has
-     * never succeeded doubles from RETRY_MIN with each failure.
-     *
-     * From the times already kept, so it needs no new column.
-     *
-     * @param object $state the job's state entity
-     * @return int|null unix time
-     */
-    public static function retryAfter( $state ) {
-
-        if ( (string) $state->get( 'last_status' ) !== 'failed' ) {
-
-            return null;
+            return [ 'answered' => true, 'message' => 'Gave up, not retried before the next run: ' . $message ];
         }
 
-        $failed_at  = (int) $state->get( 'last_failure_at' );
-        $success_at = (int) $state->get( 'last_success_at' );
+        if ( $attempt > 0 && \OWA\Module\Base\Classes\RetryPolicy::attemptsSpent( $policy, $attempt ) ) {
 
-        if ( ! $failed_at ) {
-
-            return null;
+            // Not "N attempts": a run that started late lands in a later
+            // window, and the windows it skipped were never tried.
+            return [ 'answered' => true, 'message' => 'No attempts left, not retried before the next run: ' . $message ];
         }
 
-        if ( $success_at && $success_at < $failed_at ) {
-
-            $wait = $failed_at - $success_at;
-
-        } else {
-
-            $failures = max( 1, min( 7, (int) $state->get( 'failure_count' ) ) );
-            $wait     = self::RETRY_MIN * ( 2 ** ( $failures - 1 ) );
-        }
-
-        return $failed_at + min( self::RETRY_MAX, max( self::RETRY_MIN, $wait ) );
+        return [ 'answered' => false, 'message' => $message ];
     }
 
     /**
@@ -396,10 +397,13 @@ class ScheduleRunCli extends SchedulerCli {
         // The command takes only the arguments its usage() declares, as from cli.php.
         $undeclared = \OWA\Core\Controller\Cli::undeclaredArguments( get_class( $controller ), (array) $job['params'] );
 
+        // Final: the arguments come from the registration, the same on every attempt.
         if ( $undeclared ) {
 
-            $this->record( $state, $job, 'failed', sprintf( '%s does not take %s',
-                $job['command'], implode( ', ', $undeclared ) ), time(), time(), null );
+            $settled = self::settle( [ 'outcome' => 'failed', 'final' => true, 'message' => sprintf( '%s does not take %s',
+                $job['command'], implode( ', ', $undeclared ) ) ], self::retryPolicyFor( $job ), 0 );
+
+            $this->record( $state, $job, 'failed', $settled['message'], time(), time(), $slot );
 
             return;
         }
@@ -455,14 +459,17 @@ class ScheduleRunCli extends SchedulerCli {
             $lease->release();
         }
 
+        $settled = self::settle( $outcome, self::retryPolicyFor( $job ),
+            $slot ? \OWA\Module\Base\Classes\RetryPolicy::attemptOf( self::retryPolicyFor( $job ), $slot, $began ) : 0 );
+
         $this->record(
             $state,
             $job,
             $outcome['outcome'],
-            $outcome['message'],
+            $settled['message'],
             $began,
             time(),
-            self::satisfiesOccurrence( $outcome ) ? $slot : null
+            $settled['answered'] ? $slot : null
         );
     }
 
@@ -552,7 +559,7 @@ class ScheduleRunCli extends SchedulerCli {
             return [
                 'outcome' => isset( $outcome['outcome'] ) ? $outcome['outcome'] : 'ok',
                 'message' => isset( $outcome['message'] ) ? $outcome['message'] : '',
-                'retry'   => isset( $outcome['retry'] ) ? (bool) $outcome['retry'] : true,
+                'final'   => ! empty( $outcome['final'] ),
             ];
         }
 

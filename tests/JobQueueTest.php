@@ -314,6 +314,62 @@ final class JobQueueTest extends TestCase
         }
     }
 
+    /** A policy attached when the job is queued is resolved over the default and kept on the row. */
+    public function testAPolicyAttachedWhenQueuedIsKeptOnTheRow(): void
+    {
+        $row = $this->row(JobQueue::enqueue(self::CMD, [], null, 0, ['max_attempts' => 5, 'backoff' => [10, 20]]));
+
+        $this->assertSame(5, (int) $row['max_attempts']);
+        $this->assertSame('10,20', $row['backoff']);
+
+        // Either key alone: the other is the default's.
+        $row = $this->row(JobQueue::enqueue(self::CMD, [], null, 0, ['max_attempts' => 2]));
+
+        $this->assertSame(2, (int) $row['max_attempts']);
+        $this->assertSame('60,300,900', $row['backoff']);
+    }
+
+    /** An unusable policy is refused where it is given, not guessed at. */
+    public function testAnUnusablePolicyIsNotQueued(): void
+    {
+        foreach ([['max_attempts' => 0], ['backoff' => []], ['backoff' => [-1]], ['retries' => 3], ['max_attempts' => '3']] as $bad) {
+            $this->assertFalse(JobQueue::enqueue(self::CMD, [], null, 0, $bad), json_encode($bad));
+        }
+
+        $this->assertSame(0, JobQueue::stats()['due']);
+    }
+
+    /** No limit is stored as 0, and a job with no limit is never spent. */
+    public function testAJobWithNoLimitIsRetriedUntilItSucceeds(): void
+    {
+        $id = JobQueue::enqueue(self::CMD, [], null, 0, ['max_attempts' => null, 'backoff' => [10]]);
+
+        $this->assertSame(0, (int) $this->row($id)['max_attempts']);
+
+        for ($i = 0; $i < 6; $i++) {
+            $this->assertSame(1, $this->drainWith(['outcome' => 'failed'])['retried']);
+            $this->later(10);
+        }
+
+        $this->assertSame(1, $this->drainWith(['outcome' => 'ok'])['done']);
+        $this->assertSame('done', $this->row($id)['status']);
+    }
+
+    /** A run that gives up (Cli::fail( $msg, true )) has no attempts left: failed at once, and says so. */
+    public function testARunThatGivesUpFailsAtOnce(): void
+    {
+        $id = JobQueue::enqueue(self::CMD);
+
+        $counts = $this->drainWith(['outcome' => 'failed', 'final' => true, 'message' => 'the key was rejected']);
+        $row    = $this->row($id);
+
+        $this->assertSame(1, $counts['failed']);
+        $this->assertSame(0, $counts['retried']);
+        $this->assertSame('failed', $row['status']);
+        $this->assertSame(1, (int) $row['attempts']);
+        $this->assertSame('Gave up, not retried: the key was rejected', $row['last_error']);
+    }
+
     public function testARunnerThatThrowsIsAFailedRun(): void
     {
         $id = JobQueue::enqueue(self::CMD);

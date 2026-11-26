@@ -33,10 +33,10 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  * there is something newer, or when there is no local copy, and not again
  * within RETRY_DOWNLOAD_AFTER of a download that did not install.
  *
- * A scheduled run whose key MaxMind rejects fails without asking to be
- * retried (Cli::failUntilNextRun()): the same key is rejected every hour, so
- * the next attempt is the next weekly run, or a run by hand once the key is
- * fixed.
+ * A scheduled run whose key MaxMind rejects gives up (Cli::fail( $msg, true )):
+ * a retry would be rejected the same way, so the next attempt is the next
+ * weekly run, or a run by hand once the key is fixed. Any other failure is
+ * retried as the job's retry policy says.
  */
 class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
@@ -185,9 +185,7 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         // without asking, above.
         if ( $scheduled && $local && ! $remote ) {
 
-            return $this->keyRejected()
-                ? $this->failUntilNextRun( $this->whyNoAnswer( $edition ) . self::NOT_RETRIED )
-                : $this->fail( $this->whyNoAnswer( $edition ) );
+            return $this->fail( $this->whyNoAnswer( $edition ), $this->keyRejected() );
         }
 
         // After a download that did not install, a scheduled run waits before
@@ -252,9 +250,7 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
             @unlink( $archive );
 
-            return $scheduled && $this->keyRejected()
-                ? $this->failUntilNextRun( $bytes . self::NOT_RETRIED )
-                : $this->fail( $bytes );
+            return $this->fail( $bytes, $scheduled && $this->keyRejected() );
         }
 
         // Recorded once a download has been spent, and cleared once it is
@@ -325,9 +321,6 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
         return null;
     }
-
-    /** Appended to a scheduled run's rejected-key failure. */
-    const NOT_RETRIED = ' Not retried before the next scheduled run.';
 
     /**
      * Whether MaxMind answered the last request with a rejected licence key.

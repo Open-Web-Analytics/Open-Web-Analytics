@@ -220,7 +220,14 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
             fn ($job) => 'sometimes'
         );
 
-        $this->assertSame('| `a-job` | `cube-rebuild days=3 property=p1` | sometimes | x\\|y |', $lines[2]);
+        $this->assertSame('| `a-job` | `cube-rebuild days=3 property=p1` | sometimes | x\\|y | until the next run, waiting 1 minute and doubling to 1 hour, then every 1 hour |', $lines[2]);
+
+        $lines = \OWA\Module\Base\Controller\ScheduleStatusCli::markdownTable(
+            ['b-job' => ['command' => 'cube-rebuild', 'params' => [], 'description' => '', 'retry' => ['max_attempts' => 2, 'backoff' => [300]]]],
+            fn ($job) => 'sometimes'
+        );
+
+        $this->assertStringEndsWith('| up to 2 attempts, waiting 5 minutes |', $lines[2]);
     }
 
     /**
@@ -308,14 +315,15 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
     public function testTheLimitsTableShowsEachConstant(): void
     {
         $md     = $this->section('job-limits');
-        $policy = \OWA\Module\Base\Classes\JobQueue::DEFAULT_POLICY;
+        $policy = \OWA\Module\Base\Classes\RetryPolicy::ONE_OFF;
 
         $expect = [
             'Time one `schedule-run` tick may spend starting jobs' => self::duration(\OWA\Module\Base\Controller\ScheduleRunCli::MAX_RUNTIME),
             'A job\'s lock lease when its command sets none'      => self::duration(\OWA\Core\Controller\Cli::DEFAULT_JOB_LEASE),
             'How late a job can be before it is called overdue'   => self::duration(\OWA\Module\Base\Classes\JobStatus::MIN_GRACE),
             'Attempts a one-off job gets'                         => (string) $policy['max_attempts'],
-            'A one-off job\'s lease'                              => self::duration($policy['lease_seconds']),
+            'A one-off job\'s lease'                              => self::duration(\OWA\Module\Base\Classes\JobQueue::DEFAULT_LEASE),
+            'A recurring job\'s retries'                          => 'until the next run',
             'How long a done one-off job is kept'                 => self::duration(\OWA\Module\Base\Classes\JobQueue::KEEP_DONE),
             'How long a failed one-off job is kept'               => self::duration(\OWA\Module\Base\Classes\JobQueue::KEEP_FAILED),
         ];

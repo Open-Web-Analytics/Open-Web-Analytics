@@ -139,8 +139,21 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
+     * A job's retry policy in words (Classes\RetryPolicy::describe()).
+     *
+     * @param JobRegistration $job
+     * @return string
+     */
+    public static function retriesInWords( $job ) {
+
+        return \OWA\Module\Base\Classes\RetryPolicy::describe(
+            \OWA\Module\Base\Controller\ScheduleRunCli::retryPolicyFor( $job ),
+            \OWA\Module\Base\Classes\RetryPolicy::KIND_RECURRING );
+    }
+
+    /**
      * Jobs as a Markdown table: name, the command line it runs, the schedule
-     * in words as $schedule gives it, and the description.
+     * in words as $schedule gives it, the description, and its retries.
      *
      * @param array<string, JobRegistration> $jobs keyed by name
      * @param callable $schedule  job => the schedule in words
@@ -148,7 +161,7 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     public static function markdownTable( array $jobs, callable $schedule ) {
 
-        $lines = [ '| Job | Runs | Schedule | What it does |', '|---|---|---|---|' ];
+        $lines = [ '| Job | Runs | Schedule | What it does | Retries |', '|---|---|---|---|---|' ];
         $cell  = fn ( $v ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], (string) $v );
 
         foreach ( $jobs as $name => $job ) {
@@ -159,8 +172,8 @@ class ScheduleStatusCli extends SchedulerCli {
                 $args[] = $k . '=' . $v;
             }
 
-            $lines[] = sprintf( '| `%s` | `%s` | %s | %s |', $name, $cell( implode( ' ', $args ) ),
-                $cell( $schedule( $job ) ), $cell( $job['description'] ?? '' ) );
+            $lines[] = sprintf( '| `%s` | `%s` | %s | %s | %s |', $name, $cell( implode( ' ', $args ) ),
+                $cell( $schedule( $job ) ), $cell( $job['description'] ?? '' ), $cell( self::retriesInWords( $job ) ) );
         }
 
         return $lines;
@@ -261,6 +274,8 @@ class ScheduleStatusCli extends SchedulerCli {
             $job['command'],
             $job['params'] ? ' ' . $this->encodeParams( $job['params'] ) : ' (no arguments)'
         );
+
+        $lines[] = '  retries      ' . self::retriesInWords( $job );
 
         if ( $parsed ) {
 

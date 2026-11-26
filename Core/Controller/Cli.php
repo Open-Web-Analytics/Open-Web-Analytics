@@ -121,12 +121,12 @@ class Cli extends \OWA\Core\AdminController {
     protected $cli_message = '';
 
     /**
-     * Whether the scheduler retries this run's failure before the job's next
-     * occurrence. failUntilNextRun() clears it.
+     * Whether this run's failure gave up: no attempts left, whatever the job's
+     * retry policy says. fail( $msg, true ) and usageError() set it.
      *
      * @var bool
      */
-    protected $cli_retry = true;
+    protected $cli_final = false;
 
     /** The exit code of a command that failed. */
     const EXIT_FAILED = 1;
@@ -187,18 +187,28 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /**
-     * Tried and failed. The occurrence is left unsatisfied and retried.
+     * Tried and failed. A job is retried as its retry policy says
+     * (Classes\RetryPolicy).
      *
      * Db::query() swallows SQL errors and
      * returns falsy, so without commands calling this, a job whose ALTER TABLE
      * was rejected by the server would record 'ok' indefinitely.
      *
+     * $final GIVES UP: the run has no attempts left, whatever the policy
+     * says. A recurring job waits for its next run, a one-off job is failed.
+     * Pass it only for a failure the command can name, that a retry would
+     * meet again -- a rejected credential, a required setting missing, the
+     * thing it works on deleted. Anything unclassified is retried: a
+     * transient failure called final loses the run, while a permanent one
+     * called transient costs only the policy's attempts.
+     *
      * @param string $msg
+     * @param bool   $final
      * @return null
      */
-    protected function fail( $msg ) {
+    protected function fail( $msg, $final = false ) {
 
-        $this->markFailed( $msg, self::EXIT_FAILED );
+        $this->markFailed( $msg, self::EXIT_FAILED, $final );
 
         \OWA\Core\CoreAPI::notice( $msg );
 
@@ -208,12 +218,14 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * Given an argument or value it cannot act on. A failure, exiting 2.
      *
+     * Final: a job's arguments are the same on every attempt.
+     *
      * @param string $msg
      * @return null
      */
     protected function usageError( $msg ) {
 
-        $this->markFailed( $msg, self::EXIT_USAGE );
+        $this->markFailed( $msg, self::EXIT_USAGE, true );
 
         \OWA\Core\CoreAPI::notice( $msg );
 
@@ -221,41 +233,22 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /**
-     * Failed, and retrying sooner cannot help: a rejected credential, say.
-     *
-     * Still a failure -- the exit code, System Health and the job's failure
-     * count all say so -- but the scheduler counts the occurrence as answered
-     * and does not retry it hourly. The next attempt is the job's next
-     * scheduled run.
-     *
-     * The first failure decides, as it decides the message: a failure that
-     * asked to be retried stays retried.
-     *
-     * @param string $msg
-     * @return null
-     */
-    protected function failUntilNextRun( $msg ) {
-
-        $first = $this->cli_outcome !== 'failed';
-
-        $this->fail( $msg );
-
-        if ( $first ) {
-
-            $this->cli_retry = false;
-        }
-
-        return null;
-    }
-
-    /**
      * Record a failure without logging it, for a failure already reported.
+     *
+     * The first failure decides, as it decides the message and the exit code:
+     * a failure that may be retried is not made final by a later one.
      *
      * @param string $msg
      * @param int    $code
+     * @param bool   $final  see fail()
      * @return void
      */
-    protected function markFailed( $msg, $code ) {
+    protected function markFailed( $msg, $code, $final = false ) {
+
+        if ( $this->cli_outcome !== 'failed' ) {
+
+            $this->cli_final = (bool) $final;
+        }
 
         $this->cli_outcome = 'failed';
         $this->cli_message = $this->cli_message ?: $msg;
@@ -291,7 +284,8 @@ class Cli extends \OWA\Core\AdminController {
 
         } elseif ( ! empty( $this->v ) && $this->v->hasErrors === true ) {
 
-            $this->markFailed( 'invalid arguments', self::EXIT_USAGE );
+            // Final, as usageError(): the arguments are the same on every attempt.
+            $this->markFailed( 'invalid arguments', self::EXIT_USAGE, true );
 
         } elseif ( $view === 'base.genericCli' ) {
 
@@ -374,18 +368,29 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * The outcome, for the dispatcher. The FIRST message wins, so what is
      * recorded is the first thing that went wrong rather than the last.
-     * retry is false unless the run failed and may be retried before the
-     * job's next occurrence (failUntilNextRun()).
+     * final is true when the run failed and gave up (fail()).
      *
-     * @return array{outcome: string, message: string, retry: bool}
+     * @return array{outcome: string, message: string, final: bool}
      */
     public function getCliOutcome() {
 
         return [
             'outcome' => $this->cli_outcome,
             'message' => $this->cli_message,
-            'retry'   => $this->cli_outcome === 'failed' && $this->cli_retry,
+            'final'   => $this->cli_outcome === 'failed' && $this->cli_final,
         ];
+    }
+
+    /**
+     * The command's own retry policy, for a job that attaches none: any of
+     * Classes\RetryPolicy::KEYS, merged over the default for the job's kind.
+     * Empty: the default.
+     *
+     * @return array<string, mixed>
+     */
+    public static function retryPolicy() {
+
+        return [];
     }
 
     /**
@@ -404,11 +409,15 @@ class Cli extends \OWA\Core\AdminController {
      * need behind "I want a shorter lease" is answered by
      * `schedule-run --force-release`.
      *
+     * A command with a fixed lease declares it as `const JOB_LEASE`, which
+     * the one-off queue reads too (JobQueue::leaseFor()), so it is stated
+     * once.
+     *
      * @return int seconds
      */
     public function getJobLease() {
 
-        return self::DEFAULT_JOB_LEASE;
+        return defined( static::class . '::JOB_LEASE' ) ? (int) constant( static::class . '::JOB_LEASE' ) : self::DEFAULT_JOB_LEASE;
     }
 
     /**

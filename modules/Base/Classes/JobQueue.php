@@ -24,9 +24,11 @@ namespace OWA\Module\Base\Classes;
  * pending updates that job; claiming releases the key, so a change made while
  * a job runs queues a fresh one that sees it.
  *
- * A RETRY KEEPS ITS ROW: the same id, pending again after the next back-off
- * step. A job that exhausts its attempts is kept as failed, with its error,
- * until retried or pruned.
+ * RETRIES FOLLOW THE JOB'S RETRY POLICY (RetryPolicy), resolved when it is
+ * queued and kept on the row: max_attempts (0 for no limit) and backoff. A
+ * retry keeps its row: the same id, pending again after the next wait. A job
+ * that exhausts its attempts, or whose run gave up (Cli::fail( $msg, true )),
+ * is kept as failed, with its error, until retried or pruned.
  *
  * NEVER FORCED. A job runs without its force argument: the web user can write
  * this table, and a forced run as the install owner installs a release older
@@ -34,17 +36,15 @@ namespace OWA\Module\Base\Classes;
  * forces.
  *
  * @phpstan-import-type Row from \OWA\Core\Db
- * @phpstan-type Policy array{max_attempts: int, backoff: list<int>, lease_seconds: int}
  */
 class JobQueue {
 
-    /** Used where a command declares no policy of its own (see policyFor()). */
-    const DEFAULT_POLICY = [
-        'max_attempts'  => 3,
-        'backoff'       => [ 60, 300, 900 ],
-        // Longer than a job may run, or a second tick claims it mid-run.
-        'lease_seconds' => 300,
-    ];
+    /**
+     * A queued job's lease where its command declares no JOB_LEASE
+     * (leaseFor()). Longer than a job may run, or a second tick claims it
+     * mid-run.
+     */
+    const DEFAULT_LEASE = 300;
 
     /** What last_error holds; STRICT mode refuses a longer value. */
     const ERROR_LENGTH = 1000;
@@ -177,27 +177,20 @@ class JobQueue {
     }
 
     /**
-     * A command's retry policy: DEFAULT_POLICY, overridden by the command's
-     * controller declaring a static jobQueuePolicy().
+     * A queued command's lease, in seconds: the JOB_LEASE its controller
+     * declares -- the same constant its scheduled runs use
+     * (Cli::getJobLease()) -- or DEFAULT_LEASE.
      *
      * @param  string $command
-     * @return Policy
+     * @return int
      */
-    public static function policyFor( $command ) {
+    public static function leaseFor( $command ) {
 
-        $policy = self::DEFAULT_POLICY;
-        $class  = self::commandClass( $command );
+        $class = self::commandClass( $command );
 
-        if ( $class !== null && method_exists( $class, 'jobQueuePolicy' ) ) {
-
-            $policy = array_merge( $policy, (array) $class::jobQueuePolicy() );
-        }
-
-        $policy['max_attempts']  = max( 1, (int) $policy['max_attempts'] );
-        $policy['lease_seconds'] = max( 1, (int) $policy['lease_seconds'] );
-        $policy['backoff']       = array_values( array_map( 'intval', (array) $policy['backoff'] ) ) ?: [ 60 ];
-
-        return $policy;
+        return $class !== null && defined( $class . '::JOB_LEASE' )
+            ? max( 1, (int) constant( $class . '::JOB_LEASE' ) )
+            : self::DEFAULT_LEASE;
     }
 
     /**
@@ -214,11 +207,20 @@ class JobQueue {
      * @param  array<string, mixed> $params  its arguments, name => a JSON-encodable value
      * @param  string|null $key      at most one pending job per key
      * @param  int         $delay    seconds before it may run
+     * @param  array<string, mixed>|null $retry  this job's retry policy, over its command's
+     *                             (RetryPolicy::resolve()); kept when $key's pending job is updated
      * @return string|false  the job's id
      */
-    public static function enqueue( $command, array $params = [], $key = null, $delay = 0 ) {
+    public static function enqueue( $command, array $params = [], $key = null, $delay = 0, $retry = null ) {
 
         $command = (string) $command;
+
+        if ( $retry !== null && ( $problem = RetryPolicy::problem( $retry ) ) !== null ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Not queueing "%s": %s.', $command, $problem ) );
+
+            return false;
+        }
 
         if ( ! self::commandAction( $command ) ) {
 
@@ -246,7 +248,7 @@ class JobQueue {
         $key    = $key === null || $key === '' ? null : substr( (string) $key, 0, 255 );
         $now    = self::now();
         $due    = $now + max( 0, (int) $delay );
-        $policy = self::policyFor( $command );
+        $policy = RetryPolicy::resolve( RetryPolicy::KIND_ONE_OFF, $command, $retry );
         $db     = self::db();
 
         if ( $key !== null ) {
@@ -268,8 +270,8 @@ class JobQueue {
         $inserted = $db->query( sprintf(
             'INSERT INTO %s (id, command, params, dedupe_key, status, run_after, attempts, max_attempts,'
           . ' lease_seconds, backoff, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)', self::table() ),
-            [ $id, $command, $json, $key, 'pending', $due, $policy['max_attempts'],
-                   $policy['lease_seconds'], implode( ',', $policy['backoff'] ), $now ] );
+            [ $id, $command, $json, $key, 'pending', $due, (int) ( $policy['max_attempts'] ?? 0 ),
+                   self::leaseFor( $command ), implode( ',', $policy['backoff'] ), $now ] );
 
         if ( $inserted !== false ) {
 
@@ -408,7 +410,7 @@ class JobQueue {
      * @param  int      $deadline  unix time to stop claiming
      * @param  callable(string, array<string, mixed>, Row): array<string, mixed> $run  given the command, its
      *                             arguments and the job's row; answers outcome ('ok', 'refused', else
-     *                             failed) and message
+     *                             failed), message, and final (true when the run gave up)
      * @return array{done: int, retried: int, failed: int, exhausted: int}
      */
     public static function drain( $deadline, callable $run ) {
@@ -434,7 +436,7 @@ class JobQueue {
 
             $first = false;
 
-            if ( (int) $job['attempts'] > (int) $job['max_attempts'] ) {
+            if ( (int) $job['max_attempts'] > 0 && (int) $job['attempts'] > (int) $job['max_attempts'] ) {
 
                 self::markFailed( $job['id'], sprintf(
                     'Did not finish in %d attempts: each run died before recording an outcome. Last error: %s',
@@ -487,6 +489,11 @@ class JobQueue {
                 self::markDone( $job['id'] );
                 $counts['done']++;
 
+            } elseif ( ! empty( $outcome['final'] ) ) {
+
+                self::markFailed( $job['id'], 'Gave up, not retried: ' . ( (string) ( $outcome['message'] ?? '' ) ?: 'Failed.' ) );
+                $counts['failed']++;
+
             } elseif ( self::retryOrFail( $job, (string) ( $outcome['message'] ?? '' ) ) ) {
 
                 $counts['retried']++;
@@ -524,8 +531,8 @@ class JobQueue {
     }
 
     /**
-     * After a failed run: pending again after the next back-off step, or
-     * failed for good once its attempts are spent.
+     * After a failed run: pending again after the next wait, or failed for
+     * good once its attempts are spent (max_attempts 0: never spent).
      *
      * @param  Row    $job
      * @param  string $error  '' reads as Failed.
@@ -535,7 +542,7 @@ class JobQueue {
 
         $attempts = (int) $job['attempts'];
 
-        if ( $attempts >= (int) $job['max_attempts'] ) {
+        if ( (int) $job['max_attempts'] > 0 && $attempts >= (int) $job['max_attempts'] ) {
 
             self::markFailed( $job['id'], $error ?: 'Failed.' );
 
@@ -544,7 +551,7 @@ class JobQueue {
 
         $steps = array_values( array_filter( array_map( 'intval', explode( ',', (string) $job['backoff'] ) ),
             fn ( $s ) => $s >= 0 ) ) ?: [ 60 ];
-        $delay = $steps[ min( $attempts - 1, count( $steps ) - 1 ) ];
+        $delay = RetryPolicy::waitBefore( [ 'max_attempts' => null, 'backoff' => $steps ], $attempts + 1 );
 
         self::db()->query( sprintf(
             'UPDATE %s SET status = ?, lease_until = NULL, run_after = ?, last_error = ? WHERE id = ?', self::table() ),

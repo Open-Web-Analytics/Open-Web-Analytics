@@ -303,15 +303,17 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame('A job of ours.', $jobs['owa-test-described']['description']);
     }
 
-    /** The markdown table: every job, the command line it runs, its schedule in words and its description. */
+    /** The markdown table: every job, the command line it runs, its schedule in words, its description and its retries. */
     public function testTheMarkdownTableListsEveryJob()
     {
         $lines = $this->callProtected($this->statusCli(['format' => 'markdown']), 'markdown');
         $jobs  = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertSame('| Job | Runs | Schedule | What it does |', $lines[0]);
+        $this->assertSame('| Job | Runs | Schedule | What it does | Retries |', $lines[0]);
         $this->assertCount(count($jobs) + 2, $lines);
         $this->assertStringContainsString('| `drain-tracker-ingest` | `drain-tracker-ingest scheduled=1` | every minute | Ingests', implode("\n", $lines));
+        $this->assertMatchesRegularExpression('/^\| `rotate-partitions` \|.* \| until the next run, waiting 1 minute and doubling to 1 hour, then every 1 hour \|$/m',
+            implode("\n", $lines));
     }
 
     /**
@@ -650,6 +652,8 @@ final class ScheduleCliTest extends CliControllerTestCase
             'no schedule'       => ['command' => 'jobs-prune'],
             'unknown command'   => ['command' => 'no-such-command', 'schedule' => '@daily'],
             'not an array'      => 'nonsense',
+            'unusable retry'    => ['command' => 'jobs-prune', 'schedule' => '@daily', 'retry' => ['max_attempts' => 0]],
+            'retry misspelt'    => ['command' => 'jobs-prune', 'schedule' => '@daily', 'retry' => ['attempts' => 3]],
         ];
 
         foreach ($cases as $label => $spec) {
@@ -1090,7 +1094,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         ]);
 
         $this->assertStringNotContainsString('every tick', $reason);
-        $this->assertStringContainsString('from a minute up to an hour', $reason);
+        $this->assertStringContainsString('Its retry policy: until the next run, waiting 1 minute and doubling to 1 hour', $reason);
     }
 
     /** A first run that never finished has no last_finished_at at all, and is reported. */
@@ -1115,7 +1119,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /** Register OwaTestStateStubCli as a job and return its name. */
-    private function stateStubJob(array $params): array
+    private function stateStubJob(array $params, array $spec = []): array
     {
         $name = $this->track('owa_test_state_' . bin2hex(random_bytes(3)));
         $s    = \OWA\Core\CoreAPI::serviceSingleton();
@@ -1127,7 +1131,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         ]);
 
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
-            $name => ['command' => 'owa-test-state-stub', 'schedule' => '* * * * *', 'params' => $params + ['job' => $name]],
+            $name => $spec + ['command' => 'owa-test-state-stub', 'schedule' => '* * * * *', 'params' => $params + ['job' => $name]],
         ]);
 
         $ctrl = $this->runner();
@@ -1180,28 +1184,99 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * failUntilNextRun(): recorded as a failure, but the occurrence is
-     * answered, so the next tick does not run it again.
+     * fail( $msg, true ): recorded as a failure, but the run gave up, so the
+     * occurrence is answered and the next tick does not run it again.
      */
-    public function testAFailureThatCannotBeHelpedByRetryingWaitsForTheNextRun()
+    public function testARunThatGivesUpWaitsForTheNextRun()
     {
-        list($ctrl, $name, $job) = $this->stateStubJob(['final' => 1]);
-
         // Yearly, so the second tick below cannot land in a new occurrence.
-        $job['schedule'] = '0 0 1 1 *';
+        list($ctrl, $name, $job) = $this->stateStubJob(['final' => 1], ['schedule' => '0 0 1 1 *']);
 
         $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
 
         $state = $this->callProtected($ctrl, 'state', [$name]);
         $this->assertSame('failed', (string) $state->get('last_status'));
         $this->assertSame(1, (int) $state->get('failure_count'));
-        $this->assertSame('told to fail until the next run', (string) $state->get('last_message'));
+        $this->assertSame('Gave up, not retried before the next run: told to give up', (string) $state->get('last_message'));
         $this->assertGreaterThan(0, (int) $state->get('last_run_slot'), 'the occurrence is answered');
 
         OwaTestStateStubCli::$seen = null;
         $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
 
         $this->assertNull(OwaTestStateStubCli::$seen, 'not run again before its next occurrence');
+    }
+
+    /** A usage error gives up too: a job's arguments are the same on every attempt. */
+    public function testAUsageErrorGivesUp()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['usage' => 1], ['schedule' => '0 0 1 1 *']);
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertGreaterThan(0, (int) $state->get('last_run_slot'));
+        $this->assertStringStartsWith('Gave up', (string) $state->get('last_message'));
+    }
+
+    /**
+     * A failed attempt waits for the next window of its retry policy: the
+     * run's scheduled time plus the waits so far.
+     */
+    public function testARetryWaitsForItsWindow()
+    {
+        // Retried hourly; a yearly job's attempt now is in the window for this hour.
+        list($ctrl, $name, $job) = $this->stateStubJob(['fail' => 1],
+            ['schedule' => '0 0 1 1 *', 'retry' => ['backoff' => [3600]]]);
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertSame(0, (int) $state->get('last_run_slot'), 'no limit: the occurrence stays due');
+
+        OwaTestStateStubCli::$seen = null;
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $this->assertNull(OwaTestStateStubCli::$seen, 'the next attempt waits for the next window');
+    }
+
+    /** The policy's last attempt answers the occurrence, as a give-up does, and says so. */
+    public function testTheLastAttemptAnswersTheOccurrence()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['fail' => 1],
+            ['schedule' => '0 0 1 1 *', 'retry' => ['max_attempts' => 2, 'backoff' => [60]]]);
+
+        $policy = \OWA\Module\Base\Controller\ScheduleRunCli::retryPolicyFor($job);
+        $slot   = \OWA\Core\Cron::previousMatch(\OWA\Core\Cron::parse('0 0 1 1 *'), time(), $this->callProtected($ctrl, 'timezone'));
+
+        if (\OWA\Module\Base\Classes\RetryPolicy::attemptOf($policy, $slot, time()) < 2) {
+            $this->markTestSkipped('within a minute of the yearly run; every attempt still has a window');
+        }
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertGreaterThan(0, (int) $state->get('last_run_slot'), 'no attempts left: answered');
+        $this->assertSame('No attempts left, not retried before the next run: told to fail', (string) $state->get('last_message'));
+    }
+
+    /** A policy given where the job is registered is the one it runs under; an unusable one leaves it unregistered. */
+    public function testARegisteredJobCarriesItsRetryPolicy()
+    {
+        $m = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+
+        $m->registerJob('owa-test-retry-good', 'jobs-prune', '@daily', [], '', false, ['max_attempts' => 4]);
+        $m->registerJob('owa-test-retry-bad', 'jobs-prune', '@daily', [], '', false, ['max_attempts' => -1]);
+
+        try {
+            $this->assertSame(['max_attempts' => 4, 'backoff' => \OWA\Module\Base\Classes\RetryPolicy::RECURRING['backoff']],
+                \OWA\Module\Base\Controller\ScheduleRunCli::retryPolicyFor($m->scheduled_jobs['owa-test-retry-good']));
+            $this->assertArrayNotHasKey('owa-test-retry-bad', $m->scheduled_jobs);
+        } finally {
+            unset($m->scheduled_jobs['owa-test-retry-good'], $m->scheduled_jobs['owa-test-retry-bad']);
+        }
     }
 
     /** A job given an argument its command does not declare fails, and does not run. */
@@ -1216,6 +1291,10 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertNull(OwaTestStateStubCli::$seen, 'the job must not run');
         $this->assertSame('failed', (string) $state->get('last_status'));
         $this->assertStringContainsString('dryrun', (string) $state->get('last_message'));
+
+        // Its arguments are the registration's, the same on every attempt: it gives up.
+        $this->assertStringStartsWith('Gave up', (string) $state->get('last_message'));
+        $this->assertGreaterThan(0, (int) $state->get('last_run_slot'));
     }
 
     /** Every shipped job's params are arguments its command declares. */
@@ -1923,7 +2002,8 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
         return [ 'description' => 'A test stub that reads its own state row.', 'arguments' => [
             'job=<name>' => 'Its job name.',
             'fail=1'     => 'Fail.',
-            'final=1'    => 'Fail, and say retrying sooner cannot help.',
+            'final=1'    => 'Fail, and give up.',
+            'usage=1'    => 'Fail with a usage error.',
         ] ];
     }
 
@@ -1942,7 +2022,12 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
 
         if ( $this->getParam( 'final' ) ) {
 
-            return $this->failUntilNextRun( 'told to fail until the next run' );
+            return $this->fail( 'told to give up', true );
+        }
+
+        if ( $this->getParam( 'usage' ) ) {
+
+            return $this->usageError( 'told to fail with a usage error' );
         }
 
         if ( $this->getParam( 'fail' ) ) {
