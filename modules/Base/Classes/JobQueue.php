@@ -77,6 +77,14 @@ class JobQueue {
     public static $table = null;
 
     /**
+     * A test's: commands it may queue though they do not opt in
+     * (isQueueable()), so the queue's tests can use harmless ones.
+     *
+     * @var list<string>
+     */
+    public static $also_queueable = [];
+
+    /**
      * The queue's clock.
      *
      * @return int
@@ -122,6 +130,43 @@ class JobQueue {
     }
 
     /**
+     * The class a command runs, or null.
+     *
+     * @param  string $command
+     * @return string|null
+     */
+    public static function commandClass( $command ) {
+
+        $map   = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', (string) self::commandAction( $command ) );
+        $class = is_array( $map ) ? (string) ( $map['class_name'] ?? '' ) : '';
+
+        return $class !== '' && class_exists( $class ) ? $class : null;
+    }
+
+    /**
+     * Whether a command may be queued: its controller says so with
+     * `const QUEUEABLE = true;`. The web side writes the queue's table, and
+     * the drain runs what a row names as the cron user, so only the commands
+     * that opt in are run from it: OWA's own are publish-trackers,
+     * cube-rebuild, core-update and core-install, and a module can opt its
+     * own in the same way.
+     *
+     * @param  string $command
+     * @return bool
+     */
+    public static function isQueueable( $command ) {
+
+        if ( in_array( (string) $command, self::$also_queueable, true ) ) {
+
+            return true;
+        }
+
+        $class = self::commandClass( $command );
+
+        return $class !== null && defined( $class . '::QUEUEABLE' ) && constant( $class . '::QUEUEABLE' ) === true;
+    }
+
+    /**
      * The queue's table: the entity's, or a test's scratch copy.
      *
      * @return string
@@ -141,11 +186,9 @@ class JobQueue {
     public static function policyFor( $command ) {
 
         $policy = self::DEFAULT_POLICY;
-        $s      = \OWA\Core\CoreAPI::serviceSingleton();
-        $map    = $s->getMapValue( 'actions', (string) self::commandAction( $command ) );
-        $class  = is_array( $map ) ? ( $map['class_name'] ?? '' ) : '';
+        $class  = self::commandClass( $command );
 
-        if ( $class && class_exists( $class ) && method_exists( $class, 'jobQueuePolicy' ) ) {
+        if ( $class !== null && method_exists( $class, 'jobQueuePolicy' ) ) {
 
             $policy = array_merge( $policy, (array) $class::jobQueuePolicy() );
         }
@@ -180,6 +223,13 @@ class JobQueue {
         if ( ! self::commandAction( $command ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Not queueing "%s": no such command.', $command ) );
+
+            return false;
+        }
+
+        if ( ! self::isQueueable( $command ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Not queueing "%s": it cannot be queued.', $command ) );
 
             return false;
         }
@@ -406,6 +456,20 @@ class JobQueue {
             }
 
             unset( $params['force'] );
+
+            /*
+             * A row names any command; the drain runs only those that opt in
+             * (isQueueable()). The runner checks the arguments against the
+             * command's usage, as for a scheduled job (ScheduleRunCli).
+             */
+            if ( ! self::isQueueable( (string) $job['command'] ) ) {
+
+                self::markFailed( $job['id'], sprintf( '%s cannot be queued.', $job['command'] ) );
+                $counts['failed']++;
+
+                continue;
+            }
+
 
             try {
 

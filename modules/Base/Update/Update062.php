@@ -60,10 +60,31 @@ class Update062 extends \OWA\Core\Update {
     public $partitioned_tables = null;
 
     /**
+     * The migration, failed when the database refuses a read: a migrator
+     * throws then (FactMigrator::results()) rather than reading no rows, and
+     * the update is run again.
+     *
      * @param  bool $force
      * @return bool
      */
     public function up( $force = false ) {
+
+        try {
+
+            return $this->migrate();
+
+        } catch ( \RuntimeException $e ) {
+
+            $this->e->notice( $e->getMessage() );
+
+            return false;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    private function migrate() {
 
         /*
          * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
@@ -175,16 +196,7 @@ class Update062 extends \OWA\Core\Update {
 
             foreach ( $migrator->sites() as $site_id ) {
 
-                try {
-
-                    $progress = $migrator->migrateSite( $site_id );
-
-                } catch ( \RuntimeException $e ) {
-
-                    $this->e->notice( $e->getMessage() );
-
-                    return false;
-                }
+                $progress = $migrator->migrateSite( $site_id );
 
                 $this->e->notice( sprintf( 'v1 migration, %s, site %s: read %d, wrote %d, refused %d%s',
                     $label, $site_id, $progress['rows_read'], $progress['rows_written'], $progress['rows_refused'],

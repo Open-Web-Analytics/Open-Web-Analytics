@@ -63,7 +63,7 @@ final class ReleaseCheckTest extends TestCase
         copy(dirname(__DIR__) . '/updater.php', $this->tmp . '/owa/updater.php');
         \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
 
-        InstallLock::$path = $this->tmp . '/data/updating';
+        InstallLock::$path = $this->tmp . '/data/owa-update-lock.php';
         $this->served      = [];
 
         // Releases signed as the packager signs them, by a key made for the test.

@@ -15,6 +15,9 @@ use OWA\Module\Base\Classes\AutoUpdate\Install;
  */
 class CoreInstallCli extends \OWA\Core\Controller\Cli {
 
+    /** May be queued (JobQueue::isQueueable()): The Updates screen's Install queues it. */
+    const QUEUEABLE = true;
+
     /** A release is installed from a full server only (Install::byHand()). */
     public static function serverRoles() {
 

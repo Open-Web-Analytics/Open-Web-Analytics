@@ -16,8 +16,9 @@ use OWA\Module\Base\Classes\JobQueueLease;
  * test's. The queue's clock is stopped (JobQueue::$frozen_at) and moved on,
  * never waited for.
  *
- * The commands are real registered ones because enqueue() refuses any other;
- * the drain's runner here is a closure, so none of them runs.
+ * The commands are real registered ones because enqueue() refuses any other,
+ * and queueable for the test (JobQueue::$also_queueable); the drain's runner
+ * here is a closure, so none of them runs.
  */
 final class JobQueueTest extends TestCase
 {
@@ -36,18 +37,57 @@ final class JobQueueTest extends TestCase
         $db->query('DROP TABLE IF EXISTS ' . self::TABLE);
         $db->query('CREATE TABLE ' . self::TABLE . ' LIKE owa_job_queue');
 
-        JobQueue::$table     = self::TABLE;
-        JobQueue::$frozen_at = time();
+        JobQueue::$table          = self::TABLE;
+        JobQueue::$frozen_at      = time();
+        JobQueue::$also_queueable = [self::CMD];
     }
 
     protected function tearDown(): void
     {
-        JobQueue::$table     = null;
-        JobQueue::$frozen_at = null;
+        JobQueue::$table          = null;
+        JobQueue::$frozen_at      = null;
+        JobQueue::$also_queueable = [];
 
         if (owa_test_db_available()) {
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
         }
+    }
+
+    /**
+     * The web side writes the queue's table, and the drain runs what a row
+     * names as the cron user: only the commands that opt in (QUEUEABLE) are
+     * queued or run. OWA's own are these four.
+     */
+    public function testOnlyCommandsThatOptInAreQueuedOrRun(): void
+    {
+        JobQueue::$also_queueable = [];
+
+        foreach (['publish-trackers', 'cube-rebuild', 'core-update', 'core-install'] as $command) {
+            $this->assertTrue(JobQueue::isQueueable($command), $command);
+        }
+
+        foreach (['reset-secrets', 'backup', 'v1-drop', 'tables-cleanup', 'core-update-schema', self::CMD] as $command) {
+            $this->assertFalse(JobQueue::isQueueable($command), $command);
+        }
+
+        $this->assertFalse(JobQueue::enqueue('reset-secrets'), 'refused when queued');
+
+        // A row the web side could write straight into the table: made through
+        // the test's seam, which is then taken away before the drain.
+        JobQueue::$also_queueable = ['reset-secrets'];
+        $planted = (string) JobQueue::enqueue('reset-secrets');
+        JobQueue::$also_queueable = [];
+
+        $ran    = [];
+        $counts = JobQueue::drain(JobQueue::now() + 60, function ($command) use (&$ran) {
+            $ran[] = $command;
+            return ['outcome' => 'ok', 'message' => ''];
+        });
+
+        $this->assertSame([], $ran, 'never run');
+        $this->assertSame(1, $counts['failed']);
+        $this->assertSame('failed', $this->row($planted)['status']);
+        $this->assertSame('reset-secrets cannot be queued.', $this->row($planted)['last_error']);
     }
 
     private function row(string $id): array

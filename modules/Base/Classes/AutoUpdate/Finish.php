@@ -58,7 +58,14 @@ class Finish {
 
         $owa->setCurrentUser( 'admin' );
 
-        $downloads = new Downloads( (string) ( $marker['updates'] ?? '' ) ?: null );
+        /*
+         * The marker's updates directory, unless it is now a link: the web
+         * server can rename the directory and put a link in its place, and
+         * cleanup() deletes in it. Then the directory is looked for as on any
+         * other run (Downloads), which refuses a link.
+         */
+        $updates   = (string) ( $marker['updates'] ?? '' );
+        $downloads = new Downloads( $updates !== '' && ! is_link( rtrim( $updates, '/' ) ) ? $updates : null );
 
         // Kept in the marker: a Finish run again takes back what a killed one held (CoreUpdateSchemaCli).
         $lease  = (string) ( $marker['schema_lease'] ?? '' ) ?: bin2hex( random_bytes( 8 ) );

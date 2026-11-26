@@ -268,6 +268,35 @@ final class InstallerTest extends TestCase
     }
 
     /** The record says where the install stopped: its stage from the marker's phase, Finish's step, and the install's log with the failure last. */
+    /**
+     * The web server can rename the updates directory and put a link in its
+     * place, or a FIFO at last-failure.json: nothing is written through the
+     * link, and the FIFO is not read (which would hang the run holding the lock).
+     */
+    public function testAFailureIsNotRecordedThroughALinkNorReadFromAFifo(): void
+    {
+        $target = $this->data . '/elsewhere';
+        mkdir($target);
+        $link = $this->data . '/updates-link';
+        symlink($target, $link);
+
+        $this->u['recordFailure']($link, ['from' => '2.0.0', 'to' => '2.0.1', 'since' => 1], 'a test');
+
+        $this->assertSame([], glob($target . '/*'), 'nothing written where the link points');
+
+        if (function_exists('posix_mkfifo')) {
+            posix_mkfifo($this->updates . '/last-failure.json', 0644);
+
+            $this->u['recordFailure']($this->updates, ['from' => '2.0.0', 'to' => '2.0.1', 'since' => 1], 'a test');
+
+            $this->assertSame('a test', json_decode((string) file_get_contents($this->updates . '/last-failure.json'), true)['error'],
+                'recorded over it, without reading it first');
+        }
+
+        unlink($link);
+        rmdir($target);
+    }
+
     public function testAFailureRecordsWhereTheInstallStopped(): void
     {
         $m = $this->u['logged'](['from' => '2.0.0', 'to' => '2.0.1', 'since' => 1], 'Release check (by hand), OWA 2.0.0 installed.');
@@ -610,7 +639,7 @@ final class InstallerTest extends TestCase
 
     public function testTheLock(): void
     {
-        $file = $this->data . '/updating';
+        $file = $this->data . '/owa-update-lock.php';
         $this->assertFalse($this->u['isLocked']($this->data));
         $this->assertFileDoesNotExist($file, 'asking creates nothing');
 
@@ -619,8 +648,10 @@ final class InstallerTest extends TestCase
         umask($umask);
         $this->assertNotNull($hold);
         $this->assertSame('0644', sprintf('%04o', fileperms($file) & 0777), 'readable, whatever the umask');
-        $this->assertMatchesRegularExpression('/^install 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, token [0-9a-f]{16}\n$/',
+        $this->assertMatchesRegularExpression('/^<\?php exit; \?>\ninstall 2\.0\.1, pid \d+, since \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC, token [0-9a-f]{16}\n$/',
             (string) file_get_contents($file), 'the operator can read who holds it');
+        $this->assertSame('', (string) shell_exec(sprintf('%s -f %s', escapeshellarg(PHP_BINARY), escapeshellarg($file))),
+            'it is in the OWA directory: a request for it runs PHP that exits, and shows nothing');
 
         $other = shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
             '$u = require %s; var_export([$u["isLocked"](%2$s), $u["tryLock"](%2$s)]);',
@@ -641,7 +672,7 @@ final class InstallerTest extends TestCase
     /** A holder that dies leaves the file, unflocked: the next process takes it over. */
     public function testALockWhoseHolderDiedIsTakenOver(): void
     {
-        $file = $this->data . '/updating';
+        $file = $this->data . '/owa-update-lock.php';
         shell_exec(sprintf('%s -r %s', escapeshellarg(PHP_BINARY), escapeshellarg(sprintf(
             '$u = require %s; $u["tryLock"](%s, "install 2.0.1"); exit(1);',
             var_export($this->root . '/updater.php', true), var_export($this->data, true)))));
@@ -656,18 +687,18 @@ final class InstallerTest extends TestCase
         $this->assertNotNull($hold);
         $this->assertNotNull($hold['handle'], 'flocked');
         clearstatcache();
-        $this->assertSame($inode, fileinode($file), 'taken over in place: updating is never missing');
+        $this->assertSame($inode, fileinode($file), 'taken over in place: the lock is never missing');
         $this->assertNotSame($left, file_get_contents($file));
-        $this->assertStringStartsWith('release check, pid ', (string) file_get_contents($file));
+        $this->assertStringStartsWith("<?php exit; ?>\nrelease check, pid ", (string) file_get_contents($file));
 
         $this->u['unlock']($hold);
-        $this->assertSame([], glob($this->data . '/updating*'));
+        $this->assertSame([], glob($this->data . '/owa-update-lock.php*'));
     }
 
     /** A link named updating is never opened, so whatever it names is never written: it is deleted, and the lock made new. */
     public function testALinkIsNeverTakenForTheLock(): void
     {
-        $file   = $this->data . '/updating';
+        $file   = $this->data . '/owa-update-lock.php';
         $target = $this->root . '/owa-config.php';
         symlink($target, $file);
 
@@ -683,7 +714,7 @@ final class InstallerTest extends TestCase
     /** Without flock(): taken by creating it, held while it is fresh, a stale one taken over and asked again a second later. */
     public function testTheLockWithoutFlock(): void
     {
-        $file = $this->data . '/updating';
+        $file = $this->data . '/owa-update-lock.php';
         $hold = $this->u['tryLock']($this->data, 'install 2.0.1', true);
         $this->assertNotNull($hold);
         $this->assertNull($hold['handle'], 'nothing flocked');
@@ -694,7 +725,7 @@ final class InstallerTest extends TestCase
         $next    = $this->u['tryLock']($this->data, 'release check', true);
         $this->assertNotNull($next, 'a stale one is taken over');
         $this->assertGreaterThanOrEqual(1.0, microtime(true) - $started, 'and asked again a second later');
-        $this->assertStringStartsWith('release check, pid ', (string) file_get_contents($file));
+        $this->assertStringStartsWith("<?php exit; ?>\nrelease check, pid ", (string) file_get_contents($file));
 
         $this->u['unlock']($hold);
         $this->assertFileExists($file, 'the old holder does not delete its successor\'s');
@@ -705,13 +736,13 @@ final class InstallerTest extends TestCase
     /** Without flock(): a stale lock taken over, then written by another process in the second before the second look, is that process's. */
     public function testATakeoverWithoutFlockThatAnotherProcessOvertakesIsGivenUp(): void
     {
-        $file = $this->data . '/updating';
+        $file = $this->data . '/owa-update-lock.php';
         file_put_contents($file, "install 2.0.1, pid 1, since 2026-11-22 10:00:00 UTC, token 0000000000000000\n");
         touch($file, time() - 601);
 
         // Once the takeover's line is in the file, the other process writes its own.
         $other = proc_open([PHP_BINARY, '-r', sprintf(
-            '$f = %s; for ($i = 0; $i < 300; $i++) { if (str_starts_with((string) @file_get_contents($f), "release check, ")) { file_put_contents($f, "another run, pid 2, since 2026-11-22 10:00:00 UTC, token 1111111111111111\n"); exit(0); } usleep(10000); } exit(1);',
+            '$f = %s; for ($i = 0; $i < 300; $i++) { if (str_contains((string) @file_get_contents($f), "\nrelease check, ")) { file_put_contents($f, "another run, pid 2, since 2026-11-22 10:00:00 UTC, token 1111111111111111\n"); exit(0); } usleep(10000); } exit(1);',
             var_export($file, true)
         )], [], $pipes);
 
@@ -726,14 +757,14 @@ final class InstallerTest extends TestCase
         $hold = $this->u['tryLock']($this->data, 'install 2.0.1', true);
         $this->assertTrue($this->u['stillMine']($hold));
 
-        file_put_contents($this->data . '/updating', "release check, pid 1, since 2026-11-22 10:00:00 UTC, token 0000000000000000\n");
+        file_put_contents($this->data . '/owa-update-lock.php', "release check, pid 1, since 2026-11-22 10:00:00 UTC, token 0000000000000000\n");
         $this->assertFalse($this->u['stillMine']($hold), 'another process took it');
     }
 
     /** Where the filesystem has no flock(), the file's age says whether its holder is gone: 10 minutes. */
     public function testWithoutFlockTheFilesAgeSays(): void
     {
-        $file = $this->data . '/updating';
+        $file = $this->data . '/owa-update-lock.php';
         $this->assertSame(600, $this->u['lock_stale']);
         $this->assertSame('free', $this->u['lockState']($file, true));
 
@@ -772,7 +803,7 @@ final class InstallerTest extends TestCase
             'to'       => '2.0.1',
             'phase'    => $phase,
             'since'    => time(),
-            'lock'     => $this->data . '/updating',
+            'lock'     => $this->data . '/owa-update-lock.php',
             'updates'  => $this->updates,
             'from_tar' => $this->updates . '/owa_2.0.0_packaged.tar',
             'to_tar'   => $this->updates . '/owa_2.0.1_packaged.tar',

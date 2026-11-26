@@ -164,6 +164,15 @@ class PaginatedResultSet {
     public $notReady = null;
 
     /**
+     * Why there are no numbers, when the database refused or timed out a
+     * statement the answer was built from: in place of the rows, which would
+     * read as zeros. Null otherwise.
+     *
+     * @var string|null
+     */
+    public $unavailable = null;
+
+    /**
      * The comparison period, when the request asked for one (`compare`): its
      * key, startDate, endDate and aggregates. Each metric cell then carries
      * compare_value, compare_formatted_value and change. See CompareMerger.

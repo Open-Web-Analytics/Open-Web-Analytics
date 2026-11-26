@@ -97,7 +97,14 @@ class ProcessEvent extends \OWA\Core\Controller {
             return false;
         }
 
-        $db->endTransaction();
+        if ( $db->endTransaction() === false ) {
+
+            $db->rollbackTransaction();
+
+            \OWA\Core\CoreAPI::error( 'domstream: the commit was refused; nothing was written.' );
+
+            return false;
+        }
 
         return true;
     }

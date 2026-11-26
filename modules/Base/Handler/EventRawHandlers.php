@@ -678,7 +678,16 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_FAILED;
         }
 
-        $db->endTransaction();
+        // A COMMIT the database refuses (a deadlock, a lost connection) has
+        // written nothing: the beacon failed, and is retried.
+        if ( $db->endTransaction() === false ) {
+
+            $db->rollbackTransaction();
+
+            \OWA\Core\CoreAPI::error( 'v2 ingest: the commit was refused; nothing of the beacon was written.' );
+
+            return OWA_EHS_EVENT_FAILED;
+        }
 
         $this->queueLateRebuilds( $rows );
 

@@ -22,6 +22,22 @@ if (!OWA_CLI)
     exit();
 }
 
+// Never as root unless asked (CliInvocation::rootRefusal()): before anything
+// loads, the updater's preboot included, which can boot a release.
+$owa_root_refusal = \OWA\Core\CliInvocation::rootRefusal(
+    function_exists('posix_geteuid') ? posix_geteuid() : -1,
+    (array) ($_SERVER['argv'] ?? []),
+    getenv('OWA_CLI_ALLOW_ROOT'),
+    function_exists('posix_getpwuid') ? (string) (posix_getpwuid((int) @fileowner(__DIR__ . '/owa.php'))['name'] ?? '') : ''
+);
+
+if ($owa_root_refusal !== null) {
+    fwrite(STDERR, $owa_root_refusal . "\n");
+    exit(2);
+}
+
+unset($owa_root_refusal);
+
 // Automatic updates (updater.php `preboot`), before any OWA file loads: an
 // install the marker says is under way is waited for, put back, or finished.
 // Finishing boots the new release and runs Finish before the command.
@@ -59,6 +75,7 @@ if (!is_array($params)) {
 
 unset($params['action']);
 unset($params['do']);
+unset($params['allow-root']);
 if (empty($params['cmd'])) {
     fwrite(STDERR, "Missing a command argument: cmd=<command>\n");
     exit(2);

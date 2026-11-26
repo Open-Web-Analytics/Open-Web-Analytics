@@ -1506,6 +1506,7 @@ return [
     'The country resolved from the user\'s address.' => 'The country resolved from the user\'s address.',
     'The custom report could not be deleted.' => 'The custom report could not be deleted.',
     'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.' => 'The data directory holds %d automatic updates directories (%s). Nothing installs until all but one are removed.',
+    'The database could not answer this report. Try again in a moment.' => 'The database could not answer this report. Try again in a moment.',
     'The database schema could not be installed. See the error log.' => 'The database schema could not be installed. See the error log.',
     'The day and hour together, as 2026092518: one value that sorts chronologically.' => 'The day and hour together, as 2026092518: one value that sorts chronologically.',
     'The day of the month, 1 to 31.' => 'The day of the month, 1 to 31.',

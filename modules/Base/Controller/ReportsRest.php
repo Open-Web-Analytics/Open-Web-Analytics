@@ -152,7 +152,18 @@ class ReportsRest extends \OWA\Core\ReportController {
             return;
         }
 
-        $this->set( 'response', $this->getResultSet() );
+        $response = $this->getResultSet();
+
+        // A statement refused or timed out: no rows rather than numbers that
+        // read as zeros, or a total of a part.
+        if ( $this->refused_before !== null
+                && \OWA\Core\CoreAPI::dbSingleton()->queryErrorCount() > $this->refused_before ) {
+
+            $response = new \OWA\Module\Base\Classes\PaginatedResultSet();
+            $response->unavailable = \OWA\Core\CoreAPI::t( 'The database could not answer this report. Try again in a moment.' );
+        }
+
+        $this->set( 'response', $response );
     }
     
     public function success() {
@@ -193,6 +204,11 @@ class ReportsRest extends \OWA\Core\ReportController {
              * rows, which is how a real zero looks.
              */
             $status = 409;
+
+        } elseif ( is_object( $response ) && ! empty( $response->unavailable ) ) {
+
+            // The request is fine and the server could not answer it now.
+            $status = 503;
         }
 
         $this->restResponse( $status, 'response' );

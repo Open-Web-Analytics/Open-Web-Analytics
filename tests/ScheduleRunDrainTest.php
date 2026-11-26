@@ -25,11 +25,15 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
         $db->query('CREATE TABLE ' . self::TABLE . ' LIKE owa_job_queue');
 
         JobQueue::$table = self::TABLE;
+
+        // Harmless commands, queueable for the test only (JobQueue::$also_queueable).
+        JobQueue::$also_queueable = ['jobs-prune', 'custom-dimension-apply', 'jobs-forget'];
     }
 
     protected function tearDown(): void
     {
-        JobQueue::$table = null;
+        JobQueue::$table          = null;
+        JobQueue::$also_queueable = [];
 
         \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
 
@@ -91,6 +95,20 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
 
         $this->assertSame('pending', $this->jobStatus($id));
         $this->assertSame(0, \OWA\Core\Controller\Cli::$exit_code);
+    }
+
+    /** A queued job takes only the arguments its command's usage declares, as a scheduled one does. */
+    public function testAnArgumentTheCommandDoesNotTakeFailsTheJob(): void
+    {
+        $id = JobQueue::enqueue('jobs-prune', ['dir' => '/etc']);
+
+        $this->drain();
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT status, last_error FROM ' . self::TABLE . ' WHERE id = ?', [$id]);
+
+        $this->assertNotSame('done', $row['status']);
+        $this->assertStringContainsString('jobs-prune does not take dir', (string) $row['last_error']);
     }
 
     public function testTheJobsCommandsActOnTheQueue(): void
