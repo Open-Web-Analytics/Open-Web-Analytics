@@ -80,30 +80,15 @@ $owa_ke = (array) $view->goalEventDefinition;
                         array_unshift( $owa_custom, $view->triggerEvent );
                     }
 
-                    $owa_other = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
                     ?>
                     <select class="owa_goalTrigger" name="triggerEvent"
                             aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The event this goal counts' ) );?>">
-                        <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'OWA events' ) );?>">
-                        <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
-                            <option value="<?php $view->out( $owa_event );?>"
-                                <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
-                                <?php $view->out( $owa_event );?>
-                            </option>
-                        <?php endforeach;?>
-                        </optgroup>
-                        <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Your events' ) );?>">
-                        <?php foreach ( $owa_custom as $owa_event ):?>
-                            <option value="<?php $view->out( $owa_event );?>"
-                                <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
-                                <?php $view->out( $owa_event );?>
-                            </option>
-                        <?php endforeach;?>
-                            <option value="<?php $view->out( $owa_other );?>"
-                                <?php echo ( $view->triggerEvent === $owa_other ) ? 'selected' : '';?>>
-                                <?php $view->out( \OWA\Core\CoreAPI::t( 'Another event of yours…' ) );?>
-                            </option>
-                        </optgroup>
+                <?php foreach ( \OWA\Module\Base\Classes\GoalVocabulary::triggerChoices( (array) $view->triggerEvents, $owa_custom ) as $owa_choice ):?>
+                    <option value="<?php $view->out( $owa_choice['value'] );?>" data-label="<?php $view->out( $owa_choice['label'] );?>"
+                            data-group="<?php $view->out( $owa_choice['group'] );?>" data-group-label="<?php $view->out( $owa_choice['group_label'] );?>"
+                            data-description="<?php $view->out( $owa_choice['description'] );?>"
+                            <?php echo $view->triggerEvent === $owa_choice['value'] ? 'selected' : '';?>><?php $view->out( $owa_choice['label'] );?></option>
+                <?php endforeach;?>
                     </select>
                     <input class="owa_goalCustomTrigger" type="text" maxlength="40"
                            name="customTriggerEvent"

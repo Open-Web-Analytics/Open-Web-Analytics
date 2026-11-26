@@ -160,14 +160,19 @@ describe('the filters a grid is given', () => {
 
 describe('which rows a page shows', () => {
 
-    test('short of ten pages ahead, the total is exact', () => {
-        expect(OWA.dataGrid.range({ resultsPerPage: 10, page: 2, resultsReturned: 10, resultsTotal: 38 }))
+    test('the total is the server\'s count', () => {
+        expect(OWA.dataGrid.range({ resultsPerPage: 10, page: 2, resultsReturned: 10, resultsTotal: 11, totalRows: 48, totalCapped: false }))
             .toEqual({ start: 11, end: 20, total: 48, more: false });
     });
 
-    test('at ten pages ahead there may be more', () => {
-        expect(OWA.dataGrid.range({ resultsPerPage: 10, page: 1, resultsReturned: 10, resultsTotal: 100 }))
+    test('a count stopped ten pages on is a lower bound', () => {
+        expect(OWA.dataGrid.range({ resultsPerPage: 10, page: 1, resultsReturned: 10, resultsTotal: 11, totalRows: 100, totalCapped: true }))
             .toEqual({ start: 1, end: 10, total: 100, more: true });
+    });
+
+    test('a result set with no count is as many as it holds', () => {
+        expect(OWA.dataGrid.range({ resultsPerPage: 10, page: 1, resultsReturned: 4 }))
+            .toEqual({ start: 1, end: 4, total: 4, more: false });
     });
 });
 
@@ -872,7 +877,9 @@ describe('a card\'s Show more', () => {
             rs: Object.assign({
                 resultsPerPage: shown,
                 resultsReturned: Math.min(shown, total),
-                resultsTotal: total,
+                resultsTotal: Math.min(total, shown + 1),
+                totalRows: total,
+                totalCapped: false,
                 total_pages: Math.ceil(total / shown),
                 next: total > shown ? 'n' : undefined,
             }, extra || {}),
@@ -1067,7 +1074,7 @@ describe('a card\'s explorer', () => {
                     browserType: cell('browserType', 'dimension', 'Browser ' + i),
                     sessions: cell('sessions', 'metric', 100 - i),
                 })),
-                resultsPerPage: per, resultsReturned: shown, resultsTotal: total, page: 1,
+                resultsPerPage: per, resultsReturned: shown, resultsTotal: Math.min(total, per + 1), totalRows: total, totalCapped: false, page: 1,
                 total_pages: Math.ceil(total / per), sortColumn: 'sessions', sortOrder: 'desc',
             });
             return $.Deferred().resolve().promise();
@@ -1544,7 +1551,7 @@ describe('a compared grid\'s rows only the comparison has', () => {
         const page = (shown) => {
             const all = [own('Chrome', 60, 50), own('Safari', 30, 20), only('Firefox', 12), only('Edge', 3)];
             const rows = all.slice(0, shown);
-            return compared(rows, { resultsPerPage: shown, resultsReturned: rows.length, resultsTotal: all.length,
+            return compared(rows, { resultsPerPage: shown, resultsReturned: rows.length, resultsTotal: Math.min(all.length, shown + 1), totalRows: all.length, totalCapped: false,
                 total_pages: Math.ceil(all.length / shown), next: all.length > shown ? 'n' : undefined });
         };
 

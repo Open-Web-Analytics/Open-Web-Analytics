@@ -22,7 +22,6 @@
             "type": "css",
             "outputDir": "../../public/base/css",
             "files": [
-                "css/chosen.css",
                 "css/owa.css",
                 "css/owa.admin.css",
                 "css/owa.report.css",
