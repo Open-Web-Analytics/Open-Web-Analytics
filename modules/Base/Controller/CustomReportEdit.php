@@ -19,10 +19,9 @@ namespace OWA\Module\Base\Controller;
  *
  * An options screen configures the INSTALLATION -- settings, users,
  * modules -- and a custom report is something the author makes, which is
- * why the roster is a reporting screen too. View/Options.php loads
- * owa.admin.css and nothing else, and the reporting stylesheet is loaded by
- * report pages only, so the builder's rules and its widget dialog need the
- * reporting family.
+ * why the roster is a reporting screen too. The reporting stylesheet is
+ * loaded by report pages only, so the builder's rules and its widget dialog
+ * need the reporting family.
  *
  * It also gives the site. A report is viewed against one, and the site the
  * author is building against is the one the View link and the share URL
