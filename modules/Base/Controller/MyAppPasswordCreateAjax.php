@@ -46,6 +46,8 @@ class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
             return $this->answer( 422, $this->getMsg( 3216 )['message'] );
         }
 
+        \OWA\Module\Base\Classes\AppPasswords::announce( $made, $user_id, \OWA\Core\ClientAddress::fromRequest() );
+
         $made['scope_label']     = \OWA\Module\Base\Classes\AppPasswords::scopes()[ $made['scope'] ];
         $made['created_display'] = date( 'Y-m-d H:i', (int) $made['created_at'] );
 

@@ -36,7 +36,7 @@
             <TH><?php $view->out( \OWA\Core\CoreAPI::t( 'Property:' ) ); ?></TH>
             <TD>
                 <?php $view->out( $view->propertyName ?? '' );?>
-                <?php $owa_ident = ( $view->site['stream_type'] ?? 'web' ) === 'app'
+                <?php $owa_ident = \OWA\Module\Base\Entity\Site::streamTypeOf( $view->site ) === \OWA\Module\Base\Entity\Site::STREAM_APP
                         ? ( $view->site['app_id'] ?? '' )
                         : ( $view->site['domain'] ?? '' );?>
                 <?php if ( $owa_ident ):?>
@@ -85,7 +85,7 @@
          * per Profile: one Property can hold a website and its app, and there
          * is no single identifier that describes both.
          */
-        $owa_stream = $view->site['stream_type'] ?? \OWA\Module\Base\Entity\Site::STREAM_WEB;
+        $owa_stream = \OWA\Module\Base\Entity\Site::streamTypeOf( $view->site );
         ?>
         <TR>
             <TH><label for="owa_streamType"><?php $view->out( \OWA\Core\CoreAPI::t( 'This Profile observes:' ) ); ?></label></TH>

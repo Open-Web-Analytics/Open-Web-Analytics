@@ -313,12 +313,6 @@ OWA.resultSetExplorer.prototype = {
         return this.options[name];
     },
 
-    // needed??
-    setView : function(name) {
-
-        this.view = name;
-    },
-
     loadFromArray : function(json, view) {
 
         if (view) {
