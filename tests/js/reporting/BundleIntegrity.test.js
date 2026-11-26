@@ -87,7 +87,6 @@ describe('reporting bundle build integrity', () => {
         const entry = fs.readFileSync(entryPath, 'utf8')
             .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
         const orderedTokens = [
-            'chosen-js/chosen.jquery.js',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
             './owa.format.js',
@@ -113,6 +112,27 @@ describe('reporting bundle build integrity', () => {
 
         expect(entry).not.toContain('jquery.flot.pie');
         expect(fs.existsSync(path.join(srcDir, 'owa.piechart.js'))).toBe(false);
+    });
+
+    // Every picker is OWA.fieldChooser or a plain <select>: chosen is gone, and its CSS with it.
+    test('chosen is not imported, called, styled or a dependency', () => {
+        const entry = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
+
+        expect(entry).not.toContain('chosen');
+
+        const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+        expect(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })).not.toContain('chosen-js');
+
+        const cssDir = path.join(repoRoot, 'modules/Base/css');
+        expect(fs.existsSync(path.join(cssDir, 'chosen.css'))).toBe(false);
+
+        const offenders = [
+            ...fs.readdirSync(srcDir).filter((f) => f.endsWith('.js')).map((f) => path.join(srcDir, f)),
+            ...fs.readdirSync(cssDir).filter((f) => f.endsWith('.css')).map((f) => path.join(cssDir, f)),
+        ].filter((f) => /\.chosen\s*\(|\.chosen-[a-z]/.test(fs.readFileSync(f, 'utf8')))
+            .map((f) => path.relative(repoRoot, f));
+        expect(offenders).toEqual([]);
     });
 
     // Dialogs are the browser's <dialog> (owa.dialog.js) and tabs are OWA.tabs.
@@ -244,7 +264,7 @@ describe('reporting bundle build integrity', () => {
         test('the bundle is self-contained (vendors inlined, not split out)', () => {
             if (bundle === null) return;
             // The report templates load ONLY owa.reporting-combined-min.js, so the
-            // vendor code (jQuery, chosen, flot, ...) must be INLINED in
+            // vendor code (jQuery, flot, ...) must be INLINED in
             // this one file rather than split into a sibling chunk. (The tracker's
             // owa.vendors split is scoped away from this bundle via a separate
             // compiler config in webpack.config.js.)

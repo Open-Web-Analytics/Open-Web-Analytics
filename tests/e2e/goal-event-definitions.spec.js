@@ -13,15 +13,18 @@ async function gotoAction(page, doName, extra = '') {
 }
 
 /**
- * Pick from a chosen widget the way a person does: open it, type, take the
- * first match. The <select> under it is hidden, so selectOption() on it is not
- * what anyone can do. The event picker is one.
+ * Pick an event the way a person does: the button after its <select> opens
+ * the field chooser, which is searched and the name clicked. The <select> is
+ * hidden, so selectOption() on it is not what anyone can do.
  */
 async function choose(scope, selectSelector, text) {
-    const box = scope.locator(selectSelector).locator('xpath=following-sibling::div[contains(@class,"chosen-container")][1]');
-    await box.locator('.chosen-single').click();
-    await box.locator('.chosen-search input').pressSequentially(text);
-    await box.locator('.chosen-results li.active-result').first().click();
+    await scope.locator(selectSelector).locator('xpath=following-sibling::button[1]').click();
+
+    const chooser = fieldChooser(scope.page ? scope.page() : scope);
+
+    await chooser.getByRole('combobox').pressSequentially(text);
+    await chooser.getByRole('option', { name: text }).first().click();
+    await expect(chooser).toHaveCount(0);
 }
 
 /**

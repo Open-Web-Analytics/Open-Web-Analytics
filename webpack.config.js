@@ -258,7 +258,7 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = [], lazy = []) {
 // url:false so every url() is left EXACTLY as authored; the CopyPlugin below then
 // mirrors the url()-referenced assets into the SAME relative layout under the public
 // output (css sprites and fonts beside the stylesheet, ../i/ as a sibling), so the
-// verbatim relative paths (chosen-sprite.png, font-awesome/*, ../i/*) keep
+// verbatim relative paths (font-awesome/*, ../i/*) keep
 // resolving without rewriting a single url() -- the public-tree analogue of the old
 // same-dir strategy. The `files` order is the cascade order (later files
 // intentionally override earlier). A CSS-only entry still emits a stub .js chunk,

@@ -860,7 +860,7 @@ class Strings {
     }
 
     /** The metric and dimension vocabularies Core\Module reads, by path. */
-    const VOCABULARY_FILES = '#/modules/[^/]+/config/(metrics|dimensions)\.php$#';
+    const VOCABULARY_FILES = '#/modules/[^/]+/config/(metrics|dimensions|tracking_events)\.php$#';
 
     /**
      * The strings of a metric or dimension vocabulary file that are shown

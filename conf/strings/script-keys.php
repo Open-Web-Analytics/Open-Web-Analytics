@@ -110,6 +110,7 @@ return [
     'End date',
     'Enter your password.',
     'Equals',
+    'Event',
     'Field',
     'Filter',
     'Filter on',
