@@ -38,6 +38,10 @@ $config = [
 $owa = new owa( $config );
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
+    // Framed by OWA's own pages only, as index.php's are.
+    header( "Content-Security-Policy: frame-ancestors 'self'" );
+    header( 'X-Frame-Options: SAMEORIGIN' );
+
     // need third param here so that seting is not persisted.
     $owa->setSetting('base','main_url', 'install.php');
     // run controller, echo page content
