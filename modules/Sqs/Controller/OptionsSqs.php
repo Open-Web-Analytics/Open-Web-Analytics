@@ -12,7 +12,6 @@ class OptionsSqs extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
         $this->setRequiredCapability( 'edit_settings' );
     }
 

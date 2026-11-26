@@ -309,7 +309,7 @@ return [
                 . 'paths already stored keep theirs.',
         ],
         'disableAllEndpoints' => [ 'config_constant' => 'OWA_DISABLE_ALL_ENDPOINTS', 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ],
-        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry-point file names to turn off, such as install.php. Empty by default.' ],
+        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php. Empty by default.' ],
         'enableEcommerceReporting' => [
             'default'  => false,
             'storable' => true,
