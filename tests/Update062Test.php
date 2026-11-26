@@ -412,6 +412,29 @@ final class Update062Test extends TestCase
             'SELECT COUNT(*) AS n FROM owa_event_raw WHERE site_id = ?', [self::SITE])['n'], 'nothing migrated');
     }
 
+    /**
+     * The web server writes the queue directory: a link at the archive's name,
+     * which can be guessed to the second, is not written through (the update
+     * stops, the queue as it was), and a link among the queue files is not read.
+     */
+    public function testTheArchiveIsNeverWrittenThroughALink(): void
+    {
+        $dir    = $this->queueDir();
+        $victim = $dir . 'victim.txt';
+        $line   = '12:00:00 2026-01-01|*|incoming_tracking_events|*|1|*|x';
+
+        file_put_contents($dir . 'events.txt', $line . "\n");
+        file_put_contents($victim, "mine\n");
+        symlink($victim, $dir . 'update062-v1-queue-test.txt');
+        symlink($victim, $dir . 'unprocessed/linked');
+
+        $this->update->archive_name = 'update062-v1-queue-test.txt';
+
+        $this->assertNull($this->update->archiveV1Queue());
+        $this->assertSame("mine\n", file_get_contents($victim), 'nothing appended through the link');
+        $this->assertSame($line . "\n", file_get_contents($dir . 'events.txt'), 'the queue as it was');
+    }
+
     /** Retries awaiting in owa_queue_item are counted, not a reason to refuse: they are v1 handler failures, dropped with the table. */
     public function testRetriesInTheOneXQueueTableDoNotStopIt(): void
     {

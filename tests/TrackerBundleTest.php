@@ -335,6 +335,38 @@ final class TrackerBundleTest extends TestCase
         $this->assertSame('unbuilt', TrackerBundle::status(self::SITE)['state']);
     }
 
+    /**
+     * The web server and the CLI both write the bundles' directory: a publish
+     * writes nothing through a link at the bundle's name, nor at the name the
+     * temporary file used to have; and a FIFO at the bundle's name is not read.
+     */
+    public function testPublishingNeverWritesThroughALink(): void
+    {
+        $path   = TrackerBundle::path(self::SITE);
+        $victim = sys_get_temp_dir() . '/owa-bundle-victim-' . bin2hex(random_bytes(4));
+
+        @mkdir(dirname($path), 0755, true);
+        @unlink($path);
+        symlink($victim, $path);
+        symlink($victim . '-tmp', $path . '.' . getmypid() . '.tmp');
+
+        try {
+            $this->assertTrue(TrackerBundle::publish(self::SITE));
+            $this->assertFalse(is_link($path), 'the link was replaced, not followed');
+            $this->assertFileDoesNotExist($victim);
+            $this->assertFileDoesNotExist($victim . '-tmp');
+
+            if (function_exists('posix_mkfifo')) {
+                unlink($path);
+                posix_mkfifo($path, 0644);
+                $this->assertFalse(TrackerBundle::isCurrent(self::SITE), 'a FIFO is not read');
+            }
+        } finally {
+            @unlink($path . '.' . getmypid() . '.tmp');
+            @unlink($path);
+        }
+    }
+
     public function testPublishingWritesTheBundleAndItIsThenCurrent(): void
     {
         $this->assertSame('waiting', TrackerBundle::status(self::SITE)['state']);
