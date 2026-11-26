@@ -535,7 +535,7 @@ class TrackingEventHelpers {
 
         $description = (string) ( self::eventConfig()[ (string) $name ]['description'] ?? '' );
 
-        return $description !== '' ? \OWA\Core\CoreAPI::t( $description ) : '';
+        return $description !== '' ? \OWA\Core\Strings::translate( $description ) : '';
     }
 
     /** @var string[]|null goalTriggerEventNames(), once computed */
