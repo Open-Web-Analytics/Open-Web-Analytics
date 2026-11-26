@@ -168,6 +168,28 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'the response says why there is nothing to answer');
     }
 
+    /** A REST call builds none of the screen's chrome, and resolves the Property its siteId names. */
+    public function testARestCallSkipsTheScreenAndResolvesTheProperty(): void
+    {
+        $this->authenticateAs('admin');
+        $siteId = $this->profile(true);
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $siteId]
+        );
+
+        $this->assertEnvelope($resp, 200);
+
+        foreach (['sites', 'site_hierarchy', 'period_picker', 'top_level_report_nav', 'metricSets', 'report_as_of'] as $chrome) {
+            $this->assertArrayNotHasKey($chrome, $resp['data_raw'], $chrome);
+        }
+
+        $this->assertSame(\OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($siteId),
+            $resp['data_raw']['currentPropertyId']);
+    }
+
     /** A statement the database refuses or times out answers 503 with the reason, not 200 with rows that read as zeros. */
     public function testARefusedQueryIs503NotZeros(): void
     {
