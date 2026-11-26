@@ -750,12 +750,23 @@ class TrackerBundle {
                 return false;
             }
 
-            return \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [], 'publish-trackers:all' );
+            $queued = \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [], 'publish-trackers:all' );
+            $why    = 'the job was not queued';
 
         } catch ( \Throwable $t ) {
 
-            return false;
+            $queued = false;
+            $why    = $t->getMessage();
         }
+
+        // Not queued, live bundles keep the settings they were built from: said so, with the fix.
+        if ( ! $queued ) {
+
+            \OWA\Core\CoreAPI::error( sprintf( 'Tracker bundles: a republish could not be queued (%s). '
+                . 'Run php cli.php cmd=publish-trackers.', $why ) );
+        }
+
+        return $queued;
     }
 
     /**

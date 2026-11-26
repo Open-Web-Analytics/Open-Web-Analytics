@@ -739,9 +739,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             $queued[ $key ] = true;
 
-            \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
-                [ 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ],
-                $key, self::LATE_REBUILD_DELAY );
+            // Not queued, the settled day never takes the row in: said so, with what rebuilds it by hand.
+            if ( ! \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
+                    [ 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ],
+                    $key, self::LATE_REBUILD_DELAY ) ) {
+
+                \OWA\Core\CoreAPI::error( sprintf(
+                    'v2 ingest: a late row for %1$d was stored, but its cube rebuild could not be queued. '
+                  . 'Run php cli.php cmd=cube-rebuild property=%2$s from=%1$d to=%1$d.', $day, $property ) );
+            }
         }
     }
 
