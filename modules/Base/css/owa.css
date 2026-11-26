@@ -246,17 +246,12 @@ div {margin:0;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
 td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 1rem; line-height: normal;}
-.subview_content{padding:10px;}
-.subview_content td {padding:20ps;}
 
 /* FORMATING */
 .owa_largeFormField { font-size:1.125rem;}
 .info_text {color:var(--owa-text-muted, #6b7280);font-size:0.75rem;}
 .legend_link {color:var(--owa-text-muted, #6b7280);font-size:0.75rem;font-weight:normal;}
 .legend_link a {text-decoration:underline;}
-.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:0.625rem;}
-.visible {display:;}
-.invisible {display:none;}
 
 .owa .error, .owa .status, .owa .notice {
     color: #ffffff;

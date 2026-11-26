@@ -482,18 +482,6 @@
     text-align: left;
 }
 
-.owa_grid .owa_gridPopSearch {
-    width: 100%;
-    height: 40px;
-    padding: 0 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font: inherit;
-    font-size: 0.875rem;
-    box-sizing: border-box;
-}
-
-.owa_grid .owa_gridPopSearch:focus,
 .owa_grid .owa_gridFilterField:focus,
 .owa_grid input.owa_gridFilterInput:focus {
     outline: none;
@@ -507,13 +495,6 @@
     margin: 0 0 8px;
     padding: 0 0 8px;
     border-bottom: 1px solid #eef0f3;
-}
-
-.owa_gridPopHeading {
-    margin: 12px 10px 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b7280;
 }
 
 .owa_grid .owa_gridPopOption {
@@ -552,12 +533,6 @@
     color: #9ca3af;
     background: transparent;
     cursor: default;
-}
-
-.owa_gridPopNote {
-    margin-left: auto;
-    font-size: 0.75rem;
-    font-weight: normal;
 }
 
 .owa_gridPop .owa_gridFilterPop {

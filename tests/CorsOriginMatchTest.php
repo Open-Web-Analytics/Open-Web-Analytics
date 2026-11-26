@@ -164,6 +164,7 @@ final class CorsOriginMatchTest extends TestCase
 
         $this->assertSame($origin, $match(['stream_type' => 'web']));
         $this->assertSame($origin, $match([]), 'a Profile that predates stream_type is a website');
+        $this->assertSame($origin, $match(['stream_type' => null]), 'a 1.x row\'s NULL is a website');
 
         $this->assertNull($match(['stream_type' => 'app']),
             'An app Profile\'s identifier is parsed as a host for CORS matching.');

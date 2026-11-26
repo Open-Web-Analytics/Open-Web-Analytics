@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/fixtures/mail_to_nowhere.php';
 
 use OWA\Module\Base\Classes\AppPasswords;
 
@@ -16,10 +17,23 @@ final class AppPasswordCliTest extends CliControllerTestCase
     /** @var string[] users whose passwords to delete */
     private $users = [];
 
+    /** @var array<string, mixed> the mail settings, while making a password e-mails nowhere */
+    private array $mail = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mail = owa_test_mail_to_nowhere();
+    }
+
     protected function tearDown(): void
     {
+        owa_test_mail_restore($this->mail);
+
         foreach ($this->users as $user_id) {
             AppPasswords::revokeAllForUser($user_id);
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE source = 'app_password' AND user_id = ?",
+                \OWA\Core\CoreAPI::entityFactory('base.notification')->getTableName()), [$user_id]);
         }
 
         parent::tearDown();

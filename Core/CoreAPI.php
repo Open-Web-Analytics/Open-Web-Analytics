@@ -1128,47 +1128,6 @@ class CoreAPI {
     }
 
     /**
-     * Every setting a scope answers with, most specific value winning.
-     *
-     * The settings FORMS need this: they render whatever key they render and
-     * cannot ask for values one at a time without the controller keeping a
-     * hardcoded list in step with the template. Built bottom-up so a Profile
-     * row overwrites its Property's, which overwrites the install's.
-     *
-     * @param  string $scopeType
-     * @param  string $scopeId
-     * @param  string $module
-     * @return array<mixed> key => value
-     */
-    public static function getEffectiveSettings( $scopeType, $scopeId, $module = 'base' ) {
-
-        // start from the install-wide map for this module
-        $s      = \OWA\Core\CoreAPI::configSingleton();
-        $values = $s->getModuleSettings( $module );
-
-        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
-
-        // least specific first, so the nearer scope overwrites
-        foreach ( array_reverse(
-                      \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId ) ) as $scope ) {
-
-            $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->selectFrom( $setting->getTableName() );
-            $db->selectColumn( 'name, value' );
-            $db->where( 'scope_type', $scope['type'] );
-            $db->where( 'scope_id', $scope['id'] );
-            $db->where( 'module', $module );
-
-            foreach ( (array) $db->getAllRows() as $row ) {
-
-                $values[ $row['name'] ] = unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
-            }
-        }
-
-        return $values;
-    }
-
-    /**
      * @return list<int|string>
      */
     public static function getAllRoles() {
