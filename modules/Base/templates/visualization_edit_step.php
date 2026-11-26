@@ -44,17 +44,12 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
             <?php $view->out( \OWA\Core\CoreAPI::t( 'A' ) );?>
             <select class="owa_funnelStepEvent" name="stepEvent[]"
                     aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The event this step matches' ) );?>">
-                <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'OWA events' ) );?>">
-                <?php foreach ( (array) $view->eventNames as $owa_event ):?>
-                    <option value="<?php $view->out( $owa_event );?>" <?php echo $owa_picked === $owa_event ? 'selected' : '';?>><?php $view->out( $owa_event );?></option>
+<?php foreach ( \OWA\Module\Base\Classes\GoalVocabulary::triggerChoices( (array) $view->eventNames, $owa_custom ) as $owa_choice ):?>
+                    <option value="<?php $view->out( $owa_choice['value'] );?>" data-label="<?php $view->out( $owa_choice['label'] );?>"
+                            data-group="<?php $view->out( $owa_choice['group'] );?>" data-group-label="<?php $view->out( $owa_choice['group_label'] );?>"
+                            data-description="<?php $view->out( $owa_choice['description'] );?>"
+                            <?php echo $owa_picked === $owa_choice['value'] ? 'selected' : '';?>><?php $view->out( $owa_choice['label'] );?></option>
                 <?php endforeach;?>
-                </optgroup>
-                <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Your events' ) );?>">
-                <?php foreach ( $owa_custom as $owa_event ):?>
-                    <option value="<?php $view->out( $owa_event );?>" <?php echo $owa_picked === $owa_event ? 'selected' : '';?>><?php $view->out( $owa_event );?></option>
-                <?php endforeach;?>
-                    <option value="<?php $view->out( $owa_other );?>" <?php echo $owa_picked === $owa_other ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'Another event of yours…' ) );?></option>
-                </optgroup>
             </select>
             <input class="owa_funnelStepCustomEvent" type="text" maxlength="40"
                    name="stepCustomEvent[]"

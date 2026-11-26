@@ -4,7 +4,6 @@
  * The reporting bundle's vendored jQuery plugins are UMD/IIFE files that cannot be
  * edited, and several read a FREE `jQuery`/`$` at module-eval time rather than
  * require()-ing it:
- *   - chosen-js:      `$ = jQuery` (chosen.jquery.js ~610)
  *   - jquery.flot (core/time): `(function($){...})(jQuery)`
  *
  * This module imports jQuery and assigns it to window BEFORE the plugins run. It MUST be the FIRST import in reporting-entry.js -- ES modules are
