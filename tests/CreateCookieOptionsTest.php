@@ -107,7 +107,7 @@ final class CreateCookieOptionsTest extends TestCase
 
     /**
      * A sign-in cookie is host-only, on the install's path, and HttpOnly; and
-     * the same name at cookie_domain and / is expired with it, as a browser
+     * the same name at cookie_domain and / is expired before it, as a browser
      * holding one there would send it first.
      */
     public function testASignInCookieIsSentOnlyToThisInstall(): void
@@ -116,7 +116,8 @@ final class CreateCookieOptionsTest extends TestCase
             'PROBE_PUBLIC_URL' => 'http://owa.example.com/owa/', 'PROBE_COOKIE_DOMAIN' => '.example.com']);
 
         $this->assertSame(2, preg_match_all('/^Set-Cookie: [^\r\n]*probe=[^\r\n]*/mi', $headers, $m), $headers);
-        [$set, $expired] = $m[0];
+        // The old scope's expiry first: after, a browser would take it for the new cookie and remove it.
+        [$expired, $set] = $m[0];
 
         $this->assertMatchesRegularExpression('/probe=v;/', $set);
         $this->assertMatchesRegularExpression('/; path=\/owa\/(;|$)/i', $set);

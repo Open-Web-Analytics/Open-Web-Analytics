@@ -2762,9 +2762,12 @@ class CoreAPI {
      * cookie_domain, or another application on this one, is not sent it.
      * HttpOnly unless asked otherwise; Secure as createCookie() decides.
      *
-     * Each write also expires the cookie of that name where createCookie()
+     * Each write first expires the cookie of that name where createCookie()
      * puts one, at cookie_domain and /: a browser that holds one there sends
-     * both, and with the same path the older first, which PHP reads.
+     * both, and with the same path the older first, which PHP reads. First,
+     * not after: cookie_domain is usually this host, and a browser takes a
+     * cookie with the same name, domain and path as the same cookie, so an
+     * expiry sent after the new cookie would remove it.
      *
      * @param  string $cookie_name
      * @param  string $cookie_value '' deletes it
@@ -2778,12 +2781,12 @@ class CoreAPI {
         $path   = self::signInCookiePath();
         $domain = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'cookie_domain' );
 
-        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, '', $secure, $httponly );
-
         if ( $domain !== '' || $path !== '/' ) {
 
             self::setNamespacedCookie( $cookie_name, '', time() - 86400, '/', $domain, $secure, $httponly );
         }
+
+        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, '', $secure, $httponly );
     }
 
     /**
