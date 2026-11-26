@@ -274,6 +274,33 @@ class ReportController extends \OWA\Core\AdminController {
      */
     public function pre() {
 
+        /*
+         * A REST call answers JSON, not the screen: it needs the Property its
+         * request names and nothing of the screen's chrome -- the sites, the
+         * hierarchy, the period picker, the as-of line, the report nav, about
+         * ten queries a widget call threw away. Resolved as the screen does
+         * (resolvePropertyId(); under REST no remembered Property is read).
+         */
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
+
+            $propertyId = $this->resolvePropertyId( [] );
+
+            if ( $propertyId !== '' ) {
+
+                $this->setParam( 'propertyId', $propertyId );
+            }
+
+            if ( ! $this->filters_by_site ) {
+
+                unset( $this->params['siteId'], $this->params['site_id'] );
+            }
+
+            $this->set( 'currentPropertyId', $propertyId );
+            $this->data['params'] = $this->params;
+
+            return;
+        }
+
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('sites', $sites);
 

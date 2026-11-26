@@ -86,6 +86,23 @@ final class ExistsWithinLookupTest extends TestCase
         $this->assertTrue($found);
     }
 
+    /** Its own day and the days either side: a redelivery derives the same day; a timezone changed in between moves it one. */
+    public function testABeaconIsLookedForOnItsDayAndTheDaysEitherSide(): void
+    {
+        $day = (int) date('Ymd', strtotime('-3 days'));
+        $id  = $this->newId();
+
+        $this->storeRow('base.event_raw', $id, (int) date('Ymd', strtotime('-2 days')));
+
+        $this->assertTrue($this->alreadyIngested(['id' => $id, 'yyyymmdd' => $day]), 'a day later');
+
+        $far = $this->newId();
+        $this->storeRow('base.event_raw', $far, (int) date('Ymd', strtotime('-10 days')));
+
+        $this->assertFalse($this->alreadyIngested(['id' => $far, 'yyyymmdd' => $day]), 'a week away is another beacon');
+        $this->assertTrue($this->alreadyIngested(['id' => $far, 'yyyymmdd' => 0]), 'no usable date: looked for everywhere');
+    }
+
     public function testAChunkIsLookedUpOnce(): void
     {
         DomstreamFixtures::ensure();

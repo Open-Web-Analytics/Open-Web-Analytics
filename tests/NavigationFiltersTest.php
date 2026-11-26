@@ -10,7 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  *   nav_header, nav_user_menu, nav_help_menu, nav_site_control
  *       lists templates build, finished by Core\Navigation::links()
- *   nav_reports, nav_settings, nav_view, nav_hierarchy
+ *   nav_reports, nav_settings, nav_hierarchy
  *       lists the registries assemble, filtered after every module contributed
  *   report_links
  *       each report-links widget's links, in ConfiguredReport
@@ -32,7 +32,7 @@ final class NavigationFiltersTest extends TestCase
         self::$context = [];
 
         foreach (['nav_header', 'nav_site_control', 'nav_reports', 'nav_settings',
-                  'nav_view', 'nav_hierarchy', 'report_links'] as $filter) {
+                  'nav_hierarchy', 'report_links'] as $filter) {
             \OWA\Core\CoreAPI::registerFilter($filter, self::class . '::on_' . $filter, 99);
         }
     }
@@ -143,17 +143,6 @@ final class NavigationFiltersTest extends TestCase
         $panels = \OWA\Core\CoreAPI::getAdminPanels();
 
         $this->assertSame('added', end($panels)['id'] ?? null);
-    }
-
-    public function testAViewNavIsFilteredBeforeSorting(): void
-    {
-        self::$on = 'nav_view';
-
-        $nav = (array) \OWA\Core\CoreAPI::getNavigation('some.view', 'some_nav');
-
-        $this->assertContains('added', array_column($nav, 'id'),
-            'a filter can put an entry on a nav nobody registered anything for');
-        $this->assertSame(['some.view', 'some_nav'], self::$context);
     }
 
     public function testTheHierarchyNavIsFiltered(): void

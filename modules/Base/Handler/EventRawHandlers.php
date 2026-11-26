@@ -602,18 +602,26 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Has this beacon already been written?
      *
-     * Looked for only in the partitions its own yyyymmdd can be in
-     * (Entity::existsWithin()). A redelivered beacon derives the same id and
-     * the same yyyymmdd, so its row is inside that range, and a new beacon --
-     * nearly every one -- costs one pruned lookup.
+     * Looked for on its own day and the days either side (Entity::existsWithin()):
+     * a redelivered beacon derives the same id and, from the time it carries,
+     * the same yyyymmdd; a day either way covers the timezone setting changed
+     * between the two. Three seeks, where factDateConstraint()'s range -- a
+     * session's, with a month of slack for rows dated before it -- was about
+     * thirty-three on every beacon. A row with no usable date is looked for
+     * everywhere.
      *
      * @param array<string, mixed> $row
      * @return bool
      */
     protected function alreadyIngested( $row ) {
 
+        $day  = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) ( $row['yyyymmdd'] ?? '' ) );
+        $days = $day && $day->format( 'Ymd' ) === (string) $row['yyyymmdd']
+            ? [ (int) $day->modify( '-1 day' )->format( 'Ymd' ), (int) $day->format( 'Ymd' ), (int) $day->modify( '+1 day' )->format( 'Ymd' ) ]
+            : [];
+
         return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->existsWithin( 'id', $row['id'],
-            \OWA\Core\Db::factDateConstraint( $row['yyyymmdd'] ) );
+            $days ? [ 'yyyymmdd' => [ 'value' => $days, 'operator' => 'in' ] ] : [] );
     }
 
     /**

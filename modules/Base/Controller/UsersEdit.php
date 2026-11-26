@@ -39,22 +39,44 @@ class UsersEdit extends \OWA\Core\AdminController {
         ];
 
         $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', $userEntityConf);
+
+        // An address, and not another user's: password resets and notices go to it.
+        $email = trim( (string) $this->getParam( 'email_address' ) );
+
+        $this->addValidation( 'email_address', $email, 'required', [ 'stopOnError' => true ] );
+        $this->addValidation( 'email_address', $email, 'emailAddress',
+            [ 'stopOnError' => true, 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' ) ] );
     }
 
     public function action() {
 
-        // This needs form validation in a bad way.
-
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('user_id', $this->getParam('user_id'));
-        $u->set('email_address', $this->getParam('email_address'));
+
+        // Another user's address is refused: a reset link for it would reach the wrong account.
+        $email = trim( (string) $this->getParam('email_address') );
+        $other = \OWA\Core\CoreAPI::entityFactory('base.user');
+        $other->getByColumn('email_address', $email);
+
+        if ( $other->get('id') && (string) $other->get('user_id') !== (string) $u->get('user_id') ) {
+
+            $this->set( 'validation_errors', [ 'email_address' => $this->getMsg( 3009 )['message'] ] );
+
+            return $this->errorAction();
+        }
+
+        $u->set('email_address', $email);
 
         // never change the role of the admin user
         if (!$u->isOWAAdmin()) {
             $u->set('real_name', $this->getParam('real_name'));
-            $u->set('role', $this->getParam('role'));
-        }
 
+            // Only when posted: an edit without one kept nothing and blanked it.
+            if ( (string) $this->getParam('role') !== '' ) {
+
+                $u->set('role', $this->getParam('role'));
+            }
+        }
 
         $u->update();
         $this->setStatusCode( 3003 );

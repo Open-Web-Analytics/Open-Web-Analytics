@@ -24,13 +24,6 @@ class NotificationDismissRest extends \OWA\Core\AdminController {
         parent::__construct($params);
 
         /*
-         * Capability set AFTER parent::__construct(), matching ReportsRest --
-         * the browser calls that route on every report page, so it is the
-         * working example of a REST route reached with a session rather than
-         * an application password. Setting it before the parent runs makes the constructor
-         * take the admin-page path and answer with an HTML error document
-         * instead of the REST view.
-         *
          * `view_site_list` is the gate, and the choice is not arbitrary:
          *
          *   - Without SOME capability the route answers ANONYMOUS callers --

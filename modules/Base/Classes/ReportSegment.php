@@ -129,47 +129,28 @@ class ReportSegment {
      * The authority is the reporting stack, not a list written out here: a list
      * of our own would offer names the segment then refuses.
      *
-     * Taken from an AGGREGATE-ONLY query -- asking for a metric with no
-     * dimensions still comes back carrying the full related-dimension and
-     * related-metric lists, and costs one aggregate rather than a group-by over
-     * every visitor in the period.
+     * The query layer's own lists (ResultSetManager::relatedDimensions(),
+     * relatedMetrics()), from the registry for this Property: no query.
      *
      * @return array{dimensions: array<mixed>, metrics: array<mixed>} in the shape the picker reads
      */
     public function options() {
 
-        $empty = [ 'dimensions' => [], 'metrics' => [] ];
-
-        /*
-         * No period, no query. A report normally always has one, but its
-         * controller is also constructed directly -- by the registry contract
-         * test, and by anything checking a route -- and a picker is decoration:
-         * it must never be the reason a report cannot render.
-         */
-        if ( ! $this->period && ! ( $this->startDate && $this->endDate ) ) {
-
-            return $empty;
-        }
-
         $rsm = new ResultSetManager;
-
-        $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setPropertyId( $this->propertyId );
-        $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
-        $rsm->setLimit( 1 );
 
         try {
 
-            $rs = $rsm->getResults();
+            $dimensions = $rsm->relatedDimensions();
+            $metrics    = $rsm->relatedMetrics();
 
         } catch ( \Throwable $e ) {
 
+            // A picker is decoration: it must never be the reason a report cannot render.
             \OWA\Core\CoreAPI::notice( 'Could not build segment filter options: ' . $e->getMessage() );
 
-            return $empty;
+            return [ 'dimensions' => [], 'metrics' => [] ];
         }
-
-        $dimensions = (array) $rs->relatedDimensions;
 
         foreach ( self::EXCLUDED_GROUPS as $group ) {
 
@@ -178,7 +159,7 @@ class ReportSegment {
 
         return [
             'dimensions' => $dimensions,
-            'metrics'    => (array) $rs->relatedMetrics,
+            'metrics'    => $metrics,
         ];
     }
 
@@ -220,7 +201,9 @@ class ReportSegment {
         $rsm->setPropertyId( $this->propertyId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
         $rsm->setConstraints( $rsm->constraintsStringToArray( $this->constraints ) );
-        $rsm->setLimit( self::LIMIT + 1 );
+        // One more than the cap, and no more: a page's limit reads ten pages
+        // ahead (ResultSetManager), 100,010 subjects into PHP to tell 10,001.
+        $rsm->setRowWindow( 0, self::LIMIT + 1 );
 
         $results = $rsm->getResults();
 

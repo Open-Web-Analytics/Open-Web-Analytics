@@ -50,9 +50,6 @@ class CoreAPI {
      * The per-process singletons and memos. forgetSingletons() clears them.
      */
 
-    /** @var \OWA\Core\CoreAPI|null singleton() */
-    private static $api = null;
-
     /** @var \OWA\Core\Db|null dbSingleton() */
     private static $db = null;
 
@@ -82,32 +79,6 @@ class CoreAPI {
 
     /** @var array<string, true> module directories getPresentModules() has warned about */
     private static $warned_modules = [];
-
-    /**
-     * What singleton() was last given, when it was given something.
-     *
-     * @var array<string, mixed>|null
-     */
-    public $params;
-
-    /**
-     * @param  array<string, mixed> $params
-     * @return \OWA\Core\CoreAPI
-     * @deprecated
-     * @todo remove
-     */
-    public static function singleton($params = []) {
-
-        if(!isset(self::$api)):
-            self::$api = new \OWA\Core\CoreAPI();
-        endif;
-
-        if(!empty($params)):
-            self::$api->params = $params;
-        endif;
-
-        return self::$api;
-    }
 
     /**
      * The driver name to actually load for a configured db_type.
@@ -1117,7 +1088,6 @@ class CoreAPI {
      */
     public static function forgetSingletons() {
 
-        self::$api            = null;
         self::$db             = null;
         self::$config         = null;
         self::$error          = null;
@@ -1839,7 +1809,7 @@ class CoreAPI {
     /**
      * The report registry, built on first use.
      *
-     * Lazy on purpose, exactly as getNavigation() is: Module::__construct()
+     * Lazy on purpose, as the report nav is (getGroupNavigation()): Module::__construct()
      * runs on every request including every tracker beacon, so registration
      * must not live there. The guard makes it idempotent -- a request that
      * renders two reports registers once.
@@ -1882,54 +1852,6 @@ class CoreAPI {
     }
 
     /**
-     * Returns a consolidated list of nav links from all active modules for a particular view
-     * and named navigation element.
-     *
-     * A module adds one with Module::addViewNavigationLink().
-     *
-     * @param string $view
-     * @param string $nav_name the name of the navigation element that you want links for
-     * @param string $sortby the array value to sort the navigation array by
-     * @return array<mixed>|false
-     */
-    public static function getNavigation($view, $nav_name, $sortby ='order') {
-
-        $links = [];
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        foreach ($service->modules as $k => $v) {
-
-            // Registered once: registerNavigation() adds to what is there.
-            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
-
-                $v->registerNavigation();
-            }
-
-            foreach ( $v->getViewNavigationLinks() as $link ) {
-
-                $links[ $link['view'] ][ $link['nav_name'] ][] = $link;
-            }
-        }
-
-        // nav_view: one view's named nav, from every module, before it is sorted.
-        $named = (array) \OWA\Core\CoreAPI::filter( 'nav_view',
-            $links[ $view ][ $nav_name ] ?? [], $view, $nav_name );
-
-        if ( ! $named ) {
-
-            return false;
-        }
-
-        usort( $named, function ( $a, $b ) use ( $sortby ) {
-            return strnatcmp( (string) ( $a[ $sortby ] ?? '' ), (string) ( $b[ $sortby ] ?? '' ) );
-        } );
-
-        return $named;
-
-    }
-
-    /**
      * @param  string $group_name
      * @param  string $sortby the key to sort entries by
      * @return mixed the group's entries, sorted, through the nav_reports filter; null when no module registered the group
@@ -1944,7 +1866,7 @@ class CoreAPI {
 
             // If the module does not have nav links, register them. needed in case this function is called twice on
             // same view.
-            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
+            if ( empty( $v->nav_links ) ) {
 
                 $v->registerNavigation();
             }
