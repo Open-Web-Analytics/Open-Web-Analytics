@@ -1014,30 +1014,6 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Drop parameters naming a property the server computes for itself.
-     *
-     * Unregistered names pass through: this refuses to let a request OVERWRITE
-     * a derivation, it does not restrict what a site may send.
-     *
-     * @param  array<mixed> $params
-     * @return array<mixed> the params the server does not own
-     */
-    public static function rejectServerOwnedParams( array $params ) {
-
-        $serverOwned = self::serverOwnedProperties();
-
-        $refused = array_intersect_key( $params, $serverOwned );
-
-        if ( $refused ) {
-
-            \OWA\Core\CoreAPI::debug( 'Refused client-supplied values for server-owned properties: '
-                . implode( ', ', array_keys( $refused ) ) );
-        }
-
-        return array_diff_key( $params, $serverOwned );
-    }
-
-    /**
      * @param  array<mixed> $items    property name => definition
      * @param  int          $priority
      * @return void

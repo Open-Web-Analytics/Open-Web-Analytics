@@ -389,7 +389,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testASettingsScreenIsNamedOnlyWhereItIsRegistered(): void
     {
-        $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
+        $panels = (array) \OWA\Core\CoreAPI::getAdminPanels();
 
         $checked   = 0;
         $untitled  = [];
@@ -465,7 +465,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheSettingsNavHoldsOnlyInstallWideOptions(): void
     {
-        $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
+        $panels = (array) \OWA\Core\CoreAPI::getAdminPanels();
 
         $actions = [];
 

@@ -10,34 +10,6 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class DocblocksAndUnreadReturnsTest extends TestCase
 {
-    /** singleton() keeps what it is given in a declared property, not a dynamic one. */
-    public function testCoreApiDeclaresParams(): void
-    {
-        $this->assertTrue(property_exists(\OWA\Core\CoreAPI::class, 'params'));
-
-        $api = \OWA\Core\CoreAPI::singleton();
-        $was = $api->params;
-        $deprecations = [];
-
-        set_error_handler(function ($no, $msg) use (&$deprecations) {
-            $deprecations[] = $msg;
-
-            return true;
-        }, E_DEPRECATED);
-
-        try {
-            \OWA\Core\CoreAPI::singleton(['probe' => 'zz']);
-        } finally {
-            restore_error_handler();
-        }
-
-        $this->assertSame(['probe' => 'zz'], $api->params);
-        $this->assertSame([], $deprecations);
-
-        $api->params = $was;
-    }
-
-    /** With no subview to load it answers nothing, whatever the debug log answered. */
     public function testLoadSubViewAnswersNothing(): void
     {
         $view = (new ReflectionClass(\OWA\Core\View::class))->newInstanceWithoutConstructor();

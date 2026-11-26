@@ -165,4 +165,29 @@ final class FunnelBuilderTest extends TestCase
         $this->assertStringEndsWith( ' has a value', $words[1] );
         $this->assertSame( [], \OWA\Module\Base\Classes\CustomReports::constraintsInWords( '' ) );
     }
+
+    /** Every operator reads as its pill does, translated, and a value reads as it was typed. */
+    public function testEveryOperatorReadsAsItsPillAndAValueAsTyped(): void
+    {
+        $this->assertSame( [
+            'Page Path does not contain /blog/',
+            'Page Path matches ^/a',
+            'Page Path is /a,b',
+            'Page Path at least 5%',
+        ], \OWA\Module\Base\Classes\CustomReports::constraintsInWords(
+            'pagePath!@/blog/,pagePath=~^/a,pagePath==/a%2Cb,pagePath>=5%25' ) );
+
+        \OWA\Core\Strings::useTranslations( [ 'does not contain' => 'ne contient pas' ] );
+
+        try {
+            $this->assertSame( [ 'Page Path ne contient pas /x' ],
+                \OWA\Module\Base\Classes\CustomReports::constraintsInWords( 'pagePath!@/x' ) );
+        } finally {
+            \OWA\Core\Strings::useTranslations( null );
+        }
+
+        $operators = array_keys( \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS );
+        $this->assertSame( [], array_diff( $operators, array_keys( \OWA\Module\Base\Classes\CustomReports::CONSTRAINT_WORDS ) ),
+            'an operator the parser reads with no words' );
+    }
 }
