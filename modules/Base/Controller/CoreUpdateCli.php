@@ -21,6 +21,25 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
     /** May be queued (JobQueue::isQueueable()): The Updates screen's Check queues it. */
     const QUEUEABLE = true;
 
+    /** Release check outcomes that fail the run. */
+    const FAILS = [ ReleaseCheck::FAILED, ReleaseCheck::UNREACHED, ReleaseCheck::NO_TEMP, ReleaseCheck::FOREIGN ];
+
+    /**
+     * Of those, the ones that give up (Cli::fail( $msg, true )): a retry
+     * within the hour meets them again.
+     *
+     *   NO_TEMP  the temporary directory cannot be written: someone fixes that.
+     *   FOREIGN  files another user owns: likewise.
+     *   FAILED   a download or install that failed. The release check keeps
+     *            its own schedule for these -- "the next listing tries
+     *            again", and a failed install is tried 6 hours on, 3 times
+     *            (Install) -- and a retry would spend another tens-of-megabytes
+     *            download from the update host.
+     *
+     * UNREACHED, the listing not answering, is retried: that is the network.
+     */
+    const GIVES_UP = [ ReleaseCheck::FAILED, ReleaseCheck::NO_TEMP, ReleaseCheck::FOREIGN ];
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
@@ -49,16 +68,28 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
     public function action() {
 
         $scheduled = (bool) $this->getParam( 'scheduled' );
-        $result    = ( new ReleaseCheck( null, [ 'scheduled' => $scheduled ] ) )->run( (bool) $this->getParam( 'dry-run' ) );
+        $result    = $this->releaseCheck( $scheduled )->run( (bool) $this->getParam( 'dry-run' ) );
 
         if ( ! $scheduled ) {
 
             $this->write( $result['lines'] );
         }
 
-        if ( in_array( $result['outcome'], [ ReleaseCheck::FAILED, ReleaseCheck::UNREACHED, ReleaseCheck::NO_TEMP, ReleaseCheck::FOREIGN ], true ) ) {
+        if ( in_array( $result['outcome'], self::FAILS, true ) ) {
 
-            return $this->fail( sprintf( 'Release check: %s. %s', $result['outcome'], implode( ' ', $result['problems'] ) ) );
+            return $this->fail( sprintf( 'Release check: %s. %s', $result['outcome'], implode( ' ', $result['problems'] ) ),
+                in_array( $result['outcome'], self::GIVES_UP, true ) );
         }
+    }
+
+    /**
+     * A method so a test can answer for it.
+     *
+     * @param  bool $scheduled
+     * @return ReleaseCheck
+     */
+    protected function releaseCheck( $scheduled ) {
+
+        return new ReleaseCheck( null, [ 'scheduled' => $scheduled ] );
     }
 }
