@@ -607,9 +607,7 @@ class TrackerBundle {
                 continue;
             }
 
-            $type = (string) ( $row['stream_type'] ?? '' );
-
-            if ( $type !== '' && $type !== \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+            if ( \OWA\Module\Base\Entity\Site::streamTypeOf( $row ) !== \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
                 continue;
             }
