@@ -423,6 +423,8 @@ class RequestContainer {
      * the two: multiplying up cannot invent precision, where truncating down would
      * throw some away.
      *
+     * Nothing in OWA calls it; tests use it to fix the request's time.
+     *
      * @param  int $seconds
      * @return void
      */

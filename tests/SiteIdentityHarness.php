@@ -48,7 +48,8 @@ final class SiteIdentityHarness
     {
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
 
-        $siteId = $site->generateSiteId( $domain );
+        // 1.x's site_id: the domain's md5.
+        $siteId = md5( $domain );
 
         return [
             'site_id' => (string) $siteId,

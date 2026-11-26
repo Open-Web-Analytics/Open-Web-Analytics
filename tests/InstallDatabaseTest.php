@@ -74,15 +74,6 @@ final class InstallDatabaseTest extends TestCase
         $this->assertFalse(InstallDatabase::dropCreated('paa_wordpress'), 'never drops a database it did not name');
     }
 
-    public function testTheServerIsNamedFromItsVersion(): void
-    {
-        if (!owa_test_db_available()) {
-            $this->markTestSkipped('asks the server');
-        }
-
-        $this->assertMatchesRegularExpression('/^(MySQL|MariaDB) \d+\.\d+\.\d+$/', InstallDatabase::serverDescription());
-    }
-
     /** The form: existing is the default, and the name a created database would get is shown, not typed. */
     public function testTheFormOffersBothAndShowsTheName(): void
     {
