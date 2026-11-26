@@ -173,6 +173,19 @@ class PaginatedResultSet {
     public $unavailable = null;
 
     /**
+     * How many rows the query has in all, counted apart from the page
+     * (ResultSetManager::countPages()), and whether that is a lower bound:
+     * the count stops COUNT_PAGES_AHEAD pages past this one. Null where the
+     * query is not paged.
+     *
+     * @var int|null
+     */
+    public $totalRows = null;
+
+    /** @var bool whether there are more rows than totalRows */
+    public $totalCapped = false;
+
+    /**
      * The comparison period, when the request asked for one (`compare`): its
      * key, startDate, endDate and aggregates. Each metric cell then carries
      * compare_value, compare_formatted_value and change. See CompareMerger.
@@ -258,8 +271,24 @@ class PaginatedResultSet {
     }
 
     /**
+     * @param  int  $rows
+     * @param  bool $capped there are more
+     * @return void
+     */
+    public function setTotalRows( $rows, $capped ) {
+
+        $this->totalRows   = max( 0, (int) $rows );
+        $this->totalCapped = (bool) $capped;
+
+        if ( $this->resultsPerPage ) {
+
+            $this->total_pages = max( 1, (int) ceil( $this->totalRows / $this->resultsPerPage ) );
+        }
+    }
+
+    /**
      * Rows from another query after this page's own: as many as the page has
-     * room for. $fetched is how many that query read, within the read-ahead,
+     * room for. $fetched is how many that query read, a row past the page at most,
      * and is counted with this page's (countResults()), so the pager and the
      * next link reach them.
      *
@@ -277,7 +306,11 @@ class PaginatedResultSet {
 
         if ( $this->resultsPerPage ) {
 
-            $this->total_pages = ceil( ( $this->resultsTotal + $this->calculateOffset() ) / $this->resultsPerPage );
+            // A counted total is set by its caller (setTotalRows()); otherwise the rows read are what is known.
+            if ( $this->totalRows === null ) {
+
+                $this->total_pages = ceil( ( $this->resultsTotal + $this->calculateOffset() ) / $this->resultsPerPage );
+            }
 
             if ( $this->resultsTotal > $this->resultsPerPage ) {
 

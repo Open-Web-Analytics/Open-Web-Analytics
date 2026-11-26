@@ -26,8 +26,9 @@ import './owa.fieldchooser.js';
  * from a button after the row's <select>, which stays, hidden, as what the
  * form posts. The chooser groups the properties and describes each one; the
  * property picked shows its label on the button and its description on the
- * line under the row. The event picker stays a chosen widget: it picks an
- * event, not a field.
+ * line under the row. The event is picked the same way, from a button after
+ * the event <select>: the chooser groups OWA's own events ("Built-in events",
+ * each described) and the Property's ("Your events").
  *
  *   <script type="application/json" id="owa_goalVocabulary">{ event: [ {name, label, description, carried, group, group_label} ] }</script>
  */
@@ -36,7 +37,8 @@ import './owa.fieldchooser.js';
  * The class names one builder's parts carry. The goal event definition form's
  * are these; a funnel step passes its own to bindBuilder().
  *
- *   trigger            the event picker
+ *   trigger            the event <select>, hidden
+ *   triggerButton      the button after it that opens the field chooser
  *   custom             the field naming "another event of yours"
  *   condition          a condition row
  *   property           a condition row's property <select>, hidden
@@ -45,6 +47,7 @@ import './owa.fieldchooser.js';
  */
 export const GOAL_CLASSES = {
     trigger: 'owa_goalTrigger',
+    triggerButton: 'owa_goalTriggerButton',
     custom: 'owa_goalCustomTrigger',
     condition: 'owa_goalCondition',
     property: 'owa_goalProperty',
@@ -229,19 +232,19 @@ export function fieldsOf( select ) {
 }
 
 /**
- * The button after a row's <select> that opens the field chooser, made the
- * first time; a copied row brings its own. The <select>'s accessible name is
- * the button's too.
+ * The button after a <select> that opens the field chooser on its options,
+ * made the first time; a copied row brings its own. The <select>'s accessible
+ * name is the button's too.
  */
-function propertyButton( select, classes ) {
+function pickerButton( select, className ) {
 
     let button = select.nextElementSibling;
 
-    if ( ! button || ! button.classList.contains( classes.button ) ) {
+    if ( ! button || ! button.classList.contains( className ) ) {
 
         button = document.createElement( 'button' );
         button.type = 'button';
-        button.className = classes.button + ' owa_fieldTrigger';
+        button.className = className + ' owa_fieldTrigger';
         button.setAttribute( 'aria-haspopup', 'listbox' );
         button.setAttribute( 'aria-expanded', 'false' );
 
@@ -292,10 +295,7 @@ function syncRow( row, event, classes ) {
     }
 
     const property = selectedProperty( select );
-    const button = propertyButton( select, classes );
-
-    button.textContent = property ? property.label : '';
-    button.insertAdjacentHTML( 'beforeend', ' <i class="fas fa-caret-down" aria-hidden="true"></i>' );
+    showOnButton( pickerButton( select, classes.button ), property );
 
     const help = row.querySelector( '.' + classes.help );
 
@@ -306,14 +306,11 @@ function syncRow( row, event, classes ) {
     }
 }
 
-function enhance( select, options ) {
+/** A picker button reads as what its <select> has selected. */
+function showOnButton( button, picked ) {
 
-    const $select = $( select );
-
-    if ( typeof $select.chosen === 'function' ) {
-
-        $select.chosen( options );
-    }
+    button.textContent = picked ? picked.label : '';
+    button.insertAdjacentHTML( 'beforeend', ' <i class="fas fa-caret-down" aria-hidden="true"></i>' );
 }
 
 /**
@@ -385,10 +382,13 @@ export function bindBuilder( builder, vocabulary, classes = GOAL_CLASSES ) {
 
     if ( trigger ) {
 
-        enhance( trigger, { search_contains: true, width: '190px', disable_search_threshold: 8 } );
+        const syncTrigger = () => showOnButton( pickerButton( trigger, classes.triggerButton ), selectedProperty( trigger ) );
+
+        syncTrigger();
 
         $( trigger ).on( 'change', () => {
 
+            syncTrigger();
             showCustom();
             rows().forEach( ( row ) => buildRow( row, vocabulary, event(), classes ) );
         } );
@@ -400,12 +400,13 @@ export function bindBuilder( builder, vocabulary, classes = GOAL_CLASSES ) {
     } );
 
     /*
-     * A row's button opens the field chooser on its <select>'s options; a pick
-     * sets the <select>. Delegated, so a row copied from another works too.
+     * A picker button (the event's, a row's property) opens the field chooser
+     * on its <select>'s options; a pick sets the <select>. Delegated, so a row
+     * copied from another works too.
      */
     let open = null;
 
-    $( builder ).on( 'click', '.' + classes.button, function () {
+    $( builder ).on( 'click', '.' + classes.button + ', .' + classes.triggerButton, function () {
 
         const button = this;
         const select = button.previousElementSibling;
@@ -423,7 +424,7 @@ export function bindBuilder( builder, vocabulary, classes = GOAL_CLASSES ) {
         }
 
         open = new OWA.fieldChooser( fieldsOf( select ), {
-            title: button.getAttribute( 'aria-label' ) || OWA.l( 'Property' ),
+            title: button.getAttribute( 'aria-label' ) || ( button.classList.contains( classes.triggerButton ) ? OWA.l( 'Event' ) : OWA.l( 'Property' ) ),
             selected: select.value ? [ select.value ] : [],
             onPick: ( name ) => {
 

@@ -482,4 +482,39 @@ class GoalVocabulary {
 
         return $column === false ? null : $column;
     }
+
+    /**
+     * The event picker's choices (a goal event definition's trigger, a funnel
+     * step's event), as the field chooser groups them: OWA's own under
+     * "Built-in events", with what each is; the Property's own under "Your
+     * events", then "Another event of yours…", whose name is typed beside it.
+     *
+     * @param  list<string> $built_in TrackingEventHelpers::goalTriggerEventNames()
+     * @param  list<string> $yours    the Property's own events
+     * @return list<array{value: string, label: string, group: string, group_label: string, description: string}>
+     */
+    public static function triggerChoices( array $built_in, array $yours ) {
+
+        $out = [];
+
+        foreach ( $built_in as $name ) {
+
+            $out[] = [ 'value' => (string) $name, 'label' => (string) $name, 'group' => 'built_in',
+                'group_label' => \OWA\Core\CoreAPI::t( 'Built-in events' ),
+                'description' => TrackingEventHelpers::eventDescription( (string) $name ) ];
+        }
+
+        foreach ( $yours as $name ) {
+
+            $out[] = [ 'value' => (string) $name, 'label' => (string) $name, 'group' => 'yours',
+                'group_label' => \OWA\Core\CoreAPI::t( 'Your events' ), 'description' => '' ];
+        }
+
+        $out[] = [ 'value' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
+            'label' => \OWA\Core\CoreAPI::t( 'Another event of yours…' ), 'group' => 'yours',
+            'group_label' => \OWA\Core\CoreAPI::t( 'Your events' ),
+            'description' => \OWA\Core\CoreAPI::t( 'An event your site sends that is not listed: type its name in the field beside this one.' ) ];
+
+        return $out;
+    }
 }

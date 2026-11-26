@@ -7,16 +7,16 @@ const { execSync } = require('child_process');
  * (public/base/css/owa.reporting-css-combined.css; sources in modules/Base/css/).
  *
  * Built by webpack (reportingCssConfig in webpack.config.js):
- *   - The six source CSS files are the webpack entry, in cascade order: chosen,
+ *   - The five source CSS files are the webpack entry, in cascade order:
  *     owa, owa.admin, owa.report, owa.grid, owa.shell.
  *   - mini-css-extract-plugin emits the combined file to public/base/css/, and
  *     css-loader runs with url:false so every url() is passed through verbatim --
- *     combined with the css/ output dir, the relative asset paths (chosen-sprite.png, ../i/*) stay
+ *     combined with the css/ output dir, the relative asset paths (font-awesome/*, ../i/*) stay
  *     valid without rewriting a single url().
  *   - webpack-remove-empty-scripts drops the stub .js a CSS-only entry produces.
  *   - The output is NOT minified (no -min suffix).
  *
- * These tests pin that contract: the six sources exist, the config drives the CSS
+ * These tests pin that contract: the five sources exist, the config drives the CSS
  * through mini-css-extract, no PHP build package is registered, and
  * the built artifact carries each source's signature rule with url()s intact.
  */
@@ -33,10 +33,9 @@ describe('reporting CSS build integrity', () => {
     const artifactPath = path.join(publicCssDir, 'owa.reporting-css-combined.css');
     const modulePhpPath = path.join(repoRoot, 'modules/Base/Module.php');
 
-    // The six source stylesheets, in the cascade order the entry lists them.
+    // The five source stylesheets, in the cascade order the entry lists them.
     // Order is load-bearing: later files intentionally override earlier ones.
     const CSS_SOURCES = [
-        'chosen.css',
         'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css',
     ];
 
@@ -44,13 +43,13 @@ describe('reporting CSS build integrity', () => {
     const cssPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
         .packages.find((p) => p.name === 'owa.reporting-css-combined.css');
 
-    test('all six source stylesheets exist', () => {
+    test('all five source stylesheets exist', () => {
         for (const f of CSS_SOURCES) {
             expect(fs.existsSync(path.join(cssSrcDir, f))).toBe(true);
         }
     });
 
-    test('the build manifest lists the six sources in cascade order', () => {
+    test('the build manifest lists the five sources in cascade order', () => {
         // The entry (source list + order) lives in base/build.manifest.json,
         // discovered by webpack.config.js. Order is load-bearing.
         expect(cssPkg).toBeDefined();
@@ -100,10 +99,9 @@ describe('reporting CSS build integrity', () => {
             expect(css.length).toBeGreaterThan(40 * 1024);
         });
 
-        test('a signature rule from each source is present (all six concatenated)', () => {
+        test('a signature rule from each source is present (all five concatenated)', () => {
             if (css === null) return;
             // One distinctive token per source proves it made it into the combine.
-            expect(css).toMatch(/\.chosen-container/);     // chosen.css
             expect(css).toMatch(/#owa/);                   // owa.css (OWA app ids)
             expect(css).toMatch(/dialog\.owa_dialog/);    // owa.report.css (owa.dialog.js)
             expect(css).toMatch(/\.owa_tabs/);            // owa.report.css (owa.tabs.js)
@@ -121,7 +119,7 @@ describe('reporting CSS build integrity', () => {
             if (css === null) return;
             // These would be rewritten/hashed/inlined if css-loader resolved url()s;
             // they must stay as authored so they resolve against the css/ dir at runtime.
-            expect(css).toContain('url("chosen-sprite.png")');
+            expect(css).toContain('url("data:image/svg+xml,%3Csvg xmlns=');
             // owa.report.css does not point at ../i/.
         });
 
@@ -143,7 +141,6 @@ describe('reporting CSS build integrity', () => {
             // sibling. Pin one of each root the combined CSS references.
             const publicBase = path.dirname(publicCssDir); // public/base
             const copied = [
-                'css/chosen-sprite.png',
                 'css/font-awesome/css/all.min.css',
                 'css/owa.css', // dual-role: build input AND served raw to the installer
                 'i/owa_logo_72w.jpg', // the i/ directory, a sibling of css/

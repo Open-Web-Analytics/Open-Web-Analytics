@@ -2103,22 +2103,6 @@ li.constraintRow {
     background: #f6dcc4;
 }
 
-.owa .owa_widgetPanel .chosen-container-single .chosen-single {
-    height: 40px;
-    padding: 0 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: none;
-    font-size: 0.875rem;
-    line-height: 38px;
-    color: #111827;
-}
-
-.owa .owa_widgetPanel .chosen-container-single .chosen-single div b {
-    margin-top: 7px;
-}
-
 .owa .owa_builderSort {
     display: flex;
     gap: 8px;
@@ -2407,18 +2391,6 @@ li.constraintRow {
 .owa .owa_funnelEditor .owa_filterAdd {
     height: 32px;
     padding: 0 12px;
-}
-
-.owa .owa_funnelEditor .owa_filterForm .chosen-container-single .chosen-single,
-.owa .owa_reportFilters .owa_filterForm .chosen-container-single .chosen-single {
-    height: 40px;
-    padding: 0 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: none;
-    font-size: 0.875rem;
-    line-height: 38px;
 }
 
 .owa .owa_funnelPreviewNote {
@@ -3181,44 +3153,6 @@ dialog.owa_typeDialogFrame {
 .owa .owa_trendBreakdown {
     margin-top: 18px;
     clear: both;
-}
-
-/* A condition row's pickers (goal event definitions, funnel steps): a pill per chosen select. */
-.owa .constraintRow .chosen-container {
-    font-size: 0.6875rem;
-    max-width: 100%;
-    /* Content width, not the 100% chosen was given at enhancement time. */
-    width: auto !important;
-}
-
-.owa .constraintRow .chosen-container .chosen-single {
-    height: auto;
-    padding: 3px 22px 3px 9px;
-    border: 1px solid #cccccc;
-    border-radius: 12px;
-    background: #e6e6e6;
-    box-shadow: none;
-    color: #303030;
-    line-height: 1.4;
-}
-
-.owa .constraintRow .chosen-container .chosen-single span {
-    margin-right: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-}
-
-.owa .constraintRow .chosen-container-active .chosen-single {
-    border-color: #999999;
-}
-
-/* The drop is wider than the pill that opened it -- a name has to be readable
-   even when the trigger is only as wide as "Date". */
-.owa .constraintRow .chosen-container .chosen-drop {
-    min-width: 240px;
-    width: auto;
 }
 
 /* ---------------------------------------------------------------------------
@@ -4890,8 +4824,11 @@ dialog.owa_typeDialogFrame {
     max-width: 100%;
 }
 
-/* The event picker is part of the sentence's text, not a pill. */
-.owa .owa_goalSentence .chosen-container {
+/* The event: a button that opens the field chooser, part of the sentence (owa.goalbuilder.js). */
+.owa .owa_goalTriggerButton,
+.owa .owa_funnelStepEventButton {
+    width: auto;
+    max-width: 100%;
     font-size: 0.8125rem;
 }
 
@@ -4903,12 +4840,6 @@ dialog.owa_typeDialogFrame {
 
     .owa_hierarchyContent #panel .owa_goalBuilder .constraintRow {
         margin-left: 0;
-    }
-
-    .owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop,
-    .owa .owa_funnelConditions .constraintRow .chosen-container .chosen-drop {
-        min-width: 0;
-        width: calc(100vw - 48px);
     }
 }
 
