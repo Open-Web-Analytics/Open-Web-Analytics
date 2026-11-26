@@ -232,26 +232,22 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     public function testTheSplitHalvesCannotBeSetFromTheWire(): void
     {
-        $kept = Helpers::rejectServerOwnedParams( [
-            'cv1'       => 'Color=Blue',
-            'cv1_name'  => 'forged',
-            'cv1_value' => 'forged',
-            'cv5_name'  => 'forged',
-        ] );
+        // ProcessEvent re-applies only what is neither registered nor server-owned.
+        $owned = Helpers::serverOwnedProperties();
 
-        $this->assertSame(
-            [ 'cv1' => 'Color=Blue' ], $kept,
-            'A request set a custom variable half directly, bypassing the split.' );
+        foreach ( [ 'cv1_name', 'cv1_value', 'cv5_name' ] as $half ) {
+            $this->assertArrayHasKey( $half, $owned,
+                "$half is not server-owned: a request could set it directly, bypassing the split." );
+        }
     }
 
     public function testTheSlotItselfRemainsSettable(): void
     {
         /* The filter must not overreach: the slot IS what the tracker sends. */
-        $slots = [ 'cv1' => 'a=1', 'cv2' => 'b=2', 'cv3' => 'c=3',
-                        'cv4' => 'd=4', 'cv5' => 'e=5' ];
+        $owned = Helpers::serverOwnedProperties();
 
-        $this->assertSame(
-            $slots, Helpers::rejectServerOwnedParams( $slots ),
-            'The filter rejected the slots the tracker actually sends.' );
+        foreach ( [ 'cv1', 'cv2', 'cv3', 'cv4', 'cv5' ] as $slot ) {
+            $this->assertArrayNotHasKey( $slot, $owned, "the tracker's $slot slot is treated as server-owned" );
+        }
     }
 }

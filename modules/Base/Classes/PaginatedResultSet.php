@@ -573,11 +573,19 @@ class PaginatedResultSet {
     }
 
     /**
+     * The guid: a hash of what the result set holds, by which the grid skips
+     * redrawing a refresh that brought nothing new. Not of the field
+     * catalogue (relatedDimensions, relatedMetrics), which every result set
+     * carries and which is the same for every one of a Property.
+     *
      * @return void
      */
     public function createResultSetHash() {
 
-        $this->guid = md5(serialize($this));
+        $content = get_object_vars( $this );
+        unset( $content['guid'], $content['relatedDimensions'], $content['relatedMetrics'] );
+
+        $this->guid = md5( serialize( $content ) );
     }
 
     /**

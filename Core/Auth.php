@@ -548,7 +548,8 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
-     * A session cookie: HttpOnly, and Secure on an HTTPS request.
+     * A session cookie: HttpOnly, Secure on an HTTPS request, and sent only
+     * to this install (CoreAPI::createSignInCookie()).
      *
      * @param  string $name
      * @param  string $value
@@ -570,7 +571,7 @@ class Auth extends \OWA\Core\Base {
      */
     protected function emitCookie( $name, $value, $expires, $secure, $httponly ) {
 
-        \OWA\Core\CoreAPI::createCookie( $name, $value, $expires, '/', '', $secure, $httponly );
+        \OWA\Core\CoreAPI::createSignInCookie( $name, $value, $expires, $secure, $httponly );
     }
 
     /**
@@ -581,7 +582,11 @@ class Auth extends \OWA\Core\Base {
      */
     public function deleteCredentials() {
 
-        return \OWA\Core\CoreAPI::clearState('p');
+        // The state store's copy, and the cookie, at both of its scopes.
+        \OWA\Core\CoreAPI::clearState('p');
+        $this->emitCookie( 'p', '', time() - 86400, (bool) \OWA\Core\Lib::isHttps(), true );
+
+        return null;
     }
 
     /**
