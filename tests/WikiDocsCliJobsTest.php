@@ -291,7 +291,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $md   = $this->section('job-config-keys');
         $keys = \OWA\Module\Base\Classes\Service::SCHEDULED_JOB_KEYS;
 
-        $this->assertSame(['command', 'schedule', 'params', 'description'], array_keys($keys),
+        $this->assertSame(['command', 'schedule', 'params', 'description', 'retry'], array_keys($keys),
             'applyConfiguredJobs() copies exactly these keys, so a new one is documented by adding it here');
 
         foreach ($keys as $key => $meaning) {
