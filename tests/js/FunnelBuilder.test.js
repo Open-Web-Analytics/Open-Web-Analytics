@@ -42,10 +42,15 @@ function stepRow(index = 0) {
     const li = document.createElement('li');
     li.className = 'owa_funnelStep';
     li.innerHTML = `
-        <select class="owa_funnelStepEvent" name="owa_stepEvent[]">
-            <option value="page_view" selected>page_view</option>
-            <option value="click">click</option>
-            <option value="${CUSTOM_TRIGGER}">Another event of yours</option>
+        <select class="owa_funnelStepEvent" name="owa_stepEvent[]" aria-label="The event this step matches">
+            <option value="page_view" data-label="page_view" data-group="built_in" data-group-label="Built-in events"
+                    data-description="A page was viewed." selected>page_view</option>
+            <option value="click" data-label="click" data-group="built_in" data-group-label="Built-in events"
+                    data-description="An element was clicked.">click</option>
+            <option value="newsletter_signup" data-label="newsletter_signup" data-group="yours" data-group-label="Your events"
+                    data-description="">newsletter_signup</option>
+            <option value="${CUSTOM_TRIGGER}" data-label="Another event of yours" data-group="yours" data-group-label="Your events"
+                    data-description="">Another event of yours</option>
         </select>
         <input class="owa_funnelStepCustomEvent" type="text" name="owa_stepCustomEvent[]" value="" hidden>
         <select class="owa_funnelStepMatch" name="owa_stepMatch[]">
@@ -195,6 +200,43 @@ test('a condition\'s property is picked in the field chooser, from the button af
     expect(button.textContent.trim()).toBe('Plan');
     expect(row.querySelector('.owa_funnelConditionHelp').textContent).toBe('Custom dimension.');
     expect($('.owa_fieldChooser')).toHaveLength(0);
+});
+
+test('the event is picked in the field chooser: built-in events and yours, each described', () => {
+    const row = stepRow();
+
+    bindStep(row);
+
+    const event = row.querySelector('.' + STEP_CLASSES.trigger);
+    const button = row.querySelector('.' + STEP_CLASSES.triggerButton);
+
+    expect(event.hidden).toBe(true);
+    expect(button.previousElementSibling).toBe(event);
+    expect(button.getAttribute('aria-label')).toBe('The event this step matches');
+    expect(button.textContent.trim()).toBe('page_view');
+
+    $(button).trigger('click');
+
+    expect($('.owa_fieldGroup .owa_fieldLabel').map((i, e) => $(e).text()).get()).toEqual(['Built-in events', 'Your events']);
+
+    $('.owa_fieldGroup').first().trigger('click');
+    $('.owa_fieldChooser .owa_fieldOption[data-name="click"]').trigger('mousemove');
+    expect($('.owa_fieldChooser .owa_fieldDescription').text()).toContain('An element was clicked.');
+
+    $('.owa_fieldChooser .owa_fieldOption[data-name="click"]').trigger('click');
+
+    expect(event.value).toBe('click');
+    expect(button.textContent.trim()).toBe('click');
+    expect($('.owa_fieldChooser')).toHaveLength(0);
+
+    // The conditions follow the event, as they do when the <select> changes.
+    expect(Array.from(property(row).options).map((o) => o.value)).toContain('element_id');
+
+    // "Another event of yours" shows the name field.
+    $(button).trigger('click');
+    $('.owa_fieldGroup').eq(1).trigger('click');
+    $('.owa_fieldChooser .owa_fieldOption[data-name="' + CUSTOM_TRIGGER + '"]').trigger('click');
+    expect(row.querySelector('.owa_funnelStepCustomEvent').hidden).toBe(false);
 });
 
 function property(row) {

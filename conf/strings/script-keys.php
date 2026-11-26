@@ -109,6 +109,7 @@ return [
     'Element clicks',
     'End date',
     'Equals',
+    'Event',
     'Field',
     'Filter',
     'Filter on',
