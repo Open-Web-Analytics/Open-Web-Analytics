@@ -121,8 +121,11 @@ class Metric extends \OWA\Core\Base {
     /** @var string|null null until setName() */
     public $name;
     
-    /** @var list<string> */
-    public $supported_data_types = ['percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds'];
+    /** The data types a metric's values are formatted by. */
+    const DATA_TYPES = ['percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds'];
+
+    /** @var list<string> DATA_TYPES */
+    public $supported_data_types = self::DATA_TYPES;
 
     /**
      * The aggregation (count, distinct_count, sum, boolean_true_count,
