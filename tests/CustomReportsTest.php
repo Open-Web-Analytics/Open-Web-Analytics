@@ -456,8 +456,9 @@ final class CustomReportsTest extends TestCase
      */
     public function testEveryShippedReportThatNamesItsMetricsPassesTheBuildersRules(): void
     {
-        $metric_sets = ['browsers', 'channels', 'creative-performance', 'devices', 'entry-pages', 'exit-pages',
-            'geolocation', 'languages', 'os', 'screen-resolutions', 'sources', 'visitors-loyalty'];
+        $metric_sets = ['ads', 'browsers', 'campaigns', 'channels', 'creative-performance', 'devices', 'entry-pages',
+            'exit-pages', 'geolocation', 'keywords', 'languages', 'os', 'referring-sites', 'screen-resolutions',
+            'search-engines', 'sources', 'visitors-loyalty'];
 
         $checked = [];
 
@@ -477,6 +478,7 @@ final class CustomReportsTest extends TestCase
         $this->assertContains('transactions', $checked);
         $this->assertContains('latest-visits', $checked);
         $this->assertContains('traffic', $checked);
+        $this->assertContains('clicks', $checked, 'a report-level filter is within the rules');
 
         foreach ($metric_sets as $id) {
             $definition = json_decode((string) file_get_contents(dirname(__DIR__) . "/modules/Base/reports/$id.json"), true);
