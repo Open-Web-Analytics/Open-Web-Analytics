@@ -32,6 +32,11 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  * refusal. A scheduled run downloads only when MaxMind's HEAD answer says
  * there is something newer, or when there is no local copy, and not again
  * within RETRY_DOWNLOAD_AFTER of a download that did not install.
+ *
+ * A scheduled run whose key MaxMind rejects fails without asking to be
+ * retried (Cli::failUntilNextRun()): the same key is rejected every hour, so
+ * the next attempt is the next weekly run, or a run by hand once the key is
+ * fixed.
  */
 class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
@@ -44,6 +49,9 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
     /** @var int HTTP status of the last lastModified() request; 0 when there was no response */
     protected $check_status = 0;
+
+    /** @var int HTTP status of the last download() request; 0 when there was no response */
+    protected $download_status = 0;
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
@@ -177,7 +185,9 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         // without asking, above.
         if ( $scheduled && $local && ! $remote ) {
 
-            return $this->fail( $this->whyNoAnswer( $edition ) );
+            return $this->keyRejected()
+                ? $this->failUntilNextRun( $this->whyNoAnswer( $edition ) . self::NOT_RETRIED )
+                : $this->fail( $this->whyNoAnswer( $edition ) );
         }
 
         // After a download that did not install, a scheduled run waits before
@@ -242,7 +252,9 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
             @unlink( $archive );
 
-            return $this->fail( $bytes );
+            return $scheduled && $this->keyRejected()
+                ? $this->failUntilNextRun( $bytes . self::NOT_RETRIED )
+                : $this->fail( $bytes );
         }
 
         // Recorded once a download has been spent, and cleared once it is
@@ -312,6 +324,20 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         \OWA\Core\CoreAPI::notice( $msg );
 
         return null;
+    }
+
+    /** Appended to a scheduled run's rejected-key failure. */
+    const NOT_RETRIED = ' Not retried before the next scheduled run.';
+
+    /**
+     * Whether MaxMind answered the last request with a rejected licence key.
+     *
+     * @return bool
+     */
+    protected function keyRejected() {
+
+        return in_array( (int) $this->check_status, [ 401, 403 ], true )
+            || in_array( (int) $this->download_status, [ 401, 403 ], true );
     }
 
     /**
@@ -384,6 +410,8 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
                         'user_agent' => 'Open Web Analytics' ],
         ] );
 
+        $this->download_status = 0;
+
         $in = @fopen( $url, 'rb', false, $context );
 
         if ( ! $in ) {
@@ -395,6 +423,8 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         // thing that distinguishes a bad key from a real download -- writing
         // the body out would leave an error page named as a database.
         $status = $this->statusFrom( $this->responseHeaders( $in ) );
+
+        $this->download_status = $status;
 
         if ( $status === 401 || $status === 403 ) {
 

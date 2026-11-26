@@ -131,6 +131,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
                 $this->downloads++;
 
                 if ( isset( $this->options['download_fails'] ) ) {
+                    $this->download_status = isset( $this->options['download_status'] ) ? $this->options['download_status'] : 0;
                     return $this->options['download_fails'];
                 }
 
@@ -177,6 +178,8 @@ final class MaxmindDownloadFlowTest extends TestCase {
             }
 
             public function outcomeIs() { return $this->getCliOutcome()['outcome']; }
+
+            public function retried() { return $this->getCliOutcome()['retry']; }
 
             public function said( $needle ) {
 
@@ -404,19 +407,21 @@ final class MaxmindDownloadFlowTest extends TestCase {
     }
 
     /**
-     * No answer from the update check: a failure, retried by the scheduler
-     * with another free HEAD, never a download spent on a copy that may be
-     * current.
+     * No answer from the update check: a failure, never a download spent on a
+     * copy that may be current. Retried by the scheduler with another free
+     * HEAD -- except a rejected key, which the same HEAD would only hear
+     * again: that failure waits for the next scheduled run.
      */
     public function testAScheduledRunDoesNotDownloadWhenTheCheckGetsNoAnswer(): void {
 
         $this->localCopy( 86400 );
 
         foreach ( [
-            0   => 'Could not reach MaxMind',
-            200 => 'gave no Last-Modified date',
-            401 => 'rejected the licence key',
-        ] as $status => $said ) {
+            0   => [ 'Could not reach MaxMind', true ],
+            200 => [ 'gave no Last-Modified date', true ],
+            401 => [ 'rejected the licence key', false ],
+            403 => [ 'rejected the licence key', false ],
+        ] as $status => [ $said, $retried ] ) {
 
             $c = $this->scheduled( [ 'check_status' => $status ] );
             $c->action();
@@ -424,9 +429,39 @@ final class MaxmindDownloadFlowTest extends TestCase {
             $this->assertSame( 1, $c->head_requests );
             $this->assertSame( 0, $c->downloads, "HTTP $status" );
             $this->assertSame( 'failed', $c->outcomeIs(), "HTTP $status" );
+            $this->assertSame( $retried, $c->retried(), "HTTP $status" );
             $this->assertTrue( $c->said( $said ), "HTTP $status" );
+            $this->assertSame( ! $retried, $c->said( 'Not retried before the next scheduled run' ), "HTTP $status" );
             $this->assertSame( 'EXISTING', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
         }
+    }
+
+    /** With no local copy a scheduled run downloads without asking; a rejected key there waits too. */
+    public function testAScheduledDownloadWithARejectedKeyIsNotRetriedHourly(): void {
+
+        foreach ( [ 401 => false, 403 => false, 500 => true ] as $status => $retried ) {
+
+            $c = $this->scheduled( [ 'download_fails' => "HTTP $status from MaxMind.", 'download_status' => $status ] );
+            $c->action();
+
+            $this->assertSame( 1, $c->downloads, "HTTP $status" );
+            $this->assertSame( 'failed', $c->outcomeIs(), "HTTP $status" );
+            $this->assertSame( $retried, $c->retried(), "HTTP $status" );
+        }
+    }
+
+    /** By hand a rejected key is an ordinary failure; nothing schedules it. */
+    public function testByHandARejectedKeyIsAnOrdinaryFailure(): void {
+
+        $c = $this->controller( [
+            'params'          => $this->withKey(),
+            'download_fails'  => 'MaxMind rejected the licence key.',
+            'download_status' => 401,
+        ] );
+        $c->action();
+
+        $this->assertSame( 'failed', $c->outcomeIs() );
+        $this->assertFalse( $c->said( 'Not retried' ) );
     }
 
     /**

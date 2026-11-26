@@ -182,7 +182,7 @@ class Finish {
      * say how it ended.
      *
      * @param  string $class
-     * @return array{outcome: string, message: string}
+     * @return array{outcome: string, message: string, retry: bool}
      */
     private static function command( $class ) {
 
