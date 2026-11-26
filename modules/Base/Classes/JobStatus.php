@@ -291,8 +291,9 @@ class JobStatus {
         if ( $row && (int) $row['last_failure_at'] > (int) $row['last_success_at'] ) {
 
             return sprintf(
-                \OWA\Core\CoreAPI::t( 'Overdue by %s. Failing since %s: %s. Each retry waits longer than the last, from a minute up to an hour.' ),
-                $late, self::readable( $row['last_failure_at'] ), $row['last_message'] ?: \OWA\Core\CoreAPI::t( 'no message recorded' )
+                \OWA\Core\CoreAPI::t( 'Overdue by %s. Failing since %s: %s. Its retry policy: %s.' ),
+                $late, self::readable( $row['last_failure_at'] ), $row['last_message'] ?: \OWA\Core\CoreAPI::t( 'no message recorded' ),
+                RetryPolicy::describe( \OWA\Module\Base\Controller\ScheduleRunCli::retryPolicyFor( $job ), RetryPolicy::KIND_RECURRING )
             );
         }
 

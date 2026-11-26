@@ -12,7 +12,7 @@ namespace OWA\Core;
  * @phpstan-type NavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string}
  * @phpstan-type NavItem array{ref?: string|array<string, string>, anchortext?: string, order?: int|null, priviledge?: string, icon_class?: string, subgroup?: list<NavLink>}
  * @phpstan-type ActivationDeclaration array{activated_by: list<mixed>, intake_queue_type: string}
- * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string, while_updates_pending?: bool}
+ * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string, while_updates_pending?: bool, retry?: array<string, mixed>|null}
  */
 
 // Modules set properties they do not declare; this attribute is PHP 8.2's
@@ -1740,9 +1740,20 @@ abstract class Module {
      *                            schema updates are pending, when it runs no
      *                            other job: only for a command that needs no
      *                            current schema (Controller::needsCurrentSchema())
+     * @param array<string, mixed>|null $retry this job's retry policy
+     *                            (Classes\RetryPolicy), over its command's; null
+     *                            for the command's, else the recurring default.
+     *                            An unusable one leaves the job unregistered.
      * @return void
      */
-    public function registerJob( $name, $command, $schedule, $params, $description = '', $while_updates_pending = false ) {
+    public function registerJob( $name, $command, $schedule, $params, $description = '', $while_updates_pending = false, $retry = null ) {
+
+        if ( $retry !== null && ( $problem = \OWA\Module\Base\Classes\RetryPolicy::problem( $retry ) ) !== null ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Job %s: %s; not registering it.', $name, $problem ) );
+
+            return;
+        }
 
         $this->scheduled_jobs[ $name ] = [
             'name'        => $name,
@@ -1754,6 +1765,12 @@ abstract class Module {
             'source'      => 'code',
             'while_updates_pending' => (bool) $while_updates_pending,
         ];
+
+        // Only when given, so a registration without one reads as before.
+        if ( $retry !== null ) {
+
+            $this->scheduled_jobs[ $name ]['retry'] = $retry;
+        }
     }
 
     /**
@@ -1932,7 +1949,7 @@ abstract class Module {
 
             $this->registerJob( $name, (string) $job['command'], $schedule,
                 (array) ( $job['params'] ?? [] ), (string) ( $job['description'] ?? '' ),
-                ! empty( $job['while_updates_pending'] ) );
+                ! empty( $job['while_updates_pending'] ), $job['retry'] ?? null );
         }
     }
 

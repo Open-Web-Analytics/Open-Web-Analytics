@@ -7,10 +7,12 @@
  *   Core\Controller\Cli::DEFAULT_JOB_LEASE  the lock lease of a command that sets none
  *   JobStatus::MIN_GRACE                  how late is overdue
  *   SchedulerHealth::MISSED_INTERVALS, MIN_SILENT_FOR, SILENT_FOR   the banner
- *   JobQueue::DEFAULT_POLICY, KEEP_DONE, KEEP_FAILED                one-off jobs
+ *   RetryPolicy::RECURRING, ONE_OFF       the retry policies a job gets by default
+ *   JobQueue::DEFAULT_LEASE, KEEP_DONE, KEEP_FAILED                 one-off jobs
  */
 
 use OWA\Module\Base\Classes\JobQueue;
+use OWA\Module\Base\Classes\RetryPolicy;
 use OWA\Module\Base\Classes\JobStatus;
 use OWA\Module\Base\Classes\SchedulerHealth;
 
@@ -31,15 +33,13 @@ return static function () {
         return $seconds . ' seconds';
     };
 
-    $policy = JobQueue::DEFAULT_POLICY;
+    $policy = RetryPolicy::ONE_OFF;
 
-    // The delay after each failure that is retried: JobQueue::retryOrFail()
-    // takes step (attempt - 1), the last step repeating.
-    $steps  = array_values( $policy['backoff'] );
+    // The delay before each retry: RetryPolicy::waitBefore(), the last step repeating.
     $delays = [];
 
-    for ( $attempt = 1; $attempt < (int) $policy['max_attempts']; $attempt++ ) {
-        $delays[] = $time( $steps[ min( $attempt - 1, count( $steps ) - 1 ) ] );
+    for ( $attempt = 2; $attempt <= (int) $policy['max_attempts']; $attempt++ ) {
+        $delays[] = $time( RetryPolicy::waitBefore( $policy, $attempt ) );
     }
 
     $rows = [
@@ -53,12 +53,14 @@ return static function () {
             => sprintf( '%d intervals of the most frequent registered job, at least %s and at most %s',
                 SchedulerHealth::MISSED_INTERVALS, $time( SchedulerHealth::MIN_SILENT_FOR ),
                 $time( SchedulerHealth::SILENT_FOR ) ),
-        'Attempts a one-off job gets, unless its command declares its own policy'
+        'A recurring job\'s retries, unless it or its command has a policy'
+            => RetryPolicy::describe( RetryPolicy::RECURRING, RetryPolicy::KIND_RECURRING ),
+        'Attempts a one-off job gets, unless it or its command has a policy'
             => (string) (int) $policy['max_attempts'],
         'Wait before a failed one-off job is retried'
             => $delays ? implode( ', then ', $delays ) : 'not retried',
-        'A one-off job\'s lease'
-            => $time( $policy['lease_seconds'] ),
+        'A one-off job\'s lease, unless its command declares a JOB_LEASE'
+            => $time( JobQueue::DEFAULT_LEASE ),
         'How long a done one-off job is kept'
             => $time( JobQueue::KEEP_DONE ),
         'How long a failed one-off job is kept'

@@ -161,7 +161,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
             // The outcome the parent would record, without its notice().
             protected function refuse( $msg ) { return $this->outcome( 'refused', $msg ); }
-            protected function fail( $msg )   { return $this->outcome( 'failed', $msg ); }
+            protected function fail( $msg, $final = false ) {
+                if ( $this->cli_outcome !== 'failed' ) { $this->cli_final = (bool) $final; }
+                return $this->outcome( 'failed', $msg );
+            }
             protected function usageError( $msg ) { $this->usage_errors++; return $this->outcome( 'failed', $msg ); }
 
             /** @var int how many usage errors, which exit 2 */
@@ -179,7 +182,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
             public function outcomeIs() { return $this->getCliOutcome()['outcome']; }
 
-            public function retried() { return $this->getCliOutcome()['retry']; }
+            public function gaveUp() { return $this->getCliOutcome()['final']; }
 
             public function said( $needle ) {
 
@@ -408,20 +411,20 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
     /**
      * No answer from the update check: a failure, never a download spent on a
-     * copy that may be current. Retried by the scheduler with another free
-     * HEAD -- except a rejected key, which the same HEAD would only hear
-     * again: that failure waits for the next scheduled run.
+     * copy that may be current. Retried with another free HEAD -- except a
+     * rejected key, which the same HEAD would only hear again: that run gives
+     * up, and the next attempt is the next scheduled run.
      */
     public function testAScheduledRunDoesNotDownloadWhenTheCheckGetsNoAnswer(): void {
 
         $this->localCopy( 86400 );
 
         foreach ( [
-            0   => [ 'Could not reach MaxMind', true ],
-            200 => [ 'gave no Last-Modified date', true ],
-            401 => [ 'rejected the licence key', false ],
-            403 => [ 'rejected the licence key', false ],
-        ] as $status => [ $said, $retried ] ) {
+            0   => [ 'Could not reach MaxMind', false ],
+            200 => [ 'gave no Last-Modified date', false ],
+            401 => [ 'rejected the licence key', true ],
+            403 => [ 'rejected the licence key', true ],
+        ] as $status => [ $said, $gave_up ] ) {
 
             $c = $this->scheduled( [ 'check_status' => $status ] );
             $c->action();
@@ -429,24 +432,23 @@ final class MaxmindDownloadFlowTest extends TestCase {
             $this->assertSame( 1, $c->head_requests );
             $this->assertSame( 0, $c->downloads, "HTTP $status" );
             $this->assertSame( 'failed', $c->outcomeIs(), "HTTP $status" );
-            $this->assertSame( $retried, $c->retried(), "HTTP $status" );
+            $this->assertSame( $gave_up, $c->gaveUp(), "HTTP $status" );
             $this->assertTrue( $c->said( $said ), "HTTP $status" );
-            $this->assertSame( ! $retried, $c->said( 'Not retried before the next scheduled run' ), "HTTP $status" );
             $this->assertSame( 'EXISTING', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
         }
     }
 
-    /** With no local copy a scheduled run downloads without asking; a rejected key there waits too. */
-    public function testAScheduledDownloadWithARejectedKeyIsNotRetriedHourly(): void {
+    /** With no local copy a scheduled run downloads without asking; a rejected key there gives up too. */
+    public function testAScheduledDownloadWithARejectedKeyGivesUp(): void {
 
-        foreach ( [ 401 => false, 403 => false, 500 => true ] as $status => $retried ) {
+        foreach ( [ 401 => true, 403 => true, 500 => false ] as $status => $gave_up ) {
 
             $c = $this->scheduled( [ 'download_fails' => "HTTP $status from MaxMind.", 'download_status' => $status ] );
             $c->action();
 
             $this->assertSame( 1, $c->downloads, "HTTP $status" );
             $this->assertSame( 'failed', $c->outcomeIs(), "HTTP $status" );
-            $this->assertSame( $retried, $c->retried(), "HTTP $status" );
+            $this->assertSame( $gave_up, $c->gaveUp(), "HTTP $status" );
         }
     }
 
@@ -461,7 +463,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $c->action();
 
         $this->assertSame( 'failed', $c->outcomeIs() );
-        $this->assertFalse( $c->said( 'Not retried' ) );
+        $this->assertFalse( $c->gaveUp() );
     }
 
     /**

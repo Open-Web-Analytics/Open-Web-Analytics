@@ -257,6 +257,7 @@ class Service extends \OWA\Core\Base {
         'schedule'    => 'A cron expression, an `@` alias, or `off`. Required for a job OWA does not register itself.',
         'params'      => 'Arguments passed to the command, as `name => value` pairs: `array( \'days\' => 3 )` runs the command with `days=3`.',
         'description' => 'A sentence for the System Health screen and `schedule-status`.',
+        'retry'       => 'The job\'s retry policy: `array( \'max_attempts\' => 3, \'backoff\' => array( 60, 300 ) )`, either key alone. Replaces the registered job\'s; the command\'s and the default fill in what it leaves out. See [Retries](#retries).',
     ];
 
     /**
@@ -381,10 +382,18 @@ class Service extends \OWA\Core\Base {
                 $job['while_updates_pending'] = false;
             }
 
+            // An unusable policy disables the entry, as any other bad value does.
+            if ( isset( $spec['retry'] ) && ( $problem = RetryPolicy::problem( $spec['retry'] ) ) !== null ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'OWA_SCHEDULED_JOBS: "%s": %s. Skipping it.', $name, $problem ) );
+
+                continue;
+            }
+
             foreach ( array_keys( self::SCHEDULED_JOB_KEYS ) as $key ) {
 
                 if ( isset( $spec[ $key ] ) ) {
-                    $job[ $key ] = $key === 'params' ? (array) $spec[ $key ] : (string) $spec[ $key ];
+                    $job[ $key ] = $key === 'params' || $key === 'retry' ? (array) $spec[ $key ] : (string) $spec[ $key ];
                 }
             }
 

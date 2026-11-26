@@ -76,7 +76,6 @@ namespace OWA\Module\Base\Controller;
  * failing the run, since the build in progress produces what this one would.
  *
  * @phpstan-import-type Span from \OWA\Core\Db
- * @phpstan-import-type Policy from \OWA\Module\Base\Classes\JobQueue
  * @phpstan-type DayRange array{from: int, to: int}
  * @phpstan-type Outcome array<string, int|string>
  */
@@ -117,22 +116,6 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * duplicated, because a second run skips a cube whose BUILD_LEASE is held.
      */
     const JOB_LEASE = 600;
-
-    /** See \OWA\Core\Controller\Cli::getJobLease(). */
-    public function getJobLease() {
-
-        return self::JOB_LEASE;
-    }
-
-    /**
-     * See \OWA\Module\Base\Classes\JobQueue::policyFor().
-     *
-     * @return array{lease_seconds: int} merged over the default Policy
-     */
-    public static function jobQueuePolicy() {
-
-        return [ 'lease_seconds' => self::JOB_LEASE ];
-    }
 
     public function __construct( $params ) {
 

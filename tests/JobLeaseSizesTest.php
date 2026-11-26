@@ -23,7 +23,7 @@ final class JobLeaseSizesTest extends CliControllerTestCase
         $C = \OWA\Module\Base\Controller\CubeRebuildCli::class;
 
         $this->assertSame(600, (new $C([]))->getJobLease());
-        $this->assertSame(600, \OWA\Module\Base\Classes\JobQueue::policyFor('cube-rebuild')['lease_seconds']);
+        $this->assertSame(600, \OWA\Module\Base\Classes\JobQueue::leaseFor('cube-rebuild'));
         $this->assertLessThan(\OWA\Core\Controller\Cli::DEFAULT_JOB_LEASE, $C::JOB_LEASE);
     }
 
