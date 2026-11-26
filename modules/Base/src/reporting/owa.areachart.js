@@ -2,7 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.format.js';
-import { formatRange, describeChange } from './owa.periodpicker.js';
+import { formatRange, describeChange, toTime } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {
 
@@ -279,13 +279,8 @@ OWA.areaChart.prototype = {
         switch(type) {
             // convery yyyymmdd to javascript timestamp as  flot requires that
             case 'yyyymmdd':
-                
-                var year = value.substring(0,4) * 1;
-                var month = (value.substring(4,6) * 1) -1;
-                var day = value.substring(6,8) * 1; 
-                var d = Date.UTC(year,month,day,0,0,0,0);
-                value = d;
-                OWA.debug('year: %s, month: %s, day: %s, timestamp: %s',year,month,day,d);
+
+                value = toTime( value );
                 break;
                 
             // 202608 -> the first of that month. yearMonth stores yyyymm, which
@@ -922,9 +917,7 @@ OWA.areaChart.prototype = {
 
         var at = function ( yyyymmdd ) {
 
-            var t = String( yyyymmdd );
-
-            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+            return toTime( yyyymmdd );
         };
 
         var days = Math.round( ( at( cmp.endDate ) - at( cmp.startDate ) ) / 86400000 ) + 1;
@@ -1724,9 +1717,7 @@ OWA.areaChart.prototype = {
 
         var day = function ( yyyymmdd ) {
 
-            var t = String( yyyymmdd );
-
-            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+            return toTime( yyyymmdd );
         };
 
         return Math.round( ( day( period.axisEndDate || period.endDate ) - day( period.startDate ) ) / 86400000 ) + 1;
@@ -1754,9 +1745,7 @@ OWA.areaChart.prototype = {
 
         var at = function ( yyyymmdd ) {
 
-            var t = String( yyyymmdd );
-
-            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+            return toTime( yyyymmdd );
         };
 
         var min = at( period.startDate );
@@ -2651,9 +2640,7 @@ OWA.areaChart.prototype = {
 
         var ymd = function ( t ) {
 
-            t = String( t );
-
-            return Date.UTC( t.substring( 0, 4 ) * 1, t.substring( 4, 6 ) * 1 - 1, t.substring( 6, 8 ) * 1 );
+            return toTime( t );
         };
 
         if ( this.xType === 'yyyymm' ) {
