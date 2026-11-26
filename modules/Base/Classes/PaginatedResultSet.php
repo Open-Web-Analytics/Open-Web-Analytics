@@ -520,12 +520,6 @@ class PaginatedResultSet {
         }
     }
 
-    /**
-     * @return array<int, ResultRow>
-     */
-    public function getDataRows() {
-        return $this->resultsRows;
-    }
 
     /**
      * @return array<int, ResultRow>

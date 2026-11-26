@@ -98,24 +98,6 @@ final class InstallDatabase {
         return $server ? $server->dropDatabase( $name ) : false;
     }
 
-    /**
-     * "MariaDB 10.11.6" or "MySQL 8.4.3": the server install connected to.
-     *
-     * @return string|null null when the server does not say
-     */
-    public static function serverDescription() {
-
-        $version = \OWA\Core\CoreAPI::dbSingleton()->serverVersion();
-
-        if ( $version === '' ) {
-
-            return null;
-        }
-
-        return stripos( $version, 'mariadb' ) !== false
-            ? 'MariaDB ' . preg_replace( '/-.*$/', '', $version )
-            : 'MySQL ' . preg_replace( '/-.*$/', '', $version );
-    }
 
     /**
      * A connection to the server with no database selected: the settings'

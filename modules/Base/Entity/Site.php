@@ -166,21 +166,6 @@ class Site extends \OWA\Core\Entity {
         return (bool) $this->get('archived_date');
     }
 
-    /**
-     * The identifier an existing site was given, derived from its domain.
-     *
-     * LEGACY. 1.x site_ids have this shape, and they are never reissued --
-     * every fact row references one. Kept so a legacy identifier can still be
-     * reconstructed from a domain; new sites get mintSiteId(), so one domain can
-     * have two sites.
-     *
-     * @param  string $domain
-     * @return string
-     */
-    public function generateSiteId($domain) {
-
-        return md5($domain);
-    }
 
     /**
      * The Profile a site_id names. Not persisted when there is none, or no
