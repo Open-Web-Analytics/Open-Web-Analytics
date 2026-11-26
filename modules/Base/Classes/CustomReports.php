@@ -62,11 +62,13 @@ class CustomReports {
      * How many metrics one query may ask for.
      *
      * A limit on READABILITY as much as on cost. A metric-boxes widget draws a
-     * box per metric and a trend draws a box per metric under its chart, so
-     * beyond about four they stop fitting a row and the widget reads as a wall
-     * of numbers. Every metric is also another aggregate in the query.
+     * box per metric and a trend draws a box per metric with its chart; a row
+     * of boxes wider than the screen scrolls sideways (owa.kpibox.js), so the
+     * limit is where a row stops being one glance -- six, the most a shipped
+     * report's trend draws -- not where it stops fitting. Every metric is also
+     * another aggregate in the query.
      */
-    const MAX_METRICS = 4;
+    const MAX_METRICS = 6;
 
     /**
      * How many dimensions one query may group by.

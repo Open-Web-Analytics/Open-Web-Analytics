@@ -12,7 +12,7 @@
             "colspan": 12,
             "chartMetric": "totalUsers",
             "query": {
-                "metrics": "totalUsers,pageViews,engagementRate,averageEngagementTimePerSession",
+                "metrics": "totalUsers,pageViews,pageViewsPerSession,engagementRate,averageEngagementTimePerSession",
                 "dimensions": "date",
                 "sort": "date"
             }
