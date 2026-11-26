@@ -184,7 +184,7 @@ return [
         ],
         'archive_old_events' => [ 'config_constant' => 'OWA_ARCHIVE_OLD_EVENTS', 'default' => true, 'description' => 'Whether the file event queue moves a processed batch file to its archive directory instead of deleting it. On by default.' ],
         'assets_url' => [ 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ],
-        'async_log_dir' => [ 'config_constant' => 'OWA_ASYNC_LOG_DIR', 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ],
+        'async_log_dir' => [ 'config_constant' => 'OWA_ASYNC_LOG_DIR', 'default' => '', 'description' => 'The file event queue\'s directory: its batches, archive and dead letters, which only the cron user writes. Empty uses owa-data/queue/. The web server writes beacons to an inbox beside it, owa-data/logs/incoming-tracking-events/ (or incoming-tracking-events/ in this directory when it is set), which the drain copies them out of.' ],
         /*
          * edit_reports is authoring a custom report, and edit_own_email is
          * changing the address on your own account, which moves where its

@@ -213,6 +213,7 @@ class Module extends \OWA\Core\Module {
 
             'queue_type'   => 'file',
             'path'         => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
+            'inbox'        => \OWA\Module\Base\Classes\TrackerIngest::inboxDir(),
             'max_receives' => \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES,
         ]);
 

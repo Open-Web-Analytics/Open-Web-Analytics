@@ -157,6 +157,27 @@ class TrackerIngest {
         return $built[ $type ] = $queue;
     }
 
+    /** The inbox's directory name, in owa-data/logs/. */
+    const INBOX = 'incoming-tracking-events';
+
+    /**
+     * Where the web server writes beacons for the file queue: owa-data/logs/
+     * incoming-tracking-events/, logs/ being the one directory it writes; or,
+     * where the config file sets the queue's directory (OWA_ASYNC_LOG_DIR),
+     * incoming-tracking-events/ in it. The drain copies them into the queue's
+     * own directory (FileEventQueue::intake()).
+     *
+     * @return string with a trailing slash
+     */
+    public static function inboxDir() {
+
+        $set = defined( 'OWA_ASYNC_LOG_DIR' ) ? (string) OWA_ASYNC_LOG_DIR : '';
+
+        return $set !== ''
+            ? rtrim( $set, '/' ) . '/' . self::INBOX . '/'
+            : (string) \OWA\Core\CoreAPI::getSetting( 'base', 'data_dir' ) . 'logs/' . self::INBOX . '/';
+    }
+
     /**
      * Where a beacon the intake refuses is kept: the file queue in
      * async_log_dir, built with the intake's registration. Null when the

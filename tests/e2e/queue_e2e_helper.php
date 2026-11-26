@@ -133,10 +133,11 @@ function state(string $site_id): array
 }
 
 /**
- * Beacons waiting in the tracker-ingest file queue: events.txt, the rotated
- * batches, a batch a drain holds, and released ones waiting to retry
- * (FileEventQueue::depth()). The queue's own count, so this helper does not
- * restate its layout.
+ * Beacons waiting in the tracker-ingest file queue: the inbox the web server
+ * writes, the rotated batches, a batch a drain holds, and released ones
+ * waiting to retry (FileEventQueue::depth()). The queue's own count, built
+ * with the inbox Base registers it with, so this helper does not restate its
+ * layout.
  */
 function fileQueueDepth(): int
 {
@@ -145,7 +146,10 @@ function fileQueueDepth(): int
         return 0;
     }
 
-    return (new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]))->depth();
+    return (new \OWA\Module\Base\Classes\FileEventQueue([
+        'path'  => $dir,
+        'inbox' => \OWA\Module\Base\Classes\TrackerIngest::inboxDir(),
+    ]))->depth();
 }
 
 /**

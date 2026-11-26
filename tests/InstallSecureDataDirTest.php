@@ -29,6 +29,8 @@ final class InstallSecureDataDirTest extends TestCase
         $old = umask(0);
         mkdir($this->data . '/logs', 0777, true);
         mkdir($this->data . '/conf', 0775);
+        mkdir($this->data . '/queue', 0775);
+        mkdir($this->data . '/logs/incoming-tracking-events', 0755);
         chmod($this->data, 0777);
         chmod($this->data . '/logs', 0755);
         umask($old);
@@ -41,8 +43,10 @@ final class InstallSecureDataDirTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'data_dir', $this->saved);
 
         if ($this->data !== '') {
+            @rmdir($this->data . '/logs/incoming-tracking-events');
             @rmdir($this->data . '/logs');
             @rmdir($this->data . '/conf');
+            @rmdir($this->data . '/queue');
             @rmdir($this->data);
         }
     }
@@ -63,6 +67,9 @@ final class InstallSecureDataDirTest extends TestCase
         $this->assertSame(0, fileperms($this->data . '/conf') & 0022, 'conf/: its owner only');
         $this->assertSame(02070, fileperms($this->data . '/logs') & 02070, 'logs/: group-writable, setgid');
         $this->assertSame(0, fileperms($this->data . '/logs') & 0002, 'logs/: not world-writable');
+        $this->assertSame(0, fileperms($this->data . '/queue') & 0022, 'queue/: the drain\'s alone');
+        $this->assertSame(02070, fileperms($this->data . '/logs/incoming-tracking-events') & 02070,
+            'the tracking inbox: group-writable, setgid, as logs/');
         $this->assertContains($this->data . ' is now writable by its owner only.', $said);
 
         $this->assertSame([], $this->secure($mine), 'nothing more to change');

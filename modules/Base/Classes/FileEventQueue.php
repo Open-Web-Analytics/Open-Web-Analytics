@@ -18,10 +18,15 @@ namespace OWA\Module\Base\Classes;
  * daily prune-tracker-ingest-archive deletes archived batches older than it.
  * With the setting unset, both keep everything.
  *
- * Each queue is a directory (the main one is async_log_dir, its dead-letter
- * queue is dead-letter/ inside it):
+ * Each queue is a directory (the main one is async_log_dir, owa-data/queue/;
+ * its dead-letter queue is dead-letter/ inside it), which only the drain
+ * writes. The web server writes the tracking queue's INBOX instead, owa-data/
+ * logs/incoming-tracking-events/, by names nobody guesses (PrivateFiles):
+ * events_<hash>.txt, and delayed_<due>_<hash>.txt for a beacon retried later.
+ * The drain copies them in (intake()): the only files it takes from a
+ * directory the web server can write. Every directory gets an index.php.
  *
- *   events.txt     what log.php appends to, one JSON line per beacon
+ *   events.txt     what is appended to, in a queue with no inbox (a dead-letter queue)
  *   unprocessed/   batches rotated out of events.txt, oldest name first
  *   processing/    a batch a consumer holds, and its .state sidecar
  *   delayed/       messages sent or released with a delay, one file per due minute
@@ -57,7 +62,16 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @var string the queue's directory, with a trailing slash */
     public $queue_dir;
 
-    /** @var string */
+    /**
+     * Where the web server writes, when it is not the queue's directory: the
+     * intake's inbox (owa-data/logs/incoming-tracking-events/). Null for a
+     * queue only the drain writes, a dead-letter queue. See intake().
+     *
+     * @var string|null with a trailing slash
+     */
+    public $inbox_dir = null;
+
+    /** @var string what send() appends to: in the inbox, when there is one */
     public $event_file;
 
     /** @var string */
@@ -111,7 +125,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     /**
      * @param array<string, mixed> $map  the queue's registration: queue_name,
-     *   path (async_log_dir when empty), is_dead_letter, max_receives; values as configured, so cast
+     *   path (async_log_dir when empty), inbox, is_dead_letter, max_receives; values as configured, so cast
      */
     public function __construct( $map = [] ) {
 
@@ -128,7 +142,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             : max( 1, (int) ( $map['max_receives'] ?? TrackerIngest::MAX_RECEIVES ) );
 
         $this->queue_dir        = rtrim( (string) $dir, '/' ) . '/';
-        $this->event_file       = $this->queue_dir . 'events.txt';
+        $this->inbox_dir        = isset( $map['inbox'] ) && (string) $map['inbox'] !== '' ? rtrim( (string) $map['inbox'], '/' ) . '/' : null;
+        $this->event_file       = $this->inbox_dir !== null
+            ? $this->inbox_dir . \OWA\Core\PrivateFiles::name( 'events', '.txt' ) : $this->queue_dir . 'events.txt';
         $this->unprocessed_path = $this->queue_dir . 'unprocessed/';
         $this->processing_path  = $this->queue_dir . 'processing/';
         $this->delayed_path     = $this->queue_dir . 'delayed/';
@@ -144,18 +160,34 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     // The contract
     // ---------------------------------------------------------------------
 
+    /**
+     * The queue's directories: its own, which only the drain writes (0755),
+     * and the inbox, which the web server writes too (provisionInbox()). A
+     * link at any of them is refused: the drain renames and writes inside
+     * them, and through a link would do it wherever the link points.
+     */
     public function provision() {
+
+        if ( $this->inbox_dir !== null && ! $this->provisionInbox() ) {
+
+            return false;
+        }
 
         foreach ( [ $this->queue_dir, $this->unprocessed_path, $this->processing_path,
                          $this->delayed_path, $this->archive_path ] as $d ) {
 
-            // The web server writes beacons here and the CLI drains them.
-            if ( ! \OWA\Core\Lib::makeSharedDir( $d ) ) {
+            $made = $this->inbox_dir !== null || $this->is_dead_letter
+                ? \OWA\Core\SafeFile::makeDirs( $d, 0755 )
+                : \OWA\Core\Lib::makeSharedDir( $d );
 
-                \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot make queue directory $d." );
+            if ( is_link( rtrim( $d, '/' ) ) || ! $made ) {
+
+                \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot make queue directory $d, or it is a link." );
 
                 return false;
             }
+
+            \OWA\Core\PrivateFiles::guard( $d );
         }
 
         $this->provisioned = true;
@@ -163,6 +195,26 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $dlq = $this->deadLetterQueue();
 
         return $dlq ? $dlq->provision() : true;
+    }
+
+    /**
+     * The inbox alone: all the web server makes. owa-data/logs/ is the one
+     * directory it writes; the queue's own directory is the drain's.
+     *
+     * @return bool
+     */
+    private function provisionInbox() {
+
+        if ( is_link( rtrim( (string) $this->inbox_dir, '/' ) ) || ! \OWA\Core\Lib::makeSharedDir( (string) $this->inbox_dir ) ) {
+
+            \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot make the inbox {$this->inbox_dir}, or it is a link." );
+
+            return false;
+        }
+
+        \OWA\Core\PrivateFiles::guard( (string) $this->inbox_dir );
+
+        return true;
     }
 
     public function send( array $envelope, $delay = 0, $replayed = false ) {
@@ -174,7 +226,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             $row['p'] = 1;
         }
 
-        return $this->appendRow( $this->fileFor( $delay ), $row );
+        return $this->appendRow( $this->fileFor( $delay, $this->inbox_dir !== null ), $row );
     }
 
     public function receive( $max, $visibility = 0 ) {
@@ -187,6 +239,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $max      = max( 1, (int) $max );
         $messages = [];
 
+        $this->intake();
         $this->promoteDue();
         $this->rotate();
 
@@ -264,7 +317,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $row = $this->rowOf( $message );
 
-        if ( $row === null || ! $this->appendRow( $this->fileFor( $delay ), $row ) ) {
+        // The drain's own write: into the queue's directory, never the inbox.
+        if ( $row === null || ! $this->appendRow( $this->fileFor( $delay, false ), $row ) ) {
 
             // Not written anywhere: leave it outstanding so it is delivered again.
             return false;
@@ -332,7 +386,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        if ( self::files( $this->unprocessed_path ) || self::files( $this->processing_path, '.txt' ) ) {
+        if ( self::files( $this->unprocessed_path, '.txt' ) || self::files( $this->processing_path, '.txt' ) ) {
 
             return false;
         }
@@ -392,7 +446,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $removed = 0;
 
-        foreach ( self::files( $this->archive_path ) as $name ) {
+        foreach ( self::files( $this->archive_path, '.txt' ) as $name ) {
 
             $path = $this->archive_path . $name;
 
@@ -558,9 +612,16 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
-        if ( ! is_dir( dirname( $path ) ) && ! $this->provision() ) {
+        // A line for the inbox needs the inbox only: the web server makes no more.
+        if ( ! is_dir( dirname( $path ) ) ) {
 
-            return false;
+            $ready = $this->inbox_dir !== null && dirname( $path ) . '/' === $this->inbox_dir
+                ? $this->provisionInbox() : $this->provision();
+
+            if ( ! $ready ) {
+
+                return false;
+            }
         }
 
         return $this->append( $path, $line );
@@ -589,17 +650,43 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     }
 
     /**
-     * Where a line due in $delay seconds goes: events.txt when it is due now,
-     * else the delayed file of the minute it falls due in.
+     * Where a line due in $delay seconds goes: the events file when it is due
+     * now, else the delayed file of the minute it falls due in. In the inbox
+     * (the web server's) or the queue's own directory (the drain's); the drain
+     * has no events file of its own when there is an inbox, so a line due now
+     * goes to delayed/, due this minute.
      *
-     * @param  int $delay seconds
+     * @param  int  $delay seconds
+     * @param  bool $inbox
      * @return string
      */
-    private function fileFor( $delay ) {
+    private function fileFor( $delay, $inbox ) {
 
         $delay = (int) $delay;
 
-        return $delay > 0 ? $this->delayedFile( time() + $delay ) : $this->event_file;
+        if ( $inbox ) {
+
+            return $delay > 0 ? $this->inboxDelayedFile( time() + $delay ) : $this->event_file;
+        }
+
+        if ( $delay > 0 || $this->inbox_dir !== null ) {
+
+            return $this->delayedFile( time() + max( 0, $delay ) );
+        }
+
+        return $this->event_file;
+    }
+
+    /**
+     * The inbox's delayed file for a due time: delayed_<due>_<hash>.txt, a
+     * name nobody guesses (PrivateFiles::name()).
+     *
+     * @param  int $due  a Unix time
+     * @return string
+     */
+    private function inboxDelayedFile( $due ) {
+
+        return $this->inbox_dir . \OWA\Core\PrivateFiles::name( 'delayed_' . (string) ( (int) ceil( $due / 60 ) * 60 ), '.txt' );
     }
 
     /**
@@ -616,9 +703,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @return string[] every file holding waiting lines */
     private function waitingFiles() {
 
+        $inbox = $this->inbox_dir === null ? [] : array_map( fn ( $f ) => $this->inbox_dir . $f,
+            array_values( array_filter( self::files( $this->inbox_dir, '.txt' ), fn ( $f ) => strpos( $f, 'delayed_' ) === 0 ) ) );
+
         return array_values( array_filter( array_merge(
             [ $this->event_file ],
-            array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
+            $inbox,
+            array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path, '.txt' ) ),
             array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
             array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path, '.txt' ) )
         ), 'is_file' ) );
@@ -635,11 +726,127 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      */
     private function rotate() {
 
+        // The inbox's events file is taken in by intake(), checked and copied; never renamed in.
+        if ( $this->inbox_dir !== null ) {
+
+            return;
+        }
+
         clearstatcache( true, $this->event_file );
 
         if ( is_file( $this->event_file ) && filesize( $this->event_file ) > 0 ) {
 
             $this->moveIntoBatches( $this->event_file, 'events' );
+        }
+    }
+
+    /**
+     * Take the inbox's files into the queue's own directory: the one point
+     * where the drain touches what the web server wrote.
+     *
+     * Only the names the queue gives (the events file, delayed files), each
+     * opened and checked to be a plain file with this one name -- not a
+     * link, not a hard link to another file, not a FIFO (SafeFile::isNamed())
+     * -- under the lock its writers append under. Its contents are COPIED
+     * into a new file of the drain's, never renamed: renamed, the file would
+     * still be the web server's to write. The inbox file is then removed,
+     * still under the lock, so a writer that had it open writes to a new one.
+     *
+     * Nothing is taken from an inbox the drain cannot remove files from:
+     * copied and left, a file would be copied again on every drain.
+     *
+     * @return void
+     */
+    private function intake() {
+
+        if ( $this->inbox_dir === null || ! is_dir( $this->inbox_dir ) ) {
+
+            return;
+        }
+
+        if ( ! is_writable( $this->inbox_dir ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: %s cannot be written by this user, so its beacons cannot be taken in. '
+                . 'Give it the group of owa-data/logs/ and group write (cmd=install sets it).', $this->inbox_dir ) );
+
+            return;
+        }
+
+        $events = basename( $this->event_file );
+        $hash   = \OWA\Core\CoreAPI::generateInstanceSpecificHash();
+
+        foreach ( self::files( $this->inbox_dir, '.txt' ) as $name ) {
+
+            if ( $name === $events ) {
+
+                $this->takeIn( $this->inbox_dir . $name, null );
+
+            } elseif ( preg_match( '/^delayed_(\d+)_' . preg_quote( $hash, '/' ) . '\.txt$/', $name, $m ) ) {
+
+                $this->takeIn( $this->inbox_dir . $name, (int) $m[1] );
+            }
+        }
+    }
+
+    /**
+     * One inbox file, copied into a new batch (unprocessed/) or, when it is
+     * one due at $due, into delayed/; then removed. See intake().
+     *
+     * @param  string   $path
+     * @param  int|null $due
+     * @return void
+     */
+    private function takeIn( $path, $due ) {
+
+        if ( is_link( $path ) || ! is_file( $path ) ) {
+
+            return;
+        }
+
+        $h = @fopen( $path, 'rb' );
+
+        if ( ! $h ) {
+
+            return;
+        }
+
+        flock( $h, LOCK_EX );
+
+        try {
+
+            if ( ! \OWA\Core\SafeFile::isNamed( $h, $path ) ) {
+
+                \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: %s is not a plain file of its own; it is left where it is.', $path ) );
+
+                return;
+            }
+
+            $data = (string) stream_get_contents( $h );
+
+            if ( $data !== '' ) {
+
+                if ( $due === null ) {
+
+                    \OWA\Core\SafeFile::replace( sprintf( '%s%s-events-%s-%s.txt', $this->unprocessed_path,
+                        date( 'YmdHis' ), getmypid(), bin2hex( random_bytes( 3 ) ) ), $data, 0640 );
+
+                } elseif ( ! \OWA\Core\SafeFile::append( $this->delayedFile( $due ), $data, 0640 ) ) {
+
+                    throw new \RuntimeException( 'Could not write ' . $this->delayedFile( $due ) . '.' );
+                }
+            }
+
+            @unlink( $path );
+
+        } catch ( \RuntimeException $e ) {
+
+            // Left in the inbox: taken in on the next drain.
+            \OWA\Core\CoreAPI::error( 'Tracker ingest: ' . $e->getMessage() );
+
+        } finally {
+
+            flock( $h, LOCK_UN );
+            fclose( $h );
         }
     }
 
@@ -708,7 +915,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             }
         }
 
-        foreach ( self::files( $this->unprocessed_path ) as $name ) {
+        foreach ( self::files( $this->unprocessed_path, '.txt' ) as $name ) {
 
             $target = $this->processing_path . $name;
 

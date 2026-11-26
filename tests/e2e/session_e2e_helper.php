@@ -324,11 +324,11 @@ function clearIntake(): void
     }
 }
 
-/** @return string[] every file holding waiting lines, in the main queue and its dead-letter queue */
+/** @return string[] every file holding waiting lines: the inbox the web server writes, the main queue and its dead-letter queue */
 function intakeFiles(): array
 {
     $dir   = rtrim((string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'), '/') . '/';
-    $files = [];
+    $files = (array) glob(\OWA\Module\Base\Classes\TrackerIngest::inboxDir() . '*.txt');
 
     foreach ([$dir, $dir . 'dead-letter/'] as $q) {
         $files = array_merge($files, [$q . 'events.txt'],
