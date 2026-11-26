@@ -296,7 +296,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         $restore = $this->forgetFixtureAfter();
         try {
-            \OWA\Core\CoreAPI::activateModule(self::MODULE);
+            \OWA\Core\CoreAPI::installModule(self::MODULE);
 
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleDeactivateCli::class,

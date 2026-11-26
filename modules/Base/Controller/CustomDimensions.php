@@ -20,7 +20,6 @@ class CustomDimensions extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
 
         /*
          * Registering issues DDL against the table every report reads, which is

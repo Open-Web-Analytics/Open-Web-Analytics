@@ -30,7 +30,6 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
         $this->setRequiredCapability( 'view_reports' );
         $this->setNonceRequired();
 

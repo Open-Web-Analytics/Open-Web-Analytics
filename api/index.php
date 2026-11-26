@@ -21,7 +21,8 @@ $config = [
 
 $owa = new owa( $config );
 
-if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+// By its path from the install's root: index.php is the admin and reports.
+if ( $owa->isEndpointEnabled( 'api/index.php' ) ) {
     
     $s = \OWA\Core\CoreAPI::serviceSingleton();
 
