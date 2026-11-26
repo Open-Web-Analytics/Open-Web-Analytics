@@ -26,6 +26,15 @@ final class DataDirConfigTest extends TestCase
         'OWA_SQS_SECRET'    => 'probe-secret',
     ];
 
+    /**
+     * The runner's own config may pin the error log and the file queue (the
+     * CI harness does); defined first, these leave both to their defaults.
+     */
+    private const UNPINNED = [
+        'OWA_ERROR_LOG_FILE' => '',
+        'OWA_ASYNC_LOG_DIR'  => '',
+    ];
+
     private string $dir = '';
 
     protected function setUp(): void
@@ -78,28 +87,14 @@ final class DataDirConfigTest extends TestCase
         $this->fail("the probe printed nothing:\n" . $out . $err);
     }
 
-    /**
-     * Where a path should be once the data directory moves: a path that sat
-     * under the default owa-data/ moves with it; one the runner's own config
-     * pins elsewhere (the CI harness pins its error log and file queue) stays
-     * where the config says.
-     */
-    private static function followed(string $default, string $data): string
-    {
-        $owaData = \OWA\Core\Env::root() . '/owa-data/';
-
-        return strpos($default, $owaData) === 0
-            ? $data . substr($default, strlen($owaData))
-            : $default;
-    }
-
     public function testTheDataDirectoryMovesEverythingWrittenUnderIt(): void
     {
-        $d = $this->probe(self::SQS);
+        $d = $this->probe(self::UNPINNED + self::SQS);
 
         // No trailing slash: the setting adds one.
-        $r    = $this->probe(['OWA_DATA_DIR' => $this->dir] + self::SQS, 'log');
-        $data = $this->dir . '/';
+        $r       = $this->probe(['OWA_DATA_DIR' => $this->dir] + self::UNPINNED + self::SQS, 'log');
+        $data    = $this->dir . '/';
+        $owaData = \OWA\Core\Env::root() . '/owa-data/';
 
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('OWA_DATA_DIR', $r['constant']);
@@ -107,8 +102,12 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame($data . 'conf/ua-parser/regexes.php', $r['ua_regexes']);
 
         foreach (['error_log_file', 'async_log_dir', 'queue_dir', 'archive_dir', 'dead_letter', 'fallback_dir'] as $key) {
-            $this->assertSame(self::followed((string) $d[$key], $data), $r[$key], "$key follows the data directory unless the config pins it");
+            $this->assertStringStartsWith($owaData, (string) $d[$key], "$key defaults to under owa-data/");
+            $this->assertSame($data . substr((string) $d[$key], strlen($owaData)), $r[$key], "$key follows the data directory");
         }
+
+        $this->assertSame($data . 'logs/' . \OWA\Core\PrivateFiles::name('errors', '.txt'), $r['error_log_file'],
+            'the error log is named with the install\'s hash');
 
         $this->assertFileExists($r['error_log_file']);
         $this->assertStringContainsString('data dir probe', (string) file_get_contents($r['error_log_file']));

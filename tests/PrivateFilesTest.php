@@ -21,13 +21,12 @@ final class PrivateFilesTest extends TestCase
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
-    public function testANameCarriesTheInstallsHashAsTheErrorLogsDoes(): void
+    /** The error log's default name is checked in DataDirConfigTest, where the runner's config cannot pin it. */
+    public function testANameCarriesTheInstallsHash(): void
     {
         $hash = \OWA\Core\CoreAPI::generateInstanceSpecificHash();
 
         $this->assertSame('events_' . $hash . '.txt', PrivateFiles::name('events', '.txt'));
-        $this->assertSame('logs/' . PrivateFiles::name('errors', '.txt'),
-            substr((string) \OWA\Core\CoreAPI::getSetting('base', 'error_log_file'), -strlen('logs/' . PrivateFiles::name('errors', '.txt'))));
     }
 
     public function testGuardWritesTheShippedIndexOnceAndNeverThroughALink(): void
