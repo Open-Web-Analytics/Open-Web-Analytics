@@ -23,27 +23,21 @@
 <?php endforeach; ?>
 <?php endif;?>
 
+<?php
+    /*
+     * Deferred, so the page draws while the bundle loads: it runs once the
+     * document is parsed, in this order. No inline script on a page reads
+     * OWA; what the bundle needs from the page is handed over as JSON, as
+     * config_dom.php does here.
+     */
+?>
 <?php if(!empty($view->js)): ?>
 <?php foreach ($view->js as $jsfile): ?>
-<script src="<?php $view->out( $jsfile['url'] );?>"></script>
+<script defer src="<?php $view->out( $jsfile['url'] );?>"></script>
 <?php endforeach; ?>
 <?php endif;?>
 
-<script>
-<?php
-    /*
-     * Only when the bundle that defines OWA is on the page.
-     *
-     * config_dom.php assigns onto OWA.config, and the signed-out pages -- the
-     * password reset request and the set-password form -- load no JavaScript at
-     * all. So every one of them threw "OWA is not defined" on load, which was
-     * harmless and permanently in the console, hiding anything that was not.
-     */
-?>
-if (typeof OWA !== 'undefined' && OWA.config) {
 <?php include('config_dom.php'); ?>
-}
-</script>
 
 
 <!-- END HEAD -->

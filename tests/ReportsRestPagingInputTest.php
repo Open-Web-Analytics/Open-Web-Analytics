@@ -46,17 +46,10 @@ final class ReportsRestPagingInputTest extends TestCase
     /** A card's Show more stops at the ceiling, so every page tells the grid what it is. */
     public function testEveryPageGivesTheGridTheCeiling(): void
     {
-        ob_start();
+        require_once __DIR__ . '/PageConfig.php';
 
-        try {
-            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
-        } finally {
-            $js = (string) ob_get_clean();
-        }
-
-        $this->assertStringContainsString(
-            'OWA.config.max_results_per_page = ' . \OWA\Module\Base\Controller\ReportsRest::MAX_RESULTS_PER_PAGE . ';',
-            $js );
+        $this->assertSame( \OWA\Module\Base\Controller\ReportsRest::MAX_RESULTS_PER_PAGE,
+            owa_test_page_config()['config']['max_results_per_page'] ?? null );
 
         $this->assertStringContainsString( "OWA.getSetting( 'max_results_per_page' )",
             (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.resultSetExplorer.js' ) );
