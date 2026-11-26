@@ -9,6 +9,14 @@ class Login extends \OWA\Core\Controller {
      */
     const FORM_COOKIE = 'lf';
 
+    /**
+     * Whether the form's nonce verified (action()); until then, only a
+     * session signs anyone in.
+     *
+     * @var bool
+     */
+    private $form_verified = false;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );
@@ -16,6 +24,21 @@ class Login extends \OWA\Core\Controller {
         // The one screen that signs someone in. The session is accepted too,
         // after the form, as authenticateUser() has always ordered them.
         $this->setAuthMethods( [ 'login_form', 'cookies' ] );
+    }
+
+    /**
+     * The form signs in only once its nonce has verified. doAction()
+     * authenticates before action() runs whenever session cookies are
+     * present, and with the form accepted then, a link from anywhere carrying
+     * a user_id and password signed a signed-in browser into that account
+     * before the nonce was checked. Until action() has checked it, only the
+     * session is accepted.
+     *
+     * @return list<string>|null
+     */
+    public function acceptedAuthMethods() {
+
+        return $this->form_verified ? parent::acceptedAuthMethods() : [ 'cookies' ];
     }
 
     public function validate()
@@ -26,8 +49,11 @@ class Login extends \OWA\Core\Controller {
     public function action() {
 
         // A form from another page, or one older than the nonce windows: the
-        // form again, with a nonce that verifies.
-        if ( ! self::formNonceIsValid( $this->getParam( 'nonce' ) ) ) {
+        // form again, with a nonce that verifies. Posted only: a password is
+        // never accepted from a URL, where logs and history keep it.
+        $posted = strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? 'POST' ) ) === 'POST';
+
+        if ( ! $posted || ! self::formNonceIsValid( $this->getParam( 'nonce' ) ) ) {
 
             $this->setView( 'base.loginForm' );
             $this->set( 'go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam( 'go' ) ) );
@@ -36,6 +62,8 @@ class Login extends \OWA\Core\Controller {
 
             return;
         }
+
+        $this->form_verified = true;
 
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUser( $this->acceptedAuthMethods() );

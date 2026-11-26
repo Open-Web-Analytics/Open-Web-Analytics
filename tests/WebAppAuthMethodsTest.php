@@ -201,10 +201,10 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     {
         $user = $this->postedPassword();
 
-        $login = new \OWA\Module\Base\Controller\Login([]);
-        $status = \OWA\Core\Auth::get_instance()->authenticateUser($login->acceptedAuthMethods());
+        $login = new \OWA\Module\Base\Controller\Login(['nonce' => \OWA\Module\Base\Controller\Login::formNonce(), 'go' => '']);
+        $login->action();
 
-        $this->assertTrue($status['auth_status']);
+        $this->assertNotSame('base.loginForm', $login->data['view'] ?? null, 'not drawn again');
         $this->assertSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
         $this->assertSame($user['user_id'], \OWA\Core\CoreAPI::getCurrentUser()->getUserData('user_id'));
     }
@@ -247,9 +247,16 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->assertTrue($screen->ran);
     }
 
-    public function testLoginDeclaresTheFormThenTheSession(): void
+    /** The session only, until action() has verified the form's nonce; then the form, then the session. */
+    public function testLoginDeclaresTheFormThenTheSessionOnceItsNonceVerifies(): void
     {
-        $login = new \OWA\Module\Base\Controller\Login([]);
+        $this->postedPassword();
+
+        $login = new \OWA\Module\Base\Controller\Login(['nonce' => \OWA\Module\Base\Controller\Login::formNonce(), 'go' => '']);
+
+        $this->assertSame(['cookies'], $login->acceptedAuthMethods());
+
+        $login->action();
 
         $this->assertSame(['login_form', 'cookies'], $login->acceptedAuthMethods());
     }

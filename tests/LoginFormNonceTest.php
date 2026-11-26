@@ -84,6 +84,45 @@ final class LoginFormNonceTest extends TestCase
         $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
     }
 
+    /**
+     * doAction() authenticates before action() whenever session cookies are
+     * present: until action() has checked the nonce, only the session is
+     * accepted, so a link carrying a user_id and password signs no signed-in
+     * browser into another account.
+     */
+    public function testBeforeItsNonceIsCheckedOnlyTheSessionIsAccepted(): void
+    {
+        $login = new \OWA\Module\Base\Controller\Login([
+            'user_id' => 'owatest-login-user', 'password' => 'x', 'nonce' => 'not-it', 'go' => '',
+        ]);
+
+        $this->assertSame(['cookies'], $login->acceptedAuthMethods());
+
+        $login->action();
+
+        $this->assertSame(['cookies'], $login->acceptedAuthMethods(), 'still, after a nonce that did not verify');
+    }
+
+    /** A password is never taken from a URL: a GET, even with a nonce that verifies, draws the form again. */
+    public function testASignInByGetIsRefused(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
+        try {
+            $login = new \OWA\Module\Base\Controller\Login([
+                'user_id' => 'owatest-login-user', 'password' => 'x', 'go' => '',
+                'nonce' => \OWA\Module\Base\Controller\Login::formNonce(),
+            ]);
+            $login->action();
+
+            $this->assertSame('base.loginForm', $login->data['view'] ?? null);
+            $this->assertSame(2006, $login->data['error_code'] ?? null);
+            $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
+        } finally {
+            unset($_SERVER['REQUEST_METHOD']);
+        }
+    }
+
     public function testTheFormCarriesTheNonce(): void
     {
         $view = \OWA\Core\CoreAPI::viewFactory('base.loginForm', []);
