@@ -56,6 +56,29 @@ class CustomReportDelete extends \OWA\Core\AdminController {
             (bool) $user->isCapable( 'edit_users' )
         );
 
+        /*
+         * RESET: the reader's own version of a shipped report goes, and they
+         * are back on the shipped one (ReportOverrides).
+         */
+        $replaces = $report ? (string) ( $report['replaces'] ?? '' ) : '';
+
+        if ( $may && $replaces !== '' ) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete( $id );
+
+            $this->setStatusCode( 2517 );
+            $this->set( 'reportId', $replaces );
+
+            if ( $propertyId !== '' ) {
+
+                $this->set( 'propertyId', $propertyId );
+            }
+
+            $this->setRedirectAction( 'base.report' );
+
+            return;
+        }
+
         if ( $may ) {
 
             \OWA\Module\Base\Classes\CustomReports::delete( $id );

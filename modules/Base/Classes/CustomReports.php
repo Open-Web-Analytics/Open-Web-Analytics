@@ -503,6 +503,13 @@ class CustomReports {
             return \OWA\Core\CoreAPI::t( 'A saved report cannot declare a capability.' );
         }
 
+        $error = self::validateSettings( $definition, $property_id );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
         $widgets = isset( $definition['widgets'] ) ? (array) $definition['widgets'] : [];
 
         if ( ! $widgets ) {
@@ -672,6 +679,66 @@ class CustomReports {
         }
 
         return (float) $m[1] > 0 && (float) $m[1] <= self::BOX_WIDTH_UNITS[ $m[2] ];
+    }
+
+    /** The settings a saved report may carry: the filter its every widget applies, as a shipped report's. */
+    const SETTINGS_KEYS = [ 'constraints' ];
+
+    /**
+     * A saved report's settings: only SETTINGS_KEYS, and its constraints by
+     * names that resolve.
+     *
+     * The renderer copies every settings key onto the report's view
+     * (ConfiguredReport::action()), which is right for a shipped definition
+     * and not for one a person posted: a key the view reads for something
+     * else -- its title actions, its header -- would be theirs to set, on a
+     * report others open.
+     *
+     * A constraint reads no parameter: a saved report declares none.
+     *
+     * @param Definition  $definition
+     * @param string|null $property_id whose dimensions; see validate()
+     * @return string
+     */
+    private static function validateSettings( array $definition, $property_id ) {
+
+        if ( ! isset( $definition['settings'] ) ) {
+
+            return '';
+        }
+
+        $unknown = array_diff( array_map( 'strval', array_keys( (array) $definition['settings'] ) ), self::SETTINGS_KEYS );
+
+        if ( $unknown ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( 'A saved report\'s settings take only %s; this one has %s.' ),
+                implode( ', ', self::SETTINGS_KEYS ), implode( ', ', $unknown ) );
+        }
+
+        $constraints = $definition['settings']['constraints'] ?? '';
+        $where       = \OWA\Core\CoreAPI::t( 'The report filter' );
+
+        if ( is_string( $constraints ) ) {
+
+            return self::constraintsProblem( $constraints, $where, $property_id );
+        }
+
+        foreach ( (array) $constraints as $part ) {
+
+            $name = is_array( $part ) ? (string) ( $part['dimension'] ?? '' ) : '';
+
+            if ( $name === '' || ! self::isDimension( $name, $property_id ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%s names "%s", which is not a dimension.' ), $where, $name );
+            }
+
+            if ( array_key_exists( 'fromParam', $part ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%s reads a parameter, which a saved report does not take.' ), $where );
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -1962,6 +2029,12 @@ class CustomReports {
             $params[] = (string) $property_id;
         }
 
+        /*
+         * A user's version of a shipped report is not a custom report on the
+         * roster: it is drawn in the shipped report's place (ReportOverrides).
+         */
+        $where[] = "( replaces IS NULL OR replaces = '' )";
+
         $starred = \OWA\Module\Base\Classes\CustomReportFavorites::idsFor( $user_id );
 
         /*
@@ -2020,10 +2093,8 @@ class CustomReports {
             $params[] = \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION;
         }
 
-        if ( $where ) {
-
-            $sql .= ' WHERE ' . implode( ' AND ', $where );
-        }
+        // Never empty: an override is always left out.
+        $sql .= ' WHERE ' . implode( ' AND ', $where );
 
         /*
          * The column comes from the allowlist, never from the request. An
@@ -2131,7 +2202,8 @@ class CustomReports {
      * on it, and an edit is refused unless the report is already of it, as
      * one that does not exist is: a report never moves between Properties.
      *
-     * @param array<string, mixed> $fields {id, name, definition, is_shared}, as posted
+     * @param array<string, mixed> $fields {id, name, definition, is_shared}, as posted; and, from
+     *                            ReportOverrides only, replaces and replaces_hash
      * @param string $user_id the author, for a new report
      * @param string|null $property_id the Property it is built on, whose dimensions it may name
      * @return SaveResult
@@ -2221,6 +2293,13 @@ class CustomReports {
             $entity->set( 'is_shared', $fields['is_shared'] ? 1 : 0 );
         }
 
+        // A user's version of a shipped report (ReportOverrides): what it
+        // replaces is set once, the shipped definition's hash on every save.
+        if ( isset( $fields['replaces_hash'] ) ) {
+
+            $entity->set( 'replaces_hash', (string) $fields['replaces_hash'] );
+        }
+
         if ( $id === '' ) {
 
             $id = \OWA\Core\Lib::randomId();
@@ -2228,6 +2307,7 @@ class CustomReports {
             $entity->set( 'id', $id );
             $entity->set( 'user_id', (string) $user_id );
             $entity->set( 'property_id', (string) $property_id );
+            $entity->set( 'replaces', (string) ( $fields['replaces'] ?? '' ) );
             $entity->set( 'creation_timestamp', $now );
             $entity->create();
 

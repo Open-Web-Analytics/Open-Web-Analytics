@@ -236,4 +236,17 @@ describe('the definition posted', () => {
         expect(widgets[0].id).toBeUndefined();
         expect(buildDefinition('R', [], '')).toEqual({ title: 'R', widgets: [] });
     });
+
+    test('a shipped report\'s description and filter are kept, nothing else of it', () => {
+        const opened = {
+            title: 'Clicks', description: 'Every click.', metrics: 'eventCount',
+            settings: { constraints: [{ dimension: 'eventName', value: 'click' }] },
+            params: { pagePath: {} },
+        };
+
+        expect(buildDefinition('My clicks', [], 'eventCount', opened)).toEqual({
+            title: 'My clicks', widgets: [], metrics: 'eventCount', description: 'Every click.',
+            settings: { constraints: [{ dimension: 'eventName', value: 'click' }] },
+        });
+    });
 });

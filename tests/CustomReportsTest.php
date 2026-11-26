@@ -394,6 +394,34 @@ final class CustomReportsTest extends TestCase
     }
 
     /**
+     * A saved report's settings carry only its filter. The renderer copies
+     * every settings key onto the view, so any other key would be a way to
+     * set what the report page reads for something else.
+     */
+    public function testASavedReportsSettingsCarryOnlyAFilterByKnownNames(): void
+    {
+        $definition = $this->definition();
+
+        $definition['settings'] = ['constraints' => [['dimension' => 'eventName', 'value' => 'click']]];
+        $this->assertSame('', CustomReports::validate($definition), 'a filter as a shipped report writes one');
+
+        $definition['settings'] = ['constraints' => 'sessionMedium==referral'];
+        $this->assertSame('', CustomReports::validate($definition), 'a filter as a string');
+
+        $definition['settings'] = ['constraints' => 'noSuchDimension==x'];
+        $this->assertNotSame('', CustomReports::validate($definition), 'a string filter naming nothing');
+
+        $definition['settings'] = ['constraints' => [['dimension' => 'noSuchDimension', 'value' => 'x']]];
+        $this->assertStringContainsString('noSuchDimension', CustomReports::validate($definition));
+
+        $definition['settings'] = ['constraints' => [['dimension' => 'pagePath', 'fromParam' => 'pagePath']]];
+        $this->assertStringContainsString('parameter', CustomReports::validate($definition));
+
+        $definition['settings'] = ['title_actions' => [['url' => 'https://example.test/']]];
+        $this->assertStringContainsString('title_actions', CustomReports::validate($definition));
+    }
+
+    /**
      * EIGHT for a full-width table, written out for the same reason: a list
      * is the widget whose rows are meant to be near-unique. Latest Visits
      * groups by seven.

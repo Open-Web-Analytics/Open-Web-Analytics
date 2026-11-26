@@ -35,7 +35,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * listed reaches it as false (CustomReportsTest holds the two together).
      */
     const SCREEN_VARS = [
-        'propertyId', 'custom_report_id', 'custom_report_name', 'custom_report_definition',
+        'propertyId', 'custom_report_id', 'custom_report_name', 'custom_report_definition', 'report_replaces',
         'custom_report_error', 'custom_report_is_shared', 'metric_choices', 'dimension_choices',
         'widget_types', 'max_widgets', 'max_metrics', 'max_dimensions', 'full_width_max_dimensions', 'full_width_types',
         'single_field_types', 'single_metric_types', 'chart_types', 'fixed_dimensions',
@@ -123,6 +123,36 @@ class CustomReportEdit extends \OWA\Core\ReportController {
             }
         }
 
+        /*
+         * A user's own version of a SHIPPED report (ReportOverrides): opened on
+         * theirs if they have one on this Property, else on the shipped
+         * report, as it is drawn.
+         */
+        $replaces = (string) $this->getParam( 'replaces' );
+        $shipped  = null;
+
+        if ( $replaces !== '' ) {
+
+            $report = null;
+
+            if ( ! \OWA\Module\Base\Classes\ReportOverrides::isEditable( $replaces ) ) {
+
+                $replaces = '';
+                $this->set( 'custom_report_error', \OWA\Core\CoreAPI::t( 'That report cannot be edited.' ) );
+
+            } else {
+
+                $report = \OWA\Module\Base\Classes\ReportOverrides::find( $replaces,
+                    (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ),
+                    (string) $this->getParam( 'propertyId' ) );
+
+                $shipped = \OWA\Core\ConfiguredReport::translated(
+                    (array) \OWA\Module\Base\Classes\ReportOverrides::shipped( $replaces ) );
+            }
+        }
+
+        $this->set( 'report_replaces', $replaces );
+
         $this->set( 'custom_report', $report );
         $this->set( 'custom_report_id', $report ? $report['id'] : '' );
 
@@ -136,6 +166,13 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $definition = $report ? \OWA\Module\Base\Classes\CustomReports::drawable( (array) $report['definition'] ) : [];
 
         $name = $report ? $report['name'] : '';
+
+        // No version of theirs yet: the shipped report is the starting point.
+        if ( ! $report && $shipped !== null ) {
+
+            $definition = \OWA\Module\Base\Classes\CustomReports::drawable( $shipped );
+            $name       = (string) ( $shipped['title'] ?? '' );
+        }
 
         /*
          * A REFUSED save comes back through here, carrying what the author

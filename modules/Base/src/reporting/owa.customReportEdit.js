@@ -437,23 +437,39 @@ export function applyPanel( rules, config, widget, panel ) {
 }
 
 /**
+ * The report-level keys the builder has no control for, passed through from
+ * the definition it opened on. A shipped report carries them: its
+ * description, and the filter its every widget applies (settings.constraints:
+ * Clicks counts only clicks). Saving the reader's version without them would
+ * quietly change what it counts.
+ */
+export const PASSED_THROUGH = [ 'description', 'settings' ];
+
+/**
  * The definition the form posts: the name, the widgets in order with the id
  * and container the renderer addresses them by, and a stored report-level
  * metric set passed through unchanged (there is no control for it, so a
- * rename must not strip it).
+ * rename must not strip it), as are PASSED_THROUGH.
  *
  * @param  {string}   name
  * @param  {Object[]} widgets
  * @param  {string}   reportMetrics
+ * @param  {Object}   [opened]  the definition the builder opened on
  * @return {Object}
  */
-export function buildDefinition( name, widgets, reportMetrics ) {
+export function buildDefinition( name, widgets, reportMetrics, opened ) {
 
     var built = { title: name, widgets: [] };
 
     if ( reportMetrics ) {
         built.metrics = reportMetrics;
     }
+
+    PASSED_THROUGH.forEach( function ( key ) {
+        if ( opened && opened[ key ] !== undefined ) {
+            built[ key ] = opened[ key ];
+        }
+    } );
 
     widgets.forEach( function ( widget, i ) {
 
@@ -1803,7 +1819,7 @@ export function start( config ) {
         }
 
         jQuery( '#customReportDefinition' ).val(
-            JSON.stringify( buildDefinition( jQuery( '#customReportName' ).val(), widgets, reportMetrics ) ) );
+            JSON.stringify( buildDefinition( jQuery( '#customReportName' ).val(), widgets, reportMetrics, definition ) ) );
     } );
 
     draw();

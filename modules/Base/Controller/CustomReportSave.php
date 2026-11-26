@@ -60,6 +60,37 @@ class CustomReportSave extends \OWA\Core\AdminController {
         }
 
         /*
+         * The reader's own version of a shipped report (ReportOverrides). Found
+         * by its author, report and Property, never by an id in the request,
+         * so there is nobody else's to reach. Then back to the shipped report's
+         * own address, which draws it.
+         */
+        $replaces = (string) $this->getParam( 'replaces' );
+
+        if ( $replaces !== '' ) {
+
+            $result = \OWA\Module\Base\Classes\ReportOverrides::save( $replaces,
+                $this->getParam( 'customReportName' ), $this->getParam( 'customReportDefinition' ), $user_id, $propertyId );
+
+            if ( ! $result['ok'] ) {
+
+                return $this->refuse( $result['error'] );
+            }
+
+            $this->setStatusCode( 2516 );
+            $this->set( 'reportId', $replaces );
+
+            if ( $propertyId !== '' ) {
+
+                $this->set( 'propertyId', $propertyId );
+            }
+
+            $this->setRedirectAction( 'base.report' );
+
+            return;
+        }
+
+        /*
          * An EDIT is authorised against the stored row, not against the id in
          * the request. Checking the id would only prove the request named a
          * report; this proves the requester may change THAT one.

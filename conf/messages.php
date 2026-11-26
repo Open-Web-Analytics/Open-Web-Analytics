@@ -35,6 +35,9 @@ $_owa_messages = [
     // one the reader may not report on, or gone; and one of somebody else's.
     2514 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That funnel does not exist.' )],
     2515 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That funnel belongs to another user.' )],
+    // A user's own version of a shipped report (ReportOverrides).
+    2516 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Your version of this report is saved.' )],
+    2517 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'This report is back to its default.' )],
 
     // User management
     3000 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'User added.' )],
