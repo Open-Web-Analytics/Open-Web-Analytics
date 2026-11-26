@@ -523,6 +523,21 @@ class TrackingEventHelpers {
         return self::$goal_trigger_names = $out;
     }
 
+    /**
+     * What a first-class event is, in the locale in use: its `description` in
+     * config/tracking_events.php, which the strings catalogue carries. '' for
+     * an event that declares none, and for a site's own.
+     *
+     * @param  string $name
+     * @return string
+     */
+    public static function eventDescription( $name ) {
+
+        $description = (string) ( self::eventConfig()[ (string) $name ]['description'] ?? '' );
+
+        return $description !== '' ? \OWA\Core\Strings::translate( $description ) : '';
+    }
+
     /** @var string[]|null goalTriggerEventNames(), once computed */
     private static $goal_trigger_names = null;
 
