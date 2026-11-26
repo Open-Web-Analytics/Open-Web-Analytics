@@ -96,7 +96,8 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $this->signedInBy('cookies');
 
-        $params += ['do' => 'base.myAppPasswordCreateAjax'];
+        // The signed-in fixture's own password (RestControllerTestCase::makeUser()).
+        $params += ['do' => 'base.myAppPasswordCreateAjax', 'password' => 'pw' . $this->tok];
 
         if ($nonce) {
             $params['nonce'] = self::nonceFor('base.myAppPasswordCreateAjax');
@@ -144,6 +145,22 @@ final class AppPasswordScreensTest extends RestControllerTestCase
                 'nonce' => self::nonceFor('base.myAppPasswordCreateAjax')]);
 
             $this->assertSame(401, $this->ajax($c)['status'], $method);
+        }
+
+        $this->assertSame([], AppPasswords::forUser($me['user_id']));
+    }
+
+    /** The password is asked again: a session alone, borrowed or left open, makes nothing. */
+    public function testCreatingAsksForThePassword(): void
+    {
+        $me = $this->signIn();
+
+        foreach (['' => 'none', 'not-the-password' => 'a wrong one'] as $typed => $what) {
+
+            $r = $this->create(['name' => 'Export script', 'scope' => 'read', 'password' => $typed]);
+
+            $this->assertSame(403, $r['status'], $what);
+            $this->assertSame('That is not your password.', $r['json']['error'], $what);
         }
 
         $this->assertSame([], AppPasswords::forUser($me['user_id']));
