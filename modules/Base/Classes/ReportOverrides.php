@@ -21,6 +21,12 @@ namespace OWA\Module\Base\Classes;
  * page or a source from the URL, and the reports that name no metrics and
  * draw the Property's metric sets as tabs, which the builder does not author.
  *
+ * THE SHIPPED TITLE. It is the same report, reached by the same nav entry,
+ * so it keeps the shipped title and description: neither is stored from the
+ * editor, and both are drawn from the shipped definition as it is now --
+ * translated, and as a release last worded them. A different name is a
+ * custom report.
+ *
  * A CHANGED DEFAULT. An override is a copy, so a release that changes the
  * shipped report does not reach it. The hash of the shipped definition it
  * was made from is stored with it (replaces_hash), and the report says when
@@ -120,7 +126,7 @@ final class ReportOverrides {
      * have one on that Property.
      *
      * @param  string     $report_id   the shipped report
-     * @param  string     $name        what it is titled
+     * @param  string     $name        ignored: it keeps the shipped title
      * @param  mixed      $definition  as posted: JSON or decoded
      * @param  string     $user_id
      * @param  string     $property_id
@@ -139,7 +145,7 @@ final class ReportOverrides {
 
         return CustomReports::save( [
             'id'            => $mine ? (string) $mine['id'] : '',
-            'name'          => $name,
+            'name'          => (string) ( $shipped['title'] ?? $report_id ),
             'definition'    => $definition,
             'is_shared'     => false,
             'replaces'      => (string) $report_id,
@@ -175,8 +181,20 @@ final class ReportOverrides {
         }
 
         $definition = CustomReports::drawable( (array) $mine['definition'] );
-        $error      = CustomReports::validate( $definition, $property_id );
         $shipped    = self::shipped( $report_id );
+
+        // The shipped report's title and description, as it is now.
+        foreach ( [ 'title', 'description' ] as $key ) {
+
+            unset( $definition[ $key ] );
+
+            if ( isset( $shipped[ $key ] ) ) {
+
+                $definition[ $key ] = $shipped[ $key ];
+            }
+        }
+
+        $error = CustomReports::validate( $definition, $property_id );
 
         return [
             'id'         => (string) $mine['id'],

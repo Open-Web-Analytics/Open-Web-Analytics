@@ -63,6 +63,11 @@ $owa_max        = (int) $view->get('max_widgets');
                  * most ordinary mistake there is.
                  */
             ?>
+            <?php if ( $owa_replaces !== '' ): ?>
+            <?php // Your version of a shipped report keeps its title (ReportOverrides). ?>
+            <h1 class="owa_reportTitle" data-ui="custom-report-editor:title"><?php $view->out( $owa_name ); ?></h1>
+            <input type="hidden" id="customReportName" name="customReportName" value="<?php $view->out( $owa_name ); ?>" />
+            <?php else: ?>
             <div class="owa_builderFieldLabel">
                 <label for="customReportName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Report name' ) ); ?></label>
                 <span class="owa_builderRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
@@ -70,6 +75,7 @@ $owa_max        = (int) $view->get('max_widgets');
             <input type="text" id="customReportName" name="customReportName"
                    placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Untitled report' ) ); ?>"
                    value="<?php $view->out( $owa_name ); ?>" />
+            <?php endif; ?>
         </div>
 
         <?php

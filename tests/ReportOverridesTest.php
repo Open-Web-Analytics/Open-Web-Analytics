@@ -104,7 +104,34 @@ final class ReportOverridesTest extends TestCase
         $second = ReportOverrides::save('dashboard', 'Mine, again', $this->edited(), self::READER, self::PROPERTY);
 
         $this->assertSame($first['id'], $second['id']);
-        $this->assertSame('Mine, again', CustomReports::load($first['id'])['name']);
+    }
+
+    /**
+     * It is the same report, reached by the same nav entry: a posted name is
+     * not kept, and it is drawn with the shipped title and description as
+     * they are now, whatever was stored.
+     */
+    public function testItKeepsTheShippedTitle(): void
+    {
+        $shipped = ReportOverrides::shipped('dashboard');
+        $saved   = ReportOverrides::save('dashboard', 'My stuff', $this->edited(), self::READER, self::PROPERTY);
+
+        $row = CustomReports::load($saved['id']);
+        $this->assertSame($shipped['title'], $row['name']);
+        $this->assertSame($shipped['title'], $row['definition']['title']);
+
+        // A version stored with another title, as one saved before this was: drawn with the shipped one.
+        $definition = $row['definition'];
+        $definition['title']       = 'My stuff';
+        $definition['description'] = 'Not the shipped description.';
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET name = ?, definition = ? WHERE id = ?',
+            \OWA\Core\CoreAPI::entityFactory('base.custom_report')->getTableName()), ['My stuff', json_encode($definition), $saved['id']]);
+
+        $drawn = ReportOverrides::forReader('dashboard', self::READER, self::PROPERTY)['definition'];
+
+        $this->assertSame($shipped['title'], $drawn['title']);
+        $this->assertSame($shipped['description'], $drawn['description']);
     }
 
     public function testAReportThatCannotBeEditedIsNotSaved(): void

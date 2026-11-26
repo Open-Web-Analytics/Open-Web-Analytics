@@ -171,7 +171,12 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         if ( ! $report && $shipped !== null ) {
 
             $definition = \OWA\Module\Base\Classes\CustomReports::drawable( $shipped );
-            $name       = (string) ( $shipped['title'] ?? '' );
+        }
+
+        // Either way it keeps the shipped report's title (ReportOverrides).
+        if ( $shipped !== null ) {
+
+            $name = (string) ( $shipped['title'] ?? '' );
         }
 
         /*
