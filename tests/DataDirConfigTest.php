@@ -88,7 +88,7 @@ final class DataDirConfigTest extends TestCase
     {
         $owaData = \OWA\Core\Env::root() . '/owa-data/';
 
-        return strpos($default, $owaData) === 0 && strpos($default, $owaData . 'logs/') === 0
+        return strpos($default, $owaData) === 0
             ? $data . substr($default, strlen($owaData))
             : $default;
     }

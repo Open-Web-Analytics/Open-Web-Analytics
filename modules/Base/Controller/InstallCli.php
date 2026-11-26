@@ -86,7 +86,8 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         $data = rtrim( \OWA\Core\Env::dataDir(), '/' );
         $out  = [];
 
-        foreach ( [ $data, $data . '/conf' ] as $dir ) {
+        // The queue's own directory too: only the drain writes there.
+        foreach ( [ $data, $data . '/conf', $data . '/queue' ] as $dir ) {
 
             if ( is_dir( $dir ) && @fileowner( $dir ) === $me && ( fileperms( $dir ) & 0022 ) ) {
 
@@ -96,28 +97,33 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             }
         }
 
-        $logs  = $data . '/logs';
         $group = $web_group !== '' ? $web_group : ( posix_getgrgid( (int) @filegroup( \OWA\Core\Env::root() ) )['name'] ?? '' );
 
-        if ( is_dir( $logs ) && ! is_link( $logs ) && @fileowner( $logs ) === $me ) {
+        // logs/ and the tracking inbox in it: what the web server writes, and the cron user takes from.
+        foreach ( [ $data . '/logs', $data . '/logs/' . \OWA\Module\Base\Classes\TrackerIngest::INBOX ] as $shared ) {
 
-            $has = posix_getgrgid( (int) filegroup( $logs ) )['name'] ?? '';
+            if ( ! is_dir( $shared ) || is_link( $shared ) || @fileowner( $shared ) !== $me ) {
+
+                continue;
+            }
+
+            $has = posix_getgrgid( (int) filegroup( $shared ) )['name'] ?? '';
 
             if ( $group !== '' && $has !== $group ) {
 
-                $out[] = @chgrp( $logs, $group )
-                    ? sprintf( '%s now belongs to group %s.', $logs, $group )
-                    : sprintf( 'Could not give %1$s to group %2$s: make it writable by the user the web server runs as.', $logs, $group );
+                $out[] = @chgrp( $shared, $group )
+                    ? sprintf( '%s now belongs to group %s.', $shared, $group )
+                    : sprintf( 'Could not give %1$s to group %2$s: make it writable by the user the web server runs as.', $shared, $group );
             }
 
-            $mode = fileperms( $logs ) & 07777;
+            $mode = fileperms( $shared ) & 07777;
             $want = ( $mode | 02070 ) & ~0002;
 
             if ( $mode !== $want ) {
 
-                $out[] = @chmod( $logs, $want )
-                    ? sprintf( '%s is now writable by its group.', $logs )
-                    : sprintf( 'Could not make %s writable by its group.', $logs );
+                $out[] = @chmod( $shared, $want )
+                    ? sprintf( '%s is now writable by its group.', $shared )
+                    : sprintf( 'Could not make %s writable by its group.', $shared );
             }
         }
 
