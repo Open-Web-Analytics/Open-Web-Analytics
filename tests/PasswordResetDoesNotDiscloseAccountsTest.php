@@ -17,6 +17,43 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
 {
+    /** @var list<string> the addresses base.reset_password was raised for */
+    public static array $raised = [];
+
+    protected function tearDown(): void
+    {
+        // Whatever an action left for after the response, run here rather than at the end of the run.
+        \OWA\Core\CoreAPI::runAfterResponse();
+        self::$raised = [];
+    }
+
+    /**
+     * The handler writes a token and sends mail only for a known address, so
+     * its time would tell the two apart: it runs after the reply has gone.
+     */
+    public function testTheResetIsHandledAfterTheResponse(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the reset handler looks the address up' );
+        }
+
+        \OWA\Core\CoreAPI::getEventDispatch()->attach( 'base.reset_password',
+            [ new ResetPasswordRecorder(), 'notify' ], 'test|ResetPasswordRecorder::notify' );
+
+        $controller = new \OWA\Module\Base\Controller\PasswordResetRequest( [ 'email_address' => 'nobody@example.com' ] );
+        $controller->action();
+
+        $this->assertSame( [], self::$raised, 'not while the reply is made' );
+        $this->assertNotEmpty( $controller->data['status_msg'] ?? null, 'the reply is made' );
+
+        \OWA\Core\CoreAPI::runAfterResponse();
+
+        $this->assertSame( [ 'nobody@example.com' ], self::$raised );
+
+        \OWA\Core\CoreAPI::runAfterResponse();
+        $this->assertCount( 1, self::$raised, 'once' );
+    }
+
     public function testTheRequestFormDoesNotCheckWhetherTheAccountExists(): void
     {
         $controller = new \OWA\Module\Base\Controller\PasswordResetRequest(
@@ -117,5 +154,15 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
         $this->assertStringContainsString( 'If an account exists for ' . $address . ',',
             $sent->data['status_msg']['message'] ?? '' );
         $this->assertSame( $sent->getMsg( 2000 )['headline'], $sent->data['status_msg']['headline'] ?? null );
+    }
+}
+
+/** Records the address of each base.reset_password event. */
+final class ResetPasswordRecorder
+{
+    /** @param object $event */
+    public function notify($event): void
+    {
+        PasswordResetDoesNotDiscloseAccountsTest::$raised[] = (string) $event->get('email_address');
     }
 }

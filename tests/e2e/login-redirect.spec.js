@@ -130,6 +130,13 @@ test.describe('admin pages are not cacheable', () => {
 
         expect(report.headers()['cache-control']).toBe('private, no-store');
     });
+
+    test('no other site may frame an admin page', async ({ request }) => {
+        const login = await request.get('index.php?owa_do=base.loginForm');
+
+        expect(login.headers()['content-security-policy']).toBe("frame-ancestors 'self'");
+        expect(login.headers()['x-frame-options']).toBe('SAMEORIGIN');
+    });
 });
 
 /**
