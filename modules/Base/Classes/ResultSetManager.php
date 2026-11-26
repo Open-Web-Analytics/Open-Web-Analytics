@@ -2670,6 +2670,9 @@ class ResultSetManager extends \OWA\Core\Base {
             $inner->selectFrom( $bm->getTableName(), $bm->getTableAlias() );
         }
 
+        // And the groups the rows are restricted to or exclude, so a count of them is the rows'.
+        $this->applyGroupConditions( $inner );
+
         $sql = $inner->generateSelectQuerySql();
 
         return [ $sql, $inner->getBindings() ];

@@ -384,7 +384,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame('/a', $a['pagePath']['value']);
         $this->assertSame([3, 1], [(int) $a['pageViews']['value'], (int) $a['pageViews']['compare_value']]);
         $this->assertEqualsWithDelta(2.0, $a['pageViews']['change'], 1e-9);
-        $this->assertSame(3, (int) $data['resultsTotal']);
+        $this->assertSame(3, (int) $data['totalRows'], '/a and /b, and /c only the comparison has');
     }
 
     public function testATrendIsComparedDayForDay(): void
