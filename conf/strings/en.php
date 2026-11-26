@@ -1424,6 +1424,7 @@ return [
     'Stay signed in' => 'Stay signed in',
     'Step %1$s: a step takes at most %2$d conditions.' => 'Step %1$s: a step takes at most %2$d conditions.',
     'Step %s' => 'Step %s',
+    'Step %s needs a path without its query string: test the part after the ? as the page query.' => 'Step %s needs a path without its query string: test the part after the ? as the page query.',
     'Step %s needs a path, such as /basket, not a full web address.' => 'Step %s needs a path, such as /basket, not a full web address.',
     'Step %s needs an event.' => 'Step %s needs an event.',
     'Step %s of this funnel has no event to match. Edit the funnel and choose one.' => 'Step %s of this funnel has no event to match. Edit the funnel and choose one.',
