@@ -607,48 +607,38 @@ PHP
     }
 
     /**
-     * A drained batch that cannot be archived is not dead-lettered -- its events
-     * are ingested -- nor read again: each drain tries once more, saying why,
-     * and drains the batches behind it; after MAX_REMOVE_ATTEMPTS it is set
-     * aside as .failed, and failedBatches() names it for System Health.
+     * A drained batch that cannot be archived is not dead-lettered -- its
+     * events are ingested -- nor read again: it is set aside as .failed at
+     * once, saying why, the batches behind it drain, and failedBatches() names
+     * it for System Health.
      */
-    public function testABatchThatCannotBeArchivedIsRetriedThenSetAside(): void
+    public function testABatchThatCannotBeArchivedIsSetAside(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', true);
 
         $q = $this->queue();
         $q->send(self::envelope('a'));
         $first = $q->receive(10, 300);
+        $name  = $this->batchName($first[0]);
 
         chmod($this->dir . 'archive', 0555);
 
         try {
             $log = $this->logDuring(fn () => $q->ack($first[0]));
             $this->assertStringContainsString('could not be archived (', $log);
-            $this->assertStringContainsString('attempt 1 of ' . FileEventQueue::MAX_REMOVE_ATTEMPTS, $log);
+            $this->assertStringContainsString('is set aside as ' . $name . FileEventQueue::FAILED_SUFFIX, $log);
 
-            // The same drain goes on to the next batch, once.
+            $this->assertFileExists($this->dir . 'processing/' . $name . FileEventQueue::FAILED_SUFFIX);
+            $this->assertFileDoesNotExist($this->dir . 'processing/' . $name);
+
+            $failed = array_values(array_filter($q->failedBatches(), fn ($f) => $f['batch'] === $name . FileEventQueue::FAILED_SUFFIX));
+            $this->assertCount(1, $failed);
+            $this->assertTrue($failed[0]['set_aside']);
+            $this->assertNotSame('', $failed[0]['reason']);
+
+            // The batches behind it drain; it is taken by no drain.
             $q->send(self::envelope('b'));
-            $b = $q->receive(10, 300);
-            $this->assertSame(['b'], self::names($b));
-            $q->ack($b[0]);
-
-            $this->assertSame([['batch' => $this->batchName($first[0]), 'attempts' => 1, 'set_aside' => false]],
-                array_map(fn ($f) => ['batch' => $f['batch'], 'attempts' => $f['attempts'], 'set_aside' => $f['set_aside']],
-                    array_values(array_filter($q->failedBatches(), fn ($f) => $f['batch'] === $this->batchName($first[0])))));
-
-            for ($drain = 2; $drain <= FileEventQueue::MAX_REMOVE_ATTEMPTS; $drain++) {
-                $log = $this->logDuring(fn () => $this->assertSame([], self::names($this->queue()->receive(10, 300)), 'nothing read again'));
-            }
-
-            $this->assertStringContainsString('is set aside as', $log);
-            $this->assertFileExists($this->dir . 'processing/' . $this->batchName($first[0]) . FileEventQueue::FAILED_SUFFIX);
-
-            $failed = $this->queue()->failedBatches();
-            $this->assertTrue((bool) array_filter($failed, fn ($f) => $f['set_aside'] && $f['attempts'] === FileEventQueue::MAX_REMOVE_ATTEMPTS
-                && $f['reason'] !== ''));
-
-            $this->assertSame([], self::names($this->queue()->receive(10, 300)), 'a batch set aside is taken by no drain');
+            $this->assertSame(['b'], self::names($this->queue()->receive(10, 300)));
         } finally {
             chmod($this->dir . 'archive', 0775);
         }

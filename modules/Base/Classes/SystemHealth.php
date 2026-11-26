@@ -331,17 +331,18 @@ class SystemHealth {
                     . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid ) );
         }
 
-        // Drained, every event ingested, and not removable: retried, then set aside.
+        // Drained, every event ingested, and not removable: set aside, or where even that failed, in the way.
         foreach ( $unremoved as $batch ) {
 
             $findings[] = $batch['set_aside']
                 ? self::finding( 'red', \OWA\Core\CoreAPI::t( 'Batch set aside' ), sprintf( \OWA\Core\CoreAPI::t(
-                    'Batch %1$s was drained, and could not be archived or deleted after %2$d tries: %3$s. Its events are ingested. '
-                  . 'Fix the cause -- the permissions of the queue\'s processing directory, or disk space -- then delete it.' ),
-                    $batch['batch'], $batch['attempts'], $batch['reason'] ) )
-                : self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Batch not removed' ), sprintf( \OWA\Core\CoreAPI::t(
-                    'Batch %1$s was drained, but could not be archived or deleted: %2$s. Tried %3$d of %4$d times; the next drain tries again.' ),
-                    $batch['batch'], $batch['reason'], $batch['attempts'], FileEventQueue::MAX_REMOVE_ATTEMPTS ) );
+                    'Batch %1$s was drained but could not be archived or deleted: %2$s. Its events are ingested. '
+                  . 'Fix the cause -- the permissions of the queue\'s archive directory, or disk space -- then delete it.' ),
+                    $batch['batch'], $batch['reason'] ) )
+                : self::finding( 'red', \OWA\Core\CoreAPI::t( 'Batch not removed' ), sprintf( \OWA\Core\CoreAPI::t(
+                    'Batch %1$s was drained but could not be archived, deleted or set aside: %2$s. Its events are ingested and it is '
+                  . 'not read again; each drain tries to remove it. Fix the permissions of the queue\'s processing directory.' ),
+                    $batch['batch'], $batch['reason'] ) );
         }
 
         $backend = TrackerIngest::backend();

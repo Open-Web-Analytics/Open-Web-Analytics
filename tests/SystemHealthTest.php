@@ -122,8 +122,8 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('red', self::levels(SystemHealth::intake())['Backlog']);
     }
 
-    /** A drained batch that cannot be archived is yellow while it is retried, red once it is set aside. */
-    public function testABatchNotRemovedIsYellowThenSetAsideIsRed(): void
+    /** A drained batch that cannot be archived is set aside, and red, with its reason. */
+    public function testABatchSetAsideIsRed(): void
     {
         $was = \OWA\Core\CoreAPI::getSetting('base', 'archive_old_events');
         \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', true);
@@ -139,12 +139,6 @@ final class SystemHealthTest extends TestCase
             ob_start();
             $q->ack($got[0]);
             ob_end_clean();
-
-            $this->assertSame('yellow', self::levels(SystemHealth::intake())['Batch not removed']);
-
-            for ($i = 2; $i <= \OWA\Module\Base\Classes\FileEventQueue::MAX_REMOVE_ATTEMPTS; $i++) {
-                (new \OWA\Module\Base\Classes\FileEventQueue(['path' => $this->intakeDir]))->receive(10, 300);
-            }
 
             $this->assertSame('red', self::levels(SystemHealth::intake())['Batch set aside']);
         } finally {

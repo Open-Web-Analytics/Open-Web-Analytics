@@ -828,16 +828,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
-    /** Drains that try to archive or delete a drained batch before it is set aside as failed. */
-    const MAX_REMOVE_ATTEMPTS = 3;
-
     /** What a batch set aside is renamed with: no longer a .txt, so no drain takes it. */
     const FAILED_SUFFIX = '.failed';
 
     /**
-     * Batches this consumer drained and could not archive or delete: not taken
-     * again by it (claimNext()), which would find each at its end again at once.
-     * The next drain tries once more.
+     * Batches this consumer drained and could neither remove nor set aside:
+     * not taken again by it (claimNext()), which would find each at its end
+     * again at once. The next drain tries once more.
      *
      * @var array<string, true>
      */
@@ -847,11 +844,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * Every line of the batch is settled: archive or delete it.
      *
      * Every event in it is already ingested, so a batch that cannot be
-     * removed (permissions, a full disk) is not dead-lettered: what failed is
-     * the housekeeping. Its state is kept, saying it was read to the end, so
-     * no drain reads it again, and records each failure and why. The next
-     * MAX_REMOVE_ATTEMPTS drains try again; then it is renamed .failed, out of
-     * every drain's way, and System Health names it (failedBatches()).
+     * removed is not dead-lettered: what failed is the housekeeping. It is
+     * renamed .failed where it is, at once -- a rename within processing/
+     * works whenever archive/ is what refused -- out of every drain's way,
+     * with its state beside it saying why, and System Health names it
+     * (failedBatches()). When processing/ itself refuses, it cannot be set
+     * aside either: its state, read to the end, keeps any drain from reading
+     * it again, and each drain tries once more.
      *
      * @return void
      */
@@ -866,6 +865,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->batch  = null;
 
         $archive = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' );
+        $verb    = $archive ? 'archived' : 'deleted';
 
         error_clear_last();
 
@@ -878,12 +878,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return;
         }
 
-        $this->unremovable[ $path ] = true;
+        $reason = (string) ( error_get_last()['message'] ?? 'no reason given' );
 
-        $reason   = (string) ( error_get_last()['message'] ?? 'no reason given' );
-        $attempts = (int) ( $this->state['remove_failures'] ?? 0 ) + 1;
-
-        $this->state['remove_failures'] = $attempts;
+        $this->state['remove_failures'] = (int) ( $this->state['remove_failures'] ?? 0 ) + 1;
         $this->state['remove_error']    = $reason;
         $this->state['failed_at']       = time();
         $this->state['clean']           = true;
@@ -894,28 +891,29 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         } catch ( \RuntimeException $e ) {
 
-            // The count is lost with it; the next drain starts it again.
+            // processing/ refuses writes: the rename below fails too, and the batch is tried again.
         }
 
-        if ( $attempts >= self::MAX_REMOVE_ATTEMPTS
-             && @rename( $path, $path . self::FAILED_SUFFIX ) ) {
+        if ( @rename( $path, $path . self::FAILED_SUFFIX ) ) {
 
             @rename( $path . '.state', $path . self::FAILED_SUFFIX . '.state' );
 
-            \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s could not be %2$s after %3$d drains (%4$s), and is set aside as %5$s. '
-                . 'Its events are ingested; fix the cause and delete it.',
-                $path, $archive ? 'archived' : 'deleted', $attempts, $reason, basename( $path ) . self::FAILED_SUFFIX ) );
+            \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s could not be %2$s (%3$s), and is set aside as %4$s. '
+                . 'Its events are ingested; fix the cause and delete it.', $path, $verb, $reason, basename( $path ) . self::FAILED_SUFFIX ) );
 
             return;
         }
 
-        \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s was drained but could not be %2$s (%3$s); attempt %4$d of %5$d, tried again on the next drain.',
-            $path, $archive ? 'archived' : 'deleted', $reason, $attempts, self::MAX_REMOVE_ATTEMPTS ) );
+        $this->unremovable[ $path ] = true;
+
+        \OWA\Core\CoreAPI::error( sprintf( 'Event queue: %1$s was drained but could not be %2$s or set aside (%3$s); '
+            . 'it is tried again on the next drain.', $path, $verb, $reason ) );
     }
 
     /**
      * Drained batches that could not be archived or deleted: set aside as
-     * .failed, or still being retried. For System Health.
+     * .failed, or, where even that failed, still in processing/. For System
+     * Health.
      *
      * @return list<array{batch: string, attempts: int, reason: string, failed_at: int|null, set_aside: bool}>
      */
