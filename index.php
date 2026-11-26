@@ -35,6 +35,12 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
      */
     header( 'Cache-Control: private, no-store' );
 
+    // Framed by OWA's own pages only, so no other site can draw one under a
+    // decoy and steer a signed-in user's clicks. Nothing of OWA's is framed
+    // elsewhere: the overlay launcher frames the tracked site, not the reverse.
+    header( "Content-Security-Policy: frame-ancestors 'self'" );
+    header( 'X-Frame-Options: SAMEORIGIN' );
+
     
     $params = [];
     
