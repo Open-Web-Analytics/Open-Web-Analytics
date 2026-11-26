@@ -17,13 +17,13 @@ namespace OWA\Module\Base\Controller;
  */
 class PropertyDelete extends \OWA\Core\AdminController {
 
-    // edit_sites on the Property acted on, not on the request's siteId.
+    // create_properties, held install-wide, and a Property the user may see.
     use \OWA\Core\PropertyScopedAccess;
 
     public function __construct( $params ) {
 
         parent::__construct( $params );
-        $this->setRequiredCapability( 'edit_sites' );
+        $this->setRequiredCapability( 'create_properties' );
         $this->setNonceRequired();
     }
 

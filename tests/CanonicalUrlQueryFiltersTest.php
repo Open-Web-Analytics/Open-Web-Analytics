@@ -72,6 +72,27 @@ final class CanonicalUrlQueryFiltersTest extends TestCase
             $this->canonical('http://shop.example.com/p?owa_source=x&a=1&owa_medium=y'));
     }
 
+    /**
+     * A click's target_url drops what page_query and referer_query drop
+     * (droppedQueryParams()): search terms, the Property's own campaign keys
+     * and utm_* where read, not only source, medium and campaign. Two lists
+     * split one URL into several rows in the outbound-click reports.
+     */
+    public function testItDropsWhatThePageQueryDrops(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', 'sessionid');
+        $dropped = Helpers::droppedQueryParams('no-such-site-for-this-test');
+
+        $this->assertContains('sessionid', $dropped);
+
+        $this->assertContains(\OWA\Core\CoreAPI::getSetting('base', 'ns') . 'search_terms', $dropped);
+
+        foreach ($dropped as $name) {
+            $this->assertSame('http://shop.example.com/p?a=1',
+                $this->canonical('http://shop.example.com/p?' . $name . '=x&a=1', 'sessionid'), $name);
+        }
+    }
+
     public function testNoQuestionMarkIsLeftWithNothingAfterIt(): void
     {
         $this->assertSame('http://shop.example.com/p', $this->canonical('http://shop.example.com/p?owa_campaign=z'));

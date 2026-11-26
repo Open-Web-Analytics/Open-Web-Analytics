@@ -86,28 +86,13 @@ describe( 'is_object', () => {
     } );
 } );
 
-describe( 'in_array', () => {
-
-    test( 'finds a value in an array or an object\'s values', () => {
-        expect( OWA.util.in_array( 'b', [ 'a', 'b' ] ) ).toBe( true );
-        expect( OWA.util.in_array( 'c', [ 'a', 'b' ] ) ).toBe( false );
-        expect( OWA.util.in_array( 2, { x: 1, y: 2 } ) ).toBe( true );
-    } );
-
-    test( 'compares loosely unless strict', () => {
-        expect( OWA.util.in_array( '1', [ 1 ] ) ).toBe( true );
-        expect( OWA.util.in_array( '1', [ 1 ], true ) ).toBe( false );
-    } );
-
-    test( 'an empty haystack holds nothing', () => {
-        expect( OWA.util.in_array( 'a', null ) ).toBe( false );
-    } );
-} );
-
 describe( 'removed helpers', () => {
 
-    test( 'Util.rand and OWA.util.urldecode are gone', () => {
+    test( 'Util.rand, zeroFill, stripWwwFromDomain and OWA.util.urldecode, in_array are gone', () => {
         expect( Util.rand ).toBeUndefined();
+        expect( Util.zeroFill ).toBeUndefined();
+        expect( Util.stripWwwFromDomain ).toBeUndefined();
         expect( OWA.util.urldecode ).toBeUndefined();
+        expect( OWA.util.in_array ).toBeUndefined();
     } );
 } );

@@ -105,17 +105,7 @@ describe('cookie parsing without the strpos port', () => {
     });
 });
 
-describe('zero padding through padStart', () => {
-
-    test('pads to width and leaves anything already wide enough alone', () => {
-        expect(Util.zeroFill(42, 6)).toBe('000042');
-        expect(Util.zeroFill('7', 3)).toBe('007');
-        expect(Util.zeroFill(999999, 6)).toBe('999999');
-        // Longer than the target width is returned unchanged rather than
-        // truncated -- the guid builder depends on never losing digits.
-        expect(Util.zeroFill(1234567, 6)).toBe('1234567');
-        expect(Util.zeroFill(0, 3)).toBe('000');
-    });
+describe('the random guid', () => {
 
     test('the visitor id it feeds is still all digits', () => {
         // The tracker id contract: guids must be numeric, because the column is

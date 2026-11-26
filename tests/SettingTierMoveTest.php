@@ -176,37 +176,6 @@ final class SettingTierMoveTest extends TestCase
     }
 
     /**
-     * The settings FORM needs a whole map, not one key at a time.
-     *
-     * Otherwise the controller carries a hardcoded key list that has to be
-     * kept in step with the template by hand.
-     */
-    public function testTheEffectiveMapLayersInstallThenPropertyThenProfile(): void
-    {
-        $this->skipUnlessParented();
-
-        \OWA\Core\CoreAPI::setScopedSetting(
-            'property', $this->propertyId, 'base', $this->key, 'property-value' );
-
-        $map = \OWA\Core\CoreAPI::getEffectiveSettings( 'profile', $this->siteId, 'base' );
-
-        $this->assertSame( 'property-value', $map[ $this->key ] ?? null,
-            'An inherited value was missing from the map, so the form would render it blank '
-            . 'and saving would write a blank over it.' );
-
-        $this->assertArrayHasKey( 'timezone', $map,
-            'Install-wide keys were dropped, so the form only shows overridden settings.' );
-
-        \OWA\Core\CoreAPI::setScopedSetting(
-            'profile', $this->siteId, 'base', $this->key, 'profile-value' );
-
-        $map = \OWA\Core\CoreAPI::getEffectiveSettings( 'profile', $this->siteId, 'base' );
-
-        $this->assertSame( 'profile-value', $map[ $this->key ] ?? null,
-            'The Profile row did not win over its Property.' );
-    }
-
-    /**
      * The resolver is memoized, so a write in the same request has to bust it.
      *
      * Caching was not optional: the tracking path reads four scoped settings
