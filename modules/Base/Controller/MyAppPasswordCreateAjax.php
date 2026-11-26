@@ -9,7 +9,9 @@ namespace OWA\Module\Base\Controller;
  * so an application password cannot mint a successor that
  * outlives revoking it. Scripts use `cmd=app-password-create`.
  *
- * The user is the session's, never a parameter.
+ * The user is the session's, never a parameter, and must type their
+ * password again: a session alone, borrowed or left open, does not make a
+ * credential that outlives it.
  */
 class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
 
@@ -30,6 +32,11 @@ class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
     public function action() {
 
         $user_id = (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' );
+
+        if ( ! \OWA\Core\Auth::get_instance()->isAccountPassword( $user_id, $this->getParam( 'password' ) ) ) {
+
+            return $this->answer( 403, \OWA\Core\CoreAPI::t( 'That is not your password.' ) );
+        }
 
         $made = \OWA\Module\Base\Classes\AppPasswords::create(
             $user_id, trim( (string) $this->getParam( 'name' ) ), (string) $this->getParam( 'scope' ) );

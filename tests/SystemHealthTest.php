@@ -122,6 +122,31 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('red', self::levels(SystemHealth::intake())['Backlog']);
     }
 
+    /** A drained batch that cannot be archived is set aside, and red, with its reason. */
+    public function testABatchSetAsideIsRed(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('base', 'archive_old_events');
+        \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', true);
+
+        $q = TrackerIngest::$queue;
+        $q->send(['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1]);
+        $got = $q->receive(10, 300);
+
+        @mkdir($this->intakeDir . 'archive', 0775, true);
+        chmod($this->intakeDir . 'archive', 0555);
+
+        try {
+            ob_start();
+            $q->ack($got[0]);
+            ob_end_clean();
+
+            $this->assertSame('red', self::levels(SystemHealth::intake())['Batch set aside']);
+        } finally {
+            chmod($this->intakeDir . 'archive', 0775);
+            \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', $was);
+        }
+    }
+
     public function testEveryRegisteredJobIsListed(): void
     {
         $jobs = SystemHealth::recurringJobs();

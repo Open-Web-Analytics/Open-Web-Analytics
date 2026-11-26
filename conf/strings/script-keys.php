@@ -108,6 +108,7 @@ return [
     'Edit %s',
     'Element clicks',
     'End date',
+    'Enter your password.',
     'Equals',
     'Event',
     'Field',
