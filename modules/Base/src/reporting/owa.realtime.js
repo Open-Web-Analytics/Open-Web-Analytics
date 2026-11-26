@@ -254,7 +254,7 @@ OWA.realtime.prototype = {
 
                 } else {
 
-                    // NULL is absent, and is labelled at the edge (PLAN 2.11).
+                    // NULL is absent, and is labelled at the edge.
                     td.textContent = v === null || v === undefined || v === '' ? OWA.l( '(not set)' ) : String( v );
                 }
 

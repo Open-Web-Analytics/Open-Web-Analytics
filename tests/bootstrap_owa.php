@@ -55,7 +55,7 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
 
     /*
      * Tracking bundles go to a directory of the suite's own. Creating a
-     * Profile or saving its tag settings publishes its bundle (PLAN 2.30.7),
+     * Profile or saving its tag settings publishes its bundle,
      * and a test doing either would otherwise leave files under the
      * install's public/tracker/ for Profiles it then deletes.
      */

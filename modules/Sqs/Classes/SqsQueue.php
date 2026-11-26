@@ -2,7 +2,7 @@
 namespace OWA\Module\Sqs\Classes;
 
 /**
- * The tracking intake on AWS SQS (PLAN 2.30.4a), mirroring the file queue
+ * The tracking intake on AWS SQS, mirroring the file queue
  * (Base\Classes\FileEventQueue): a main queue with a dead-letter queue, a
  * receive limit the queue enforces (here, the redrive policy itself), and
  * one-time replay through the contract.

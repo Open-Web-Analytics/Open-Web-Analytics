@@ -9,7 +9,7 @@ use OWA\Module\Base\Classes\SystemHealth;
 use OWA\Module\Base\Classes\TrackerIngest;
 
 /**
- * System Health (PLAN 2.30.5): what Classes\SystemHealth finds, and that the
+ * System Health: what Classes\SystemHealth finds, and that the
  * screen shows it. The job queue and the tracker intake are scratch copies
  * of the test's own, so the findings are about state the test made.
  */

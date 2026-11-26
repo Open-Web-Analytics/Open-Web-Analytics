@@ -3,7 +3,7 @@
 namespace OWA\Module\Sqs\Controller;
 
 /**
- * Settings page for the SQS tracking intake (PLAN 2.30.4a): the region, and
+ * Settings page for the SQS tracking intake: the region, and
  * what provisioning found.
  */
 class OptionsSqs extends \OWA\Core\AdminController {

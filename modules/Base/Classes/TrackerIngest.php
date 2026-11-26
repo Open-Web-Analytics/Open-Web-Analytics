@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): beacons on their way into
+ * The tracker-ingest intake: beacons on their way into
  * ingest, through the IntakeQueue of the configured backend (backend()).
  *
  * log.php's path decides between two modes. QUEUED (queue_tracking_events,

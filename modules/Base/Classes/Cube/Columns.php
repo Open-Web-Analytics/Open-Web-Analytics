@@ -190,7 +190,7 @@ class Columns {
                     $this->test( $definition ) );
 
             // The session's own reading, or the visitor's last touch within the
-            // lookback; each side read by an ordinary step (PLAN 2.29).
+            // lookback; each side read by an ordinary step.
             case 'attributed':
                 return new AttributedStep( $column,
                     $this->step( $column, (array) $definition['own'] ),

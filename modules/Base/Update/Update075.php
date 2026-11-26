@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * A goal event's conversion becomes a row of its own (PLAN 1.3.2).
+ * A goal event's conversion becomes a row of its own.
  *
  * Before this, ingest flagged the event that met a goal event, is_goal_event = 1,
  * so the stored rows could not say WHICH goal event converted. A conversion is a

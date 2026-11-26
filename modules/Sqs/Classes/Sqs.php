@@ -2,7 +2,7 @@
 namespace OWA\Module\Sqs\Classes;
 
 /**
- * What the SQS intake needs to know about this install (PLAN 2.30.4a): its
+ * What the SQS intake needs to know about this install: its
  * region, its credentials, and its queues' names.
  *
  * owa-config.php constants, all optional:
@@ -312,7 +312,7 @@ final class Sqs {
 
     /**
      * Create both queues, or find them, and record the outcome for the
-     * settings screen (PLAN 2.30.4a).
+     * settings screen.
      *
      * @return array{ok: bool, error: string|null, main: string|null, dlq: string|null, at: int}
      */

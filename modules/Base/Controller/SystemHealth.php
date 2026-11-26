@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * System Health (PLAN 2.30.5): is the installation's background work
+ * System Health: is the installation's background work
  * happening -- the scheduler, its recurring jobs, the one-off job queue and the
  * tracker-ingest intake. What it says is Classes\SystemHealth, which
  * cmd=schedule-status reads too.

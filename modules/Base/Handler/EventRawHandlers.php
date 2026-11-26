@@ -990,7 +990,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
      * Record a session that arrived with tags or a referrer as the visitor's
-     * last non-direct touch (PLAN 2.29).
+     * last non-direct touch.
      *
      * ON THE LANDING BEACON ONLY: the one beacon carrying the session's tags.
      * A direct arrival writes nothing; it is what reads the touch

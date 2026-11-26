@@ -456,7 +456,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The tracker-ingest intake (PLAN 2.30.3): a queue that stops draining
+     * The tracker-ingest intake: a queue that stops draining
      * accumulates in silence, and a dead letter is a beacon not yet in a
      * report.
      *

@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Classes\Cube;
 
 /**
  * attributed_source, attributed_medium, attributed_campaign: the last
- * non-direct touch within the Property's lookback (PLAN 2.29).
+ * non-direct touch within the Property's lookback.
  *
  *   the session arrived with tags or a referrer   its own reading
  *   else the visitor's last non-direct touch      that touch's reading,

@@ -6,7 +6,7 @@
  * Read from disk before any module object exists -- see
  * Core\Module::settingsRegistry() for why that is forced rather than chosen.
  *
- * Two tag settings (PLAN 2.24.4): whether a Profile records, and what share
+ * Two tag settings: whether a Profile records, and what share
  * of page loads. They reach the tracker only through a Profile's tracking
  * bundle, as trackDomStream and setDomstreamSampleRate.
  *

@@ -16,7 +16,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * The columns are what v2 needs, not what 1.x had, so the v2 migration reads
  * this table rather than reinterpreting it: an author names a goal event, gives
  * it an event type and a condition, and the server materialises a row whose
- * event_type IS that name (PLAN.html §7.14).
+ * event_type IS that name.
  */
 final class GoalEventDefinitionStorageTest extends TestCase
 {

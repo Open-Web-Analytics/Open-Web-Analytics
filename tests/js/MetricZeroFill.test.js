@@ -18,7 +18,7 @@ require('../../modules/Base/src/reporting/owa.areachart.js');
  * A report never prints "null".
  *
  * A count over nothing is 0, and the server says so. A ratio over nothing has
- * no value (PLAN 2.11) and reads as a dash. On a trend, a day the cube has no
+ * no value and reads as a dash. On a trend, a day the cube has no
  * row for is a zero, for a ratio as well as a count: a ratio's line broke
  * there.
  */

@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Classes\Migration;
 
 /**
- * v1's recorded goal completions onto the migrated rows (PLAN.html 2.21).
+ * v1's recorded goal completions onto the migrated rows.
  *
  * v1 recorded a completion per session in a numbered slot (owa_session.goal_N);
  * v2 counts a goal event, a row named by the goal event definition -- by the

@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Controller;
 /**
  * The realtime screen: a Property's last thirty minutes, refreshed as it runs.
  *
- * Replaces 1.x's per-report Live View (PLAN 1.6). Reports read the cube and
+ * Replaces 1.x's per-report Live View. Reports read the cube and
  * are as of the last build; this reads raw through v1/realtime and is
  * immediate, so it has no period and no "Data as of" line, and works on a
  * Property whose reports are not ready yet -- it reads no cube.

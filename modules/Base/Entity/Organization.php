@@ -10,8 +10,7 @@ namespace OWA\Module\Base\Entity;
  * deliberately, because "which organization am I acting in?" is a real question
  * and nothing yet needs to ask it.
  *
- * Migrated and freshly installed instances get one named "My Organization"
- * (PLAN.html §3.5).
+ * Migrated and freshly installed instances get one named "My Organization".
  */
 class Organization extends \OWA\Core\Entity {
 

@@ -2252,7 +2252,7 @@ class TrackingEventHelpers {
 
     /**
      * The visitor's last non-direct touch before this session, from the visitor
-     * store, as the evidence it was recorded as (PLAN 2.29).
+     * store, as the evidence it was recorded as.
      *
      * ON THE LANDING BEACON OF A RETURNING VISITOR'S SESSION ONLY -- the one
      * beacon whose rows the cube reads a session's values from. A first visit

@@ -76,7 +76,7 @@ class SitesAdd extends \OWA\Core\AdminController {
                 $site->applyAssignedUserChanges( [ $uid ], [ $uid ] );
             }
 
-            // A web Profile's bundle is there when its snippet is first pasted (PLAN 2.30.7).
+            // A web Profile's bundle is there when its snippet is first pasted.
             if ( $site->getStreamType() === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
                 \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site->get( 'site_id' ) );

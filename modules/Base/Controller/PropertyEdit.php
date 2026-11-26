@@ -163,7 +163,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
                 (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) );
         }
 
-        // Its tag settings reach every Profile under it: one queued publish (PLAN 2.30.7).
+        // Its tag settings reach every Profile under it: one queued publish.
         \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
 
         $this->set( 'propertyId', $propertyId );

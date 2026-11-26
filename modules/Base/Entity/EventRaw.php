@@ -395,7 +395,7 @@ class EventRaw extends \OWA\Core\Entity {
          * LATEST touch: by the time a cube is built, or rebuilt a year on, the
          * row may hold one that came after this session. The cube decides what
          * it means -- classification and the lookback window are both applied
-         * there, so a change to either reaches history on rebuild (PLAN 2.29).
+         * there, so a change to either reaches history on rebuild.
          *
          * Not on the cubes: the cube's attributed_* columns are the reading.
          */

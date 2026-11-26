@@ -3,7 +3,7 @@
 require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
- * The visitor's last non-direct touch, written and read at ingest (PLAN 2.29).
+ * The visitor's last non-direct touch, written and read at ingest.
  *
  * A session arriving with tags or a referrer records itself on the visitor
  * store as last_touch_*, under a guard in the UPDATE itself. A returning

@@ -156,7 +156,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          * last_touch_ts < ? -- so a late beacon for an older session cannot
          * displace a newer touch (EventRawHandlers::writeLastTouch()). A direct
          * session of a returning visitor reads it and stamps it onto its raw
-         * rows as prior_touch_* (PLAN 2.29).
+         * rows as prior_touch_*.
          */
         $this->setProperty( $this->column( 'last_touch_source', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'last_touch_medium', OWA_DTD_VARCHAR64 ) );

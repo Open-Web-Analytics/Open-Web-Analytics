@@ -33,8 +33,7 @@ class Module extends \OWA\Core\Module {
     /**
      * The schema 1.14.0 left behind, and the oldest this release upgrades.
      *
-     * v2's updates start at 34, so an older installation upgrades to 1.14 first
-     * (PLAN.html 2.21).
+     * v2's updates start at 34, so an older installation upgrades to 1.14 first.
      */
     const OLDEST_UPGRADABLE_SCHEMA = 33;
 
@@ -83,7 +82,7 @@ class Module extends \OWA\Core\Module {
         }
 
         /*
-         * What a new version needs beyond its schema (PLAN 2.30.7): the
+         * What a new version needs beyond its schema: the
          * Profiles' tracking bundles made from its tracker, and a bundle for
          * every Profile from 1.x, which has none. Only those not current are
          * rewritten -- each one's first line names the build and settings it
@@ -152,7 +151,7 @@ class Module extends \OWA\Core\Module {
 
     /**
      * Up to date when the schema is, AND the tracker this install has built is
-     * the one that last applied an update (PLAN 2.30.7): the hash of the built
+     * the one that last applied an update: the hash of the built
      * tracker (TrackerBundle::buildHash()) is the one recorded. A release that
      * leaves the tracker alone builds the same tracker and asks for no update.
      *
@@ -204,7 +203,7 @@ class Module extends \OWA\Core\Module {
         $this->registerImplementation('event_queue_types', 'file', \OWA\Module\Base\Classes\FileEventQueue::class );
 
         /*
-         * The tracking intake (PLAN 2.30.3). Its type is written here and the
+         * The tracking intake. Its type is written here and the
          * backend is the only plug: a queue type a module registers serves its
          * own queues, and that module's constant points this one at it
          * (TrackerIngest::backend()).
@@ -576,7 +575,7 @@ class Module extends \OWA\Core\Module {
                 'custom_report',
                 'custom_report_favorite',
                 'job_lock',
-                // One-off admin jobs, run by the scheduler (PLAN 2.30.5).
+                // One-off admin jobs, run by the scheduler.
                 'job_queue',
                 // Application passwords for the REST API.
                 'app_password',
@@ -613,7 +612,7 @@ class Module extends \OWA\Core\Module {
     /**
      * Queue one publish of every bundle when a save at install level touched
      * a tag setting -- Base's or an active module's, anything in a
-     * `tracking_tag` fieldset (PLAN 2.30.7).
+     * `tracking_tag` fieldset.
      *
      * @param  \OWA\Module\Base\Classes\Event $event the settings save: its module and keys
      * @return int an OWA_EHS_ handler status

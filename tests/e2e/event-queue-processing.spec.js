@@ -7,7 +7,7 @@
  * log.php is appended to the FILE queue under owa-data/logs/ and NOT written to the
  * fact tables until a separate drain runs (`php cli.php cmd=drain-tracker-ingest`).
  * That deferred path is what a busy site turns on to keep log.php cheap, and it is
- * the tracker-ingest intake's file queue and drain (PLAN 2.30.3, 2.30.4). No
+ * the tracker-ingest intake's file queue and drain. No
  * jest/phpunit test drives it end to end: enqueue over real HTTP, prove nothing is
  * ingested yet, run the real CLI drain, prove the fact row then appears.
  *

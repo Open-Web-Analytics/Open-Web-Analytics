@@ -212,7 +212,7 @@ final class MaterializedEventsTest extends IngestionTestCase
 
         /*
          * The failed write is sent to the intake to be retried, as the beacon
-         * arrived (PLAN 2.30.3): one message, delayed by the first back-off step.
+         * arrived: one message, delayed by the first back-off step.
          */
         $intake = \OWA\Module\Base\Classes\TrackerIngest::$queue;
         \OWA\Module\Base\Classes\TrackerIngest::$queue = null;

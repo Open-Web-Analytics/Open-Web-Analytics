@@ -6,8 +6,7 @@ use OWA\Module\Base\Classes\Migration\CustomReportRewriter;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A 1.14 custom report rewritten into v2's names, per the rules decided in
- * PLAN.html 2.21: rename what has an equivalent, drop what has none, drop a
+ * A 1.14 custom report rewritten into v2's names: rename what has an equivalent, drop what has none, drop a
  * widget only when what is left cannot render, and say every time.
  */
 final class CustomReportRewriterTest extends TestCase

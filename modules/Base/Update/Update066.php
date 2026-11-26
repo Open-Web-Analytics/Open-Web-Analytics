@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Attributed source: the last non-direct touch (PLAN 2.29).
+ * Attributed source: the last non-direct touch.
  *
  * Three tables, each its own way:
  *

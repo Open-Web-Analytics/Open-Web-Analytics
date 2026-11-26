@@ -65,7 +65,7 @@ class User extends \OWA\Core\Entity {
          *
          * One per user for now: multi-organization membership carries a real
          * question -- which organization am I acting in? -- and nothing yet
-         * needs to ask it (PLAN.html §3.5).
+         * needs to ask it.
          */
         $this->properties['organization_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['organization_id']->setDataType(OWA_DTD_BIGINT);

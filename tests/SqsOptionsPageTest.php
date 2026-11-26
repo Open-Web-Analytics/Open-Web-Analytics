@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The SQS settings page renders, and says what an administrator needs: the
  * derived queue names, whether provisioning worked, and where credentials
- * come from (PLAN 2.30.4a).
+ * come from.
  *
  * Asserted on the render, as MaxmindOptionsPageTest explains: a template that
  * fails renders as nothing.

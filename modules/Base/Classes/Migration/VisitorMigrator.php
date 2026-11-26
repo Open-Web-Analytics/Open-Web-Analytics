@@ -8,8 +8,7 @@ namespace OWA\Module\Base\Classes\Migration;
  * Reads a site's sessions and keeps the ones that were their visitor's first
  * (owa_visitor.first_session_id). What it records is evidence, as ingest does:
  * the first session's referrer, for the cube to classify, and the tags only
- * where that session recorded a campaign or an ad -- the attribution rule of
- * PLAN.html 2.21. A first session with no evidence at all was a direct visit,
+ * where that session recorded a campaign or an ad. A first session with no evidence at all was a direct visit,
  * and gets a row with nothing in it and acq_ts set, which the build reads as
  * direct -- the session is the landing, so its having neither a referrer nor
  * a campaign is the answer, not a gap. A visitor v2 already has is left alone.

@@ -9,7 +9,7 @@ use OWA\Module\Sqs\Classes\Sqs;
 use OWA\Module\Sqs\Classes\SqsQueue;
 
 /**
- * The SQS intake against REAL queues (PLAN 2.30.4a): what the mock in
+ * The SQS intake against REAL queues: what the mock in
  * SqsQueueTest cannot show -- that SQS accepts what OWA sends, counts
  * receives, redrives past the limit, and that the dead-letter round trip and
  * replay work end to end.

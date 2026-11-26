@@ -363,7 +363,7 @@ final class Update062Test extends TestCase
 
     /**
      * Beacons 1.x queued to its file queue and never ingested are moved to an
-     * archive, unchanged and file by file, and the migration goes on (PLAN 2.30.6).
+     * archive, unchanged and file by file, and the migration goes on.
      * v2's own lines stay queued.
      */
     public function testBeaconsTheOneXFileQueueNeverIngestedAreArchived(): void

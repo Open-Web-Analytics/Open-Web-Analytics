@@ -373,7 +373,7 @@ return [
         'log_robots_before_084' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         /*
          * Whether user_id is stored. It gated user_name and user_email, which are
-         * custom user properties now (PLAN.html §2.26.1), so it moves to the one
+         * custom user properties now, so it moves to the one
          * identity field left in the release vocabulary -- see gateUserId().
          */
         'log_visitor_pii' => [ 'config_constant' => 'OWA_LOG_VISITOR_PII', 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ],
@@ -496,7 +496,7 @@ return [
         'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/conf/ua-parser/. Used only when nobody but the owner of OWA\'s files can write it.' ],
 
         /*
-         * The tracking intake (PLAN 2.30.3), OWA_QUEUE_TRACKING_EVENTS.
+         * The tracking intake, OWA_QUEUE_TRACKING_EVENTS.
          * Storable because the e2e queue suite persists it; no screen offers it.
          */
         'queue_tracking_events' => [ 'default' => false, 'storable' => true, 'autoload' => true, 'description' => 'Whether log.php queues each beacon for the drain-tracker-ingest job instead of writing it as it arrives. A collector always queues. The queue is the file queue unless a queue module is configured, such as AWS SQS by OWA_SQS_QUEUE_URL.' ],
@@ -586,7 +586,7 @@ return [
         ],
         'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ],
         /*
-         * THE TRACKING TAG (PLAN 2.24.4). What a Profile's tracking bundle does,
+         * THE TRACKING TAG. What a Profile's tracking bundle does,
          * baked in at publish as the tracker's own options and commands -- the
          * ones a snippet could push. These govern the tracker only: the server's
          * cookie_persistence and cookie_domain, above, are for OWA's own admin

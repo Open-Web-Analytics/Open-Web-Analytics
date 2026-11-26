@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Entity;
 
 /**
- * One queued admin job (PLAN 2.30.5): a registered CLI command and its
+ * One queued admin job: a registered CLI command and its
  * arguments, run once by the scheduler.
  *
  * Read and written by Classes\JobQueue with its own SQL -- the claim needs

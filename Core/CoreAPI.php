@@ -2448,7 +2448,7 @@ class CoreAPI {
         $event = \OWA\Module\Base\Classes\Ingest::at(
             \OWA\Module\Base\Classes\Ingest::EDGE_POST, $event );
 
-        // Queued: the drain ingests it (PLAN 2.30.3).
+        // Queued: the drain ingests it.
         if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued() ) {
 
             \OWA\Core\CoreAPI::debug( 'Queuing', $event );
@@ -3550,7 +3550,7 @@ class CoreAPI {
     }
 
     /**
-     * Queue a CLI command to run once, from the scheduler (PLAN 2.30.5).
+     * Queue a CLI command to run once, from the scheduler.
      *
      * @param  string      $command  a registered CLI command
      * @param  array<mixed> $params  its arguments
@@ -3574,7 +3574,7 @@ class CoreAPI {
         $t = new \OWA\Core\Template();
 
         $t->set( 'site_id', $site_id );
-        // The Profile's own commands, from its tag settings (PLAN 2.24.4).
+        // The Profile's own commands, from its tag settings.
         $t->set( 'profile_cmds', \OWA\Module\Base\Classes\TrackerBundle::commandLines( $site_id ) );
         // And any a third-party module still adds the old way.
         $cmds = \OWA\Core\CoreAPI::filter( 'tracker_tag_cmds', [] );
@@ -3585,7 +3585,7 @@ class CoreAPI {
     }
 
     /**
-     * The tag that loads a Profile's tracking bundle (PLAN 2.24): one script,
+     * The tag that loads a Profile's tracking bundle: one script,
      * configured on the server, so it never needs pasting again.
      *
      * @param  string $site_id

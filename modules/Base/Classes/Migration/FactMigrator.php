@@ -580,8 +580,7 @@ abstract class FactMigrator {
     }
 
     /**
-     * What v1 holds for one site against what reached owa_event_raw, per day
-     * (PLAN.html 2.22).
+     * What v1 holds for one site against what reached owa_event_raw, per day.
      *
      * The expected side is what each batch recorded as it wrote
      * (recordTally()): per day, v1 rows read and refused, and per event type
@@ -955,7 +954,7 @@ abstract class FactMigrator {
      * result. v2 stores evidence, and the cube classifies it. For a row that
      * recorded a campaign or an ad the verdict was the tags, so they go in as
      * tags. Every other row carries none, and the cube classifies it from the
-     * migrated referrer as it would a live beacon (PLAN.html 2.21).
+     * migrated referrer as it would a live beacon.
      *
      * EXCEPT WHAT v1 FILLED IN ITSELF. A campaign link without utm_medium or
      * utm_source still got a medium and a source: v1 defaulted the medium to

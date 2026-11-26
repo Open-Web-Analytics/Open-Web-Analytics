@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * attributed_* through a real build (PLAN 2.29).
+ * attributed_* through a real build.
  *
  * A session's attributed source is its own if it arrived with tags or a
  * referrer, else the prior touch stamped on its first event when that touch is

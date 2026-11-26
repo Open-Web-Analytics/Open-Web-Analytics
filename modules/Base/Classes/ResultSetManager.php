@@ -2482,7 +2482,7 @@ class ResultSetManager extends \OWA\Core\Base {
          * reads is what its numbers are "as of" -- a report reads the cube,
          * and the cube moves only when a build runs. MAX, not MIN: settled
          * partitions are not rebuilt because they are complete, so their older
-         * build times say nothing about staleness (PLAN 1.6).
+         * build times say nothing about staleness.
          *
          * Carried on the query already being run, so it costs no statement of
          * its own. Not under a segment, whose subselect names its own columns.

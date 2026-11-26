@@ -175,7 +175,7 @@ return [
     /*
      * The last non-direct touch within the Property's lookback: the session's
      * own reading if it arrived with tags or a referrer, else the visitor's
-     * last touch before it, stamped at ingest as prior_touch_* (PLAN 2.29).
+     * last touch before it, stamped at ingest as prior_touch_*.
      * Each side is read exactly as `source`, `medium` and `campaign` are.
      */
     'attributed_source' => [

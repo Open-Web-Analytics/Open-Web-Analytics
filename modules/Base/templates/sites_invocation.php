@@ -117,7 +117,7 @@ $state  = (string) ( $status['state'] ?? '' );
         <?php
             /*
              * Every fieldset in the tracking_tag group, Base's and each active
-             * module's, at Profile scope (PLAN 2.24.4), each a group closed until
+             * module's, at Profile scope, each a group closed until
              * opened. Each field shows what the Profile inherits until its
              * Override switch is on. See SettingsForm::scopedField().
              */

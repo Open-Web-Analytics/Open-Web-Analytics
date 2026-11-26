@@ -139,7 +139,7 @@ RewriteRule owa.tracker.js$ http://%{HTTP_HOST}%1/public/base/dist/owa.tracker.j
 </IfModule>
 
 
-# --- Tracker cache headers (PLAN 2.24.6) ------------------------------------------------
+# --- Tracker cache headers ------------------------------------------------
 #
 # A Profile's tracking bundle (public/tracker/<site id>.js) and the generic tracker keep
 # one URL for life, so a browser must revalidate them on every page view: no-cache keeps

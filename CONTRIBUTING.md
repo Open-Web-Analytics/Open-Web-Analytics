@@ -45,6 +45,11 @@ saying what changed and its effect:
 Read the code around a change and follow it. Comments say why, not what.
 Strings shown to people go through the translation helpers.
 
+v2's design was worked out in `research/v2-schema/PLAN.html` on the
+`research/v2-single-fact-table` branch. That document is no longer updated,
+and the code wins where they disagree, so a comment states its own reasoning
+rather than citing it.
+
 ## Security issues
 
 Do not open a public issue or pull request for a vulnerability; see

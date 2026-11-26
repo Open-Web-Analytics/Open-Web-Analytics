@@ -2,7 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Migrate v1's history into v2 (PLAN.html 2.21).
+ * Migrate v1's history into v2.
  *
  * FORCED AND BLOCKING. CLI-only, and until it succeeds the schema stays behind
  * and every action refuses -- an installation does not run on v2 with its
@@ -27,7 +27,7 @@ namespace OWA\Module\Base\Update;
  * completions onto the migrated rows (GoalMigrator). A purchase takes its v1
  * line items into params.items, and the reconciliation counts them.
  *
- * THEN A RECONCILIATION (PLAN.html 2.22), per site and day, of each pass that
+ * THEN A RECONCILIATION, per site and day, of each pass that
  * writes raw rows: every row v1 holds is either refused, with its reason, or
  * present in owa_event_raw with the revenue and visitors it should carry.
  * Until that holds the update is not recorded, and the next run writes what
@@ -87,7 +87,7 @@ class Update062 extends \OWA\Core\Update {
     private function migrate() {
 
         /*
-         * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
+         * First, whatever v1 holds. Beacons in 1.x's FILE queue
          * arrived and were never ingested, in a format v2 does not read. Their
          * lines are moved to an
          * archive file in the queue directory, said in a notice, and the
@@ -468,7 +468,7 @@ class Update062 extends \OWA\Core\Update {
     }
 
     /**
-     * What OWA 1.x left queued (PLAN 2.30.6): lines in its file queue that are
+     * What OWA 1.x left queued: lines in its file queue that are
      * not v2's JSON -- beacons never ingested, which up() archives -- and
      * owa_queue_item rows still awaiting a retry, which do not.
      *

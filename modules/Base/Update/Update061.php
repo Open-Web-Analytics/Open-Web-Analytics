@@ -2,8 +2,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Saved custom reports into v2's names, and 1.x funnels into visualizations
- * (PLAN.html 2.21).
+ * Saved custom reports into v2's names, and 1.x funnels into visualizations.
  *
  * REPORTS. Names resolve exactly and there is no alias layer, so a report saved
  * on 1.14 naming a renamed or removed metric or dimension fails whole on v2.

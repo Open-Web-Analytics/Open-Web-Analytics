@@ -2,7 +2,7 @@
 namespace OWA\Module\Sqs;
 
 /**
- * The tracking intake on AWS SQS (PLAN 2.30.4a).
+ * The tracking intake on AWS SQS.
  *
  * Registers the sqs queue type. OWA_SQS_QUEUE_URL activates the module and
  * makes sqs the tracking intake's backend, on any server (Core\ModuleActivation);

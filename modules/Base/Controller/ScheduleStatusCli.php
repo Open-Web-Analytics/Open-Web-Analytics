@@ -167,7 +167,7 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
-     * The one-off job queue (PLAN 2.30.5), drained after the recurring jobs:
+     * The one-off job queue, drained after the recurring jobs:
      * its counts, and what Classes\SystemHealth finds wrong with it -- the
      * same findings the System Health screen shows.
      *
@@ -187,7 +187,7 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
-     * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): only when something is
+     * The tracker-ingest intake: only when something is
      * wrong -- a backlog, dead letters, a drain that has hung.
      *
      * @return string[]

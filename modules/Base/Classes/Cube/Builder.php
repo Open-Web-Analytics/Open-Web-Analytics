@@ -692,7 +692,7 @@ class Builder {
     /**
      * A Property's attribution lookback, in days: its own setting, else the
      * install's, else 90. Read at build time, so a change reaches history when
-     * its partitions are rebuilt (PLAN 2.29).
+     * its partitions are rebuilt.
      *
      * @param string $property_id
      * @return int

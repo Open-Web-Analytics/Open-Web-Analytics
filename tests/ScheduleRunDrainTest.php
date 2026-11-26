@@ -5,7 +5,7 @@ require_once __DIR__ . '/CliControllerTestCase.php';
 use OWA\Module\Base\Classes\JobQueue;
 
 /**
- * schedule-run drains the one-off queue (PLAN 2.30.5): each job through the
+ * schedule-run drains the one-off queue: each job through the
  * same controller path as a scheduled job, its outcome recorded on its row.
  *
  * Against a scratch copy of owa_job_queue, so a real tick never takes these

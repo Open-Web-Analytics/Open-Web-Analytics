@@ -602,7 +602,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchSource"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "prior_touch_medium": {
         "description": "The medium of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
@@ -621,7 +621,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchMedium"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "prior_touch_campaign": {
         "description": "The campaign of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
@@ -640,7 +640,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchCampaign"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "prior_touch_ad": {
         "description": "The ad of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
@@ -659,7 +659,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchAd"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "prior_touch_referer_host": {
         "description": "The referring host of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
@@ -678,7 +678,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchRefererHost"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "prior_touch_ts": {
         "description": "When the returning visitor's most recent non-direct visit before this session happened, as a Unix timestamp in microseconds, from the visitor store. Absent when there was none.",
@@ -697,7 +697,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolvePriorTouchTs"
         ],
-        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
+        "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer."
     },
     "click_x": {
         "description": "The horizontal position of the click, in pixels.",

@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * owa_queue_item goes (PLAN 2.30.6); down() puts the table back as it was.
+ * owa_queue_item goes; down() puts the table back as it was.
  * Update062 has already refused an upgrade that left unprocessed rows in it
  * (Update062Test).
  *

@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Update;
 
 /**
  * Create owa_migration_progress, where the v1 migration records how far it has
- * got and what it refused (PLAN.html 2.21, 2.22), and owa_migration_tally and
+ * got and what it refused, and owa_migration_tally and
  * owa_migration_day_visitor, what each batch wrote, which reconciliation counts
  * against.
  *

@@ -139,7 +139,7 @@ class ScheduleRunCli extends SchedulerCli {
             $this->considerJob( $name, $job, $force, $dry_run );
         }
 
-        // Then the one-off jobs, in what is left of the budget (PLAN 2.30.5).
+        // Then the one-off jobs, in what is left of the budget.
         // Not when asked to run one named job, and not on a dry run.
         if ( ! $only && ! $dry_run && ! $pending ) {
 

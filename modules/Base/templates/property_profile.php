@@ -96,7 +96,7 @@
                     is_array( $view->posted ?? null ) ? $view->posted : null );
             }
 
-            // The tracking tag defaults for this Property's Profiles (PLAN 2.24.4).
+            // The tracking tag defaults for this Property's Profiles.
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints

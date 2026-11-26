@@ -11,8 +11,8 @@ namespace OWA\Module\Base\Entity;
  *
  * In v2 an author names a goal event definition,
  * gives it an event type and a condition, and when the condition matches the server
- * materialises an additional row whose event_type IS that name (PLAN.html
- * §7.14). The columns are exactly what that needs:
+ * materialises an additional row whose event_type IS that name.
+ * The columns are exactly what that needs:
  *
  *   name                 becomes the materialised row's event_type
  *   trigger_event_type   the event type the condition is evaluated against

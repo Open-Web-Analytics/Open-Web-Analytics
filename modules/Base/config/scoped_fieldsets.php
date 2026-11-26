@@ -66,7 +66,7 @@ return [
     ],
 
     /*
-     * The tracking tag (PLAN 2.24.4), in the `tracking_tag` group so an active
+     * The tracking tag, in the `tracking_tag` group so an active
      * module adds its own fieldset beside it. Each fieldset serves every
      * level: each screen shows the settings that level may hold.
      *

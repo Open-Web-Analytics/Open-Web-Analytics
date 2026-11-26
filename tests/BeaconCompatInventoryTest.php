@@ -183,7 +183,7 @@ final class BeaconCompatInventoryTest extends TestCase
      * arrives, resolves, and is dropped.
      *
      * TWO KINDS OF TARGET: a declared property, or a CUSTOM-PREFIX key.
-     * user_name and user_email are custom user properties (PLAN.html §2.26.1), so
+     * user_name and user_email are custom user properties, so
      * their bridges point at up_user_name and up_user_email, which no registry
      * entry declares and admitRequestParams() admits by prefix.
      *

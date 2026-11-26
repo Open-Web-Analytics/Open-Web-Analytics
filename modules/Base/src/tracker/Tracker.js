@@ -580,7 +580,7 @@ class OWATracker  {
      * replaced the stubs, the queued calls run in order. A page that never
      * calls one never downloads it.
      *
-     * A bundle that carries the chunk inline, before the core (PLAN 2.24.3),
+     * A bundle that carries the chunk inline, before the core,
      * resolves the import with no request.
      *
      *   name                the plugin's registerPlugin() name

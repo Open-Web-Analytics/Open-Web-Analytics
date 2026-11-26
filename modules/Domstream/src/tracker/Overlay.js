@@ -1,5 +1,5 @@
 /**
- * Playback: the overlay's `loadPlayer` action (PLAN 2.24.3).
+ * Playback: the overlay's `loadPlayer` action.
  *
  * Compiled into the tracker itself (`contributes` in this module's build
  * manifest), not into the recorder's lazy chunk. Playback is opened in an
