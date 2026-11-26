@@ -58,19 +58,7 @@ class View extends \OWA\Core\Base {
      */
     public $subview_rendered;
 
-    /**
-     * The priviledge level required to access this view
-     * @depricated
-     * @var string
-     */
-    public $priviledge_level;
 
-    /**
-     * Type of page
-     *
-     * @var string
-     */
-    public $page_type;
 
     /**
      * Request Params
@@ -562,31 +550,7 @@ class View extends \OWA\Core\Base {
         $this->js[$uid]['version'] = $version;
     }
 
-    /**
-     * Sets the Priviledge Level required to access this view
-     *
-     * @param string $level
-     * @return void
-     */
-    public function _setPriviledgeLevel( $level ) {
 
-        $this->priviledge_level = $level;
-
-        return;
-    }
-
-    /**
-     * Sets the page type of this view. Used for tracking.
-     *
-     * @param string $page_type
-     * @return void
-     */
-    public function _setPageType( $page_type ) {
-
-        $this->page_type = $page_type;
-
-        return;
-    }
 
 
     /**

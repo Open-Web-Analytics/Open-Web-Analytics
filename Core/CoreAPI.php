@@ -3642,28 +3642,13 @@ class CoreAPI {
 
     /**
      * @param  string $module_name
-     * @return bool|null whether is_active was stored; null for no module name
-     */
-    public static function activateModule( $module_name ) {
-
-        if ( $module_name ) {
-
-            $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
-            return $m->activate();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  string $module_name
      * @return bool|void nothing for no module name
      */
     public static function deactivateModule( $module_name ) {
 
         if ( $module_name ) {
 
-            // Load a fresh module instance, symmetric with activateModule() and
+            // Load a fresh module instance, symmetric with installModule() and
             // installModule(). deactivate() only flips the persisted is_active setting on
             // $this->name, so a boot-loaded instance is not needed, and a module outside
             // the boot-loaded set can still be deactivated.

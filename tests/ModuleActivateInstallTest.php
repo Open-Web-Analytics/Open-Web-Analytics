@@ -243,7 +243,7 @@ final class ModuleActivateInstallTest extends TestCase
 
     /**
      * cmd=activate installs, as the admin UI does: the module ends with a
-     * recorded version, which activateModule() alone never writes.
+     * recorded version, which Module::activate() alone never writes.
      */
     public function testTheActivateCommandInstalls(): void
     {
