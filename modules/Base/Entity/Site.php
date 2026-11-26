@@ -138,16 +138,27 @@ class Site extends \OWA\Core\Entity {
     const STREAM_APP = 'app';
 
     /**
-     * What kind of thing this Profile observes.
-     *
-     * Falsy means web: a NULL is a row from 1.x, and every one of those is a
-     * website.
+     * What kind of thing this Profile observes (streamTypeOf()).
      *
      * @return string
      */
     public function getStreamType() {
 
-        $type = (string) $this->get('stream_type');
+        return self::streamTypeOf( [ 'stream_type' => $this->get( 'stream_type' ) ] );
+    }
+
+    /**
+     * What kind of thing a Profile's row observes.
+     *
+     * Empty means web: a NULL is a row from 1.x, and every one of those is a
+     * website. So is no row at all, a Profile not yet made.
+     *
+     * @param  array<string, mixed>|null $row
+     * @return string a STREAM_* value
+     */
+    public static function streamTypeOf( $row ) {
+
+        $type = is_array( $row ) ? (string) ( $row['stream_type'] ?? '' ) : '';
 
         return $type !== '' ? $type : self::STREAM_WEB;
     }

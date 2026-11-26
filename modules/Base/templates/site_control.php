@@ -71,7 +71,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
 
         <div class="owa_siteControlColumn owa_siteControlProperties">
             <div class="owa_siteControlColumnHead"><?php $view->out( \OWA\Core\CoreAPI::t( 'Properties' ) );?><?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', [
-                [ 'id' => 'add', 'label' => \OWA\Core\CoreAPI::t( 'add new' ), 'capability' => 'edit_sites',
+                [ 'id' => 'add', 'label' => \OWA\Core\CoreAPI::t( 'add new' ), 'capability' => 'create_properties',
                        'href' => $view->makeLink( [ 'do' => 'base.propertyProfile' ] ) ],
             ], 'properties', '' ) as $owa_action ):?><a class="owa_siteControlAdd" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
             <ul>

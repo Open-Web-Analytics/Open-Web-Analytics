@@ -173,6 +173,16 @@ class PaginatedResultSet {
     public $unavailable = null;
 
     /**
+     * The ISO 4217 exponent of the Property's currency (Currency::exponent()):
+     * how many digits of a currency value are below the major unit. A chart
+     * divides by 10 to this, as the server's own formatting does: 0 for JPY,
+     * 3 for KWD.
+     *
+     * @var int
+     */
+    public $currencyExponent = Currency::DEFAULT_EXPONENT;
+
+    /**
      * How many rows the query has in all, counted apart from the page
      * (ResultSetManager::countPages()), and whether that is a lower bound:
      * the count stops COUNT_PAGES_AHEAD pages past this one. Null where the

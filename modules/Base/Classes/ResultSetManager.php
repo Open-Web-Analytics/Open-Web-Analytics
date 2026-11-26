@@ -3110,6 +3110,8 @@ class ResultSetManager extends \OWA\Core\Base {
         // None when the query named something that is not a metric or a dimension.
         $this->resultSet->setRelatedDimensions( $bm ? $this->relatedDimensions() : [] );
 
+        $this->resultSet->currencyExponent = Currency::exponent( Currency::ofProperty( $this->propertyIdForRequest() ) );
+
         $this->resultSet->setRelatedMetrics( $bm ? $this->relatedMetrics() : [] );
 
         return $this->resultSet;

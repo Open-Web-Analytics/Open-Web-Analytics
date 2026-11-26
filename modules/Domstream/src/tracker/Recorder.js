@@ -32,6 +32,20 @@ import { Util } from '../../../Base/src/common/Util.js';
 
 const EVENT_NAME = 'domstream';
 
+/*
+ * What the server accepts of a chunk (Classes\Chunk): the most samples, the most
+ * characters -- less a sample's room, as a chunk is sent once it reaches the
+ * limit, not before -- the longest gap a sample may record, and the longest
+ * text. A site's options are held to these; DomstreamLimitsTest compares them.
+ */
+const LIMITS = {
+    domstreamMaxSamples: 1000,
+    domstreamMaxChars: 64000,
+    domstreamMaxDurationMsec: 3600000,
+};
+
+const MAX_TEXT = 255;
+
 const DEFAULTS = {
     /**
      * Percent of page loads recorded, 0-100. setDomstreamSampleRate() sets it.
@@ -100,7 +114,15 @@ class Recorder {
 
         var value = this.tracker.getOption( name );
 
-        return value === undefined || value === null ? DEFAULTS[ name ] : value;
+        value = value === undefined || value === null ? DEFAULTS[ name ] : value;
+
+        // A site's own value, held to what the server accepts (LIMITS).
+        if ( LIMITS[ name ] !== undefined ) {
+
+            value = Math.min( Number( value ) || DEFAULTS[ name ], LIMITS[ name ] );
+        }
+
+        return value;
     }
 
     now() {
@@ -263,19 +285,31 @@ class Recorder {
         this.push( [ 'c',
             Math.round( Number( click.get( 'click_x' ) ) || 0 ),
             Math.round( Number( click.get( 'click_y' ) ) || 0 ),
-            String( click.get( 'dom_element_tag' ) || '' ),
-            String( click.get( 'dom_element_id' ) || '' ),
-            String( click.get( 'dom_element_name' ) || '' ) ] );
+            Recorder.text( click.get( 'dom_element_tag' ) ),
+            Recorder.text( click.get( 'dom_element_id' ) ),
+            Recorder.text( click.get( 'dom_element_name' ) ) ] );
     }
 
     /** @return {string[]} tag, id, name */
     static element( node ) {
 
         return [
-            String( node.tagName || '' ).toLowerCase(),
-            String( node.id || '' ),
-            String( ( node.getAttribute && node.getAttribute( 'name' ) ) || '' ),
+            Recorder.text( String( node.tagName || '' ).toLowerCase() ),
+            Recorder.text( node.id ),
+            Recorder.text( node.getAttribute && node.getAttribute( 'name' ) ),
         ];
+    }
+
+    /**
+     * A sample's text, at most MAX_TEXT characters (code points, as the server
+     * counts them): one longer, a framework's generated id say, refused the
+     * whole chunk (Chunk::MAX_TEXT).
+     *
+     * @return {string}
+     */
+    static text( value ) {
+
+        return Array.from( String( value || '' ) ).slice( 0, MAX_TEXT ).join( '' );
     }
 
     /** Send what has accrued as the next chunk. */
