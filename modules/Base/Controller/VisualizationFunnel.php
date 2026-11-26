@@ -657,7 +657,21 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * them over one at a time; the walk never holds more than one second's
          * worth.
          */
-        return self::walk( $db->get_result_iterator( $sql, $params ), count( $steps ) );
+        // Walked inside the limit: the rows stream while the statement runs.
+        $refused = $db->queryErrorCount();
+        $counted = $db->withSelectTimeLimit( \OWA\Module\Base\Classes\ResultSetManager::QUERY_SECONDS,
+            static fn () => self::walk( $db->get_result_iterator( $sql, $params ), count( $steps ) ) );
+
+        // Refused or stopped at the limit, the walk saw part of the rows: no counts rather than low ones.
+        if ( $db->queryErrorCount() !== $refused ) {
+
+            $this->set( 'funnel_step_error', \OWA\Core\CoreAPI::t(
+                'The database could not count this funnel in time. Try a shorter period or fewer conditions.' ) );
+
+            return null;
+        }
+
+        return $counted;
     }
 
     /**

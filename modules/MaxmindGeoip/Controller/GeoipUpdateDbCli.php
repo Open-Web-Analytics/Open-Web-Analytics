@@ -248,9 +248,21 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         // Recorded once a download has been spent, and cleared once it is
         // installed: what remains marks one that did not install. The
         // directory may not exist yet; whyNotWritable() allowed creating it.
-        \OWA\Core\Lib::makeSharedDir( $dir );
+        // Only this command writes it, so it is not shared with the web
+        // server; and the marker is replaced under a fresh name, never written
+        // through a link put at its name.
+        \OWA\Core\SafeFile::makeDirs( $dir, 0755 );
 
-        @touch( $attempted );
+        try {
+
+            \OWA\Core\SafeFile::replace( $attempted, '', 0644 );
+
+        } catch ( \RuntimeException $e ) {
+
+            @unlink( $archive );
+
+            return $this->fail( sprintf( 'Could not record the download at %s.', $attempted ) );
+        }
 
         $this->write( sprintf( 'Downloaded %s.', $this->readableSize( $bytes ) ) );
 
@@ -544,12 +556,20 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
      */
     protected function extractDatabase( $archive, $dir, $edition ) {
 
-        $work = $dir . '.update-' . getmypid() . '/';
+        /*
+         * A fresh name, made here and nowhere else: mkdir() refuses a name
+         * that is there, a link included, so nothing another user put in the
+         * database's directory can be where the download is unpacked, nor
+         * what removeTree() deletes.
+         */
+        $work = \OWA\Core\SafeFile::fresh( $dir . '.update' );
 
-        if ( ! @mkdir( $work, 0755, true ) && ! is_dir( $work ) ) {
+        if ( ! \OWA\Core\SafeFile::makeDir( $work, 0700 ) ) {
 
             return sprintf( 'Could not create a working directory at %s.', $work );
         }
+
+        $work .= '/';
 
         try {
 
@@ -640,6 +660,11 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
             }
         }
 
+        // Its mode set where it is, in this process's own working directory,
+        // not by a chmod() after the rename, which a link put at the
+        // destination meanwhile would follow.
+        @chmod( $found, 0644 );
+
         if ( ! @rename( $found, $destination ) ) {
 
             if ( $had_existing ) {
@@ -653,8 +678,6 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
                 $had_existing ? ' The database you had is still in place.' : '' );
         }
 
-        @chmod( $destination, 0644 );
-
         return $destination;
     }
 
@@ -666,7 +689,8 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
      */
     protected function removeTree( $dir ) {
 
-        if ( ! is_dir( $dir ) ) {
+        // Never through a link: the iterator would delete wherever it points.
+        if ( is_link( rtrim( $dir, '/' ) ) || ! is_dir( $dir ) ) {
 
             return;
         }

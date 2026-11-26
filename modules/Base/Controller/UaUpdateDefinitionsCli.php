@@ -127,7 +127,7 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
          * only this user (the owner of OWA's files) may write where they are
          * (Core\Overrides).
          */
-        if ( ! $this->makeDirs( $dir ) ) {
+        if ( ! \OWA\Core\SafeFile::makeDirs( $dir, 0755 ) ) {
 
             // Reachable despite the preflight: something else could have
             // changed underneath, and a race is not a reason to write a
@@ -170,24 +170,6 @@ class UaUpdateDefinitionsCli extends \OWA\Core\Controller\Cli {
         ) );
 
         return;
-    }
-
-    /**
-     * $dir and any directory above it that is missing, each 0755.
-     *
-     * @param  string $dir
-     * @return bool whether $dir is there
-     */
-    protected function makeDirs( $dir ) {
-
-        $dir = rtrim( $dir, '/' );
-
-        if ( is_dir( $dir ) ) {
-
-            return true;
-        }
-
-        return $this->makeDirs( dirname( $dir ) ) && ( \OWA\Core\SafeFile::makeDir( $dir, 0755 ) || is_dir( $dir ) );
     }
 
     /**
