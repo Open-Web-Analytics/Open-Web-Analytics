@@ -1298,21 +1298,25 @@ abstract class Module {
      * Registers a metric definition which is used by the
      * resultSetExplorer and getResultSet API methods
      *
-     * This method dynamically creates an owa_metric class and
-     * properly configures it based on the properties passed in.
+     * Stored as a base.configurableMetric definition, configured from the
+     * properties passed in.
      *
      * Map properties include:
      *
-     *         'name'            => '',             // the name of the metric as called via the API
-     *        'label'            => '',             // the label that will be displayed in result sets
-     *        'description'    => '',             // the descript displayed in the GUI
-     *        'group'            => 'unknown',    // the group that this metric will belong to in the UI
-     *        'entity'        => '',          // Module::FACT_ENTITY; a metric on any other is refused
-     *        'metric_type'    => '',          // 'count', 'distinct_count', 'sum', or 'calculated'
-     *        'data_type'        => '',          // 'integrer', 'currency', 'average'
-     *        'column'        => '',          // the column of the entity to use when calculating
+     *        'name'              // the name of the metric as called via the API
+     *        'label'             // the label shown in result sets; the name when empty
+     *        'description'       // the description shown in the UI
+     *        'group'             // the group the metric belongs to in the UI
+     *        'entity'            // Module::FACT_ENTITY; a metric on any other is refused
+     *        'metric_type'       // 'count', 'distinct_count', 'sum', 'boolean_true_count',
+     *                            // 'avg_difference', or 'calculated', 'ratio', 'difference'
+     *        'data_type'         // one of Metric::DATA_TYPES; any other is dropped, with a notice
+     *        'column'            // the column of the entity an aggregate reads
+     *        'subtrahend_column' // avg_difference: the column subtracted from 'column'
+     *        'condition'         // the rows an aggregate counts
      *        'numerator', 'denominator'      // a calculated ratio, each a metric name
      *        'minuend', 'subtrahend'         // a calculated difference, each a metric name
+     *        'precision'         // a ratio's decimal places
      *
      * @param array<string, mixed> $params the keys above => value; others are dropped
      * @return void
@@ -1370,6 +1374,15 @@ abstract class Module {
         if ( (string) $map['label'] === '' ) {
 
             $map['label'] = $map['name'];
+        }
+
+        if ( (string) $map['data_type'] !== '' && ! in_array( $map['data_type'], \OWA\Core\Metric::DATA_TYPES, true ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'The metric "%s" is shown unformatted: its data_type "%s" is not one of %s.',
+                $map['name'], (string) $map['data_type'], implode( ', ', \OWA\Core\Metric::DATA_TYPES ) ) );
+
+            $map['data_type'] = '';
         }
 
         // Computed from other metrics (Metric::setMetricType()), so it reads no

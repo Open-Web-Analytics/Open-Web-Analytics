@@ -256,6 +256,22 @@ final class VocabularyConfigTest extends TestCase
         $this->assertSame([], array_keys($module->metrics ?? []));
     }
 
+    /** An unknown data_type is dropped from the definition: the metric is registered and shown unformatted. */
+    public function testAnUnknownDataTypeIsDropped(): void
+    {
+        $module = $this->module();
+
+        $module->registerMetricDefinition([
+            'name' => 'zzAverage', 'label' => 'A', 'entity' => 'base.event',
+            'metric_type' => 'count', 'data_type' => 'average', 'column' => 'id' ]);
+        $module->registerMetricDefinition([
+            'name' => 'zzCurrency', 'label' => 'C', 'entity' => 'base.event',
+            'metric_type' => 'sum', 'data_type' => 'currency', 'column' => 'id' ]);
+
+        $this->assertSame('', $module->metrics['zzAverage'][0]['params']['data_type'] ?? null);
+        $this->assertSame('currency', $module->metrics['zzCurrency'][0]['params']['data_type'] ?? null);
+    }
+
     /** A definition with no label is labelled with its name. */
     public function testAMetricWithNoLabelIsLabelledWithItsName(): void
     {

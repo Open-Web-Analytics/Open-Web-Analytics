@@ -217,6 +217,27 @@ final class FunnelStepValidationTest extends TestCase
             [ 'page_path', 'exact', '/checkout' ], [ 'page_query', 'exact', 'step=2' ] ] ] ] ) );
     }
 
+    /** The cases the builder's own check (VisualizationEdit.test.js) is held to. */
+    public function testThePagePathCasesTheBuilderSharesAreRefusedAsItRefusesThem(): void
+    {
+        $cases = json_decode( (string) file_get_contents( __DIR__ . '/fixtures/funnel_path_cases.json' ), true )['cases'];
+
+        foreach ( $cases as $c ) {
+
+            $errors = $this->errors( [ [ 'event' => 'page_view', 'conditions' => [ [ 'page_path', $c['operator'], $c['value'] ] ] ] ] );
+            $said   = (string) ( $errors['stepCondition1_1'] ?? '' );
+            $label  = $c['operator'] . ' ' . $c['value'];
+
+            if ( $c['problem'] === 'url' ) {
+                $this->assertStringContainsString( 'not a full URL', $said, $label );
+            } elseif ( $c['problem'] === 'query' ) {
+                $this->assertStringContainsString( 'has no query string', $said, $label );
+            } else {
+                $this->assertSame( [], $errors, $label );
+            }
+        }
+    }
+
     public function testAPathIsAccepted(): void
     {
         $this->assertFalse( $this->refuses( [ $this->step( 'Basket', '/basket' ) ] ) );

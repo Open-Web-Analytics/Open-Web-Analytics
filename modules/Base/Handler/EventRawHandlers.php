@@ -8,8 +8,10 @@ namespace OWA\Module\Base\Handler;
  *
  * WHAT IT DOES
  *
- *   - Writes ONE table. No session upsert, no dimension check-and-create, no
- *     foreign keys: a write is an insert with no lookups.
+ *   - Writes owa_event_raw, and the visitor store: a first session's
+ *     acquisition, user-scoped properties and the last non-direct touch. No
+ *     session upsert, no dimension check-and-create, no foreign keys. Its one
+ *     lookup is alreadyIngested(), which finds a redelivered beacon.
  *   - Derives the row id from the event's own content (Classes\V2Event::id),
  *     so a redelivered beacon derives the same ids instead of a second random
  *     one.
@@ -51,11 +53,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * How many custom properties one event may carry, per scope.
      *
-     * The tracker refuses a 26th at the setter, where an author can see it.
-     * This is the SECOND gate, because the tracker is not the only thing that
-     * can post to the endpoint -- and because params is one JSON column on a
-     * row already using most of MySQL's 65,535-byte limit, where an over-long
-     * row is refused outright rather than truncated.
+     * Kept here and only here: the tracker sets no limit, as it is not the
+     * only thing that can post to the endpoint. Those past it are dropped.
+     * params is one JSON column on a row already using most of MySQL's
+     * 65,535-byte limit, where an over-long row is refused outright rather
+     * than truncated.
      */
     const MAX_CUSTOM_PROPERTIES = 25;
 

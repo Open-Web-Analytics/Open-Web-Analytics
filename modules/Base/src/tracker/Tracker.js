@@ -3107,8 +3107,8 @@ class OWATracker  {
 
     /**
      * Kept in the event chain; it adds nothing to the event. The server parses
-     * the campaign tags out of the landing beacon's own page_location in
-     * taggedColumns().
+     * the campaign tags out of the landing beacon's own page_location
+     * (TrackingEventHelpers::taggedValue()).
      *
      * @internal
      */
@@ -4016,22 +4016,10 @@ class OWATracker  {
 
 
         /*
-         * The visitor's first-visit DATE, derived from the stored anchor rather
-         * than stored beside it, so the two cannot drift apart.
-         *
-         * A date, not a timestamp and not an elapsed count. Coarsening is the
-         * whole point: the anchor is stamped by the visitor's clock, and a clock
-         * wrong by minutes or hours yields the same date -- only an error
-         * crossing midnight costs anything, and only ever one day, once.
-         *
-         * It is also a pure function of a value that never changes, so it is
-         * permanent and visitor-scoped: identical on every event this visitor
-         * ever sends. The elapsed version it replaces was recomputed on every
-         * page load, so the clock was consulted afresh each page and the value
-         * could change part way through a session.
-         *
-         * The server does the day arithmetic against its own calendar -- see
-         * TrackingEventHelpers::deriveDaysSinceFirstSession().
+         * The visitor's first-session timestamp, as stored: an epoch value,
+         * permanent and visitor-scoped, so it is identical on every event this
+         * visitor sends. Ingest stores it as visitor_fsts; any day arithmetic
+         * is the server's, against its own calendar.
          */
         var first_seen = OWA.getState( 'v', 'fsts' );
 

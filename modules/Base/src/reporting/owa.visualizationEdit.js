@@ -26,6 +26,32 @@ export function isFullUrl( value ) {
     return /^[a-z][a-z0-9+.\-]*:\/\//i.test( String( value || '' ) );
 }
 
+/**
+ * Why a page_path condition matches nothing, as FunnelStep::problems()
+ * refuses it on save: 'url' for a full web address compared exactly, as
+ * not, or as a beginning; 'query' for a ? compared exactly or as not, as
+ * page_path is cut at the ?; '' otherwise. The other comparisons are left to
+ * the author. tests/fixtures/funnel_path_cases.json holds the cases both
+ * sides are tested on.
+ *
+ * @param  {Object} condition  {property, operator, value}
+ * @return {string}
+ */
+export function pathProblem( condition ) {
+
+    var value = String( condition.value || '' );
+
+    if ( condition.property !== 'page_path' || [ 'exact', 'not', 'begins' ].indexOf( condition.operator ) === -1 ) {
+        return '';
+    }
+
+    if ( isFullUrl( value ) ) {
+        return 'url';
+    }
+
+    return condition.operator !== 'begins' && value.indexOf( '?' ) !== -1 ? 'query' : '';
+}
+
 /** pattern with %1$s, %2$s... replaced by the values in order. */
 export function sayEach( pattern, values ) {
 
@@ -74,8 +100,14 @@ export function stepsProblem( name, steps ) {
 
         for ( var c = 0; c < step.conditions.length; c++ ) {
 
-            if ( step.conditions[ c ].property === 'page_path' && isFullUrl( step.conditions[ c ].value ) ) {
+            var problem = pathProblem( step.conditions[ c ] );
+
+            if ( problem === 'url' ) {
                 return say( OWA.l( 'Step %s needs a path, such as /basket, not a full web address.' ), i + 1 );
+            }
+
+            if ( problem === 'query' ) {
+                return say( OWA.l( 'Step %s needs a path without its query string: test the part after the ? as the page query.' ), i + 1 );
             }
         }
     }
@@ -97,7 +129,7 @@ export function previewSteps( steps ) {
     var bad = kept.some( function ( step ) {
 
         return step.event === '' || step.conditions.some( function ( c ) {
-            return c.property === 'page_path' && isFullUrl( c.value );
+            return pathProblem( c ) !== '';
         } );
     } );
 

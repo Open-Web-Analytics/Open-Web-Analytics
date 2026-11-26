@@ -17,20 +17,17 @@ final class TemplateScriptDataTest extends TestCase
     /**
      * The templates that still carry inline JavaScript, and how many blocks.
      *
-     * The tracker tags are R6's. head.php assigns OWA.config before the page
-     * body exists. nav_shell.php's runs before the first paint, so a hidden
-     * column does not show and then go. report.php's creates OWA.items[dom_id]
-     * while the page parses, which a report's subview may read from its own
-     * inline script. sites_invocation.php's is a tag shown as text, not run.
+     * The tracker tags are R6's. nav_shell.php's runs before the first paint,
+     * so a hidden column does not show and then go. sites_invocation.php's is
+     * a tag shown as text, not run. None reads OWA: the reporting bundle loads
+     * deferred (head.php).
      * A block of data
      * (type="application/json") or a script loaded by src is not code here.
      */
     private const INLINE_CODE_LEFT = [
-        'Base/templates/head.php'                   => 1,
         'Base/templates/js_bundle_tag.php'          => 1,
         'Base/templates/js_log_tag.php'             => 2,
         'Base/templates/nav_shell.php'              => 1,
-        'Base/templates/report.php'                 => 1,
         'Base/templates/sites_invocation.php'       => 1,
     ];
 
@@ -293,7 +290,9 @@ final class TemplateScriptDataTest extends TestCase
             'ecommerce'  => [ 'label' => 'Sales & returns', 'metrics' => 'transactions', 'chartMetric' => 'transactions' ],
         ] );
 
-        $this->assertSame( 1, preg_match( "~OWA\.items\['([^']+)'\] = new OWA\.report\(\);~", $html, $m ) );
+        $item = $this->configs( $html, 'report:item' );
+        $this->assertCount( 1, $item, 'the report hands over its object' );
+        $m = [ 1 => $item[0]['dom_id'] ?? null ];
         $domId = $m[1];
 
         $widgets = array_column( $this->configs( $html, 'report-widget:config' ), null, 'name' );
@@ -332,7 +331,9 @@ final class TemplateScriptDataTest extends TestCase
 
         $html = $this->report( 'pages' );
 
-        $this->assertSame( 1, preg_match( "~OWA\.items\['([^']+)'\] = new OWA\.report\(\);~", $html, $m ) );
+        $item = $this->configs( $html, 'report:item' );
+        $this->assertCount( 1, $item, 'the report hands over its object' );
+        $m = [ 1 => $item[0]['dom_id'] ?? null ];
 
         $controls = $this->configs( $html, 'report:controls' );
 
