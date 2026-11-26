@@ -81,10 +81,11 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     }
 
     /**
-     * A job given arguments it cannot act on has failed, and is retried; the
-     * failure is the job's, not schedule-run's exit code.
+     * A job given arguments it cannot act on has failed, and gives up: its
+     * arguments are the same on every attempt. The failure is the job's, not
+     * schedule-run's exit code.
      */
-    public function testAUsageErrorIsRetriedAndLeavesTheExitCode(): void
+    public function testAUsageErrorGivesUpAndLeavesTheExitCode(): void
     {
         // jobs-forget with no id cannot say which job.
         $id = JobQueue::enqueue('jobs-forget');
@@ -93,7 +94,7 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
 
         $this->drain();
 
-        $this->assertSame('pending', $this->jobStatus($id));
+        $this->assertSame('failed', $this->jobStatus($id));
         $this->assertSame(0, \OWA\Core\Controller\Cli::$exit_code);
     }
 
@@ -107,8 +108,8 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'SELECT status, last_error FROM ' . self::TABLE . ' WHERE id = ?', [$id]);
 
-        $this->assertNotSame('done', $row['status']);
-        $this->assertStringContainsString('jobs-prune does not take dir', (string) $row['last_error']);
+        $this->assertSame('failed', $row['status'], 'the row\'s arguments are the same on every attempt: it gives up');
+        $this->assertSame('Gave up, not retried: jobs-prune does not take dir', (string) $row['last_error']);
     }
 
     public function testTheJobsCommandsActOnTheQueue(): void
