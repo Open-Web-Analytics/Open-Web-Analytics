@@ -8,8 +8,18 @@ namespace OWA\Module\Base\Controller;
 class SitesAdd extends \OWA\Core\AdminController {
 
     // edit_sites on the Property the Profile is added to, not on the
-    // request's siteId.
+    // request's siteId; create_properties when a new one is made for it.
     use \OWA\Core\PropertyScopedAccess;
+
+    /**
+     * No propertyId and no live Property with the domain: createSite() makes one.
+     *
+     * @return bool
+     */
+    protected function createsProperty() {
+
+        return $this->requestPropertyId() === '';
+    }
 
     public function __construct( $params ) {
         
@@ -53,8 +63,21 @@ class SitesAdd extends \OWA\Core\AdminController {
             
             \OWA\Core\CoreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
 
+            /*
+             * Whoever adds a Profile and is not an administrator is granted it,
+             * so the Property they made or manage is theirs to see: a grant on
+             * any Profile is a grant on its Property (PropertyGrants).
+             */
+            $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+            if ( ! $user->isAdmin() && $user->getUserData( 'id' ) ) {
+
+                $uid = (int) $user->getUserData( 'id' );
+                $site->applyAssignedUserChanges( [ $uid ], [ $uid ] );
+            }
+
             // A web Profile's bundle is there when its snippet is first pasted.
-            if ( $site->get( 'stream_type' ) === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+            if ( $site->getStreamType() === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
                 \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site->get( 'site_id' ) );
             }
@@ -68,8 +91,7 @@ class SitesAdd extends \OWA\Core\AdminController {
     /**
      * The Property the Profile goes under, as createSite() picks it: the
      * request's propertyId, else the live Property of its domain. '' when a
-     * new Property is made for it, which is checked as any controller's
-     * capability is, against the request's siteId.
+     * new Property is made for it (createsProperty()).
      *
      * @return string
      */

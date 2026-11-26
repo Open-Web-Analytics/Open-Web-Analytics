@@ -193,9 +193,14 @@ return [
          * default, granted to another role by OWA_ROLE_CAPABILITIES, and held on
          * every Property (not in capabilitiesThatRequireSiteAccess): a custom
          * report is of one Property, and drawing it asks view_reports there.
+         *
+         * create_properties is making and deleting a Property. It is admin-only
+         * by default and held install-wide, unlike edit_sites, which is held
+         * on the Properties a user has been given and manages what is in
+         * them. PropertyScopedAccess applies both.
          */
         'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside the web root. Empty: cmd=backup needs dir=.' ],
-        'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
+        'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
         'capabilitiesThatRequireSiteAccess' => [ 'default' => [ 'view_reports', 'edit_sites' ], 'description' => 'The capabilities a user holds only on the sites they have been given access to, rather than on every site.' ],
         'config_file' => [ 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ],
         'configuration_id' => [ 'default' => '1', 'internal' => true ],

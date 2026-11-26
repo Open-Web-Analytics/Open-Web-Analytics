@@ -170,10 +170,17 @@ OWA.filterPills.parse = function ( str ) {
 
 OWA.filterPills.stringify = function ( filters ) {
 
-    return filters.map( function ( f ) {
-        return f.name + f.op + ( OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( f.op ) ? ''
-            : OWA.dataGrid.constraintValue( f.value ) );
-    } ).join( ',' );
+    return OWA.dataGrid.formatConstraints( filters.map( OWA.filterPills.clause ) );
+};
+
+/** A pill's filter in the report grid's shape ({name, operator, value}); an empty test has no value. */
+OWA.filterPills.clause = function ( f ) {
+
+    return {
+        name:     f.name,
+        operator: f.op,
+        value:    OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : f.value
+    };
 };
 
 /** How an operator reads on a pill: as the report grid's chips say it, for field when given. */
@@ -182,33 +189,16 @@ OWA.filterPills.phrase = function ( op, field ) {
     return OWA.dataGrid.phrase( op, field || null );
 };
 
-/**
- * A filter as the report grid's chip words it: "%1$s %2$s %3$s" (field,
- * condition, value), or "%1$s %2$s" for an empty test -- as the parts of the
- * sentence either side of the value, which the caller puts between them.
- * fieldOf, when given, finds the filter's chooser field ("Date before ...").
- */
+/** A pill's sentence either side of its value: the report grid's (OWA.dataGrid.filterSentence()). */
 OWA.filterPills.sentence = function ( f, labelOf, fieldOf ) {
 
-    var empty = OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( f.op );
-    var form  = empty
-        ? OWA.l( '%1$s %2$s', 'filter chip: field, condition' )
-        : OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' );
-
-    var label  = labelOf ? labelOf( f.name ) : f.name;
-    var phrase = OWA.filterPills.phrase( f.op, fieldOf ? fieldOf( f.name ) : null );
-
-    return form.split( '%3$s' ).map( function ( part ) {
-        return OWA.util.sprintf( part, label, phrase );
-    } );
+    return OWA.dataGrid.filterSentence( OWA.filterPills.clause( f ), labelOf, fieldOf );
 };
 
-/** "Page Path contains /blog/", with labelOf() naming the dimension. */
+/** "Page Path contains /blog/", as the report grid's chip says it (OWA.dataGrid.filterWords()). */
 OWA.filterPills.words = function ( f, labelOf, fieldOf ) {
 
-    var field = fieldOf ? fieldOf( f.name ) : null;
-
-    return OWA.filterPills.sentence( f, labelOf, fieldOf ).join( OWA.dataGrid.shownValue( f.value, field ) );
+    return OWA.dataGrid.filterWords( OWA.filterPills.clause( f ), labelOf, fieldOf );
 };
 
 OWA.filterPills.prototype = {

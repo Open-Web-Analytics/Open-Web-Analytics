@@ -66,6 +66,12 @@ final class ControllerCapabilityContractTest extends TestCase
         'UsersPasswordEntry',
         'UsersNewAccount',
 
+        // Application password revoke link: the e-mailed key is the
+        // credential (AppPasswords::forRevokeLink()), and it must work signed
+        // out. Its mail is run in-process only.
+        'AppPasswordRevokeLink',
+        'AppPasswordCreatedMail',
+
         // REST plumbing: CorsPreflight answers OPTIONS only.
         'CorsPreflight',
 

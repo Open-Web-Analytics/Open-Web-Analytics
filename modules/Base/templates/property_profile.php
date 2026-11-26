@@ -108,7 +108,7 @@
         <input class="owa-button" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Property' ) );?>">
     </form>
 
-<?php if ( ! empty( $view->property['id'] ) && $view->getCurrentUser()->isCapable('edit_sites') ):?>
+<?php if ( ! empty( $view->property['id'] ) && $view->getCurrentUser()->isCapable( 'create_properties' ) ):?>
 <?php
 /*
  * Deleting a Property.
