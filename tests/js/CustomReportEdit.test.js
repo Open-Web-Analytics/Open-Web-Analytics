@@ -96,6 +96,14 @@ describe('what each type decides', () => {
         expect(rules.maxDimensions('grid')).toBe(3);
     });
 
+    test('a full-width table takes its own dimension cap, the others keep theirs', () => {
+        const wide = typeRules({ ...CONFIG, fullWidthMaxDimensions: 8 });
+
+        expect(wide.maxDimensions('grid')).toBe(8);
+        expect(wide.maxDimensions('grid-card')).toBe(1);
+        expect(wide.maxDimensions('trend')).toBe(1);
+    });
+
     test('a card or a pie takes one metric', () => {
         expect(rules.maxMetrics('pie')).toBe(1);
         expect(rules.maxMetrics('grid')).toBe(8);

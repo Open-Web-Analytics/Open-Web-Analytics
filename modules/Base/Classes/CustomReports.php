@@ -62,11 +62,13 @@ class CustomReports {
      * How many metrics one query may ask for.
      *
      * A limit on READABILITY as much as on cost. A metric-boxes widget draws a
-     * box per metric and a trend draws a box per metric under its chart, so
-     * beyond about four they stop fitting a row and the widget reads as a wall
-     * of numbers. Every metric is also another aggregate in the query.
+     * box per metric and a trend draws a box per metric with its chart; a row
+     * of boxes wider than the screen scrolls sideways (owa.kpibox.js), so the
+     * limit is where a row stops being one glance -- six, the most a shipped
+     * report's trend draws -- not where it stops fitting. Every metric is also
+     * another aggregate in the query.
      */
-    const MAX_METRICS = 4;
+    const MAX_METRICS = 6;
 
     /**
      * How many dimensions one query may group by.
@@ -77,6 +79,16 @@ class CustomReports {
      * reader came for.
      */
     const MAX_DIMENSIONS = 4;
+
+    /**
+     * How many dimensions a full-width table may group by (FULL_WIDTH_TYPES).
+     *
+     * More than MAX_DIMENSIONS because a list is the one widget for which
+     * near-unique rows are the point: Latest Visits groups by seven -- when,
+     * from where, by what route -- to list visits one per row. A card or a
+     * chart grouped that way answers nothing; a table of rows reads as rows.
+     */
+    const FULL_WIDTH_MAX_DIMENSIONS = 8;
 
     /**
      * The visualizations, and the controller each resolves to.
@@ -426,6 +438,11 @@ class CustomReports {
         if ( array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
 
             return self::FIXED_DIMENSION_EXTRA[ $type ];
+        }
+
+        if ( in_array( $type, self::FULL_WIDTH_TYPES, true ) ) {
+
+            return self::FULL_WIDTH_MAX_DIMENSIONS;
         }
 
         return in_array( $type, self::SINGLE_FIELD_TYPES, true )

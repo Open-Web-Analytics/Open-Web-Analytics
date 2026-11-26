@@ -37,6 +37,7 @@
             "colspan": 6,
             "chartMetric": "sessions",
             "query": {
+                "metrics": "sessions",
                 "dimensions": "attributedChannel",
                 "sort": "sessions-"
             },
@@ -50,6 +51,7 @@
             "colspan": 6,
             "chartMetric": "sessions",
             "query": {
+                "metrics": "sessions",
                 "dimensions": "attributedCampaign",
                 "sort": "sessions-"
             },

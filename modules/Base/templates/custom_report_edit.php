@@ -337,6 +337,7 @@ $owa_max        = (int) $view->get('max_widgets');
     'maxWidgets'          => $owa_max,
     'maxMetrics'          => (int) $view->get('max_metrics'),
     'maxDimensions'       => (int) $view->get('max_dimensions'),
+    'fullWidthMaxDimensions' => (int) $view->get('full_width_max_dimensions'),
     'fullWidthTypes'      => array_values( (array) $view->get('full_width_types') ),
     'singleFieldTypes'    => array_values( (array) $view->get('single_field_types') ),
     'singleMetricTypes'   => array_values( (array) $view->get('single_metric_types') ),

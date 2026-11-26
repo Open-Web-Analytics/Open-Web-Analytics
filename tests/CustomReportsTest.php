@@ -357,14 +357,14 @@ final class CustomReportsTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * FOUR, written out rather than taken from the constant.
+     * SIX metrics and FOUR dimensions, written out rather than taken from the constants.
      *
      * A fixture built from the constant under test follows it anywhere it
      * moves, so raising the cap would leave the test passing.
      */
-    public function testAtMostFourMetricsAndFourDimensions(): void
+    public function testAtMostSixMetricsAndFourDimensions(): void
     {
-        $this->assertSame(4, CustomReports::MAX_METRICS);
+        $this->assertSame(6, CustomReports::MAX_METRICS);
         $this->assertSame(4, CustomReports::MAX_DIMENSIONS);
 
         /*
@@ -377,13 +377,13 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalEvents';
-        $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime,engagementRate';
+        $this->assertSame('', CustomReports::validate($definition), 'six metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime';
-        $this->assertStringContainsString('the most is 4',
-            CustomReports::validate($definition), 'five metrics is refused');
+            'sessions,totalUsers,pageViews,goalEvents,totalEngagementTime,engagementRate,pageViewsPerSession';
+        $this->assertStringContainsString('the most is 6',
+            CustomReports::validate($definition), 'seven metrics is refused');
 
         $definition = $this->definition();
         $definition['widgets'][1]['query']['metrics'] = 'pageViews';
@@ -391,11 +391,71 @@ final class CustomReportsTest extends TestCase
 
         $definition['widgets'][1]['query']['dimensions'] = 'pagePath,browserType,city,country';
         $this->assertSame('', CustomReports::validate($definition), 'four dimensions is allowed');
+    }
+
+    /**
+     * EIGHT for a full-width table, written out for the same reason: a list
+     * is the widget whose rows are meant to be near-unique. Latest Visits
+     * groups by seven.
+     */
+    public function testAFullWidthTableMayGroupByEight(): void
+    {
+        $this->assertSame(8, CustomReports::FULL_WIDTH_MAX_DIMENSIONS);
+        $this->assertSame(8, CustomReports::maxDimensionsFor('grid'));
+        $this->assertSame(1, CustomReports::maxDimensionsFor('grid-card'));
+        $this->assertSame(1, CustomReports::maxDimensionsFor('trend'), 'a trend adds one breakdown to its date');
+
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['metrics'] = 'pageViews';
+        $definition['widgets'][1]['query']['sort']    = 'pageViews-';
 
         $definition['widgets'][1]['query']['dimensions'] =
-            'pagePath,browserType,city,country,sessionMedium';
-        $this->assertStringContainsString('the most is 4',
-            CustomReports::validate($definition), 'five dimensions is refused');
+            'pagePath,browserType,city,country,sessionMedium,deviceType,language,screenResolution';
+        $this->assertSame('', CustomReports::validate($definition), 'eight dimensions is allowed');
+
+        $definition['widgets'][1]['query']['dimensions'] .= ',landingPage';
+        $this->assertStringContainsString('the most is 8',
+            CustomReports::validate($definition), 'nine dimensions is refused');
+    }
+
+    /**
+     * Every shipped report that names its own metrics is within the builder's
+     * rules, so a person who opens one in the builder can save it as it is.
+     *
+     * The ones that name none draw the Property's metric sets as tabs, which
+     * the builder does not author; they are listed here so a new one is a
+     * decision, not an accident.
+     */
+    public function testEveryShippedReportThatNamesItsMetricsPassesTheBuildersRules(): void
+    {
+        $metric_sets = ['ads', 'browsers', 'campaigns', 'channels', 'creative-performance', 'devices', 'entry-pages',
+            'exit-pages', 'geolocation', 'keywords', 'languages', 'os', 'referring-sites', 'screen-resolutions',
+            'search-engines', 'sources', 'visitors-loyalty'];
+
+        $checked = [];
+
+        foreach (glob(dirname(__DIR__) . '/modules/Base/reports/*.json') as $file) {
+            $id         = basename($file, '.json');
+            $definition = json_decode((string) file_get_contents($file), true);
+
+            if (isset($definition['params']) || in_array($id, $metric_sets, true)) {
+                continue;
+            }
+
+            $this->assertSame('', CustomReports::validate($definition), "$id is outside the builder's rules");
+            $checked[] = $id;
+        }
+
+        $this->assertContains('dashboard', $checked);
+        $this->assertContains('transactions', $checked);
+        $this->assertContains('latest-visits', $checked);
+        $this->assertContains('traffic', $checked);
+        $this->assertContains('clicks', $checked, 'a report-level filter is within the rules');
+
+        foreach ($metric_sets as $id) {
+            $definition = json_decode((string) file_get_contents(dirname(__DIR__) . "/modules/Base/reports/$id.json"), true);
+            $this->assertArrayNotHasKey('metrics', $definition, "$id names its metrics now: take it off the metric-set list");
+        }
     }
 
     // ------------------------------------------------------------------

@@ -1,7 +1,7 @@
 {
     "title": "Transactions Overview",
     "description": "Each transaction by order id, with its revenue, tax, shipping and refunds.",
-    "metrics": "sessions,transactions,transactionRevenue,taxRevenue,shippingRevenue,refunds,refundAmount,netRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate",
+    "metrics": "transactions,transactionRevenue,netRevenue,revenuePerTransaction",
     "widgets": [
         {
             "type": "trend",
@@ -13,6 +13,24 @@
                 "sort": "date"
             },
             "chartMetric": "transactions"
+        },
+        {
+            "type": "metric-boxes",
+            "id": "costs",
+            "container": "costs-boxes",
+            "title": "Tax, shipping and refunds",
+            "query": {
+                "metrics": "taxRevenue,shippingRevenue,refunds,refundAmount"
+            }
+        },
+        {
+            "type": "metric-boxes",
+            "id": "rates",
+            "container": "rates-boxes",
+            "title": "Per session",
+            "query": {
+                "metrics": "sessions,revenuePerSession,ecommerceConversionRate"
+            }
         },
         {
             "type": "grid",

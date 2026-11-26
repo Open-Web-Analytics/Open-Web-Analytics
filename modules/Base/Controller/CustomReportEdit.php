@@ -37,7 +37,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
     const SCREEN_VARS = [
         'propertyId', 'custom_report_id', 'custom_report_name', 'custom_report_definition',
         'custom_report_error', 'custom_report_is_shared', 'metric_choices', 'dimension_choices',
-        'widget_types', 'max_widgets', 'max_metrics', 'max_dimensions', 'full_width_types',
+        'widget_types', 'max_widgets', 'max_metrics', 'max_dimensions', 'full_width_max_dimensions', 'full_width_types',
         'single_field_types', 'single_metric_types', 'chart_types', 'fixed_dimensions',
         'fixed_dimension_extra', 'default_colspans', 'grid_columns', 'link_targets', 'more_targets',
     ];
@@ -195,6 +195,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
         $this->set( 'max_metrics',       \OWA\Module\Base\Classes\CustomReports::MAX_METRICS );
         $this->set( 'max_dimensions',    \OWA\Module\Base\Classes\CustomReports::MAX_DIMENSIONS );
+        $this->set( 'full_width_max_dimensions', \OWA\Module\Base\Classes\CustomReports::FULL_WIDTH_MAX_DIMENSIONS );
 
         /*
          * Which types decide their own layout, so the builder can stop
