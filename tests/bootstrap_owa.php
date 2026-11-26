@@ -179,12 +179,23 @@ function owa_test_db_available(): bool
     try {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $row = $db->get_row('SELECT 1 AS ok');
-        return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
+        $ok  = is_array($row) && isset($row['ok']) && $row['ok'] == 1;
     } catch (\Throwable $e) {
-        return false;
+        $ok = false;
     } finally {
         restore_error_handler();
     }
+
+    /*
+     * Where a job promises a database (OWA_E2E_DB_HOST, as CI's database jobs
+     * set), one that cannot be reached is a failure: answered false, every
+     * database test skipped and the job passed green with none of them run.
+     */
+    if (!$ok && (string) getenv('OWA_E2E_DB_HOST') !== '') {
+        throw new \RuntimeException('OWA_E2E_DB_HOST is set, but the database does not answer; the database tests would be skipped, not run.');
+    }
+
+    return $ok;
 }
 
 /**

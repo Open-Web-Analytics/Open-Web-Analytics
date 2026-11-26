@@ -72,16 +72,15 @@ class VisitorExpiry {
      * lies wholly before the cutoff, and old periods are merged into blocks of
      * up to five years, so a kept block can hold days long before it.
      *
-     * Per site through site_date (site_id, yyyymmdd, ...), which the server
-     * answers with a loose index scan -- one probe per site per partition.
+     * One end of the primary key (yyyymmdd, id) per partition, where a
+     * minimum per site through site_date was a probe per site per partition.
      *
      * @return int|null
      */
     public static function oldestRawMonth() {
 
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
-            'SELECT MIN(m) AS m FROM (SELECT site_id, MIN(yyyymmdd) AS m FROM %s GROUP BY site_id) s',
-            self::rawTable() ) );
+            'SELECT MIN(yyyymmdd) AS m FROM %s', self::rawTable() ) );
 
         return empty( $row['m'] ) ? null : intdiv( (int) $row['m'], 100 );
     }

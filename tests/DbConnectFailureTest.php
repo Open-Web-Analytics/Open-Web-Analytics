@@ -161,7 +161,7 @@ final class DbConnectFailureTest extends TestCase
           . 'Before this fix a failed probe raised an Error and was caught here; it now returns '
           . 'a null row instead, and both paths must keep producing a verdict rather than escaping');
 
-        $this->assertStringContainsString('return is_array($row)', $bootstrap,
+        $this->assertStringContainsString('$ok  = is_array($row)', $bootstrap,
             'and the verdict must come from the round-trip result, not from connection_status, '
           . 'which mysqli_init() makes unreliable');
     }
