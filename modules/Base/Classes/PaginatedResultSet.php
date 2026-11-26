@@ -173,6 +173,16 @@ class PaginatedResultSet {
     public $unavailable = null;
 
     /**
+     * The ISO 4217 exponent of the Property's currency (Currency::exponent()):
+     * how many digits of a currency value are below the major unit. A chart
+     * divides by 10 to this, as the server's own formatting does: 0 for JPY,
+     * 3 for KWD.
+     *
+     * @var int
+     */
+    public $currencyExponent = Currency::DEFAULT_EXPONENT;
+
+    /**
      * The comparison period, when the request asked for one (`compare`): its
      * key, startDate, endDate and aggregates. Each metric cell then carries
      * compare_value, compare_formatted_value and change. See CompareMerger.
