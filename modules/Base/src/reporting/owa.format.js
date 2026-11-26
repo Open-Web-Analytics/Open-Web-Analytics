@@ -490,15 +490,6 @@ OWA.util =  {
         };
      
         return format.replace(regex, doFormat);
-    },
-    
-    /**
-     * Whether an array (or an object's values) holds a value: compared with
-     * ===, or with == unless argStrict is set.
-     */
-    in_array : function( needle, haystack, argStrict ) {
-
-        return Object.values( haystack || {} ).some( ( value ) => argStrict ? value === needle : value == needle );
     }
     
 };

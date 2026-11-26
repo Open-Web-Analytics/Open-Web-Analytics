@@ -207,21 +207,6 @@ OWA.report.prototype = {
         return this.getProperty('propertyId');
     },
     
-    getPeriod : function() {
-        
-        return this.getProperty('period');
-    },
-    
-    getStartDate : function() {
-    
-        return this.getProperty('startDate');
-    },
-    
-    getEndDate : function() {
-    
-        return this.getProperty('endDate');
-    },
-    
     setProperty : function (name, value) {
         
         this.properties[name] = value;

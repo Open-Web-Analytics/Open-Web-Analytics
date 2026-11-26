@@ -34,7 +34,7 @@
         </thead>
         <tbody>
         <?php foreach ( $view->profiles as $owa_prof ):?>
-            <?php $owa_is_app = ( $owa_prof['stream_type'] ?? '' ) === \OWA\Module\Base\Entity\Site::STREAM_APP;?>
+            <?php $owa_is_app = \OWA\Module\Base\Entity\Site::streamTypeOf( $owa_prof ) === \OWA\Module\Base\Entity\Site::STREAM_APP;?>
             <tr>
                 <td>
                     <a href="<?php echo $view->makeLink( [ 'do' => 'base.sitesProfile',

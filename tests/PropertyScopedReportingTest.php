@@ -18,6 +18,9 @@ final class PropertyScopedReportingTest extends TestCase
 
     const OTHER_PROPERTY = 92000081;
 
+    /** A Property with no Profile at all. */
+    const EMPTY_PROPERTY = 92000082;
+
     const ONE      = 'psr-one';
     const TWO      = 'psr-two';
     const ARCHIVED = 'psr-archived';
@@ -40,6 +43,8 @@ final class PropertyScopedReportingTest extends TestCase
         foreach ([self::PROPERTY, self::OTHER_PROPERTY] as $property) {
             $db->query(sprintf("INSERT INTO owa_property (id, name, domain) VALUES (%d, 'PSR fixture', 'psr.test')", $property));
         }
+
+        $db->query(sprintf("INSERT INTO owa_property (id, name, domain) VALUES (%d, 'PSR empty', '')", self::EMPTY_PROPERTY));
 
         // Named out of id order, so the roster's ordering is by name.
         // Ids as a Profile's are minted, which is how SitesDelete finds one.
@@ -91,13 +96,19 @@ final class PropertyScopedReportingTest extends TestCase
             $db->query(sprintf('DELETE FROM owa_site_user WHERE site_id = %s', $entity->generateId($site)));
             $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
         }
+
+        // Profiles a test added to the empty Property.
+        foreach ((array) $db->get_results(sprintf('SELECT id FROM owa_site WHERE property_id = %d', self::EMPTY_PROPERTY)) as $row) {
+            $db->query('DELETE FROM owa_site_user WHERE site_id = ?', [((array) $row)['id']]);
+            $db->query('DELETE FROM owa_site WHERE id = ?', [((array) $row)['id']]);
+        }
         foreach ((array) $db->get_results(sprintf('SELECT id FROM owa_goal_event_definition WHERE property_id IN (%d, %d)',
                 self::PROPERTY, self::OTHER_PROPERTY)) as $goal) {
             $db->query('DELETE FROM owa_goal_event_definition_condition WHERE goal_event_definition_id = ?', [((array) $goal)['id']]);
             \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->delete(((array) $goal)['id']);
         }
 
-        $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d)', self::PROPERTY, self::OTHER_PROPERTY));
+        $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d, %d)', self::PROPERTY, self::OTHER_PROPERTY, self::EMPTY_PROPERTY));
     }
 
     /** A viewer granted the given Profiles, as the database holds them. @return array [entity, row id] */
@@ -300,7 +311,6 @@ final class PropertyScopedReportingTest extends TestCase
         foreach ([
             \OWA\Module\Base\Controller\PropertyAccess::class,
             \OWA\Module\Base\Controller\PropertyAccessUpdate::class,
-            \OWA\Module\Base\Controller\PropertyDelete::class,
             \OWA\Module\Base\Controller\PropertyEdit::class,
             \OWA\Module\Base\Controller\PropertyProfile::class,
             \OWA\Module\Base\Controller\PropertyProfiles::class,
@@ -321,9 +331,29 @@ final class PropertyScopedReportingTest extends TestCase
             $this->assertFalse($check(['siteId' => self::OTHER]), "$class acted on another Property through its Profile");
         }
 
-        // Adding a Property names no propertyId; the user's own siteId is accepted.
-        $add = new \OWA\Module\Base\Controller\PropertyEdit(['siteId' => self::ONE, 'name' => 'New']);
-        $this->assertTrue((new ReflectionMethod($add, 'isCurrentUserCapable'))->invoke($add, $su));
+        // Adding a Property names no propertyId. It asks create_properties,
+        // whatever siteId is sent: edit_sites on the user's own is not enough.
+        $maker = $this->serviceUser($user);
+        $maker->capabilities[] = 'edit_sites';
+        $maker->capabilities[] = 'create_properties';
+
+        foreach ([
+            [\OWA\Module\Base\Controller\PropertyEdit::class, ['siteId' => self::ONE, 'name' => 'New']],
+            [\OWA\Module\Base\Controller\PropertyProfile::class, ['siteId' => self::ONE]],
+            [\OWA\Module\Base\Controller\SitesProfile::class, []],
+        ] as [$class, $params]) {
+            $add = new $class($params);
+            $m   = new ReflectionMethod($add, 'isCurrentUserCapable');
+
+            $this->assertFalse($m->invoke($add, $su), "$class made a Property with edit_sites alone");
+            $this->assertTrue($m->invoke($add, $maker), "$class refused create_properties");
+        }
+
+        // The Profile screen with a siteId is the Profile's Property's.
+        $own = new \OWA\Module\Base\Controller\SitesProfile(['siteId' => self::ONE]);
+        $this->assertTrue((new ReflectionMethod($own, 'isCurrentUserCapable'))->invoke($own, $su));
+        $other = new \OWA\Module\Base\Controller\SitesProfile(['siteId' => self::OTHER]);
+        $this->assertFalse((new ReflectionMethod($other, 'isCurrentUserCapable'))->invoke($other, $maker));
 
         // Without edit_sites, the user's own Property is refused too.
         $viewer = $this->serviceUser($user);
@@ -355,8 +385,104 @@ final class PropertyScopedReportingTest extends TestCase
             $this->assertTrue($check(['propertyId' => (string) self::PROPERTY, 'domain' => 'psr.test']), "$class: the user's own Property");
             $this->assertFalse($check(['propertyId' => (string) self::OTHER_PROPERTY, 'domain' => 'psr-new.test']), "$class: another Property by its id");
             $this->assertFalse($check(['domain' => 'https://PSR-other.test/']), "$class: another Property by its domain");
-            $this->assertTrue($check(['domain' => 'psr-new.test']), "$class: a new Property, against the user's siteId");
+            $this->assertFalse($check(['domain' => 'psr-new.test']), "$class: a new Property with edit_sites alone");
         }
+
+        $su->capabilities[] = 'create_properties';
+
+        foreach ([\OWA\Module\Base\Controller\SitesAdd::class, \OWA\Module\Base\Controller\AddSiteRest::class] as $class) {
+            $controller = new $class(['domain' => 'psr-new.test', 'siteId' => self::ONE]);
+
+            $this->assertTrue((new ReflectionMethod($controller, 'isCurrentUserCapable'))->invoke($controller, $su), "$class: a new Property");
+
+            $controller = new $class(['domain' => 'https://PSR-other.test/']);
+            $this->assertFalse((new ReflectionMethod($controller, 'isCurrentUserCapable'))->invoke($controller, $su),
+                "$class: create_properties reached another Property by its domain");
+        }
+    }
+
+    /** Deleting a Property asks create_properties, on a Property the user may see. */
+    public function testDeletingAPropertyAsksCreateProperties(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        $check = function (string $property) use ($su): bool {
+            $controller = new \OWA\Module\Base\Controller\PropertyDelete(['propertyId' => $property]);
+
+            return (new ReflectionMethod($controller, 'isCurrentUserCapable'))->invoke($controller, $su);
+        };
+
+        $this->assertFalse($check((string) self::PROPERTY), 'edit_sites deleted the user\'s own Property');
+
+        $su->capabilities[] = 'create_properties';
+
+        $this->assertTrue($check((string) self::PROPERTY));
+        $this->assertFalse($check((string) self::OTHER_PROPERTY), 'deleted a Property the user may not see');
+    }
+
+    /**
+     * A Property with no Profile is open to whoever may make one: no grant can
+     * be held on it until its first Profile, the step after making it.
+     */
+    public function testAPropertyWithNoProfileIsOpenToWhoeverMayCreateOne(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        $check = function (string $class, string $property) use ($su): bool {
+            $controller = new $class(['propertyId' => $property, 'domain' => 'psr-empty.test']);
+
+            return (new ReflectionMethod($controller, 'isCurrentUserCapable'))->invoke($controller, $su);
+        };
+
+        $classes = [
+            \OWA\Module\Base\Controller\PropertyEdit::class,
+            \OWA\Module\Base\Controller\PropertyProfile::class,
+            \OWA\Module\Base\Controller\SitesProfile::class,
+            \OWA\Module\Base\Controller\SitesAdd::class,
+            \OWA\Module\Base\Controller\PropertyDelete::class,
+        ];
+
+        foreach ($classes as $class) {
+            $this->assertFalse($check($class, (string) self::EMPTY_PROPERTY), "$class: an empty Property with edit_sites alone");
+        }
+
+        $su->capabilities[] = 'create_properties';
+
+        foreach ($classes as $class) {
+            $this->assertTrue($check($class, (string) self::EMPTY_PROPERTY), "$class: an empty Property with create_properties");
+            $this->assertFalse($check($class, '92000099'), "$class: a Property that does not exist");
+        }
+    }
+
+    /** A Profile's maker who is not an administrator is granted it, and so its Property. */
+    public function testWhoeverAddsAProfileIsGrantedIt(): void
+    {
+        [$user, $id] = $this->viewer([]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'create_properties';
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $was     = $service->current_user;
+        $service->current_user = $su;
+
+        try {
+            $controller = new \OWA\Module\Base\Controller\SitesAdd([
+                'propertyId' => (string) self::EMPTY_PROPERTY, 'name' => 'PSR app',
+                'streamType' => \OWA\Module\Base\Entity\Site::STREAM_APP, 'appId' => 'test.psr.empty',
+            ]);
+            $controller->action();
+        } finally {
+            $service->current_user = $was;
+        }
+
+        $site = $this->data($controller)['site'] ?? [];
+        $this->assertNotEmpty($site['site_id'] ?? '', 'no Profile was made');
+        $this->assertSame([(string) $site['site_id']], $this->grantedSites($id));
+        $this->assertContains($id, \OWA\Module\Base\Classes\PropertyGrants::userIds((string) self::EMPTY_PROPERTY));
     }
 
     public function testPropertyAccessShowsAGrantOnAnyProfile(): void

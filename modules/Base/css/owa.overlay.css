@@ -70,16 +70,6 @@
 #owa_overlay_notices .owa_overlay_notice_close:hover,
 #owa_overlay_notices .owa_overlay_notice_close:focus-visible {color: var(--owa-accent, #f47a17);}
 
-#owa-latest-click {
-    background-color: red;
-    padding: 5px;
-    color: white;
-    display: none;
-    font-size: 10px;
-    font-weight: bold;
-    position: absolute;
-}
-
 .owa-click-marker {
     background-color: red;
     width:5px;

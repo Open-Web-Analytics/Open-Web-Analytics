@@ -255,12 +255,9 @@ class RestApi extends \OWA\Core\View {
              *
              * An app Profile is identified by a bundle id, not a host, and has
              * no domain -- so it contributes nothing here and is skipped before
-             * its identifier can be parsed as one. Falsy stream_type is web:
-             * every Profile that predates the column is a website.
+             * its identifier can be parsed as one.
              */
-            $streamType = is_array( $site ) ? ( $site['stream_type'] ?? '' ) : '';
-
-            if ( $streamType && $streamType !== 'web' ) {
+            if ( \OWA\Module\Base\Entity\Site::streamTypeOf( $site ) !== \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
                 continue;
             }

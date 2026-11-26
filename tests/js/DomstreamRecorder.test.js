@@ -246,3 +246,45 @@ test('the player is an overlay mode the tracker registers, not the recorder', as
         }
     }
 });
+
+/**
+ * The server refuses a chunk with any text over 255 characters (Chunk::MAX_TEXT),
+ * counting code points: a framework's long generated id is cut, not the chunk lost.
+ */
+test('an element\'s id and name are cut to 255 characters, by code point', () => {
+    const t = newTracker();
+    const chunks = chunksOf(t);
+    const r = started(t);
+    const long = 'x'.repeat(250) + '😀'.repeat(10);
+    const field = document.createElement('input');
+    field.id = long;
+    field.setAttribute('name', long);
+    document.body.appendChild(field);
+
+    r.tick(10);
+    r.onKey({ key: 'a', target: field });
+    r.flush();
+
+    const [, , , id, name] = JSON.parse(chunks()[0].samples)[0];
+    expect(Array.from(id)).toHaveLength(255);
+    expect(id.endsWith('😀'.repeat(5))).toBe(true);
+    expect(name).toBe(id);
+    r.stop();
+});
+
+/** A site's own limits are held to what the server accepts. */
+test('the options are held to the server\'s limits', () => {
+    const t = newTracker();
+    const r = recorderFor(t);
+
+    t.setOption('domstreamMaxSamples', 5000);
+    t.setOption('domstreamMaxChars', 'lots');
+    t.setOption('domstreamMaxDurationMsec', 9e9);
+
+    expect(r.option('domstreamMaxSamples')).toBe(1000);
+    expect(r.option('domstreamMaxChars')).toBe(24000);
+    expect(r.option('domstreamMaxDurationMsec')).toBe(3600000);
+
+    t.setOption('domstreamMaxSamples', 50);
+    expect(r.option('domstreamMaxSamples')).toBe(50);
+});
