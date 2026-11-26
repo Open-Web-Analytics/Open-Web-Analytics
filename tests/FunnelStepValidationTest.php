@@ -172,6 +172,17 @@ final class FunnelStepValidationTest extends TestCase
         ] ) );
     }
 
+    /** A step takes at most FunnelStep::MAX_CONDITIONS conditions. */
+    public function testAStepWithTooManyConditionsIsRefused(): void
+    {
+        $max = \OWA\Module\Base\Classes\FunnelStep::MAX_CONDITIONS;
+        $one = [ 'element_id', 'exact', 'buy' ];
+
+        $this->assertSame( [], $this->errors( [ [ 'event' => 'click', 'conditions' => array_fill( 0, $max, $one ) ] ] ) );
+        $this->assertSame( [ 'stepCondition1_' . ( $max + 1 ) => "Step 1: a step takes at most $max conditions." ],
+            $this->errors( [ [ 'event' => 'click', 'conditions' => array_fill( 0, $max + 1, $one ) ] ] ) );
+    }
+
     /** A funnel's filter is checked the way a widget's is. */
     public function testAFilterThatNamesNothingIsRefused(): void
     {

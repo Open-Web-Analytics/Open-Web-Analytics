@@ -117,6 +117,28 @@ final class FunnelBuilderTest extends TestCase
             $this->call( $many, 'visualization' )['definition']['steps'] );
     }
 
+    /**
+     * The preview runs the caller's own steps against the cube, so it asks for
+     * what saving them does; a step with more conditions than a step takes is
+     * refused before anything is counted.
+     */
+    public function testThePreviewAsksForEditReportsAndRefusesTooManyConditions(): void
+    {
+        $this->assertSame( 'edit_reports',
+            ( new \OWA\Module\Base\Controller\VisualizationPreview( [] ) )->getRequiredCapability() );
+
+        $conditions = array_fill( 0, \OWA\Module\Base\Classes\FunnelStep::MAX_CONDITIONS + 1,
+            [ 'property' => 'page_path', 'operator' => 'exact', 'value' => '/x' ] );
+
+        $preview = new \OWA\Module\Base\Controller\VisualizationPreview( [
+            'steps' => json_encode( [ [ 'event' => 'page_view', 'match' => 'all', 'conditions' => $conditions ] ] ),
+        ] );
+        $preview->action();
+
+        $this->assertSame( 'Step 1: a step takes at most 10 conditions.', $preview->data['ajax_error'] ?? null );
+        $this->assertArrayNotHasKey( 'funnel', $preview->data, 'nothing was counted' );
+    }
+
     /** Anything but a list of steps is no steps, not an error. */
     public function testThePreviewIgnoresStepsThatAreNotAList(): void
     {

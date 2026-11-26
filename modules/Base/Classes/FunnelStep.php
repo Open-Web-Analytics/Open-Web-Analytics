@@ -30,6 +30,12 @@ class FunnelStep {
 
     const KIND_EVENT = 'event';
 
+    /**
+     * The most conditions a step takes. Each is a predicate on every event the
+     * funnel reads, and the preview runs for anyone editing a funnel.
+     */
+    const MAX_CONDITIONS = 10;
+
     /** What a new step matches: a page, by its path. */
     const DEFAULT_EVENT    = 'page_view';
     const DEFAULT_PROPERTY = 'page_path';
@@ -191,6 +197,20 @@ class FunnelStep {
     }
 
     /**
+     * Why a submitted row has too many conditions (MAX_CONDITIONS), or ''.
+     *
+     * @param  array<string, mixed> $row
+     * @param  int                  $number the step's position, from 1
+     * @return string
+     */
+    public static function tooManyConditions( array $row, $number ) {
+
+        return count( self::conditionsOf( $row ) ) > self::MAX_CONDITIONS
+            ? sprintf( \OWA\Core\CoreAPI::t( 'Step %1$s: a step takes at most %2$d conditions.' ), $number, self::MAX_CONDITIONS )
+            : '';
+    }
+
+    /**
      * Why a submitted row cannot be saved: field => message, empty when it can.
      *
      * The field names say which row, and which condition of it, a message is
@@ -233,6 +253,15 @@ class FunnelStep {
         if ( $problem !== '' ) {
 
             $out[ 'stepEvent' . $number ] = $problem;
+
+            return $out;
+        }
+
+        $too_many = self::tooManyConditions( $row, $number );
+
+        if ( $too_many !== '' ) {
+
+            $out[ 'stepCondition' . $number . '_' . ( self::MAX_CONDITIONS + 1 ) ] = $too_many;
 
             return $out;
         }
