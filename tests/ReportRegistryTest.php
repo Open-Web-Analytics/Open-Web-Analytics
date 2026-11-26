@@ -422,7 +422,7 @@ final class ReportRegistryTest extends TestCase
         foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
 
             // Registered once: registerNavigation() adds to what is there.
-            if ( empty( $module->nav_links ) && empty( $module->view_nav_links ) ) {
+            if ( empty( $module->nav_links ) ) {
 
                 $module->registerNavigation();
             }

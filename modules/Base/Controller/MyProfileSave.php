@@ -16,7 +16,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
      * The messages.php codes a refusal carries back to base.myProfile, and
      * the only ones it shows.
      */
-    const ERRORS = [ 2001, 3230, 3231, 3232, 3233, 3234, 3235, 3236, 3237, 3238 ];
+    const ERRORS = [ 2001, 3009, 3230, 3231, 3232, 3233, 3234, 3235, 3236, 3237, 3238 ];
 
     /** The code of each failed validation, by its name. */
     const VALIDATION_ERRORS = [
@@ -136,6 +136,15 @@ class MyProfileSave extends \OWA\Core\AdminController {
                 if ( ! $user->isCapable( 'edit_own_email' ) ) {
 
                     return $this->refuse( 3235 );
+                }
+
+                // Another user's address: a reset link for it would reach the wrong account.
+                $other = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+                $other->getByColumn( 'email_address', $submitted_email );
+
+                if ( $other->get( 'id' ) && (string) $other->get( 'user_id' ) !== $user_id ) {
+
+                    return $this->refuse( 3009 );
                 }
 
                 $entity->set( 'email_address', $submitted_email );

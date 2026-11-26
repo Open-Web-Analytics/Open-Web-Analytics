@@ -93,6 +93,7 @@ class Strings {
         'CustomReports::MORE_LABEL',
         'CustomReports::VISUALIZATION_TYPES',
         'CustomReports::VISUALIZATION_TYPE_HINTS',
+        'CustomReports::CONSTRAINT_WORDS',
         'Requirements::RETIRED_CONSTANTS',
         'GoalVocabulary::LABELS',
         'GoalVocabulary::DESCRIPTIONS',

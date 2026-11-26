@@ -1564,16 +1564,23 @@ class CustomReports {
 
     /**
      * How a filter's condition reads, by its operator: as its pill words it
-     * (OWA.dataGrid.EMPTY_TESTS and OPERATOR_PHRASES in owa.resultSetExplorer.js).
+     * (OWA.dataGrid.EMPTY_TESTS and OPERATOR_PHRASES in owa.resultSetExplorer.js),
+     * for every operator ResultSetManager parses. Translated where shown
+     * (Strings::VALUE_TABLES).
      */
     const CONSTRAINT_WORDS = [
         '!=(not set)' => 'has a value',
         '==(not set)' => 'is not set',
         '=='          => 'is',
         '!='          => 'is not',
-        '=@'          => 'contains',
+        '>='          => 'at least',
+        '<='          => 'at most',
         '>'           => 'greater than',
         '<'           => 'less than',
+        '=~'          => 'matches',
+        '!~'          => 'does not match',
+        '=@'          => 'contains',
+        '!@'          => 'does not contain',
     ];
 
     /**
@@ -1602,16 +1609,17 @@ class CustomReports {
                 if ( $at > 0 ) {
 
                     $name  = trim( substr( $clause, 0, $at ) );
-                    $value = trim( substr( $clause, $at + strlen( $operator ) ) );
+                    // As the parser reads it: a comma in a value travels as %2C.
+                    $value = ResultSetManager::readConstraintValue( trim( substr( $clause, $at + strlen( $operator ) ) ) );
                     $label = $labels[ $name ] ?? $name;
 
                     if ( isset( self::CONSTRAINT_WORDS[ $operator . $value ] ) ) {
 
-                        $words = $label . ' ' . self::CONSTRAINT_WORDS[ $operator . $value ];
+                        $words = $label . ' ' . \OWA\Core\Strings::translate( self::CONSTRAINT_WORDS[ $operator . $value ] );
 
                     } else {
 
-                        $words = $label . ' ' . ( self::CONSTRAINT_WORDS[ $operator ] ?? $operator ) . ' ' . $value;
+                        $words = $label . ' ' . \OWA\Core\Strings::translate( self::CONSTRAINT_WORDS[ $operator ] ?? $operator ) . ' ' . $value;
                     }
 
                     break;

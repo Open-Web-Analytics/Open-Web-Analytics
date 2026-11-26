@@ -18,8 +18,6 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        // After the parent, as for every REST route reached with a session
-        // (see NotificationsRest).
         $this->setRequiredCapability( 'edit_settings' );
     }
 
