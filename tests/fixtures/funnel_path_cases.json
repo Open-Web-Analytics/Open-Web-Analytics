@@ -1,0 +1,16 @@
+{
+    "about": "page_path conditions a funnel step refuses, as FunnelStep::problems() and owa.visualizationEdit.js pathProblem() both do: url, query, or empty for accepted. FunnelStepValidationTest and VisualizationEdit.test.js read these.",
+    "cases": [
+        { "operator": "exact",    "value": "https://example.com/basket", "problem": "url" },
+        { "operator": "not",      "value": "https://example.com/basket", "problem": "url" },
+        { "operator": "begins",   "value": "https://example.com/",       "problem": "url" },
+        { "operator": "contains", "value": "https://example.com/",       "problem": "" },
+        { "operator": "regex",    "value": "^https://",                  "problem": "" },
+        { "operator": "exact",    "value": "/checkout?step=2",           "problem": "query" },
+        { "operator": "not",      "value": "/checkout?step=2",           "problem": "query" },
+        { "operator": "begins",   "value": "/checkout?",                 "problem": "" },
+        { "operator": "contains", "value": "?step=2",                    "problem": "" },
+        { "operator": "exact",    "value": "/basket",                    "problem": "" },
+        { "operator": "exact",    "value": "/a:b",                       "problem": "" }
+    ]
+}

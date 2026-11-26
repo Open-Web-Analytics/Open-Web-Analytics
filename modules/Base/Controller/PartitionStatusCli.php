@@ -10,7 +10,7 @@ namespace OWA\Module\Base\Controller;
  * and how long the lead lasts before a rotate is due.
  *
  *   php cli.php cmd=partition-status
- *   php cli.php cmd=partition-status table=owa_session
+ *   php cli.php cmd=partition-status table=owa_event_raw
  *
  * Nothing here writes, so it is safe to run on a busy installation. It reads
  * metadata for the layout, and touches table data only to count the catch-all --

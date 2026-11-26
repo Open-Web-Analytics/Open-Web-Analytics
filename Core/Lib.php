@@ -499,9 +499,7 @@ class Lib {
             foreach ($params as $n => $v) {
 
                 // The namespace has to be a PREFIX, not merely present: a host page's
-                // 'my_owa_setting' carries 'owa_' and is not OWA's. Anchoring it is also what
-                // makes the namespaced and bare param sets exact complements, which
-                // RequestContainer relies on.
+                // 'my_owa_setting' carries 'owa_' and is not OWA's.
                 if ( strpos( (string) $n, $ns ) !== 0 ) {
                     continue;
                 }

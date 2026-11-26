@@ -96,18 +96,6 @@ class Retention {
         return $raw > 0 ? min( $cube, $raw ) : $cube;
     }
 
-    /**
-     * The window for one partitioned table: its cube's, or raw's.
-     *
-     * @param string $table
-     * @return int months
-     */
-    public static function monthsForTable( $table ) {
-
-        $property_id = Cube\Cubes::propertyIdFor( $table );
-
-        return $property_id !== '' ? self::cubeMonths( $property_id ) : self::rawMonths();
-    }
 
     /**
      * The first day a window keeps, or null when it keeps everything.

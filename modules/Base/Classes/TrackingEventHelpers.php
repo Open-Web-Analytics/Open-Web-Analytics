@@ -2085,9 +2085,8 @@ class TrackingEventHelpers {
      * own query string. Changing `ns` changes every campaign URL in the wild,
      * which is exactly why the list is built from it rather than hard-coded.
      *
-     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
-     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
-     * not share a stem.
+     * Note owa_search_terms becomes tagged_TERMS, not tagged_search_terms --
+     * the one place the two halves do not share a stem.
      *
      * NO ad_type. 1.x read owa_ad_type, and v2 has no property, column or
      * dimension to keep it in, so it is not a role: a campaignKeys value naming

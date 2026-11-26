@@ -175,7 +175,7 @@ export function renderSet( desc, made ) {
             tab.addRse( pair[0], made[ pair[1] ] );
         } );
 
-        OWA.items[ desc.report ].addTab( tab );
+        OWA.report.item( desc.report ).addTab( tab );
     }
 }
 
@@ -186,7 +186,7 @@ export function renderSet( desc, made ) {
  */
 export function startControls( desc ) {
 
-    var report = OWA.items[ desc.report ];
+    var report = OWA.report.item( desc.report );
 
     if ( desc.periodPicker ) {
 
@@ -242,7 +242,7 @@ export function render( root ) {
             } else if ( el.matches( SET_SELECTOR ) ) {
                 renderSet( desc, made );
             } else if ( el.matches( TABS_SELECTOR ) ) {
-                OWA.items[ desc.report ].createTabs();
+                OWA.report.item( desc.report ).createTabs();
             } else {
                 startControls( desc );
             }

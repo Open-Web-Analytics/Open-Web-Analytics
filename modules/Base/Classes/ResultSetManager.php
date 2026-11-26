@@ -67,10 +67,6 @@ class ResultSetManager extends \OWA\Core\Base {
     public $page = 1;
     /** @var int|string|null rows per page */
     public $limit;
-    /** @var mixed nothing reads it */
-    public $order;
-    /** @var mixed nothing reads it */
-    public $format;
     /**
      * The constraint operators, in the order a clause is tested against them,
      * and what each means. The first found in a clause is the one it means, so
@@ -3121,17 +3117,6 @@ class ResultSetManager extends \OWA\Core\Base {
         return $this->resultSet;
     }
     
-    /**
-     * The segment's subselect without its bound values: segmentQuery() returns
-     * both, and a statement that embeds this text has to bind them.
-     *
-     * @param  \OWA\Core\Entity $base_entity
-     * @return string|null the segment's subselect, in parentheses; null without a segment
-     */
-    public function generateSegmentQuery( $base_entity ) {
-
-        return $this->segmentQuery( $base_entity )[0];
-    }
 
     /**
      * @param  \OWA\Core\Entity $base_entity

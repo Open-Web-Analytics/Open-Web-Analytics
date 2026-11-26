@@ -327,10 +327,6 @@ function up(string $repoRoot): array
  * The tracker harness pages send owa_site_id=e2e-tracker-harness, a literal
  * baked into the fixtures, and tracking refuses events naming a site the
  * installation does not have.
- *
- * Written directly rather than through SiteManager, which is simpler: this row
- * needs no other setup. It is otherwise identical to
- * one the admin UI creates.
  */
 function registerHarnessSite(string $repoRoot): void
 {
@@ -339,9 +335,8 @@ function registerHarnessSite(string $repoRoot): void
     /*
      * THROUGH SiteManager, not by writing the row.
      *
-     * This built the owa_site row with the entity directly, and claimed above
-     * to be "otherwise identical to one the admin UI creates". That stopped
-     * being true when Properties landed: createSite() derives a Property for a
+     * This built the owa_site row with the entity directly. That stopped
+     * matching a row the admin UI creates when Properties landed: createSite() derives a Property for a
      * site that names none, and a hand-written row has no property_id at all.
      *
      * A Profile with no Property has no cube -- Entity\Event stays unbound and

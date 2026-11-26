@@ -314,7 +314,7 @@ return [
                 . 'paths already stored keep theirs.',
         ],
         'disableAllEndpoints' => [ 'config_constant' => 'OWA_DISABLE_ALL_ENDPOINTS', 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ],
-        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php. Empty by default.' ],
+        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php, cli.php. Empty by default.' ],
         'enableEcommerceReporting' => [
             'default'  => false,
             'storable' => true,
@@ -412,22 +412,10 @@ return [
         'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],
 
         /*
-         * The URL parameter names a campaign tag arrives under.
-         *
-         * EMPTY MEANS ns-PREFIXED, which is what OWA has always done: owa_source,
-         * owa_medium and so on, honouring a custom `ns`. Setting it names the
-         * parameters explicitly instead, which is how a site opts into
-         * utm_source, utm_medium, utm_campaign, utm_term, utm_content without
-         * having to change its links.
-         *
-         * PROPERTY-SCOPED, because a Property is a website and its links are its
-         * own. The install default covers the common case of one convention
-         * everywhere; a Property whose links already use utm_* overrides it.
-         *
-         * A SERVER setting, because the server parses the tags.
-         *
-         * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
-         * about which tag is the medium.
+         * Whether the utm_ parameters are read as well as OWA's own, which win
+         * where a URL carries both (TrackingEventHelpers::campaignKeysFor()).
+         * Install and Property scoped: a Property is a website and its links
+         * are its own.
          */
         'campaignUtmParams' => [
             'default'  => true,
@@ -442,6 +430,13 @@ return [
                 . 'both, the owa_ value is used. Applies to visits recorded after the change.' ),
         ],
         /*
+         * The URL parameter each campaign role arrives under, in place of
+         * OWA's own name for it. A role left out is ns-prefixed: owa_source,
+         * owa_medium and so on, honouring a custom `ns`.
+         *
+         * Install, Property and Profile scoped. Read by the server, which
+         * parses the tags (TrackingEventHelpers::campaignKeysFor()).
+         *
          * On the Property screen beside campaignUtmParams, and on the Profile's
          * Observation Settings. A `map`: typed as role=parameter pairs, and
          * only the roles TrackingEventHelpers reads are accepted.

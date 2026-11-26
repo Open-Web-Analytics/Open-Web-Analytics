@@ -23,18 +23,10 @@ final class ConstraintOperatorsJsTest extends TestCase
 
     public function testEveryPageGivesTheGridTheServersOperatorsInOrder(): void
     {
-        ob_start();
+        require_once __DIR__ . '/PageConfig.php';
 
-        try {
-            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
-        } finally {
-            $js = (string) ob_get_clean();
-        }
-
-        $this->assertMatchesRegularExpression( '/^OWA\.config\.constraint_operators = (.*);$/m', $js );
-        preg_match( '/^OWA\.config\.constraint_operators = (.*);$/m', $js, $m );
-
-        $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ), json_decode( $m[1], true ) );
+        $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ),
+            owa_test_page_config()['config']['constraint_operators'] ?? null );
     }
 
     public function testTheGridReadsTheOperatorsFromThePage(): void
