@@ -66,6 +66,12 @@ class UserManager extends \OWA\Core\Base {
         $u->endSessions();
         $ret = $u->update();
 
+        // However it was changed -- a reset link, My Profile, the CLI.
+        if ( $ret ) {
+
+            AppPasswords::askForReview( (string) $u->get( 'user_id' ) );
+        }
+
         return $ret ? $u : false;
 
     }

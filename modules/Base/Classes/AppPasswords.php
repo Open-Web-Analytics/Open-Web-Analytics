@@ -317,6 +317,37 @@ class AppPasswords {
     }
 
     /**
+     * After a password change, put the account's application passwords in
+     * front of it: they keep working (they are not revoked by a change), so
+     * one made by someone who had the account would too. A notice in the
+     * account's bell, linking to the list, when it has any.
+     *
+     * @param  string $user_id
+     * @return bool whether a notice was raised
+     */
+    public static function askForReview( $user_id ) {
+
+        $count = count( self::forUser( (string) $user_id ) );
+
+        if ( ! $count ) {
+
+            return false;
+        }
+
+        $now = time();
+
+        return NotificationManager::record( [ [
+            'source_key'   => (string) $user_id . ':' . $now,
+            'title'        => sprintf( \OWA\Core\CoreAPI::tn(
+                'Your password was changed. Review your %d application password.',
+                'Your password was changed. Review your %d application passwords.', $count ), $count ),
+            'body'         => \OWA\Core\CoreAPI::t( 'Application passwords keep working after a password change. Under My application passwords, revoke any you do not recognise.' ),
+            'url'          => rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' ) . '/index.php?owa_do=base.myAppPasswords',
+            'published_at' => $now,
+        ] ], 'app_password_review', (string) $user_id ) > 0;
+    }
+
+    /**
      * HMAC of a whole token, hex.
      *
      * @param  string $token
