@@ -606,7 +606,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     /**
      * The comparison's rows page on from the period's: a page that runs past
      * the period's rows is filled from them, and a page after it is theirs
-     * alone, from the right one. The read-ahead counts both.
+     * alone, from the right one. The total counts both.
      */
     public function testTheComparisonsRowsPageOnFromThePeriods(): void
     {
@@ -623,17 +623,47 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
         $page = function (int $n) use ($site): array {
             $data = $this->comparedGrid($site, ['resultsPerPage' => 2, 'page' => $n]);
-            return [self::compared($data), (int) $data['resultsTotal'], (bool) $data['next']];
+            return [self::compared($data), (int) $data['totalRows'], (bool) $data['next']];
         };
 
         $this->assertSame([[['/a', 5, null], ['/b', 4, 1]], 6, true], $page(1));
-        $this->assertSame([[['/c', 3, null], ['/x', 0, 9]], 4, true], $page(2));
-        $this->assertSame([[['/y', 0, 8], ['/z', 0, 7]], 2, false], $page(3));
-        $this->assertSame([[], 0, false], $page(4));
+        $this->assertSame([[['/c', 3, null], ['/x', 0, 9]], 6, true], $page(2));
+        $this->assertSame([[['/y', 0, 8], ['/z', 0, 7]], 6, false], $page(3));
+        $this->assertSame([[], 6, false], $page(4));
 
         // A card's Show more: page 1, more rows.
         $this->assertSame(['/a', '/b', '/c', '/x', '/y'], array_map(fn ($r) => $r['pagePath']['value'],
             $this->comparedGrid($site, ['resultsPerPage' => 5])['resultsRows']));
+    }
+
+    /**
+     * A page is read with one row past it, and the total counted apart, up to
+     * ten pages past the page: beyond that a lower bound (totalCapped).
+     */
+    public function testAPageReadsARowPastItAndTheTotalIsCountedApart(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $this->seedPageViews($site, array_map(fn ($i) => [$day, sprintf('/p%02d', $i), 1], range(1, 25)));
+
+        $grid = fn (int $page) => $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class, 'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'pagePath', 'sort' => 'pagePath', 'period' => 'today',
+             'siteId' => $site, 'resultsPerPage' => 2, 'page' => $page])['data'];
+
+        $first = $grid(1);
+        $this->assertSame(3, (int) $first['resultsTotal'], 'the page and one row');
+        $this->assertSame([20, true, 10], [(int) $first['totalRows'], (bool) $first['totalCapped'], (int) $first['total_pages']],
+            'counted ten pages on, and no further');
+
+        $late = $grid(12);
+        $this->assertSame([25, false, 13], [(int) $late['totalRows'], (bool) $late['totalCapped'], (int) $late['total_pages']]);
+
+        $past = $grid(14);
+        $this->assertSame([], $past['resultsRows']);
+        $this->assertSame(25, (int) $past['totalRows'], 'a page past the last row counts them');
     }
 
     /**

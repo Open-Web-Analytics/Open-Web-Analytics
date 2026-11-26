@@ -1418,10 +1418,10 @@ OWA.dataGrid.readConstraintValue = function ( value ) {
 /**
  * Which rows a page shows, and of how many.
  *
- * The server reads up to ten pages ahead (ResultSetManager over-queries by
- * ten times the page size), so resultsTotal counts the rows from this page's
- * first one to at most ten pages on. Short of that it is exact; at it, there
- * may be more, and the total is a lower bound.
+ * The server counts the rows apart from the page, up to ten pages past it
+ * (totalRows, ResultSetManager::countPages()); totalCapped says the count
+ * stopped there, and the total is a lower bound. A result set without a count
+ * -- one not paged -- is as many as it holds.
  *
  * @return object {start, end, total, more}
  */
@@ -1430,14 +1430,14 @@ OWA.dataGrid.range = function ( rs ) {
     var per      = parseInt( rs.resultsPerPage, 10 ) || 0;
     var page     = parseInt( rs.page, 10 ) || 1;
     var returned = parseInt( rs.resultsReturned, 10 ) || 0;
-    var fetched  = parseInt( rs.resultsTotal, 10 ) || returned;
     var offset   = per * ( page - 1 );
+    var counted  = rs.totalRows !== undefined && rs.totalRows !== null;
 
     return {
         start: returned ? offset + 1 : 0,
         end:   offset + returned,
-        total: offset + fetched,
-        more:  per > 0 && fetched >= per * 10
+        total: counted ? parseInt( rs.totalRows, 10 ) || 0 : offset + returned,
+        more:  counted && !! rs.totalCapped
     };
 };
 
