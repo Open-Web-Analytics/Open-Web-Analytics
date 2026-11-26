@@ -105,6 +105,56 @@ final class CreateCookieOptionsTest extends TestCase
         return $m[0];
     }
 
+    /**
+     * A sign-in cookie is host-only, on the install's path, and HttpOnly; and
+     * the same name at cookie_domain and / is expired before it, as a browser
+     * holding one there would send it first.
+     */
+    public function testASignInCookieIsSentOnlyToThisInstall(): void
+    {
+        $headers = $this->cgiHeaders('tests/fixtures/sign_in_cookie_probe.php', [
+            'PROBE_PUBLIC_URL' => 'http://owa.example.com/owa/', 'PROBE_COOKIE_DOMAIN' => '.example.com']);
+
+        $this->assertSame(2, preg_match_all('/^Set-Cookie: [^\r\n]*probe=[^\r\n]*/mi', $headers, $m), $headers);
+        // The old scope's expiry first: after, a browser would take it for the new cookie and remove it.
+        [$expired, $set] = $m[0];
+
+        $this->assertMatchesRegularExpression('/probe=v;/', $set);
+        $this->assertMatchesRegularExpression('/; path=\/owa\/(;|$)/i', $set);
+        $this->assertDoesNotMatchRegularExpression('/; domain=/i', $set, 'host-only');
+        $this->assertMatchesRegularExpression('/; httponly/i', $set);
+
+        $this->assertMatchesRegularExpression('/probe=deleted;/', $expired);
+        $this->assertMatchesRegularExpression('/; path=\/(;|$)/i', $expired);
+        $this->assertMatchesRegularExpression('/; domain=\.?example\.com/i', $expired);
+    }
+
+    /** At the root of its host with no cookie_domain, the one scope is the old one too: nothing else is expired. */
+    public function testAtTheRootWithNoCookieDomainOnlyTheCookieIsSet(): void
+    {
+        $headers = $this->cgiHeaders('tests/fixtures/sign_in_cookie_probe.php', [
+            'PROBE_PUBLIC_URL' => 'http://owa.example.com/', 'PROBE_COOKIE_DOMAIN' => '']);
+
+        $this->assertSame(1, preg_match_all('/^Set-Cookie: [^\r\n]*probe=v; [^\r\n]*path=\/(;|\r|$)/mi', $headers), $headers);
+        $this->assertStringNotContainsString('probe=deleted', $headers);
+    }
+
+    public function testTheSignInPathIsThePublicUrlsPath(): void
+    {
+        $before = CoreAPI::getSetting('base', 'public_url');
+
+        try {
+            foreach (['https://a.example/owa/' => '/owa/', 'https://a.example/owa' => '/owa/',
+                      'https://a.example/' => '/', 'https://a.example' => '/', '' => '/',
+                      'https://a.example/x/y/' => '/x/y/'] as $url => $path) {
+                CoreAPI::setSetting('base', 'public_url', $url);
+                $this->assertSame($path, CoreAPI::signInCookiePath(), $url);
+            }
+        } finally {
+            CoreAPI::setSetting('base', 'public_url', $before);
+        }
+    }
+
     /** Every caller in the code means the root path, and the default is it. */
     public function testTheDefaultPathIsTheRoot(): void
     {

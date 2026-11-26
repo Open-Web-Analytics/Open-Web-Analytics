@@ -50,9 +50,6 @@ class CoreAPI {
      * The per-process singletons and memos. forgetSingletons() clears them.
      */
 
-    /** @var \OWA\Core\CoreAPI|null singleton() */
-    private static $api = null;
-
     /** @var \OWA\Core\Db|null dbSingleton() */
     private static $db = null;
 
@@ -82,32 +79,6 @@ class CoreAPI {
 
     /** @var array<string, true> module directories getPresentModules() has warned about */
     private static $warned_modules = [];
-
-    /**
-     * What singleton() was last given, when it was given something.
-     *
-     * @var array<string, mixed>|null
-     */
-    public $params;
-
-    /**
-     * @param  array<string, mixed> $params
-     * @return \OWA\Core\CoreAPI
-     * @deprecated
-     * @todo remove
-     */
-    public static function singleton($params = []) {
-
-        if(!isset(self::$api)):
-            self::$api = new \OWA\Core\CoreAPI();
-        endif;
-
-        if(!empty($params)):
-            self::$api->params = $params;
-        endif;
-
-        return self::$api;
-    }
 
     /**
      * The driver name to actually load for a configured db_type.
@@ -1115,7 +1086,6 @@ class CoreAPI {
      */
     public static function forgetSingletons() {
 
-        self::$api            = null;
         self::$db             = null;
         self::$config         = null;
         self::$error          = null;
@@ -1837,7 +1807,7 @@ class CoreAPI {
     /**
      * The report registry, built on first use.
      *
-     * Lazy on purpose, exactly as getNavigation() is: Module::__construct()
+     * Lazy on purpose, as the report nav is (getGroupNavigation()): Module::__construct()
      * runs on every request including every tracker beacon, so registration
      * must not live there. The guard makes it idempotent -- a request that
      * renders two reports registers once.
@@ -1880,54 +1850,6 @@ class CoreAPI {
     }
 
     /**
-     * Returns a consolidated list of nav links from all active modules for a particular view
-     * and named navigation element.
-     *
-     * A module adds one with Module::addViewNavigationLink().
-     *
-     * @param string $view
-     * @param string $nav_name the name of the navigation element that you want links for
-     * @param string $sortby the array value to sort the navigation array by
-     * @return array<mixed>|false
-     */
-    public static function getNavigation($view, $nav_name, $sortby ='order') {
-
-        $links = [];
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        foreach ($service->modules as $k => $v) {
-
-            // Registered once: registerNavigation() adds to what is there.
-            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
-
-                $v->registerNavigation();
-            }
-
-            foreach ( $v->getViewNavigationLinks() as $link ) {
-
-                $links[ $link['view'] ][ $link['nav_name'] ][] = $link;
-            }
-        }
-
-        // nav_view: one view's named nav, from every module, before it is sorted.
-        $named = (array) \OWA\Core\CoreAPI::filter( 'nav_view',
-            $links[ $view ][ $nav_name ] ?? [], $view, $nav_name );
-
-        if ( ! $named ) {
-
-            return false;
-        }
-
-        usort( $named, function ( $a, $b ) use ( $sortby ) {
-            return strnatcmp( (string) ( $a[ $sortby ] ?? '' ), (string) ( $b[ $sortby ] ?? '' ) );
-        } );
-
-        return $named;
-
-    }
-
-    /**
      * @param  string $group_name
      * @param  string $sortby the key to sort entries by
      * @return mixed the group's entries, sorted, through the nav_reports filter; null when no module registered the group
@@ -1942,7 +1864,7 @@ class CoreAPI {
 
             // If the module does not have nav links, register them. needed in case this function is called twice on
             // same view.
-            if ( empty( $v->nav_links ) && empty( $v->view_nav_links ) ) {
+            if ( empty( $v->nav_links ) ) {
 
                 $v->registerNavigation();
             }
@@ -2752,6 +2674,68 @@ class CoreAPI {
             
             $domain = \OWA\Core\CoreAPI::getSetting('base', 'cookie_domain');
         }
+
+        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, (string) $domain, $secure, $httponly );
+    }
+
+    /**
+     * A sign-in cookie (Auth's u and p, the login form's): host-only, on the
+     * install's own path (signInCookiePath()), so another host under
+     * cookie_domain, or another application on this one, is not sent it.
+     * HttpOnly unless asked otherwise; Secure as createCookie() decides.
+     *
+     * Each write first expires the cookie of that name where createCookie()
+     * puts one, at cookie_domain and /: a browser that holds one there sends
+     * both, and with the same path the older first, which PHP reads. First,
+     * not after: cookie_domain is usually this host, and a browser takes a
+     * cookie with the same name, domain and path as the same cookie, so an
+     * expiry sent after the new cookie would remove it.
+     *
+     * @param  string $cookie_name
+     * @param  string $cookie_value '' deletes it
+     * @param  int    $expires
+     * @param  bool   $secure
+     * @param  bool   $httponly
+     * @return void
+     */
+    public static function createSignInCookie( $cookie_name, $cookie_value, $expires, $secure = false, $httponly = true ) {
+
+        $path   = self::signInCookiePath();
+        $domain = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'cookie_domain' );
+
+        if ( $domain !== '' || $path !== '/' ) {
+
+            self::setNamespacedCookie( $cookie_name, '', time() - 86400, '/', $domain, $secure, $httponly );
+        }
+
+        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, '', $secure, $httponly );
+    }
+
+    /**
+     * The path of the install's public URL, ending in /: what a sign-in cookie
+     * is sent for. / when there is none.
+     *
+     * @return string
+     */
+    public static function signInCookiePath() {
+
+        $path = trim( (string) parse_url( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), PHP_URL_PATH ), '/' );
+
+        return $path === '' ? '/' : '/' . $path . '/';
+    }
+
+    /**
+     * @param string $cookie_name before the namespace
+     * @param mixed  $cookie_value
+     * @param int    $expires
+     * @param string $path
+     * @param string $domain '' for a host-only cookie
+     * @param bool   $secure
+     * @param bool   $httponly
+     * @return void
+     */
+    private static function setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, $domain, $secure, $httponly ) {
+
         if (is_array($cookie_value)) {
 
             $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $cookie_value);

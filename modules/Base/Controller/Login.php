@@ -188,7 +188,7 @@ class Login extends \OWA\Core\Controller {
 
         if ( ! headers_sent() ) {
 
-            \OWA\Core\CoreAPI::createCookie( self::FORM_COOKIE, $value, 0, '/', '', (bool) \OWA\Core\Lib::isHttps(), true );
+            \OWA\Core\CoreAPI::createSignInCookie( self::FORM_COOKIE, $value, 0 );
         }
 
         $_COOKIE[ $name ] = $value;

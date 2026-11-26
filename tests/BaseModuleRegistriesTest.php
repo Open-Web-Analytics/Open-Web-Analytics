@@ -63,7 +63,6 @@ final class BaseModuleRegistriesTest extends TestCase
                 'admin_panels'    => $m->getAdminPanels(),
                 'fieldsets'       => $fs->getValue($settings),
                 'navigation'      => $m->getNavigationLinks(),
-                'view_navigation' => $m->getViewNavigationLinks(),
             ];
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'public_url', $url);
@@ -84,7 +83,7 @@ final class BaseModuleRegistriesTest extends TestCase
     {
         $out = [];
 
-        foreach (['actions', 'cli_commands', 'rest_routes', 'jobs', 'admin_panels', 'fieldsets', 'navigation', 'view_navigation'] as $name) {
+        foreach (['actions', 'cli_commands', 'rest_routes', 'jobs', 'admin_panels', 'fieldsets', 'navigation'] as $name) {
             $out[$name] = [$name];
         }
 

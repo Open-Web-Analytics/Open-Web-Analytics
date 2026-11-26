@@ -29,9 +29,6 @@ class Caller extends \OWA\Core\Base {
 
     /** @var \OWA\Module\Base\Classes\Service */
     public $service;
-
-    /** @var string|null */
-    public $site_id;
             
     /**
      * Constructor
@@ -219,38 +216,6 @@ class Caller extends \OWA\Core\Base {
         }
 
         $cu->setAuthStatus(true);
-    }
-    
-    /**
-     * @param  string $type
-     * @return \OWA\Module\Base\Classes\Event
-     */
-    public function makeEvent($type = '') {
-    
-        $event = new \OWA\Module\Base\Classes\Event();
-        
-        if ($type) {
-            $event->setEventType($type);
-        }
-        
-        return $event;
-    }
-    
-    /**
-     * @param  string $site_id
-     * @return void
-     */
-    public function setSiteId($site_id) {
-        
-        $this->site_id = $site_id;
-    }
-    
-    /**
-     * @return string|null
-     */
-    public function getSiteId() {
-        
-        return $this->site_id;
     }
     
     /**
