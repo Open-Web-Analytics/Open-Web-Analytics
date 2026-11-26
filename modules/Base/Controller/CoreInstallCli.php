@@ -18,6 +18,15 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
     /** May be queued (JobQueue::isQueueable()): The Updates screen's Install queues it. */
     const QUEUEABLE = true;
 
+    /**
+     * Install outcomes that are retried; every other failure gives up
+     * (Cli::fail( $msg, true )). Only BUSY, another install running, can
+     * change within minutes. A refusal names something about this server or
+     * the version asked for, and a failed install is tried again on the
+     * release check's own schedule (Install), never at once.
+     */
+    const RETRIED = [ Install::BUSY ];
+
     /** A release is installed from a full server only (Install::byHand()). */
     public static function serverRoles() {
 
@@ -58,12 +67,24 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
             return $this->usageError( 'cmd=core-install needs --version=<x.y.z>: the release to install.' );
         }
 
-        $result = Install::byHand( (string) $version, (bool) $this->getParam( 'force' ) );
+        $result = $this->install( (string) $version, (bool) $this->getParam( 'force' ) );
         $this->write( array_merge( [ $result['message'] ], array_map( static fn ( $l ) => '  ' . $l, $result['lines'] ) ) );
 
         if ( $result['outcome'] !== Install::OK ) {
 
-            return $this->fail( $result['message'] );
+            return $this->fail( $result['message'], ! in_array( $result['outcome'], self::RETRIED, true ) );
         }
+    }
+
+    /**
+     * A method so a test can answer for it.
+     *
+     * @param  string $version
+     * @param  bool   $force
+     * @return array{outcome: string, message: string, lines: list<string>}
+     */
+    protected function install( $version, $force ) {
+
+        return Install::byHand( $version, $force );
     }
 }
