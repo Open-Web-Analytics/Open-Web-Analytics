@@ -11,7 +11,11 @@ class SitesAdd extends \OWA\Core\AdminController {
     // request's siteId; create_properties when a new one is made for it.
     use \OWA\Core\PropertyScopedAccess;
 
-    /** No propertyId and no live Property with the domain: createSite() makes one. */
+    /**
+     * No propertyId and no live Property with the domain: createSite() makes one.
+     *
+     * @return bool
+     */
     protected function createsProperty() {
 
         return $this->requestPropertyId() === '';

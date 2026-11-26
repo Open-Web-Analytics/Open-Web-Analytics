@@ -21,7 +21,11 @@ class PropertyEdit extends \OWA\Core\AdminController {
     // create_properties when there is none.
     use \OWA\Core\PropertyScopedAccess;
 
-    /** No propertyId: the form makes a new Property, whatever the siteId. */
+    /**
+     * No propertyId: the form makes a new Property, whatever the siteId.
+     *
+     * @return bool
+     */
     protected function createsProperty() {
 
         return (string) $this->getParam( 'propertyId' ) === '';

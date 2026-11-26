@@ -11,7 +11,11 @@ class SitesProfile extends \OWA\Core\AdminController {
     // is added to; create_properties when there is neither.
     use \OWA\Core\PropertyScopedAccess;
 
-    /** No siteId and no propertyId: the form's save makes a new Property. */
+    /**
+     * No siteId and no propertyId: the form's save makes a new Property.
+     *
+     * @return bool
+     */
     protected function createsProperty() {
 
         return (string) $this->getParam( 'siteId' ) === '' && (string) $this->getParam( 'propertyId' ) === '';
