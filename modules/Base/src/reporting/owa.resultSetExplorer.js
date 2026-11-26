@@ -1023,22 +1023,38 @@ OWA.dataGrid.OPERATOR_PHRASES = {
 
 /**
  * A filter in words, as its chip reads: "Medium is referral", "Visit Start
- * has a value". labelOf names the dimension; fieldOf, when given, finds its
- * chooser field, for words that depend on its type ("Date before 20261101",
- * "Outbound Click is Yes").
+ * has a value". labelOf, when given, names the dimension; fieldOf, when given,
+ * finds its chooser field, for words that depend on its type ("Date before
+ * 20261101", "Outbound Click is Yes"). The report editor's pills read the same
+ * (OWA.filterPills.words()).
  */
 OWA.dataGrid.filterWords = function ( c, labelOf, fieldOf ) {
 
-    var field = fieldOf ? fieldOf( c.name ) : null;
+    return OWA.dataGrid.filterSentence( c, labelOf, fieldOf )
+        .join( OWA.dataGrid.shownValue( c.value, fieldOf ? fieldOf( c.name ) : null ) );
+};
 
-    var form = c.value !== ''
+/**
+ * filterWords() as the parts either side of the value, for a caller that sets
+ * the value apart: "%1$s %2$s %3$s" (field, condition, value), or "%1$s %2$s"
+ * for an empty test or no value, in one part.
+ */
+OWA.dataGrid.filterSentence = function ( c, labelOf, fieldOf ) {
+
+    var field = fieldOf ? fieldOf( c.name ) : null;
+    var value = c.value === undefined || c.value === null ? '' : String( c.value );
+
+    var form = value !== '' && ! OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( c.operator )
         ? OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' )
         : OWA.l( '%1$s %2$s', 'filter chip: field, condition' );
 
+    var label  = labelOf ? labelOf( c.name ) : c.name;
+    var phrase = OWA.dataGrid.phrase( c.operator, field );
+
     // The value goes where the sentence puts %3$s, after the rest is filled.
     return form.split( '%3$s' ).map( function ( part ) {
-        return OWA.util.sprintf( part, labelOf( c.name ), OWA.dataGrid.phrase( c.operator, field ) );
-    } ).join( OWA.dataGrid.shownValue( c.value, field ) );
+        return OWA.util.sprintf( part, label, phrase );
+    } );
 };
 
 /**
