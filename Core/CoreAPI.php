@@ -2752,6 +2752,68 @@ class CoreAPI {
             
             $domain = \OWA\Core\CoreAPI::getSetting('base', 'cookie_domain');
         }
+
+        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, (string) $domain, $secure, $httponly );
+    }
+
+    /**
+     * A sign-in cookie (Auth's u and p, the login form's): host-only, on the
+     * install's own path (signInCookiePath()), so another host under
+     * cookie_domain, or another application on this one, is not sent it.
+     * HttpOnly unless asked otherwise; Secure as createCookie() decides.
+     *
+     * Each write first expires the cookie of that name where createCookie()
+     * puts one, at cookie_domain and /: a browser that holds one there sends
+     * both, and with the same path the older first, which PHP reads. First,
+     * not after: cookie_domain is usually this host, and a browser takes a
+     * cookie with the same name, domain and path as the same cookie, so an
+     * expiry sent after the new cookie would remove it.
+     *
+     * @param  string $cookie_name
+     * @param  string $cookie_value '' deletes it
+     * @param  int    $expires
+     * @param  bool   $secure
+     * @param  bool   $httponly
+     * @return void
+     */
+    public static function createSignInCookie( $cookie_name, $cookie_value, $expires, $secure = false, $httponly = true ) {
+
+        $path   = self::signInCookiePath();
+        $domain = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'cookie_domain' );
+
+        if ( $domain !== '' || $path !== '/' ) {
+
+            self::setNamespacedCookie( $cookie_name, '', time() - 86400, '/', $domain, $secure, $httponly );
+        }
+
+        self::setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, '', $secure, $httponly );
+    }
+
+    /**
+     * The path of the install's public URL, ending in /: what a sign-in cookie
+     * is sent for. / when there is none.
+     *
+     * @return string
+     */
+    public static function signInCookiePath() {
+
+        $path = trim( (string) parse_url( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), PHP_URL_PATH ), '/' );
+
+        return $path === '' ? '/' : '/' . $path . '/';
+    }
+
+    /**
+     * @param string $cookie_name before the namespace
+     * @param mixed  $cookie_value
+     * @param int    $expires
+     * @param string $path
+     * @param string $domain '' for a host-only cookie
+     * @param bool   $secure
+     * @param bool   $httponly
+     * @return void
+     */
+    private static function setNamespacedCookie( $cookie_name, $cookie_value, $expires, $path, $domain, $secure, $httponly ) {
+
         if (is_array($cookie_value)) {
 
             $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $cookie_value);
