@@ -20,6 +20,46 @@ OWA.report = function(dom_id, options) {
     this.asOf = null;
 };
 
+/**
+ * The report object for dom_id: OWA.items[dom_id], made the first time it is
+ * asked for from the page's report:item JSON (report.php). Asked for by
+ * whatever starts first, so the order modules start in does not matter.
+ *
+ * @param  {string} dom_id
+ * @return {OWA.report|undefined} undefined where the page has none
+ */
+OWA.report.item = function ( dom_id ) {
+
+    if ( OWA.items[ dom_id ] ) {
+        return OWA.items[ dom_id ];
+    }
+
+    var holders = typeof document !== 'undefined' ? document.querySelectorAll( '[data-ui="report:item"]' ) : [];
+
+    for ( var i = 0; i < holders.length; i++ ) {
+
+        var desc;
+
+        try {
+            desc = JSON.parse( holders[ i ].textContent || '{}' );
+        } catch ( e ) {
+            continue;
+        }
+
+        if ( desc.dom_id === dom_id ) {
+
+            var report = new OWA.report();
+
+            report.dom_id     = dom_id;
+            report.properties = desc.properties || {};
+
+            return OWA.items[ dom_id ] = report;
+        }
+    }
+
+    return undefined;
+};
+
 OWA.report.prototype = {
     
     /**

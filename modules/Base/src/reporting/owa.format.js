@@ -597,5 +597,31 @@ OWA.onWidthChange = function ( dom_id, callback ) {
 //     the same object: OWA.report = ... etc.).
 //   - window.OWA -- the report templates' inline <script> blocks (~166 references)
 //     read the browser global, so it stays published here.
+/**
+ * The page's settings (config_dom.php's JSON) into OWA.config. A page without
+ * them, such as a signed-out screen, leaves the defaults.
+ *
+ * @param {Document} doc
+ * @return {void}
+ */
+OWA.readPageConfig = function ( doc ) {
+
+    var el = doc && doc.querySelector ? doc.querySelector( '[data-ui="owa:config"]' ) : null;
+
+    if ( ! el ) {
+        return;
+    }
+
+    try {
+        Object.assign( OWA.config, JSON.parse( el.textContent || '{}' ) );
+    } catch ( e ) {
+        // An unreadable block leaves the defaults.
+    }
+};
+
+if ( typeof document !== 'undefined' ) {
+    OWA.readPageConfig( document );
+}
+
 export { OWA };
 window.OWA = OWA;
