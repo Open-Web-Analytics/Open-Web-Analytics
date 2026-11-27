@@ -18,7 +18,7 @@
  *                    precedes in a defaults object, or @default when there is none.
  *   @default value
  *   @internal        deliberately not public
- *   @deprecated text
+ *   @deprecated text  still works, but is left out of the wiki
  *   @param {type} name description
  *
  * The description is the first paragraph of the block. Indented lines that
@@ -358,7 +358,6 @@ const moduleNote = ( item ) => item.module === 'Base' ? '' : ` Provided by the $
 function renderMethods( api = readApi() ) {
 
     const current = api.commands.filter( ( c ) => ! c.deprecated );
-    const deprecated = api.commands.filter( ( c ) => c.deprecated );
     const signature = ( c ) => `${ c.name }(${ c.args.length ? ' ' + c.args.join( ', ' ) + ' ' : '' })`;
     const anchor = ( c ) => c.name.toLowerCase().replace( /[^a-z0-9-]/g, '' );
 
@@ -386,16 +385,6 @@ function renderMethods( api = readApi() ) {
         }
     }
 
-    if ( deprecated.length ) {
-
-        out += '\n### Deprecated commands\n\nThese still work.\n\n'
-             + '| Command | Use instead |\n|---|---|\n';
-
-        for ( const c of deprecated ) {
-            out += `| \`${ signature( c ) }\` | ${ cell( c.deprecated ) } |\n`;
-        }
-    }
-
     return out;
 }
 
@@ -403,9 +392,9 @@ function renderOptions( api = readApi() ) {
 
     let out = '| Option | Default | Description |\n|---|---|---|\n';
 
-    for ( const o of api.options ) {
+    for ( const o of api.options.filter( ( opt ) => ! opt.deprecated ) ) {
 
-        const desc = ( o.deprecated ? `**Deprecated.** ${ o.deprecated } ` : '' ) + o.description + moduleNote( o );
+        const desc = o.description + moduleNote( o );
 
         out += `| \`${ o.name }\` | ${ o.default === null || o.default === '' ? '—' : '`' + cell( o.default ) + '`' } | ${ cell( desc ) } |\n`;
     }
