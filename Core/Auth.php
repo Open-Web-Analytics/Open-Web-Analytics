@@ -487,10 +487,12 @@ class Auth extends \OWA\Core\Base {
         // the typed password, checked against the stored hash
         $this->credentials['new_password'] = $password;
 
-        // Failed sign-ins are counted per user name and per client address.
-        $keys = \OWA\Module\Base\Classes\LoginThrottle::keys( $this->credentials['user_id'], self::lastPublicHop() );
+        // Failed sign-ins are counted per user name and per client address,
+        // this attempt among them before its password is checked.
+        $address = self::lastPublicHop();
+        $keys    = \OWA\Module\Base\Classes\LoginThrottle::keys( $this->credentials['user_id'], $address );
 
-        if ( \OWA\Module\Base\Classes\LoginThrottle::isLocked( $keys ) ) {
+        if ( ! \OWA\Module\Base\Classes\LoginThrottle::attempt( $keys ) ) {
 
             // Answered as a wrong password is, in the time one takes.
             $this->passwordMatches( $password, self::NO_USER_HASH );
@@ -504,9 +506,11 @@ class Auth extends \OWA\Core\Base {
 
         if ($ret === true) {
             $this->saveCredentials();
-            \OWA\Module\Base\Classes\LoginThrottle::clear( [ \OWA\Module\Base\Classes\LoginThrottle::nameKey( $this->credentials['user_id'] ) ] );
+            \OWA\Module\Base\Classes\LoginThrottle::succeeded(
+                \OWA\Module\Base\Classes\LoginThrottle::nameKey( $this->credentials['user_id'] ),
+                \OWA\Module\Base\Classes\LoginThrottle::addressKey( $address ) );
         } else {
-            \OWA\Module\Base\Classes\LoginThrottle::recordFailure( $keys );
+            \OWA\Module\Base\Classes\LoginThrottle::failed( $keys );
         }
 
         return $ret;

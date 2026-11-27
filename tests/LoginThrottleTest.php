@@ -217,22 +217,85 @@ final class LoginThrottleTest extends TestCase
         $this->assertFalse(LoginThrottle::isLockedRow($row, $t + 600 + 900));
     }
 
+    /** @param list<int> $times */
+    private function failedAt(string $key, array $times): void
+    {
+        foreach ($times as $t) {
+            $this->assertTrue(LoginThrottle::attempt([$key], $t));
+            LoginThrottle::failed([$key], $t);
+        }
+    }
+
     public function testFailuresOutsideTheWindowStartAgain(): void
     {
-        $t = 1000000;
+        $t   = 1000000;
+        $key = LoginThrottle::nameKey('owa-test-window');
 
-        $this->assertSame($this->row(5, $t, $t + 899), LoginThrottle::afterFailure($this->row(4, $t, $t + 800), $t + 899),
-            'the fifth within 15 minutes of the first');
-        $this->assertSame($this->row(1, $t + 900, $t + 900), LoginThrottle::afterFailure($this->row(4, $t, $t + 800), $t + 900),
+        $this->failedAt($key, [$t, $t + 200, $t + 400, $t + 800, $t + 899]);
+        $this->assertSame($this->row(5, $t, $t + 899), LoginThrottle::$rows[$key], 'the fifth within 15 minutes of the first');
+
+        LoginThrottle::$rows = [];
+        $this->failedAt($key, [$t, $t + 200, $t + 400, $t + 800, $t + 900]);
+        $this->assertSame($this->row(1, $t + 900, $t + 900), LoginThrottle::$rows[$key],
             'fifteen minutes after the first, counting starts again');
     }
 
     public function testAnEndedRefusalCountsAgainFromOne(): void
     {
-        $t = 1000000;
+        $t   = 1000000;
+        $key = LoginThrottle::nameKey('owa-test-ended');
 
-        $this->assertSame($this->row(1, $t + 2000, $t + 2000),
-            LoginThrottle::afterFailure($this->row(5, $t, $t + 100), $t + 2000));
+        $this->failedAt($key, [$t, $t + 25, $t + 50, $t + 75, $t + 100]);
+        $this->assertFalse(LoginThrottle::attempt([$key], $t + 999), 'refused until 15 minutes after the last');
+        $this->failedAt($key, [$t + 2000]);
+
+        $this->assertSame($this->row(1, $t + 2000, $t + 2000), LoginThrottle::$rows[$key]);
+    }
+
+    /**
+     * Attempts made at once are each counted before any password is checked,
+     * so a sixth is refused while the first five are still being checked.
+     */
+    public function testTheSixthAttemptInTheSameSecondIsRefused(): void
+    {
+        $t    = 1000000;
+        $keys = LoginThrottle::keys('owa-test-burst', '198.51.100.40');
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertTrue(LoginThrottle::attempt($keys, $t), "attempt $i is checked");
+        }
+
+        $this->assertFalse(LoginThrottle::attempt($keys, $t), 'none of the five has failed yet');
+        $this->assertFalse(LoginThrottle::attempt([$keys[1]], $t), 'the address alone');
+        $this->assertSame(5, LoginThrottle::$rows[$keys[0]]['failures'], 'a refused attempt is taken back');
+    }
+
+    /** The same through the login form: five wrong passwords in one second, then the right one. */
+    public function testTheRightPasswordIsRefusedAfterFiveFailuresInOneSecond(): void
+    {
+        $keys = LoginThrottle::keys(self::USER, '198.51.100.20');
+        $t    = time();
+
+        for ($i = 0; $i < 5; $i++) {
+            LoginThrottle::attempt($keys, $t);
+        }
+
+        foreach ($keys as $key) {
+            LoginThrottle::failed([$key], $t);
+        }
+
+        $this->assertFalse($this->auth()->authByInput(self::USER, 'the right password'));
+    }
+
+    public function testASuccessTakesItsAttemptBackFromTheAddress(): void
+    {
+        $keys = LoginThrottle::keys('owa-test-ok', '198.51.100.41');
+
+        $this->assertTrue(LoginThrottle::attempt($keys));
+        LoginThrottle::succeeded($keys[0], $keys[1]);
+
+        $this->assertArrayNotHasKey($keys[0], LoginThrottle::$rows);
+        $this->assertSame(0, LoginThrottle::$rows[$keys[1]]['failures']);
     }
 
     public function testRecordingOnTheClock(): void

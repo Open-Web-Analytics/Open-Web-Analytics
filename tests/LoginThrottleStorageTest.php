@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * LoginThrottle on owa_login_failure: the same rule LoginThrottleTest checks
- * in memory, through its three statements. Each test counts against a name
+ * in memory, through its statements. Each test counts against a name
  * and an address of its own, and deletes them after.
  */
 final class LoginThrottleStorageTest extends TestCase
@@ -87,6 +87,31 @@ final class LoginThrottleStorageTest extends TestCase
         LoginThrottle::recordFailure(LoginThrottle::keys('owa-test-other-' . bin2hex(random_bytes(4)), ''), $now);
 
         $this->assertTrue(LoginThrottle::isLocked($this->keys, $now));
+    }
+
+    /** Five attempts in one second, none settled yet: the sixth is refused, and taken back. */
+    public function testTheSixthAttemptInTheSameSecondIsRefused(): void
+    {
+        $now = time();
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertTrue(LoginThrottle::attempt($this->keys, $now), "attempt $i is checked");
+        }
+
+        $this->assertFalse(LoginThrottle::attempt($this->keys, $now));
+        $this->assertSame(5, $this->row($this->keys[0])['failures'] ?? null);
+        $this->assertSame(5, $this->row($this->keys[1])['failures'] ?? null);
+    }
+
+    public function testASucceededAttemptClearsTheNameAndIsTakenBackFromTheAddress(): void
+    {
+        LoginThrottle::recordFailure($this->keys);
+        $this->assertTrue(LoginThrottle::attempt($this->keys));
+
+        LoginThrottle::succeeded($this->keys[0], $this->keys[1]);
+
+        $this->assertNull($this->row($this->keys[0]));
+        $this->assertSame(1, $this->row($this->keys[1])['failures'] ?? null);
     }
 
     public function testClearForgetsTheName(): void

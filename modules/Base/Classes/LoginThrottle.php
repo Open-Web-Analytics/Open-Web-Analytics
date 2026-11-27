@@ -10,8 +10,12 @@ namespace OWA\Module\Base\Classes;
  * refusal is the answer a wrong password gets. A successful sign-in, and a
  * password change, clear the name's count; the address's stays.
  *
- * The login form counts both (Core\Auth::authByInput()); an application
- * password counts its address only (Core\Auth::authByAppPassword()).
+ * The login form counts both (Core\Auth::authByInput()), and counts each
+ * attempt BEFORE the password is checked (attempt()): attempts made at
+ * once each see the others, so no more than MAX_FAILURES are checked. The
+ * outcome then settles it: failed() keeps it counted, succeeded() takes it
+ * back. An application password counts its address only, once it has failed
+ * (Core\Auth::authByAppPassword()).
  *
  * Stored in owa_login_failure (Entity\LoginFailure). When the table cannot be
  * read nothing is refused.
@@ -104,27 +108,6 @@ final class LoginThrottle {
     }
 
     /**
-     * A row after one more failure at $now.
-     *
-     * @param  array<string, mixed>|null $row null for none
-     * @param  int $now
-     * @return array{failures: int, first_failure_at: int, last_failure_at: int}
-     */
-    public static function afterFailure( $row, $now ) {
-
-        if ( ! $row || self::isStaleRow( $row, $now ) ) {
-
-            return [ 'failures' => 1, 'first_failure_at' => $now, 'last_failure_at' => $now ];
-        }
-
-        return [
-            'failures'         => (int) $row['failures'] + 1,
-            'first_failure_at' => (int) $row['first_failure_at'],
-            'last_failure_at'  => $now,
-        ];
-    }
-
-    /**
      * Whether any of $keys refuses a sign-in now.
      *
      * @param  list<string> $keys keys()
@@ -152,11 +135,82 @@ final class LoginThrottle {
     }
 
     /**
-     * Count one failure against each of $keys.
+     * Count a sign-in attempt against each of $keys before its password is
+     * checked, and say whether it may be checked: false when any count, this
+     * attempt included, is over MAX_FAILURES. A refused attempt is taken back
+     * at once. One that may be checked is settled by failed() or succeeded().
      *
-     * Three statements, each one atomic: rows whose failures no longer count
-     * are deleted, every row's count is raised by one or inserted at one, and
-     * the time of the last failure is set.
+     * The raise is one statement, so attempts made at the same moment each
+     * count the others.
+     *
+     * @param  list<string> $keys keys()
+     * @param  int|null     $now
+     * @return bool
+     */
+    public static function attempt( array $keys, $now = null ) {
+
+        if ( ! self::$enabled || ! $keys ) {
+
+            return true;
+        }
+
+        $now ??= time();
+
+        self::prune( $now );
+        self::addOne( $keys, $now );
+
+        foreach ( self::read( $keys ) as $row ) {
+
+            if ( (int) ( $row['failures'] ?? 0 ) > self::MAX_FAILURES ) {
+
+                self::subtractOne( $keys );
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The attempt() that was checked failed: it stays counted, and the
+     * refusal runs from now.
+     *
+     * @param  list<string> $keys
+     * @param  int|null     $now
+     * @return void
+     */
+    public static function failed( array $keys, $now = null ) {
+
+        if ( ! self::$enabled || ! $keys ) {
+
+            return;
+        }
+
+        self::setLast( $keys, $now ?? time() );
+    }
+
+    /**
+     * The attempt() that was checked succeeded: the name's count is cleared,
+     * and the attempt is taken back from the address's.
+     *
+     * @param  string $name_key    nameKey()
+     * @param  string $address_key addressKey()
+     * @return void
+     */
+    public static function succeeded( $name_key, $address_key ) {
+
+        self::clear( [ $name_key ] );
+
+        if ( self::$enabled && $address_key !== '' ) {
+
+            self::subtractOne( [ $address_key ] );
+        }
+    }
+
+    /**
+     * Count one failure against each of $keys, after the fact: for a
+     * credential whose check comes first (an application password).
      *
      * @param  list<string> $keys
      * @param  int|null     $now
@@ -171,6 +225,19 @@ final class LoginThrottle {
 
         $now ??= time();
 
+        self::prune( $now );
+        self::addOne( $keys, $now );
+        self::setLast( $keys, $now );
+    }
+
+    /**
+     * Delete every row whose failures no longer count (isStaleRow()).
+     *
+     * @param  int $now
+     * @return void
+     */
+    private static function prune( $now ) {
+
         if ( self::$rows !== null ) {
 
             foreach ( self::$rows as $key => $row ) {
@@ -181,21 +248,43 @@ final class LoginThrottle {
                 }
             }
 
+            return;
+        }
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            'DELETE FROM %s WHERE first_failure_at <= ? AND (failures < ? OR last_failure_at <= ?)', self::table() ),
+            [ $now - self::WINDOW, self::MAX_FAILURES, $now - self::LOCKOUT ] );
+    }
+
+    /**
+     * Raise each key's count by one, in one statement; a key with no row
+     * starts at one, its first and last failure now.
+     *
+     * @param  list<string> $keys
+     * @param  int $now
+     * @return void
+     */
+    private static function addOne( array $keys, $now ) {
+
+        if ( self::$rows !== null ) {
+
             foreach ( $keys as $key ) {
 
-                self::$rows[ $key ] = self::afterFailure( self::$rows[ $key ] ?? null, $now );
+                if ( isset( self::$rows[ $key ] ) ) {
+
+                    self::$rows[ $key ]['failures']++;
+
+                } else {
+
+                    self::$rows[ $key ] = [ 'failures' => 1, 'first_failure_at' => $now, 'last_failure_at' => $now ];
+                }
             }
 
             return;
         }
 
         // The driver first: loading it is what defines the OWA_SQL_* constants.
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = self::table();
-
-        $db->query( sprintf( 'DELETE FROM %s WHERE first_failure_at <= ? AND (failures < ? OR last_failure_at <= ?)', $table ),
-            [ $now - self::WINDOW, self::MAX_FAILURES, $now - self::LOCKOUT ] );
-
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
         $params = [];
 
         foreach ( $keys as $key ) {
@@ -205,10 +294,65 @@ final class LoginThrottle {
 
         $params[] = 1;
 
-        $db->query( sprintf( OWA_SQL_INSERT_OR_ADD, $table, 'subject, failures, first_failure_at, last_failure_at',
+        $db->query( sprintf( OWA_SQL_INSERT_OR_ADD, self::table(), 'subject, failures, first_failure_at, last_failure_at',
             implode( '), (', array_fill( 0, count( $keys ), '?, ?, ?, ?' ) ), 'subject', 'failures' ), $params );
+    }
 
-        $db->query( sprintf( 'UPDATE %s SET last_failure_at = ? WHERE subject IN (%s)', $table, self::placeholders( $keys ) ),
+    /**
+     * Lower each key's count by one, not below zero.
+     *
+     * @param  list<string> $keys
+     * @return void
+     */
+    private static function subtractOne( array $keys ) {
+
+        $keys = array_values( array_filter( $keys ) );
+
+        if ( ! $keys ) {
+
+            return;
+        }
+
+        if ( self::$rows !== null ) {
+
+            foreach ( $keys as $key ) {
+
+                if ( isset( self::$rows[ $key ] ) ) {
+
+                    self::$rows[ $key ]['failures'] = max( 0, self::$rows[ $key ]['failures'] - 1 );
+                }
+            }
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            'UPDATE %s SET failures = failures - 1 WHERE failures > 0 AND subject IN (%s)', self::table(), self::placeholders( $keys ) ),
+            $keys );
+    }
+
+    /**
+     * @param  list<string> $keys
+     * @param  int $now
+     * @return void
+     */
+    private static function setLast( array $keys, $now ) {
+
+        if ( self::$rows !== null ) {
+
+            foreach ( $keys as $key ) {
+
+                if ( isset( self::$rows[ $key ] ) ) {
+
+                    self::$rows[ $key ]['last_failure_at'] = $now;
+                }
+            }
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            'UPDATE %s SET last_failure_at = ? WHERE subject IN (%s)', self::table(), self::placeholders( $keys ) ),
             array_merge( [ $now ], $keys ) );
     }
 
