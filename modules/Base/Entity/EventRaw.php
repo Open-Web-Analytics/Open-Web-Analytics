@@ -58,7 +58,7 @@ class EventRaw extends \OWA\Core\Entity {
         $this->properties['id']->setPrimaryKey();
         $this->properties['id']->setDescription(
             'The event\'s id, derived from its site, visitor, session, timestamp, event name and '
-          . 'sequence number, so a beacon delivered twice is stored once.' );
+          . 'sequence number. A beacon delivered twice is stored once.' );
 
         /*
          * Wide enough for any name a site may give a custom event -- 40

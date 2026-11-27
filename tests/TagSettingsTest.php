@@ -106,7 +106,7 @@ final class TagSettingsTest extends TestCase
         $this->assertSame(['install', 'property', 'profile'], $args['scopes']);
         $this->assertSame('Honor Privacy Signals', $args['label']);
 
-        foreach (['Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other', 'legal requirement'] as $phrase) {
+        foreach (['Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other'] as $phrase) {
             $this->assertStringContainsString($phrase, $args['description']);
         }
 

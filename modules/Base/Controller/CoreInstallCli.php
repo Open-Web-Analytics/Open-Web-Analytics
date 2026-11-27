@@ -37,7 +37,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Installs one release now, whatever the automatic update settings say: its tarball and signature are fetched by its version through OWA\'s update host (auto_update_download_url), so any release in this major can be named. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
+            'description' => 'Installs one release now, whatever the automatic update settings say: its tarball and signature are fetched by its version through OWA\'s update host (auto_update_download_url). Any release in this major version can be named. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
             'arguments'   => [
                 '--version=<x.y.z>' => 'The release to install, in this major version. Required.',
                 '--force'           => 'Install it even when it is not newer than the installed release (going back, or the same release again). Never one older than the database schema: the rollbacks to run first are listed instead.',

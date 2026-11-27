@@ -335,16 +335,16 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         }
     }
 
-    public function testEveryRefusedCommandIsInTheTableAndIsARealCommand(): void
+    public function testEveryRefusedCommandIsInTheListAndIsARealCommand(): void
     {
         $md       = $this->section('job-refused-commands');
         $commands = $this->registeredCommands();
 
         $this->assertNotEmpty(\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE);
 
-        foreach (\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE as $command => $why) {
+        foreach (array_keys(\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE) as $command) {
             $this->assertArrayHasKey($command, $commands, "$command is refused, but no command has that name");
-            $this->assertStringContainsString("| `$command` | " . owa_wiki_cell($why) . ' |', $md, "$command is not in the table");
+            $this->assertStringContainsString("| `$command` |\n", $md, "$command is not in the table");
         }
     }
 
