@@ -30,6 +30,13 @@ namespace OWA\Module\Base\Handler;
 class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
+     * Whether ids are 1.x's, which may be negative (migratedRowFor()).
+     *
+     * @var bool
+     */
+    private $v1_ids = false;
+
+    /**
      * The wire prefixes that carry scope, matching the tracker's.
      *
      * Scope lives in the NAME so ingest never has to infer which bag a value
@@ -166,6 +173,25 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
+     * rowFor() for an event migrated from a 1.x row.
+     *
+     * Before 1.x's 64-bit ids (January 2012) a visitor or session id was a
+     * crc32, which the tracker and 32-bit PHP stored signed, so half of them
+     * are negative. A signed BIGINT holds them, so they are kept: any id
+     * FactMigrator::isId() accepts, where a beacon's must be positive.
+     *
+     * @param  object $event
+     * @return array<string, mixed>|null  as rowFor()
+     */
+    public static function migratedRowFor( $event ) {
+
+        $self         = new self();
+        $self->v1_ids = true;
+
+        return $self->row( $event, (string) $event->getEventType() );
+    }
+
+    /**
      * Build one raw row -- A MAPPING, NOT A DERIVATION.
      *
      * Every column is one property read off a formed event and coerced to what
@@ -218,11 +244,16 @@ class EventRawHandlers extends \OWA\Core\Observer {
         /*
          * The ids are BIGINT columns: a beacon's value that is not a positive
          * integer they hold fails the insert, and the queue retries it until it
-         * is dead-lettered. Dropped here instead.
+         * is dead-lettered. Dropped here instead. A migrated 1.x id may also be
+         * negative (migratedRowFor()).
          */
         foreach ( [ 'visitor id' => $visitor_id, 'session id' => $session_id ] as $what => $id ) {
 
-            if ( ! \OWA\Module\Base\Classes\V2Event::isId( $id ) ) {
+            $valid = $this->v1_ids
+                ? \OWA\Module\Base\Classes\Migration\FactMigrator::isId( $id )
+                : \OWA\Module\Base\Classes\V2Event::isId( $id );
+
+            if ( ! $valid ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     'v2 ingest: dropping an event, its %s is not a positive integer.', $what ) );

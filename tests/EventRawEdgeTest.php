@@ -77,6 +77,55 @@ final class EventRawEdgeTest extends TestCase
         }
     }
 
+    /** @return array<string, array{mixed, bool}> */
+    public static function v1Ids(): array
+    {
+        return [
+            'a 64-bit id'            => ['1790000000123456789', true],
+            'a signed 32-bit crc32'  => ['-1482514472', true],
+            'a negative int'         => [-2147418572, true],
+            'the smallest'           => ['-9223372036854775808', true],
+            'one past the smallest'  => ['-9223372036854775809', false],
+            'minus zero'             => ['-0', false],
+            'zero'                   => ['0', false],
+            'letters'                => ['-17900abc', false],
+            'an array'               => [['-1790'], false],
+        ];
+    }
+
+    /**
+     * 1.x's ids before January 2012 were crc32s, stored signed, so half are
+     * negative. A migrated event keeps one; a beacon's is still refused.
+     *
+     * @dataProvider v1Ids
+     */
+    public function testAMigratedEventKeepsAnyIdASignedBigintHolds($id, bool $valid): void
+    {
+        foreach (['visitor_id', 'session_id'] as $key) {
+            $row = null;
+            $this->logDuring(function () use (&$row, $key, $id) {
+                $row = EventRawHandlers::migratedRowFor($this->event([$key => $id]));
+            });
+
+            if ($valid) {
+                $this->assertIsArray($row, $key);
+                $this->assertSame((string) $id, (string) $row[$key], $key);
+            } else {
+                $this->assertNull($row, $key);
+            }
+        }
+    }
+
+    public function testABeaconWithANegativeIdIsStillDropped(): void
+    {
+        $row = null;
+        $this->logDuring(function () use (&$row) {
+            $row = EventRawHandlers::rowFor($this->event(['visitor_id' => '-1482514472']));
+        });
+
+        $this->assertNull($row);
+    }
+
     public function testPropertiesPastTheCapAreLoggedOnce(): void
     {
         $extra = [];
