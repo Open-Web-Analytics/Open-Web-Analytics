@@ -3622,15 +3622,17 @@ class CoreAPI {
     }
 
     /**
-     * @param  string $module_name
+     * @param  string      $module_name
+     * @param  string|null $problem     set to why it failed (Module::$install_problem), '' when it did not
      * @return bool|void nothing for no module name
      */
-    public static function installModule( $module_name ) {
+    public static function installModule( $module_name, &$problem = null ) {
 
         if ($module_name) {
 
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             $status = $m->install();
+            $problem = (string) $m->install_problem;
             return $status;
         }
     }

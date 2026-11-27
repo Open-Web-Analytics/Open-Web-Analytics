@@ -51,6 +51,11 @@ $_owa_messages = [
     3012 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database.' )],
     3013 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'User added, but the invitation email was not sent. Check the mail settings and the error log, then send the user a password reset from the login screen.' )],
     3014 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'This module stays active while its constant is set in owa-config.php.' )],
+    // The modules screen's refusals (OptionsModules::refuse()).
+    3030 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Module %1$s was not activated. %2$s' )],
+    3031 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no module named %s.' )],
+    3032 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Module %s is not active.' )],
+    3033 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'No module was named.' )],
 
     // Sites management
     3200 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Fill in all required fields.' )],
