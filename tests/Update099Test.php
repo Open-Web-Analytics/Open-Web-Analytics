@@ -5,11 +5,11 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Update098: owa_login_failure, created and dropped by the exact inverse.
+ * Update099: owa_login_failure, created and dropped by the exact inverse.
  */
-final class Update098Test extends TestCase
+final class Update099Test extends TestCase
 {
-    private \OWA\Module\Base\Update\Update098 $update;
+    private \OWA\Module\Base\Update\Update099 $update;
 
     protected function setUp(): void
     {
@@ -17,7 +17,7 @@ final class Update098Test extends TestCase
             $this->markTestSkipped('creates a table');
         }
 
-        $this->update = new \OWA\Module\Base\Update\Update098();
+        $this->update = new \OWA\Module\Base\Update\Update099();
     }
 
     protected function tearDown(): void
@@ -34,8 +34,8 @@ final class Update098Test extends TestCase
 
     public function testTheModuleRequiresIt(): void
     {
-        $this->assertSame(98, $this->update->schema_version);
-        $this->assertGreaterThanOrEqual(98, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
+        $this->assertSame(99, $this->update->schema_version);
+        $this->assertGreaterThanOrEqual(99, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
         $this->assertContains('login_failure', \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->entities,
             'registered, so a fresh install creates it');
     }

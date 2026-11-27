@@ -10,9 +10,9 @@ namespace OWA\Module\Base\Update;
  *
  * NOT CLI-ONLY. An empty table.
  */
-class Update098 extends \OWA\Core\Update {
+class Update099 extends \OWA\Core\Update {
 
-    public $schema_version = 98;
+    public $schema_version = 99;
 
     /**
      * @param  bool $force
