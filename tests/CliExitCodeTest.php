@@ -116,8 +116,7 @@ final class CliExitCodeTest extends CliControllerTestCase
                 continue;
             }
 
-            // The command and the Cli classes it extends; a screen it extends
-            // (sitesAddCli) reads the screen's form fields.
+            // The command and the Cli classes it extends, not the traits it uses.
             $src = '';
             for ($r = new ReflectionClass($class); $r && ($r->getName() === ltrim($class, '\\') || $r->isSubclassOf(Cli::class)); $r = $r->getParentClass()) {
                 $src .= file_get_contents($r->getFileName());

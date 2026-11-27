@@ -500,8 +500,8 @@ final class ServerRole {
             return null;
         }
 
-        // A command whose controller is not a Controller\Cli (sitesAddCli
-        // extends its screen) declares its roles the same way, or has the default.
+        // A command's controller is a Controller\Cli (CliCommandsTest); one
+        // without serverRoles() has the default.
         return method_exists( $class, 'serverRoles' )
             ? (array) $class::serverRoles()
             : Controller\Cli::serverRoles();

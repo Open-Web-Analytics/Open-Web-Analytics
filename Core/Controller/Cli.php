@@ -334,8 +334,7 @@ class Cli extends \OWA\Core\AdminController {
 
     /**
      * acceptedArguments() as $class answers it, which a command overrides to
-     * read a retired argument only to refuse it. A command's controller need
-     * not be a Cli (sitesAddCli extends its screen).
+     * read a retired argument only to refuse it.
      *
      * @param string $class
      * @return string[]|null
