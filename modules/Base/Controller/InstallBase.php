@@ -24,6 +24,8 @@ class InstallBase extends \OWA\Core\Controller\Install {
         $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'  => true]);
         $this->addValidation('timezone', $this->getParam('timezone'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress',
+            ['errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' )]);
         $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
             'operator' => '>=',

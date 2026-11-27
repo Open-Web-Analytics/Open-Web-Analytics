@@ -43,6 +43,8 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
             'errorMsg' => sprintf( 'The password must be at least %d characters.', \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress',
+            ['errorMsg' => 'A valid email address for the admin account is required: email_address=<email>.']);
     }
 
     /** A refused install prints why, and has done nothing. */
