@@ -340,9 +340,8 @@ function seed(): array
     }
 
     // 2a. Admin user with a known password (idempotent). No site grant needed:
-    //     the admin role's edit_* capabilities are not in
-    //     capabilitiesThatRequireSiteAccess, so the admin-actions suite can log
-    //     in and reach every options/users/sites/modules screen without one.
+    //     an admin has every Property, so the admin-actions suite can log in
+    //     and reach every options/users/sites/modules screen without one.
     $a = \OWA\Core\CoreAPI::entityFactory('base.user');
     $a->load(E2E_ADMIN_ID, 'user_id');
     if (!$a->get('id')) {
@@ -350,8 +349,8 @@ function seed(): array
         $a->createNewUser(E2E_ADMIN_ID, E2E_ADMIN_ROLE, E2E_ADMIN_PASS, E2E_ADMIN_ID, E2E_ADMIN_NAME);
     }
 
-    // 2b. Grant the user access to the fixture site. The analyst role's
-    //     view_reports capability is in capabilitiesThatRequireSiteAccess, so
+    // 2b. Grant the user access to the fixture site. Reports need
+    //     view_reports and access to the Property, so
     //     without a base.site_user relation the login succeeds but every report
     //     page is denied. The relation is keyed by INTERNAL ids (not the md5
     //     site_id / user_id string), mirroring siteAddAllowedUserRestController.

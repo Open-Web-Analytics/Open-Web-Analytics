@@ -10,6 +10,9 @@ namespace OWA\Module\Base\Controller;
  */
 class ProfileSettings extends \OWA\Core\AdminController {
 
+    // edit_sites, and access to the Property of the Profile the request names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_sites' );

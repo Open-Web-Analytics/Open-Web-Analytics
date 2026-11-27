@@ -63,21 +63,26 @@ final class RestPropertyResolutionTest extends TestCase
         };
     }
 
-    /** A signed-in reader who holds the capability on any Profile asked about. */
+    /** A signed-in reader who holds the capability, and access to any Property asked about. */
     private static function reader(): object
     {
         return new class {
-            public function siteIdForProperty($propertyId)
-            {
-                return 'owatest-site';
-            }
-
             public function isAdmin()
             {
                 return false;
             }
 
-            public function isCapable($cap, $siteId = null)
+            public function isCapable($cap)
+            {
+                return true;
+            }
+
+            public function isCapableOnProperty($cap, $propertyId)
+            {
+                return (string) $propertyId !== '';
+            }
+
+            public function isSiteAccessible($siteId)
             {
                 return true;
             }

@@ -33,7 +33,6 @@ return [
     'campaignKeys' => [],
     'campaignUtmParams' => true,
     'capabilities' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ],
-    'capabilitiesThatRequireSiteAccess' => [ 'view_reports', 'edit_sites' ],
     'config_file' => \OWA\Core\Env::root() . '/owa-config.php',
     'configuration_id' => '1',
     'cookie_domain' => false,

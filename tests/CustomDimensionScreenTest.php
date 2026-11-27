@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/AsAdministrator.php' );
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -22,6 +24,8 @@ use OWA\Module\Base\Classes\Cube\Dimensions;
  */
 final class CustomDimensionScreenTest extends TestCase
 {
+    use AsAdministrator;
+
     const PROPERTY = 7772000000000001;
     const PROPERTY_WITH_CUBE = 7772000000000002;
 
@@ -81,8 +85,9 @@ final class CustomDimensionScreenTest extends TestCase
      */
     public function testTheNavOffersItUnderProperty(): void
     {
-        $nav = ( new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' ) )
-            ->invoke( new \OWA\Module\Base\Controller\CustomDimensions( [] ), '', self::PROPERTY );
+        // The Property group is listed for a Property the user may access: an administrator has every one.
+        $nav = self::asAdministrator( fn () => ( new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' ) )
+            ->invoke( new \OWA\Module\Base\Controller\CustomDimensions( [] ), '', self::PROPERTY ) );
 
         $groups = [];
 

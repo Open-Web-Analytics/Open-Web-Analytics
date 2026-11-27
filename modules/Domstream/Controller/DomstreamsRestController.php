@@ -10,6 +10,9 @@ namespace OWA\Module\Domstream\Controller;
  */
 class DomstreamsRestController extends \OWA\Core\AdminController {
 
+    // view_reports, and access to the Property of the Profile the request names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );

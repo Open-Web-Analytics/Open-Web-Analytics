@@ -77,7 +77,7 @@ final class CustomReportsRosterAccessTest extends TestCase
             : (array) \OWA\Core\ReportController::reportNavigation( $propertyId );
 
         $rail = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
-            ->navRail( $nav, $propertyId, [], $user->siteIdForProperty( $propertyId ) );
+            ->navRail( $nav, $propertyId, [] );
 
         return array_column( $rail, 'id' );
     }

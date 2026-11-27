@@ -59,7 +59,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $propertyId = (string) $this->get('propertyId');
 
         if ( $propertyId === ''
-             || \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $propertyId ) === '' ) {
+             || ! \OWA\Core\CoreAPI::getCurrentUser()->isCapableOnProperty( 'view_reports', $propertyId ) ) {
 
             return;
         }
