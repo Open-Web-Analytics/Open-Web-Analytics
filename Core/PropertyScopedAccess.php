@@ -4,12 +4,14 @@ namespace OWA\Core;
 /**
  * A controller whose capability is held on the Property the request is about.
  *
- * The Property is the request's propertyId, else the Property of its siteId.
- * The capability is checked against a Profile of that Property the user may
- * see. A user who is not an administrator and may see none is refused,
- * whatever the capability, unless the Property has no Profile at all.
- * A request naming neither is checked as any controller's is, against its
- * siteId.
+ * The Property is the Property of the request's siteId, else its propertyId.
+ * A request whose siteId is no Profile is refused, and so is one whose
+ * propertyId is not that Profile's Property, administrator or not. The
+ * capability is checked against a Profile of that Property the user may see.
+ * A user who is not an administrator and may see none is refused, whatever
+ * the capability, unless the Property has no Profile at all. A request with
+ * no Property, naming neither or a Profile that has none, is checked as any
+ * controller's is, against its siteId.
  *
  * Making a Property asks create_properties, which is held install-wide
  * (createsProperty()). So does a Property with no Profile: no grant can be
@@ -22,6 +24,11 @@ trait PropertyScopedAccess {
      * @return bool
      */
     protected function isCurrentUserCapable( $currentUser ) {
+
+        if ( ! $this->requestNamesOneProperty() ) {
+
+            return false;
+        }
 
         if ( $this->createsProperty() ) {
 
@@ -71,19 +78,70 @@ trait PropertyScopedAccess {
     }
 
     /**
-     * The request's propertyId, else the Property of its siteId; '' for neither.
+     * The Property of the request's siteId, else its propertyId; '' for
+     * neither, or for a Profile with no Property.
      *
      * @return string
      */
     protected function requestPropertyId() {
 
-        $propertyId = (string) $this->getParam( 'propertyId' );
+        if ( (string) $this->getCurrentSiteId() !== '' ) {
 
-        if ( $propertyId === '' && $this->getCurrentSiteId() ) {
-
-            $propertyId = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->getCurrentSiteId() );
+            return (string) $this->propertyIdOfRequestSite();
         }
 
-        return $propertyId;
+        return (string) $this->getParam( 'propertyId' );
+    }
+
+    /**
+     * Whether the request's siteId names a Profile, and its propertyId, when
+     * it sends one too, is that Profile's Property. True for a request with
+     * no siteId.
+     *
+     * @return bool
+     */
+    private function requestNamesOneProperty() {
+
+        if ( (string) $this->getCurrentSiteId() === '' ) {
+
+            return true;
+        }
+
+        $ofSite = $this->propertyIdOfRequestSite();
+
+        if ( $ofSite === null ) {
+
+            return false;
+        }
+
+        $named = (string) $this->getParam( 'propertyId' );
+
+        return $named === '' || $named === $ofSite;
+    }
+
+    /**
+     * The Property of the Profile the request's siteId names: '' for no
+     * siteId or a Profile with no Property, null for a siteId that is no
+     * Profile. Archived Profiles count.
+     *
+     * @return string|null
+     */
+    protected function propertyIdOfRequestSite() {
+
+        $siteId = (string) $this->getCurrentSiteId();
+
+        if ( $siteId === '' ) {
+
+            return '';
+        }
+
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $siteId );
+
+        if ( ! $site->wasPersisted() ) {
+
+            return null;
+        }
+
+        return (string) ( $site->get( 'property_id' ) ?: '' );
     }
 }
