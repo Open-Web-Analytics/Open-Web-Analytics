@@ -29,6 +29,17 @@ class UsersProfile extends \OWA\Core\View {
             $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Add a new user profile' ));
             $this->body->set('action', 'base.usersAdd');
             $this->body->set('edit', false);
+
+            // A new account starts at the least-privileged role.
+            if ( ! is_array( $user ) ) {
+
+                $user = [];
+            }
+
+            if ( (string) ( $user['role'] ?? '' ) === '' ) {
+
+                $user['role'] = \OWA\Core\CoreAPI::leastPrivilegedRole();
+            }
         }
         //page title
         $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'User Profile' ));

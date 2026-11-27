@@ -1148,6 +1148,32 @@ class CoreAPI {
     }
 
     /**
+     * The assignable role with the fewest capabilities, the last of them
+     * when several tie, as the capabilities setting lists admin first: what
+     * the Add user form starts at.
+     *
+     * @return string '' when no role can be assigned
+     */
+    public static function leastPrivilegedRole() {
+
+        $least = '';
+        $count = PHP_INT_MAX;
+
+        foreach ( self::getAssignableRoles() as $role ) {
+
+            $n = count( (array) self::getCapabilities( $role ) );
+
+            if ( $n <= $count ) {
+
+                $least = (string) $role;
+                $count = $n;
+            }
+        }
+
+        return $least;
+    }
+
+    /**
      * Capabilities OWA no longer has. A role configuration that still names
      * one is not an error: getCapabilities() leaves the name out.
      * view_reports_ecommerce: view_reports covers the e-commerce reports.
