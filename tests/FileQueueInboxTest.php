@@ -11,9 +11,9 @@ require_once __DIR__ . '/CapturesLog.php';
  * The tracking queue's two directories: the web server writes only the inbox
  * (owa-data/logs/incoming-tracking-events/), and the drain copies its files
  * into the queue's own directory (owa-data/queue/), which it alone writes
- * (FileEventQueue::intake()). Only the queue's own names are taken, each a
- * plain file of its own; a link is not followed and nothing is renamed out of
- * the inbox.
+ * (FileEventQueue::intake()). Only the queue's own names are taken, under
+ * any install hash, each a plain file of its own; a link is not followed and
+ * nothing is renamed out of the inbox.
  */
 final class FileQueueInboxTest extends TestCase
 {
@@ -112,6 +112,36 @@ final class FileQueueInboxTest extends TestCase
         $this->assertSame([], $this->queue()->receive(10, 300), 'not due');
         $this->assertSame([], glob($this->inbox('delayed_*')), 'taken in');
         $this->assertCount(1, glob($this->root . 'queue/delayed/*.txt'));
+    }
+
+    public function testFilesNamedUnderAnotherInstallHashAreTakenIn(): void
+    {
+        $other = str_repeat('d', 32);
+        $line  = fn (string $n) => json_encode(['r' => 0, 'e' => self::envelope($n)]) . "\n";
+        $due   = (int) ceil((time() + 600) / 60) * 60;
+
+        file_put_contents($this->inbox('delayed_' . $due . '_' . $other . '.txt'), $line('later'));
+        file_put_contents($this->inbox('events_' . $other . '.txt'), $line('now'));
+
+        $q = $this->queue();
+        $this->assertFalse($q->isProbablyEmpty(), 'an events file under another hash is waiting');
+        $this->assertSame(2, $q->depth());
+
+        $got = $this->queue()->receive(10, 300);
+        $this->assertSame(['now'], array_map(fn ($m) => $m->envelope['properties']['n'], $got));
+        $this->assertSame([], glob($this->inbox('*_' . $other . '.txt')), 'both taken in');
+        $this->assertSame([$this->root . 'queue/delayed/' . $due . '.txt'], glob($this->root . 'queue/delayed/*.txt'), 'the delayed one keeps its minute');
+    }
+
+    public function testALinkUnderAnotherInstallHashIsNotFollowed(): void
+    {
+        file_put_contents($this->root . 'secret.txt', json_encode(['r' => 0, 'e' => self::envelope('secret')]) . "\n");
+        $link = $this->inbox('delayed_' . time() . '_' . str_repeat('e', 32) . '.txt');
+        symlink($this->root . 'secret.txt', $link);
+
+        $this->assertSame([], $this->queue()->receive(10, 300));
+        $this->assertTrue(is_link($link), 'left where it is');
+        $this->assertSame([], glob($this->root . 'queue/delayed/*.txt'));
     }
 
     public function testEveryDirectoryTheQueueMakesHasAnIndexAndNoneIsTakenAsABatch(): void

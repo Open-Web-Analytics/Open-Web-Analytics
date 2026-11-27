@@ -8,7 +8,8 @@ namespace OWA\Core;
  *
  *  - name(): a file name with the install's hash in it, which nobody can
  *    guess without its secrets (CoreAPI::generateInstanceSpecificHash()). The
- *    hash does not change, so the name is computed, never stored.
+ *    hash changes only with those secrets, so the name is computed, never
+ *    stored. hashOf() reads the hash of a name made under any of them.
  *  - guard(): an index.php in a directory, as owa-data/ and owa-data/logs/
  *    ship with, so a server that lists directories lists nothing there.
  */
@@ -16,6 +17,9 @@ class PrivateFiles {
 
     /** What guard() writes: what owa-data/index.php holds. */
     const INDEX = "<?php\n// ...\n";
+
+    /** The hash in a name(), as a regular expression: any install's, not only this one's. */
+    const HASH_PATTERN = '[0-9a-f]{32}';
 
     /**
      * @param  string $stem errors, events
@@ -25,6 +29,21 @@ class PrivateFiles {
     public static function name( $stem, $ext ) {
 
         return (string) $stem . '_' . CoreAPI::generateInstanceSpecificHash() . (string) $ext;
+    }
+
+    /**
+     * The hash in a file name of name()'s shape, whatever hash it carries.
+     *
+     * @param  string $file a base name
+     * @param  string $stem errors, events
+     * @param  string $ext  with its dot
+     * @return string|null its hash; null when $file is not $stem_<hash>$ext
+     */
+    public static function hashOf( $file, $stem, $ext ) {
+
+        $pattern = '/^' . preg_quote( (string) $stem, '/' ) . '_(' . self::HASH_PATTERN . ')' . preg_quote( (string) $ext, '/' ) . '$/';
+
+        return preg_match( $pattern, (string) $file, $m ) ? $m[1] : null;
     }
 
     /**

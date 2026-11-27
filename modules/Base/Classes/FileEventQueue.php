@@ -23,7 +23,8 @@ namespace OWA\Module\Base\Classes;
  * writes. The web server writes the tracking queue's INBOX instead, owa-data/
  * logs/incoming-tracking-events/, by names nobody guesses (PrivateFiles):
  * events_<hash>.txt, and delayed_<due>_<hash>.txt for a beacon retried later.
- * The drain copies them in (intake()): the only files it takes from a
+ * The drain copies them in (intake()), under whatever hash they were named
+ * by: the only files it takes from a
  * directory the web server can write. Every directory gets an index.php.
  *
  *   events.txt     what is appended to, in a queue with no inbox (a dead-letter queue)
@@ -386,6 +387,14 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return false;
         }
 
+        foreach ( array_keys( array_filter( $this->inboxFiles(), 'is_null' ) ) as $name ) {
+
+            if ( filesize( $this->inbox_dir . $name ) > 0 ) {
+
+                return false;
+            }
+        }
+
         if ( self::files( $this->unprocessed_path, '.txt' ) || self::files( $this->processing_path, '.txt' ) ) {
 
             return false;
@@ -703,16 +712,15 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @return string[] every file holding waiting lines */
     private function waitingFiles() {
 
-        $inbox = $this->inbox_dir === null ? [] : array_map( fn ( $f ) => $this->inbox_dir . $f,
-            array_values( array_filter( self::files( $this->inbox_dir, '.txt' ), fn ( $f ) => strpos( $f, 'delayed_' ) === 0 ) ) );
+        $inbox = array_map( fn ( $f ) => $this->inbox_dir . $f, array_keys( $this->inboxFiles() ) );
 
-        return array_values( array_filter( array_merge(
+        return array_values( array_unique( array_filter( array_merge(
             [ $this->event_file ],
             $inbox,
             array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path, '.txt' ) ),
             array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
             array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path, '.txt' ) )
-        ), 'is_file' ) );
+        ), 'is_file' ) ) );
     }
 
     // ---------------------------------------------------------------------
@@ -744,7 +752,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * Take the inbox's files into the queue's own directory: the one point
      * where the drain touches what the web server wrote.
      *
-     * Only the names the queue gives (the events file, delayed files), each
+     * Only the names the queue gives (events files, delayed files, under
+     * any install hash: inboxFiles()), each
      * opened and checked to be a plain file with this one name -- not a
      * link, not a hard link to another file, not a FIFO (SafeFile::isNamed())
      * -- under the lock its writers append under. Its contents are COPIED
@@ -772,20 +781,42 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return;
         }
 
-        $events = basename( $this->event_file );
-        $hash   = \OWA\Core\CoreAPI::generateInstanceSpecificHash();
+        foreach ( $this->inboxFiles() as $name => $due ) {
+
+            $this->takeIn( $this->inbox_dir . $name, $due );
+        }
+    }
+
+    /**
+     * The inbox's files of the queue's own names, under any install hash:
+     * events_<hash>.txt (null) and delayed_<due>_<hash>.txt (its due time).
+     * A file named under an earlier OWA_SECRET, OWA_DB_USER or
+     * OWA_DB_PASSWORD is one of them.
+     *
+     * @return array<string, int|null> name => due time, null for an events file
+     */
+    private function inboxFiles() {
+
+        if ( $this->inbox_dir === null ) {
+
+            return [];
+        }
+
+        $found = [];
 
         foreach ( self::files( $this->inbox_dir, '.txt' ) as $name ) {
 
-            if ( $name === $events ) {
+            if ( \OWA\Core\PrivateFiles::hashOf( $name, 'events', '.txt' ) !== null ) {
 
-                $this->takeIn( $this->inbox_dir . $name, null );
+                $found[ $name ] = null;
 
-            } elseif ( preg_match( '/^delayed_(\d+)_' . preg_quote( $hash, '/' ) . '\.txt$/', $name, $m ) ) {
+            } elseif ( preg_match( '/^delayed_(\d+)_' . \OWA\Core\PrivateFiles::HASH_PATTERN . '\.txt$/', $name, $m ) ) {
 
-                $this->takeIn( $this->inbox_dir . $name, (int) $m[1] );
+                $found[ $name ] = (int) $m[1];
             }
         }
+
+        return $found;
     }
 
     /**
