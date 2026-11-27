@@ -171,50 +171,14 @@ class RestApi extends \OWA\Core\View {
     }
     
     /**
-     * The host without a leading `www.`, when what is left is still a domain
-     * of two labels or more: `www.example.com` is `example.com`; `www.com`
-     * stays as it is.
-     *
-     * @param  string $host
-     * @return string
-     */
-    private static function withoutWww( $host ) {
-
-        $rest = substr( $host, 4 );
-
-        return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
-    }
-
-    /**
-     * An origin's port: the one it names, else its scheme's default.
-     *
-     * @param  string $origin
-     * @return int
-     */
-    private static function originPort( $origin ) {
-
-        $port = parse_url( $origin, PHP_URL_PORT );
-
-        if ( $port ) {
-
-            return (int) $port;
-        }
-
-        return strtolower( (string) parse_url( $origin, PHP_URL_SCHEME ) ) === 'https' ? 443 : 80;
-    }
-
-    /**
      * Decides whether an Origin belongs to one of this installation's sites.
      *
-     * Matching is on **host**, not on the stored string. Sites are commonly
-     * stored with an `http://` scheme while being served over https, so a
-     * browser sends an `https://` Origin and
-     * comparing the stored value verbatim would refuse exactly the requests
-     * this is for. Hosts are compared in full and case-insensitively; a
-     * prefix or suffix match is what lets `evil-example.com` pass as
-     * `example.com`, and a subdomain is a separate origin, not a child.
-     * The one exception is `www.`: `www.example.com` and `example.com` are
-     * one site, whichever of the two the Profile names.
+     * The rule is the overlays' (ProfileDomains::originOf()): an http or https
+     * origin whose host is a live web Profile's domain or a subdomain of it.
+     * The heatmap launcher and the player open pages by the same rule, so a
+     * page an overlay opens on is answered here. Hosts are compared in full and
+     * case-insensitively, without a port and a leading `www.`; `evil-example.com`
+     * is not `example.com`.
      *
      * Pure: no request, no database, no headers. See tests/CorsOriginMatchTest.
      *
@@ -231,74 +195,11 @@ class RestApi extends \OWA\Core\View {
             return null;
         }
 
-        $originHost = parse_url( $origin, PHP_URL_HOST );
-        $scheme     = parse_url( $origin, PHP_URL_SCHEME );
+        $allowed = \OWA\Module\Base\Classes\ProfileDomains::originOf( $origin,
+            \OWA\Module\Base\Classes\ProfileDomains::ofSites( $sites ) );
 
-        // An Origin is a scheme and a host. Anything else -- 'null', a bare
-        // path, a javascript: URL -- is refused rather than coerced.
-        if ( ! $originHost || ! $scheme || ! in_array( strtolower( $scheme ), [ 'http', 'https' ], true ) ) {
-
-            return null;
-        }
-
-        foreach ( $sites as $site ) {
-
-            $domain = is_array( $site ) ? ( $site['domain'] ?? '' ) : '';
-
-            if ( ! is_string( $domain ) || $domain === '' ) {
-
-                continue;
-            }
-
-            /*
-             * Only WEB Profiles grant an origin.
-             *
-             * An app Profile is identified by a bundle id, not a host, and has
-             * no domain -- so it contributes nothing here and is skipped before
-             * its identifier can be parsed as one.
-             */
-            if ( \OWA\Module\Base\Entity\Site::streamTypeOf( $site ) !== \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
-
-                continue;
-            }
-
-            /*
-             * And only LIVE ones. An archived Profile has stopped observing, so
-             * its origin should stop being allowed with it.
-             */
-            if ( ! empty( $site['archived_date'] ) ) {
-
-                continue;
-            }
-
-            // A stored domain may carry a scheme or not. Without one parse_url
-            // reads the whole value as a path, so give it something to parse --
-            // and a value with no host at all ('owa-test-site' exists on a real
-            // install) still yields nothing and is skipped.
-            $candidate = strpos( $domain, '//' ) === false ? 'http://' . $domain : $domain;
-            $siteHost  = parse_url( $candidate, PHP_URL_HOST );
-
-            if ( ! $siteHost ) {
-
-                continue;
-            }
-
-            // A port stored with the domain is the only port of that site.
-            $sitePort = parse_url( $candidate, PHP_URL_PORT );
-
-            if ( $sitePort && $sitePort !== self::originPort( $origin ) ) {
-
-                continue;
-            }
-
-            if ( strcasecmp( self::withoutWww( $siteHost ), self::withoutWww( $originHost ) ) === 0 ) {
-
-                // Echo what the browser actually sent, never the stored form.
-                return $origin;
-            }
-        }
-
-        return null;
+        // Echo what the browser actually sent, never the stored form.
+        return $allowed === '' ? null : $origin;
     }
 
     /**

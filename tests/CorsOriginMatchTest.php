@@ -3,7 +3,9 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Which Origins the REST API is willing to answer cross-origin.
+ * Which Origins the REST API is willing to answer cross-origin: those the
+ * overlays open pages on (ProfileDomains::originOf()), a live web Profile's
+ * domain or a subdomain of it.
  *
  * Matching is on HOST, not on the stored string. Real installs store
  * `http://demo.openwebanalytics.com` while serving over https, so a browser
@@ -67,11 +69,22 @@ final class CorsOriginMatchTest extends TestCase
     }
 
     /**
-     * A subdomain is a different origin and is not covered by its parent.
+     * A subdomain of a Profile's domain is answered: the heatmap and the
+     * player open pages there, and their fetch came back refused.
      */
-    public function testASubdomainIsNotItsParent(): void
+    public function testASubdomainOfTheDomainIsAllowed(): void
     {
-        $this->assertNull($this->match('https://sub.example.com', ['https://example.com']));
+        $this->assertSame('https://shop.example.com', $this->match('https://shop.example.com', ['https://example.com']));
+        $this->assertSame('https://a.b.example.com', $this->match('https://a.b.example.com', ['example.com']));
+        $this->assertSame('https://shop.example.com', $this->match('https://shop.example.com', ['www.example.com']));
+        $this->assertSame('https://www.sub.example.com', $this->match('https://www.sub.example.com', ['example.com']));
+    }
+
+    /** A parent of the Profile's domain is not on it. */
+    public function testTheParentOfTheDomainIsNotAllowed(): void
+    {
+        $this->assertNull($this->match('https://example.com', ['shop.example.com']));
+        $this->assertNull($this->match('https://other.example.com', ['shop.example.com']));
     }
 
     /**
@@ -86,11 +99,9 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertSame('https://WWW.Example.com', $this->match('https://WWW.Example.com', ['example.com']));
     }
 
-    /** Only `www.`: another subdomain, or `www.` on a different domain, is still refused. */
-    public function testWwwIsTheOnlySubdomainFolded(): void
+    /** `www.` on a different domain, or before a single label, is refused. */
+    public function testWwwOnAnotherDomainIsRefused(): void
     {
-        $this->assertNull($this->match('https://shop.example.com', ['www.example.com']));
-        $this->assertNull($this->match('https://www.sub.example.com', ['example.com']));
         $this->assertNull($this->match('https://www.evil-example.com', ['example.com']));
         $this->assertNull($this->match('https://wwwexample.com', ['example.com']));
         $this->assertNull($this->match('https://com', ['www.com']));
@@ -137,15 +148,47 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertNull($this->match('https://c.example.com', $domains));
     }
 
-    /** A domain stored with a port allows that port only; the scheme's default port counts when the origin names none. */
-    public function testAStoredPortIsTheOnlyPortAllowed(): void
+    /** The port is not part of the rule, as it is not for the overlay launcher. */
+    public function testThePortIsNotPartOfTheRule(): void
     {
         $this->assertSame('http://localhost:8080', $this->match('http://localhost:8080', ['localhost:8080']));
-        $this->assertNull($this->match('http://localhost:9000', ['localhost:8080']));
-        $this->assertNull($this->match('http://localhost', ['localhost:8080']));
-        $this->assertSame('https://example.com', $this->match('https://example.com', ['https://example.com:443']));
-        $this->assertNull($this->match('https://example.com:8443', ['https://example.com:443']));
-        $this->assertSame('https://example.com:8443', $this->match('https://example.com:8443', ['https://example.com:8443/']));
+        $this->assertSame('http://localhost:9000', $this->match('http://localhost:9000', ['localhost:8080']));
+        $this->assertSame('http://localhost', $this->match('http://localhost', ['localhost:8080']));
+        $this->assertSame('https://example.com:8443', $this->match('https://example.com:8443', ['https://example.com']));
+    }
+
+    /** @return array<string, array{string, list<string>}> */
+    public static function launcherCases(): array
+    {
+        return [
+            'the domain'              => ['https://example.com', ['example.com']],
+            'www and the bare domain' => ['https://www.example.com', ['example.com']],
+            'a subdomain'             => ['https://shop.example.com', ['http://www.example.com']],
+            'a deeper subdomain'      => ['http://a.b.example.com', ['example.com']],
+            'another port'            => ['https://example.com:8443', ['example.com']],
+            'a suffix'                => ['https://evil-example.com', ['example.com']],
+            'the domain as a label'   => ['https://example.com.evil.net', ['example.com']],
+            'the parent'              => ['https://example.com', ['shop.example.com']],
+            'www before one label'    => ['https://com', ['www.com']],
+            'ftp'                     => ['ftp://example.com', ['example.com']],
+            'no host'                 => ['https://', ['example.com']],
+            'a hostless Profile'      => ['https://example.com', ['owa-test-site']],
+        ];
+    }
+
+    /**
+     * One rule: an Origin is answered exactly when the overlay launcher would
+     * open a page of that origin (ProfileDomains::originOf()).
+     *
+     * @dataProvider launcherCases
+     */
+    public function testTheRuleIsTheOverlayLaunchers(string $origin, array $domains): void
+    {
+        $sites    = $this->sites($domains);
+        $launches = \OWA\Module\Base\Classes\ProfileDomains::originOf(
+            $origin . '/page', \OWA\Module\Base\Classes\ProfileDomains::ofSites($sites)) !== '';
+
+        $this->assertSame($launches, \OWA\Core\View\RestApi::matchAllowedOrigin($origin, $sites) !== null);
     }
 
     /**

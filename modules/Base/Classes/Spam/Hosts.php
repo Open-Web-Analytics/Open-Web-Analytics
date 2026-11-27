@@ -5,7 +5,8 @@ namespace OWA\Module\Base\Classes\Spam;
  * Host comparison for the page_origin rules.
  *
  * Two hosts are the same when they are equal once each is lower-cased, its
- * port is dropped and a leading `www.` is removed: www.example.com,
+ * port is dropped and a leading `www.` is removed, when a domain of two
+ * labels or more is left: www.example.com,
  * EXAMPLE.com and example.com:8080 are one host. Nothing else is folded, so
  * blog.example.com is not example.com; isWithin() is what counts a subdomain
  * as on a site.
@@ -50,7 +51,9 @@ class Hosts {
 
         $host = rtrim( strtolower( $host ), '.' );
 
-        return strpos( $host, 'www.' ) === 0 ? substr( $host, 4 ) : $host;
+        // Not when what is left is one label: www.com is not com.
+        return strpos( $host, 'www.' ) === 0 && strpos( substr( $host, 4 ), '.' ) !== false
+            ? substr( $host, 4 ) : $host;
     }
 
     /**
