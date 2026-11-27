@@ -4,7 +4,7 @@ require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
  * The server resolves campaign tags by parsing the landing beacon's own URL,
- * so the answer is re-derivable: a fix to the parser, or a site changing `ns`,
+ * so the answer is re-derivable: a fix to the parser, or a site changing its campaignKeys,
  * applies on reprocess instead of being frozen in whatever a browser decided.
  *
  * On the session-starting beacon page_location IS the landing URL, and that
@@ -35,7 +35,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
     private function ns(): string
     {
-        $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        $ns = \OWA\Core\CoreAPI::NS;
 
         $this->assertNotSame('', $ns,
             'the campaign parameter names are ns + suffix, so an empty ns would make '
@@ -353,7 +353,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     public function testPageQueryDropsTheCampaignTagsItReads(): void
     {
         $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
-        $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        $ns = \OWA\Core\CoreAPI::NS;
         \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
         $url = 'https://example.test/p?utm_source=newsletter&utm_medium=email&utm_campaign=spring'

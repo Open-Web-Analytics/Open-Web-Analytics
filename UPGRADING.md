@@ -421,6 +421,16 @@ the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-
 Update091 deletes the stored `hello` rows, so an install that had it active no
 longer lists `hello` as an active module. The update's down() puts them back.
 
+### The `ns` setting is removed
+
+OWA's cookie names and the URL parameters it reads from tracked pages, such as
+`owa_source` and `owa_state`, always start with `owa_`, the setting's default.
+A config that still defines `OWA_NS` gets a notice in `cmd=server-check` and
+System Health. The nonce and auth secrets are read from `OWA_NONCE_KEY`,
+`OWA_NONCE_SALT`, `OWA_AUTH_KEY` and `OWA_AUTH_SALT` by name; with another
+`ns` they were read from constants named after it. Update100 deletes the
+setting's stored rows at every scope. Its down() puts them back.
+
 ### The API key and request signature are refused
 
 1.x signed a REST request in with the user's API key (`apiKey`, or the

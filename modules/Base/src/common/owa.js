@@ -2,6 +2,13 @@ import { StateManager } from './StateManager.js';
 import { Util } from './Util.js';
 
 /**
+ * The prefix on OWA's cookie names, the owa_state cross-domain handoff and the
+ * owa_overlay anchor: everything OWA writes into a tracked page's URL or
+ * cookie jar. The server's CoreAPI::NS.
+ */
+const NS = 'owa_';
+
+/**
  * OWA Global Object 
  *	
  * @author      Peter Adams <peter@openwebanalytics.com>
@@ -31,11 +38,6 @@ class OWA {
 	        loadHeatmap: ( p ) => this.loadHeatmap( p ),
 	    };
 	    this.config = {
-	        // The WIRE namespace: cookie names, the owa_state cross-domain
-	        // handoff and the owa_overlay anchor -- everything OWA writes into a
-	        // TRACKED PAGE's URL or cookie jar, where the names belong to the
-	        // site owner and a collision is theirs to suffer.
-	        ns: 'owa_',
 	        baseUrl: '',
 	        hashCookiesToDomain: true,
 	        debug: false
@@ -401,7 +403,7 @@ class OWA {
         
         // Erase any owa_overlay cookie an older tracker left on this domain,
         // then drop the in-memory copy.
-        Util.eraseCookie(this.getSetting('ns') + 'overlay', document.domain);
+        Util.eraseCookie(NS + 'overlay', document.domain);
         this.overlayParams = null;
         this.overlayActive = false;
     }
@@ -563,4 +565,4 @@ class OWA {
 }
 
 const OWA_instance = new OWA();
-export { OWA_instance };
+export { OWA_instance, NS };

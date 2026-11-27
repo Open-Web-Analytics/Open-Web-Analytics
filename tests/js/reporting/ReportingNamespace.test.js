@@ -15,18 +15,19 @@ const path = require('path');
 /**
  * The reporting bundle's own URLs carry bare parameter names.
  *
- *   config.ns  'owa_'  -- the WIRE namespace, shared with the tracker.
  *   OWA's OWN admin/reporting URLs carry bare names: OWA owns the entire query
- *   string.
+ *   string. nsAll() prefixes with owa_, a constant, not a setting.
  */
 describe('the reporting bundle keeps the wire namespace out of its own URLs', () => {
 
     afterEach(() => {
-        OWA.setOption('ns', 'owa_');
+        delete OWA.config.ns;
     });
 
-    test('the wire namespace is still owa_, and there is no app namespace', () => {
-        expect(OWA.config.ns).toBe('owa_');
+    test('the prefix is owa_ whatever the config says, and there is no app namespace', () => {
+        expect('ns' in OWA.config).toBe(false);
+        OWA.setOption('ns', 'xy_');
+        expect(OWA.util.nsAll({ do: 'base.reportDashboard' })).toEqual({ owa_do: 'base.reportDashboard' });
         expect('app_ns' in OWA.config).toBe(false);
         expect(OWA.util.appNs).toBeUndefined();
     });

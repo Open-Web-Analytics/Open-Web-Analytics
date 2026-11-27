@@ -123,7 +123,7 @@ final class ConfigFileConstantsTest extends TestCase
     {
         $file = $this->tempConfig("<?php\n// \$this->set('base', 'mailer-host', 'x');\n"
             . "# \$this->addCapabilityToRole('everyone', 'view_reports');\n"
-            . "/* \$this->set('base', 'ns', 'x'); */\n"
+            . "/* \$this->set('base', 'timezone', 'x'); */\n"
             . "/** \$this */\n"
             . "define('OWA_NOTE', 'use \$this nowhere');\n");
 

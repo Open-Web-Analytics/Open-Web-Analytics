@@ -6,7 +6,7 @@
  * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
  */
  
-import { OWA_instance as OWA } from '../common/owa.js';
+import { OWA_instance as OWA, NS } from '../common/owa.js';
 import { Util } from '../common/Util.js';
 import { OwaEvent } from './OwaEvent.js';
 import { toWire } from './WireNames.js';
@@ -241,7 +241,7 @@ class OWATracker  {
 	     * storeName() turns a logical name into the physical one -- 's' becomes
 	     * 's_<siteId>' -- which is what separates two trackers on a page: the
 	     * map key in the state manager and the cookie name both follow from it,
-	     * because the cookie is named ns + store name.
+	     * because the cookie is named NS + store name.
 	     *
 	     * 'v' stays global on purpose: it is the visitor, and two trackers SHOULD
 	     * agree about who the visitor is. The visitor is shared and the session is
@@ -730,10 +730,10 @@ class OWATracker  {
 
         if ( this.linkedStateSet != true ) {
 
-            var ls = this.getUrlParam(OWA.getSetting('ns') + 'state');
+            var ls = this.getUrlParam(NS + 'state');
 
             if ( ! ls ) {
-                ls = this.getAnchorParam(OWA.getSetting('ns') + 'state');
+                ls = this.getAnchorParam(NS + 'state');
             }
 
             if ( ls ) {
@@ -805,7 +805,7 @@ class OWATracker  {
     /**
      * The URL with the shared state token in its fragment.
      *
-     * The token is a `<ns>state.<payload>` pair. A URL with no fragment gets it
+     * The token is a `owa_state.<payload>` pair. A URL with no fragment gets it
      * as the whole fragment; one that has a fragment keeps it and gets the
      * token after a comma, the pair separator getAnchorParam() splits on.
      *
@@ -816,7 +816,7 @@ class OWATracker  {
      */
     addSharedStateToUrl(url, state) {
 
-        var token = OWA.getSetting('ns') + 'state.' + state;
+        var token = NS + 'state.' + state;
         var hash = url.indexOf('#');
 
         if ( hash === -1 ) {
@@ -954,7 +954,7 @@ class OWATracker  {
     checkForOverlaySession() {
 
         // check to see if overlay sesson should be created
-        var a = this.getAnchorParam( OWA.getSetting('ns') + 'overlay');
+        var a = this.getAnchorParam( NS + 'overlay');
 
         if ( a ) {
 
@@ -1355,7 +1355,7 @@ class OWATracker  {
      *
      * Site-scoped stores carry the site in the name ('s' -> 's_<siteId>'), so
      * two trackers on one page get separate entries in the state manager's map
-     * AND separate cookies, since a cookie is named ns + store name. Global
+     * AND separate cookies, since a cookie is named NS + store name. Global
      * stores are returned unchanged.
      *
      * Falls back to the bare name when no site is known. The command queue
@@ -1800,11 +1800,10 @@ class OWATracker  {
 
         // No prefix on these names. They go to log.php, whose query string the
         // tracker writes and OWA reads; nothing else puts a param on it, so
-        // there is nothing for a prefix to protect against. The wire namespace
-        // still governs the names OWA puts in a TRACKED PAGE's URL or cookie
-        // jar (owa_state, owa_overlay, the cookies) and the campaignKeys a site
-        // owner writes into their own marketing links -- those really are
-        // shared namespaces.
+        // there is nothing for a prefix to protect against. NS (owa_) is on
+        // the names OWA puts in a TRACKED PAGE's URL or cookie jar
+        // (owa_state, owa_overlay, the cookies) and on the campaign parameters
+        // a site owner writes into their own marketing links.
         //
         // Old trackers cached on customer sites keep sending the prefixed
         // spelling; RequestContainer reads both.

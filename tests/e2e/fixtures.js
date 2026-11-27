@@ -196,8 +196,8 @@ const FIXTURE = {
  * authenticated. Leaves the page on the post-login redirect (base.sites).
  *
  * FIELD NAMES ARE UN-NAMESPACED: OWA owns its own admin query string and has
- * nothing to collide with. The wire namespace ('ns', still 'owa_') names
- * cookies and tracker params. If the form's names ever gain a prefix, every
+ * nothing to collide with. The prefix owa_ is on cookie names and tracker
+ * params. If the form's names ever gain a prefix, every
  * selector in this suite goes stale at once, so the field is checked before it
  * is filled and says so rather than timing out forty times.
  *

@@ -2708,7 +2708,7 @@ class CoreAPI {
         $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
 
         // add namespace
-        $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
+        $cookie_name = self::NS . $cookie_name;
 
         // debug
         \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
@@ -2738,6 +2738,12 @@ class CoreAPI {
 
         return (bool) $secure || (bool) \OWA\Core\Lib::isHttps();
     }
+
+    /**
+     * The prefix on OWA's cookie names and on the URL parameters it reads from
+     * tracked pages, such as owa_source and owa_state.
+     */
+    const NS = 'owa_';
 
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
     const CREDENTIAL_COOKIES = [ 'u', 'p' ];

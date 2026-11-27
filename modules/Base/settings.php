@@ -404,9 +404,6 @@ return [
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ],
-        // The wire namespace only. OWA's own admin and reporting URLs carry no
-        // prefix; RequestContainer still accepts prefixed ones.
-        'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],
 
         /*
          * Whether the utm_ parameters are read as well as OWA's own, which win
@@ -428,8 +425,8 @@ return [
         ],
         /*
          * The URL parameter each campaign role arrives under, in place of
-         * OWA's own name for it. A role left out is ns-prefixed: owa_source,
-         * owa_medium and so on, honouring a custom `ns`.
+         * OWA's own name for it. A role left out is prefixed with CoreAPI::NS:
+         * owa_source, owa_medium and so on.
          *
          * Install, Property and Profile scoped. Read by the server, which
          * parses the tags (TrackingEventHelpers::campaignKeysFor()).
@@ -515,6 +512,8 @@ return [
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update093: the names of the autoload indexes it dropped, for its down().
         'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update100: the rows of the removed ns setting it deleted, for its down().
+        'retired_settings_before_100' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],

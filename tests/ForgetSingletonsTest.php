@@ -189,7 +189,7 @@ final class ForgetSingletonsTest extends TestCase
 
         $this->assertArrayHasKey( 'features', $defaults::all(), 'defaults.json was not read again' );
         $this->assertSame( 'owatest.old', $compat::eventName( 'owatest.old' ) );
-        $this->assertArrayHasKey( 'base|ns', $module::settingsRegistry()['fields'],
+        $this->assertArrayHasKey( 'base|link_template', $module::settingsRegistry()['fields'],
             'the modules\' settings.php files were not read again' );
     }
 
