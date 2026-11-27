@@ -135,5 +135,4 @@ return [
     'use_32bit_hash_before_v2' => false,
     'user_id_illegal_chars' => [ ' ', ';', '\'', '"', '|', ')', '(' ],
     'v1_tables_dropped' => false,
-    'wiki_url' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
 ];

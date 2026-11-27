@@ -456,14 +456,16 @@ dates.
 A `default_reporting_period` setting that names any of them is read as
 `last_seven_days`.
 
-### Removed settings: `owa_user_agent`
+### Removed settings: `owa_user_agent` and `wiki_url`
 
-Requests to the update host send a fixed User-Agent,
-`OpenWebAnalytics/<version> (+https://updates.openwebanalytics.com/updater)`,
-in place of the `owa_user_agent` setting. A config that still defines
-`OWA_USER_AGENT` gets a notice in `cmd=server-check` and System Health.
-Update101 deletes the setting's stored rows at every scope. Its down() puts
-them back.
+| Setting | 2.0 |
+|---|---|
+| `owa_user_agent` (`OWA_USER_AGENT`) | Requests to the update host send a fixed User-Agent, `OpenWebAnalytics/<version> (+https://updates.openwebanalytics.com/updater)`. |
+| `wiki_url` (`OWA_WIKI_URL`) | The screens link to the documentation on GitHub, `https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki`. |
+
+A config that still defines either constant gets a notice in
+`cmd=server-check` and System Health. Update101 deletes the settings' stored
+rows at every scope. Its down() puts them back.
 
 ### The command line: exit codes and arguments
 

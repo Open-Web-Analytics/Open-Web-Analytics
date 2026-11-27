@@ -744,6 +744,5 @@ return [
         // tables gone there is nothing to revert to.
         'v1_tables_dropped' => [ 'default' => false, 'storable' => true, 'internal' => true ],
         'user_id_illegal_chars' => [ 'config_constant' => 'OWA_USER_ID_ILLEGAL_CHARS', 'default' => [ ' ', ';', '\'', '"', '|', ')', '(' ], 'description' => 'Characters a user name may not contain.' ],
-        'wiki_url' => [ 'config_constant' => 'OWA_WIKI_URL', 'default' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki', 'description' => 'The base URL of the documentation OWA\'s screens link to.' ],
     ],
 ];

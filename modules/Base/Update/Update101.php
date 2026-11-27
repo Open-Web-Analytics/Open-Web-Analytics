@@ -6,6 +6,8 @@ namespace OWA\Module\Base\Update;
  *
  *   owa_user_agent  the User-Agent of requests to the update host. It is
  *                   fixed: AutoUpdate\Releases::userAgent().
+ *   wiki_url        the base URL of the documentation the screens link to.
+ *                   It is Core\Template::DOCS_URL.
  *
  * A config that still defines one's constant gets the retired constant's
  * notice (Core\Requirements::RETIRED_CONSTANTS).
@@ -27,7 +29,7 @@ class Update101 extends \OWA\Core\Update {
     public $schema_version = 101;
 
     /** The base settings this deletes. */
-    const RETIRED = [ 'owa_user_agent' ];
+    const RETIRED = [ 'owa_user_agent', 'wiki_url' ];
 
     /** What up() deleted: { rows: id => row }. */
     const BEFORE = 'retired_settings_before_101';

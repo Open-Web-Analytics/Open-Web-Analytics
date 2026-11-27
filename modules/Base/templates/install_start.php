@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <p class="owa_publicIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'The next few screens set up the framework: a check of this server, your database details, and an account to sign in with.' ) );?>
 <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'If you need help, the %s covers each step.' ),
-    '<a href="' . $view->escape( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'wiki_url' ) ) . '">'
+    '<a href="' . $view->escape( $view->makeWikiLink( 'v2-Installation' ) ) . '">'
     . $view->escape( \OWA\Core\CoreAPI::t( 'documentation wiki' ) ) . '</a>' );?></p>
 
 <?php

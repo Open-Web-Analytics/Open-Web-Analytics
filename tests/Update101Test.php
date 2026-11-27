@@ -6,8 +6,8 @@ use OWA\Module\Base\Update\Update101;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Update101: the stored rows of owa_user_agent are deleted at every scope, and
- * down() puts back every row up() removed.
+ * Update101: the stored rows of owa_user_agent and wiki_url are deleted at
+ * every scope, and down() puts back every row up() removed.
  *
  * Against a scratch copy of the settings table, so the install's own rows are
  * neither read nor changed.
@@ -120,14 +120,14 @@ final class Update101Test extends TestCase
     {
         $settings = (array) (include \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings'];
 
-        foreach (['owa_user_agent' => 'OWA_USER_AGENT'] as $name => $constant) {
+        foreach (['owa_user_agent' => 'OWA_USER_AGENT', 'wiki_url' => 'OWA_WIKI_URL'] as $name => $constant) {
             $this->assertArrayHasKey($constant, \OWA\Core\Requirements::RETIRED_CONSTANTS, $constant);
             $this->assertStringStartsWith('No longer read.', \OWA\Core\Requirements::RETIRED_CONSTANTS[$constant], $constant);
             $this->assertArrayNotHasKey($name, $settings, $name);
             $this->assertSame([$constant], array_keys(\OWA\Core\ServerRole::upgradeNotices([$constant => 'x'])), $constant);
         }
 
-        $this->assertSame(['owa_user_agent'], Update101::RETIRED);
+        $this->assertSame(['owa_user_agent', 'wiki_url'], Update101::RETIRED);
     }
 
     public function testNoStoredRowWritesNothing(): void
@@ -153,13 +153,14 @@ final class Update101Test extends TestCase
         $this->requireDb();
 
         $config = new class {
-            public $db_settings = ['base' => ['owa_user_agent' => 'Agent/1', 'timezone' => 'UTC']];
+            public $db_settings = ['base' => ['owa_user_agent' => 'Agent/1', 'timezone' => 'UTC', 'wiki_url' => 'https://docs.example.test']];
             public function removeSetting($module, $key) { unset($this->db_settings[$module][$key]); }
         };
         $this->update->settings = $config;
 
         $this->row('install', '1', 'owa_user_agent', 'Agent/1', 5);
         $this->row('profile', 'abc', 'owa_user_agent', 'Agent/2', 6);
+        $this->row('install', '1', 'wiki_url', 'https://docs.example.test', 7);
 
         $this->assertTrue($this->update->up());
         $this->assertSame(['base' => ['timezone' => 'UTC']], $config->db_settings,
@@ -168,7 +169,7 @@ final class Update101Test extends TestCase
         $this->assertTrue($this->update->down());
         $held = $config->db_settings['base'];
         ksort($held);
-        $this->assertSame(['owa_user_agent' => 'Agent/1', 'timezone' => 'UTC'], $held,
+        $this->assertSame(['owa_user_agent' => 'Agent/1', 'timezone' => 'UTC', 'wiki_url' => 'https://docs.example.test'], $held,
             'the restored rows are not held, and the closing save prunes them again');
     }
 
@@ -180,6 +181,8 @@ final class Update101Test extends TestCase
         $this->row('install', '1', 'owa_user_agent', 'Agent/1', 5);
         $this->row('profile', 'abc', 'owa_user_agent', 'Agent/2', 6);
         $this->row('property', 'def', 'owa_user_agent', 'Agent/3', 7);
+        $this->row('install', '1', 'wiki_url', 'https://docs.example.test', 10);
+        $this->row('organization', 'ghi', 'wiki_url', 'https://other.example.test', 11);
         $this->row('install', '1', 'timezone', 'UTC');
         $this->row('install', '1', 'link_template', '%s?%s', 8);
         $this->row('profile', 'abc', 'owa_user_agent', 'kept', 9, 'other_module');
