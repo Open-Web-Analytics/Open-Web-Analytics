@@ -200,6 +200,8 @@ final class InstallLastStepTest extends TestCase
      */
     public function testANonceFailureRedrawsTheStep(string $class, array $post, string $subview, string $var, string $password): void
     {
+        // install.php's request type: an earlier test may have left the CLI's, which checks no nonce.
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::INSTALL);
         $this->settings->present = false;
 
         foreach (['missing' => null, 'expired' => 'owatest-not-a-nonce'] as $case => $nonce) {
