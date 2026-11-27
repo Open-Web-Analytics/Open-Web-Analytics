@@ -94,7 +94,7 @@ final class DeletedUserDataTest extends RestControllerTestCase
         return $out;
     }
 
-    private function count(string $entity, string $column, string $value): int
+    private function rowCount(string $entity, string $column, string $value): int
     {
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf('SELECT COUNT(*) AS n FROM %s WHERE %s = ?',
             $this->table($entity), $column), [$value]);
@@ -123,8 +123,8 @@ final class DeletedUserDataTest extends RestControllerTestCase
         \OWA\Module\Base\Classes\NotificationManager::markRead($others, $gone['user_id']);
         \OWA\Module\Base\Classes\NotificationManager::markRead($theirs, $other['user_id']);
 
-        $this->assertSame(2, $this->count('base.custom_report_favorite', 'user_id', $gone['user_id']), 'fixture');
-        $this->assertSame(1, $this->count('base.notification_state', 'user_id', $gone['user_id']), 'fixture');
+        $this->assertSame(2, $this->rowCount('base.custom_report_favorite', 'user_id', $gone['user_id']), 'fixture');
+        $this->assertSame(1, $this->rowCount('base.notification_state', 'user_id', $gone['user_id']), 'fixture');
 
         $this->assertTrue((new \OWA\Module\Base\Classes\UserManager())->deleteUser($gone['user_id'], $admin['user_id']));
 
@@ -132,16 +132,16 @@ final class DeletedUserDataTest extends RestControllerTestCase
             $this->owners([$private, $shared, $override, $kept]),
             'the private report and the override go; the shared one passes to the admin');
 
-        $this->assertSame(0, $this->count('base.custom_report_favorite', 'user_id', $gone['user_id']));
-        $this->assertSame(0, $this->count('base.custom_report_favorite', 'custom_report_id', $private),
+        $this->assertSame(0, $this->rowCount('base.custom_report_favorite', 'user_id', $gone['user_id']));
+        $this->assertSame(0, $this->rowCount('base.custom_report_favorite', 'custom_report_id', $private),
             'stars on a deleted report go with it');
-        $this->assertSame(1, $this->count('base.custom_report_favorite', 'custom_report_id', $shared),
+        $this->assertSame(1, $this->rowCount('base.custom_report_favorite', 'custom_report_id', $shared),
             'another user\'s star on the shared report stays');
 
-        $this->assertSame(0, $this->count('base.notification', 'user_id', $gone['user_id']));
-        $this->assertSame(0, $this->count('base.notification_state', 'user_id', $gone['user_id']));
-        $this->assertSame(0, $this->count('base.notification_state', 'notification_id', $theirs));
-        $this->assertSame(1, $this->count('base.notification', 'id', $others), 'another user\'s notification stays');
+        $this->assertSame(0, $this->rowCount('base.notification', 'user_id', $gone['user_id']));
+        $this->assertSame(0, $this->rowCount('base.notification_state', 'user_id', $gone['user_id']));
+        $this->assertSame(0, $this->rowCount('base.notification_state', 'notification_id', $theirs));
+        $this->assertSame(1, $this->rowCount('base.notification', 'id', $others), 'another user\'s notification stays');
     }
 
     public function testANewAccountWithTheSameNameStartsEmpty(): void
@@ -158,7 +158,7 @@ final class DeletedUserDataTest extends RestControllerTestCase
         $this->assertNotFalse($again->createNewUser($gone['user_id'], 'viewer', 'pw' . $this->tok, $gone['user_id'], 'Again'));
         $this->trackForCleanup('base.user', $gone['user_id'], 'user_id');
 
-        $this->assertSame(0, $this->count('base.custom_report', 'user_id', $gone['user_id']));
+        $this->assertSame(0, $this->rowCount('base.custom_report', 'user_id', $gone['user_id']));
         $this->assertNull(\OWA\Module\Base\Classes\ReportOverrides::find('base.dashboard', $gone['user_id'], '1'));
     }
 
