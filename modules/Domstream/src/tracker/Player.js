@@ -18,6 +18,9 @@ import { OverlayDom } from '../../../Base/src/tracker/OverlayDom.js';
 /** Longest pause replayed as-is; anything longer is shortened to this. */
 const MAX_PAUSE_MSEC = 2000;
 
+/** The status line when the recording is not fetched, without the launcher's translation. */
+const FETCH_FAILED = 'The recording could not be loaded.';
+
 class Player {
 
     constructor() {
@@ -33,8 +36,8 @@ class Player {
 
     init() {
 
-        this.fetchData();
         this.showPlayerControls();
+        this.fetchData();
     }
 
     /**
@@ -52,7 +55,10 @@ class Player {
         this.setStatus( this.samples.length ? 'Ready.' : 'This recording has no samples.' );
     }
 
-    /** Fetches the recording from the API URL the overlay session carries. */
+    /**
+     * Fetches the recording from the API URL the overlay session carries. A
+     * fetch that fails says so in the status line.
+     */
     fetchData() {
 
         var params = OWA_instance.getOverlayParams() || {};
@@ -60,13 +66,30 @@ class Player {
         if ( ! OWA_instance.isOwaServerUrl( params.api_url ) ) {
 
             OWA_instance.debug( 'Recording not fetched: the URL is not this OWA server.' );
+            this.setStatus( Player.fetchFailedMessage( params ) );
 
             return;
         }
 
         // A plain cross-origin GET for JSON: the credentials ride the query
         // string, so this stays a CORS simple request.
-        OverlayDom.getJson( params.api_url, ( data ) => this.load( data ) );
+        OverlayDom.getJson( params.api_url, ( data ) => this.load( data ),
+            () => this.setStatus( Player.fetchFailedMessage( params ) ) );
+    }
+
+    /**
+     * The status line for a recording not fetched: the launcher's translation
+     * (PlayerLauncher::overlayParams(), strings.fetchFailed), else the English.
+     *
+     * @param {Object} params the overlay session's
+     * @return {string}
+     */
+    static fetchFailedMessage( params ) {
+
+        var strings = params && params.strings;
+        var message = strings && typeof strings === 'object' ? strings.fetchFailed : '';
+
+        return typeof message === 'string' && message !== '' ? message : FETCH_FAILED;
     }
 
     play() {

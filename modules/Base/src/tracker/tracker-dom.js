@@ -1,5 +1,6 @@
 import { CommandQueue as OwaCommandQueue } from './CommandQueue.js';
 import { Util as OwaUtil } from '../common/Util.js';
+import { OWA_instance as OwaInstance } from '../common/owa.js';
 
 // Pin webpack's runtime publicPath to the public/ asset tree.
 //
@@ -51,6 +52,12 @@ if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseU
      * left as the page's plain array, no command runs, and the tracker's own
      * cookies are erased (Util.eraseTrackerCookies()). A browser refused only
      * for being automated keeps its cookies.
+     *
+     * A page opened on an overlay link (Util.opensOverlay()) in a browser that
+     * is not tracked runs the queue for the overlay, with OWA's sendsNothing
+     * setting on: every tracker it makes sends no event (OWATracker
+     * sendsNothing), and no feature is started. The tracker's cookies are
+     * erased after the queue has run, as for any honoured signal.
      */
     var honorPrivacySignals = q
         ? q.optionFor( 'OWATracker', 'honorPrivacySignals' ) !== false
@@ -65,6 +72,25 @@ if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseU
         // the options they read (Tracker.startFeatures()): the default tracker
         // and any named one the commands created.
         q.startFeatures();
+
+    } else if ( q && OwaUtil.opensOverlay() ) {
+
+        var signalled = honorPrivacySignals && OwaUtil.sendsPrivacySignal();
+
+        if ( signalled ) {
+
+            OwaUtil.eraseTrackerCookies();
+        }
+
+        OwaInstance.setSetting( 'sendsNothing', true );
+
+        window['owa_cmds'] = q;
+        window['owa_cmds'].process();
+
+        if ( signalled ) {
+
+            OwaUtil.eraseTrackerCookies();
+        }
 
     } else if ( honorPrivacySignals && OwaUtil.sendsPrivacySignal() ) {
 

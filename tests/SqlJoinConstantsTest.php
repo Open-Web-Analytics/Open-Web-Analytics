@@ -9,9 +9,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * "LEFT INNER JOIN" and "RIGHT INNER JOIN" are not SQL -- a join is inner or
  * outer, not both -- and nothing downstream distinguishes a rejected statement
- * from an empty result: Db::getOneRow() answers null for both, so the overlay
- * launcher's urlForPath() would read one as "no document matches this path"
- * and draw an empty heatmap.
+ * from an empty result: Db::getOneRow() answers null for both, so a caller
+ * would read one as "nothing matches".
  *
  * So the test is not "is the constant spelled correctly". It is "does the
  * server accept a statement built with it", and it extends to any join

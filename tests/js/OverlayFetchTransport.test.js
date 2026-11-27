@@ -107,6 +107,79 @@ describe('the overlay fetches over CORS, not JSONP', () => {
         expect(h.plotClickData).not.toHaveBeenCalled();
     });
 
+    describe('a player whose fetch fails says so in its status line', () => {
+
+        const status = () => document.querySelector('[data-ui="overlay:status"]').textContent;
+
+        async function shownPlayer() {
+            const p = await player();
+            p.showPlayerControls();
+            return p;
+        }
+
+        test.each([
+            ['a refusal', () => ({ ok: false, status: 401, json: () => Promise.resolve({ data: {} }) })],
+            ['a body that is not JSON', () => ({ ok: true, json: () => Promise.reject(new SyntaxError('Unexpected token')) })],
+        ])('%s', async (_label, make) => {
+            OWA.overlayParams = { action: 'loadPlayer', api_url: OWA.overlayParams.api_url };
+            answer = make();
+            const p = await shownPlayer();
+
+            p.fetchData();
+            await settle();
+
+            expect(status()).toBe('The recording could not be loaded.');
+        });
+
+        test('a request the browser refuses (CORS, network)', async () => {
+            OWA.overlayParams = { action: 'loadPlayer', api_url: OWA.overlayParams.api_url };
+            global.fetch = jest.fn(() => Promise.reject(new TypeError('Failed to fetch')));
+            const p = await shownPlayer();
+
+            p.fetchData();
+            await settle();
+
+            expect(status()).toBe('The recording could not be loaded.');
+        });
+
+        test('the message is the launcher\'s translation when it sends one', async () => {
+            OWA.overlayParams = {
+                action: 'loadPlayer',
+                api_url: OWA.overlayParams.api_url,
+                strings: { fetchFailed: 'Die Aufnahme konnte nicht geladen werden.' },
+            };
+            answer = { ok: false, status: 401, json: () => Promise.resolve({}) };
+            const p = await shownPlayer();
+
+            p.fetchData();
+            await settle();
+
+            expect(status()).toBe('Die Aufnahme konnte nicht geladen werden.');
+        });
+
+        test('a data link to another server is not fetched, and says so', async () => {
+            OWA.overlayParams = { action: 'loadPlayer', api_url: 'https://evil.example/api/' };
+            const p = await shownPlayer();
+
+            p.fetchData();
+            await settle();
+
+            expect(calls).toHaveLength(0);
+            expect(status()).toBe('The recording could not be loaded.');
+        });
+
+        test('a fetch that works reads Ready.', async () => {
+            OWA.overlayParams = { action: 'loadPlayer', api_url: OWA.overlayParams.api_url };
+            answer = { ok: true, json: () => Promise.resolve({ data: { samples: [[0, 'm', 1, 2]] } }) };
+            const p = await shownPlayer();
+
+            p.fetchData();
+            await settle();
+
+            expect(status()).toBe('Ready.');
+        });
+    });
+
     test('nothing is added to the page as a script', async () => {
         const h = await heatmap();
         const scripts = document.getElementsByTagName('script').length;
