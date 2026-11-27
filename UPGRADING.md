@@ -9,7 +9,7 @@ replaces each one, and what 2.0 itself deprecates.
 from the command line; the wiki's
 [Upgrading from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Upgrading-from-1.x)
 page covers it, and
-[Changes from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Changes-from-1.x)
+[Changes from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Changes-from-1.x)
 lists the differences area by area.
 
 Audience: site owners upgrading an installation, authors of third-party modules,
@@ -417,7 +417,7 @@ deletes the stored `domain_aliases` rows; its down() does not put them back.
 ### The Hello example module is removed
 
 `modules/Hello/` no longer ships. Its code, with an explanation of each part, is
-the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Writing-a-Module).
+the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Writing-a-Module).
 Update091 deletes the stored `hello` rows, so an install that had it active no
 longer lists `hello` as an active module. The update's down() puts them back.
 
