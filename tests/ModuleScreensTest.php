@@ -8,7 +8,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Activate and Deactivate on the modules screen (base.moduleActivate,
  * base.moduleDeactivate): a module that is missing, unknown, not active or
  * not installed is refused on the modules screen with the reason, and
- * nothing fatal happens.
+ * nothing fatal happens. Nothing is installed or stored: the database is
+ * the next test file's too, and loads its active modules from it.
  */
 final class ModuleScreensTest extends TestCase
 {
@@ -30,9 +31,8 @@ final class ModuleScreensTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (owa_test_db_available() && array_key_exists('is_active', $this->saved)) {
-            \OWA\Core\CoreAPI::persistSetting('maxmind_geoip', 'is_active', $this->saved['is_active']);
-            \OWA\Core\CoreAPI::configSingleton()->save();
+        if (array_key_exists('is_active', $this->saved)) {
+            \OWA\Core\CoreAPI::setSetting('maxmind_geoip', 'is_active', $this->saved['is_active']);
         }
     }
 
@@ -104,12 +104,23 @@ final class ModuleScreensTest extends TestCase
 
     public function testAModuleThatInstallsIsActivated(): void
     {
-        $step = new \OWA\Module\Base\Controller\ModuleActivate(['module' => 'maxmind_geoip']);
+        $step = new class(['module' => 'maxmind_geoip']) extends \OWA\Module\Base\Controller\ModuleActivate {
+            public array $installed = [];
+
+            protected function install($module, &$problem)
+            {
+                $this->installed[] = $module;
+                $problem = '';
+
+                return true;
+            }
+        };
+
         $step->action();
 
+        $this->assertSame(['maxmind_geoip'], $step->installed);
         $this->assertSame(2501, (int) $step->data['status_code']);
         $this->assertSame('base.optionsModules', $step->data['do']);
-        $this->assertContains('maxmind_geoip', \OWA\Core\CoreAPI::getActiveModules());
     }
 
     public function testDeactivatingAnInactiveModuleIsRefused(): void
@@ -122,15 +133,32 @@ final class ModuleScreensTest extends TestCase
         $this->assertSame('base.optionsModules', $data['subview'] ?? null);
     }
 
-    public function testAnActiveModuleIsDeactivatedThroughCoreApi(): void
+    public function testAnActiveModuleIsDeactivated(): void
     {
         \OWA\Core\CoreAPI::setSetting('maxmind_geoip', 'is_active', true);
 
-        $step = new \OWA\Module\Base\Controller\ModuleDeactivate(['module' => 'MaxmindGeoip']);
+        $step = new class(['module' => 'MaxmindGeoip']) extends \OWA\Module\Base\Controller\ModuleDeactivate {
+            public array $deactivated = [];
+
+            protected function deactivate($module)
+            {
+                $this->deactivated[] = $module;
+
+                return true;
+            }
+        };
+
         $step->action();
 
-        $this->assertSame(2502, (int) $step->data['status_code'], 'by its directory name as well');
-        $this->assertNotContains('maxmind_geoip', \OWA\Core\CoreAPI::getActiveModules());
+        $this->assertSame(['maxmind_geoip'], $step->deactivated, 'by its runtime name, from its directory name');
+        $this->assertSame(2502, (int) $step->data['status_code']);
+    }
+
+    /** The screen deactivates as cmd=deactivate does. */
+    public function testDeactivatingIsCoreApis(): void
+    {
+        $this->assertStringContainsString('\\OWA\\Core\\CoreAPI::deactivateModule( $module )',
+            (string) file_get_contents(__DIR__ . '/../modules/Base/Controller/ModuleDeactivate.php'));
     }
 
     public function testTheMessagesAreDeclared(): void

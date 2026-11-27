@@ -4,29 +4,24 @@ use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\SettingsForm;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/InstallSettingRowsFixture.php';
 
 /**
  * A refused save on a settings screen -- General, Data Retention, Updates
  * and a Property's Data Retention -- draws the same screen again with what
  * was posted and each refusal beside its field (SettingsForm::redrawRefused()).
- * A valid save still redirects with its saved message.
+ * A valid save still redirects with its saved message; the install rows it
+ * writes are put back exactly (InstallSettingRowsFixture).
  */
 final class SettingsScreenRefusalTest extends TestCase
 {
-    /** @var list<array{string, string, mixed}> settings to put back */
-    private array $restore = [];
+    use InstallSettingRowsFixture;
 
     protected function tearDown(): void
     {
-        foreach ($this->restore as [$module, $key, $value]) {
-            \OWA\Core\CoreAPI::persistSetting($module, $key, $value);
+        if (owa_test_db_available()) {
+            $this->putBackInstallRows();
         }
-
-        if ($this->restore) {
-            \OWA\Core\CoreAPI::configSingleton()->save();
-        }
-
-        $this->restore = [];
     }
 
     private function requireDb(): void
@@ -38,11 +33,6 @@ final class SettingsScreenRefusalTest extends TestCase
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole('admin');
         $user->setAuthStatus(true);
-    }
-
-    private function hold(string $key): void
-    {
-        $this->restore[] = ['base', $key, \OWA\Core\CoreAPI::getSetting('base', $key)];
     }
 
     /** A save controller run as the dispatcher runs it, with its nonce. */
@@ -71,22 +61,22 @@ final class SettingsScreenRefusalTest extends TestCase
 
     public function testAFieldShowsAPostedValueAndItsProblemBesideIt(): void
     {
-        $html = SettingsForm::field('base', 'notice_email', '', [
-            'config'   => ['base.notice_email' => 'not an address'],
-            'problems' => ['base.notice_email' => 'Notice E-mail Address is an e-mail address, or several separated by commas.'],
+        $html = SettingsForm::field('base', 'admin_notice_email', '', [
+            'config'   => ['base.admin_notice_email' => 'not an address'],
+            'problems' => ['base.admin_notice_email' => 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.'],
         ]);
 
         $this->assertStringContainsString('value="not an address"', $html);
-        $this->assertStringContainsString('<div class="owa-settingProblem" id="owa-setting-base-notice_email-problem" role="alert" data-ui="setting-problem">'
-            . 'Notice E-mail Address is an e-mail address, or several separated by commas.</div>', $html);
+        $this->assertStringContainsString('<div class="owa-settingProblem" id="owa-setting-base-admin_notice_email-problem" role="alert" data-ui="setting-problem">'
+            . 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.</div>', $html);
     }
 
     public function testWithoutAPostTheFieldIsAsBefore(): void
     {
-        $html = SettingsForm::field('base', 'notice_email');
+        $html = SettingsForm::field('base', 'admin_notice_email');
 
         $this->assertStringNotContainsString('owa-settingProblem', $html);
-        $this->assertSame($html, SettingsForm::field('base', 'notice_email', '', ['config' => [], 'problems' => []]));
+        $this->assertSame($html, SettingsForm::field('base', 'admin_notice_email', '', ['config' => [], 'problems' => []]));
     }
 
     public function testAPostedSecretIsNeverPrinted(): void
@@ -104,7 +94,7 @@ final class SettingsScreenRefusalTest extends TestCase
     public static function installScreens(): iterable
     {
         yield 'General' => [\OWA\Module\Base\Controller\OptionsUpdate::class, 'base.optionsUpdate', 'base.optionsGeneral',
-            'notice_email', 'not an address', 'Notice E-mail Address is an e-mail address, or several separated by commas.'];
+            'tracker_scroll_thresholds', 'abc', 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.'];
         yield 'Data Retention' => [\OWA\Module\Base\Controller\OptionsRetentionUpdate::class, 'base.optionsRetentionUpdate', 'base.optionsRetention',
             'raw_retention_months', '5000', 'Keep event data (months) is a whole number from 1 to 1200.'];
         yield 'Updates' => [\OWA\Module\Base\Controller\OptionsUpdatesUpdate::class, 'base.optionsUpdatesUpdate', 'base.optionsUpdates',
@@ -140,7 +130,7 @@ final class SettingsScreenRefusalTest extends TestCase
     public function testAValidSaveStillRedirectsWithItsMessage(string $class, string $action, string $screen, string $key): void
     {
         $this->requireDb();
-        $this->hold($key);
+        $this->keepInstallRows([$key]);
 
         $data = $this->post($class, $action, ['config' => ['base.' . $key => (string) \OWA\Core\CoreAPI::getSetting('base', $key)]]);
 

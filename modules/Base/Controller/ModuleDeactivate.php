@@ -39,7 +39,16 @@ class ModuleDeactivate extends \OWA\Core\AdminController {
         }
 
         $this->setRedirectAction('base.optionsModules');
-        $this->setStatusCode( \OWA\Core\CoreAPI::deactivateModule( $module ) === false ? 3014 : 2502 );
+        $this->setStatusCode( $this->deactivate( $module ) === false ? 3014 : 2502 );
+    }
+
+    /**
+     * @param  string $module
+     * @return bool|void CoreAPI::deactivateModule()'s answer
+     */
+    protected function deactivate( $module ) {
+
+        return \OWA\Core\CoreAPI::deactivateModule( $module );
     }
 
 }
