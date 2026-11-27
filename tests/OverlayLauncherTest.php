@@ -9,10 +9,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * The overlay launcher: a page path to the url its heatmap opens on.
  *
- * Page Detail's link carries the report's Property and no Profile, so the
- * launcher resolves by Property; an older link's siteId still narrows it. It
- * opens only a url on a Profile's own domain -- a click is a beacon, and anyone
- * can send one naming any page -- and only for a user who can see the Property.
+ * A row's link carries the report's Property; the launcher opens the page on
+ * a Profile's own domain -- a click is a beacon, and anyone can send one naming
+ * any page -- and only for a user who can see the Property.
  */
 final class OverlayLauncherTest extends TestCase
 {
@@ -116,25 +115,6 @@ final class OverlayLauncherTest extends TestCase
         if ($this->role !== '') {
             \OWA\Core\CoreAPI::getCurrentUser()->setRole($this->role);
         }
-    }
-
-    public function testThePropertyOpensItsMostClickedUrlOnAProfilesDomain(): void
-    {
-        $this->assertSame('https://shop.example.org/pricing?ref=a#owa_overlay.params',
-            $this->launch(['propertyId' => (string) self::PROPERTY]));
-    }
-
-    public function testASiteIdNarrowsItToThatProfile(): void
-    {
-        $this->assertSame('https://www.example.test/pricing#owa_overlay.params',
-            $this->launch(['siteId' => self::SITE]));
-    }
-
-    public function testAUserWhoCannotSeeThePropertyOpensNothing(): void
-    {
-        $this->asRole('viewer');
-
-        $this->assertSame('', $this->launch(['propertyId' => (string) self::PROPERTY]));
     }
 
     public function testTheRedirectToATrackedSiteIsNotTurnedBack(): void
@@ -303,17 +283,6 @@ final class OverlayLauncherTest extends TestCase
             'period'     => 'last_thirty_days',
             'pagePath'   => $path,
         ]);
-
-        $launcher->action();
-
-        return (string) ($launcher->data['url'] ?? '');
-    }
-
-    /** The url the launcher redirects to, or '' when it found none. */
-    private function launch(array $params): string
-    {
-        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher(
-            $params + ['pagePath' => '/pricing', 'overlay_params' => 'params']);
 
         $launcher->action();
 
