@@ -8,6 +8,124 @@ namespace OWA\Module\Base\Classes;
  */
 
 class UserManager extends \OWA\Core\Base {
+
+    /**
+     * The conf/messages.php codes a refused delete or role change answers
+     * with (deleteRefusal(), roleChangeRefusal()).
+     */
+    const REFUSED_OWN_ACCOUNT       = 3015;
+    const REFUSED_DELETE_LAST_ADMIN = 3016;
+    const REFUSED_DEMOTE_LAST_ADMIN = 3017;
+
+    /**
+     * Why $acting may not delete $user_id, as a message code, or 0. Nobody
+     * deletes their own account, and the last account with the admin role
+     * is not deleted.
+     *
+     * @param  string $user_id
+     * @param  string $acting the signed-in user's user_id
+     * @return int
+     */
+    public function deleteRefusal( $user_id, $acting ) {
+
+        if ( (string) $user_id === (string) $acting ) {
+
+            return self::REFUSED_OWN_ACCOUNT;
+        }
+
+        $role = $this->roleOf( $user_id );
+
+        return self::deleteRefusalOf( (string) $user_id, (string) $acting, $role,
+            $role === \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE ? $this->adminCount() : 0 );
+    }
+
+    /**
+     * deleteRefusal() on what it read.
+     *
+     * @param  string $user_id
+     * @param  string $acting
+     * @param  string $role   $user_id's role
+     * @param  int    $admins how many accounts have the admin role
+     * @return int
+     */
+    public static function deleteRefusalOf( $user_id, $acting, $role, $admins ) {
+
+        if ( (string) $user_id === (string) $acting ) {
+
+            return self::REFUSED_OWN_ACCOUNT;
+        }
+
+        if ( $role === \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE && $admins <= 1 ) {
+
+            return self::REFUSED_DELETE_LAST_ADMIN;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Why $user_id may not be given $role, as a message code, or 0: the last
+     * account with the admin role keeps it.
+     *
+     * @param  string $user_id
+     * @param  string $role
+     * @return int
+     */
+    public function roleChangeRefusal( $user_id, $role ) {
+
+        $current = $this->roleOf( $user_id );
+
+        return self::roleChangeRefusalOf( $current, (string) $role,
+            $current === \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE ? $this->adminCount() : 0 );
+    }
+
+    /**
+     * roleChangeRefusal() on what it read.
+     *
+     * @param  string $current the account's role now
+     * @param  string $role    the role asked for
+     * @param  int    $admins  how many accounts have the admin role
+     * @return int
+     */
+    public static function roleChangeRefusalOf( $current, $role, $admins ) {
+
+        $admin = \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE;
+
+        if ( $current === $admin && (string) $role !== $admin && $admins <= 1 ) {
+
+            return self::REFUSED_DEMOTE_LAST_ADMIN;
+        }
+
+        return 0;
+    }
+
+    /**
+     * A stored account's role, '' for none. Read with its own SQL: the
+     * entity cache could answer with a role since changed.
+     *
+     * @param  string $user_id
+     * @return string
+     */
+    protected function roleOf( $user_id ) {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT role FROM %s WHERE user_id = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() ), [ (string) $user_id ] );
+
+        return is_array( $row ) ? (string) ( $row['role'] ?? '' ) : '';
+    }
+
+    /**
+     * How many accounts have the admin role.
+     *
+     * @return int
+     */
+    protected function adminCount() {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT COUNT(*) AS admins FROM %s WHERE role = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() ), [ \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE ] );
+
+        return is_array( $row ) ? (int) ( $row['admins'] ?? 0 ) : 0;
+    }
     /**
      * @param  array<string, mixed> $user_params user_id, role, email_address, real_name, and password when one is set
      * @return \OWA\Module\Base\Entity\User|false

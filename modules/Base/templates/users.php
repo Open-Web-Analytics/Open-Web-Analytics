@@ -25,7 +25,8 @@
                 <TD data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Real Name' ) );?>"><?php $view->out( $value['real_name'] );?></TD>
                 <TD data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Role' ) );?>"><?php $view->out( $value['role'] );?></TD>
                 <TD class="owa_rowActions"><a href="<?php echo $view->makeLink(['do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']]);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) );?></a>
-                <?php if ($value['id'] != 1):?>
+                <?php // Not your own: nobody deletes their own account. ?>
+                <?php if ( (string) $value['user_id'] !== (string) $view->current_user_id ):?>
                 <span class="owa_rowActionSep" aria-hidden="true">|</span>
                 <a href="<?php echo $view->makeLink( [ 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ], false, false, false, true );?>"
                      data-owa-confirm

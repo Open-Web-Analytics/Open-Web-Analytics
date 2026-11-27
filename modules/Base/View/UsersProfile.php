@@ -13,15 +13,11 @@ class UsersProfile extends \OWA\Core\View {
      */
     public function render($data) {
         $user = $this->get('profile');
-        $this->body->set('isAdmin', false);
 
         if ($this->get('edit')) {
             $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Edit user profile' ));
             $this->body->set('action', 'base.usersEdit');
             $this->body->set('edit', true);
-            $userEntity =  \OWA\Core\CoreAPI::entityFactory( 'base.user' );
-            $userEntity->load( $user['id'] );
-            $this->body->set('isAdmin', $userEntity->isOWAAdmin());
             // Names and last use only. A token is never stored, so there is none to show.
             $this->body->set('app_passwords', \OWA\Module\Base\Classes\AppPasswords::forUser( $user['user_id'] ?? '' ));
             $this->body->set('app_password_scopes', \OWA\Module\Base\Classes\AppPasswords::scopes());

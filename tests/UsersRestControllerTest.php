@@ -252,8 +252,26 @@ final class UsersRestControllerTest extends RestControllerTestCase
         );
 
         $this->assertSame(422, $resp['status'],
-            'Deleting the current user should fail isNotCurrentUser validation with 422.');
+            'Deleting the current user should be refused with 422.');
         $this->assertTrue($this->userExists($admin['user_id']),
             'The current user must not be able to delete itself.');
+        $this->assertSame('You cannot delete your own account.',
+            $resp['data_raw']['validation_errors']['user_id'] ?? null);
+    }
+
+    /** Another admin is deleted like any other account. */
+    public function testDeleteUsersRemovesAnotherAdmin(): void
+    {
+        $other = $this->makeUser('admin', 'other-admin');
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\DeleteUserRest::class,
+            'deleteUserRestController.php',
+            ['user_id' => $other['user_id']]
+        );
+
+        $this->assertSame(202, $resp['status']);
+        $this->assertFalse($this->userExists($other['user_id']));
     }
 }

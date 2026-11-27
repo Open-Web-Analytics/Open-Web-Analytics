@@ -20,7 +20,7 @@ class UsersEdit extends \OWA\Core\AdminController {
         // check that user_id is present
         $this->addValidation('user_id', $this->getParam('user_id'), 'required');
 
-        // Checked when one is posted: the form posts none for the admin user.
+        // Checked when one is posted: an edit without one keeps the role.
         if ( $this->getParam('role') !== null && $this->getParam('role') !== '' ) {
 
             $roles = \OWA\Core\CoreAPI::getAssignableRoles();
@@ -65,22 +65,34 @@ class UsersEdit extends \OWA\Core\AdminController {
             return $this->errorAction();
         }
 
+        $role = (string) $this->getParam('role');
+
+        // The last account with the admin role keeps it.
+        if ( $role !== '' && ( $refusal = $this->userManager()->roleChangeRefusal( (string) $u->get('user_id'), $role ) ) ) {
+
+            $this->set( 'validation_errors', [ 'role' => $this->getMsg( $refusal )['message'] ] );
+
+            return $this->errorAction();
+        }
+
         $u->set('email_address', $email);
+        $u->set('real_name', $this->getParam('real_name'));
 
-        // never change the role of the admin user
-        if (!$u->isOWAAdmin()) {
-            $u->set('real_name', $this->getParam('real_name'));
+        // Only when posted: an edit without one kept nothing and blanked it.
+        if ( $role !== '' ) {
 
-            // Only when posted: an edit without one kept nothing and blanked it.
-            if ( (string) $this->getParam('role') !== '' ) {
-
-                $u->set('role', $this->getParam('role'));
-            }
+            $u->set('role', $role);
         }
 
         $u->update();
         $this->setStatusCode( 3003 );
         $this->setRedirectAction('base.users');
+    }
+
+    /** @return \OWA\Module\Base\Classes\UserManager */
+    protected function userManager() {
+
+        return new \OWA\Module\Base\Classes\UserManager();
     }
 
     public function errorAction() {

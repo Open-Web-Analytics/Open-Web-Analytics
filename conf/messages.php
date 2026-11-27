@@ -51,6 +51,10 @@ $_owa_messages = [
     3012 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database.' )],
     3013 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'User added, but the invitation email was not sent. Check the mail settings and the error log, then send the user a password reset from the login screen.' )],
     3014 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'This module stays active while its constant is set in owa-config.php.' )],
+    // Refused by UserManager::deleteRefusal() and roleChangeRefusal().
+    3015 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'You cannot delete your own account.' )],
+    3016 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account cannot be deleted. Give another user the admin role first.' )],
+    3017 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account keeps the admin role. Give another user the admin role first.' )],
 
     // Sites management
     3200 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Fill in all required fields.' )],
