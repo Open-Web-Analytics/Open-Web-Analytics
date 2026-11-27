@@ -52,6 +52,7 @@ final class DomstreamModuleTest extends TestCase
         foreach ([
             'domstream.processEvent'     => \OWA\Module\Domstream\Controller\ProcessEvent::class,
             'domstream.reportDomstreams' => \OWA\Module\Domstream\Controller\ReportDomstreams::class,
+            'domstream.playerLauncher'   => \OWA\Module\Domstream\Controller\PlayerLauncher::class,
         ] as $action => $class) {
             $this->assertSame($class, $s->getMapValue('actions', $action)['class_name'] ?? null, $action);
             $this->assertTrue(class_exists($class), $class);
