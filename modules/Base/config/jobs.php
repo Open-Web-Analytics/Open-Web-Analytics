@@ -70,7 +70,7 @@ return [
         'schedule'    => [ 'spread' => 'daily' ],
         'params'      => [],
         'description' => 'Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods '
-          . 'so the tables stay within the server\'s open-file limit. Deletes nothing unless told to keep '
+          . 'into larger partitions. Deletes nothing unless told to keep '
           . 'less history (raw_retention_months, and cube_retention_months per Property).',
     ],
 
@@ -85,7 +85,7 @@ return [
         'params'      => [ 'scheduled' => 1 ],
         'description' => 'Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and '
           . 'any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue '
-          . 'refused and the file queue kept. A minute with nothing waiting costs a few file checks.',
+          . 'refused and the file queue kept.',
     ],
 
     /*
@@ -151,8 +151,8 @@ return [
         'command'     => 'cube-rebuild',
         'schedule'    => [ 'spread' => 'minutely', 'interval' => 5 ],
         'params'      => [],
-        'description' => 'Builds each Property\'s reporting cube from new events, so reports are at most a few minutes '
-          . 'behind. Skips the days that have not changed.',
+        'description' => 'Builds each Property\'s reporting cube from new events, every 5 minutes. Skips the days that '
+          . 'have not changed.',
     ],
 
     /*
@@ -175,9 +175,7 @@ return [
         'command'     => 'custom-dimension-apply',
         'schedule'    => [ 'spread' => 'minutely', 'interval' => 15 ],
         'params'      => [],
-        'description' => 'Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one '
-          . 'rebuilds the table, which is too slow for the request that registered it. With nothing pending '
-          . 'it is one quick read.',
+        'description' => 'Adds the columns for newly registered custom dimensions to the reporting cubes.',
     ],
 
     /*

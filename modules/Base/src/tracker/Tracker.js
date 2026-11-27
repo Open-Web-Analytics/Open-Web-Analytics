@@ -386,10 +386,9 @@ class OWATracker  {
 	        /**
 	         * Whether a browser reporting Do Not Track or Global Privacy Control
 	         * is left untracked, with OWA's own cookies erased; false tracks it.
-	         * Read from the queue before any
-	         * command runs, so it has to be queued in the tag; setting it on a
+	         * Queue it in the tag, before any other command. Setting it on a
 	         * tracker that is already running changes nothing. Browsers under
-	         * automation are refused either way.
+	         * automation are not tracked either way.
 	         *
 	         *   owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
 	         *

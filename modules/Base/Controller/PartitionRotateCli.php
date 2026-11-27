@@ -48,7 +48,7 @@ class PartitionRotateCli extends PartitionsCli {
     public static function usage() {
 
         return [
-            'description' => 'Adds the partitions ahead, merges old periods, and drops what the retention settings say not to keep. Runs on the scheduler daily as rotate-partitions. How much is kept comes from the retention settings, not from an argument.',
+            'description' => 'Adds the partitions ahead, merges old periods, and drops what the retention settings say not to keep. Runs on the scheduler daily as rotate-partitions. How much is kept is set by raw_retention_months and each Property\'s cube_retention_months.',
             'arguments'   => [
                 'months-ahead=<n>'                               => 'How many months of future partitions to keep. Defaults to 12.',
                 'granularity=<monthly|half-month|quarter-month>' => 'Granularity for new lead partitions. Defaults to what each table is on.',

@@ -1009,9 +1009,8 @@ abstract class Module {
                 } else {
 
                     \OWA\Core\CoreAPI::notice( sprintf(
-                        'Module %s has tables but no recorded schema version, so its version '
-                      . 'was left unset rather than assumed current. Run "cmd=core-update-schema" to apply '
-                      . 'any pending updates and record it.', $this->name ) );
+                        'Module %s has tables but no recorded schema version. Its version is left unset. '
+                      . 'Run "cmd=core-update-schema" to apply any pending updates and record it.', $this->name ) );
                 }
             }
             //activate the module and save the configuration
@@ -1401,7 +1400,7 @@ abstract class Module {
         if ( $map['entity'] !== '' && $map['entity'] !== self::FACT_ENTITY ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'The metric "%s" is registered on %s and is ignored: metrics are computed from %s.',
+                'The metric "%s" is registered on %s and is ignored. Register metrics on %s.',
                 $map['name'], $map['entity'], self::FACT_ENTITY ) );
 
             return;

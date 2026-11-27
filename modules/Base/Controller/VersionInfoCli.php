@@ -16,7 +16,7 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Prints what this code is as JSON: its version, what it needs of a server, each module\'s schema and every schema update, with whether its rollback restores what it changed. Runs without OWA booted.',
             'arguments'   => [
-                '--file=<path>' => 'Write it to this file instead of printing it. A .php file, such as the release.php a release ships with, starts with a line that exits when a web server runs it, so the JSON is not served.',
+                '--file=<path>' => 'Write it to this file instead of printing it. A .php file, such as the release.php a release ships with, starts with a line that exits when a web server runs it.',
             ],
         ];
     }
