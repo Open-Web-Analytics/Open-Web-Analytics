@@ -530,7 +530,8 @@ class Module extends \OWA\Core\Module {
         // Install-level tag settings saved: every Profile's bundle may change.
         $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
-        $this->registerEventHandler(['base.set_password', 'base.reset_password', 'base.new_user_account'], 'userHandlers');
+        $this->registerEventHandler(['base.set_password', 'base.reset_password', 'base.new_user_account',
+            'base.email_address_changed'], 'userHandlers');
     }
 
     public function _registerEventProcessors() {
