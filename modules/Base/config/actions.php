@@ -139,4 +139,5 @@ return [
     'base.userAppPasswordRevoke'        => 'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke',
     'base.usersResetPassword'           => 'OWA\\Module\\Base\\Controller\\UsersResetPassword',
     'base.usersSetPassword'             => 'OWA\\Module\\Base\\Controller\\UsersSetPassword',
+    'base.usersEmailChanged'            => 'OWA\\Module\\Base\\Controller\\UsersEmailChanged',
 ];

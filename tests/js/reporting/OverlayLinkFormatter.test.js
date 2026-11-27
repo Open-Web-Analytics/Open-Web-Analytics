@@ -207,8 +207,48 @@ describe('overlayLink formatter', () => {
             ['no url', { overlay: 'x' }],
             ['no overlay', { url: 'https://example.test/' }],
             ['unparseable json', '{not json'],
+            ['a launcher but no url', { launch: 'https://owa.example/index.php?owa_do=domstream.playerLauncher' }],
+            ['a launcher that is not a web page', { url: 'https://example.test/', launch: 'javascript:alert(1)' }],
         ])('%s', (label, value) => {
             expect(fmt(cell(value))).toBe('');
+        });
+    });
+
+    /*
+     * The Recordings report's Play: a launcher on OWA's own origin, which
+     * mints the player's token when Play is chosen, so a link is good however
+     * long the report has been open.
+     */
+    describe('with a launcher', () => {
+
+        const LAUNCH = {
+            launch: 'https://owa.example/index.php?owa_do=domstream.playerLauncher&owa_siteId=s1&owa_recording_id=42',
+            url: 'https://shop.example.test/pricing',
+            width: 1280,
+            height: 800,
+            label: 'Play',
+        };
+
+        test('the href is the launcher, with no overlay in it', () => {
+            const host = document.createElement('div');
+            host.innerHTML = fmt(cell(LAUNCH));
+
+            const a = host.querySelector('a.owa_overlayLink');
+
+            expect(a.getAttribute('href')).toBe(LAUNCH.launch);
+            expect(a.getAttribute('href')).not.toContain('owa_overlay');
+            expect(a.getAttribute('data-width')).toBe('1280');
+            expect(a.textContent).toBe('Play');
+        });
+
+        test('a launcher wins over an overlay', () => {
+            const html = fmt(cell(Object.assign({ overlay: 'abc' }, LAUNCH)));
+
+            expect(html).not.toContain('#owa_overlay.');
+        });
+
+        test('a page off the web gets no link, launcher or not', () => {
+            expect(fmt(cell(Object.assign({}, LAUNCH, { url: 'javascript:alert(1)' })))).toBe('');
         });
     });
 });

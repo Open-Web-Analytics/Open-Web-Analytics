@@ -515,7 +515,7 @@
 }
 
 /*
- * The three password boxes are one control, not three settings, so they are
+ * The two new-password boxes are one control, not two settings, so they are
  * spaced as a group rather than inheriting the gap between settings -- which
  * they had none of, leaving them stacked edge to edge.
  */

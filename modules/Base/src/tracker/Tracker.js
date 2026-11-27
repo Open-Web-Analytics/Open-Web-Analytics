@@ -438,6 +438,13 @@ class OWATracker  {
 	    this.endpoint = OWA.config.baseUrl;
 	    // Active status of tracker
 	    this.active = true;
+	    /*
+	     * Whether this page sends nothing at all, whatever restart() says: a
+	     * browser that is not tracked (Util.isBrowserTrackable()) opened on an
+	     * overlay link. tracker-dom.js runs the queue for the overlay and sets
+	     * OWA's sendsNothing setting first.
+	     */
+	    this.sendsNothing = OWA.getSetting( 'sendsNothing' ) === true;
 
 	
 	    if ( options ) {
@@ -1543,7 +1550,7 @@ class OWATracker  {
      */
     logEvent(properties, block, callback) {
 
-        if (this.active) {
+        if ( this.active && ! this.sendsNothing ) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
 
@@ -4786,7 +4793,7 @@ class OWATracker  {
 
         var block_flag = false;
 
-        if ( this.active ) {
+        if ( this.active && ! this.sendsNothing ) {
             if ( block ) {
 
                 block_flag = true;

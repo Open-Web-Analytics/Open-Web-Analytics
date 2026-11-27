@@ -107,6 +107,8 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\ProcessEvent' );
         $this->registerAction( 'domstream.reportDomstreams',
             'OWA\\Module\\Domstream\\Controller\\ReportDomstreams' );
+        $this->registerAction( 'domstream.playerLauncher',
+            'OWA\\Module\\Domstream\\Controller\\PlayerLauncher' );
     }
 
     public function _registerEntities() {

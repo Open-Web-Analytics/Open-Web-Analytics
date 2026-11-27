@@ -19,9 +19,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class ReportDefinitionFormatTest extends TestCase
 {
     /**
-     * These pin how a DEFINITION renders, drawn for siteId '1' -- a Profile
-     * with no Property and so no cube. A report that reads cube data is not
-     * drawn at all for such a Profile (ReportController::post() swaps in the
+     * These pin how a DEFINITION renders, drawn for the first Property the
+     * reader may see, which need have no cube. A report that reads cube data
+     * is not drawn at all for such a Property (ReportController::post() swaps in the
      * "not ready" notice), which is ReportingReadinessTest's business, not
      * this file's. So the readiness check is switched off for the controller
      * under test, and only here.
@@ -572,7 +572,7 @@ final class ReportDefinitionFormatTest extends TestCase
         require_once __DIR__ . '/ReportRenderHarness.php';
 
         $controller = new \OWA\Core\ConfiguredReport(
-            [ 'siteId' => '1', 'period' => 'last_thirty_days' ] );
+            [ 'period' => 'last_thirty_days' ] );
 
         $controller->setDefinition( [
             'title'   => 'Override',
@@ -625,7 +625,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $user->setAuthStatus( true );
 
         $controller = new \OWA\Core\ConfiguredReport(
-            [ 'siteId' => '1', 'period' => 'last_thirty_days' ] );
+            [ 'period' => 'last_thirty_days' ] );
 
         $controller->setDefinition( [
             'title'   => 'Content',
@@ -1394,7 +1394,7 @@ final class ReportDefinitionFormatTest extends TestCase
         require_once __DIR__ . '/ReportRenderHarness.php';
 
         $controller = new \OWA\Core\ConfiguredReport(
-            $params + [ 'siteId' => '1', 'period' => 'last_thirty_days' ] );
+            $params + [ 'period' => 'last_thirty_days' ] );
 
         $controller->setDefinition( $definition );
 
@@ -2007,7 +2007,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $this->requireDbAsAdmin();
 
-        $controller = new \OWA\Core\ConfiguredReport( [ 'siteId' => '1' ] );
+        $controller = new \OWA\Core\ConfiguredReport( [] );
         $controller->setDefinition( [
             'title'      => 'R',
             'metricSets' => [ 'roi' => [ 'label' => 'Return', 'metrics' => 'sessions' ] ],
@@ -2028,7 +2028,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->requireDbAsAdmin();
 
         $controller = new \OWA\Core\ConfiguredReport(
-            [ 'siteId' => '1', 'campaign' => 'spring' ] );
+            [ 'campaign' => 'spring' ] );
         $controller->setDefinition( [
             'title'      => 'R',
             'params'     => [ 'campaign' => [] ],
@@ -2268,7 +2268,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->requireDbAsAdmin();
 
         $controller = new \OWA\Core\ConfiguredReport(
-            [ 'siteId' => '1', 'period' => 'last_thirty_days' ] );
+            [ 'period' => 'last_thirty_days' ] );
 
         $controller->setDefinition( [
             'title'   => 'No Renderer Named',

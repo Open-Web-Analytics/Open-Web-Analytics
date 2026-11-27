@@ -389,6 +389,9 @@
         },
         "base.usersSetPassword": {
             "class_name": "OWA\\Module\\Base\\Controller\\UsersSetPassword"
+        },
+        "base.usersEmailChanged": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersEmailChanged"
         }
     },
     "cli_commands": {
