@@ -94,7 +94,30 @@ class UsersEdit extends \OWA\Core\AdminController {
          * a wrong code here shows only once that branch changes.
          */
         $this->set('error_code', 3002);
-        $this->set('user', $this->params);
+
+        // The edit form again, with what was submitted: the view reads
+        // 'profile' and 'edit'.
+        $this->set('edit', true);
+        $this->set('profile', $this->submittedProfile());
+    }
+
+    /**
+     * The form's fields as they were submitted.
+     *
+     * @return array<string, string>
+     */
+    protected function submittedProfile() {
+
+        $profile = [];
+
+        foreach ( [ 'id', 'user_id', 'real_name', 'role', 'email_address' ] as $field ) {
+
+            $value = $this->getParam( $field );
+
+            $profile[ $field ] = is_scalar( $value ) ? (string) $value : '';
+        }
+
+        return $profile;
     }
 
 }
