@@ -142,6 +142,18 @@ class Dimensions {
     }
 
     /**
+     * What capacityFor() measured for this Property in this request, else the
+     * outer cap. Runs no query.
+     *
+     * @param int|string $property_id
+     * @return int
+     */
+    public static function knownCapacityFor( $property_id ) {
+
+        return self::$capacity[ (string) $property_id ] ?? self::MAX_PER_PROPERTY;
+    }
+
+    /**
      * @param int|string $property_id
      * @return int
      */
@@ -511,6 +523,9 @@ class Dimensions {
      * when it runs, because the answer can change between the two -- another
      * registration, or a cube that has since grown.
      *
+     * Runs no DDL. The budget is knownCapacityFor(): the capacity measured in
+     * this request, else the outer cap. register() measures it.
+     *
      * @param int|string $property_id
      * @param array<string, mixed> $request  as register() takes them
      * @return string
@@ -537,7 +552,7 @@ class Dimensions {
         }
 
         $checked = self::validate( $request, $existing, [],
-            self::capacityFor( $property_id ) );
+            self::knownCapacityFor( $property_id ) );
 
         return isset( $checked['error'] ) ? (string) $checked['error'] : '';
     }
