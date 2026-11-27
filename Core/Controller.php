@@ -422,7 +422,7 @@ class Controller extends \OWA\Core\Base {
                      * out.
                      */
                     if ( ! $needs_user ) {
-                        if ( ! $auth->refusedLegacyApiKey() ) {
+                        if ( ! $auth->refusedLegacyApiKey() && ! $auth->refusedCrossOriginCookies() ) {
                             $auth->deleteCredentials();
                         }
                         return true;

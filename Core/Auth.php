@@ -145,6 +145,7 @@ class Auth extends \OWA\Core\Base {
         };
         
         $this->legacy_api_key_refused = false;
+        $this->cross_origin_cookies_refused = false;
 
         // check existing auth status first in case someone else took care of this already.
         if (\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated()) {
@@ -185,6 +186,16 @@ class Auth extends \OWA\Core\Base {
             // request named a credential and it did not hold.
             $this->setAuthMethod( 'app_password' );
             $ret = $this->authByAppPassword( $appPassword['token'], $appPassword['user_id'] );
+        } elseif ( $accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')
+                   && \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )
+                   && ! \OWA\Core\RequestOrigin::requestIsSameOrigin() ) {
+            // The REST API takes the session cookies from OWA's own origin
+            // only (RequestOrigin::isSameOrigin()). Otherwise the request is
+            // judged as one that carried no session, and the cookies are kept.
+            $this->cross_origin_cookies_refused = true;
+            $ret = false;
+            \OWA\Core\CoreAPI::debug( 'Session cookies not accepted: the request is not from OWA\'s own origin.' );
+
         } elseif ($accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
             // auth user by cookies
             $this->setAuthMethod( 'cookies');
@@ -879,6 +890,21 @@ class Auth extends \OWA\Core\Base {
     public function refusedLegacyApiKey() {
 
         return $this->legacy_api_key_refused;
+    }
+
+    /** @var bool whether the last authenticateUser() passed over session cookies from another origin */
+    private $cross_origin_cookies_refused = false;
+
+    /**
+     * Whether the last authenticateUser() passed over the session cookies of
+     * a REST request that is not from OWA's own origin. They are left in
+     * place.
+     *
+     * @return bool
+     */
+    public function refusedCrossOriginCookies() {
+
+        return $this->cross_origin_cookies_refused;
     }
 
     /**
