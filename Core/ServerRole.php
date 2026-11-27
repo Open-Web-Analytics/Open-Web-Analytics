@@ -11,19 +11,18 @@ namespace OWA\Core;
  *   collector  tracking, and the CLI commands marked for it. No database:
  *              stored settings are not read, every beacon is queued, and a
  *              queue backend other than the file queue is required.
- *   worker     cli, every command; scheduler.
- *   console    ui, and the CLI commands marked for it.
  *   api        rest, and the CLI commands marked for it.
  *
- * A comma list combines roles ('console,api'); full is all of them. Every
- * role but collector needs the database.
+ * A comma list combines roles ('collector,api'); full is all of them. Every
+ * role but collector needs the database. worker and console are no longer
+ * roles (REMOVED).
  *
  * Boot checks the role against the request (bootProblem()): a request type the
- * role does not serve, an unknown role, or a configuration the role cannot run
- * on is refused with one log line (refuse()).
+ * role does not serve, an unknown or removed role, or a configuration the role
+ * cannot run on is refused with one log line (refuse()).
  *
  * A CLI command names the roles it runs under (Controller\Cli::serverRoles(),
- * by default full and worker); cli.php refuses one this role is not among.
+ * by default full); cli.php refuses one this role is not among.
  *
  * @phpstan-type BootProblem array{status: int, message: string, php_log?: bool}
  */
@@ -31,26 +30,25 @@ final class ServerRole {
 
     const FULL      = 'full';
     const COLLECTOR = 'collector';
-    const WORKER    = 'worker';
-    const CONSOLE   = 'console';
     const API       = 'api';
 
-    const ALL = [ self::FULL, self::COLLECTOR, self::WORKER, self::CONSOLE, self::API ];
+    const ALL = [ self::FULL, self::COLLECTOR, self::API ];
+
+    /** Roles OWA_SERVER_ROLE no longer takes; naming one is refused at boot. */
+    const REMOVED = [ 'worker', 'console' ];
 
     /**
-     * The request types each role serves. cli on collector, console and api
-     * is limited to the commands marked for that role.
+     * The request types each role serves. cli on collector and api is
+     * limited to the commands marked for that role.
      */
     const SERVES = [
         self::FULL      => RequestType::ALL,
         self::COLLECTOR => [ RequestType::TRACKING, RequestType::CLI ],
-        self::WORKER    => [ RequestType::CLI ],
-        self::CONSOLE   => [ RequestType::UI, RequestType::CLI ],
         self::API       => [ RequestType::REST, RequestType::CLI ],
     ];
 
     /** The roles that run the scheduler. */
-    const SCHEDULER = [ self::FULL, self::WORKER ];
+    const SCHEDULER = [ self::FULL ];
 
     /** The roles without a database. */
     const WITHOUT_DATABASE = [ self::COLLECTOR ];
@@ -67,6 +65,9 @@ final class ServerRole {
 
     /** @var string[] names that are not roles */
     private $unknown = [];
+
+    /** @var string[] names of removed roles (REMOVED) */
+    private $removed = [];
 
     /**
      * @param string|null $value a role, or a comma list of them; empty is full
@@ -86,6 +87,10 @@ final class ServerRole {
 
                 $this->roles[ $name ] = $name;
 
+            } elseif ( in_array( $name, self::REMOVED, true ) ) {
+
+                $this->removed[ $name ] = $name;
+
             } else {
 
                 $this->unknown[ $name ] = $name;
@@ -99,6 +104,7 @@ final class ServerRole {
 
         $this->roles   = array_values( $this->roles );
         $this->unknown = array_values( $this->unknown );
+        $this->removed = array_values( $this->removed );
     }
 
     /**
@@ -121,6 +127,12 @@ final class ServerRole {
     public function unknown() {
 
         return $this->unknown;
+    }
+
+    /** @return string[] what OWA_SERVER_ROLE named that is a removed role (REMOVED) */
+    public function removed() {
+
+        return $this->removed;
     }
 
     /** @return string the roles, as OWA_SERVER_ROLE would name them */
@@ -310,6 +322,13 @@ final class ServerRole {
         }
 
         $role = self::current();
+
+        if ( $role->removed() ) {
+
+            return [ 'status' => 503, 'message' => sprintf(
+                CoreAPI::t( 'OWA_SERVER_ROLE names %1$s, which OWA no longer has. The roles are %2$s; the scheduler and the admin and report screens run on the full server.' ),
+                implode( ', ', $role->removed() ), implode( ', ', self::ALL ) ) ];
+        }
 
         if ( $role->unknown() ) {
 

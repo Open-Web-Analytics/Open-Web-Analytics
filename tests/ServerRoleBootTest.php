@@ -104,11 +104,6 @@ final class ServerRoleBootTest extends TestCase
         $this->assertSame($before + 1, $this->refusalsLogged('ui'));
     }
 
-    public function testAConsoleDoesNotServeTheApi(): void
-    {
-        $this->assertSame(404, $this->web(['OWA_SERVER_ROLE' => 'console'], 'api/index.php')['status']);
-    }
-
     public function testAnApiServerDoesNotServeTheScreens(): void
     {
         $this->assertSame(404, $this->web(['OWA_SERVER_ROLE' => 'api'], 'index.php')['status']);
@@ -116,10 +111,10 @@ final class ServerRoleBootTest extends TestCase
 
     public function testACommandNotMarkedForTheRoleIsRefused(): void
     {
-        $r = $this->cli(['OWA_SERVER_ROLE' => 'console'], 'cmd=partition-status');
+        $r = $this->cli(['OWA_SERVER_ROLE' => 'api'], 'cmd=partition-status');
 
         $this->assertSame(1, $r['code']);
-        $this->assertStringContainsString('cmd=partition-status does not run on this server: its role is console',
+        $this->assertStringContainsString('cmd=partition-status does not run on this server: its role is api',
             $r['stderr']);
     }
 
@@ -133,11 +128,12 @@ final class ServerRoleBootTest extends TestCase
 
     public function testACommandMarkedForTheRoleRuns(): void
     {
-        $r = $this->cli(['OWA_SERVER_ROLE' => 'console'], 'cmd=server-check');
+        $r = $this->cli(['OWA_SERVER_ROLE' => 'api'], 'cmd=server-check');
 
         $this->assertSame(0, $r['code'], $r['stderr'] . $r['stdout']);
-        $this->assertStringContainsString('Server role:      console', $r['stdout']);
-        $this->assertStringContainsString('Serves:           ui, cli', $r['stdout']);
+        $this->assertStringContainsString('Server role:      api', $r['stdout']);
+        $this->assertStringContainsString('Serves:           rest, cli', $r['stdout']);
+        $this->assertStringContainsString('Scheduler:        does not run here', $r['stdout']);
         $this->assertStringContainsString('Missing:          nothing', $r['stdout']);
     }
 
@@ -151,8 +147,23 @@ final class ServerRoleBootTest extends TestCase
         $cli = $this->cli(['OWA_SERVER_ROLE' => 'colector'], 'cmd=server-check');
 
         $this->assertSame(1, $cli['code']);
-        $this->assertStringContainsString('OWA_SERVER_ROLE names colector, which is not a role. The roles are full, collector, worker, console, api.',
+        $this->assertStringContainsString('OWA_SERVER_ROLE names colector, which is not a role. The roles are full, collector, api.',
             $cli['stderr']);
+    }
+
+    public function testARemovedRoleIsRefusedEverywhere(): void
+    {
+        foreach (['worker', 'console'] as $role) {
+            $web = $this->web(['OWA_SERVER_ROLE' => $role], 'index.php');
+
+            $this->assertSame(503, $web['status'], $role);
+
+            $cli = $this->cli(['OWA_SERVER_ROLE' => $role], 'cmd=server-check');
+
+            $this->assertSame(1, $cli['code'], $role);
+            $this->assertStringContainsString("OWA_SERVER_ROLE names $role, which OWA no longer has. The roles are full, collector, api;",
+                $cli['stderr'], $role);
+        }
     }
 
     public function testACollectorWithoutAQueueIsRefused(): void

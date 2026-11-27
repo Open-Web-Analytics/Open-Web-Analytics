@@ -9,12 +9,13 @@
  *
  * What this server does. One server doing everything is the default, and
  * needs nothing here. To split an install across servers, give each one a
- * role; they share the database and, between collector and worker, a queue.
+ * role; they share the database and, between collector and full, a queue.
+ * An install has exactly one full server.
  *
  *   full       tracking (log.php), the admin and report screens (index.php),
  *              the REST API (api/), the CLI, the installer; runs the scheduler.
- *   collector  log.php only, with no database. Every beacon is queued for a
- *              worker. Needs a queue other than the file queue:
+ *   collector  log.php only, with no database. Every beacon is queued for
+ *              the full server. Needs a queue other than the file queue:
  *
  *                define('OWA_SERVER_ROLE', 'collector');
  *                define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
@@ -25,18 +26,15 @@
  *
  *                * * * * * cd /path/to/owa && php cli.php cmd=drain-tracker-ingest forward_only=1
  *
- *   worker     the CLI and the scheduler: drains the queue, builds the cubes,
- *              rotates partitions. The database settings, keys and public URL
- *              below; with collectors, the same OWA_SQS_QUEUE_URL. Its crontab
- *              runs cmd=schedule-run (see SCHEDULED JOBS).
- *   console    the admin and report screens. The database settings, keys and
- *              public URL.
  *   api        the REST API. The database settings, keys and public URL.
  *
- * A comma list combines roles: 'console,api'. A request the role does not serve
- * is answered with a 404 (a CLI command with a refusal), and a missing setting
- * the role needs stops every request with a line in the error log.
- * collector, console and api run only the CLI commands marked for them;
+ * The full server drains the queue: with collectors, it has the same
+ * OWA_SQS_QUEUE_URL.
+ *
+ * A comma list combines roles: 'collector,api'. A request the role does not
+ * serve is answered with a 404 (a CLI command with a refusal), and a missing
+ * setting the role needs stops every request with a line in the error log.
+ * collector and api run only the CLI commands marked for them;
  * cmd=server-check and cmd=instance-info run everywhere.
  *
  * Check a server with:
@@ -113,7 +111,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * Tracking tags and bundles send beacons to OWA_TRACKING_URL and load the
  * tracker from OWA_ASSETS_URL; changing either republishes the bundles
  * (cmd=publish-trackers, or the scheduler). Set them on the servers that build
- * pages and bundles (full, console, worker); a collector needs neither.
+ * pages and bundles (full); a collector needs neither.
  *
  * A CDN, best first:
  *
@@ -223,8 +221,8 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 /**
  * SCHEDULED JOBS
  *
- * OWA runs its periodic maintenance from a SINGLE cron entry, on each server
- * whose role is full or worker:
+ * OWA runs its periodic maintenance from a SINGLE cron entry, on the full
+ * server:
  *
  *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
  *

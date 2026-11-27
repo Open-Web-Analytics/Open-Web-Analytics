@@ -484,7 +484,7 @@ final class SystemHealthTest extends TestCase
             $this->assertSame('green', $full['SQS configured, tracking events not queued'] ?? null);
             $this->assertSame('sqs', SystemHealth::intake()['type']);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'api');
             $this->assertArrayNotHasKey('SQS configured, tracking events not queued',
                 array_column(SystemHealth::intake()['findings'], 'level', 'label'));
 

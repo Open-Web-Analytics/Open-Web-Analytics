@@ -888,7 +888,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** A server whose role does not run the scheduler runs nothing and says so. */
     public function testARoleWithoutTheSchedulerRefusesToRun()
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'console');
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'api');
 
         $ctrl = $this->runner();
         $ctrl->action();

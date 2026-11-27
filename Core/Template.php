@@ -513,7 +513,7 @@ class Template extends TemplateEngine {
      * deployment deliberately: setEndpoint(), setLoggerEndpoint() and
      * setApiEndpoint() are independently settable, and OWA_SERVER_ROLE splits
      * an install across servers: a collector receives beacons and queues them
-     * on SQS for a worker to drain, and never touches the reporting database.
+     * on SQS for the full server to drain, and never touches the reporting database.
      * The admin interface can be on an entirely different domain from the
      * collector.
      *

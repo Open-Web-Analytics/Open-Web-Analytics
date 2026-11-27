@@ -319,7 +319,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $rows[] = $this->fact( 'Runs here', $role->runsScheduler()
             ? 'yes'
-            : sprintf( 'no (role %s): a full or worker server runs the jobs', $role->name() ) );
+            : sprintf( 'no (role %s): the full server runs the jobs', $role->name() ) );
 
         $problem = \OWA\Module\Base\Classes\SchedulerHealth::problem();
 
