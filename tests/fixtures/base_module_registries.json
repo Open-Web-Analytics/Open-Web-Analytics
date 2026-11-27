@@ -24,9 +24,6 @@
         "base.stringsExtractCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\StringsExtractCli"
         },
-        "base.uaUpdateDefinitionsCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\UaUpdateDefinitionsCli"
-        },
         "base.installBase": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallBase"
         },
@@ -404,7 +401,6 @@
         "core-update": "base.coreUpdateCli",
         "core-update-status": "base.coreUpdateStatusCli",
         "core-install": "base.coreInstallCli",
-        "ua-update-definitions": "base.uaUpdateDefinitionsCli",
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",
         "tracker-ingest-provision": "base.trackerIngestProvisionCli",

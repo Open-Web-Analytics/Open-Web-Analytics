@@ -6,7 +6,7 @@ namespace OWA\Core;
  * change what OWA ships in conf/: the channel rules, which an override
  * replaces, the site lists and the other lists CoreAPI::loadConf() reads,
  * which an override is merged into, and the user-agent patterns
- * cmd=ua-update-definitions refreshes.
+ * (ua-parser/regexes.php), which an override replaces.
  *
  * They are PHP, and the cron user runs them, so one is run only when nobody
  * but the owner of OWA's files could have written it (SafeFile::

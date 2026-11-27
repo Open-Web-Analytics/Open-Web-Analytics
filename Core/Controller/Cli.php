@@ -143,7 +143,6 @@ class Cli extends \OWA\Core\AdminController {
     /** 1.x's names for commands 2.0 renamed, and their names now: cli.php says which, and runs nothing. */
     const RENAMED = [
         'update'            => 'core-update-schema',
-        'update-ua-regexes' => 'ua-update-definitions',
         'update-geoip-db'   => 'geoip-update-db',
     ];
 

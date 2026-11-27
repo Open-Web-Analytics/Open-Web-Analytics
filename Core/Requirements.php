@@ -95,6 +95,7 @@ class Requirements {
         'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
         'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
         'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
+        'OWA_UA_REGEXES_DIR'            => 'No longer read. The user-agent patterns ship with each release; OWA_UA_REGEXES names a file of your own.',
         'OWA_NEWS_URL'                  => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
     ];
 

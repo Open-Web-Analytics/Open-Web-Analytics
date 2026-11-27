@@ -99,7 +99,7 @@ class EnvironmentCheck {
         /*
          * Where OWA writes: the data directory (OWA_DATA_DIR, else owa-data/)
          * and its logs/. The data directory itself need only exist: what
-         * writes directly under it (ua-update-definitions, geoip-update-db) checks
+         * writes directly under it (geoip-update-db) checks
          * for itself.
          */
         $data = \OWA\Core\Env::dataDir();

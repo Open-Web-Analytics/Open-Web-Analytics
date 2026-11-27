@@ -907,7 +907,7 @@ class SystemHealth {
 
         if ( $misplaced ) {
 
-            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'No longer read where they are: %1$s. Move them to %2$s; run cmd=ua-update-definitions again for user-agent patterns.' ),
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'No longer read where they are: %1$s. Move them to %2$s.' ),
                 implode( ', ', $misplaced ), \OWA\Core\Overrides::dir( $data_dir ) );
         }
 

@@ -17,7 +17,6 @@ return [
     'base.cubeRebuildCli'               => 'OWA\\Module\\Base\\Controller\\CubeRebuildCli',
     'base.v1DropCli'                    => 'OWA\\Module\\Base\\Controller\\V1DropCli',
     'base.stringsExtractCli'            => 'OWA\\Module\\Base\\Controller\\StringsExtractCli',
-    'base.uaUpdateDefinitionsCli'       => 'OWA\\Module\\Base\\Controller\\UaUpdateDefinitionsCli',
     'base.installBase'                  => 'OWA\\Module\\Base\\Controller\\InstallBase',
     'base.installCheckEnv'              => 'OWA\\Module\\Base\\Controller\\InstallCheckEnv',
     'base.installCli'                   => 'OWA\\Module\\Base\\Controller\\InstallCli',

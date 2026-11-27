@@ -490,7 +490,6 @@ return [
         'tracking_url'        => [ 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ],
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => [ 'default' => 'ui', 'internal' => true ],
-        'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/conf/ua-parser/. Used only when nobody but the owner of OWA\'s files can write it.' ],
 
         /*
          * The tracking intake, OWA_QUEUE_TRACKING_EVENTS.
@@ -576,7 +575,7 @@ return [
                 . 'recorded after it, and reports spanning the change mix the two. A day '
                 . 'boundary can move by up to 21 hours.' ),
         ],
-        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ],
+        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses owa-data/conf/ua-parser/regexes.php if present, otherwise the patterns that ship with this release.' ],
         /*
          * THE TRACKING TAG. What a Profile's tracking bundle does,
          * baked in at publish as the tracker's own options and commands -- the
