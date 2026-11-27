@@ -32,6 +32,11 @@ class InstallBase extends \OWA\Core\Controller\Install {
             'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
             'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ]);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
+        ]);
 
     }
 

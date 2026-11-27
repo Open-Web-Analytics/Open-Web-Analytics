@@ -169,6 +169,14 @@ class UserManager extends \OWA\Core\Base {
             return false;
         }
 
+        // The screens and commands refuse it first, with a message.
+        if ( \OWA\Module\Base\Entity\User::passwordIsTooLong( $user_params['password'] ?? '' ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf( 'Password not changed: it is longer than %d bytes.', \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES ) );
+
+            return false;
+        }
+
         if (isset($user_params['temp_passkey'])) {
             $u->getByColumn('temp_passkey', $user_params['temp_passkey']);
         }

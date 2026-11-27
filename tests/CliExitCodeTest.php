@@ -261,11 +261,11 @@ PHP;
     }
 
     /**
-     * cmd=install refused for its password -- none, or too short -- or for its
-     * email address is a usage error, and exits 2 before installing anything.
-     * In its own process, as InstallCli defines OWA_INSTALLING; its action()
-     * is replaced, so nothing could be installed even if validation let it
-     * through.
+     * cmd=install refused for its password -- none, too short or too long --
+     * or for its email address is a usage error, and exits 2 before
+     * installing anything. In its own process, as InstallCli defines
+     * OWA_INSTALLING; its action() is replaced, so nothing could be installed
+     * even if validation let it through.
      *
      * @dataProvider refusedInstalls
      */
@@ -307,6 +307,7 @@ PHP;
         yield 'short password' => [$base + ['password' => 'short'], 'at least'];
         yield 'not an email address' => [['email_address' => 'owa-test-admin'] + $base + ['password' => 'owa-test-password'],
             'valid email address for the admin account'];
+        yield 'password over 72 bytes' => [$base + ['password' => str_repeat('a', 73)], 'at most 72 bytes'];
     }
 
     /** A capability refused before action() is a failure. */

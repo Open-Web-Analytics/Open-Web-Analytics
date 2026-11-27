@@ -91,6 +91,7 @@ $_owa_messages = [
     3236 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That is not your current password.' )],
     3237 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password could not be changed.' )],
     3238 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Those details could not be saved.' )],
+    3239 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.' )],
 
     // Install
     3302 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The database schema could not be installed. See the error log.' )],

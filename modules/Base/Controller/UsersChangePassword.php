@@ -24,6 +24,11 @@ class UsersChangePassword extends \OWA\Core\Controller {
         // the operator/length config above; typed as 'required' the length rule
         // silently degraded to a bare non-empty check and short passwords passed.
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', $passwordLengthConf);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
+        ]);
     }
 
     public function action() {
