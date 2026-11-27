@@ -162,7 +162,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * page_location of that Profile's clicks on the page that is http or https
      * and on its domain (ProfileDomains::originOf()). A Profile's domain carries no scheme,
      * and the page may be served on a subdomain of it. With no such click,
-     * the domain itself, over https.
+     * the domain itself, over https. An archived or app Profile is passed over.
      *
      * @param string      $propertyId
      * @param string      $path
@@ -217,6 +217,14 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         foreach ( $site_ids as $site_id ) {
 
+            // A live web Profile only, as the REST API's CORS rule answers.
+            $domains = \OWA\Module\Base\Classes\ProfileDomains::of( [ $site_id ] );
+
+            if ( ! $domains ) {
+
+                continue;
+            }
+
             $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             $domain = trim( (string) $site->get( 'domain' ) );
@@ -234,8 +242,6 @@ class OverlayLauncher extends \OWA\Core\Controller {
                 $rows = $db->get_results( sprintf(
                     'SELECT page_location FROM %s WHERE %s GROUP BY page_location ORDER BY COUNT(*) DESC LIMIT %d',
                     $table, $sql, self::CANDIDATES ), $params );
-
-                $domains = \OWA\Module\Base\Classes\ProfileDomains::of( [ $site_id ] );
 
                 foreach ( (array) $rows as $row ) {
 

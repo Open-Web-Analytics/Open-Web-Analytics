@@ -262,6 +262,20 @@ final class OverlayLauncherTest extends TestCase
             'an ftp url and a host off the domain are passed over');
     }
 
+    /** An archived Profile's origin is not answered over CORS, so its pages are not opened. */
+    public function testAnArchivedProfilesPageIsNotOpened(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query('UPDATE owa_site SET archived_date = ? WHERE site_id = ?', [time(), self::OTHER]);
+
+        try {
+            $this->assertStringStartsNotWith('http://shop.example.org/', $this->launchPage('/plain'));
+            $this->assertStringStartsNotWith('http://blog.shop.example.org', $this->launchPage('/sub'));
+        } finally {
+            $db->query('UPDATE owa_site SET archived_date = NULL WHERE site_id = ?', [self::OTHER]);
+        }
+    }
+
     public function testAPagesRowOpensNothingForAUserWhoCannotSeeTheProperty(): void
     {
         $this->asRole('viewer');
