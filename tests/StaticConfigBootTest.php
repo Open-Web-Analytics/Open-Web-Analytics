@@ -5,25 +5,13 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * Locks the OWA_USE_STATIC_CONFIG_ONLY switch, the 1.x name still read in 2.0
- * (OWA_SERVER_ROLE collector is the 2.0 way): when defined true in the config
- * environment, OWA must NOT open a database connection during boot.
- *
- * WHY IT MATTERS
- * Every OWA process normally issues two DB queries at boot -- a connection
- * handshake (SET SESSION sql_mode='') and the user-settings read
- * (the install rows of owa_setting; the owa_configuration blob before
- * Update043) at owa_caller.php:~97. They are one
- * cause: the config read opens the (lazily-connected) DB handle, which triggers
- * the handshake. A dedicated node that only queues incoming tracking events to a
- * file needs neither. OWA_USE_STATIC_CONFIG_ONLY skips the config read, so such
- * a node accepts + queues beacons with zero DB access. This guards that:
- *   - the switch is wired into owa_settings::applyConfigConstants (so a
- *     config-file define reaches the gate in time), and
- *   - a normal boot still DOES connect (the switch is opt-in, not the default).
+ * The OWA_USE_STATIC_CONFIG_ONLY switch, the 1.x name (OWA_SERVER_ROLE
+ * collector is the 2.0 way). It applies only to a collector, which opens no
+ * database connection at boot. On a role with a database it is ignored: the
+ * stored settings are read, schema_version among them.
  *
  * WHY A SUBPROCESS
- * The switch is a process-global define consumed once at boot, and this runner
+ * The constants are process-global defines read once at boot, and this runner
  * has already booted OWA as a singleton. A fresh boot under each define can only
  * be observed in a clean PHP process, so each case shells to
  * fixtures/static_config_boot_probe.php and reads its JSON verdict. The probe
@@ -45,11 +33,14 @@ final class StaticConfigBootTest extends TestCase
     }
 
     /** Boot the probe in a clean process and return its parsed verdict. */
-    private function probe(bool $static): array
+    private function probe(bool $static, bool $collector = false): array
     {
         $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(self::PROBE);
         if ($static) {
             $cmd .= ' static';
+        }
+        if ($collector) {
+            $cmd .= ' collector';
         }
         // 2>/dev/null: OWA's boot emits deprecation notices under some PHP
         // builds that would corrupt the single-line JSON we parse. Errors that
@@ -61,14 +52,24 @@ final class StaticConfigBootTest extends TestCase
         return $decoded;
     }
 
-    public function testStaticConfigBootDoesNotTouchTheDatabase(): void
+    public function testOnAFullServerTheSwitchIsIgnoredAndStoredSettingsAreRead(): void
     {
+        $default = $this->probe(false);
         $verdict = $this->probe(true);
 
         $this->assertTrue($verdict['static'], 'probe should have run in static-config mode');
-        $this->assertFalse($verdict['connected'],
-            'With OWA_USE_STATIC_CONFIG_ONLY defined true, boot must not open a DB connection '
-            . '(no settings read => no connection handshake).');
+        $this->assertTrue($verdict['connected'], 'a full server reads its stored settings');
+        $this->assertGreaterThan(0, (int) ($verdict['base']['schema_version'] ?? 0));
+        $this->assertSame((int) ($default['base']['schema_version'] ?? 0), (int) ($verdict['base']['schema_version'] ?? 0),
+            'the stored schema_version, not the default');
+    }
+
+    public function testOnACollectorTheSwitchStillApplies(): void
+    {
+        $verdict = $this->probe(true, true);
+
+        $this->assertTrue($verdict['static'], 'probe should have run in static-config mode');
+        $this->assertFalse($verdict['connected'], 'a collector opens no database connection at boot');
     }
 
     public function testDefaultBootStillLoadsConfigFromDatabase(): void

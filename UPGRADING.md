@@ -501,7 +501,7 @@ error log. `php cli.php cmd=server-check` prints the role and what is missing.
 | 1.x / earlier 2.0 constant | 2.0 |
 |---|---|
 | `OWA_QUEUE_EVENTS` (1.x) | `OWA_QUEUE_TRACKING_EVENTS`. The 1.x name is still read while the new one is not set; System Health and `cmd=server-check` ask for the rename. |
-| `OWA_USE_STATIC_CONFIG_ONLY` (1.x) | `OWA_SERVER_ROLE`, `collector` for a server that only receives beacons. The 1.x switch is still read, and still only stops stored settings being read at boot: it does not make a server a collector. System Health and `cmd=server-check` ask for the role. |
+| `OWA_USE_STATIC_CONFIG_ONLY` (1.x) | `OWA_SERVER_ROLE`, `collector` for a server that only receives beacons. The 1.x switch applies only to collectors, which read no stored settings; on a role with a database it is ignored, and it does not make a server a collector. System Health and `cmd=server-check` ask for the role. |
 | `OWA_SCHEDULER_ENABLED` | Removed. The role decides: `full` and `worker` run the scheduler. |
 | `OWA_QUEUE_TRACKER_INGEST` | Removed: `OWA_QUEUE_TRACKING_EVENTS`. |
 | `OWA_TRACKER_INGEST_QUEUE_TYPE` | Removed. The queue is the file queue unless a queue module's own constant is set: `OWA_SQS_QUEUE_URL` makes it AWS SQS. |

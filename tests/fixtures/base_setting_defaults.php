@@ -106,7 +106,6 @@ return [
     'server_role' => 'full',
     'session_length' => 1800,
     'site_id' => '',
-    'skip_stored_settings' => false,
     'spam_detection' => 'normal',
     'spam_threshold' => 5.0,
     'start_page' => 'base.reportingHome',

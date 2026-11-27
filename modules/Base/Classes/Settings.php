@@ -537,14 +537,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'server_role', (string) OWA_SERVER_ROLE, 'OWA_SERVER_ROLE');
         }
 
-        /*
-         * The 1.x switch: stored settings are not read at boot, and nothing
-         * else. ServerRole::upgradeNotices() asks for OWA_SERVER_ROLE instead.
-         */
-        if (defined('OWA_USE_STATIC_CONFIG_ONLY') && OWA_USE_STATIC_CONFIG_ONLY) {
-            $this->setFromConfigConstant( 'base', 'skip_stored_settings', true, 'OWA_USE_STATIC_CONFIG_ONLY');
-        }
-
         /* DATABASE CONFIGURATION */
 
         // This needs to come before the fetch of user overrides from the DB

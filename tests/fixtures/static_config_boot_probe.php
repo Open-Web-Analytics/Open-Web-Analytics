@@ -1,7 +1,8 @@
 <?php
 /**
  * Boot probe for the OWA_USE_STATIC_CONFIG_ONLY switch, run as a SUBPROCESS by
- * StaticConfigBootTest.
+ * StaticConfigBootTest. The switch applies only to a collector; on a role
+ * with a database the stored settings are read.
  *
  * WHY A SUBPROCESS
  * The switch is a process-global `define` (OWA_USE_STATIC_CONFIG_ONLY) that
@@ -21,8 +22,10 @@
  * fires.
  *
  * USAGE
- *   php static_config_boot_probe.php            -> default boot (loads DB config)
- *   php static_config_boot_probe.php static     -> OWA_USE_STATIC_CONFIG_ONLY=true
+ *   php static_config_boot_probe.php                  -> default boot (loads DB config)
+ *   php static_config_boot_probe.php static           -> OWA_USE_STATIC_CONFIG_ONLY=true
+ *   php static_config_boot_probe.php static collector -> and OWA_SERVER_ROLE collector,
+ *                                                        with an SQS queue it never sends to
  * Prints one JSON object: { "connected": bool, "static": bool,
  * "active_modules": [...], "base": { key: value }, "constants": [ key, ... ] },
  * where constants are the Base keys a config-file constant governs and base is
@@ -41,7 +44,8 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 }
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '203.0.113.10';
 
-$static = (($argv[1] ?? '') === 'static');
+$static    = (($argv[1] ?? '') === 'static');
+$collector = (($argv[2] ?? '') === 'collector');
 
 if ($static) {
     // Set BEFORE owa.php is required: owa_settings::__construct ->
@@ -49,6 +53,13 @@ if ($static) {
     // reaches the DB-config-load gate. This is the whole point of the switch --
     // a caller override would arrive too late.
     define('OWA_USE_STATIC_CONFIG_ONLY', true);
+}
+
+if ($collector) {
+    define('OWA_SERVER_ROLE', 'collector');
+    define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-static-probe');
+    define('OWA_SQS_KEY', 'AKIAPROBEEXAMPLE');
+    define('OWA_SQS_SECRET', 'probe-secret');
 }
 
 $owa_root = dirname(__DIR__, 2) . '/';

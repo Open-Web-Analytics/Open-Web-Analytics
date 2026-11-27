@@ -518,8 +518,6 @@ return [
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],
-        // Set by the 1.x OWA_USE_STATIC_CONFIG_ONLY: stored settings are not read at boot.
-        'skip_stored_settings' => [ 'default' => false, 'internal' => true ],
         'session_length' => [ 'config_constant' => 'OWA_SESSION_LENGTH', 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ],
         /*
          * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score

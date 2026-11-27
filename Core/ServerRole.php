@@ -196,15 +196,15 @@ final class ServerRole {
     }
 
     /**
-     * Whether stored settings are read at boot: not on a server without a
-     * database, nor under the 1.x OWA_USE_STATIC_CONFIG_ONLY.
+     * Whether stored settings are read at boot: on every role with a
+     * database. The 1.x OWA_USE_STATIC_CONFIG_ONLY is not read; a collector,
+     * the role it described, reads none.
      *
      * @return bool
      */
     public static function readsStoredSettings() {
 
-        return self::current()->hasDatabase()
-            && ! CoreAPI::getSetting( 'base', 'skip_stored_settings' );
+        return self::current()->hasDatabase();
     }
 
     // ---------------------------------------------------------------------

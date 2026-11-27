@@ -1510,7 +1510,7 @@ return [
     'The "%s" constraint was given no value. Refusing to run the query unconstrained -- a missing value is not a request for everything.' => 'The "%s" constraint was given no value. Refusing to run the query unconstrained -- a missing value is not a request for everything.',
     'The %s constraint has no value.' => 'The %s constraint has no value.',
     'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.' => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',
-    'The 1.x switch, still read: stored settings are not read at boot. Set OWA_SERVER_ROLE instead, collector for a server that only receives beacons.' => 'The 1.x switch, still read: stored settings are not read at boot. Set OWA_SERVER_ROLE instead, collector for a server that only receives beacons.',
+    'The 1.x switch. It applies only to collectors, which read no stored settings; on a role with a database it is ignored. Set OWA_SERVER_ROLE to collector for a server that only receives beacons.' => 'The 1.x switch. It applies only to collectors, which read no stored settings; on a role with a database it is ignored. Set OWA_SERVER_ROLE to collector for a server that only receives beacons.',
     'The CLI\'s PHP cannot write its temporary directory' => 'The CLI\'s PHP cannot write its temporary directory',
     'The ISO 3166-1 alpha-2 code of that country.' => 'The ISO 3166-1 alpha-2 code of that country.',
     'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. A purchase that names no currency is recorded in this one.' => 'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. A purchase that names no currency is recorded in this one.',
