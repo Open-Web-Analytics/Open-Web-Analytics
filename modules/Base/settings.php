@@ -128,7 +128,7 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Update Days' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun. Empty: any day.' ),
+                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun: within the Update Window on those days, or at any hour of them when there is no window. Empty: any day.' ),
             'pattern'  => '/^$|^' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . '(\s*,\s*' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . ')*$/i',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Days is a list of days such as sat,sun: mon, tue, wed, thu, fri, sat or sun, separated by commas.' ),
         ],

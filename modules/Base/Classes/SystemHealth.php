@@ -735,6 +735,13 @@ class SystemHealth {
             $findings[] = self::finding( 'yellow', 'OWA_DISABLED_ENDPOINTS', $endpoints );
         }
 
+        $window = \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::ignoredWindow( \OWA\Core\CoreAPI::getSetting( 'base', 'auto_update_window' ) );
+
+        if ( $window !== null ) {
+
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Update Window' ), $window );
+        }
+
         $old_logs = self::oldErrorLogs();
 
         if ( $old_logs ) {

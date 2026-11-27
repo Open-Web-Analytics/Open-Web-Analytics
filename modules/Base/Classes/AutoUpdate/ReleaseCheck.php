@@ -788,21 +788,17 @@ class ReleaseCheck {
 
     /**
      * The window an update may start in, from the settings; null when it may
-     * start at any time.
+     * start at any time. A window not of the form HH:MM-HH:MM is ignored
+     * (ignoredWindow()); without one, Update Days alone allow any hour of
+     * those days, 00:00-24:00.
      *
      * @return array{days: list<int>, start: string, end: string, timezone: string}|null
      */
     public function window() {
 
         $window = (string) ( $this->context['window'] ?: '' );
-
-        if ( ! preg_match( '/^' . self::WINDOW . '$/', $window ) ) {
-
-            return null;
-        }
-
-        [ $start, $end ] = explode( '-', $window );
-        $days = [];
+        $valid  = (bool) preg_match( '/^' . self::WINDOW . '$/', $window );
+        $days   = [];
 
         foreach ( preg_split( '/\s*,\s*/', strtolower( trim( (string) $this->context['days'] ) ) ) ?: [] as $day ) {
 
@@ -815,7 +811,40 @@ class ReleaseCheck {
         $days = $days ? array_values( array_unique( $days ) ) : array_values( self::DAYS );
         sort( $days );
 
+        if ( $valid ) {
+
+            [ $start, $end ] = explode( '-', $window );
+
+        } elseif ( count( $days ) < count( self::DAYS ) ) {
+
+            [ $start, $end ] = [ '00:00', '24:00' ];
+
+        } else {
+
+            return null;
+        }
+
         return [ 'days' => $days, 'start' => $start, 'end' => $end, 'timezone' => (string) $this->context['timezone'] ];
+    }
+
+    /**
+     * An auto_update_window that is set but not of the form HH:MM-HH:MM, as
+     * OWA_AUTO_UPDATE_WINDOW can be: ignored, so updates may start at any
+     * time (of the Update Days). Null for a valid or empty one.
+     *
+     * @param  mixed $value the setting
+     * @return string|null the sentence System Health and the Updates screen show
+     */
+    public static function ignoredWindow( $value ) {
+
+        $value = is_scalar( $value ) ? trim( (string) $value ) : '';
+
+        if ( $value === '' || preg_match( '/^' . self::WINDOW . '$/', $value ) ) {
+
+            return null;
+        }
+
+        return sprintf( CoreAPI::t( 'The update window "%s" is not of the form HH:MM-HH:MM, such as 02:00-06:00, so it is ignored: updates may start at any time.' ), $value );
     }
 
     /**
@@ -858,6 +887,11 @@ class ReleaseCheck {
         $names = array_flip( self::DAYS );
         $days  = count( (array) $window['days'] ) === 7 ? CoreAPI::t( 'any day' )
             : implode( ', ', array_map( fn ( $d ) => ucfirst( $names[ (int) $d ] ), (array) $window['days'] ) );
+
+        if ( $window['start'] === '00:00' && $window['end'] === '24:00' ) {
+
+            return sprintf( CoreAPI::t( 'at any hour (%1$s), %2$s' ), $window['timezone'], $days );
+        }
 
         return sprintf( CoreAPI::t( 'between %1$s and %2$s (%3$s), %4$s' ), $window['start'], $window['end'], $window['timezone'], $days );
     }

@@ -715,4 +715,22 @@ final class SystemHealthTest extends TestCase
             $c->set('base', 'disabledEndpoints', $saved);
         }
     }
+
+    public function testAMalformedUpdateWindowIsShown(): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'auto_update_window');
+
+        try {
+            $c->set('base', 'auto_update_window', '2am-6am');
+            $finding = array_column(SystemHealth::installation()['findings'], null, 'label')['Update Window'] ?? null;
+            $this->assertSame('yellow', $finding['level'] ?? null);
+            $this->assertSame(\OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::ignoredWindow('2am-6am'), $finding['detail']);
+
+            $c->set('base', 'auto_update_window', '02:00-06:00');
+            $this->assertArrayNotHasKey('Update Window', array_column(SystemHealth::installation()['findings'], null, 'label'));
+        } finally {
+            $c->set('base', 'auto_update_window', $saved);
+        }
+    }
 }

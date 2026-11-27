@@ -228,7 +228,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertTrue(InstallLock::isHeld() || Install::$pending['hold']['handle'] !== null, 'the install lock is taken');
         $this->dropPending();
 
-        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.1.0'], ['window' => ''])['outcome'], 'no window: at once');
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.1.0'], ['window' => '', 'days' => ''])['outcome'], 'no window: at once');
         $this->dropPending();
     }
 
@@ -244,7 +244,7 @@ final class ReleaseCheckTest extends TestCase
     /** A run that started before an install finished runs the release it replaced: it installs nothing. */
     public function testARunOfTheReplacedReleaseInstallsNothing(): void
     {
-        $result = $this->check(['2.1.0'], ['window' => '', 'on_disk' => '2.1.0']);
+        $result = $this->check(['2.1.0'], ['window' => '', 'days' => '', 'on_disk' => '2.1.0']);
 
         $this->assertSame(ReleaseCheck::BUSY, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('This run started with OWA 2.0.0, and Core/Env.php now says 2.1.0: nothing was done.', implode("\n", $result['lines']));
@@ -256,7 +256,7 @@ final class ReleaseCheckTest extends TestCase
     public function testADatabaseNewerThanTheReleaseIsNotInstalledOver(): void
     {
         $this->schema['base'] = 96;
-        $result = $this->check(['2.1.0'], ['window' => '']);
+        $result = $this->check(['2.1.0'], ['window' => '', 'days' => '']);
 
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('This database is newer than 2.1.0 expects.', implode("\n", $result['lines']));
@@ -276,6 +276,71 @@ final class ReleaseCheckTest extends TestCase
         $late = ['days' => [6], 'start' => '23:00', 'end' => '02:00', 'timezone' => 'Europe/London'];
         $this->assertTrue(ReleaseCheck::inWindow($late, $sat3 + 22 * 3600), '01:00 Sunday');
         $this->assertFalse(ReleaseCheck::inWindow($late, $sat3 - 2 * 3600), '01:00 Saturday belongs to Friday');
+    }
+
+    /** @return ReleaseCheck with these settings, its clock at $now */
+    private function windowOf(string $window, string $days, int $now = 0): ReleaseCheck
+    {
+        return new ReleaseCheck($this->downloads(), ['window' => $window, 'days' => $days, 'timezone' => 'Europe/London', 'now' => $now]);
+    }
+
+    public function testAnEmptyWindowIsAnyTime(): void
+    {
+        $this->assertNull($this->windowOf('', '')->window());
+        $this->assertNull($this->windowOf('', 'mon,tue,wed,thu,fri,sat,sun')->window(), 'every day is no restriction');
+        $this->assertNull(ReleaseCheck::ignoredWindow(''));
+        $this->assertNull(ReleaseCheck::ignoredWindow(null));
+    }
+
+    public function testAValidWindowIsHonoured(): void
+    {
+        $sat3 = (new DateTimeImmutable('2026-11-21 03:00', new DateTimeZone('Europe/London')))->getTimestamp();
+
+        $this->assertSame(['days' => [6, 7], 'start' => '02:00', 'end' => '06:00', 'timezone' => 'Europe/London'], $this->windowOf('02:00-06:00', 'sat,sun')->window());
+        $this->assertSame([1, 2, 3, 4, 5, 6, 7], $this->windowOf('02:00-06:00', '')->window()['days'], 'without days: every day');
+        $this->assertTrue(ReleaseCheck::inWindow($this->windowOf('02:00-06:00', '')->window(), $sat3));
+        $this->assertFalse(ReleaseCheck::inWindow($this->windowOf('02:00-06:00', '')->window(), $sat3 + 4 * 3600));
+        $this->assertNull(ReleaseCheck::ignoredWindow('02:00-06:00'));
+    }
+
+    /** A malformed window (OWA_AUTO_UPDATE_WINDOW) is ignored, said, and leaves any time. */
+    public function testAMalformedWindowIsAnyTimeAndSaid(): void
+    {
+        foreach (['2am-6am', '25:00-26:00', '02:00'] as $bad) {
+            $this->assertNull($this->windowOf($bad, '')->window(), $bad);
+            $this->assertSame('The update window "' . $bad . '" is not of the form HH:MM-HH:MM, such as 02:00-06:00, so it is ignored: updates may start at any time.',
+                ReleaseCheck::ignoredWindow($bad));
+        }
+
+        $state = \OWA\Module\Base\Classes\AutoUpdate\UpdatesState::describe([], null, '2.0.0', null, true, 1, null, null, null, ReleaseCheck::ignoredWindow('2am-6am'));
+        $this->assertContains(ReleaseCheck::ignoredWindow('2am-6am'), $state['lines'], 'on the Updates screen');
+
+        $off = \OWA\Module\Base\Classes\AutoUpdate\UpdatesState::describe([], null, '2.0.0', null, false, 1, null, null, null, ReleaseCheck::ignoredWindow('2am-6am'));
+        $this->assertNotContains(ReleaseCheck::ignoredWindow('2am-6am'), $off['lines'], 'not while automatic updates are off');
+    }
+
+    /** Update Days with no valid window: any hour of those days. */
+    public function testDaysAloneRestrictToThoseDays(): void
+    {
+        $sat3 = (new DateTimeImmutable('2026-11-21 03:00', new DateTimeZone('Europe/London')))->getTimestamp();
+
+        foreach (['', 'not a window'] as $window) {
+            $w = $this->windowOf($window, 'sat,sun')->window();
+
+            $this->assertSame(['days' => [6, 7], 'start' => '00:00', 'end' => '24:00', 'timezone' => 'Europe/London'], $w, $window);
+            $this->assertTrue(ReleaseCheck::inWindow($w, $sat3 - 3 * 3600), 'midnight Saturday');
+            $this->assertTrue(ReleaseCheck::inWindow($w, $sat3 + 20 * 3600 + 59 * 60), '23:59 Saturday');
+            $this->assertFalse(ReleaseCheck::inWindow($w, $sat3 - 86400), 'not on a Friday');
+            $this->assertFalse(ReleaseCheck::inWindow($w, $sat3 + 45 * 3600), 'not on a Monday');
+            $this->assertSame('at any hour (Europe/London), Sat, Sun', ReleaseCheck::describeWindow($w));
+        }
+
+        $result = $this->check(['2.1.0'], ['window' => '', 'days' => 'sat, sun']);
+        $this->assertSame(ReleaseCheck::WAITING, $result['outcome'], 'a Friday: it waits');
+        $this->assertStringContainsString('2.1.0 installs at any hour (Europe/London), Sat, Sun.', implode("\n", $result['lines']));
+
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.1.0'], ['window' => '', 'days' => 'sat, sun', 'now' => $sat3 + 8 * 3600])['outcome'], 'a Saturday: it installs');
+        $this->dropPending();
     }
 
     /** The scheduler's hourly runs list the releases in four hours a day, six apart; the others install what was downloaded. */
@@ -463,7 +528,7 @@ final class ReleaseCheckTest extends TestCase
     /** An unmet requirement: it is kept, and waits, judged again each run, until the server meets it. */
     public function testAnUnmetRequirementWaits(): void
     {
-        $result = $this->check(['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env(), 'window' => '']);
+        $result = $this->check(['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env(), 'window' => '', 'days' => '']);
 
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome']);
         $this->assertTrue($this->downloads()->has('2.0.1'));
@@ -488,7 +553,7 @@ final class ReleaseCheckTest extends TestCase
         $this->check(['2.0.1']);
         file_put_contents($this->tmp . '/owa/owa-update.php', "<?php exit; ?>\n" . json_encode(['phase' => 'copied', 'from' => '2.0.0', 'to' => '2.0.1']) . "\n");
 
-        $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => ''])['outcome']);
+        $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => '', 'days' => ''])['outcome']);
         $this->assertSame(['2.0.1', '2.0.0'], $this->downloads()->versions());
         unlink($this->tmp . '/owa/owa-update.php');
 
@@ -496,7 +561,7 @@ final class ReleaseCheckTest extends TestCase
         flock($h, LOCK_EX);
 
         try {
-            $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => ''])['outcome']);
+            $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => '', 'days' => ''])['outcome']);
             $this->assertSame(['2.0.1', '2.0.0'], $this->downloads()->versions());
         } finally {
             flock($h, LOCK_UN);
@@ -558,7 +623,7 @@ final class ReleaseCheckTest extends TestCase
     {
         $this->check(['2.1.0']);
 
-        $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false, 'window' => ''])['outcome']);
+        $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false, 'window' => '', 'days' => ''])['outcome']);
         $this->assertSame(['2.0.0'], $this->downloads()->versions());
         $this->assertNull(Install::$pending);
     }
@@ -569,21 +634,21 @@ final class ReleaseCheckTest extends TestCase
         $this->check(['2.0.1']);
         $this->failed(['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'Could not write Core/Env.php. OWA 2.0.0 was put back.', 'at' => $this->now]);
 
-        $result = $this->check(['2.0.1'], ['window' => '']);
+        $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
         $this->assertStringContainsString('cmd=core-install --version=2.0.1', implode("\n", $result['lines']));
         $this->assertArrayHasKey('install_failed:2.0.1', $this->notices, 'the notice the failure calls for');
         $this->assertNull(Install::$pending);
 
-        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1', '2.0.2'], ['window' => ''])['outcome'], 'a newer release installs as usual');
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1', '2.0.2'], ['window' => '', 'days' => ''])['outcome'], 'a newer release installs as usual');
         $this->assertSame('2.0.2', Install::$pending['to']);
         $this->dropPending();
 
         // Only over the release it failed from: 2.0.2 failed over 2.0.1, so over 2.0.0 it installs.
         $this->failed(['version' => '2.0.2', 'from' => '2.0.1', 'error' => 'it failed', 'at' => $this->now]);
-        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.2'], ['window' => ''])['outcome'], 'it failed over 2.0.1, not 2.0.0');
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.2'], ['window' => '', 'days' => ''])['outcome'], 'it failed over 2.0.1, not 2.0.0');
         $this->dropPending();
-        $this->assertSame(ReleaseCheck::SKIPPED, $this->check(['2.0.2'], ['window' => '', 'installed' => '2.0.1'])['outcome'], 'over 2.0.1 it is skipped');
+        $this->assertSame(ReleaseCheck::SKIPPED, $this->check(['2.0.2'], ['window' => '', 'days' => '', 'installed' => '2.0.1'])['outcome'], 'over 2.0.1 it is skipped');
     }
 
     /** A failure to be tried again: skipped until retry_after, then installed. */
@@ -593,14 +658,14 @@ final class ReleaseCheckTest extends TestCase
         $failure = ['version' => '2.0.1', 'from' => '2.0.0', 'error' => 'The copy stopped before it finished.', 'at' => $this->now, 'attempts' => 1];
 
         $this->failed($failure + ['retry_after' => $this->now + 3600]);
-        $result = $this->check(['2.0.1'], ['window' => '']);
+        $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
         $this->assertSame(ReleaseCheck::SKIPPED, $result['outcome']);
         $this->assertStringContainsString('Installing 2.0.1 failed; it is tried again after 2027-01-15 09:00 UTC.', implode("\n", $result['lines']));
         $this->assertArrayNotHasKey('install_failed:2.0.1', $this->notices, 'no notice while it is tried again');
         $this->assertNull(Install::$pending);
 
         $this->failed($failure + ['retry_after' => $this->now]);
-        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1'], ['window' => ''])['outcome'], 'its time has come');
+        $this->assertSame(ReleaseCheck::INSTALLING, $this->check(['2.0.1'], ['window' => '', 'days' => ''])['outcome'], 'its time has come');
         $this->dropPending();
     }
 
@@ -634,7 +699,7 @@ final class ReleaseCheckTest extends TestCase
         chmod($dir, 0555);
 
         try {
-            $result = $this->check(['2.0.1'], ['window' => '']);
+            $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
         } finally {
             chmod($dir, 0755);
         }
@@ -776,7 +841,7 @@ final class ReleaseCheckTest extends TestCase
             ['module' => 'gone', 'sequence' => 1, 'manual_install' => 'A module this install does not have.'],
         ]];
 
-        $result = $this->check(['2.1.0'], ['window' => '']);
+        $result = $this->check(['2.1.0'], ['window' => '', 'days' => '']);
 
         $this->assertSame(ReleaseCheck::MANUAL, $result['outcome']);
         $this->assertTrue($this->downloads()->has('2.1.0'));
@@ -827,7 +892,7 @@ final class ReleaseCheckTest extends TestCase
     {
         $this->serve('2.0.0', $this->build('2.0.0', null));
 
-        $result = $this->check(['2.0.1'], ['window' => ''], null, null, false, false, null, false);
+        $result = $this->check(['2.0.1'], ['window' => '', 'days' => ''], null, null, false, false, null, false);
         $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertTrue($this->downloads()->has('2.0.0'));
         $this->dropPending();
@@ -901,7 +966,7 @@ final class ReleaseCheckTest extends TestCase
     /** No way back: when the installed release's tarball cannot be downloaded, nothing installs, automatically or by hand. */
     public function testWithoutTheInstalledReleasesTarballNothingInstalls(): void
     {
-        $result = $this->check(['2.0.1'], ['window' => ''], null, null, false, false, null, false);
+        $result = $this->check(['2.0.1'], ['window' => '', 'days' => ''], null, null, false, false, null, false);
         $this->assertNotSame(ReleaseCheck::INSTALLING, $result['outcome']);
         $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded', implode("\n", array_merge($result['lines'], $result['problems'])));
         $this->assertNull(Install::$pending);
@@ -915,7 +980,7 @@ final class ReleaseCheckTest extends TestCase
         $listed = hash_file('sha256', $this->downloads()->tarball('2.0.1'));
         copy($this->downloads()->tarball('2.0.0'), $this->downloads()->tarball('2.0.1'));
 
-        $result = $this->check(['2.0.1'], ['window' => '']);
+        $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
         $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('as the release\'s asset was replaced', implode("\n", $result['lines']));
         $this->assertSame($listed, Install::$pending['to_sha']);
@@ -949,7 +1014,7 @@ final class ReleaseCheckTest extends TestCase
     /** The installed release's tarball cannot be had: nothing installs without the way back. */
     public function testWithoutTheInstalledReleasesTarballNothingInstallsItself(): void
     {
-        $result = $this->check(['2.0.1'], ['installed' => '2.0.0', 'window' => ''], null, null, false, false, null, false);
+        $result = $this->check(['2.0.1'], ['installed' => '2.0.0', 'window' => '', 'days' => ''], null, null, false, false, null, false);
 
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded: Fetching https://example.test/download/2.0.0/owa_2.0.0_packaged.tar failed: 404. A failed install puts it back',
