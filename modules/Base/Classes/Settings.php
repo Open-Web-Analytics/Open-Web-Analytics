@@ -537,14 +537,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'server_role', (string) OWA_SERVER_ROLE, 'OWA_SERVER_ROLE');
         }
 
-        /*
-         * The 1.x switch: stored settings are not read at boot, and nothing
-         * else. ServerRole::upgradeNotices() asks for OWA_SERVER_ROLE instead.
-         */
-        if (defined('OWA_USE_STATIC_CONFIG_ONLY') && OWA_USE_STATIC_CONFIG_ONLY) {
-            $this->setFromConfigConstant( 'base', 'skip_stored_settings', true, 'OWA_USE_STATIC_CONFIG_ONLY');
-        }
-
         /* DATABASE CONFIGURATION */
 
         // This needs to come before the fetch of user overrides from the DB
@@ -2992,8 +2984,11 @@ namespace OWA\Module\Base\Classes;
             $this->set('base','public_path', $public_path);
         }
 
+        // The public URL (OWA_PUBLIC_URL), ending in one slash; '' stays ''.
+        $public_url = self::withSlash( (string) $this->get( 'base', 'public_url' ) );
+        $this->set( 'base', 'public_url', $public_url );
+
         // set various paths
-        $public_url = $this->get('base', 'public_url');
         $main_url = $public_url.'index.php';
         $this->set('base','main_url', $main_url);
         $this->set('base','main_absolute_url', $main_url);

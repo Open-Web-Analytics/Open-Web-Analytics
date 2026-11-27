@@ -27,7 +27,7 @@ if ( $view->updates_state['actions'] ): ?>
 <?php
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set ); // trusted: SettingsForm escapes what it prints
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, '', is_array( $view->posted ?? null ) ? $view->posted : null ); // trusted: SettingsForm escapes what it prints
 }
 ?>
     <p><?php $view->out( \OWA\Core\CoreAPI::t( 'A change takes effect at the next release check, within an hour, or at once with Check now. Install now installs the newest downloaded release at once, whatever the update window says; these settings choose which releases are downloaded.' ) ); ?></p>

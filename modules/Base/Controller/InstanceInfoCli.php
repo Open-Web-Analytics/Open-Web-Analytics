@@ -413,9 +413,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The two datasets that rot without erroring.
-     *
-     * The patterns are the file the parser uses (Browscap::regexesFile()).
+     * The user-agent patterns the parser uses (Browscap::regexesFile()) and
+     * the GeoIP database.
      *
      * @param  string|null $data_dir a test's; else the installation's
      * @return list<string> report lines
@@ -428,21 +427,12 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         if ( $file !== null ) {
 
-            $age = (int) floor( ( time() - filemtime( $file ) ) / 86400 );
-
-            $rows[] = $this->row(
-                $age > 180 ? self::WARN : self::OK,
-                'User-agent patterns',
-                sprintf( 'updated %s (%d day%s ago)', date( 'Y-m-d', filemtime( $file ) ), $age, $age === 1 ? '' : 's' ),
-                "Run 'php cli.php cmd=ua-update-definitions'. Stale patterns do not error -- "
-              . 'new browsers and crawlers are just counted as something else.' );
+            $rows[] = $this->row( self::OK, 'User-agent patterns',
+                sprintf( '%s, updated %s', $file, date( 'Y-m-d', filemtime( $file ) ) ) );
 
         } else {
 
-            $rows[] = $this->row( self::WARN, 'User-agent patterns',
-                'never updated (using the bundled copy)',
-                "Run 'php cli.php cmd=ua-update-definitions'. The bundled patterns are as old "
-              . "as the PHP library's last release, so updating the dependency does not help." );
+            $rows[] = $this->row( self::OK, 'User-agent patterns', 'the copy that ships with this release' );
         }
 
         $geo = $this->geoipStatus();

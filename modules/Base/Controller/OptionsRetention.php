@@ -21,7 +21,7 @@ class OptionsRetention extends \OWA\Core\AdminController {
         $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'base.optionsRetention', [
             'template' => 'options_retention.php',
-            'vars'     => [ 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsRetention' ) ] ] );
+            'vars'     => [ 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsRetention' ), 'posted' ] ] );
 
         return $this->data;
     }

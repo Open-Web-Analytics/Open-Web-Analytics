@@ -23,6 +23,7 @@ class OptionsUpdates extends \OWA\Core\AdminController {
             'vars'     => [
                 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsUpdates' ),
                 'updates_state'      => \OWA\Module\Base\Classes\AutoUpdate\UpdatesState::read(),
+                'posted',
             ] ] );
 
         return $this->data;

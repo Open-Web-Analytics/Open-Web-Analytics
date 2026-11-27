@@ -24,18 +24,6 @@
  * documentation could show which one OWA_SCHEDULED_JOBS keys on. It keys on
  * the name.
  *
- * NOT registering ua-update-definitions here, deliberately.
- *
- * It would fit -- the patterns go stale on their own and monthly is roughly how
- * often uap-core changes -- but it makes an outbound HTTP request to a third
- * party, unattended, on a schedule. For self-hosted analytics that is a
- * decision the administrator makes, not one that arrives with an upgrade. Same
- * reasoning as the empty params of rotate-partitions: turning the scheduler on
- * must not turn anything else on.
- *
- * An installation that wants it adds it to OWA_SCHEDULED_JOBS, or runs
- * cli.php cmd=ua-update-definitions from its own cron.
- *
  * No job for Profiles' tracking bundles. A save publishes its
  * own -- a Profile's at once, anything wider as a queued publish-trackers job
  * -- and an installed release republishes them once its schema updates are

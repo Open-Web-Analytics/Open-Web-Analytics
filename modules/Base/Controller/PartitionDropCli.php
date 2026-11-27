@@ -44,6 +44,12 @@ class PartitionDropCli extends PartitionsCli {
         ];
     }
 
+    /** See PartitionsCli::guardsAllHistory(). */
+    protected function guardsAllHistory() {
+
+        return true;
+    }
+
     public function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {

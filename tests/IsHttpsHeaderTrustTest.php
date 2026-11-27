@@ -16,9 +16,12 @@ use PHPUnit\Framework\TestCase;
  * 401, and would steer anything else building an absolute URL from
  * get_current_url().
  *
- * The forwarding headers are a different case and are kept. X-Forwarded-Proto
- * and X-Forwarded-Port are set by a terminating proxy -- which is how TLS
- * actually reaches OWA in a normal deployment -- and describe *this* hop.
+ * The forwarding headers are a different case. X-Forwarded-Proto and
+ * X-Forwarded-Port are set by a terminating proxy -- which is how TLS
+ * actually reaches OWA in a normal deployment -- and describe *this* hop, so
+ * they are read when the connecting peer is a proxy of this installation's:
+ * loopback, private, or in OWA_TRUSTED_PROXIES (ClientAddress::isProxy()).
+ * From any other peer they are the client's own.
  */
 final class IsHttpsHeaderTrustTest extends TestCase
 {
@@ -87,34 +90,73 @@ final class IsHttpsHeaderTrustTest extends TestCase
         $this->assertStringStartsWith('http://', $plain);
     }
 
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function forwardedHeaders(): iterable
+    {
+        yield 'X-Forwarded-Proto' => [['HTTP_X_FORWARDED_PROTO' => 'https']];
+        yield 'X-Forwarded-Port'  => [['HTTP_X_FORWARDED_PORT' => 443]];
+    }
+
     /**
-     * A terminating proxy's signals still count -- this is how TLS reaches OWA
-     * in a normal deployment, and removing them would break every install
-     * behind a load balancer.
+     * A terminating proxy's signals count -- this is how TLS reaches OWA in
+     * a normal deployment: from loopback (Varnish, nginx on the same host),
+     * a private address, or a listed proxy.
+     *
+     * @dataProvider forwardedHeaders
      */
-    public function testForwardedProtoIsStillTrusted(): void
+    public function testForwardedHeadersFromAProxyAreTrusted(array $headers): void
     {
-        $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'trusted_proxies');
 
-        $this->assertTrue((bool) \OWA\Core\Lib::isHttps());
-    }
+        try {
+            $c->set('base', 'trusted_proxies', ['198.51.100.0/24']);
 
-    public function testForwardedPortIsStillTrusted(): void
-    {
-        $_SERVER['HTTP_X_FORWARDED_PORT'] = 443;
-
-        $this->assertTrue((bool) \OWA\Core\Lib::isHttps());
+            foreach (['127.0.0.1', '::1', '10.0.3.7', '192.168.1.2', '198.51.100.20'] as $peer) {
+                $_SERVER = ['SERVER_PORT' => 8964, 'REMOTE_ADDR' => $peer] + $headers;
+                $this->assertTrue((bool) \OWA\Core\Lib::isHttps(), $peer);
+            }
+        } finally {
+            $c->set('base', 'trusted_proxies', $saved);
+        }
     }
 
     /**
-     * And the direct signals.
+     * From a public peer that is not a listed proxy, they are what the client
+     * chose to send.
+     *
+     * @dataProvider forwardedHeaders
+     */
+    public function testForwardedHeadersFromAPublicPeerAreIgnored(array $headers): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'trusted_proxies');
+
+        try {
+            $c->set('base', 'trusted_proxies', ['198.51.100.0/24']);
+
+            foreach (['203.0.113.9', '2a00:1450:4001:80b::200e', '', 'not-an-address'] as $peer) {
+                $_SERVER = ['SERVER_PORT' => 8964, 'REMOTE_ADDR' => $peer] + $headers;
+                $this->assertNotTrue(\OWA\Core\Lib::isHttps(), var_export($peer, true));
+            }
+
+            $_SERVER = ['SERVER_PORT' => 8964, 'HTTP_HOST' => 'owa.example.com', 'REMOTE_ADDR' => '203.0.113.9', 'REQUEST_URI' => '/index.php'] + $headers;
+            $this->assertStringStartsWith('http://', \OWA\Core\Lib::get_current_url());
+        } finally {
+            $c->set('base', 'trusted_proxies', $saved);
+        }
+    }
+
+    /**
+     * And the direct signals, whoever connected.
      */
     public function testDirectTlsIsDetected(): void
     {
         $_SERVER['HTTPS'] = 'on';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $this->assertTrue((bool) \OWA\Core\Lib::isHttps());
 
-        $_SERVER = ['SERVER_PORT' => 443];
+        $_SERVER = ['SERVER_PORT' => 443, 'REMOTE_ADDR' => '203.0.113.9'];
         $this->assertTrue((bool) \OWA\Core\Lib::isHttps());
     }
 

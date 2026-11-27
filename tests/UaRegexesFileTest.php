@@ -3,24 +3,14 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Where the user-agent patterns come from, and why it is not the bundled copy.
+ * Where the user-agent patterns come from: the ua-regexes setting, else an
+ * override in owa-data/conf/ua-parser/ (Core\Overrides), else the copy that
+ * ships with the release. The override is PHP the cron user runs, so it is
+ * used only when nobody but the owner of OWA's files can write it and the
+ * directories above it. There is no command that downloads them.
  *
- * The patterns live in uap-core, a different project from the PHP library that
- * reads them. uap-core updates roughly monthly and has tagged no release since
- * 2019, so consumers follow its master branch. The PHP library bundles whatever
- * copy existed when ITS maintainers last cut a release -- July 2025.
- *
- * So the bundled patterns are as old as the library's last release however new
- * the library is, and bumping the composer constraint does not help: there is
- * nothing newer to bump to. cmd=ua-update-definitions replaces them.
- *
- * It writes to owa-data/conf/ua-parser/ (Core\Overrides), which updates leave
- * alone. Writing inside vendor/ would last until the next composer install.
- * The file is PHP the cron user runs, so it is used only when nobody but the
- * owner of OWA's files can write it and the directories above it.
- *
- * Run against a temporary data directory, so a real refreshed file on the
- * machine running the tests is neither required nor disturbed.
+ * Run against a temporary data directory, so a real override on the machine
+ * running the tests is neither required nor disturbed.
  */
 final class UaRegexesFileTest extends TestCase {
 
@@ -69,10 +59,7 @@ final class UaRegexesFileTest extends TestCase {
         $test();
     }
 
-    /**
-     * A refreshed file is used with nothing to configure. Requiring a setting as well would mean most installations
-     * refreshed the patterns and carried on using the old ones.
-     */
+    /** An override in conf/ is used with nothing to configure. */
     public function testAMaintainedFileIsPreferredOverTheBundledCopy(): void {
 
         $this->withMaintainedFile( function () {
@@ -80,20 +67,20 @@ final class UaRegexesFileTest extends TestCase {
             $this->assertSame(
                 $this->file,
                 \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ),
-                'a refreshed file must be picked up without configuration'
+                'an override must be picked up without configuration'
             );
         } );
     }
 
-    /** cmd=instance-info reports on the file the parser uses: where ua-update-definitions writes it. */
+    /** cmd=instance-info reports on the file the parser uses. */
     public function testInstanceInfoReportsTheFileInConf(): void {
 
         $this->withMaintainedFile( function () {
 
             $report = $this->instanceInfoFreshness();
 
-            $this->assertStringContainsString( 'updated ' . date( 'Y-m-d' ), $report );
-            $this->assertStringNotContainsString( 'never updated', $report );
+            $this->assertStringContainsString( $this->file . ', updated ' . date( 'Y-m-d' ), $report );
+            $this->assertStringNotContainsString( 'the copy that ships with this release', $report );
         } );
     }
 
@@ -105,7 +92,7 @@ final class UaRegexesFileTest extends TestCase {
         file_put_contents( $this->data . 'ua-parser/regexes.php', "<?php return ['user_agent_parsers' => []];" );
         umask( $old );
 
-        $this->assertStringContainsString( 'never updated (using the bundled copy)', $this->instanceInfoFreshness() );
+        $this->assertStringContainsString( 'the copy that ships with this release', $this->instanceInfoFreshness() );
     }
 
     private function instanceInfoFreshness(): string {
@@ -147,7 +134,7 @@ final class UaRegexesFileTest extends TestCase {
         $this->assertContains( $this->data . 'ua-parser/regexes.php', \OWA\Core\Overrides::misplaced( $this->data ) );
     }
 
-    public function testTheBundledCopyIsUsedWhenNothingHasBeenRefreshed(): void {
+    public function testTheBundledCopyIsUsedWithoutAnOverride(): void {
 
         $this->assertNull(
             \OWA\Module\Base\Classes\Browscap::regexesFile( $this->data ),
@@ -175,131 +162,44 @@ final class UaRegexesFileTest extends TestCase {
         } );
     }
 
-    public function testTheRefreshCommandIsRegistered(): void {
+    /** The download command is gone, under its 2.0 name and its 1.x one. */
+    public function testThereIsNoDownloadCommand(): void {
 
-        $module = \OWA\Core\CoreAPI::moduleClassFactory( 'base', 'Module' );
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
 
-        $property = new ReflectionProperty( $module, 'cli_commands' );
+        foreach ( [ 'ua-update-definitions', 'update-ua-regexes' ] as $command ) {
 
-        $this->assertArrayHasKey(
-            'ua-update-definitions',
-            (array) $property->getValue( $module ),
-            'the command must be reachable as cli.php cmd=ua-update-definitions'
-        );
+            $this->assertEmpty( $s->getCliCommandClass( $command ), $command );
+            $this->assertArrayNotHasKey( $command, \OWA\Core\Controller\Cli::RENAMED );
+        }
+
+        $this->assertNull( $s->getMapValue( 'actions', 'base.uaUpdateDefinitionsCli' ) ?: null );
+        $this->assertFalse( class_exists( 'OWA\\Module\\Base\\Controller\\UaUpdateDefinitionsCli' ) );
+    }
+
+    public function testItsDirectorySettingIsRetired(): void {
+
+        $this->assertNull( \OWA\Core\CoreAPI::configSingleton()->registeredField( 'base', 'ua_regexes_dir' ) ?: null );
+        $this->assertArrayHasKey( 'OWA_UA_REGEXES_DIR', \OWA\Core\Requirements::RETIRED_CONSTANTS );
     }
 
     /**
-     * The action name has to resolve to the class. This asks the ACTION REGISTRY,
-     * which is where a registered action's class actually comes from -- not the
-     * alias map, which would answer for a name that is merely listed and stay
-     * silent for a class that loads perfectly well. It still catches what it was
-     * written for: an action that 404s the moment someone runs it.
+     * The file in use, when it is not the bundled copy, must be loadable by
+     * the parser.
      */
-    public function testTheCommandResolvesToItsClass(): void {
-
-        $this->assertSame(
-            \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class,
-            ( \OWA\Core\CoreAPI::serviceSingleton()
-                ->getMapValue( 'actions', 'base.uaUpdateDefinitionsCli' )['class_name'] ?? null ),
-            'the action name must resolve, or the command 404s when it is run'
-        );
-    }
-
-    /**
-     * The refreshed file must be loadable by the parser. A truncated download
-     * or a failed conversion would otherwise be discovered by every request
-     * afterwards rather than by the command that wrote it.
-     */
-    public function testARefreshedFileParsesIfOneIsPresent(): void {
+    public function testAPatternsFileInUseParses(): void {
 
         $installed = \OWA\Module\Base\Classes\Browscap::regexesFile();
 
         if ( $installed === null ) {
-            $this->markTestSkipped( 'no refreshed patterns file in use on this installation' );
+            $this->markTestSkipped( 'no patterns file of its own in use on this installation' );
         }
 
         $parser = UAParser\Parser::create( $installed );
         $result = $parser->parse( 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' );
 
         $this->assertSame( 'Spider', $result->device->family,
-            'the refreshed patterns must still classify a known crawler' );
-    }
-
-    private function command() {
-
-        // Without the constructor: the CLI controller base exits unless the
-        // process was started by cli.php, and this method does not depend on
-        // any of that.
-        return ( new ReflectionClass( \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class ) )
-            ->newInstanceWithoutConstructor();
-    }
-
-    private function whyNotWritable( $dir ) {
-
-        $m = new ReflectionMethod( \OWA\Module\Base\Controller\UaUpdateDefinitionsCli::class, 'whyNotWritable' );
-
-        return $m->invoke( $this->command(), $dir );
-    }
-
-    /**
-     * Permissions are checked BEFORE the download.
-     *
-     * The installer checks owa-data/logs/, but not where this command writes.
-     * So a passing install check does not imply this will work, and it has to
-     * ask for itself.
-     */
-    public function testAWritableDestinationIsAccepted(): void {
-
-        $this->assertNull( $this->whyNotWritable( $this->dir ) );
-        $this->assertNull( $this->whyNotWritable( $this->data . 'conf/not-yet/ua-parser/' ),
-            'a missing directory is made, from the nearest one there' );
-    }
-
-    public function testAnUnwritableParentIsRefusedWithTheReasonAndThePath(): void {
-
-        $parent = sys_get_temp_dir() . '/owa-ua-ro-' . getmypid();
-
-        if ( ! @mkdir( $parent, 0500, true ) ) {
-            $this->markTestSkipped( 'could not create a read-only directory' );
-        }
-
-        if ( is_writable( $parent ) ) {
-            rmdir( $parent );
-            $this->markTestSkipped( 'running as a user that ignores directory permissions' );
-        }
-
-        // A directory that does not exist, inside a parent that cannot be
-        // written -- the case where mkdir would fail.
-        $problem = $this->whyNotWritable( $parent . '/ua-parser/' );
-
-        chmod( $parent, 0700 );
-        rmdir( $parent );
-
-        $this->assertNotNull( $problem, 'an uncreatable destination must be refused' );
-        $this->assertStringContainsString( 'writable', $problem,
-            'the message must say what is wrong, not just that something failed' );
-    }
-
-    /**
-     * The awkward case in practice: the directory is fine but the file was
-     * written by a different user, so the refresh cannot replace it. A generic
-     * permissions message would send someone to chmod the wrong thing.
-     */
-    public function testAnUnwritableExistingFileIsReportedSeparately(): void {
-
-        $this->withMaintainedFile( function () {
-
-            if ( ! @chmod( $this->file, 0400 ) || is_writable( $this->file ) ) {
-                $this->markTestSkipped( 'cannot make a file read-only as this user' );
-            }
-
-            $problem = $this->whyNotWritable( $this->dir );
-
-            chmod( $this->file, 0644 );
-
-            $this->assertNotNull( $problem, 'an unreplaceable file must be refused' );
-            $this->assertStringContainsString( 'regexes.php', $problem,
-                'the message must name the file, since that is what needs fixing' );
-        } );
+            'the patterns in use must still classify a known crawler' );
     }
 }

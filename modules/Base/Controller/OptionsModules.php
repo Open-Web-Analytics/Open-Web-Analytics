@@ -60,4 +60,34 @@ class OptionsModules extends \OWA\Core\AdminController {
 
     }
 
+    /**
+     * Whether $name is a module in modules/ (CoreAPI::getPresentModules()),
+     * by its runtime name (maxmind_geoip) or its directory (MaxmindGeoip).
+     *
+     * @param  mixed $name
+     * @return bool
+     */
+    public static function isPresent( $name ) {
+
+        return is_string( $name ) && preg_match( '/^[A-Za-z0-9_]+$/', $name )
+            && in_array( \OWA\Core\Lib::moduleDirName( $name ), (array) \OWA\Core\CoreAPI::getPresentModules(), true );
+    }
+
+    /**
+     * This screen, drawn with a refusal from base.moduleActivate or
+     * base.moduleDeactivate.
+     *
+     * @param  array<string, mixed> $params the refused request's
+     * @param  int                  $code   a message (conf/messages.php)
+     * @param  list<string>         $values its message's substitutions
+     * @return mixed this screen's answer
+     */
+    public static function refuse( array $params, $code, array $values ) {
+
+        $screen = new self( $params );
+        $screen->set( 'error_msg', $screen->getMsg( $code, [ 'message' => $values ] ) );
+
+        return $screen->doAction();
+    }
+
 }

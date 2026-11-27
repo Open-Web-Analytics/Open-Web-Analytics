@@ -111,14 +111,21 @@ class Lib {
         // server, so any caller could tell OWA it was serving over TLS when it was
         // not -- and get_current_url() takes its scheme from here.
         //
-        // The forwarding headers are read: a terminating proxy sets them, and that is
-        // how TLS reaches OWA in a normal deployment.
+        // The forwarding headers are read only from a peer that is a proxy of
+        // this installation's (ClientAddress::peerIsProxy()): a terminating
+        // proxy sets them, and that is how TLS reaches OWA in a normal deployment.
         if(
-            ( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
-            || ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
-            || ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
+            ( isset( $_SERVER['HTTPS'] ) && strtolower( (string) $_SERVER['HTTPS'] ) == 'on' )
             || ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
         ) {
+            return true;
+        }
+
+        $forwarded = ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' )
+            || ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 );
+
+        if ( $forwarded && ClientAddress::peerIsProxy() ) {
+
             return true;
         }
 
