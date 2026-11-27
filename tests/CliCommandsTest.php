@@ -510,9 +510,8 @@ final class CliCommandsTest extends CliControllerTestCase
 
     // =================================================================
     // reset-secrets  (owa_resetSecretsCliController, cap: edit_settings)
-    // Contract-only: actually running it rewrites owa-config.php (rotating
-    // OWA_AUTH_KEY etc.), which would break this live install. We assert the
-    // capability gate, which runs before any file mutation.
+    // Only the capability gate here: running it rewrites owa-config.php.
+    // ConfigSecretsTest runs it on scratch config files.
     // =================================================================
 
     public function testResetSecretsRejectsUnprivilegedUser(): void
