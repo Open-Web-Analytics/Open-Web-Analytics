@@ -44,7 +44,6 @@ class Error extends \OWA\Core\View {
 
             $this->t->set( 'nav_rail', true );
             $this->body->set( 'nav_property_id', $navProperty );
-            $this->body->set( 'nav_access_site', (string) ( $data['nav_access_site'] ?? '' ) );
             $this->body->set( 'report_nav', \OWA\Core\ReportController::reportNavigation( $navProperty ) );
         }
 

@@ -1920,12 +1920,11 @@ class CustomReports {
     }
 
     /**
-     * Whether the signed-in user may report on this Property: view_reports on
-     * it, checked against a Profile of it they may see.
+     * Whether the signed-in user may report on this Property: view_reports,
+     * and the Property on their access list.
      *
-     * Asked by the saves on top of edit_reports, which is held on every
-     * Property: a report or funnel is saved only to a Property its author can
-     * open it on.
+     * Asked by the saves on top of edit_reports: a report or funnel is saved
+     * only to a Property its author can open it on.
      *
      * @param  string|int $property_id
      * @return bool
@@ -1937,9 +1936,7 @@ class CustomReports {
             return false;
         }
 
-        $user = \OWA\Core\CoreAPI::getCurrentUser();
-
-        return (bool) $user->isCapable( 'view_reports', $user->siteIdForProperty( (string) $property_id ) );
+        return (bool) \OWA\Core\CoreAPI::getCurrentUser()->isCapableOnProperty( 'view_reports', (string) $property_id );
     }
 
     /**

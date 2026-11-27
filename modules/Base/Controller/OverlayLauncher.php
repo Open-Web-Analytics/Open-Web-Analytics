@@ -74,7 +74,8 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * The data link is minted here, at the click, because a row only exists in
      * the browser: the report could not have minted one per row.
      *
-     * Only for a Property the user can see.
+     * Only for a Property the user may report on: view_reports, and the
+     * Property on their access list.
      *
      * @param string $value  pagePathPlusQuery, or pagePath when $byPath
      * @param bool   $byPath every query string of the path
@@ -85,7 +86,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $propertyId = (string) $this->get('propertyId');
 
         if ( $propertyId === ''
-             || \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $propertyId ) === '' ) {
+             || ! \OWA\Core\CoreAPI::getCurrentUser()->isCapableOnProperty( 'view_reports', $propertyId ) ) {
 
             return;
         }
@@ -321,7 +322,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
             : $propertyId;
 
         if ( $property_id === ''
-             || \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $property_id ) === '' ) {
+             || ! \OWA\Core\CoreAPI::getCurrentUser()->isCapableOnProperty( 'view_reports', $property_id ) ) {
 
             return '';
         }

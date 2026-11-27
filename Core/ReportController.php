@@ -72,7 +72,7 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     // Access to a report is access to its Property, the one the request names else its siteId's.
-    use \OWA\Core\PropertyScopedAccess { isCurrentUserCapable as isCapableOnProperty; }
+    use \OWA\Core\PropertyScopedAccess { isCurrentUserCapable as isCapableOnRequestProperty; }
 
     /**
      * A REST request to a route of a Property that names none is refused
@@ -92,7 +92,7 @@ class ReportController extends \OWA\Core\AdminController {
             return false;
         }
 
-        return $this->isCapableOnProperty( $currentUser );
+        return $this->isCapableOnRequestProperty( $currentUser );
     }
 
     /**
@@ -347,11 +347,7 @@ class ReportController extends \OWA\Core\AdminController {
 
         $this->set( 'currentPropertyId', $propertyId );
 
-        /*
-         * A Profile of the Property the reader may see. Capabilities are held
-         * per site, and the nav checks each link's against this one; any
-         * Profile of a Property grants the Property, so which one is immaterial.
-         */
+        // A Profile of the Property the reader may see; any one of them.
         $this->set( 'currentSiteId', \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $propertyId ) );
 
         /*
@@ -602,8 +598,7 @@ class ReportController extends \OWA\Core\AdminController {
          * entry. The registered entry is left, and the rail drops it on the
          * same capability.
          */
-        if ( ! $user->isAdmin()
-             && ! $user->isCapable( 'view_reports', $user->siteIdForProperty( $propertyId ) ) ) {
+        if ( ! $user->isCapableOnProperty( 'view_reports', $propertyId ) ) {
 
             return $nav;
         }

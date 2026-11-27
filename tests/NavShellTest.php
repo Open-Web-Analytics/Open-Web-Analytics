@@ -159,7 +159,7 @@ final class NavShellTest extends TestCase
     /** Report links are of the Property in context, which a settings screen does not carry as link state. */
     public function testReportLinksNameTheProperty(): void
     {
-        $rail = $this->template()->navRail( $this->nav(), 'prop-42', [ 'do' => 'base.myProfile' ], '', true );
+        $rail = $this->template()->navRail( $this->nav(), 'prop-42', [ 'do' => 'base.myProfile' ], true );
 
         $this->assertStringContainsString( 'prop-42', $rail[1]['href'] );
         $this->assertStringContainsString( 'prop-42', $rail[1]['items'][1]['href'] );
@@ -230,7 +230,7 @@ final class NavShellTest extends TestCase
 
     public function testOnASettingsScreenOnlySettingsIsCurrent(): void
     {
-        $rail = $this->template()->navRail( $this->nav(), 'p1', [ 'do' => 'base.customReports' ], '', true );
+        $rail = $this->template()->navRail( $this->nav(), 'p1', [ 'do' => 'base.customReports' ], true );
 
         $this->assertSame( [ false, false, false, true ], array_column( $rail, 'current' ) );
     }
@@ -358,19 +358,6 @@ final class NavShellTest extends TestCase
             $this->hierarchyNav(), [ 'propertyId' => 'p9' ] ), 'the one the screen names wins' );
 
         $this->assertSame( '', \OWA\Module\Base\View\OptionsHierarchy::propertyInContext( [], [] ) );
-    }
-
-    public function testTheRailIsCheckedAgainstAProfileOfTheProperty(): void
-    {
-        $hierarchy = [ 'properties' => [
-            [ 'id' => 'p0', 'profiles' => [ [ 'site_id' => 'other' ] ] ],
-            [ 'id' => 'p1', 'profiles' => [ [ 'site_id' => 's1' ], [ 'site_id' => 's2' ] ] ],
-        ] ];
-
-        $this->assertSame( 's1', \OWA\Module\Base\View\OptionsHierarchy::accessSiteFor( $hierarchy, 'p1', '' ) );
-        $this->assertSame( 's2', \OWA\Module\Base\View\OptionsHierarchy::accessSiteFor( $hierarchy, 'p1', 's2' ),
-            "the screen's own Profile" );
-        $this->assertSame( '', \OWA\Module\Base\View\OptionsHierarchy::accessSiteFor( $hierarchy, 'p3', '' ) );
     }
 
     /** The Events report is in the navigation, under Visitors, last. */

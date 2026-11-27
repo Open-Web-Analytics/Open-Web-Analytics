@@ -765,6 +765,36 @@ final class CustomReportPropertyTest extends TestCase
         $this->assertSame([], $this->row($id));
     }
 
+    /**
+     * edit_reports is the role's; deleting a report also needs its Property
+     * on the author's access list. The author is a viewer given edit_reports.
+     */
+    public function testAnAuthorWhoseAccessWasRemovedCannotDeleteTheirReport(): void
+    {
+        $user  = $this->viewer();
+        $saved = CustomReports::save(['name' => 'Revoked author', 'definition' => $this->definition('Revoked author')],
+            (string) $user->get('user_id'), self::P);
+        $this->assertTrue($saved['ok'], (string) $saved['error']);
+        $this->reports[] = $saved['id'];
+
+        // The grants are read again each time (loadNewUserByObject()).
+        $mayDelete = function () use ($user, $saved): bool {
+            $su = $this->serviceUser($user);
+            $su->capabilities[] = 'edit_reports';
+
+            $delete = new \OWA\Module\Base\Controller\CustomReportDelete(['customReportId' => $saved['id']]);
+
+            return (bool) (new ReflectionMethod($delete, 'isCurrentUserCapable'))->invoke($delete, $su);
+        };
+
+        $this->assertTrue($mayDelete(), 'the author, with access to P');
+
+        CoreAPI::dbSingleton()->query('DELETE FROM owa_site_user WHERE user_id = ?', [$user->get('id')]);
+
+        $this->assertFalse($mayDelete(), 'the author, once P was taken away');
+        $this->assertNotSame([], $this->row($saved['id']), 'still there');
+    }
+
     public function testStarringFromAnotherPropertyIsRefused(): void
     {
         $id = $this->store(self::P);

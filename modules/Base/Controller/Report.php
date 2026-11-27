@@ -211,11 +211,10 @@ class Report extends \OWA\Core\AdminController {
             $data['title_tags'] = array_merge( (array) ( $data['title_tags'] ?? [] ), [ $tag ] );
         }
 
-        // On this Property, as the builder asks it (Controller::checkCapabilityAndAuthenticateUser()).
+        // On this Property, as the builder asks it (PropertyScopedAccess).
         $user = \OWA\Core\CoreAPI::getCurrentUser();
-        $site = $user->siteIdForProperty( (string) ( $data['currentPropertyId'] ?? '' ) );
 
-        if ( ! ( $user->isAdmin() || $user->isCapable( 'edit_reports', $site ) )
+        if ( ! $user->isCapableOnProperty( 'edit_reports', (string) ( $data['currentPropertyId'] ?? '' ) )
              || ! \OWA\Module\Base\Classes\ReportOverrides::isEditable( $id ) ) {
 
             return $data;

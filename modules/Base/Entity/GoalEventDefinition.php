@@ -519,6 +519,26 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     }
 
     /**
+     * The Property a stored goal event definition belongs to; null for no id
+     * or no such definition.
+     *
+     * @param  string $id
+     * @return string|null
+     */
+    public static function propertyIdOf( $id ) {
+
+        if ( (string) $id === '' ) {
+
+            return null;
+        }
+
+        $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $definition->load( (string) $id );
+
+        return $definition->wasPersisted() ? (string) $definition->get( 'property_id' ) : null;
+    }
+
+    /**
      * The Property a Profile observes.
      *
      * Goal event definitions belong to the Property -- the website -- and every

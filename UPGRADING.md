@@ -184,6 +184,15 @@ For module and template authors:
 - A settings page registered into the `Observation Profile` section is a tab of
   the Profile's page rather than an entry in the column. The hierarchy nav has a
   new `Profiles` section: one entry per Profile of the Property, and Add profile.
+  The Property and Profile sections are listed only for a Property the user has
+  access to.
+- `ServiceUser::isCapable()` and `CoreAPI::isCurrentUserCapable()` take a
+  capability and no site: they ask the role. `canAccessProperty()` asks the
+  user's access list, and `isCapableOnProperty()` asks both. A controller whose
+  request is about a Property uses the `\OWA\Core\PropertyScopedAccess` trait.
+  The `capabilitiesThatRequireSiteAccess` setting and the third argument of
+  `addCapabilityToRole()` are removed. `Template::navRail()` no longer takes a
+  site to check links against: they are checked on its Property.
 
 ### The report grid is a plain table, and jqGrid is gone
 

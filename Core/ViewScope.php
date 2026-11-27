@@ -44,7 +44,7 @@ namespace OWA\Core;
  * @method mixed makeJson($array)
  * @method mixed makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false)
  * @method string makeOverlayApiLink($params, $resourceKey)
- * @method list<RailSection> navRail($nav, $propertyId, $params = [], $accessSiteId = '', $inSettings = false)
+ * @method list<RailSection> navRail($nav, $propertyId, $params = [], $inSettings = false)
  * @method mixed makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '')
  * @method mixed makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true)
  * @method mixed makeWikiLink($page)

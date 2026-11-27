@@ -54,17 +54,14 @@ class MyProfileTest extends TestCase
     }
 
     /**
-     * ...and it is not site-scoped.
-     *
-     * capabilitiesThatRequireSiteAccess is checked against ONE site. An account
-     * is not held per site, so a capability about it listed there would be
-     * asked an unanswerable question and refused for everyone.
+     * ...and the screens are about no Property: an account is not held per
+     * Property, so no access list is checked (PropertyScopedAccess).
      */
-    public function testTheEmailCapabilityIsNotSiteScoped(): void
+    public function testTheProfileScreensAreAboutNoProperty(): void
     {
-        $this->assertNotContains(
-            'edit_own_email',
-            (array) \OWA\Core\CoreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess'));
+        foreach ([\OWA\Module\Base\Controller\MyProfile::class, \OWA\Module\Base\Controller\MyProfileSave::class] as $class) {
+            $this->assertNotContains(\OWA\Core\PropertyScopedAccess::class, class_uses($class), $class);
+        }
     }
 
     /**

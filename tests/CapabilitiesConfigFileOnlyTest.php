@@ -8,13 +8,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * The role-to-capability model resolves from configuration, not from the data
  * store.
  *
- * `base.capabilities` maps each role to what it may do, and
- * `capabilitiesThatRequireSiteAccess` says which of those additionally require
- * access to the specific site. Both are shipped with the code and customised
- * from owa-config.php.
+ * `base.capabilities` maps each role to what it may do. It is shipped with
+ * the code and customised from owa-config.php.
  *
- * Base declares them STATIC, so the boot query never asks for them and
- * persistSetting() refuses to create one: these check that they are never
+ * Base declares it STATIC, so the boot query never asks for it and
+ * persistSetting() refuses to create it: these check that it is never
  * stored and never read.
  *
  * The contract has two sides and both need pinning. A value in the data store
@@ -28,7 +26,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class CapabilitiesConfigFileOnlyTest extends TestCase
 {
-    private const KEYS = [ 'capabilities', 'capabilitiesThatRequireSiteAccess' ];
+    private const KEYS = [ 'capabilities' ];
 
     private function settings()
     {
@@ -40,14 +38,10 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
         return \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? [];
     }
 
-    public function testBothHalvesOfTheModelAreStatic(): void
+    public function testTheRoleMapIsStatic(): void
     {
         $d = $this->staticBaseSettings();
 
-        // Listed together on purpose. Freezing the role map while leaving the
-        // site-access list writable would split one authorization model across
-        // two storage rules, which is worse than either choice made
-        // consistently.
         foreach ( self::KEYS as $key ) {
 
             $this->assertArrayHasKey( $key, $d );
@@ -56,8 +50,8 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
         }
     }
 
-    /** Neither may be written, by the form or by anything else. */
-    public function testNeitherCanBePersisted(): void
+    /** It may not be written, by the form or by anything else. */
+    public function testItCannotBePersisted(): void
     {
         foreach ( self::KEYS as $key ) {
 
@@ -67,8 +61,8 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
         }
     }
 
-    /** Neither is fetched at boot. */
-    public function testNeitherIsInTheBootQuery(): void
+    /** It is not fetched at boot. */
+    public function testItIsNotInTheBootQuery(): void
     {
         $eager = (array) ( $this->settings()->eagerSettings()['base'] ?? [] );
 
@@ -77,6 +71,12 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
             $this->assertNotContains( $key, $eager,
                 sprintf( 'base.%s must not be fetched at boot', $key ) );
         }
+    }
+
+    /** The Property-access list is not a setting: which requests check it is PropertyScopedAccess's. */
+    public function testThereIsNoSiteAccessSetting(): void
+    {
+        $this->assertFalse( $this->settings()->isRegistered( 'base', 'capabilitiesThatRequireSiteAccess' ) );
     }
 
     /**
