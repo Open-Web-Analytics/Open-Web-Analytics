@@ -15,7 +15,8 @@ require_once __DIR__ . '/SettingsSingletonSnapshot.php';
  *   saved together or not at all (InstallManager::finishInstall()), so a step
  *   that fails part way can be run again.
  * - The finish page writes nothing; base.installBase renders it.
- * - A nonce is checked against the action that runs.
+ * - A nonce is checked against the action that runs, and a step whose nonce
+ *   failed is drawn again with what was submitted, but not its password.
  * - The pages anyone can open before OWA is installed show no absolute paths,
  *   and the database form escapes what it shows back.
  * - The CLI install never makes the database password the admin's.
@@ -177,6 +178,69 @@ final class InstallLastStepTest extends TestCase
         // The dispatcher runs `action`; a nonce for the `do` beside it is not one for it.
         $this->assertNotTrue($c->verifyNonce(\OWA\Core\CoreAPI::createNonce('base.installBase')));
         $this->assertTrue($c->verifyNonce(\OWA\Core\CoreAPI::createNonce('base.installConfig')));
+    }
+
+    /** @return iterable<string, array{class-string, array<string, string>, string, string, string}> */
+    public static function nonceSteps(): iterable
+    {
+        yield 'the defaults step' => [
+            \OWA\Module\Base\Controller\InstallBase::class,
+            ['action' => 'base.installBase', 'domain' => 'https://example.test', 'user_id' => 'owatest-admin',
+             'email_address' => 'owatest-admin@example.test', 'password' => 'owatest-admin-password', 'timezone' => 'Europe/Berlin'],
+            'base.installDefaultsEntry', 'defaults', 'password',
+        ];
+        yield 'the database step' => [
+            \OWA\Module\Base\Controller\InstallConfig::class,
+            ['action' => 'base.installConfig', 'db_host' => '127.0.0.1', 'db_name' => 'owatest', 'db_user' => 'owatest',
+             'db_password' => 'owatest-db-password', 'db_type' => 'mysql', 'public_url' => 'https://owa.example.test/'],
+            'base.installConfigEntry', 'config', 'db_password',
+        ];
+    }
+
+    /**
+     * A step posted with an expired or missing nonce is drawn again, with
+     * what was submitted except its password and the "no longer valid"
+     * message. It does not go to the login form, and runs nothing.
+     *
+     * @dataProvider nonceSteps
+     */
+    public function testANonceFailureRedrawsTheStep(string $class, array $post, string $subview, string $var, string $password): void
+    {
+        $this->settings->present = false;
+
+        foreach (['missing' => null, 'expired' => 'owatest-not-a-nonce'] as $case => $nonce) {
+            InstallerRecording::$calls = [];
+            $step = $this->installController($class, $nonce === null ? $post : $post + ['nonce' => $nonce]);
+            $step->doAction();
+
+            $this->assertSame([], InstallerRecording::$calls, "$case: nothing ran");
+            $this->assertSame('base.install', $step->data['view'] ?? null, $case);
+            $this->assertSame($subview, $step->data['subview'] ?? null, "$case: the same step");
+            $this->assertArrayNotHasKey('redirect_action', $step->data, "$case: not the login form");
+            $this->assertNotSame('base.loginForm', $step->data['do'] ?? null, $case);
+            $this->assertSame(\OWA\Core\CoreAPI::t('This form is no longer valid'), $step->data['error_msg']['headline'] ?? null, $case);
+
+            $shown = $step->data[$var];
+            $this->assertArrayNotHasKey($password, $shown, "$case: the password is not drawn back");
+            $expected = $post;
+            unset($expected[$password]);
+            $this->assertSame($expected, array_intersect_key($shown, $expected), "$case: every other value is");
+        }
+    }
+
+    /** Only the steps that write check a nonce; the rest draw or redirect whatever is posted. */
+    public function testOnlyTheStepsThatWriteNeedANonce(): void
+    {
+        $needs = [];
+
+        foreach (['InstallStart', 'InstallCheckEnv', 'InstallConfig', 'InstallDefaultsEntry', 'InstallBase', 'InstallFinish'] as $name) {
+            $class = '\\OWA\\Module\\Base\\Controller\\' . $name;
+            if ((new $class([]))->is_nonce_required) {
+                $needs[] = $name;
+            }
+        }
+
+        $this->assertSame(['InstallConfig', 'InstallBase'], $needs);
     }
 
     public function testTheDatabaseFormEscapesWhatItShows(): void
