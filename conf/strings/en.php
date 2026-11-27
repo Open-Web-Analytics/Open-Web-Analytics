@@ -1062,6 +1062,7 @@ return [
     'OWA: New Visit to %s' => 'OWA: New Visit to %s',
     'OWA_DB_TYPE asks for PDO, and the pdo_mysql extension is not loaded. Install it and restart PHP.' => 'OWA_DB_TYPE asks for PDO, and the pdo_mysql extension is not loaded. Install it and restart PHP.',
     'OWA_DB_TYPE asks for mysqli, and the mysqli extension is not loaded. Install it and restart PHP.' => 'OWA_DB_TYPE asks for mysqli, and the mysqli extension is not loaded. Install it and restart PHP.',
+    'OWA_DISABLED_ENDPOINTS is of type %s, not a list or a comma-separated string of entry points, so it is ignored and no entry point is turned off.' => 'OWA_DISABLED_ENDPOINTS is of type %s, not a list or a comma-separated string of entry points, so it is ignored and no entry point is turned off.',
     'OWA_ROLE_CAPABILITIES gives the role %s something other than a list of capability names.' => 'OWA_ROLE_CAPABILITIES gives the role %s something other than a list of capability names.',
     'OWA_ROLE_CAPABILITIES must be an array of role => list of capabilities.' => 'OWA_ROLE_CAPABILITIES must be an array of role => list of capabilities.',
     'OWA_ROLE_CAPABILITIES names the role %1$s, which does not exist. The roles are %2$s.' => 'OWA_ROLE_CAPABILITIES names the role %1$s, which does not exist. The roles are %2$s.',

@@ -728,6 +728,13 @@ class SystemHealth {
             $findings[] = $overrides;
         }
 
+        $endpoints = \OWA\Core\Caller::endpointListProblem( \OWA\Core\CoreAPI::getSetting( 'base', 'disabledEndpoints' ) );
+
+        if ( $endpoints !== null ) {
+
+            $findings[] = self::finding( 'yellow', 'OWA_DISABLED_ENDPOINTS', $endpoints );
+        }
+
         $old_logs = self::oldErrorLogs();
 
         if ( $old_logs ) {

@@ -697,4 +697,22 @@ final class SystemHealthTest extends TestCase
             exec('rm -rf ' . escapeshellarg($root));
         }
     }
+
+    public function testADisabledEndpointsValueOfNoUsableTypeIsShown(): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'disabledEndpoints');
+
+        try {
+            $c->set('base', 'disabledEndpoints', 5);
+            $finding = array_column(SystemHealth::installation()['findings'], null, 'label')['OWA_DISABLED_ENDPOINTS'] ?? null;
+            $this->assertSame('yellow', $finding['level'] ?? null);
+            $this->assertStringContainsString('of type int', (string) $finding['detail']);
+
+            $c->set('base', 'disabledEndpoints', 'log.php, cli.php');
+            $this->assertArrayNotHasKey('OWA_DISABLED_ENDPOINTS', array_column(SystemHealth::installation()['findings'], null, 'label'));
+        } finally {
+            $c->set('base', 'disabledEndpoints', $saved);
+        }
+    }
 }
