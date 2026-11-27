@@ -198,6 +198,8 @@ final class TagSettingsTest extends TestCase
             'override' => ['base.tracker_session_cookie_days' => '1'],
         ]);
 
+        $c->validate();
+
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
         $v->doValidations();
 
