@@ -148,6 +148,30 @@ final class CliExitCodeTest extends CliControllerTestCase
         yield 'partition-reorganize, none'  => [$C . 'PartitionReorganizeCli', []];
         yield 'partition-reorganize, 31 Feb'=> [$C . 'PartitionReorganizeCli', ['granularity' => 'monthly', 'from' => '20260231']];
         yield 'prune interval 7days'        => [$C . 'PruneEventQueueArchivesCli', ['interval' => '7days', 'queues' => 'owa-no-such-queue']];
+        yield 'prune, unknown queue'        => [$C . 'PruneEventQueueArchivesCli', ['queues' => 'owa-no-such-queue']];
+    }
+
+    /** Every name is checked first: an unknown one stops the command before any queue is pruned. */
+    public function testAnUnknownQueueIsNamedWithTheQueuesThereAre(): void
+    {
+        $known = array_values(array_unique(array_merge(
+            array_keys((array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('event_queues')),
+            [\OWA\Module\Base\Classes\TrackerIngest::QUEUE])));
+
+        $cli = new \OWA\Module\Base\Controller\PruneEventQueueArchivesCli(
+            ['queues' => \OWA\Module\Base\Classes\TrackerIngest::QUEUE . ', owa-no-such-queue']);
+
+        $log = '';
+        ob_start();
+        try {
+            $cli->action();
+        } finally {
+            $log = (string) ob_get_clean();
+        }
+
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+        $this->assertSame('Unknown queue: owa-no-such-queue. Queues: ' . implode(', ', $known) . '.', $cli->getCliOutcome()['message']);
+        $this->assertStringNotContainsString('Pruned', $log, 'nothing pruned before the names were checked');
     }
 
     /** @dataProvider usageErrors */
