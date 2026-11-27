@@ -12,6 +12,7 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
 
         return [
             'description' => 'Deprecated: does the same as activate.',
+            'deprecated'  => true,
             'arguments'   => [
                 'module=<name>' => 'Required. The module\'s name.',
             ],
