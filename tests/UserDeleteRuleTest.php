@@ -215,6 +215,33 @@ final class UserDeleteRuleTest extends TestCase
         return implode( "\n", array_map( fn ( $href ) => urldecode( html_entity_decode( $href ) ), $m[1] ) );
     }
 
+    /** @return array<string, array{array<string, mixed>, bool}> */
+    public static function reportRows(): array
+    {
+        return [
+            'a shared report or funnel'  => [ [ 'id' => '1', 'is_shared' => '1', 'replaces' => '' ], true ],
+            'a private one'              => [ [ 'id' => '2', 'is_shared' => '0', 'replaces' => '' ], false ],
+            'stored before is_shared'    => [ [ 'id' => '3', 'is_shared' => null, 'replaces' => null ], false ],
+            'a version of a shipped one' => [ [ 'id' => '4', 'is_shared' => '1', 'replaces' => 'base.dashboard' ], false ],
+        ];
+    }
+
+    /**
+     * Of a deleted user's custom_report rows, only what they shared stays.
+     *
+     * @dataProvider reportRows
+     */
+    public function testOnlyASharedReportOutlivesItsAuthor( array $row, bool $kept ): void
+    {
+        $this->assertSame( $kept, \OWA\Module\Base\Classes\UserManager::keepsReport( $row ) );
+    }
+
+    /** An empty name would match the rows that belong to nobody. */
+    public function testDeletingNoUserNameDeletesNothing(): void
+    {
+        $this->assertFalse( ( new \OWA\Module\Base\Classes\UserManager() )->deleteUser( '' ) );
+    }
+
     /** Neither the installer's real name nor row id 1 is a special case any more. */
     public function testNoAccountIsProtectedByNameOrId(): void
     {

@@ -195,28 +195,37 @@ class UserManager extends \OWA\Core\Base {
     }
 
     /**
-     * Delete a user, and the site access that only meant anything for them.
+     * Delete a user, and everything stored for them alone: their site access,
+     * application passwords, report overrides, favourites, private custom
+     * reports and funnels, and the notifications addressed to them and what
+     * they did with others. A custom report or funnel they shared stays on
+     * everyone's list, and passes to $new_owner.
      *
-     * Grants left in owa_site_user for a deleted user would be invisible --
-     * every screen lists users and looks their grants up, never the reverse --
-     * and Property Access Management could not clear them: it submits a delta of
-     * the users it RENDERED.
+     * base.usersDelete and DELETE base/v1/users both come here; whether the
+     * account may be deleted is deleteRefusal()'s answer, asked first.
      *
-     * They would not be quite inert either. User ids are auto-increment rather than
-     * derived from the username, so re-creating a deleted username does NOT
-     * inherit its access -- but a restore from backup can reset the counter to
-     * MAX(id)+1, and then a new user can be minted onto a deleted user's id and
-     * pick up whatever it was granted.
+     * Rows keyed by the user_id are keyed by the user name, so anything left
+     * would belong to the next account given that name. Grants are keyed by
+     * the row id, which a restore from backup can hand out again.
      *
-     * Grants first: if that succeeds and the user delete then fails, the user
-     * keeps their account and loses their site access, which is recoverable by
-     * re-granting. The other order can leave access attached to nothing. The
-     * same goes for their application passwords.
+     * The per-user rows go first: if they go and the user delete then fails,
+     * the account remains without them, which is recoverable. The other order
+     * can leave rows attached to nothing.
      *
      * @param  string $user_id
+     * @param  string $new_owner the user_id that is given their shared reports:
+     *                           the admin deleting them; another admin when ''
      * @return bool
      */
-    public function deleteUser($user_id) {
+    public function deleteUser( $user_id, $new_owner = '' ) {
+
+        $user_id = (string) $user_id;
+
+        // An empty name matches the rows that belong to nobody: global notifications.
+        if ( $user_id === '' ) {
+
+            return false;
+        }
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->load( $user_id, 'user_id' );
@@ -226,13 +235,13 @@ class UserManager extends \OWA\Core\Base {
             $this->deleteSiteAccessFor( $u->get('id') );
         }
 
-        /*
-         * Application passwords are keyed by user_id, which IS the username, so
-         * left behind they would authenticate as whoever is next given that
-         * username. Auth refuses a password whose user is missing, which covers
-         * only the time in between.
-         */
+        // Auth refuses a password whose user is missing, which covers only
+        // the time in between.
         \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser( $user_id );
+
+        $this->deleteReportsOf( $user_id, (string) $new_owner );
+        $this->deleteRowsOf( 'base.custom_report_favorite', $user_id );
+        $this->deleteNotificationsOf( $user_id );
 
         $ret = $u->delete($user_id, 'user_id');
 
@@ -241,6 +250,103 @@ class UserManager extends \OWA\Core\Base {
         } else {
             return false;
         }
+    }
+
+    /**
+     * A user's custom reports and funnels, and their versions of shipped
+     * reports. Shared ones pass to $new_owner, else to another admin; the
+     * rest are deleted, with every favourite of them.
+     *
+     * @param  string $user_id
+     * @param  string $new_owner
+     * @return void
+     */
+    private function deleteReportsOf( $user_id, $new_owner ) {
+
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+
+        $rows = (array) $db->get_results( sprintf( 'SELECT id, is_shared, replaces FROM %s WHERE user_id = ?', $table ), [ $user_id ] );
+
+        if ( ! $rows ) {
+
+            return;
+        }
+
+        $owner = $new_owner !== '' && $new_owner !== $user_id ? $new_owner : $this->anotherAdmin( $user_id );
+
+        foreach ( $rows as $row ) {
+
+            if ( self::keepsReport( $row ) ) {
+
+                $db->query( sprintf( 'UPDATE %s SET user_id = ? WHERE id = ?', $table ), [ $owner, (string) $row['id'] ] );
+
+                continue;
+            }
+
+            \OWA\Module\Base\Classes\CustomReports::delete( (string) $row['id'] );
+        }
+    }
+
+    /**
+     * Whether a deleted user's custom_report row stays, for a new owner: a
+     * shared report or funnel. A version of a shipped report never does.
+     *
+     * @param  array<string, mixed> $row id, is_shared, replaces
+     * @return bool
+     */
+    public static function keepsReport( array $row ) {
+
+        return (string) ( $row['replaces'] ?? '' ) === '' && (bool) ( $row['is_shared'] ?? false );
+    }
+
+    /**
+     * The first admin by row id that is not $user_id, '' when there is none.
+     *
+     * @param  string $user_id
+     * @return string
+     */
+    protected function anotherAdmin( $user_id ) {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT user_id FROM %s WHERE role = ? AND user_id <> ? ORDER BY id LIMIT 1',
+            \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() ),
+            [ \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE, (string) $user_id ] );
+
+        return is_array( $row ) ? (string) ( $row['user_id'] ?? '' ) : '';
+    }
+
+    /**
+     * The notifications addressed to one user, and every read or dismissed
+     * mark they made.
+     *
+     * @param  string $user_id
+     * @return void
+     */
+    private function deleteNotificationsOf( $user_id ) {
+
+        $states = \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' )->getTableName();
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+
+        // Others' marks on a notification addressed to this user alone.
+        $db->query( sprintf( 'DELETE FROM %s WHERE notification_id IN (SELECT id FROM %s WHERE user_id = ?)',
+            $states, \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->getTableName() ), [ $user_id ] );
+
+        $this->deleteRowsOf( 'base.notification_state', $user_id );
+        $this->deleteRowsOf( 'base.notification', $user_id );
+    }
+
+    /**
+     * Every row of one entity's table whose user_id is $user_id.
+     *
+     * @param  string $entity
+     * @param  string $user_id never '': deleteUser() refuses it
+     * @return void
+     */
+    private function deleteRowsOf( $entity, $user_id ) {
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE user_id = ?',
+            \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName() ), [ (string) $user_id ] );
     }
 
     /**
