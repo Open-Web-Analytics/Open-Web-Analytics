@@ -987,6 +987,7 @@ return [
     'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.' => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
     'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.' => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
     'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.' => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
+    'No longer read. Requests to the update host send a fixed User-Agent naming OWA\'s version.' => 'No longer read. Requests to the update host send a fixed User-Agent naming OWA\'s version.',
     'No longer read. Set OWA_DEBUG to true for debug logging.' => 'No longer read. Set OWA_DEBUG to true for debug logging.',
     'No longer read. The full server runs the scheduler.' => 'No longer read. The full server runs the scheduler.',
     'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.' => 'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.',

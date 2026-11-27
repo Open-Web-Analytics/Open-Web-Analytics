@@ -96,6 +96,7 @@ class Requirements {
         'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
         'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
         'OWA_NEWS_URL'                  => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
+        'OWA_USER_AGENT'                => 'No longer read. Requests to the update host send a fixed User-Agent naming OWA\'s version.',
     ];
 
     /**

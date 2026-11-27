@@ -451,7 +451,6 @@ return [
                 . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
                 . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.' ),
         ],
-        'owa_user_agent' => [ 'config_constant' => 'OWA_USER_AGENT', 'default' => 'Open Web Analytics Bot master', 'description' => 'The User-Agent header OWA sends on its own outbound HTTP requests.' ],
         'partition_detail_months' => [ 'config_constant' => 'OWA_PARTITION_DETAIL_MONTHS', 'default' => 36, 'description' => 'How many recent months of a partitioned table keep their fine-grained partitions before partition-rotate may merge older ones. Default 36.' ],
         'partition_max_partitions' => [ 'config_constant' => 'OWA_PARTITION_MAX_PARTITIONS', 'default' => 0, 'description' => 'The most partitions partition-rotate lets one table hold. 0 uses the built-in ceiling of 400.' ],
         'public_path' => [ 'default' => '', 'description' => 'The filesystem path of OWA\'s public/ directory. Empty uses public/ inside the OWA directory.' ],
@@ -515,6 +514,8 @@ return [
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update093: the names of the autoload indexes it dropped, for its down().
         'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update101: the rows of the removed settings it deleted, for its down().
+        'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],
