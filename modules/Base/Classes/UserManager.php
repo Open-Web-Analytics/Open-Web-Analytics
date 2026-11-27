@@ -196,6 +196,9 @@ class UserManager extends \OWA\Core\Base {
         if ( $ret ) {
 
             AppPasswords::askForReview( (string) $u->get( 'user_id' ) );
+
+            // The new password starts with no failed sign-ins against the name.
+            LoginThrottle::clear( [ LoginThrottle::nameKey( $u->get( 'user_id' ) ) ] );
         }
 
         return $ret ? $u : false;
