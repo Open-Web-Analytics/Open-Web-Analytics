@@ -30,7 +30,6 @@ namespace OWA\Core;
  * @method mixed createNonceFormField($action)
  * @method string escape($value)
  * @method mixed escapeForXml($string)
- * @method mixed formatCurrency($value)
  * @method mixed get($name)
  * @method mixed getCurrentUser()
  * @method string configFileConstantFor(string $module, string $key)

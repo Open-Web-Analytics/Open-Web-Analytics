@@ -3139,7 +3139,6 @@ class TrackingEventHelpers {
         $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), [
             $ns . 'overlay',
             $ns . 'state',
-            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
         ] );
 
         foreach ( self::RETIRED_CAMPAIGN_KEYS as $suffix ) {

@@ -14,7 +14,7 @@ require_once __DIR__ . '/SettingsSingletonSnapshot.php';
  * - The admin, the first site, the timezone and the install-complete flag are
  *   saved together or not at all (InstallManager::finishInstall()), so a step
  *   that fails part way can be run again.
- * - The finish page writes nothing; base.installBase renders it.
+ * - There is no finish action; base.installBase renders the finish screen.
  * - A nonce is checked against the action that runs, and a step whose nonce
  *   failed is drawn again with what was submitted, but not its password.
  * - The pages anyone can open before OWA is installed show no absolute paths,
@@ -157,17 +157,11 @@ final class InstallLastStepTest extends TestCase
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
     }
 
-    /** It redirects to the start, and writes nothing. */
-    public function testTheFinishPageWritesNothing(): void
+    /** base.installBase renders the finish screen; there is no action of its own. */
+    public function testThereIsNoFinishAction(): void
     {
-        $this->settings()->set('base', 'install_complete', false);
-
-        $finish = $this->installController(\OWA\Module\Base\Controller\InstallFinish::class, []);
-        $finish->action();
-
-        $this->assertSame([], InstallerRecording::$calls);
-        $this->assertFalse((bool) $this->settings()->get('base', 'install_complete'));
-        $this->assertSame('base.installStart', $finish->data['do']);
+        $this->assertEmpty(\OWA\Core\CoreAPI::serviceSingleton()->getMapValue('actions', 'base.installFinish'));
+        $this->assertFalse(class_exists('OWA\\Module\\Base\\Controller\\InstallFinish'));
     }
 
     public function testANonceIsCheckedAgainstTheActionThatRuns(): void
@@ -233,7 +227,7 @@ final class InstallLastStepTest extends TestCase
     {
         $needs = [];
 
-        foreach (['InstallStart', 'InstallCheckEnv', 'InstallConfig', 'InstallDefaultsEntry', 'InstallBase', 'InstallFinish'] as $name) {
+        foreach (['InstallStart', 'InstallCheckEnv', 'InstallConfig', 'InstallDefaultsEntry', 'InstallBase'] as $name) {
             $class = '\\OWA\\Module\\Base\\Controller\\' . $name;
             if ((new $class([]))->is_nonce_required) {
                 $needs[] = $name;

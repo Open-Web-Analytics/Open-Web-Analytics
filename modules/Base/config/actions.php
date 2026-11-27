@@ -22,7 +22,6 @@ return [
     'base.installCli'                   => 'OWA\\Module\\Base\\Controller\\InstallCli',
     'base.installConfig'                => 'OWA\\Module\\Base\\Controller\\InstallConfig',
     'base.installDefaultsEntry'         => 'OWA\\Module\\Base\\Controller\\InstallDefaultsEntry',
-    'base.installFinish'                => 'OWA\\Module\\Base\\Controller\\InstallFinish',
     'base.installStart'                 => 'OWA\\Module\\Base\\Controller\\InstallStart',
     'base.login'                        => 'OWA\\Module\\Base\\Controller\\Login',
     'base.loginForm'                    => 'OWA\\Module\\Base\\Controller\\LoginForm',

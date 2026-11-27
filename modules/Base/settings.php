@@ -334,7 +334,6 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'A comma-separated list of IP addresses whose requests are not recorded.' ),
         ],
-        'feed_subscription_param' => [ 'config_constant' => 'OWA_FEED_SUBSCRIPTION_PARAM', 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ],
         'geolocation_lookup' => [ 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ],
         'geolocation_service' => [ 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ],
         // Set by Update075 when it renamed goal event definitions to event names, so its

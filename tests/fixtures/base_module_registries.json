@@ -39,9 +39,6 @@
         "base.installDefaultsEntry": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallDefaultsEntry"
         },
-        "base.installFinish": {
-            "class_name": "OWA\\Module\\Base\\Controller\\InstallFinish"
-        },
         "base.installStart": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallStart"
         },

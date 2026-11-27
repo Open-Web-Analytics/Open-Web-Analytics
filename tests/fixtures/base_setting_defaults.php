@@ -61,7 +61,6 @@ return [
     'enableEcommerceReporting' => false,
     'error_log_file' => '',
     'excluded_ips' => '',
-    'feed_subscription_param' => 'sid',
     'funnel_steps_before_079' => [],
     'geolocation_lookup' => false,
     'geolocation_service' => '',

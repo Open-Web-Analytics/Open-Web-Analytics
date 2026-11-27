@@ -1323,14 +1323,6 @@ class Template extends TemplateEngine {
     }
 
     /**
-     * @param  int|float $value minor units of the install's currency
-     * @return string
-     */
-    public function formatCurrency($value) {
-        return \OWA\Core\Lib::formatCurrency( $value, \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ), \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
-    }
-
-    /**
      * @return \OWA\Module\Base\Classes\ServiceUser
      */
     public function getCurrentUser() {

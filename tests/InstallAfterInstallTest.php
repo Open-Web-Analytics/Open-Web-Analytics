@@ -23,7 +23,6 @@ final class InstallAfterInstallTest extends TestCase
             'installConfig'        => [ \OWA\Module\Base\Controller\InstallConfig::class ],
             'installDefaultsEntry' => [ \OWA\Module\Base\Controller\InstallDefaultsEntry::class ],
             'installBase'          => [ \OWA\Module\Base\Controller\InstallBase::class ],
-            'installFinish'        => [ \OWA\Module\Base\Controller\InstallFinish::class ],
         ];
     }
 
