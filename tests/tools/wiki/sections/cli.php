@@ -2,7 +2,8 @@
 /**
  * The CLI reference. See lib/cli.php for where each column comes from.
  *
- *   cli             every command: an index, then each command's section
+ *   cli             every command but the deprecated ones (usage()'s
+ *                   `deprecated`): an index, then each command's section
  *   cli-<command>   one command's arguments table, for a page about what the
  *                   command does, e.g. cli-cube-rebuild
  */
@@ -35,6 +36,8 @@ return function ( $arg = null ) {
             : "`cmd=$arg` takes no arguments.\n";
     }
 
+    $listed = array_filter( $commands, fn ( $c ) => ! $c['deprecated'] );
+
     $out = "Run every command from the installation directory:\n\n"
          . "```bash\nphp cli.php cmd=<command> [argument=value ...] [--switch ...]\n```\n\n"
          . "A switch can also be written `switch=1`.\n\n";
@@ -45,14 +48,14 @@ return function ( $arg = null ) {
      * lines -- and it strips the markup that would stop it. The capability and
      * module are in each command's own section.
      */
-    foreach ( $commands as $command => $c ) {
+    foreach ( $listed as $command => $c ) {
 
         $first = preg_split( '/(?<=\.)\s/', $c['description'], 2 )[0];
 
         $out .= sprintf( "- [`%s`](#%s) — %s\n", $command, $command, $first );
     }
 
-    foreach ( $commands as $command => $c ) {
+    foreach ( $listed as $command => $c ) {
 
         $out .= "\n### $command\n\n" . $c['description'] . "\n\n";
 

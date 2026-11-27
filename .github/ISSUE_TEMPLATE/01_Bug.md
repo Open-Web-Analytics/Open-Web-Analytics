@@ -7,8 +7,8 @@ labels: bug
 
 **Before you open an issue:**
 
-- [ ] I followed the [installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Installation) or [update](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Updating) guide
-- [ ] [I read the troubleshooting guide in the wiki](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) 
+- [ ] I followed the [installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Installation) or [update](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Updating) guide
+- [ ] [I read the troubleshooting guide in the wiki](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Troubleshooting) 
 - [ ] I have attached http headers, console/shell errors, or debug from OWA's error log file.
 
 **OWA Version**: x.y.z

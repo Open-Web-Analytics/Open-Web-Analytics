@@ -12,7 +12,7 @@
 require_once __DIR__ . '/modules.php';
 
 /**
- * @return array<string,array{module:string,class:string,capability:?string,roles:string[],description:string,arguments:array<string,string>}>
+ * @return array<string,array{module:string,class:string,capability:?string,roles:string[],description:string,arguments:array<string,string>,deprecated:bool}>
  *         keyed by command, sorted
  */
 function owa_wiki_cli_commands() {
@@ -42,6 +42,7 @@ function owa_wiki_cli_commands() {
             'roles'       => method_exists( $class, 'serverRoles' ) ? (array) $class::serverRoles() : \OWA\Core\Controller\Cli::serverRoles(),
             'description' => (string) ( $usage['description'] ?? '' ),
             'arguments'   => (array) ( $usage['arguments'] ?? [] ),
+            'deprecated'  => ! empty( $usage['deprecated'] ),
         ];
     }
 

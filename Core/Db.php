@@ -38,7 +38,7 @@ class Db extends \OWA\Core\Base {
      * value that reaches _makeConstraintClause() outside this set would be
      * a SQL-injection primitive.
      *
-     * Set matches the Data Access API docs (==, !=, >, >=, <, <=, =~, !~,
+     * Set matches the Reporting API docs (==, !=, >, >=, <, <=, =~, !~,
      * =@, !@) plus the bare '=' default used by internal PHP callers and
      * 'between' used by internal range constraints. '<>' is NOT included:
      * the docs use '!=' as the canonical not-equals and no caller emits

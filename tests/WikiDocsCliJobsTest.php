@@ -61,8 +61,39 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $this->assertArrayHasKey('geoip-update-db', $commands, 'a command of a module a configless boot leaves inactive');
 
         foreach (array_unique(array_merge($active, array_keys($commands))) as $command) {
+
+            if (!empty($commands[$command]::usage()['deprecated'])) {
+                continue;
+            }
+
             $this->assertStringContainsString("\n### $command\n", $md, "cmd=$command has no section");
             $this->assertStringContainsString("\n- [`$command`](#$command) — ", $md, "cmd=$command is not in the index");
+        }
+    }
+
+    /**
+     * A deprecated command is left out of the reference, by its usage()'s
+     * `deprecated` marker, and keeps running. The marker and a description that
+     * says "Deprecated" go together.
+     */
+    public function testADeprecatedCommandIsLeftOut(): void
+    {
+        $md       = $this->section('cli');
+        $commands = $this->registeredCommands();
+
+        $this->assertTrue(\OWA\Module\Base\Controller\ModuleInstallCli::usage()['deprecated'] ?? false);
+        $this->assertSame(\OWA\Module\Base\Controller\ModuleInstallCli::class, $commands['install-module']);
+        $this->assertStringNotContainsString('install-module', $md);
+        $this->assertStringNotContainsString('Deprecated', $md);
+        $this->assertStringContainsString("\n### activate\n", $md);
+        $this->assertStringContainsString("\n- [`activate`](#activate) — ", $md);
+
+        foreach ($commands as $command => $class) {
+
+            $usage = $class::usage();
+
+            $this->assertSame(!empty($usage['deprecated']), str_starts_with((string) $usage['description'], 'Deprecated'),
+                "cmd=$command: the deprecated marker and the description disagree");
         }
     }
 
@@ -255,6 +286,11 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
             }
 
             $this->assertStringStartsWith("| Argument | Description |\n|---|---|\n", $md);
+
+            if ($c['deprecated']) {
+                continue;
+            }
+
             $this->assertStringContainsString("\n### $command\n", $full);
             $this->assertStringContainsString($md, $full, "cli-$command differs from its table in the full reference");
 

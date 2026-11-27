@@ -184,7 +184,7 @@ return [
             'sessionSource' => [ 'column' => 'source', 'label' => 'Source',
                 'family' => 'traffic source', 'description' => 'Where this session came from: the tag if there was one, otherwise the referring host without a leading www.' ],
             'sessionMedium' => [ 'column' => 'medium', 'label' => 'Medium',
-                'family' => 'traffic source', 'description' => 'How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.' ],
+                'family' => 'traffic source', 'description' => 'How this session arrived: the tagged medium, else organic from a search engine, ai-agent from an AI assistant, referral from any other site, or (none) for a direct visit.' ],
             'sessionCampaign' => [ 'column' => 'campaign', 'label' => 'Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).' ],
             'sessionChannel' => [ 'column' => 'channel', 'label' => 'Channel',

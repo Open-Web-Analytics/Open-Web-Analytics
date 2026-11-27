@@ -95,7 +95,10 @@ class Cli extends \OWA\Core\AdminController {
      * and the name before any `=`, without the dashes, is what the controller
      * reads with getParam(). WikiDocsCliJobsTest holds the source to that name.
      *
-     * @return array{description: string, arguments: array<string,string>}
+     * `deprecated` => true marks a command kept only for scripts that still
+     * call it. It still runs; the wiki's CLI reference leaves it out.
+     *
+     * @return array{description: string, arguments: array<string,string>, deprecated?: bool}
      */
     public static function usage() {
 

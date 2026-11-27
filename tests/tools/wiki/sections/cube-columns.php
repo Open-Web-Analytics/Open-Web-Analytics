@@ -9,8 +9,9 @@
  *
  * "Description" is the entry's `description`.
  *
- * "From" lists the logical inputs a definition names (`session.*`, `visitor.*`,
- * another cube column, or a compute class). "Unresolved when" names the test
+ * "From" lists the logical inputs a definition names (`session.*`, `visitor.*`
+ * or another cube column). A compute step's are what it declares it reads:
+ * its session values and raw columns, not its class. "Unresolved when" names the test
  * that writes the unresolved sentinel instead of a value.
  */
 return static function ( $arg = null ) {
@@ -55,6 +56,14 @@ return static function ( $arg = null ) {
         $def  = (array) $definitions[ $name ];
         $col  = $cube->getColumn( $name );
         $from = $inputs( $def );
+
+        if ( ( $def['kind'] ?? '' ) === 'compute' ) {
+            $class = (string) $def['class'];
+            $step  = new $class( $name );
+            $from  = array_merge(
+                array_map( static fn ( $n ) => 'session.' . $n, $step->sessionReads() ),
+                array_values( array_diff( $step->reads(), $step->sessionReads() ) ) );
+        }
 
         $out .= sprintf( "| `%s` | %s | `%s` | %s | `%s`%s | %s |\n",
             $name,

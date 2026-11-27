@@ -152,18 +152,34 @@ describe( 'wiki tracker reference', () => {
         expect( [ ...options ].filter( ( name ) => ! optionNames.has( name ) ) ).toEqual( [] );
     } );
 
-    test( 'the generated sections list every command and option', () => {
+    test( 'the generated sections list every command and option that is not deprecated', () => {
 
         const methods = api.renderMethods( declared );
         const options = api.renderOptions( declared );
 
+        expect( declared.commands.some( ( c ) => c.deprecated ) ).toBe( true );
+        expect( declared.options.some( ( o ) => o.deprecated ) ).toBe( true );
+
         for ( const c of declared.commands ) {
-            expect( methods ).toContain( c.deprecated ? `| \`${ c.name }(` : `\n### ${ c.name }\n` );
+
+            if ( c.deprecated ) {
+                expect( methods ).not.toContain( `\`${ c.name }` );
+            } else {
+                expect( methods ).toContain( `\n### ${ c.name }\n` );
+            }
         }
 
         for ( const o of declared.options ) {
-            expect( options ).toContain( `| \`${ o.name }\` |` );
+
+            if ( o.deprecated ) {
+                expect( options ).not.toContain( `\`${ o.name }\`` );
+            } else {
+                expect( options ).toContain( `| \`${ o.name }\` |` );
+            }
         }
+
+        expect( methods ).not.toMatch( /deprecated/i );
+        expect( options ).not.toMatch( /deprecated/i );
     } );
 
     test( 'an untagged method is not documented, and @internal keeps one out', () => {

@@ -70,7 +70,7 @@ return function () {
 
         if ( ! $d ) {
 
-            return [ $code( $id ), $what, 'Rendered by ' . $code( $registry[ $id ]['controller'] ), '—', '—' ];
+            return [ $code( $id ), $what, '—', '—', '—' ];
         }
 
         $dims    = [];

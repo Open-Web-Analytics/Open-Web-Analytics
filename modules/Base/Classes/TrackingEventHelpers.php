@@ -131,13 +131,14 @@ class TrackingEventHelpers {
      *            a property of the registry rather than of a list maintained
      *            beside it.
      *   request  the server reads it off the request, and `from` holds the
-     *            $_SERVER keys in the precedence they are tried -- or `clock`.
+     *            $_SERVER keys it reads -- or `clock`.
      *   event    derived from other properties, and `from` names them.
      *
      * ONE `from`, THREE NAMESPACES, and `set_by` says which: a wire key, a
      * request key, or a property name. It is a SET because several of them
-     * genuinely are: ip_address tries five $_SERVER keys in order, and an event
-     * property can derive from more than one.
+     * genuinely are: ip_address reads two $_SERVER keys (X-Forwarded-For, then
+     * REMOTE_ADDR; Core\ClientAddress), and an event property can derive from
+     * more than one.
      *
      * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
      * in the order they appear, and a callback reads whatever is already on the
