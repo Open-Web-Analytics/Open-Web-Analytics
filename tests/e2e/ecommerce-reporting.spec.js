@@ -59,9 +59,8 @@ test.describe('e-commerce reporting', () => {
     });
 
     /**
-     * The tab labels are two literals in MetricSets, and one of them is lower
-     * case. A row of tabs reading "Site Usage | e-commerce"
-     * shows its seams.
+     * The tab labels are literals in MetricSets. A row of tabs reading
+     * "Site Usage | e-commerce" shows its seams.
      *
      * Title-casing is a PRESENTATION rule (text-transform on the tab), which
      * is why this reads innerText: innerText is the rendered text and reflects
@@ -76,8 +75,7 @@ test.describe('e-commerce reporting', () => {
 
         expect(labels).toContain('Site Usage');
 
-        // 'e-commerce' as MetricSets writes it; 'E-Commerce' as it must read.
-        expect(labels).toContain('E-Commerce');
+        expect(labels).toContain('Ecommerce');
         expect(labels).not.toContain('e-commerce');
     });
 

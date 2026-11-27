@@ -270,13 +270,10 @@
         "note": "The device's screen as WIDTHxHEIGHT in CSS pixels, read from window.screen and rounded. On every event, as the other page-environment values are: the wire is one beacon per event, so what a batched request would carry once rides each. The SCREEN, not the viewport -- the viewport is a click's frame and rides clicks only. Anything not shaped WIDTHxHEIGHT is dropped (screenResolution()), so a hand-built beacon cannot add a value to group by."
     },
     "ip_address": {
-        "description": "The visitor's IP address: the first public address in the proxy headers, else the connecting address. Anonymized when the Profile's anonymize_ips setting is on.",
+        "description": "The visitor's IP address: reading X-Forwarded-For's hops and then the connecting address from the right, the first that is neither private nor a trusted proxy (trusted_proxies); no other header is read. Anonymized when the Profile's anonymize_ips setting is on.",
         "set_by": "request",
         "from": [
-            "HTTP_CLIENT_IP",
             "HTTP_X_FORWARDED_FOR",
-            "HTTP_X_CLUSTER_CLIENT_IP",
-            "HTTP_FORWARDED_FOR",
             "REMOTE_ADDR"
         ],
         "column": "ip_address",
@@ -950,7 +947,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
     },
     "ct_total": {
-        "description": "The order total including tax and shipping, in major units, as the older addTransaction command sends it. Revenue is derived from it when no ct_value is sent.",
+        "description": "The order total including tax and shipping, as the older addTransaction command sends it: sent in major units (12.50) and converted to the currency's minor units (1250). Revenue is derived from it when no ct_value is sent.",
         "set_by": "client",
         "from": [
             "o_tot"
@@ -1002,7 +999,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_value": {
-        "description": "The order's value excluding tax and shipping, in major units, as trackPurchase and trackRefund send it.",
+        "description": "The order's value excluding tax and shipping, as trackPurchase and trackRefund send it: sent in major units and converted to the currency's minor units.",
         "set_by": "client",
         "from": [
             "o_val"
@@ -1149,7 +1146,7 @@
         "note": "Author-assigned grouping of pages. Page-scoped: set per page, so it cannot leak onto the next one."
     },
     "consent_state": {
-        "description": "granted or denied, as the page declared it when the event was sent. Absent when the page declared nothing.",
+        "description": "The consent state the page declared when the event was sent: granted or denied. Absent when the page declared nothing.",
         "set_by": "client",
         "from": [
             "v_cs"
@@ -1663,7 +1660,7 @@
         ]
     },
     "device_type": {
-        "description": "desktop, mobile or tablet, from the user agent. Absent when the device cannot be identified.",
+        "description": "The kind of device, from the user agent: desktop, mobile or tablet. Absent when the device cannot be identified.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"

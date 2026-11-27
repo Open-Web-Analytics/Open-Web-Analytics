@@ -331,7 +331,7 @@ class OWATracker  {
 	        downloadExtensions: DEFAULTS.downloadExtensions.slice(),
 	        /**
 	         * Query parameters that carry a site-search term, tried in order.
-	         * Set it with setSearchQueryParams(), which checks it is an array.
+	         * Set it with setSearchQueryParams().
 	         *
 	         * A page that has one of these parameters but is not a search results
 	         * page is counted as a search; a site whose search uses another
@@ -342,12 +342,14 @@ class OWATracker  {
 	        siteSearchParams: DEFAULTS.siteSearchParams.slice(),
 	        /**
 	         * The features the tracker starts once the page's queued commands
-	         * have run: every one but route changes and any a module adds, which
-	         * a page or its Profile turns on itself. Route changes stay off because a
+	         * have run. A Profile's tracking bundle sets it from the Profile's
+	         * settings; a page turns one off with disabledFeatures, or replaces
+	         * the list.
+	         *
+	         * By default every feature but route changes and any a module adds,
+	         * which a page or its Profile turns on itself. Route changes stay off because a
 	         * single-page app that sends its own page view per route would count
-	         * each one twice. A Profile's tracking bundle sets it from the
-	         * Profile's settings; a page turns one off with disabledFeatures,
-	         * or replaces the list.
+	         * each one twice.
 	         *
 	         * @option
 	         */
@@ -3057,7 +3059,7 @@ class OWATracker  {
     }
 
     /**
-     * Set a tracker option. The options are listed under Tracker options.
+     * Set a tracker option. The options are listed under Options.
      *
      * Any name is accepted, and one the tracker does not read changes nothing.
      *
@@ -4565,7 +4567,7 @@ class OWATracker  {
     }
 
     /**
-     * Logs a custom event from an event type and a plain properties object.
+     * Send a custom event from an event type and a plain properties object.
      *
      * The command queue cannot carry an Event object, so this builds one from
      * the name and properties. On the tracker object, makeEvent() and
@@ -5285,7 +5287,8 @@ class OWATracker  {
     }
 
     /**
-     * Raise view_search_results when the page is a site-search results page.
+     * Send a view_search_results event, carrying the search term, when the
+     * page is a site-search results page.
      *
      * It is one when its query string has a non-blank value for one of the
      * parameters, tried in order: params when given, else the siteSearchParams

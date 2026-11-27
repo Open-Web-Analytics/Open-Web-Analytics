@@ -45,7 +45,7 @@ class MetricSets {
             'chartMetric' => 'goalEvents',
         ],
         'ecommerce' => [
-            'label'       => 'e-commerce',
+            'label'       => 'Ecommerce',
             'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
             'chartMetric' => 'transactions',
         ],

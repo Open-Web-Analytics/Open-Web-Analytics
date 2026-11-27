@@ -152,6 +152,16 @@ final class WikiDocsReportingRegistryTest extends TestCase
             array_map( fn ( $r ) => explode( ' | ', $r )[3] ?? '', explode( "\n", $md ) ) ) );
     }
 
+    /** A compute column's From is what its step reads, not the step's class. */
+    public function testAComputeColumnListsWhatItsStepReads(): void
+    {
+        $md = self::generate( 'cube-columns' );
+
+        self::assertStringNotContainsString( 'SearchTermsStep', $md );
+        self::assertMatchesRegularExpression(
+            '/^\| `search_terms` \|[^|]*\| `compute` \| `session\.tagged_search_terms`, `referer_host`, `referer_query` \|/m', $md );
+    }
+
     public function testEveryDerivedCubeColumnHasOneRow(): void
     {
         $raw  = new \OWA\Module\Base\Entity\EventRaw();

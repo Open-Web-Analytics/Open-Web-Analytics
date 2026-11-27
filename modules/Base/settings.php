@@ -65,9 +65,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Announce New Visitors Via E-mail' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Announces each new visitor to your web site via e-mail. If you have '
-                . 'a lot of visitors then you probably want to keep this feature turned '
-                . 'off.' ),
+                \OWA\Core\CoreAPI::t( 'Sends an e-mail to the Notice E-mail Address each time a session starts.' ),
         ],
         'anonymize_ips' => [
             'default'  => false,
@@ -201,7 +199,7 @@ return [
          */
         'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside the web root. Empty: cmd=backup needs dir=.' ],
         'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
-        'capabilitiesThatRequireSiteAccess' => [ 'default' => [ 'view_reports', 'edit_sites' ], 'description' => 'The capabilities a user holds only on the sites they have been given access to, rather than on every site.' ],
+        'capabilitiesThatRequireSiteAccess' => [ 'default' => [ 'view_reports', 'edit_sites' ], 'description' => 'The capabilities a user holds only on the Properties they have been given access to, rather than on every Property.' ],
         'config_file' => [ 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ],
         'configuration_id' => [ 'default' => '1', 'internal' => true ],
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
@@ -334,8 +332,7 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Excluded IP Addresses' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Enter a comma-separated list of the IP addresses that you wish to '
-                . 'exclude from tracking.' ),
+                \OWA\Core\CoreAPI::t( 'A comma-separated list of IP addresses whose requests are not recorded.' ),
         ],
         'feed_subscription_param' => [ 'config_constant' => 'OWA_FEED_SUBSCRIPTION_PARAM', 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ],
         'geolocation_lookup' => [ 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ],
@@ -366,7 +363,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Log Requests From Named Users' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Controls the logging of requests made by named users.' ),
+                \OWA\Core\CoreAPI::t( 'Whether requests made by a user signed in to OWA are recorded.' ),
         ],
         // Set by Update084 when it turned log_robots into a blank spam_threshold, so its
         // down() can put the log_robots rows and the spam_threshold row back as they were.
@@ -468,11 +465,11 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'URL Parameters' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'URL parameters OWA removes before storing a page\'s URL, its referring URL '
-                . 'and a clicked link\'s URL, and leaves out of the page query string reports '
-                . 'group by. Use it for session, state or personal parameters in your URLs. '
+                \OWA\Core\CoreAPI::t( 'A comma-separated list of URL parameters, such as session, state or personal ones, '
+                . 'that OWA removes before storing a page\'s URL, its referring URL and a clicked link\'s URL, '
+                . 'and leaves out of the page query string reports group by. '
                 . 'Campaign tags are still read from a URL before its parameters are removed. '
-                . 'Applies to events recorded after a change. Parameter names should be separated by comma.' ),
+                . 'Applies to events recorded after a change.' ),
         ],
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.
@@ -575,14 +572,11 @@ return [
             'type'     => 'timezone',
             'label'    => \OWA\Core\CoreAPI::t( 'Reporting Timezone' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'This is the timezone that should be used to generate statistics for '
-                . 'a specific time period.<br><br><strong>Changing this is not '
-                . 'retroactive.</strong> Each request is filed under a calendar day '
-                . 'when it is recorded, using the timezone set at that moment. Data '
-                . 'already collected keeps the day boundaries it was recorded with, so '
-                . 'a change applies only to traffic from this point on &mdash; and '
-                . 'reports spanning the change will mix the two. Depending on how far '
-                . 'the zones are apart, a day boundary can move by up to 21 hours.' ),
+                \OWA\Core\CoreAPI::t( 'The timezone reports count days in.<br><br><strong>Changing this is not '
+                . 'retroactive.</strong> Each request is filed under a calendar day in the '
+                . 'timezone in effect when it is recorded, so a change applies only to traffic '
+                . 'recorded after it, and reports spanning the change mix the two. A day '
+                . 'boundary can move by up to 21 hours.' ),
         ],
         'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ],
         /*
@@ -735,8 +729,7 @@ return [
             'label'    => \OWA\Core\CoreAPI::t( 'Honor Privacy Signals' ),
             'description' => \OWA\Core\CoreAPI::t( 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
                 . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other. '
-                . 'In some jurisdictions honoring Global Privacy Control is a legal requirement, so '
-                . 'turning this off is the site owner&rsquo;s decision.' ),
+                . 'In some jurisdictions honoring Global Privacy Control is a legal requirement.' ),
         ],
         // A fact about the data, not a preference: the installation's
         // content-derived dimension ids are still 32-bit crc32 values. Set by

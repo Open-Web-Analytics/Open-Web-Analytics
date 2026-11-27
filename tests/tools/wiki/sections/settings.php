@@ -180,12 +180,18 @@ return function ( $arg = null ) {
             $type[] = 'blank: ' . $text( $a['blank'] );
         }
 
-        if ( ! empty( $a['pattern_problem'] ) ) {
-            $type[] = $text( $a['pattern_problem'] );
-        }
-
         $desc = $text( $a['description'] ?? '' );
         $label = $text( $a['label'] ?? '' );
+
+        /* The form's error message names its field ("Currency is a three-letter
+           ...code"); in the setting's own row the name is already there. */
+        if ( ! empty( $a['pattern_problem'] ) ) {
+            $problem = $text( $a['pattern_problem'] );
+            if ( $label !== '' && strpos( $problem, $label . ' is ' ) === 0 ) {
+                $problem = substr( $problem, strlen( $label . ' is ' ) );
+            }
+            $type[] = $problem;
+        }
 
         if ( $label !== '' ) {
             $desc = '**' . $label . '**' . ( $desc !== '' ? ' — ' . $desc : '' );

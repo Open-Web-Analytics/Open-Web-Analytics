@@ -2208,7 +2208,7 @@
                 "column": "medium",
                 "family": "traffic source",
                 "label": "Medium",
-                "description": "How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.",
+                "description": "How this session arrived: the tagged medium, else organic from a search engine, ai-agent from an AI assistant, referral from any other site, or (none) for a direct visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3353,7 +3353,7 @@
             "column": "medium",
             "family": "traffic source",
             "label": "Medium",
-            "description": "How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.",
+            "description": "How this session arrived: the tagged medium, else organic from a search engine, ai-agent from an AI assistant, referral from any other site, or (none) for a direct visit.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

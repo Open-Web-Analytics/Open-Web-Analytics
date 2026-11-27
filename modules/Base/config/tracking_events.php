@@ -91,7 +91,7 @@ return [
      * did (TrackingEventHelpers::goalTriggerEventNames()).
      */
     'exception'           => [
-        'description'  => 'An uncaught JavaScript error, with its message, source file and line as the custom properties description, source and line. Sent once per page view for each message, source and line when trackExceptions is on; the browser\'s ResizeObserver loop notice is not sent.',
+        'description'  => 'An uncaught JavaScript error. Its message, source file and line number are sent in the custom properties description, source and line. Sent when trackExceptions is on, once per page view for each distinct error; the browser\'s ResizeObserver loop notice is not sent.',
         'goal_trigger' => false,
     ],
 
