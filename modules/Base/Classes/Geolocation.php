@@ -9,7 +9,7 @@ namespace OWA\Module\Base\Classes;
 class Geolocation {
 
     /**
-     * The last lookup: ip_address, city, country, state, country_code,
+     * The current lookup: ip_address, city, country, state, country_code,
      * latitude, longitude; '' for what it could not fill.
      *
      * @var array<string, string|null>
@@ -31,41 +31,65 @@ class Geolocation {
     }
     
     /**
-     * Look an address up, unless one has been already and $refresh is not true.
+     * Lookups made by this process, by address, oldest first.
+     *
+     * @var array<string, array<string, string|null>>
+     */
+    private $byAddress = [];
+
+    /** How many addresses are kept; the oldest is dropped past it. */
+    const MAX_CACHED_ADDRESSES = 1000;
+
+    /**
+     * Look an address up, or reuse this process's earlier lookup of the same
+     * address unless $refresh is true. The result is in $properties.
      *
      * @param  string|null $ip_address
      * @param  bool        $refresh
      * @return void
      */
     public function getGeolocationFromIp($ip_address, $refresh = false) {
-        
-        if (empty($this->properties) || $refresh === true) {
-            
-            $geo = ['ip_address'     => $ip_address,
-                         'city'         =>  '',
-                         'country'         =>  '',
-                         'state'        =>  '',
-                         'country_code'    =>    '',
-                         'latitude'        =>    '',
-                         'longitude'    =>    ''];
-            
-            if ( \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
-            
-                $eq = \OWA\Core\CoreAPI::getEventDispatch();
-                $geo = $eq->filter('geolocation', $geo);
-            
-            }
-            
-            /*
-             * A field the lookup could not fill stays empty. The label is the
-             * reporting layer's: ResultSetManager::formatDimensionValue() renders an
-             * absent dimension as "(not set)" at display time.
-             */
-            
-            $this->properties = $geo;
+
+        $key = (string) $ip_address;
+
+        if ( $refresh !== true && array_key_exists( $key, $this->byAddress ) ) {
+
+            $this->properties = $this->byAddress[ $key ];
+
+            return;
+        }
+
+        $geo = [
+            'ip_address'   => $ip_address,
+            'city'         => '',
+            'country'      => '',
+            'state'        => '',
+            'country_code' => '',
+            'latitude'     => '',
+            'longitude'    => '',
+        ];
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
+
+            $geo = \OWA\Core\CoreAPI::getEventDispatch()->filter( 'geolocation', $geo );
+        }
+
+        /*
+         * A field the lookup could not fill stays empty. The label is the
+         * reporting layer's: ResultSetManager::formatDimensionValue() renders an
+         * absent dimension as "(not set)" at display time.
+         */
+        $this->properties = $geo;
+
+        unset( $this->byAddress[ $key ] );
+        $this->byAddress[ $key ] = $geo;
+
+        if ( count( $this->byAddress ) > self::MAX_CACHED_ADDRESSES ) {
+
+            unset( $this->byAddress[ array_key_first( $this->byAddress ) ] );
         }
     }
-    
+
     /**
      * @param  string $name
      * @return string|null|void  nothing for a name not looked up

@@ -22,6 +22,7 @@ class UserHandlers extends \OWA\Core\Observer {
             'base.reset_password'   => 'base.usersResetPassword',
             'base.set_password'     => 'base.usersSetPassword',
             'base.new_user_account' => 'base.usersNewAccount',
+            'base.email_address_changed' => 'base.usersEmailChanged',
         ];
 
         $action = $actions[ $event->getEventType() ] ?? null;

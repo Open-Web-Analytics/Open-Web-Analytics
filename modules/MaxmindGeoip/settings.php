@@ -83,8 +83,7 @@ return [
             'type'        => 'text',
             'label'       => \OWA\Core\CoreAPI::t( 'Licence Key' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'The MaxMind licence key a GeoLite2 database is downloaded with. '
-              . 'A MaxMind account, a key and the databases are free.' ),
+                \OWA\Core\CoreAPI::t( 'The MaxMind licence key a GeoLite2 database is downloaded with.' ),
         ],
     ],
 ];

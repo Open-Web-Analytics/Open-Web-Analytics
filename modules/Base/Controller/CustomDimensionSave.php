@@ -52,6 +52,10 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
          * registrar produces is already written for a person to read -- the
          * name pattern, the duplicate, the budget, the Property with no cube.
          *
+         * refusalFor() measures nothing: its budget is the outer cap or a
+         * capacity already measured. The measured budget is register()'s, in
+         * action(), which reports a refusal on the form the same way.
+         *
          * Registered as a FAILING 'required' on the field it is about, because
          * that is the framework's one way to carry a message to the form. The
          * field genuinely is invalid; this says why.
@@ -98,26 +102,18 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
             ],
         ] );
 
-        $this->set( 'propertyId', $property_id );
-        $this->setRedirectAction( 'base.customDimensions' );
-
         if ( ! $result['ok'] ) {
 
-            /*
-             * validate() asked the same question and was satisfied, so getting
-             * here means the answer changed in between -- another registration
-             * taking the last of the budget, or a cube that grew. Rare, and
-             * survivable: nothing was written.
-             */
-            \OWA\Core\CoreAPI::notice( sprintf(
-                'Registering %s was refused: %s',
-                $this->getParam( 'dimensionKey' ), $result['error'] ) );
+            // register() measures the budget; its refusal goes back to the form
+            // as a failed validation does.
+            $this->set( 'validation_errors', [ 'dimensionKey' => $result['error'] ] );
+            $this->errorAction();
 
-            $this->setStatusCode( 3200 );
-
-            return;
+            return $this->data;
         }
 
+        $this->set( 'propertyId', $property_id );
+        $this->setRedirectAction( 'base.customDimensions' );
         $this->setStatusCode( 3210 );
     }
 }

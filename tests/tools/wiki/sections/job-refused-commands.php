@@ -4,14 +4,12 @@
  * Service::NEVER_SCHEDULE.
  */
 
-require_once __DIR__ . '/../lib/modules.php'; // owa_wiki_cell()
-
 return static function () {
 
-    $out = "| Command | Why it is refused |\n|---|---|\n";
+    $out = "| Command |\n|---|\n";
 
-    foreach ( \OWA\Module\Base\Classes\Service::NEVER_SCHEDULE as $command => $why ) {
-        $out .= sprintf( "| `%s` | %s |\n", $command, owa_wiki_cell( $why ) );
+    foreach ( array_keys( \OWA\Module\Base\Classes\Service::NEVER_SCHEDULE ) as $command ) {
+        $out .= sprintf( "| `%s` |\n", $command );
     }
 
     return $out;

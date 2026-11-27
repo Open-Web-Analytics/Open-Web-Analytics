@@ -412,7 +412,7 @@ return [
              */
             'elementAnchor' => [ 'column' => 'element_anchor', 'label' => 'Element Anchor',
                 'family' => 'event', 'data_type' => 'integer', 'internal' => true,
-                'description' => 'The clicked element, as a hash of its place in the page. The heatmap finds the element by it.' ],
+                'description' => 'The clicked element, as a hash of its place in the page.' ],
             'anchorX' => [ 'column' => 'anchor_x', 'label' => 'Anchor X',
                 'family' => 'event', 'data_type' => 'integer', 'internal' => true,
                 'description' => 'How far across the clicked element the click landed, in thousandths of its width.' ],

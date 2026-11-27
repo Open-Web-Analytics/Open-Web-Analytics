@@ -76,8 +76,8 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Anonymize IP Addresses' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Anonymizes the IP addresses of visitors by removing the last octet '
-                . 'from their IP address.' ),
+                \OWA\Core\CoreAPI::t( 'Stores visitors&rsquo; IP addresses with the last octet of an IPv4 address, or the last '
+                . '64 bits of an IPv6 address, set to zero.' ),
         ],
         'admin_notice_email' => [
             'config_constant' => 'OWA_ADMIN_NOTICE_EMAIL',
@@ -154,8 +154,8 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Whether the admins are e-mailed when an update installs. A failed update is always e-mailed.' ),
         ],
-        'auto_update_download_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DOWNLOAD_URL', 'default' => 'https://updates.openwebanalytics.com/download/', 'description' => 'Where every release download comes from: <this>/<version>/owa_<version>_packaged.tar, its .sig and SHA256SUMS. The default is OWA\'s update host, which redirects to GitHub. A release the listing chose keeps the listing\'s SHA-256 to check; one fetched by its version (cmd=core-install) is proved by its signature. Config-only, as auto_update_releases_url is.' ],
-        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://updates.openwebanalytics.com/releases', 'description' => 'The releases listing automatic updates choose from, in GitHub\'s format. The default is OWA\'s update host, which redirects to GitHub; each request adds from=<installed version>. Config-only: a web admin cannot change where the releases are chosen from; downloads come from auto_update_download_url.' ],
+        'auto_update_download_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DOWNLOAD_URL', 'default' => 'https://updates.openwebanalytics.com/download/', 'description' => 'Where every release download comes from: <this>/<version>/owa_<version>_packaged.tar, its .sig and SHA256SUMS. The default is OWA\'s update host, which redirects to GitHub. A release chosen from the listing is checked against the listing\'s SHA-256; one installed by its version with cmd=core-install is checked against its signature.' ],
+        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://updates.openwebanalytics.com/releases', 'description' => 'The releases listing automatic updates choose from, in GitHub\'s format. The default is OWA\'s update host, which redirects to GitHub; each request adds from=<installed version>. Downloads come from auto_update_download_url.' ],
         'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found by looking for it when first needed. Never stored.' ],
         'app_passwords_enabled' => [
             'default'  => true,
@@ -205,7 +205,7 @@ return [
         'cookie_persistence' => [ 'config_constant' => 'OWA_COOKIE_PERSISTENCE', 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ],
         // A Property's last cube build: partition, built_at and milliseconds (Cube\Builder::recordBuild()). No screen edits it.
         'cube_last_build' => [ 'default' => [], 'storable' => true, 'internal' => true, 'scopes' => [ 'property' ] ],
-        'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
+        'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube partition-rotate keeps in daily partitions. Default 7.' ],
         'data_dir' => [ 'description' => 'The directory OWA keeps its own files in: logs and the file event queue (logs/, the one folder the web server writes), downloads for automatic updates, GeoIP data, and overrides of conf/ files with the user-agent patterns (conf/). Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [
             'default'  => 90,
@@ -306,8 +306,8 @@ return [
             'scopes'   => [ 'install' ],
             'description' =>
                 'The file names a web server serves for a directory, as a list or separated by commas. A page '
-                . 'path whose last segment is one of them, in any case, is recorded without it, so '
-                . '/store/index.html and /store are one page. Applies to events recorded after the change; '
+                . 'path whose last segment is one of them, in any case, is recorded without it: '
+                . '/store/index.html and /store are counted as one page. Applies to events recorded after the change; '
                 . 'paths already stored keep theirs.',
         ],
         'disableAllEndpoints' => [ 'config_constant' => 'OWA_DISABLE_ALL_ENDPOINTS', 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ],
@@ -372,7 +372,7 @@ return [
          * custom user properties now, so it moves to the one
          * identity field left in the release vocabulary -- see gateUserId().
          */
-        'log_visitor_pii' => [ 'config_constant' => 'OWA_LOG_VISITOR_PII', 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ],
+        'log_visitor_pii' => [ 'config_constant' => 'OWA_LOG_VISITOR_PII', 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user id set with setUserId(), the user_name and user_email user properties set with setUserProperty(), and the same values sent by a 1.x tracker. Off removes them as a beacon arrives, and from events migrated from 1.x.' ],
         'logo_image_path' => [ 'config_constant' => 'OWA_LOGO_IMAGE_PATH', 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ],
         'mailer-from' => [ 'config_constant' => 'OWA_MAILER_FROM', 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ],
         'mailer-fromName' => [ 'config_constant' => 'OWA_MAILER_FROM_NAME', 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ],
@@ -693,9 +693,8 @@ return [
             'max'      => 400,
             'label'    => \OWA\Core\CoreAPI::t( 'Visitor Cookie Lifetime (days)' ),
             'description' => \OWA\Core\CoreAPI::t( 'How long the visitor cookie lasts after a visitor&rsquo;s last visit. '
-                . '<strong>0 ends it when the browser closes</strong>: every browser session is then a new '
-                . 'visitor, so returning visitors and attribution across visits are mostly lost. At most 400, '
-                . 'the longest a browser keeps a cookie.' ),
+                . '<strong>0 ends it when the browser closes</strong>, and each browser session then counts as a '
+                . 'new visitor. At most 400.' ),
         ],
         'tracker_session_cookie_days' => [
             'default'  => 364,
@@ -727,8 +726,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Honor Privacy Signals' ),
             'description' => \OWA\Core\CoreAPI::t( 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
-                . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other. '
-                . 'In some jurisdictions honoring Global Privacy Control is a legal requirement.' ),
+                . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other.' ),
         ],
         // A fact about the data, not a preference: the installation's
         // content-derived dimension ids are still 32-bit crc32 values. Set by

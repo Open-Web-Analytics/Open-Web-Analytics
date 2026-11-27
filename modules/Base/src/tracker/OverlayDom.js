@@ -93,7 +93,8 @@ function control( id, label, attrs ) {
 
 /**
  * GETs JSON from url and passes it to onData. Only a 2xx answer that parses
- * is passed on; anything else is dropped.
+ * is passed on; for anything else -- another status, a body that is not JSON,
+ * a refused or failed request -- onError is called, when given.
  *
  * fetch() asks for JSON and gets JSON: there is no JSONP to fall into. No
  * cookies are sent -- the credential is in the query string -- so a
@@ -101,9 +102,18 @@ function control( id, label, attrs ) {
  *
  * @param {string}   url
  * @param {function} onData
+ * @param {function} [onError]
  * @return {Promise}
  */
-function getJson( url, onData ) {
+function getJson( url, onData, onError ) {
+
+    var failed = function () {
+
+        if ( typeof onError === 'function' ) {
+
+            onError();
+        }
+    };
 
     return Promise.resolve()
         .then( function () {
@@ -119,8 +129,12 @@ function getJson( url, onData ) {
             if ( data ) {
 
                 onData( data );
+
+            } else {
+
+                failed();
             }
-        } )
+        }, failed )
         .catch( function () {} );
 }
 

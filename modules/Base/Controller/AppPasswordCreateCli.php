@@ -20,7 +20,7 @@ class AppPasswordCreateCli extends AppPasswordsCli {
             'description' => 'Makes an application password for a user and prints it. It is shown once and cannot be retrieved later.',
             'arguments'   => [
                 'user=<user id>'   => 'Required. The user the password authenticates as.',
-                'name=<name>'      => 'Required. What will use it, so it can be told apart from the user\'s others.',
+                'name=<name>'      => 'Required. A name for what will use it, shown in the user\'s list of application passwords.',
                 'scope=read|full'  => 'read allows GET and HEAD requests only; full allows everything the user\'s role can do. Defaults to read.',
             ],
         ];

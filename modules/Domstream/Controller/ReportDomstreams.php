@@ -259,46 +259,25 @@ class ReportDomstreams extends \OWA\Core\ReportController {
     /**
      * The Play cell's data: what the grid's overlayLink formatter needs.
      *
+     * `launch` is the player launcher (PlayerLauncher), which mints the
+     * player's token when Play is chosen and opens the page. `url` is the page
+     * it opens, '' when it is not on the Profile's domain or a subdomain of it:
+     * no Play link then.
+     *
      * @param  Row $r a row of listRecordings()
-     * @return array{overlay: string, url: string, width: int, height: int, label: string} url '' for no Play link
+     * @return array{launch: string, url: string, width: int, height: int, label: string}
      */
     private function playerPayload( array $r ) {
 
         $template = new \OWA\Core\Template();
 
-        $api_url = $template->makeOverlayApiLink( [
-            'recording_id' => (string) $r['recording_id'],
-            'siteId'       => (string) $r['site_id'],
-            'module'       => 'domstream',
-            'version'      => 'v1',
-            'do'           => 'domstreams',
-        ], 'recording_id' );
-
-        $url = (string) $r['page_location'];
-
-        if ( strpos( $url, '#' ) !== false ) {
-
-            $url = explode( '#', $url )[0];
-        }
-
-        /*
-         * Played by opening the page it was recorded on, so only a web page on
-         * the Profile's domain or a subdomain of it is offered: the player's
-         * data link travels in that page's fragment. No URL, no Play link
-         * (OWA.dataGrid's overlayLink).
-         */
-        if ( \OWA\Module\Base\Classes\ProfileDomains::originOf( $url,
-                \OWA\Module\Base\Classes\ProfileDomains::of( [ (string) $r['site_id'] ] ) ) === '' ) {
-
-            $url = '';
-        }
-
         return [
-            'overlay' => trim( base64_encode( $template->makeParamString( [
-                'action'  => 'loadPlayer',
-                'api_url' => $api_url,
-            ], true, 'json' ) ), "\0" ),
-            'url'    => $url,
+            'launch' => $template->makeLink( [
+                'do'           => 'domstream.playerLauncher',
+                'siteId'       => (string) $r['site_id'],
+                'recording_id' => (string) $r['recording_id'],
+            ] ),
+            'url'    => PlayerLauncher::playableUrl( (string) $r['page_location'], (string) $r['site_id'] ),
             'width'  => (int) $r['viewport_w'],
             'height' => (int) $r['viewport_h'],
             'label'  => \OWA\Core\CoreAPI::t( 'Play' ),
