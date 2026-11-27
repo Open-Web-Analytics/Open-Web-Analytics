@@ -158,9 +158,11 @@ class User extends \OWA\Core\Entity {
      */
     public static function passwordTooLongMessage( bool $translated = true ): string {
 
-        $text = 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.';
+        $text = $translated
+            ? \OWA\Core\CoreAPI::t( 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.' )
+            : 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.';
 
-        return sprintf( $translated ? \OWA\Core\CoreAPI::t( $text ) : $text, self::MAX_PASSWORD_BYTES );
+        return sprintf( $text, self::MAX_PASSWORD_BYTES );
     }
 
     /** A temp passkey that sets a password until $ttl seconds from now. */
