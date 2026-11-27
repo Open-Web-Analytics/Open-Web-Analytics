@@ -4,7 +4,7 @@
  *
  *   php tests/tools/wiki/generate.php <section>      print one section
  *   php tests/tools/wiki/generate.php --list         list the sections
- *   php tests/tools/wiki/generate.php --wiki <dir>   rewrite every marked section in <dir>/*.md
+ *   php tests/tools/wiki/generate.php --wiki <dir>   rewrite every marked section in the .md pages of <dir> and its folders
  *   php tests/tools/wiki/generate.php --check <dir>  exit 1 if --wiki would change anything
  *
  * A page marks what is generated with a named pair:
@@ -227,7 +227,10 @@ try {
         $cache   = [];
         $changed = [];
 
-        foreach ( glob( $dir . '/*.md' ) as $path ) {
+        // Pages at the wiki's root and one folder down (v2/), whose _Sidebar.md applies to that folder's pages.
+        $paths = array_merge( glob( $dir . '/*.md' ) ?: [], glob( $dir . '/*/*.md' ) ?: [] );
+
+        foreach ( $paths as $path ) {
 
             $page = file_get_contents( $path );
             $new  = owa_wiki_splice( $page, function ( $name ) use ( &$cache ) {
@@ -236,7 +239,7 @@ try {
 
             if ( $new !== $page ) {
 
-                $changed[] = basename( $path );
+                $changed[] = substr( $path, strlen( rtrim( $dir, '/' ) ) + 1 );
 
                 if ( $arg === '--wiki' ) {
                     file_put_contents( $path, $new );
