@@ -66,8 +66,7 @@ const DEFAULTS = {
      */
     domstreamMaxSamples: 200,
     /**
-     * Maximum serialised size of a chunk, in characters, kept under a beacon's
-     * limit.
+     * Maximum serialised size of a chunk, in characters.
      * A chunk is sent early when it reaches this.
      *
      * @option

@@ -491,20 +491,6 @@ class Module extends \OWA\Core\Module {
     public function _registerEventHandlers() {
 
         /*
-         * Notification handler.
-         *
-         * announce_visitors and notice_email are per-Profile now, and this
-         * runs at module-registration time -- there is no event and no site
-         * here to ask about. So the handler registers unconditionally and
-         * makes the decision itself, where it has a site_id. The only test
-         * left that is knowable this early is the CLI one.
-         */
-        if ( ! defined('OWA_CLI') ) {
-
-            $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
-        }
-
-        /*
          * EVERY TRACKING EVENT BASE PROCESSES, as a namespace rather than a list.
          *
          * base.processRequest dispatches each event it processes under
@@ -530,7 +516,8 @@ class Module extends \OWA\Core\Module {
         // Install-level tag settings saved: every Profile's bundle may change.
         $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
-        $this->registerEventHandler(['base.set_password', 'base.reset_password', 'base.new_user_account'], 'userHandlers');
+        $this->registerEventHandler(['base.set_password', 'base.reset_password', 'base.new_user_account',
+            'base.email_address_changed'], 'userHandlers');
     }
 
     public function _registerEventProcessors() {

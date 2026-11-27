@@ -85,13 +85,15 @@ class MyProfileSave extends \OWA\Core\AdminController {
     }
 
     /**
-     * Whether this submission is trying to set a password at all.
+     * Whether this submission is trying to set a password at all: a new
+     * password typed. The current password alone is not one, since an
+     * address change asks for it too.
      *
      * @return bool
      */
     private function changingPassword() {
 
-        foreach ( [ 'current_password', 'new_password', 'new_password2' ] as $field ) {
+        foreach ( [ 'new_password', 'new_password2' ] as $field ) {
 
             if ( (string) $this->getParam( $field ) !== '' ) {
 
@@ -117,6 +119,9 @@ class MyProfileSave extends \OWA\Core\AdminController {
         }
 
         $entity->set( 'real_name', trim( (string) $this->getParam( 'real_name' ) ) );
+
+        // The address the account had, when this save changes it.
+        $old_email = null;
 
         /*
          * The address is only writable with edit_own_email.
@@ -155,13 +160,32 @@ class MyProfileSave extends \OWA\Core\AdminController {
                     return $this->refuse( 3009 );
                 }
 
+                /*
+                 * The address is where password resets are sent, so changing
+                 * it takes the current password, as a password change does:
+                 * a borrowed session could otherwise move the account's
+                 * recovery to an address of its own.
+                 */
+                $error = $this->currentPasswordProblem( $user_id );
+
+                if ( $error !== 0 ) {
+
+                    return $this->refuse( $error );
+                }
+
                 $entity->set( 'email_address', $submitted_email );
+                $old_email = $current_email;
             }
         }
 
         $entity->set( 'last_update_date', time() );
 
         $entity->update();
+
+        if ( $old_email !== null ) {
+
+            $this->announceEmailChange( $user_id, $old_email, (string) $entity->get( 'email_address' ) );
+        }
 
         if ( $this->changingPassword() ) {
 
@@ -221,12 +245,11 @@ class MyProfileSave extends \OWA\Core\AdminController {
      */
     private function changePassword( $entity, $user_id ) {
 
-        $current = (string) $this->getParam( 'current_password' );
+        $error = $this->currentPasswordProblem( $user_id );
 
-        // The check sign-in makes, a password 1.x stored included.
-        if ( ! \OWA\Core\Auth::get_instance()->isAccountPassword( $user_id, $current ) ) {
+        if ( $error !== 0 ) {
 
-            return 3236;
+            return $error;
         }
 
         /*
@@ -246,6 +269,67 @@ class MyProfileSave extends \OWA\Core\AdminController {
         }
 
         return 0;
+    }
+
+    /**
+     * Why the posted current password does not confirm this account: 3230
+     * when none was typed, 3236 when it is not the account's password.
+     *
+     * @param  string $user_id
+     * @return int a messages.php code, or 0 when it is the account's password
+     */
+    private function currentPasswordProblem( $user_id ) {
+
+        $current = (string) $this->getParam( 'current_password' );
+
+        if ( $current === '' ) {
+
+            return 3230;
+        }
+
+        // The check sign-in makes, a password 1.x stored included.
+        if ( ! \OWA\Core\Auth::get_instance()->isAccountPassword( $user_id, $current ) ) {
+
+            return 3236;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Mail the address the account had: its user name, the new address, when
+     * and from which client address (base.email_address_changed, sent by
+     * UserHandlers). A mail that is not sent is logged; the change stands.
+     *
+     * @param  string $user_id
+     * @param  string $old_email
+     * @param  string $new_email
+     * @return void
+     */
+    private function announceEmailChange( $user_id, $old_email, $new_email ) {
+
+        if ( $old_email === '' ) {
+
+            return;
+        }
+
+        $ed    = \OWA\Core\CoreAPI::getEventDispatch();
+        $event = $ed->makeEvent( 'base.email_address_changed' );
+        $event->setProperties( [
+            'user_id'           => (string) $user_id,
+            'old_email_address' => $old_email,
+            'new_email_address' => $new_email,
+            'changed_at'        => time(),
+            'ip'                => \OWA\Core\ClientAddress::fromRequest(),
+        ] );
+        $ed->notify( $event );
+
+        if ( $event->get( 'mail_sent' ) !== true ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                'The email address of user %s was changed, and the mail telling its previous address was not sent.',
+                $user_id ) );
+        }
     }
 
     /**

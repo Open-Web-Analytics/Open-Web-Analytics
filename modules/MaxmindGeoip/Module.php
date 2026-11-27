@@ -97,8 +97,7 @@ class Module extends \OWA\Core\Module {
             'refresh-geoip-db', 'geoip-update-db',
             \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), [ 'scheduled' => 1 ],
             'Checks whether MaxMind have published a newer GeoLite2 database than the local copy, and downloads '
-          . 'it if they have, or if there is no local copy. The check does not count against the MaxMind '
-          . 'account\'s download limit. Does nothing until a MaxMind licence key is set.' );
+          . 'it if they have, or if there is no local copy. Does nothing until a MaxMind licence key is set.' );
     }
 
     public function registerActions() {

@@ -146,6 +146,112 @@ final class CustomDimensionScreenTest extends TestCase
         $this->assertContains( 'propertyId', $this->validatedNames( $controller ) );
     }
 
+    /** The capacities Dimensions has measured in this request: property id => count. */
+    private function measured(): array
+    {
+        return (array) ( new \ReflectionProperty( Dimensions::class, 'capacity' ) )->getValue();
+    }
+
+    /** Constructing the save registers no validation, so nothing asks the registrar. */
+    public function testConstructingTheSaveMeasuresNothing(): void
+    {
+        Dimensions::forgetCapacity();
+
+        $controller = new \OWA\Module\Base\Controller\CustomDimensionSave( [
+            'propertyId' => (string) self::PROPERTY_WITH_CUBE, 'dimensionKey' => 'plan', 'scope' => 'event',
+        ] );
+
+        $this->assertNull( ( new \ReflectionProperty( \OWA\Core\Controller::class, 'v' ) )->getValue( $controller ) );
+        $this->assertSame( [], $this->measured() );
+    }
+
+    /** The pre-check's budget: a capacity already measured, else the outer cap. */
+    public function testTheKnownCapacityIsTheMeasuredOneElseTheCap(): void
+    {
+        $capacity = new \ReflectionProperty( Dimensions::class, 'capacity' );
+        $was      = $capacity->getValue();
+
+        try {
+            Dimensions::forgetCapacity();
+
+            $this->assertSame( Dimensions::MAX_PER_PROPERTY, Dimensions::knownCapacityFor( self::PROPERTY ) );
+            $this->assertSame( [], $this->measured(), 'knownCapacityFor() measured' );
+
+            $capacity->setValue( null, [ (string) self::PROPERTY => 3 ] );
+
+            $this->assertSame( 3, Dimensions::knownCapacityFor( self::PROPERTY ) );
+        } finally {
+            $capacity->setValue( null, $was );
+        }
+    }
+
+    /** validate() runs the registrar's rules without measuring the cube. */
+    public function testValidatingTheSaveMeasuresNothing(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the rules are asked of a cube that exists' );
+        }
+
+        $property = self::PROPERTY_WITH_CUBE;
+
+        $this->assertTrue( Cubes::create( $property ), 'creating the fixture cube failed' );
+        Cubes::forgetExistence();
+        Dimensions::forgetCapacity();
+
+        try {
+            $controller = new \OWA\Module\Base\Controller\CustomDimensionSave(
+                [ 'propertyId' => (string) $property, 'dimensionKey' => 'plan', 'scope' => 'event' ] );
+
+            $controller->validate();
+
+            $this->assertSame( '', $this->validationMessages( $controller ) );
+            $this->assertSame( [], $this->measured(), 'validate() measured the cube' );
+        } finally {
+            \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s', Cubes::tableFor( $property ) ) );
+            Cubes::forgetExistence();
+        }
+    }
+
+    /**
+     * A refusal from the measured budget, found by register() in action(),
+     * comes back on the register screen with its reason and nothing written.
+     */
+    public function testARefusalFromTheMeasuredBudgetComesBackOnTheForm(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'register() reads the cube and the registry' );
+        }
+
+        $property = self::PROPERTY_WITH_CUBE;
+        $capacity = new \ReflectionProperty( Dimensions::class, 'capacity' );
+        $was      = $capacity->getValue();
+
+        $this->assertTrue( Cubes::create( $property ), 'creating the fixture cube failed' );
+        Cubes::forgetExistence();
+
+        try {
+            // What this server takes, as capacityFor() measured it: none.
+            $capacity->setValue( null, [ (string) $property => 0 ] );
+
+            $controller = new \OWA\Module\Base\Controller\CustomDimensionSave( [
+                'propertyId' => (string) $property, 'dimensionKey' => 'plan',
+                'scope' => 'event', 'dataType' => 'string', 'label' => 'Plan',
+            ] );
+
+            $data = (array) $controller->action();
+
+            $this->assertSame( 'base.customDimensionEdit', $data['subview'] ?? null );
+            $this->assertStringContainsString( 'room for 0', (string) ( $data['validation_errors']['dimensionKey'] ?? '' ) );
+            $this->assertNotSame( 'redirect', $data['view_method'] ?? null );
+            $this->assertSame( 'plan', $data['submitted']['dimensionKey'] ?? null );
+            $this->assertSame( [], Dimensions::forProperty( $property ), 'a refused registration was written' );
+        } finally {
+            $capacity->setValue( null, $was );
+            \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s', Cubes::tableFor( $property ) ) );
+            Cubes::forgetExistence();
+        }
+    }
+
     /**
      * A REFUSAL ARRIVES IN THE REGISTRAR'S OWN WORDS.
      *

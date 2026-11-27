@@ -51,6 +51,7 @@ final class SpamPageOriginRulesTest extends TestCase
         $this->assertSame('blog.example.com', Hosts::of('https://blog.example.com/'));
         $this->assertSame('', Hosts::of(''));
         $this->assertSame('', Hosts::of('/relative/only'));
+        $this->assertSame('www.com', Hosts::of('https://www.com/'), 'www. before a single label stays');
     }
 
     public function testAProfilesHostIsItsDomain(): void

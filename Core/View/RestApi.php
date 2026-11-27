@@ -171,50 +171,14 @@ class RestApi extends \OWA\Core\View {
     }
     
     /**
-     * The host without a leading `www.`, when what is left is still a domain
-     * of two labels or more: `www.example.com` is `example.com`; `www.com`
-     * stays as it is.
-     *
-     * @param  string $host
-     * @return string
-     */
-    private static function withoutWww( $host ) {
-
-        $rest = substr( $host, 4 );
-
-        return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
-    }
-
-    /**
-     * An origin's port: the one it names, else its scheme's default.
-     *
-     * @param  string $origin
-     * @return int
-     */
-    private static function originPort( $origin ) {
-
-        $port = parse_url( $origin, PHP_URL_PORT );
-
-        if ( $port ) {
-
-            return (int) $port;
-        }
-
-        return strtolower( (string) parse_url( $origin, PHP_URL_SCHEME ) ) === 'https' ? 443 : 80;
-    }
-
-    /**
      * Decides whether an Origin belongs to one of this installation's sites.
      *
-     * Matching is on **host**, not on the stored string. Sites are commonly
-     * stored with an `http://` scheme while being served over https, so a
-     * browser sends an `https://` Origin and
-     * comparing the stored value verbatim would refuse exactly the requests
-     * this is for. Hosts are compared in full and case-insensitively; a
-     * prefix or suffix match is what lets `evil-example.com` pass as
-     * `example.com`, and a subdomain is a separate origin, not a child.
-     * The one exception is `www.`: `www.example.com` and `example.com` are
-     * one site, whichever of the two the Profile names.
+     * The rule is the overlays' (ProfileDomains::originOf()): an http or https
+     * origin whose host is a live web Profile's domain or a subdomain of it.
+     * The heatmap launcher and the player open pages by the same rule, so a
+     * page an overlay opens on is answered here. Hosts are compared in full and
+     * case-insensitively, without a port and a leading `www.`; `evil-example.com`
+     * is not `example.com`.
      *
      * Pure: no request, no database, no headers. See tests/CorsOriginMatchTest.
      *
@@ -231,74 +195,45 @@ class RestApi extends \OWA\Core\View {
             return null;
         }
 
-        $originHost = parse_url( $origin, PHP_URL_HOST );
-        $scheme     = parse_url( $origin, PHP_URL_SCHEME );
+        $allowed = \OWA\Module\Base\Classes\ProfileDomains::originOf( $origin,
+            \OWA\Module\Base\Classes\ProfileDomains::ofSites( $sites ) );
 
-        // An Origin is a scheme and a host. Anything else -- 'null', a bare
-        // path, a javascript: URL -- is refused rather than coerced.
-        if ( ! $originHost || ! $scheme || ! in_array( strtolower( $scheme ), [ 'http', 'https' ], true ) ) {
+        // Echo what the browser actually sent, never the stored form.
+        return $allowed === '' ? null : $origin;
+    }
 
-            return null;
+    /**
+     * The CORS headers for a request's Origin: Vary: Origin always, and
+     * Access-Control-Allow-Origin for an allowed one (matchAllowedOrigin()).
+     *
+     * No Access-Control-Allow-Credentials. The overlays fetch with
+     * credentials omitted and authenticate with their token, and an
+     * application password travels in the Authorization header; nothing reads
+     * the API cross-origin with cookies.
+     *
+     * Pure. See tests/CorsOriginMatchTest.
+     *
+     * @param  mixed        $origin the request's Origin header as read
+     * @param  array<mixed> $sites  site rows as getSitesList() returns them
+     * @return list<string> header lines, in the order sent
+     */
+    public static function corsHeaders( $origin, array $sites ) {
+
+        // The response body and its CORS headers depend on the Origin, so a
+        // shared cache cannot serve one site's allowed-origin header to a
+        // request from another. Sent whether or not the Origin is allowed,
+        // because the refusal is origin-dependent too.
+        $headers = [ 'Vary: Origin' ];
+
+        // No Origin: not a cross-origin request.
+        $allowed = $origin ? self::matchAllowedOrigin( $origin, $sites ) : null;
+
+        if ( $allowed !== null ) {
+
+            $headers[] = 'Access-Control-Allow-Origin: ' . $allowed;
         }
 
-        foreach ( $sites as $site ) {
-
-            $domain = is_array( $site ) ? ( $site['domain'] ?? '' ) : '';
-
-            if ( ! is_string( $domain ) || $domain === '' ) {
-
-                continue;
-            }
-
-            /*
-             * Only WEB Profiles grant an origin.
-             *
-             * An app Profile is identified by a bundle id, not a host, and has
-             * no domain -- so it contributes nothing here and is skipped before
-             * its identifier can be parsed as one.
-             */
-            if ( \OWA\Module\Base\Entity\Site::streamTypeOf( $site ) !== \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
-
-                continue;
-            }
-
-            /*
-             * And only LIVE ones. An archived Profile has stopped observing, so
-             * its origin should stop being allowed with it.
-             */
-            if ( ! empty( $site['archived_date'] ) ) {
-
-                continue;
-            }
-
-            // A stored domain may carry a scheme or not. Without one parse_url
-            // reads the whole value as a path, so give it something to parse --
-            // and a value with no host at all ('owa-test-site' exists on a real
-            // install) still yields nothing and is skipped.
-            $candidate = strpos( $domain, '//' ) === false ? 'http://' . $domain : $domain;
-            $siteHost  = parse_url( $candidate, PHP_URL_HOST );
-
-            if ( ! $siteHost ) {
-
-                continue;
-            }
-
-            // A port stored with the domain is the only port of that site.
-            $sitePort = parse_url( $candidate, PHP_URL_PORT );
-
-            if ( $sitePort && $sitePort !== self::originPort( $origin ) ) {
-
-                continue;
-            }
-
-            if ( strcasecmp( self::withoutWww( $siteHost ), self::withoutWww( $originHost ) ) === 0 ) {
-
-                // Echo what the browser actually sent, never the stored form.
-                return $origin;
-            }
-        }
-
-        return null;
+        return $headers;
     }
 
     /**
@@ -306,33 +241,12 @@ class RestApi extends \OWA\Core\View {
      */
     public function addCorsHeaders() {
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
+        $origin = \OWA\Core\RequestOrigin::header();
 
-        // Announce that the response body and its CORS headers depend on the
-        // Origin, so a shared cache cannot serve one site's allowed-origin
-        // header to a request from another. Sent whether or not the Origin is
-        // allowed, because the refusal is origin-dependent too.
-        header( 'Vary: Origin', false );
+        foreach ( self::corsHeaders( $origin, $origin ? \OWA\Core\CoreAPI::getSitesList() : [] ) as $header ) {
 
-        // no Origin means this is not a cross-origin request.
-        if ( ! $HTTP_ORIGIN ) {
-
-            return;
+            // Vary is added to, not replaced.
+            header( $header, strpos( $header, 'Vary:' ) !== 0 );
         }
-
-        $allowed = self::matchAllowedOrigin( $HTTP_ORIGIN, \OWA\Core\CoreAPI::getSitesList() );
-
-        if ( ! $allowed ) {
-
-            // Send nothing. The browser refuses the response, which is the
-            // correct outcome for an origin this installation does not serve.
-            return;
-        }
-
-        header( 'Access-Control-Allow-Origin: ' . $allowed );
-
-        // needed to allow cookie content to become available to the DOM.
-        header( 'Access-Control-Allow-Credentials: true' );
     }
 }

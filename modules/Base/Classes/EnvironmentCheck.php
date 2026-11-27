@@ -145,7 +145,7 @@ class EnvironmentCheck {
                 : sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable so the installer can create owa-config.php, or '
                          . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.' ),
                            $relative ? \OWA\Core\CoreAPI::t( 'the directory owa-config.php goes in' ) : $config_dir ),
-            '`owa-config.php` exists and is readable, or its directory is writable so the installer can create it.' );
+            '`owa-config.php` exists and is readable, or its directory is writable.' );
 
         // The two directories a source checkout does not come with.
         $checks[] = self::check(

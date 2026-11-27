@@ -98,9 +98,6 @@ class Controller extends \OWA\Core\Base {
         // set request params
         $this->params = $params;
         
-        // set param validators
-        $this->validate();
-        
         // set the default view method
         $this->setViewMethod('delegate');
 
@@ -121,7 +118,8 @@ class Controller extends \OWA\Core\Base {
     
     
     /**
-     * Method used to set param validators by concrete class
+     * Registers the param validators. doAction() calls it once the capability
+     * and nonce checks have passed, so it runs only for an authorised caller.
      *
      * @return void
      */
@@ -237,7 +235,10 @@ class Controller extends \OWA\Core\Base {
                 }
             }
         }
-        
+
+        // set param validators
+        $this->validate();
+
         // TODO: These sets need to be removed and added to pre(), action() or post() methods
         // in various concrete controller classes as they screw up things when
         // redirecting from one controller to another.
@@ -422,7 +423,7 @@ class Controller extends \OWA\Core\Base {
                      * out.
                      */
                     if ( ! $needs_user ) {
-                        if ( ! $auth->refusedLegacyApiKey() ) {
+                        if ( ! $auth->refusedLegacyApiKey() && ! $auth->refusedCrossOriginCookies() ) {
                             $auth->deleteCredentials();
                         }
                         return true;

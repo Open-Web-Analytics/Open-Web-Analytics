@@ -690,54 +690,19 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * about, never which action to invoke or what to put in a credential.
      *
      * The overlay is reached in two hops. This link goes to the launcher on
-     * OWA's own origin, which resolves the path to a real page and redirects
-     * the browser there with an #owa_overlay fragment; the tracker on that page
-     * reads the fragment and fetches the clicks.
-     *
-     * The api_url is an ORDINARY dimensional query now -- eventCount grouped by
-     * where on the element and where on the page each click landed
-     * (OverlayLauncher::HEATMAP_DIMENSIONS), constrained on the page and to
-     * clicks -- so the token binds to `constraints`, a normal request
-     * parameter, rather than to a bespoke report's document_id.
+     * OWA's own origin, which opens the page at the path with the clicks of
+     * every query string of it (OverlayLauncher::openPage()); the tracker on
+     * that page reads the fragment and fetches the clicks. The launcher mints
+     * the data link's token when the link is followed, so a link is good
+     * however long the report has been open.
      */
     $owa_hm_path = (string) ( $owa_w['pagePath'] ?? '' );
 
     if ( $owa_hm_path !== '' ):
 
-        /*
-         * CLICKS ONLY, said as a constraint.
-         *
-         * This asked for `metrics=domClicks`, which no metric declares -- so the
-         * name never resolved and the heatmap's fetch could not run. The filter it
-         * wanted is an ordinary constraint on the event, and eventCount already
-         * counts rows: without it, grouping by clickX and clickY would fold every
-         * non-click row of the page into one bucket at NULL,NULL.
-         *
-         * Comma-separated, which is what parseConstraintsString() splits on. The
-         * path is escaped as a constraint value (a comma in it does not split
-         * the pair), then urlencoded for the link.
-         */
-        $owa_hm_constraints = 'pagePath==' . urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $owa_hm_path ) )
-            . ',eventName==click';
-
-        $owa_hm_api = $view->makeOverlayApiLink( [
-            'do'             => 'reports',
-            'module'         => 'base',
-            'version'        => 'v1',
-            'metrics'        => 'eventCount',
-            'dimensions'     => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
-            'constraints'    => $owa_hm_constraints,
-            'resultsPerPage' => 1000,
-            'format'         => 'json',
-        ], 'constraints' );
-
         $owa_hm_url = $view->makeLink( [
-            'do'             => 'base.overlayLauncher',
-            'pagePath'       => $owa_hm_path,
-            'overlay_params' => base64_encode( $view->makeParamString( [
-                'action'  => 'loadHeatmap',
-                'api_url' => $owa_hm_api,
-            ], false, 'json' ) ),
+            'do'       => 'base.overlayLauncher',
+            'pagePath' => $owa_hm_path,
         ], true );
 ?>
         <div class="relatedReports">

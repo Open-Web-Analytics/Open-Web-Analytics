@@ -799,12 +799,12 @@ final class TrackerBundleTest extends TestCase
         };
 
         try {
-            $base->tagSettingsSavedHandler($saved('base', ['announce_visitors']));
+            $base->tagSettingsSavedHandler($saved('base', ['anonymize_ips']));
             $base->tagSettingsSavedHandler($saved('domstream', ['tracker_clicks']));
             $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'),
                 'not a tag setting, or not that module\'s');
 
-            $base->tagSettingsSavedHandler($saved('base', ['announce_visitors', 'tracker_clicks']));
+            $base->tagSettingsSavedHandler($saved('base', ['anonymize_ips', 'tracker_clicks']));
             $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
         } finally {
             $this->dropScratchJobQueue($table);

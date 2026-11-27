@@ -1790,7 +1790,7 @@ namespace OWA\Module\Base\Classes;
 
              if ( $governing ) {
 
-                 $why = sprintf( 'it is set by %s in owa-config.php, which wins on every boot',
+                 $why = sprintf( 'it is set by %s in owa-config.php',
                      $governing );
 
              } elseif ( ! $this->isRegistered( $module, $key ) ) {
@@ -1799,7 +1799,7 @@ namespace OWA\Module\Base\Classes;
 
              } elseif ( ! self::isStorable( $this->registeredField( $module, $key ) ) ) {
 
-                 $why = 'it is not declared storable, so nothing would ever read the value';
+                 $why = 'it is not declared storable';
 
              } else {
 

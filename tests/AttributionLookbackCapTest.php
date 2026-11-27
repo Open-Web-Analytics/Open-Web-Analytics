@@ -27,6 +27,8 @@ final class AttributionLookbackCapTest extends TestCase
     /** @return string[] the messages a controller's validations produce */
     private function errors(\OWA\Core\Controller $c): array
     {
+        $c->validate();
+
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
 
         if (!$v) {

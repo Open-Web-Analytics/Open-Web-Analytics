@@ -423,7 +423,7 @@
         "callbacks": []
     },
     "is_new_session_start": {
-        "description": "Set on the one event that started a new session. OWA creates the session_start event from it.",
+        "description": "Set on the one event that started a new session.",
         "set_by": "client",
         "from": [
             "s_new"
@@ -438,7 +438,7 @@
         "note": "REQUEST scoped: rides exactly the one beacon that created the session, and is what SessionHandlers branches create-vs-update on."
     },
     "is_new_visitor_created": {
-        "description": "Set on the one event that created a new visitor. OWA creates the first_visit event from it.",
+        "description": "Set on the one event that created a new visitor.",
         "set_by": "client",
         "from": [
             "v_new"
@@ -791,7 +791,7 @@
         "note": "As anchor_x."
     },
     "element_anchor": {
-        "description": "The element the click landed on, as a hash of its path from the nearest ancestor with an id. The heatmap finds the element by it.",
+        "description": "The element the click landed on, as a hash of its path from the nearest ancestor with an id.",
         "set_by": "client",
         "from": [
             "el_a"
@@ -1161,7 +1161,7 @@
         "note": "granted or denied, as the page declared it at send. Per event because it can change mid-session; absent stays absent, because no consent recorded is not the same as consent denied."
     },
     "user_id": {
-        "description": "The site's own id for a logged-in visitor. Not stored when the install's log_visitor_pii setting is off.",
+        "description": "The site's own id for a logged-in visitor.",
         "set_by": "client",
         "from": [
             "u_id"
@@ -1172,10 +1172,8 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [
-            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::gateUserId"
-        ],
-        "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
+        "callbacks": [],
+        "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, so the only basis for joining a person's devices. Stored as the beacon sent it. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
         "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting. On a goal event, the currency of its value.",

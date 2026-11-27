@@ -7,8 +7,7 @@ require_once __DIR__ . '/DeclaresProbeSettings.php';
 
 /**
  * Settings that describe ONE observed thing live on that thing, so a box
- * watching two sites can anonymize, exclude office IPs and announce new
- * sessions per site.
+ * watching two sites can anonymize and exclude office IPs per site.
  *
  * Two seams are covered here. First, the store: getSiteSetting() reads the
  * scoped table, not owa_site.settings, so an edit made on the Profile screen
@@ -58,7 +57,7 @@ final class SettingTierMoveTest extends TestCase
             return;
         }
 
-        foreach ( [ $this->key, 'anonymize_ips', 'log_named_users' ] as $name ) {
+        foreach ( [ $this->key, 'anonymize_ips' ] as $name ) {
 
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', $name );
             \OWA\Core\CoreAPI::clearScopedSetting( 'property', $this->propertyId, 'base', $name );
@@ -292,106 +291,6 @@ final class SettingTierMoveTest extends TestCase
             'A Profile that turned anonymisation off still got a masked address.' );
     }
 
-    /**
-     * The one that could not be scoped in place.
-     *
-     * announce_visitors and notice_email are per-Profile, and handlers are
-     * registered at module-registration time, before there is a site to ask
-     * about. So the handler is registered whatever the install-wide value is
-     * (false by default, which is what every boot without a stored value sees).
-     */
-    public function testTheAnnouncementHandlerIsRegisteredWhateverTheInstallSays(): void
-    {
-        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
-        $classes  = [];
-
-        foreach ( $dispatch->listenersFor( 'base.new_session' ) as $id ) {
-
-            $listener  = $dispatch->listeners[ $id ] ?? null;
-            $classes[] = is_array( $listener ) && is_object( $listener[0] ) ? get_class( $listener[0] ) : '';
-        }
-
-        $this->assertContains( \OWA\Module\Base\Handler\NotifyHandlers::class, $classes,
-            'The handler is registered based on an install-wide read, so a per-Profile '
-            . 'value cannot take effect.' );
-    }
-
-    /** The handler decides, from the Profile the event names. */
-    public function testTheProfileDecidesWhetherASessionIsAnnounced(): void
-    {
-        $this->skipUnlessParented();
-
-        $s       = \OWA\Core\CoreAPI::serviceSingleton();
-        $action  = $s->getMapValue( 'actions', 'base.notifyNewSession' );
-        $install = [];
-
-        foreach ( [ 'announce_visitors', 'notice_email' ] as $name ) {
-            $install[ $name ] = \OWA\Core\CoreAPI::getSetting( 'base', $name );
-        }
-
-        $s->setMapValue( 'actions', 'base.notifyNewSession',
-            [ 'class_name' => RecordedAnnouncement::class, 'file' => __FILE__ ] );
-        RecordedAnnouncement::$heard = [];
-
-        $event = \OWA\Core\CoreAPI::getEventDispatch()->makeEvent( 'base.new_session' );
-        $event->set( 'site_id', $this->siteId );
-
-        try {
-            \OWA\Core\CoreAPI::setSetting( 'base', 'announce_visitors', false );
-            \OWA\Core\CoreAPI::setSetting( 'base', 'notice_email', '' );
-            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'announce_visitors', true );
-            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'notice_email', 'ops@owatest.example.com' );
-
-            ( new \OWA\Module\Base\Handler\NotifyHandlers() )->notify( $event );
-
-            $this->assertSame( [ $this->siteId ], RecordedAnnouncement::$heard,
-                'The Profile asked for announcements and the install-wide value refused them.' );
-
-            RecordedAnnouncement::$heard = [];
-            \OWA\Core\CoreAPI::setSetting( 'base', 'announce_visitors', true );
-            \OWA\Core\CoreAPI::setSetting( 'base', 'notice_email', 'ops@owatest.example.com' );
-            \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'announce_visitors', false );
-
-            ( new \OWA\Module\Base\Handler\NotifyHandlers() )->notify( $event );
-
-            $this->assertSame( [], RecordedAnnouncement::$heard,
-                'The Profile turned announcements off and the install-wide value sent one.' );
-        } finally {
-            $s->setMapValue( 'actions', 'base.notifyNewSession', $action );
-
-            foreach ( $install as $name => $value ) {
-                \OWA\Core\CoreAPI::setSetting( 'base', $name, $value );
-                \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', $name );
-            }
-        }
-    }
-
-    /**
-     * Same shape, different cause: logEvent() tested log_named_users before it
-     * had built the event, so $event->get() there would have been a fatal.
-     */
-    public function testTheNamedUserCheckRunsAfterTheEventExists(): void
-    {
-        $this->skipUnlessParented();
-
-        \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'log_named_users', false );
-
-        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( 'page_view' ) );
-
-        $cu  = \OWA\Core\CoreAPI::getCurrentUser();
-        $was = $cu->getUserData( 'user_id' );
-        $cu->setUserData( 'user_id', 'tier_probe_user' );
-
-        try {
-            // A raw array, as a beacon arrives: the check reads the site_id of the event built from it.
-            $this->assertFalse(
-                \OWA\Core\CoreAPI::logEvent( 'page_view', [ 'site_id' => $this->siteId ] ),
-                'A signed-in user was logged on a Profile that does not log named users.' );
-        } finally {
-            $cu->setUserData( 'user_id', $was );
-        }
-    }
-
     /** Excluding an IP is a per-Profile judgement about one office, not a box-wide one. */
     public function testTheExcludedIpListIsTheEventsProfiles(): void
     {
@@ -443,17 +342,5 @@ final class SettingTierMoveTest extends TestCase
 
             exec( 'rm -rf ' . escapeshellarg( $dir ) );
         }
-    }
-}
-
-/** Records the site of each announcement it is asked to send. */
-class RecordedAnnouncement extends \OWA\Core\Controller
-{
-    /** @var list<string> */
-    public static $heard = [];
-
-    public function action()
-    {
-        self::$heard[] = (string) $this->getParam( 'site' )->get( 'site_id' );
     }
 }

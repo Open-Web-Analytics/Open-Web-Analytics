@@ -85,6 +85,17 @@ $owa_minPassword  = (int) $view->min_password_length;
         </div>
 
         <div class="setting">
+            <label class="title" for="owa_myProfileCurrentPassword"><?php $view->out( \OWA\Core\CoreAPI::t( 'Current password' ) ); ?></label>
+            <div class="description" id="owa_myProfileCurrentPasswordHint"><?php $view->out( $owa_mayEditEmail
+                ? \OWA\Core\CoreAPI::t( 'Needed to change your email address or your password.' )
+                : \OWA\Core\CoreAPI::t( 'Needed to change your password.' ) ); ?></div>
+            <div class="field">
+                <input type="password" size="30" name="current_password" id="owa_myProfileCurrentPassword"
+                       autocomplete="current-password" aria-describedby="owa_myProfileCurrentPasswordHint">
+            </div>
+        </div>
+
+        <div class="setting">
             <div class="title" id="owa_myProfilePasswordTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Change password' ) ); ?></div>
             <div class="description" id="owa_myProfilePasswordHint"><?php $view->out( sprintf( \OWA\Core\CoreAPI::tn(
                 'Leave empty to keep your current password. At least %d character. Changing it signs you out.',
@@ -98,11 +109,9 @@ $owa_minPassword  = (int) $view->min_password_length;
                      * filling the new-password fields with the old one.
                      */
                 ?>
-                <?php // One title over three boxes: the group takes the title, each box its own name. ?>
+                <?php // One title over two boxes: the group takes the title, each box its own name. ?>
                 <div class="owa_passwordFields" role="group" aria-labelledby="owa_myProfilePasswordTitle"
                      aria-describedby="owa_myProfilePasswordHint">
-                    <input type="password" size="30" name="current_password"
-                           autocomplete="current-password" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Current password' ) ); ?>" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Current password' ) ); ?>">
                     <input type="password" size="30" name="new_password"
                            autocomplete="new-password" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'New password' ) ); ?>" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'New password' ) ); ?>">
                     <input type="password" size="30" name="new_password2"

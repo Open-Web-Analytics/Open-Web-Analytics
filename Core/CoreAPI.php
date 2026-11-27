@@ -2374,24 +2374,6 @@ class CoreAPI {
          */
         $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $event_type ) );
         
-        /*
-         * Named-user logging is a per-Profile decision, so this check runs AFTER the
-         * event is built: it needs a site_id, and before this point there is only
-         * $message, which may still be a raw array. Nothing is stored between the two
-         * points, so it is still an early bail.
-         */
-        // Check to see if named users should be logged
-        if ( \OWA\Core\CoreAPI::getSetting(
-                 'base', 'log_named_users', 'profile', $event->get('site_id') ) != true ) {
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-            $cu_user_id = $cu->getUserData('user_id');
-
-            if( ! empty( $cu_user_id ) ) {
-                \OWA\Core\CoreAPI::debug("Not logging named user.");
-                return false;
-            }
-        }
-        
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         
         // Tracking Event processing STAGE 1
@@ -2402,9 +2384,6 @@ class CoreAPI {
 
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
-
-        // Before anything is queued: log_visitor_pii off keeps the identity fields out of the intake.
-        \OWA\Module\Base\Classes\TrackingEventHelpers::gateVisitorPii( $event );
 
         // do not log if the do not log property is set on the event.
         if ($event->get('do_not_log')) {

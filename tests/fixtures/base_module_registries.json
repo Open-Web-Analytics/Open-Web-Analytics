@@ -72,9 +72,6 @@
         "base.moduleInstallCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\ModuleInstallCli"
         },
-        "base.notifyNewSession": {
-            "class_name": "OWA\\Module\\Base\\Controller\\NotifyNewSession"
-        },
         "base.optionsGeneral": {
             "class_name": "OWA\\Module\\Base\\Controller\\OptionsGeneral"
         },
@@ -392,6 +389,9 @@
         },
         "base.usersSetPassword": {
             "class_name": "OWA\\Module\\Base\\Controller\\UsersSetPassword"
+        },
+        "base.usersEmailChanged": {
+            "class_name": "OWA\\Module\\Base\\Controller\\UsersEmailChanged"
         }
     },
     "cli_commands": {
@@ -528,7 +528,7 @@
             "command": "partition-rotate",
             "schedule": "6 22 * * *",
             "params": [],
-            "description": "Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods so the tables stay within the server's open-file limit. Deletes nothing unless told to keep less history (raw_retention_months, and cube_retention_months per Property).",
+            "description": "Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods into larger partitions. Deletes nothing unless told to keep less history (raw_retention_months, and cube_retention_months per Property).",
             "module": "base",
             "source": "code",
             "while_updates_pending": false
@@ -540,7 +540,7 @@
             "params": {
                 "scheduled": 1
             },
-            "description": "Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue refused and the file queue kept. A minute with nothing waiting costs a few file checks.",
+            "description": "Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue refused and the file queue kept.",
             "module": "base",
             "source": "code",
             "while_updates_pending": false
@@ -584,7 +584,7 @@
             "command": "cube-rebuild",
             "schedule": "1,6,11,16,21,26,31,36,41,46,51,56 * * * *",
             "params": [],
-            "description": "Builds each Property's reporting cube from new events, so reports are at most a few minutes behind. Skips the days that have not changed.",
+            "description": "Builds each Property's reporting cube from new events, every 5 minutes. Skips the days that have not changed.",
             "module": "base",
             "source": "code",
             "while_updates_pending": false
@@ -594,7 +594,7 @@
             "command": "custom-dimension-apply",
             "schedule": "0,15,30,45 * * * *",
             "params": [],
-            "description": "Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one rebuilds the table, which is too slow for the request that registered it. With nothing pending it is one quick read.",
+            "description": "Adds the columns for newly registered custom dimensions to the reporting cubes.",
             "module": "base",
             "source": "code",
             "while_updates_pending": false
@@ -620,7 +620,6 @@
             "order": 1,
             "fieldsets": [
                 "base.tracking",
-                "base.announcements",
                 "base.reporting",
                 "base.restApi"
             ],
@@ -726,19 +725,7 @@
             "legend": "Privacy and exclusions",
             "settings": [
                 "anonymize_ips",
-                "excluded_ips",
-                "log_named_users"
-            ],
-            "module": "base"
-        },
-        "base.profileAnnouncements": {
-            "id": "base.profileAnnouncements",
-            "group": "profile_observation",
-            "order": 3,
-            "legend": "Visitor announcements",
-            "settings": [
-                "announce_visitors",
-                "notice_email"
+                "excluded_ips"
             ],
             "module": "base"
         },
@@ -867,20 +854,10 @@
             "settings": [
                 "spam_detection",
                 "spam_threshold",
-                "log_named_users",
                 "excluded_ips",
                 "anonymize_ips",
                 "query_string_filters",
                 "campaignUtmParams"
-            ],
-            "module": "base"
-        },
-        "base.announcements": {
-            "id": "base.announcements",
-            "legend": "Visitor Announcements",
-            "settings": [
-                "announce_visitors",
-                "notice_email"
             ],
             "module": "base"
         },

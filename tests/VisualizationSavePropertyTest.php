@@ -6,9 +6,8 @@ require_once __DIR__ . '/RestControllerTestCase.php';
 /**
  * VisualizationSave resolves the Property before it validates: an edit posted
  * with its siteId and no propertyId (a stale form, a direct post) is checked
- * against that Property, not refused for naming none.
- * Controller::__construct() runs validate() before a subclass constructor's
- * own work, so the resolution is validate()'s first step.
+ * against that Property, not refused for naming none. The resolution is
+ * validate()'s first step.
  */
 final class VisualizationSavePropertyTest extends RestControllerTestCase
 {
@@ -21,6 +20,8 @@ final class VisualizationSavePropertyTest extends RestControllerTestCase
             'stepEvent' => ['page_view'], 'stepMatch' => ['all'], 'stepName' => [''], 'stepCustomEvent' => [''],
             'stepConditionProperty' => [['page_path']], 'stepConditionOperator' => [['exact']], 'stepConditionValue' => [['/a']],
         ]);
+
+        $save->validate();
 
         $this->assertSame(\OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($site['site_id']), (string) $save->getParam('propertyId'));
 
