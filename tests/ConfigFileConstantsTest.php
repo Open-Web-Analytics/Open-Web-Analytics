@@ -110,7 +110,7 @@ final class ConfigFileConstantsTest extends TestCase
     /** A screen setting and a name OWA does not have get their own advice. */
     public function testASetWithNoConstantSaysWhatToDo(): void
     {
-        $problems = ConfigFile::problemsIn("<?php\n\$this->set('base', 'announce_visitors', true);\n"
+        $problems = ConfigFile::problemsIn("<?php\n\$this->set('base', 'anonymize_ips', true);\n"
             . "\$this->set('base', 'error_handler', 'development');\n");
 
         $text = ConfigFile::messages($problems, 'owa-config.php');

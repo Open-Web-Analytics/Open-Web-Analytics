@@ -111,7 +111,7 @@ final class BaseModuleRegistriesTest extends TestCase
         $this->assertSame(12, array_sum(array_map('count', $fixture['rest_routes']['base']['v1'])), 'REST routes');
         $this->assertCount(8, $fixture['jobs']);
         $this->assertCount(6, $fixture['admin_panels']);
-        $this->assertCount(21, $fixture['fieldsets']);
+        $this->assertCount(19, $fixture['fieldsets']);
         $this->assertCount(8, $fixture['navigation']['Reports']);
     }
 }

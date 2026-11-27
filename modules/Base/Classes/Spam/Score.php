@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Classes\Spam;
  * That is after the property stage
  * -- geolocation and the parsed agent are on the event -- and before anything is
  * written, in the request for a direct beacon and in the drain for a queued
- * one. The edge's exclusions (named users, excluded addresses, unknown sites)
+ * one. The edge's exclusions (excluded addresses, unknown sites)
  * run first, in logEvent(): they are decided by the request and configuration,
  * they keep what they refuse out of the queue, and what they refuse is not
  * spam, so it is not counted in owa_spam_block.

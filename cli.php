@@ -114,8 +114,8 @@ $owa = $owa ?? new owa( $config );
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-    // An admin with no user_id. A login name here would reach nonces,
-    // named-user logging and anything stored per user.
+    // An admin with no user_id. A login name here would reach nonces
+    // and anything stored per user.
     $owa->setCurrentUser('admin');
     // run controller or view and echo page content
     $s = \OWA\Core\CoreAPI::serviceSingleton();

@@ -21,8 +21,8 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        // Runs from the parent constructor (Core\Controller), so nothing here may
-        // assume a Property was named.
+        // Runs from Core\Controller::doAction() after the capability and nonce
+        // checks. Nothing here may assume a Property was named.
         $id       = (string) $this->getParam( 'propertyId' );
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 

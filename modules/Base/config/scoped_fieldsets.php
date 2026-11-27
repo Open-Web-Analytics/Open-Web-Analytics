@@ -35,14 +35,7 @@ return [
         'group'    => 'profile_observation',
         'order'    => 2,
         'legend'   => \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),
-        'settings' => [ 'anonymize_ips', 'excluded_ips', 'log_named_users' ],
-    ],
-    [
-        'id'       => 'base.profileAnnouncements',
-        'group'    => 'profile_observation',
-        'order'    => 3,
-        'legend'   => \OWA\Core\CoreAPI::t( 'Visitor announcements' ),
-        'settings' => [ 'announce_visitors', 'notice_email' ],
+        'settings' => [ 'anonymize_ips', 'excluded_ips' ],
     ],
 
     [

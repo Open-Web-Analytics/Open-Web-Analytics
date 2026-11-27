@@ -112,4 +112,29 @@ final class WikiDocsGeneratorTest extends TestCase
 
         $this->assertMatchesRegularExpression( '/^\|.*\|$/m', $md, "$name produced no table" );
     }
+
+    /** --check reads pages one folder down, as the v2/ pages are, and names each stale one by its path. */
+    public function testCheckReadsPagesInAFolder(): void
+    {
+        $dir = sys_get_temp_dir() . '/owa-wiki-check-' . bin2hex( random_bytes( 4 ) );
+        mkdir( $dir . '/v2', 0700, true );
+
+        $stale = "<!-- BEGIN GENERATED: cron-aliases -->\nstale\n<!-- END GENERATED: cron-aliases -->\n";
+        file_put_contents( $dir . '/Root.md', "No markers.\n" );
+        file_put_contents( $dir . '/v2/v2-Page.md', $stale );
+
+        try {
+            exec( sprintf( '%s %s --check %s 2>&1', escapeshellarg( PHP_BINARY ),
+                escapeshellarg( dirname( __DIR__ ) . '/tests/tools/wiki/generate.php' ), escapeshellarg( $dir ) ), $out, $rc );
+
+            $this->assertSame( 1, $rc, implode( "\n", $out ) );
+            $this->assertStringContainsString( 'v2/v2-Page.md', implode( "\n", $out ) );
+            $this->assertStringNotContainsString( 'Root.md', implode( "\n", $out ) );
+        } finally {
+            unlink( $dir . '/v2/v2-Page.md' );
+            unlink( $dir . '/Root.md' );
+            rmdir( $dir . '/v2' );
+            rmdir( $dir );
+        }
+    }
 }

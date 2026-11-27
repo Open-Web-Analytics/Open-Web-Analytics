@@ -358,16 +358,13 @@ final class ProfileSettingsScreenTest extends TestCase
     }
 
     /**
-     * The Profile settings the tracking path and the visitor announcement read
-     * at Profile scope, each with the control its declared type takes.
+     * The Profile settings the tracking path reads at Profile scope, each with
+     * the control its declared type takes.
      */
     private const OFFERED = [
-        'anonymize_ips'     => '<select name="owa_config[base.anonymize_ips]"',
-        'excluded_ips'      => '<input type="text" size="50" name="owa_config[base.excluded_ips]"',
-        'log_named_users'   => '<select name="owa_config[base.log_named_users]"',
-        'campaignKeys'      => '<input type="text" size="50" name="owa_config[base.campaignKeys]"',
-        'announce_visitors' => '<select name="owa_config[base.announce_visitors]"',
-        'notice_email'      => '<input type="text" size="50" name="owa_config[base.notice_email]"',
+        'anonymize_ips' => '<select name="owa_config[base.anonymize_ips]"',
+        'excluded_ips'  => '<input type="text" size="50" name="owa_config[base.excluded_ips]"',
+        'campaignKeys'  => '<input type="text" size="50" name="owa_config[base.campaignKeys]"',
     ];
 
     private function screenHtml( string $site_id = '' ): string
@@ -392,14 +389,16 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $this->assertStringContainsString( 'name="owa_config[base.query_string_filters]"', $html, 'base.query_string_filters is still offered' );
 
-        // Retired (domain_aliases, default_page), and default_page's install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
-        foreach ( [ 'domain_aliases', 'default_page', 'directory_index_pages' ] as $key ) {
+        // Retired (domain_aliases, default_page, log_named_users, announce_visitors, notice_email), and default_page's install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
+        foreach ( [ 'domain_aliases', 'default_page', 'directory_index_pages', 'log_named_users', 'announce_visitors', 'notice_email' ] as $key ) {
             $this->assertStringNotContainsString( '[base.' . $key . ']', $html, "base.$key is offered on the Profile" );
         }
 
-        foreach ( [ 'Page URLs', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ] as $legend ) {
+        foreach ( [ 'Page URLs', 'Campaign parameters', 'Privacy and exclusions' ] as $legend ) {
             $this->assertStringContainsString( '<legend>' . $legend . '</legend>', $html );
         }
+
+        $this->assertStringNotContainsString( 'Visitor announcements', $html );
     }
 
     /**
@@ -426,12 +425,9 @@ final class ProfileSettingsScreenTest extends TestCase
         $site_id = $this->aSiteId();
 
         $posted = [
-            'anonymize_ips'     => [ '1', true ],
-            'excluded_ips'      => [ '203.0.113.9, 198.51.100.7', '203.0.113.9, 198.51.100.7' ],
-            'log_named_users'   => [ '0', false ],
-            'campaignKeys'      => [ 'source=src, medium=channel', [ 'source' => 'src', 'medium' => 'channel' ] ],
-            'announce_visitors' => [ '1', true ],
-            'notice_email'      => [ 'owner@example.test', 'owner@example.test' ],
+            'anonymize_ips' => [ '1', true ],
+            'excluded_ips'  => [ '203.0.113.9, 198.51.100.7', '203.0.113.9, 198.51.100.7' ],
+            'campaignKeys'  => [ 'source=src, medium=channel', [ 'source' => 'src', 'medium' => 'channel' ] ],
         ];
 
         $this->holdProfile( $site_id );
@@ -463,7 +459,7 @@ final class ProfileSettingsScreenTest extends TestCase
         // Every switch off, and the text fields emptied as a person would.
         $c = new \OWA\Module\Base\Controller\SitesEditSettings( [
             'siteId' => $site_id,
-            'config' => [ 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ] ] );
+            'config' => [ 'base.excluded_ips' => '', 'base.campaignKeys' => '' ] ] );
         $c->action();
 
         foreach ( array_keys( $posted ) as $key ) {
