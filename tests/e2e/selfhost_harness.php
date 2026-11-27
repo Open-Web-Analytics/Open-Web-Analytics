@@ -441,7 +441,10 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
         . "// Added by tests/e2e/selfhost_harness.php -- keeps this run's queue and\n"
         . "// error log out of the live install's owa-data/logs/.\n"
         . "define('OWA_ASYNC_LOG_DIR', __DIR__ . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
-        . "define('OWA_ERROR_LOG_FILE', __DIR__ . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
+        . "define('OWA_ERROR_LOG_FILE', __DIR__ . '/' . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n"
+        . "// Every spec signs in from 127.0.0.1, and some fail on purpose: failed\n"
+        . "// sign-ins are not counted (Classes\\LoginThrottle; LoginThrottleTest covers it).\n"
+        . "define('OWA_LOGIN_THROTTLE_MAX_FAILURES', 0);\n";
 
     $close = strrpos($out, '?>');
     $out = $close === false ? $out . $override : substr($out, 0, $close) . $override . substr($out, $close);

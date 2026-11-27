@@ -108,7 +108,63 @@ final class LoginThrottleTest extends TestCase
     {
         $this->assertSame(5, LoginThrottle::MAX_FAILURES);
         $this->assertSame(900, LoginThrottle::WINDOW);
-        $this->assertSame(900, LoginThrottle::LOCKOUT);
+        $this->assertSame(5, LoginThrottle::maxFailures(), 'the setting\'s default');
+        $this->assertSame(900, LoginThrottle::window(), 'the setting\'s default');
+    }
+
+    public function testTheLimitsAreSetByConfigConstants(): void
+    {
+        $this->assertSame('OWA_LOGIN_THROTTLE_MAX_FAILURES',
+            \OWA\Module\Base\Classes\Settings::constantForSetting('base', 'login_throttle_max_failures'));
+        $this->assertSame('OWA_LOGIN_THROTTLE_WINDOW',
+            \OWA\Module\Base\Classes\Settings::constantForSetting('base', 'login_throttle_window'));
+    }
+
+    /** @param array<string, int> $settings */
+    private function withSettings(array $settings, callable $fn): void
+    {
+        $was = [];
+
+        foreach ($settings as $k => $v) {
+            $was[$k] = \OWA\Core\CoreAPI::getSetting('base', $k);
+            \OWA\Core\CoreAPI::setSetting('base', $k, $v);
+        }
+
+        try {
+            $fn();
+        } finally {
+            foreach ($was as $k => $v) {
+                \OWA\Core\CoreAPI::setSetting('base', $k, $v);
+            }
+        }
+    }
+
+    public function testARaisedLimitAndAShorterWindow(): void
+    {
+        $this->withSettings(['login_throttle_max_failures' => 7, 'login_throttle_window' => 60], function () {
+
+            $keys = LoginThrottle::keys('owa-test-raised', '198.51.100.50');
+            $t    = 1000000;
+
+            for ($i = 0; $i < 7; $i++) {
+                $this->assertTrue(LoginThrottle::attempt($keys, $t), "attempt $i");
+                LoginThrottle::failed($keys, $t);
+            }
+
+            $this->assertFalse(LoginThrottle::attempt($keys, $t + 59), 'the eighth, within 60 seconds of the last');
+            $this->assertTrue(LoginThrottle::attempt($keys, $t + 60), '60 seconds after the last');
+        });
+    }
+
+    public function testALimitOfZeroCountsAndRefusesNothing(): void
+    {
+        $this->withSettings(['login_throttle_max_failures' => 0], function () {
+
+            $this->failSignIns(6);
+
+            $this->assertSame([], LoginThrottle::$rows);
+            $this->assertTrue($this->auth()->authByInput(self::USER, 'the right password'));
+        });
     }
 
     public function testFourFailuresStillLetTheRightPasswordIn(): void

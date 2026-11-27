@@ -4,15 +4,17 @@ namespace OWA\Module\Base\Classes;
 /**
  * Failed sign-ins, counted per user name and per client address.
  *
- * MAX_FAILURES failures counted within WINDOW of the first refuse every
- * further sign-in by that name, or from that address, until LOCKOUT after
- * the last of them. A refused attempt is not checked and not counted. The
+ * maxFailures() failures counted within window() of the first refuse every
+ * further sign-in by that name, or from that address, until window() after
+ * the last of them: by default 5, and 15 minutes, set by
+ * OWA_LOGIN_THROTTLE_MAX_FAILURES and OWA_LOGIN_THROTTLE_WINDOW. A limit
+ * of 0 counts and refuses nothing. A refused attempt is not checked and not counted. The
  * refusal is the answer a wrong password gets. A successful sign-in, and a
  * password change, clear the name's count; the address's stays.
  *
  * The login form counts both (Core\Auth::authByInput()), and counts each
  * attempt BEFORE the password is checked (attempt()): attempts made at
- * once each see the others, so no more than MAX_FAILURES are checked. The
+ * once each see the others, so no more than maxFailures() are checked. The
  * outcome then settles it: failed() keeps it counted, succeeded() takes it
  * back. An application password counts its address only, once it has failed
  * (Core\Auth::authByAppPassword()).
@@ -22,14 +24,42 @@ namespace OWA\Module\Base\Classes;
  */
 final class LoginThrottle {
 
-    /** Failures that refuse further sign-ins. */
+    /** The default of login_throttle_max_failures: failures that refuse further sign-ins. */
     const MAX_FAILURES = 5;
 
-    /** How long after the first failure the next ones count with it. */
+    /**
+     * The default of login_throttle_window, in seconds: how long after the
+     * first failure the next ones count with it, and how long after the last
+     * sign-ins are refused.
+     */
     const WINDOW = 900; // 15 minutes
 
-    /** How long after the last failure sign-ins are refused. */
-    const LOCKOUT = 900; // 15 minutes
+    /**
+     * Failures that refuse further sign-ins (OWA_LOGIN_THROTTLE_MAX_FAILURES);
+     * 0 for no limit.
+     *
+     * @return int
+     */
+    public static function maxFailures() {
+
+        return max( 0, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'login_throttle_max_failures' ) );
+    }
+
+    /**
+     * The window, in seconds (OWA_LOGIN_THROTTLE_WINDOW).
+     *
+     * @return int
+     */
+    public static function window() {
+
+        return max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'login_throttle_window' ) );
+    }
+
+    /** @return bool whether anything is counted or refused */
+    private static function on() {
+
+        return self::$enabled && self::maxFailures() > 0;
+    }
 
     /**
      * False: nothing is counted or refused. The test suite's bootstrap turns
@@ -90,8 +120,8 @@ final class LoginThrottle {
      */
     public static function isLockedRow( array $row, $now ) {
 
-        return (int) ( $row['failures'] ?? 0 ) >= self::MAX_FAILURES
-            && (int) ( $row['last_failure_at'] ?? 0 ) > $now - self::LOCKOUT;
+        return (int) ( $row['failures'] ?? 0 ) >= self::maxFailures()
+            && (int) ( $row['last_failure_at'] ?? 0 ) > $now - self::window();
     }
 
     /**
@@ -104,7 +134,7 @@ final class LoginThrottle {
      */
     public static function isStaleRow( array $row, $now ) {
 
-        return (int) ( $row['first_failure_at'] ?? 0 ) <= $now - self::WINDOW && ! self::isLockedRow( $row, $now );
+        return (int) ( $row['first_failure_at'] ?? 0 ) <= $now - self::window() && ! self::isLockedRow( $row, $now );
     }
 
     /**
@@ -116,7 +146,7 @@ final class LoginThrottle {
      */
     public static function isLocked( array $keys, $now = null ) {
 
-        if ( ! self::$enabled || ! $keys ) {
+        if ( ! self::on() || ! $keys ) {
 
             return false;
         }
@@ -137,7 +167,7 @@ final class LoginThrottle {
     /**
      * Count a sign-in attempt against each of $keys before its password is
      * checked, and say whether it may be checked: false when any count, this
-     * attempt included, is over MAX_FAILURES. A refused attempt is taken back
+     * attempt included, is over maxFailures(). A refused attempt is taken back
      * at once. One that may be checked is settled by failed() or succeeded().
      *
      * The raise is one statement, so attempts made at the same moment each
@@ -149,7 +179,7 @@ final class LoginThrottle {
      */
     public static function attempt( array $keys, $now = null ) {
 
-        if ( ! self::$enabled || ! $keys ) {
+        if ( ! self::on() || ! $keys ) {
 
             return true;
         }
@@ -161,7 +191,7 @@ final class LoginThrottle {
 
         foreach ( self::read( $keys ) as $row ) {
 
-            if ( (int) ( $row['failures'] ?? 0 ) > self::MAX_FAILURES ) {
+            if ( (int) ( $row['failures'] ?? 0 ) > self::maxFailures() ) {
 
                 self::subtractOne( $keys );
 
@@ -182,7 +212,7 @@ final class LoginThrottle {
      */
     public static function failed( array $keys, $now = null ) {
 
-        if ( ! self::$enabled || ! $keys ) {
+        if ( ! self::on() || ! $keys ) {
 
             return;
         }
@@ -202,7 +232,7 @@ final class LoginThrottle {
 
         self::clear( [ $name_key ] );
 
-        if ( self::$enabled && $address_key !== '' ) {
+        if ( self::on() && $address_key !== '' ) {
 
             self::subtractOne( [ $address_key ] );
         }
@@ -218,7 +248,7 @@ final class LoginThrottle {
      */
     public static function recordFailure( array $keys, $now = null ) {
 
-        if ( ! self::$enabled || ! $keys ) {
+        if ( ! self::on() || ! $keys ) {
 
             return;
         }
@@ -253,7 +283,7 @@ final class LoginThrottle {
 
         \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
             'DELETE FROM %s WHERE first_failure_at <= ? AND (failures < ? OR last_failure_at <= ?)', self::table() ),
-            [ $now - self::WINDOW, self::MAX_FAILURES, $now - self::LOCKOUT ] );
+            [ $now - self::window(), self::maxFailures(), $now - self::window() ] );
     }
 
     /**
@@ -366,7 +396,7 @@ final class LoginThrottle {
 
         $keys = array_values( array_filter( $keys ) );
 
-        if ( ! self::$enabled || ! $keys ) {
+        if ( ! self::on() || ! $keys ) {
 
             return;
         }
