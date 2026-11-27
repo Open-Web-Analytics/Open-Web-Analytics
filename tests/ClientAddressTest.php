@@ -120,4 +120,18 @@ final class ClientAddressTest extends TestCase
             $this->assertStringStartsWith('OWA_TRUSTED_PROXIES ', $problem);
         }
     }
+
+    /** The one trust test, shared with Lib::isHttps(): private, reserved or listed. */
+    public function testAProxyIsPrivateOrListed(): void
+    {
+        $trusted = ['198.51.100.0/24', '2001:db8:1::/48'];
+
+        foreach (['127.0.0.1', '::1', '10.1.2.3', '172.16.0.1', '192.168.0.9', '198.51.100.7', '2001:db8:1::5', '127.0.0.1:8080'] as $proxy) {
+            $this->assertTrue(ClientAddress::isProxy($proxy, $trusted), $proxy);
+        }
+
+        foreach (['203.0.113.9', '2a00:1450:4001:80b::200e', '', 'proxy.example.test'] as $client) {
+            $this->assertFalse(ClientAddress::isProxy($client, $trusted), var_export($client, true));
+        }
+    }
 }
