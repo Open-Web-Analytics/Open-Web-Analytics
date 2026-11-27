@@ -4,7 +4,7 @@ namespace OWA\Module\Base\Update;
 /**
  * Delete the stored rows of the removed Hello example module: every row with
  * module 'hello', at every scope. The module is a page in the wiki
- * (v2-Writing-a-Module) and does not ship.
+ * (Writing-a-Module) and does not ship.
  *
  * The loader skips a module that is not on disk. The stored is_active and
  * schema_version still made cmd=instance-info list hello as active and up to

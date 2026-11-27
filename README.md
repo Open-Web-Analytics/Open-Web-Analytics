@@ -27,9 +27,9 @@ OWA 2.0 needs a 64-bit build of PHP 8.2 or later with the `pdo_mysql` (or
 `mysqli` built on mysqlnd), `mbstring` and `zlib` extensions, MySQL 8.0.21 or
 later or MariaDB 10.11 or later, and a cron entry for its scheduler: without it,
 events are recorded but reports stay empty. See the
-[technical requirements](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Technical-Requirements)
+[technical requirements](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Technical-Requirements)
 before you install, and the
-[installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Installation)
+[installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Installation)
 guide for the steps.
 
 ## Upgrading from 1.x
@@ -42,9 +42,9 @@ and [UPGRADING.md](UPGRADING.md).
 
 ## Documentation
 
-The wiki's [2.0 documentation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Home)
+The wiki's [2.0 documentation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Home)
 covers the server, the reports and the JavaScript tracker.
-[Changes from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Changes-from-1.x)
+[Changes from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Changes-from-1.x)
 lists what is different.
 
 Maintaining a third-party module, local template override, or custom theme? See
@@ -97,7 +97,7 @@ lower.
 
 ## Issues & Support
 
-Please read the [troubleshooting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Troubleshooting) guide before filing any issue or bug reports. Issue tickets without the necessary debug info will be closed automatically.
+Please read the [troubleshooting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) guide before filing any issue or bug reports. Issue tickets without the necessary debug info will be closed automatically.
 
 ## Development
 
@@ -114,7 +114,7 @@ To contribute to OWA Server:
 
    `vendor/` and the built `public/` asset tree (including the JS tracker) are not tracked in git — you must build them after cloning.
 
-See the [Development](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Development) and [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Testing) wiki pages for the full build process and test suites.
+See the [Development](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Development) and [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Testing) wiki pages for the full build process and test suites.
 
 
 ## Donate to this project
