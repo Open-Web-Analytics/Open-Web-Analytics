@@ -8,81 +8,12 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Guard against stored XSS in server-rendered admin templates.
  *
  * Admin and reporting templates render attacker-controllable, tracker-sourced
- * values (page URLs, page titles, visitor user_name/user_email) into HTML an
- * admin views -- notably into <a href="..."> attributes and an HTML
- * notification email. A stored page URL like  https://x/?a=1"><script>...
- * keeps its raw quote, so echoed raw it breaks out of the href attribute.
- *
- * Those sinks go through \OWA\Core\Template::out() (htmlentities,
- * ENT_QUOTES). These tests render the ACTUAL template files with a breakout
- * payload and assert the dangerous sequence does not survive into the output.
- * They are DB-free: templates only need their view vars set directly.
- *
- * If any of these templates regresses to a raw `echo`, the payload's `"><`
- * (or `<script`) reappears verbatim and the matching assertion fails.
+ * values (page URLs, page titles) into HTML an admin views -- notably into
+ * <a href="..."> attributes. An href goes through Sanitize::sanitizeHref(),
+ * whose scheme whitelist is tested here. DB-free.
  */
 final class TemplateXssTest extends TestCase
 {
-    /**
-     * A URL payload that survives makeUrlCanonical() (verified: parse_url keeps
-     * the raw quote) and breaks out of an href attribute + opens a tag.
-     */
-    private const URL_PAYLOAD = 'https://owa-xss.example.test/?a=1"><script>alert(1)</script>';
-
-    /** A free-text payload (page title / visitor name). */
-    private const TEXT_PAYLOAD = '"><img src=x onerror=alert(1)>';
-
-    /**
-     * Assert an escaped render: the raw attribute-breakout sequence `">` and a
-     * raw `<script` / `<img` opener must NOT appear; the escaped entity form
-     * (&quot; / &lt;) must. This is what \OWA\Core\Template::out() produces.
-     */
-    private function assertEscaped(string $html, string $context): void
-    {
-        $this->assertStringNotContainsString(
-            '"><script', $html, "$context: raw attribute-breakout + <script survived"
-        );
-        $this->assertStringNotContainsString(
-            '<script>alert(1)', $html, "$context: raw <script> survived"
-        );
-        $this->assertStringNotContainsString(
-            '<img src=x onerror', $html, "$context: raw <img onerror> survived"
-        );
-        // Positive control: the payload WAS present, just entity-encoded.
-        $this->assertMatchesRegularExpression(
-            '/&quot;|&lt;|&#0*3[49];/', $html, "$context: expected HTML-entity-escaped output"
-        );
-    }
-
-    private function renderBaseTemplate(string $file, array $vars): string
-    {
-        $t = new \OWA\Core\Template('base');
-        foreach ($vars as $k => $v) {
-            $t->set($k, $v);
-        }
-        $this->assertTrue($t->set_template($file), "could not locate template $file");
-        return $t->fetch();
-    }
-
-    public function testNewSessionEmailEscapesVisitorFields(): void
-    {
-        // HTML notification email (announce_visitors + notice_email enabled).
-        $html = $this->renderBaseTemplate('new_session_email.php', [
-            'site'    => ['domain' => 'owa-e2e.example.test'],
-            'session' => [
-                'visitor_id' => '1785002347504724034',
-                'user_name'  => self::TEXT_PAYLOAD,
-                'user_email' => self::TEXT_PAYLOAD,
-                'host'       => self::TEXT_PAYLOAD,
-                'city'       => 'Portland',
-                'country'    => 'US',
-                'page_title' => self::TEXT_PAYLOAD,
-                'page_url'   => self::URL_PAYLOAD,
-            ],
-        ]);
-        $this->assertEscaped($html, 'new_session_email.php');
-    }
-
     /**
      * Unit-level guard for the scheme whitelist itself: only http/https/mailto/
      * ftp/tel (plus relative + scheme-relative) survive; everything else -> '#'.

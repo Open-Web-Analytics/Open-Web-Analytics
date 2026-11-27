@@ -72,9 +72,6 @@
         "base.moduleInstallCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\ModuleInstallCli"
         },
-        "base.notifyNewSession": {
-            "class_name": "OWA\\Module\\Base\\Controller\\NotifyNewSession"
-        },
         "base.optionsGeneral": {
             "class_name": "OWA\\Module\\Base\\Controller\\OptionsGeneral"
         },
@@ -620,7 +617,6 @@
             "order": 1,
             "fieldsets": [
                 "base.tracking",
-                "base.announcements",
                 "base.reporting",
                 "base.restApi"
             ],
@@ -726,19 +722,7 @@
             "legend": "Privacy and exclusions",
             "settings": [
                 "anonymize_ips",
-                "excluded_ips",
-                "log_named_users"
-            ],
-            "module": "base"
-        },
-        "base.profileAnnouncements": {
-            "id": "base.profileAnnouncements",
-            "group": "profile_observation",
-            "order": 3,
-            "legend": "Visitor announcements",
-            "settings": [
-                "announce_visitors",
-                "notice_email"
+                "excluded_ips"
             ],
             "module": "base"
         },
@@ -867,20 +851,10 @@
             "settings": [
                 "spam_detection",
                 "spam_threshold",
-                "log_named_users",
                 "excluded_ips",
                 "anonymize_ips",
                 "query_string_filters",
                 "campaignUtmParams"
-            ],
-            "module": "base"
-        },
-        "base.announcements": {
-            "id": "base.announcements",
-            "legend": "Visitor Announcements",
-            "settings": [
-                "announce_visitors",
-                "notice_email"
             ],
             "module": "base"
         },

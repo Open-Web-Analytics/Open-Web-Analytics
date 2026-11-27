@@ -280,15 +280,6 @@ require_once($owa_root . 'owa.php');
 require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
-// If the live install has new-session announcements enabled (announce_visitors +
-// notice_email), seeding a fixture pageview fires base.new_session and its notify
-// handler sends mail. We deliberately DON'T suppress that: announcements are off
-// by default, so if they're on it's an operator's choice and the seed should
-// behave like any other tracked hit -- including on a localhost install with the
-// shipped 'owa@localhost' mailer-from. owa_mailer now guards an invalid From and
-// never lets a mail failure fatal the request (modules/base/classes/mailer.php),
-// so no override is needed here; the seed exercises that real path.
-
 $cmd = $argv[1] ?? 'info';
 
 switch ($cmd) {

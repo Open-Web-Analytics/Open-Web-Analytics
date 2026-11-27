@@ -717,8 +717,8 @@ final class EventRawIngestionTest extends IngestionTestCase
      *
      * user_name and user_email are ordinary custom user properties (v2 offers
      * site authors event and user scope and nothing else, and a value
-     * describing the PERSON is the second), and log_visitor_pii gates
-     * user_id, the identity field that has a column.
+     * describing the PERSON is the second). user_id is the identity field
+     * that has a column.
      *
      * So the path under test is the `vps_` one, the same path any other user
      * property takes.
@@ -773,65 +773,30 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * log_visitor_pii gates user_id, which is where it belongs.
-     *
-     * user_id is the site's own identifier for a person: it has a column, it
-     * persists, and it outlives a cookie. An install that turns visitor PII off
-     * must be able to stop storing it.
-     *
-     * gateUserId() DELETES the property rather than returning null. A null is not
-     * written back by setTrackerProperties(), so a gate that merely returns
-     * nothing leaves the beacon's value on the event for the row builder to read.
+     * A beacon's user_id, user_name and user_email are stored as it sent them:
+     * user_id in its column, the other two in the visitor store. A 1.x
+     * tracker's email_address is renamed onto user_email.
      */
-    public function testThePiiGateStopsUserIdBeingStored(): void
+    public function testTheIdentityFieldsAreStoredAsSent(): void
     {
-        $before = \OWA\Core\CoreAPI::getSetting('base', 'log_visitor_pii');
-
-        $with = $this->firePageView(['user_id' => 'person-42'])['page_view'];
-
-        $this->assertSame('person-42', $with['user_id'],
-            'with PII logging on, user_id is stored');
-
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
-
-        try {
-            $without = $this->firePageView(['user_id' => 'person-42'])['page_view'];
-
-            $this->assertNull($without['user_id'],
-                'with PII logging off, user_id must not be stored');
-
-        } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', $before);
-        }
-    }
-
-    /** log_visitor_pii off keeps the display name and email out of the visitor store, a site's own user property not. */
-    public function testThePiiGateStopsTheDisplayNameAndEmailBeingStored(): void
-    {
-        $before  = \OWA\Core\CoreAPI::getSetting('base', 'log_visitor_pii');
         $visitor = $this->uniqueGuid();
 
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
+        $row = $this->firePageView([
+            'visitor_id'    => $visitor,
+            'user_id'       => 'person-42',
+            'vps_user_name' => 'Display Name',
+            'email_address' => 'person@example.test',
+        ])['page_view'];
 
-        try {
-            $this->firePageView([
-                'visitor_id'     => $visitor,
-                'vps_user_name'  => 'Display Name',
-                'email_address'  => 'person@example.test',
-                'vps_plan'       => 'pro',
-            ]);
-        } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', $before);
-        }
+        $this->assertSame('person-42', $row['user_id']);
 
         $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->load($visitor, 'visitor_id');
 
         $properties = json_decode((string) $store->get('properties'), true) ?: [];
 
-        $this->assertArrayNotHasKey('user_name', $properties);
-        $this->assertArrayNotHasKey('user_email', $properties);
-        $this->assertSame('pro', $properties['plan']['v'] ?? null);
+        $this->assertSame('Display Name', $properties['user_name']['v'] ?? null);
+        $this->assertSame('person@example.test', $properties['user_email']['v'] ?? null);
     }
 
     /**

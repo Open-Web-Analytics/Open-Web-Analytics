@@ -1131,9 +1131,7 @@ class OWATracker  {
      *
      * Kept in the visitor cookie, so it survives the page and the session.
      * It is the one value that identifies the same person on another device
-     * or after their cookies are cleared. With the install's log_visitor_pii
-     * setting off, the server removes it as a beacon arrives, as it does the
-     * display name and email address.
+     * or after their cookies are cleared.
      *
      * Forward-only: events sent before the person identified themselves stay
      * anonymous, and are not relabelled afterwards.
