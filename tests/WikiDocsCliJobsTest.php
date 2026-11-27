@@ -344,7 +344,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
 
         foreach (array_keys(\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE) as $command) {
             $this->assertArrayHasKey($command, $commands, "$command is refused, but no command has that name");
-            $this->assertStringContainsString("- `$command`\n", $md, "$command is not in the list");
+            $this->assertStringContainsString("| `$command` |\n", $md, "$command is not in the table");
         }
     }
 

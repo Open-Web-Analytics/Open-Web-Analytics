@@ -6,10 +6,10 @@
 
 return static function () {
 
-    $out = '';
+    $out = "| Command |\n|---|\n";
 
     foreach ( array_keys( \OWA\Module\Base\Classes\Service::NEVER_SCHEDULE ) as $command ) {
-        $out .= sprintf( "- `%s`\n", $command );
+        $out .= sprintf( "| `%s` |\n", $command );
     }
 
     return $out;
