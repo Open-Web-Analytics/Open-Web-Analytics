@@ -25,7 +25,7 @@ Every change comes with tests, and updates the existing tests it affects.
   first (`getByRole`, `getByLabel`), then by `data-ui="part:name"`
   (`ui(page, 'kpi:visits')` in `tests/e2e/fixtures.js`); never by a styling class.
 
-The wiki's [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Testing)
+The wiki's [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Testing)
 page has the details.
 
 ## Submitting changes
