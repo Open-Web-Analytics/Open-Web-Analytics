@@ -31,7 +31,7 @@ return [
             'group'           => 'General',
             'order'           => 1,
             'fieldsets'       => [
-                'base.tracking', 'base.announcements', 'base.reporting', 'base.restApi' ],
+                'base.tracking', 'base.reporting', 'base.restApi' ],
             'fieldset_groups' => [ 'tracking_tag' ],
         ],
 
@@ -99,18 +99,11 @@ return [
             'settings' => [
                 'spam_detection',
                 'spam_threshold',
-                'log_named_users',
                 'excluded_ips',
                 'anonymize_ips',
                 'query_string_filters',
                 'campaignUtmParams',
             ],
-        ],
-
-        [
-            'id'       => 'base.announcements',
-            'legend'   => \OWA\Core\CoreAPI::t( 'Visitor Announcements' ),
-            'settings' => [ 'announce_visitors', 'notice_email' ],
         ],
 
         [

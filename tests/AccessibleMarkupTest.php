@@ -267,7 +267,7 @@ final class AccessibleMarkupTest extends TestCase
             "$template has controls with no name");
     }
 
-    /** The three password boxes share one title, so the title names their group. */
+    /** The two new-password boxes share one title, so the title names their group; the current password has a label of its own. */
     public function testThePasswordBoxesAreAGroupUnderTheirTitle(): void
     {
         $html = $this->render('my_profile.php', [
@@ -279,6 +279,8 @@ final class AccessibleMarkupTest extends TestCase
         $this->assertMatchesRegularExpression(
             '#<div class="owa_passwordFields" role="group" aria-labelledby="owa_myProfilePasswordTitle"#', $html);
         $this->assertStringContainsString('<div class="title" id="owa_myProfilePasswordTitle">Change password</div>', $html);
+        $this->assertStringContainsString('<label class="title" for="owa_myProfileCurrentPassword">Current password</label>', $html);
+        $this->assertStringContainsString('Needed to change your email address or your password.', $html);
     }
 
     /**

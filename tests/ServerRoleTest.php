@@ -283,6 +283,16 @@ final class ServerRoleTest extends TestCase
         $this->assertStringContainsString('OWA_DEBUG', $notices['OWA_LOG_PHP_ERRORS']);
     }
 
+    /** OWA_LOG_VISITOR_PII is not read: the identity fields are stored as sent. */
+    public function testTheVisitorPiiConstantGetsAnUpgradeNotice(): void
+    {
+        $notices = ServerRole::upgradeNotices(['OWA_LOG_VISITOR_PII' => false]);
+
+        $this->assertSame(['OWA_LOG_VISITOR_PII'], array_keys($notices));
+        $this->assertStringContainsString('No longer read', $notices['OWA_LOG_VISITOR_PII']);
+        $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'log_visitor_pii'));
+    }
+
     /** The boot itself, with OWA_USE_STATIC_CONFIG_ONLY defined, is StaticConfigBootTest's. */
     public function testStoredSettingsAreReadOnEveryRoleWithADatabase(): void
     {

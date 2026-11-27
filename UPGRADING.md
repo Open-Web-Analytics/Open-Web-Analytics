@@ -421,6 +421,16 @@ the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-
 Update091 deletes the stored `hello` rows, so an install that had it active no
 longer lists `hello` as an active module. The update's down() puts them back.
 
+### Three privacy and announcement settings are removed
+
+| Setting | What changes |
+|---|---|
+| Log Requests From Named Users (`log_named_users`) | A request from a user signed in to OWA is recorded like any other. |
+| `log_visitor_pii` (`OWA_LOG_VISITOR_PII`) | A beacon's `user_id`, `user_name` and `user_email` are stored as sent, and 1.x's `user_name` migrates as `user_id`. A config that still defines the constant gets a notice in `cmd=server-check` and System Health. |
+| Announce New Visitors Via E-mail (`announce_visitors`, `notice_email`) | No e-mail is sent when a session starts. The Admin Notice E-mail Address is unchanged. |
+
+Update098 deletes their stored rows at every scope. Its down() puts them back.
+
 ### The API key and request signature are refused
 
 1.x signed a REST request in with the user's API key (`apiKey`, or the

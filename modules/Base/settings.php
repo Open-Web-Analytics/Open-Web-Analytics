@@ -56,17 +56,6 @@ return [
     'settings' => [
 
         'additionalCss' => [ 'config_constant' => 'OWA_ADDITIONAL_CSS', 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. None by default.' ],
-        'announce_visitors' => [
-            'default'  => false,
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'boolean',
-            'label'    => \OWA\Core\CoreAPI::t( 'Announce New Visitors Via E-mail' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Sends an e-mail to the Notice E-mail Address each time a session starts.' ),
-        ],
         'anonymize_ips' => [
             'default'  => false,
             'storable' => true,
@@ -89,7 +78,7 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Where notices for OWA\'s administrators are e-mailed, such as an update that installed '
                 . 'or failed. Separate several with commas. Empty sends them to every admin user\'s address.' ),
-            // As notice_email: read where nobody sees an error, so checked on save.
+            // Read where nobody sees an error, so checked on save.
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ],
@@ -353,26 +342,9 @@ return [
         'funnel_steps_before_079' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'install_complete' => [ 'storable' => true, 'autoload' => true, 'internal' => true ],
         'link_template' => [ 'config_constant' => 'OWA_LINK_TEMPLATE', 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ],
-        'log_named_users' => [
-            'default'  => true,
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'boolean',
-            'label'    => \OWA\Core\CoreAPI::t( 'Log Requests From Named Users' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Whether requests made by a user signed in to OWA are recorded.' ),
-        ],
         // Set by Update084 when it turned log_robots into a blank spam_threshold, so its
         // down() can put the log_robots rows and the spam_threshold row back as they were.
         'log_robots_before_084' => [ 'default' => [], 'storable' => true, 'internal' => true ],
-        /*
-         * Whether user_id is stored. It gated user_name and user_email, which are
-         * custom user properties now, so it moves to the one
-         * identity field left in the release vocabulary -- see gateUserId().
-         */
-        'log_visitor_pii' => [ 'config_constant' => 'OWA_LOG_VISITOR_PII', 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user id set with setUserId(), the user_name and user_email user properties set with setUserProperty(), and the same values sent by a 1.x tracker. Off removes them as a beacon arrives, and from events migrated from 1.x.' ],
         'logo_image_path' => [ 'config_constant' => 'OWA_LOGO_IMAGE_PATH', 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ],
         'mailer-from' => [ 'config_constant' => 'OWA_MAILER_FROM', 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ],
         'mailer-fromName' => [ 'config_constant' => 'OWA_MAILER_FROM_NAME', 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ],
@@ -385,24 +357,6 @@ return [
         'mailer-username' => [ 'config_constant' => 'OWA_MAILER_USERNAME', 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'config_constant' => 'OWA_MAX_CUSTOM_VARS', 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
         'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
-        'notice_email' => [
-            'default'  => '',
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'text',
-            'label'    => \OWA\Core\CoreAPI::t( 'Notice E-mail Address' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'The e-mail address new visit announcements are sent to. Separate several with commas.' ),
-            /*
-             * Checked on save, because it is read during ingest: an address
-             * the mailer refuses is skipped there (Mailer::addAddress()), and
-             * a value like 'a@x b@y' would be found only in the error log.
-             */
-            'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
-            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
-        ],
         // The wire namespace only. OWA's own admin and reporting URLs carry no
         // prefix; RequestContainer still accepts prefixed ones.
         'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],
@@ -513,6 +467,8 @@ return [
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update093: the names of the autoload indexes it dropped, for its down().
         'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update098: the rows of the removed privacy and announcement settings it deleted, for its down().
+        'retired_settings_before_098' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],

@@ -13,8 +13,8 @@ class Mailer {
 
     /**
      * Seconds PHPMailer waits on the SMTP server, per connect and per reply.
-     * Its own default is 300, and a new-visit announcement is sent while the
-     * beacon that raised it is being ingested.
+     * Its own default is 300, and the request or job that sends a mail waits
+     * for it.
      */
     const TIMEOUT = 10;
 
@@ -41,8 +41,7 @@ class Mailer {
             // and the shipped default is 'owa@' . SERVER_NAME, which on a
             // localhost (or any dotless-hostname) install is 'owa@localhost',
             // an address PHPMailer considers invalid (no dot in the domain).
-            // An operator who turns on new-session announcements on such a box
-            // would otherwise fatal on every tracked hit.
+            // Every mail sent from such a box would otherwise fatal.
             //
             // We must REPAIR, not skip: skipping setFrom leaves From empty, and
             // an empty From builds a malformed 'From:' header that the local MTA

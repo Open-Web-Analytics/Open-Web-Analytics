@@ -35,9 +35,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
         /*
          * The Property it is saved to: the one the form posts, else an existing
          * visualization's own (CustomReports::requestProperty()). Resolved
-         * first, so the steps are checked against its custom dimensions:
-         * Controller::__construct() runs validate(), before anything a
-         * subclass's constructor does after it.
+         * first, so the steps are checked against its custom dimensions.
          */
         $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
             (string) $this->getParam( 'visualizationId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );

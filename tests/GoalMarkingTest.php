@@ -103,7 +103,7 @@ final class GoalMarkingTest extends TestCase
         $two = $this->makeGoal( [ [ 'page_path', 'begins', '/two' ], [ 'page_title', 'contains', 'probe' ] ],
             [ 'name' => 'Marking_probe_two' ] );
 
-        \OWA\Core\CoreAPI::getSetting( 'base', 'log_named_users', 'profile', $this->siteId );
+        \OWA\Core\CoreAPI::getSetting( 'base', 'excluded_ips', 'profile', $this->siteId );
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $before = $db->num_queries;

@@ -27,12 +27,14 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         'base.login', 'base.loginForm', 'base.logout',
         'base.passwordResetForm', 'base.passwordResetRequest', 'base.usersChangePassword',
         'base.usersNewAccount', 'base.usersPasswordEntry', 'base.usersResetPassword', 'base.usersSetPassword',
+        // a mail its event handler runs in-process
+        'base.usersEmailChanged',
         // signed out: the e-mailed key is the credential; its mail is in-process only
         'base.appPasswordRevokeLink', 'base.appPasswordCreatedMail',
         // must run while updates are pending, which AdminController blocks
         'base.updates', 'base.updatesApply',
         // tracking, from log.php and its event queue
-        'base.processEvent', 'base.processRequest', 'base.notifyNewSession', 'domstream.processEvent',
+        'base.processEvent', 'base.processRequest', 'domstream.processEvent',
         // the REST API's CORS preflight
         'base.corsPreflight',
         // opens on the tracked site and hands over to an overlay token

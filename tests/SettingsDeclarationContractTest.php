@@ -377,9 +377,13 @@ final class SettingsDeclarationContractTest extends TestCase
         $this->assertFalse( $c->isRegistered( 'base', 'log_robots' ), 'spam_threshold replaced it (Update084)' );
         $this->assertFalse( $c->isRegistered( 'base', 'goals' ), 'Update092 deleted its 1.x rows' );
 
-        foreach ( [ 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ] as $key ) {
+        foreach ( [ 'anonymize_ips', 'excluded_ips' ] as $key ) {
             $this->assertSame( [ 'install', 'profile' ], $c->scopesFor( 'base', $key ),
                 "base.$key is offered on the Profile only" );
+        }
+
+        foreach ( \OWA\Module\Base\Update\Update098::RETIRED as $key ) {
+            $this->assertFalse( $c->isRegistered( 'base', $key ), "Update098 deleted the rows of base.$key" );
         }
 
         $this->assertSame( [ 'install' ], $c->scopesFor( 'base', 'directory_index_pages' ) );

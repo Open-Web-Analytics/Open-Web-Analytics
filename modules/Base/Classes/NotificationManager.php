@@ -817,10 +817,14 @@ class NotificationManager {
      * Set one timestamp on one user's state row, creating the row if needed.
      *
      * Both facts go through here so they cannot drift into different ideas of
-     * what a state row is. Idempotent: the id is derived from the pair, and an
-     * already-set timestamp is left alone rather than moved -- "when did I
-     * first read this" should not change because a second tab loaded the
-     * panel.
+     * what a state row is. Idempotent: the row is found by its notification_id
+     * and user_id columns, and an already-set timestamp is left alone rather
+     * than moved -- "when did I first read this" should not change because a
+     * second tab loaded the panel.
+     *
+     * A new row's id is derived from the pair with a NUL between the two
+     * (stateId()). Rows written before that carry the id of the two run
+     * together, and are found by their columns all the same.
      *
      * @param string $notificationId
      * @param string $userId
@@ -836,9 +840,12 @@ class NotificationManager {
 
         $state = \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' );
 
-        $id = $state->generateId( $notificationId . $userId );
+        $existing = self::stateRowId( $notificationId, $userId );
 
-        $state->load( $id );
+        if ( $existing !== null ) {
+
+            $state->load( $existing );
+        }
 
         if ( $state->get( 'id' ) ) {
 
@@ -852,11 +859,42 @@ class NotificationManager {
             return (bool) $state->update();
         }
 
-        $state->set( 'id', $id );
+        $state->set( 'id', self::stateId( $notificationId, $userId ) );
         $state->set( 'notification_id', $notificationId );
         $state->set( 'user_id', (string) $userId );
         $state->set( $column, time() );
 
         return (bool) $state->create();
+    }
+
+    /**
+     * The id of a new state row: the pair, separated by a NUL, so that
+     * notification 900 for user 1alice and 9001 for alice are two rows.
+     *
+     * @param  string $notificationId
+     * @param  string $userId
+     * @return int|string see Entity::generateId()
+     */
+    public static function stateId( $notificationId, $userId ) {
+
+        return \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' )
+            ->generateId( (string) $notificationId . "\0" . (string) $userId );
+    }
+
+    /**
+     * The id of this user's state row for this notification, by its columns.
+     *
+     * @param  string $notificationId
+     * @param  string $userId
+     * @return string|null null when there is none
+     */
+    private static function stateRowId( $notificationId, $userId ) {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT id FROM %s WHERE notification_id = ? AND user_id = ?',
+            \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' )->getTableName() ),
+            [ (string) $notificationId, (string) $userId ] );
+
+        return ( is_array( $row ) && isset( $row['id'] ) ) ? (string) $row['id'] : null;
     }
 }

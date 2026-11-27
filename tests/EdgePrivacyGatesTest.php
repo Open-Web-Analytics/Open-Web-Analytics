@@ -9,9 +9,9 @@ use OWA\Module\Base\Classes\TrackerIngest;
 use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 /**
- * What the edge (CoreAPI::logEvent()) refuses or removes before a beacon is
- * queued: the identity fields log_visitor_pii turns off, and an excluded IP
- * matched against the full address while anonymize_ips is on.
+ * What the edge (CoreAPI::logEvent()) keeps or refuses before a beacon is
+ * queued: the identity fields, which are queued and processed as sent, and an
+ * excluded IP matched against the full address while anonymize_ips is on.
  *
  * Queued mode against a scratch intake, so what the intake holds is read
  * back directly. The site is answered for without a database.
@@ -41,13 +41,11 @@ final class EdgePrivacyGatesTest extends TestCase
             'REMOTE_ADDR'     => '203.0.113.77',
         ];
 
-        foreach (['queue_tracking_events', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users'] as $key) {
+        foreach (['queue_tracking_events', 'anonymize_ips', 'excluded_ips'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
         \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
-        \OWA\Core\CoreAPI::setSetting('base', 'log_named_users', true);
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', true);
         \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', false);
         \OWA\Core\CoreAPI::setSetting('base', 'excluded_ips', '');
 
@@ -93,10 +91,10 @@ final class EdgePrivacyGatesTest extends TestCase
     ];
 
     // ---------------------------------------------------------------------
-    // log_visitor_pii
+    // The identity fields
     // ---------------------------------------------------------------------
 
-    public function testWithPiiOnTheIdentityFieldsAreQueued(): void
+    public function testTheIdentityFieldsAreQueuedAsSent(): void
     {
         $queued = $this->logPageView(self::IDENTITY);
 
@@ -107,50 +105,43 @@ final class EdgePrivacyGatesTest extends TestCase
         }
     }
 
-    /** Off: the intake never holds them, so neither can a retry or a dead letter. */
-    public function testWithPiiOffNoIdentityFieldReachesTheIntake(): void
-    {
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
-
-        $queued = $this->logPageView(self::IDENTITY);
-
-        $this->assertCount(1, $queued, 'the event itself is still recorded');
-        $this->assertSame('https://edge.test/a', $queued[0]['properties']['page_location']);
-
-        foreach (array_keys(self::IDENTITY) as $name) {
-            $this->assertArrayNotHasKey($name, $queued[0]['properties'], $name);
-        }
-    }
-
-    /** A 1.x tracker's user_name and email_address are renamed onto the user properties, and gated as them. */
-    public function testWithPiiOffA1xTrackersNamesAreGatedToo(): void
-    {
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
-
-        $queued = $this->logPageView(['user_name' => 'Old Name', 'email_address' => 'old@example.test']);
-
-        $this->assertCount(1, $queued);
-        $this->assertStringNotContainsString('Old Name', json_encode($queued[0]));
-        $this->assertStringNotContainsString('old@example.test', json_encode($queued[0]));
-    }
-
-    /** The property stage asks again, for an event queued before the setting was turned off. */
-    public function testThePropertyStageGatesAQueuedEventToo(): void
+    /** The property stage leaves them as sent, a 1.x tracker's names renamed onto the user properties. */
+    public function testThePropertyStageKeepsThemAsSent(): void
     {
         $queued = $this->logPageView(self::IDENTITY);
-
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
 
         $process = new \OWA\Module\Base\Controller\ProcessEvent(['event' => TrackerIngest::event($queued[0])]);
         $process->pre();
 
-        foreach (array_keys(self::IDENTITY) as $name) {
-            $this->assertArrayNotHasKey($name, $process->event->getProperties(), $name);
+        foreach (self::IDENTITY as $name => $value) {
+            $this->assertSame($value, $process->event->get($name), $name);
+        }
+
+        $old = $this->logPageView(['user_name' => 'Old Name', 'email_address' => 'old@example.test']);
+
+        $process = new \OWA\Module\Base\Controller\ProcessEvent(['event' => TrackerIngest::event(end($old))]);
+        $process->pre();
+
+        $this->assertSame('Old Name', $process->event->get('vps_user_name'));
+        $this->assertSame('old@example.test', $process->event->get('vps_user_email'));
+    }
+
+    /** A request from a user signed in to OWA is recorded like any other. */
+    public function testASignedInUsersRequestIsQueued(): void
+    {
+        $cu  = \OWA\Core\CoreAPI::getCurrentUser();
+        $was = $cu->getUserData('user_id');
+        $cu->setUserData('user_id', 'edge-gates-signed-in');
+
+        try {
+            $this->assertCount(1, $this->logPageView());
+        } finally {
+            $cu->setUserData('user_id', $was);
         }
     }
 
-    /** The 1.x migration maps user_name to user_id, and the setting decides it there too. */
-    public function testTheMigrationHonoursPii(): void
+    /** The 1.x migration maps user_name to user_id. */
+    public function testTheMigrationKeepsTheUserName(): void
     {
         $migrator = new class extends \OWA\Module\Base\Classes\Migration\FactMigrator {
             protected function events(array $r, array $refs)
@@ -168,10 +159,6 @@ final class EdgePrivacyGatesTest extends TestCase
                      'timestamp' => 1700000000, 'yyyymmdd' => 20231114, 'user_name' => 'person-7'];
 
         $this->assertSame('person-7', $migrator->one($row)[0]->get('user_id'));
-
-        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
-
-        $this->assertArrayNotHasKey('user_id', $migrator->one($row)[0]->getProperties());
     }
 
     // ---------------------------------------------------------------------

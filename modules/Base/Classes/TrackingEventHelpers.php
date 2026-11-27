@@ -1989,8 +1989,12 @@ class TrackingEventHelpers {
      *
      * The tracker sends what window.screen reports, rounded. Anything else --
      * a hand-built beacon, a zero side, a size no screen has -- is dropped
-     * rather than stored as a value to group by. Deletes rather than returning
-     * null, for the reason gateUserId() gives.
+     * rather than stored as a value to group by.
+     *
+     * DELETES RATHER THAN RETURNING NULL: setTrackerProperties() declines to
+     * write a null back, so whatever the beacon put on the event is still there
+     * for the row builder to read. A callback that returns nothing leaves the
+     * value in place.
      *
      * @param  string|null $value
      * @param  object      $event
@@ -2008,73 +2012,6 @@ class TrackingEventHelpers {
         $event->delete( 'screen_resolution' );
 
         return null;
-    }
-
-    /**
-     * user_id, unless the install has turned visitor PII off.
-     *
-     * DELETES RATHER THAN RETURNING NULL, which is the lesson the two callbacks
-     * above taught on their way out: setTrackerProperties() declines to write a
-     * null back, so whatever the beacon put on the event is still there for the
-     * row builder to read. A gate that returns nothing leaves the value in place.
-     *
-     * @param  string|null $user_id
-     * @param  object      $event
-     * @return string|null
-     */
-    public static function gateUserId( $user_id, $event ) {
-
-        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            $event->delete( 'user_id' );
-
-            return null;
-        }
-
-        return $user_id;
-    }
-
-    /**
-     * The properties log_visitor_pii gates: the site's id for the person, and
-     * the display name and email address OWA's own vocabulary carries as user
-     * properties (setUserName(), and a 1.x tracker's user_name and
-     * email_address, which conf/beacon_compat.php renames onto these).
-     */
-    const VISITOR_PII_PROPERTIES = [ 'user_id', 'vps_user_name', 'vps_user_email' ];
-
-    /**
-     * Remove VISITOR_PII_PROPERTIES from an event when log_visitor_pii is off.
-     *
-     * AT THE EDGE (CoreAPI::logEvent()), before the event is queued, so
-     * neither the intake nor its dead letters ever hold what the setting
-     * refuses. Asked again at the property stage, for an event queued before
-     * the setting changed, and by the 1.x migration.
-     *
-     * @param  object $event
-     * @return void
-     */
-    public static function gateVisitorPii( $event ) {
-
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            return;
-        }
-
-        $names = self::VISITOR_PII_PROPERTIES;
-
-        // The older spellings too: a rename copies the value and leaves the original.
-        foreach ( \OWA\Module\Base\Classes\Beacon\Compat::renames() as $from => $to ) {
-
-            if ( in_array( $to, self::VISITOR_PII_PROPERTIES, true ) ) {
-
-                $names[] = $from;
-            }
-        }
-
-        foreach ( $names as $name ) {
-
-            $event->delete( $name );
-        }
     }
 
     /**
@@ -2861,7 +2798,7 @@ class TrackingEventHelpers {
      * Bounded because the column is a SMALLINT and the value comes off the
      * wire: a beacon carrying 99999 would otherwise be refused by strict mode,
      * and the whole click with it. Deletes rather than returning null, for the
-     * reason gateUserId() gives.
+     * reason screenResolution() gives.
      *
      * @param mixed  $value
      * @param object $event
@@ -2910,7 +2847,7 @@ class TrackingEventHelpers {
      * why the registry declares it after them. A row with an anchor is one the
      * heatmap can place; a hash without its point could not be, and a click
      * with none is drawn by click_x and click_y or not at all. Deletes rather
-     * than returning null, for the reason gateUserId() gives.
+     * than returning null, for the reason screenResolution() gives.
      *
      * @param mixed  $value
      * @param object $event
