@@ -3,7 +3,8 @@ namespace OWA\Core;
 
 /**
  * Where a request to the REST API comes from: its Origin and Sec-Fetch-Site
- * headers, and OWA's own origin, the scheme, host and port of public_url.
+ * headers, and the origin it was made to, the scheme, host and port the
+ * browser addressed.
  *
  * Read in one place by the CORS headers (View\RestApi::addCorsHeaders()) and
  * by the session-cookie check (Auth::authenticateUser()).
@@ -35,13 +36,22 @@ class RequestOrigin {
     }
 
     /**
-     * OWA's own origin: public_url's scheme, host and port.
+     * The origin the request was made to: https when Lib::isHttps() says so,
+     * else http, with the request's Host header, its port included when it
+     * is not the scheme's default.
      *
-     * @return string '' when public_url names no http or https host
+     * @return string '' when the request has no Host
      */
     public static function own() {
 
-        return self::of( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) );
+        $host = \OWA\Core\CoreAPI::getServerParam( 'HTTP_HOST' );
+
+        if ( ! is_string( $host ) || trim( $host ) === '' ) {
+
+            return '';
+        }
+
+        return self::of( ( \OWA\Core\Lib::isHttps() ? 'https' : 'http' ) . '://' . trim( $host ) );
     }
 
     /**
@@ -80,12 +90,12 @@ class RequestOrigin {
     }
 
     /**
-     * Whether a request is same-origin with OWA: it sent no Origin or OWA's
-     * own, and no Sec-Fetch-Site or `same-origin`.
+     * Whether a request is same-origin: it sent no Origin or the origin it
+     * was made to, and no Sec-Fetch-Site or `same-origin`.
      *
      * @param  string $origin     the Origin header; '' for none
      * @param  string $fetch_site the Sec-Fetch-Site header; '' for none
-     * @param  string $own        OWA's origin, as own() gives it
+     * @param  string $own        the origin the request was made to, as own() gives it
      * @return bool
      */
     public static function isSameOrigin( $origin, $fetch_site, $own ) {
@@ -102,7 +112,7 @@ class RequestOrigin {
     }
 
     /**
-     * Whether this request is same-origin with OWA (isSameOrigin()).
+     * Whether this request is same-origin (isSameOrigin()).
      *
      * @return bool
      */

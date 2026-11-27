@@ -7,8 +7,9 @@ use OWA\Core\Auth;
 
 /**
  * The REST API signs a request in by the session cookies only when it is
- * same-origin with OWA (RequestOrigin::isSameOrigin()): no Origin or OWA's
- * own, and no Sec-Fetch-Site or `same-origin`. Any other request is judged
+ * same-origin (RequestOrigin::isSameOrigin()): no Origin or the origin the
+ * request was made to -- its scheme and Host, whatever public_url says -- and
+ * no Sec-Fetch-Site or `same-origin`. Any other request is judged
  * as one that carried no session, and its cookies are left in place. An
  * application password is read whatever the origin.
  */
@@ -30,9 +31,11 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
             'stores' => $request->state->stores,
             'url'    => \OWA\Core\CoreAPI::getSetting('base', 'public_url'),
             'method' => Auth::get_instance()->getAuthMethod(),
+            'https'  => $_SERVER['HTTPS'] ?? null,
         ];
 
         \OWA\Core\CoreAPI::setSetting('base', 'public_url', self::OWN . '/');
+        $_SERVER['HTTPS'] = 'on';
     }
 
     protected function tearDown(): void
@@ -42,6 +45,12 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
         $request->state->stores = $this->saved['stores'];
         \OWA\Core\CoreAPI::setSetting('base', 'public_url', $this->saved['url']);
         $this->resetAuth($this->saved['method']);
+
+        if ($this->saved['https'] === null) {
+            unset($_SERVER['HTTPS']);
+        } else {
+            $_SERVER['HTTPS'] = $this->saved['https'];
+        }
 
         parent::tearDown();
     }
@@ -70,7 +79,7 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
     private function authenticate(array $cookies, array $server): bool
     {
         $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
-        $request->server = array_merge((array) $this->saved['server'], $server);
+        $request->server = array_merge((array) $this->saved['server'], ['HTTP_HOST' => 'owa.example.com'], $server);
 
         foreach ($cookies as $name => $value) {
             $request->state->stores[$name] = $value;
@@ -119,6 +128,38 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
         $this->assertSame($user_id, (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData('user_id'));
     }
 
+    /** An admin on another of OWA's hostnames: the Origin is the host the request was made to. */
+    public function testARequestToAnotherHostOfOwaIsSignedInFromThatHost(): void
+    {
+        [$user_id, $credential] = $this->session();
+
+        $this->assertTrue($this->authenticate(['u' => $user_id, 'p' => $credential], [
+            'HTTP_HOST'           => 'stats.example.com',
+            'HTTP_ORIGIN'         => 'https://stats.example.com',
+            'HTTP_SEC_FETCH_SITE' => 'same-origin',
+        ]));
+    }
+
+    /** @return array<string, array{string}> */
+    public static function otherOrigins(): array
+    {
+        return [
+            'public_url, from another host' => [self::OWN],
+            'the host over http'            => ['http://stats.example.com'],
+            'the host on another port'      => ['https://stats.example.com:8443'],
+            'www of the host'               => ['https://www.stats.example.com'],
+        ];
+    }
+
+    /** @dataProvider otherOrigins */
+    public function testAnOriginThatIsNotTheRequestHostIsNotSignedIn(string $origin): void
+    {
+        [$user_id, $credential] = $this->session();
+
+        $this->assertFalse($this->authenticate(['u' => $user_id, 'p' => $credential],
+            ['HTTP_HOST' => 'stats.example.com', 'HTTP_ORIGIN' => $origin]));
+    }
+
     public function testAnAppPasswordFromAnotherOriginStillSignsIn(): void
     {
         $user = $this->makeUser('admin', 'cookieoriginapp');
@@ -126,8 +167,6 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
             \OWA\Module\Base\Classes\AppPasswords::SCOPE_FULL);
 
         try {
-            $_SERVER['HTTPS'] = 'on';
-
             $this->assertTrue($this->authenticate([], [
                 'HTTPS'               => 'on',
                 'HTTP_ORIGIN'         => 'https://shop.example.com',
@@ -136,7 +175,6 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
             ]));
             $this->assertSame('app_password', Auth::get_instance()->getAuthMethod());
         } finally {
-            unset($_SERVER['HTTPS']);
             \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser($user['user_id']);
         }
     }

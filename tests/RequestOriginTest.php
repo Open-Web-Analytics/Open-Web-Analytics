@@ -6,8 +6,9 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * RequestOrigin: OWA's own origin, from public_url, and whether a request is
- * same-origin with it -- what the REST API's session-cookie check asks.
+ * RequestOrigin: the origin a request was made to, from its scheme and Host,
+ * and whether the request is same-origin with it -- what the REST API's
+ * session-cookie check asks.
  *
  * Pure but for the last tests, which drive Auth::authenticateUser() with a
  * request refused before any user is looked up.
@@ -54,6 +55,41 @@ final class RequestOriginTest extends TestCase
         $this->assertSame($same, RequestOrigin::isSameOrigin($origin, $fetchSite, self::OWN));
     }
 
+    /** @return array<string, array{array<string, mixed>, string}> server variables, the origin */
+    public static function madeTo(): array
+    {
+        return [
+            'https, by the server'     => [['HTTPS' => 'on', 'HTTP_HOST' => 'owa.example.com'], 'https://owa.example.com'],
+            'https, by the proxy'      => [['HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_HOST' => 'OWA.example.com'], 'https://owa.example.com'],
+            'http'                     => [['HTTP_HOST' => 'owa.example.com'], 'http://owa.example.com'],
+            'a port'                   => [['HTTP_HOST' => 'localhost:8080'], 'http://localhost:8080'],
+            'the default port'         => [['HTTPS' => 'on', 'HTTP_HOST' => 'owa.example.com:443'], 'https://owa.example.com'],
+            'no Host'                  => [[], ''],
+        ];
+    }
+
+    /**
+     * The origin is the request's own, whatever public_url says.
+     *
+     * @dataProvider madeTo
+     */
+    public function testTheOwnOriginIsTheRequestsSchemeAndHost(array $server, string $expected): void
+    {
+        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
+        $saved   = [$request->server, $_SERVER, \OWA\Core\CoreAPI::getSetting('base', 'public_url')];
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'public_url', 'https://elsewhere.example.org/owa/');
+            $_SERVER = $server;
+            $request->server = $server;
+
+            $this->assertSame($expected, RequestOrigin::own());
+        } finally {
+            [$request->server, $_SERVER] = $saved;
+            \OWA\Core\CoreAPI::setSetting('base', 'public_url', $saved[2]);
+        }
+    }
+
     public function testWithNoOwnOriginOnlyARequestWithoutAnOriginIs(): void
     {
         $this->assertTrue(RequestOrigin::isSameOrigin('', '', ''));
@@ -82,7 +118,6 @@ final class RequestOriginTest extends TestCase
             'server' => $request->server,
             'stores' => $request->state->stores,
             'type'   => \OWA\Core\CoreAPI::getSetting('base', 'request_type'),
-            'url'    => \OWA\Core\CoreAPI::getSetting('base', 'public_url'),
         ];
 
         $auth = \OWA\Core\Auth::get_instance();
@@ -91,8 +126,7 @@ final class RequestOriginTest extends TestCase
 
         try {
             \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
-            \OWA\Core\CoreAPI::setSetting('base', 'public_url', self::OWN . '/');
-            $request->server = array_merge((array) $saved['server'], $server);
+            $request->server = array_merge((array) $saved['server'], ['HTTP_HOST' => 'owa.example.com'], $server);
             $request->state->stores['u'] = 'someone@owatest.example.com';
             $request->state->stores['p'] = 'a-session-credential';
             $method->setValue($auth, '');
@@ -106,7 +140,6 @@ final class RequestOriginTest extends TestCase
             $request->server = $saved['server'];
             $request->state->stores = $saved['stores'];
             \OWA\Core\CoreAPI::setSetting('base', 'request_type', $saved['type']);
-            \OWA\Core\CoreAPI::setSetting('base', 'public_url', $saved['url']);
             $method->setValue($auth, $savedMethod);
         }
     }

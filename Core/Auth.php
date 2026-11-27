@@ -189,12 +189,13 @@ class Auth extends \OWA\Core\Base {
         } elseif ( $accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')
                    && \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )
                    && ! \OWA\Core\RequestOrigin::requestIsSameOrigin() ) {
-            // The REST API takes the session cookies from OWA's own origin
-            // only (RequestOrigin::isSameOrigin()). Otherwise the request is
-            // judged as one that carried no session, and the cookies are kept.
+            // The REST API takes the session cookies from a same-origin
+            // request only (RequestOrigin::isSameOrigin()): one from the origin
+            // it was made to. Otherwise the request is judged as one that
+            // carried no session, and the cookies are kept.
             $this->cross_origin_cookies_refused = true;
             $ret = false;
-            \OWA\Core\CoreAPI::debug( 'Session cookies not accepted: the request is not from OWA\'s own origin.' );
+            \OWA\Core\CoreAPI::debug( 'Session cookies not accepted: the request is not same-origin.' );
 
         } elseif ($accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
             // auth user by cookies
@@ -897,7 +898,7 @@ class Auth extends \OWA\Core\Base {
 
     /**
      * Whether the last authenticateUser() passed over the session cookies of
-     * a REST request that is not from OWA's own origin. They are left in
+     * a REST request that is not same-origin. They are left in
      * place.
      *
      * @return bool
