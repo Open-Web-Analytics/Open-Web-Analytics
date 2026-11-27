@@ -383,6 +383,61 @@ final class MigrateRequestsTest extends TestCase
         $this->assertNotEmpty($progress['completed_at']);
     }
 
+    /** 1.x's ids before January 2012 were signed crc32s, so half are negative. */
+    public function testASigned32BitV1IdIsMigrated(): void
+    {
+        $this->visit();
+        $this->request('1790000000000000104', ['visitor_id' => '-1482514472', 'session_id' => '-2147418572']);
+
+        $migrator = $this->migrator();
+        $progress = $migrator->migrateSite(self::SITE);
+
+        $this->assertSame(4, $progress['rows_read']);
+        $this->assertSame(0, $progress['rows_refused']);
+
+        $old = array_filter($this->rows(), fn ($r) => (string) $r['visitor_id'] === '-1482514472');
+        $this->assertNotEmpty($old, 'the page view is in raw');
+        $this->assertSame(['-2147418572'], array_values(array_unique(array_map(
+            fn ($r) => (string) $r['session_id'], $old))));
+        $this->assertSame([], RequestMigrator::discrepancies($migrator->reconcileSite(self::SITE)));
+    }
+
+    /**
+     * A row the raw-row builder will not store refuses its v1 row by a reason
+     * of its own. Skipped instead, it was missing from the expected events as
+     * well as from raw, and the day reconciled without it.
+     */
+    public function testARowTheBuilderWillNotStoreIsRefusedAndCounted(): void
+    {
+        $this->visit();
+
+        $migrator = new class(V1Schema::PREFIX) extends RequestMigrator {
+            protected function events(array $r, array $refs)
+            {
+                $events = parent::events($r, $refs);
+
+                if ((string) $r['id'] === '1790000000000000103') {
+                    foreach ($events as $event) {
+                        $event->set('session_id', 'not-an-id');
+                    }
+                }
+
+                return $events;
+            }
+        };
+
+        $progress = $migrator->migrateSite(self::SITE);
+
+        $this->assertSame(3, $progress['rows_read']);
+        $this->assertSame(1, $progress['rows_refused']);
+        $this->assertEquals(['not_stored' => 1], $progress['refusals']);
+        $this->assertSame(3, $progress['rows_written'], 'two page views and the session start');
+
+        $days = $migrator->reconcileSite(self::SITE);
+        $this->assertSame([], RequestMigrator::discrepancies($days));
+        $this->assertStringContainsString('1 refused (not_stored 1)', RequestMigrator::summary($days));
+    }
+
     public function testAReplayWritesNothingTwice(): void
     {
         $this->visit();

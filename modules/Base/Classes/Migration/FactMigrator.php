@@ -74,6 +74,7 @@ abstract class FactMigrator {
     const NO_SESSION   = 'no_session';
     const NO_TIMESTAMP = 'no_timestamp';
     const NO_DAY       = 'no_day';
+    const NOT_STORED   = 'not_stored';
 
     /** @var string */
     private $prefix;
@@ -427,7 +428,7 @@ abstract class FactMigrator {
      * @param  list<Row>  $rows
      * @param  Progress   $progress updated in place
      * @param  Tally|null $tally    added to in place; null counts nothing
-     * @return list<array<string, mixed>> raw rows, as EventRawHandlers::rowFor() builds them
+     * @return list<array<string, mixed>> raw rows, as EventRawHandlers::migratedRowFor() builds them
      */
     protected function build( array $rows, array &$progress, ?array &$tally = null ) {
 
@@ -440,6 +441,39 @@ abstract class FactMigrator {
             $progress['rows_read']++;
 
             $refused = $this->refusal( $r );
+            $built   = [];
+
+            if ( ! $refused ) {
+
+                foreach ( $this->events( $r, $refs ) as $event ) {
+
+                    foreach ( $event->getProperties() as $name => $value ) {
+
+                        if ( is_string( $value ) ) {
+
+                            $event->set( $name, self::v1Text( $value ) );
+                        }
+                    }
+
+                    $row = \OWA\Module\Base\Handler\EventRawHandlers::migratedRowFor( $event );
+
+                    /*
+                     * A row the builder will not store refuses the whole v1 row,
+                     * by its own reason, so the count says so. Skipped silently,
+                     * it was left out of the expected events as well as raw, and
+                     * the day reconciled with it missing.
+                     */
+                    if ( ! $row ) {
+
+                        $refused = self::NOT_STORED;
+                        $built   = [];
+
+                        break;
+                    }
+
+                    $built[] = $row;
+                }
+            }
 
             if ( $tally !== null ) {
 
@@ -460,22 +494,7 @@ abstract class FactMigrator {
                 continue;
             }
 
-            foreach ( $this->events( $r, $refs ) as $event ) {
-
-                foreach ( $event->getProperties() as $name => $value ) {
-
-                    if ( is_string( $value ) ) {
-
-                        $event->set( $name, self::v1Text( $value ) );
-                    }
-                }
-
-                $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
-
-                if ( ! $row ) {
-
-                    continue;
-                }
+            foreach ( $built as $row ) {
 
                 $out[] = $row;
 
@@ -1407,6 +1426,11 @@ abstract class FactMigrator {
      * @return bool
      */
     public static function isId( $value ) {
+
+        if ( ! is_int( $value ) && ! is_string( $value ) ) {
+
+            return false;
+        }
 
         $value = (string) $value;
 
