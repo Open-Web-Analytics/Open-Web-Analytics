@@ -344,4 +344,3 @@ final class SettingTierMoveTest extends TestCase
         }
     }
 }
-
