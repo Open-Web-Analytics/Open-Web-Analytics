@@ -2984,8 +2984,11 @@ namespace OWA\Module\Base\Classes;
             $this->set('base','public_path', $public_path);
         }
 
+        // The public URL (OWA_PUBLIC_URL), ending in one slash; '' stays ''.
+        $public_url = self::withSlash( (string) $this->get( 'base', 'public_url' ) );
+        $this->set( 'base', 'public_url', $public_url );
+
         // set various paths
-        $public_url = $this->get('base', 'public_url');
         $main_url = $public_url.'index.php';
         $this->set('base','main_url', $main_url);
         $this->set('base','main_absolute_url', $main_url);
