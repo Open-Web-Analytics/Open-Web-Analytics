@@ -797,7 +797,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * AFTER THE COMMIT, deliberately. Raised inside the transaction, a beacon
      * that then rolled back would still have announced a session that does not
-     * exist -- and an email is not retractable.
+     * exist.
      *
      * SYNCHRONOUS, and it needs nothing else. EventDispatch::notify() calls the
      * listeners in-process and logs "no listeners registered" when there are
@@ -810,9 +810,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * HERE because ingest knows all three facts: it is what materialises the
      * marker rows.
      *
-     * The event carries the BEACON's properties, which is what the
-     * announcement templates read: visitor_id, user_name, host, city, country,
-     * page_title, page_url.
+     * The event carries the BEACON's properties.
      *
      * @param object  $event the incoming tracking event
      * @param list<array<string, mixed>> $rows  the rows just written, primary first

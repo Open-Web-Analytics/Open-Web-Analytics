@@ -33,7 +33,6 @@ return [
     'base.moduleDeactivate'             => 'OWA\\Module\\Base\\Controller\\ModuleDeactivate',
     'base.moduleDeactivateCli'          => 'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',
     'base.moduleInstallCli'             => 'OWA\\Module\\Base\\Controller\\ModuleInstallCli',
-    'base.notifyNewSession'             => 'OWA\\Module\\Base\\Controller\\NotifyNewSession',
     'base.optionsGeneral'               => 'OWA\\Module\\Base\\Controller\\OptionsGeneral',
     'base.visualizations'               => 'OWA\\Module\\Base\\Controller\\Visualizations',
     'base.visualizationSave'            => 'OWA\\Module\\Base\\Controller\\VisualizationSave',

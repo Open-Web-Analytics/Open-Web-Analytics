@@ -13,7 +13,7 @@ class Module extends \OWA\Core\Module {
      */
     public $name = 'base';
 
-    public $required_schema_version = 97;
+    public $required_schema_version = 98;
 
     /**
      * Constructor
@@ -489,20 +489,6 @@ class Module extends \OWA\Core\Module {
      *
      */
     public function _registerEventHandlers() {
-
-        /*
-         * Notification handler.
-         *
-         * announce_visitors and notice_email are per-Profile now, and this
-         * runs at module-registration time -- there is no event and no site
-         * here to ask about. So the handler registers unconditionally and
-         * makes the decision itself, where it has a site_id. The only test
-         * left that is knowable this early is the CLI one.
-         */
-        if ( ! defined('OWA_CLI') ) {
-
-            $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
-        }
 
         /*
          * EVERY TRACKING EVENT BASE PROCESSES, as a namespace rather than a list.

@@ -21,8 +21,8 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     // Locate the OWA root (this file lives in <root>/tests).
     $owa_root = dirname(__DIR__) . '/';
 
-    // A tracking beacon has no authenticated user; logEvent() drops named
-    // users. Ensure the CLI/test context looks like an anonymous request.
+    // A tracking beacon has no authenticated user. Ensure the CLI/test
+    // context looks like an anonymous request.
     if (!isset($_SERVER['HTTP_USER_AGENT'])) {
         // Non-robotic UA: under the default spam_detection (normal) a robot
         // agent scores the default threshold and is not stored.

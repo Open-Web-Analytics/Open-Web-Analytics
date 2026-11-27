@@ -19,7 +19,6 @@ final class InProcessOnlyActionsTest extends TestCase
             'base.usersSetPassword'   => ['base.usersSetPassword', \OWA\Module\Base\Controller\UsersSetPassword::class],
             'base.usersNewAccount'    => ['base.usersNewAccount', \OWA\Module\Base\Controller\UsersNewAccount::class],
             'base.usersEmailChanged'  => ['base.usersEmailChanged', \OWA\Module\Base\Controller\UsersEmailChanged::class],
-            'base.notifyNewSession'   => ['base.notifyNewSession', \OWA\Module\Base\Controller\NotifyNewSession::class],
             'base.processEvent'       => ['base.processEvent', \OWA\Module\Base\Controller\ProcessEvent::class],
             'base.processRequest'     => ['base.processRequest', \OWA\Module\Base\Controller\ProcessRequest::class],
             'domstream.processEvent'  => ['domstream.processEvent', \OWA\Module\Domstream\Controller\ProcessEvent::class],

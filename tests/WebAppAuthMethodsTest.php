@@ -34,7 +34,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         // must run while updates are pending, which AdminController blocks
         'base.updates', 'base.updatesApply',
         // tracking, from log.php and its event queue
-        'base.processEvent', 'base.processRequest', 'base.notifyNewSession', 'domstream.processEvent',
+        'base.processEvent', 'base.processRequest', 'domstream.processEvent',
         // the REST API's CORS preflight
         'base.corsPreflight',
         // opens on the tracked site and hands over to an overlay token
