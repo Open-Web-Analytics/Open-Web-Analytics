@@ -203,37 +203,50 @@ class RestApi extends \OWA\Core\View {
     }
 
     /**
+     * The CORS headers for a request's Origin: Vary: Origin always, and
+     * Access-Control-Allow-Origin for an allowed one (matchAllowedOrigin()).
+     *
+     * No Access-Control-Allow-Credentials. The overlays fetch with
+     * credentials omitted and authenticate with their token, and an
+     * application password travels in the Authorization header; nothing reads
+     * the API cross-origin with cookies.
+     *
+     * Pure. See tests/CorsOriginMatchTest.
+     *
+     * @param  mixed        $origin the request's Origin header as read
+     * @param  array<mixed> $sites  site rows as getSitesList() returns them
+     * @return list<string> header lines, in the order sent
+     */
+    public static function corsHeaders( $origin, array $sites ) {
+
+        // The response body and its CORS headers depend on the Origin, so a
+        // shared cache cannot serve one site's allowed-origin header to a
+        // request from another. Sent whether or not the Origin is allowed,
+        // because the refusal is origin-dependent too.
+        $headers = [ 'Vary: Origin' ];
+
+        // No Origin: not a cross-origin request.
+        $allowed = $origin ? self::matchAllowedOrigin( $origin, $sites ) : null;
+
+        if ( $allowed !== null ) {
+
+            $headers[] = 'Access-Control-Allow-Origin: ' . $allowed;
+        }
+
+        return $headers;
+    }
+
+    /**
      * @return void
      */
     public function addCorsHeaders() {
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
+        $origin = \OWA\Core\RequestOrigin::header();
 
-        // Announce that the response body and its CORS headers depend on the
-        // Origin, so a shared cache cannot serve one site's allowed-origin
-        // header to a request from another. Sent whether or not the Origin is
-        // allowed, because the refusal is origin-dependent too.
-        header( 'Vary: Origin', false );
+        foreach ( self::corsHeaders( $origin, $origin ? \OWA\Core\CoreAPI::getSitesList() : [] ) as $header ) {
 
-        // no Origin means this is not a cross-origin request.
-        if ( ! $HTTP_ORIGIN ) {
-
-            return;
+            // Vary is added to, not replaced.
+            header( $header, strpos( $header, 'Vary:' ) !== 0 );
         }
-
-        $allowed = self::matchAllowedOrigin( $HTTP_ORIGIN, \OWA\Core\CoreAPI::getSitesList() );
-
-        if ( ! $allowed ) {
-
-            // Send nothing. The browser refuses the response, which is the
-            // correct outcome for an origin this installation does not serve.
-            return;
-        }
-
-        header( 'Access-Control-Allow-Origin: ' . $allowed );
-
-        // needed to allow cookie content to become available to the DOM.
-        header( 'Access-Control-Allow-Credentials: true' );
     }
 }

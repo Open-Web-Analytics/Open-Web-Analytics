@@ -215,4 +215,28 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertNull($match(['stream_type' => 'web', 'archived_date' => '2026-01-01 00:00:00']),
             'An archived Profile still grants its origin, though it has stopped observing.');
     }
+
+    /**
+     * An allowed origin gets Access-Control-Allow-Origin and no
+     * Access-Control-Allow-Credentials; every answer varies on Origin.
+     */
+    public function testAnAllowedOriginGetsAllowOriginAndNoCredentials(): void
+    {
+        $headers = \OWA\Core\View\RestApi::corsHeaders('https://shop.example.com', $this->sites(['example.com']));
+
+        $this->assertSame(['Vary: Origin', 'Access-Control-Allow-Origin: https://shop.example.com'], $headers);
+
+        foreach ($headers as $header) {
+            $this->assertStringStartsNotWith('Access-Control-Allow-Credentials', $header);
+        }
+    }
+
+    public function testARefusedOrAbsentOriginGetsOnlyVary(): void
+    {
+        $sites = $this->sites(['example.com']);
+
+        $this->assertSame(['Vary: Origin'], \OWA\Core\View\RestApi::corsHeaders('https://evil.test', $sites));
+        $this->assertSame(['Vary: Origin'], \OWA\Core\View\RestApi::corsHeaders('', $sites));
+        $this->assertSame(['Vary: Origin'], \OWA\Core\View\RestApi::corsHeaders(false, $sites));
+    }
 }

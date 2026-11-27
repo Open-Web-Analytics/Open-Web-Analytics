@@ -26,7 +26,9 @@ class CorsPreflight extends \OWA\Core\View\RestApi {
         /*
          * The origin is granted, or not, in RestApi::pre() -- only a tracked
          * site's origin gets Access-Control-Allow-Origin, so for any other the
-         * browser refuses whatever this allows.
+         * browser refuses whatever this allows. No origin is allowed
+         * credentials (RestApi::corsHeaders()): a cross-origin caller sends
+         * an application password in Authorization.
          */
         header( 'Access-Control-Allow-Headers: ' . self::ALLOWED_HEADERS );
         header( 'Access-Control-Allow-Methods: ' . self::ALLOWED_METHODS );
