@@ -196,7 +196,7 @@ final class ForgetSingletonsTest extends TestCase
     /** The salts are read from the constants again after the reset. */
     public function testTheSaltsAreReadAgainAfterTheReset(): void
     {
-        self::set( CoreAPI::class, 'salts', [ 'AUTH_KEY' => 'owatest-key', 'AUTH_SALT' => 'owatest-salt' ] );
+        self::set( CoreAPI::class, 'salts', [ 'AUTH' => [ 'owatest-key', 'owatest-salt' ] ] );
 
         $this->assertStringContainsString( 'owatest-key', CoreAPI::getSalt( 'auth' ) );
 

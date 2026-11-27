@@ -74,7 +74,7 @@ class CoreAPI {
     /** @var array<string, object> queue name => the queue getEventQueue() built */
     private static $event_queues = [];
 
-    /** @var array<string, string>|null NONCE_KEY etc. => the constant's value, read by getSalt() */
+    /** @var array<string, string[]>|null scheme => its defined SALT_CONSTANTS' values, read by getSalt() */
     private static $salts = null;
 
     /** @var array<string, true> module directories getPresentModules() has warned about */
@@ -3414,7 +3414,7 @@ class CoreAPI {
 
     /**
      * @param  string $data
-     * @param  string $scheme    NONCE, SECRET or AUTH, any case
+     * @param  string $scheme    NONCE or AUTH, any case
      * @param  string $hash_type
      * @return string
      */
@@ -3427,49 +3427,42 @@ class CoreAPI {
 
 
     /**
-     * @param  string $scheme NONCE, SECRET or AUTH, any case
+     * The constants each salt scheme is read from: its key, then its salt.
+     * They are Requirements::SECRET_CONSTANTS, which owa-config.php must define.
+     */
+    const SALT_CONSTANTS = [
+        'NONCE' => [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT' ],
+        'AUTH'  => [ 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ],
+    ];
+
+    /**
+     * The scheme's key and salt constants, concatenated. A constant that is
+     * not defined, or a scheme not in SALT_CONSTANTS, adds nothing.
+     *
+     * @param  string $scheme NONCE or AUTH, any case
      * @return string
      */
     public static function getSalt( $scheme ) {
 
-        $scheme = strtoupper($scheme);
+        $scheme = strtoupper( (string) $scheme );
 
         if ( ! self::$salts ) {
 
             self::$salts = [];
-            $ns = strtoupper( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
-            foreach (['NONCE', 'SECRET', 'AUTH'] as $f ) {
+            foreach ( self::SALT_CONSTANTS as $name => $constants ) {
 
-                foreach (['KEY', 'SALT'] as $s ) {
+                foreach ( $constants as $const ) {
 
-                    $const = sprintf("%s%s_%s", $ns, $f, $s);
+                    if ( defined( $const ) ) {
 
-                    if ( ! defined ( "$const" ) ) {
-                        continue;
-                    } else {
-
-                        self::$salts[ $f.'_'.$s ] = constant("$const");
+                        self::$salts[ $name ][] = (string) constant( $const );
                     }
                 }
             }
         }
 
-
-        $key = '';
-        $salt = '';
-
-        if (array_key_exists( $scheme.'_KEY', self::$salts ) ) {
-
-            $key = self::$salts[ $scheme.'_KEY' ];
-        }
-
-        if (array_key_exists( $scheme.'_SALT', self::$salts ) ) {
-
-            $salt = self::$salts[ $scheme.'_SALT' ];
-        }
-
-        return $key . $salt;
+        return implode( '', self::$salts[ $scheme ] ?? [] );
     }
 
     /**
