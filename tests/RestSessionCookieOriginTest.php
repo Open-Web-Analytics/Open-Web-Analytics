@@ -22,8 +22,8 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
-
+        // Saved BEFORE parent::setUp(), which skips the test when there is no
+        // database. tearDown() still runs then, and puts back what was saved.
         $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
 
         $this->saved = [
@@ -33,6 +33,8 @@ final class RestSessionCookieOriginTest extends RestControllerTestCase
             'method' => Auth::get_instance()->getAuthMethod(),
             'https'  => $_SERVER['HTTPS'] ?? null,
         ];
+
+        parent::setUp();
 
         \OWA\Core\CoreAPI::setSetting('base', 'public_url', self::OWN . '/');
         $_SERVER['HTTPS'] = 'on';

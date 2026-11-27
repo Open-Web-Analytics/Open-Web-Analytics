@@ -245,14 +245,20 @@ final class OverlayLauncherTest extends TestCase
     /** An archived Profile's origin is not answered over CORS, so its pages are not opened. */
     public function testAnArchivedProfilesPageIsNotOpened(): void
     {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->query('UPDATE owa_site SET archived_date = ? WHERE site_id = ?', [time(), self::OTHER]);
+        // Through the entity, so the row other tests have read is not served from the cache.
+        $archive = static function ($date): void {
+            $site = \OWA\Module\Base\Entity\Site::forSiteId(self::OTHER);
+            $site->set('archived_date', $date);
+            $site->update();
+        };
+
+        $archive(time());
 
         try {
             $this->assertStringStartsNotWith('http://shop.example.org/', $this->launchPage('/plain'));
             $this->assertStringStartsNotWith('http://blog.shop.example.org', $this->launchPage('/sub'));
         } finally {
-            $db->query('UPDATE owa_site SET archived_date = NULL WHERE site_id = ?', [self::OTHER]);
+            $archive(0);
         }
     }
 
