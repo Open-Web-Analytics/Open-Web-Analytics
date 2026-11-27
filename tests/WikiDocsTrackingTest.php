@@ -123,7 +123,7 @@ final class WikiDocsTrackingTest extends TestCase
             return $m[0];
         };
 
-        $firstClass = $line( 'Is a first-class event' );
+        $firstClass = $line( 'Is a built-in event' );
 
         foreach ( TrackingEventHelpers::eventNames() as $name ) {
             self::assertStringContainsString( "`$name`", $firstClass, "$name is reserved" );

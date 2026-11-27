@@ -443,7 +443,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
         if ( in_array( strtolower( $name ), array_map( 'strtolower', $owas ), true ) ) {
 
-            return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $name );
+            return sprintf( \OWA\Core\CoreAPI::t( '%s is a built-in event.' ), $name );
         }
 
         return '';
@@ -502,7 +502,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
         if ( stripos( $trigger, 'owa_' ) === 0 ) {
 
-            return \OWA\Core\CoreAPI::t( 'The tracker does not send a site\'s own event under a name starting owa_.' );
+            return \OWA\Core\CoreAPI::t( 'The tracker does not send a custom event under a name starting owa_.' );
         }
 
         return '';
