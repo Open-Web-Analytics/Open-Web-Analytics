@@ -217,7 +217,7 @@ class ScheduleRunCli extends SchedulerCli {
                 }
 
                 $controller->setJobLease(
-                    new \OWA\Module\Base\Classes\JobQueueLease( $row['id'], $row['lease_seconds'] ) );
+                    new \OWA\Module\Base\Classes\JobQueueLease( $row['id'], $row['lease_seconds'], $row['attempts'] ) );
 
                 \OWA\Core\CoreAPI::notice( sprintf( 'Running queued job %s (%s), attempt %d of %d.',
                     $row['id'], $command, $row['attempts'], $row['max_attempts'] ) );
@@ -474,6 +474,13 @@ class ScheduleRunCli extends SchedulerCli {
 
             $data    = $this->doJobAction( $controller );
             $outcome = $this->readOutcome( $controller, $data );
+
+        } catch ( \OWA\Core\Controller\JobLeaseLost $lost ) {
+
+            // Another run holds the job now and records its outcome.
+            \OWA\Core\CoreAPI::notice( sprintf( 'Job "%s" stopped: %s', $name, $lost->getMessage() ) );
+
+            return;
 
         } catch ( \Throwable $t ) {
 

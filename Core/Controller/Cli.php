@@ -518,13 +518,18 @@ class Cli extends \OWA\Core\AdminController {
      * one long blocking statement -- partition-rotate is -- cannot, which is
      * exactly why it wants a long lease instead.
      *
+     * A lease that is no longer this run's -- it ran out, and another run took
+     * the job over -- stops the run: JobLeaseLost is thrown, and the scheduler
+     * records no outcome for it.
+     *
      * @return void
+     * @throws JobLeaseLost
      */
     protected function heartbeat() {
 
-        if ( $this->job_lease ) {
+        if ( $this->job_lease && ! $this->job_lease->refresh( $this->getJobLease() ) ) {
 
-            $this->job_lease->refresh( $this->getJobLease() );
+            throw new JobLeaseLost( sprintf( '%s lost its job lease: another run has taken the job over.', static::class ) );
         }
     }
 

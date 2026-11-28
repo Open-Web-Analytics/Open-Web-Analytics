@@ -52,6 +52,14 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
      */
     const APPLY_LEASE = 900;
 
+    /**
+     * The scheduler's lease on the job, renewed after each cube
+     * (heartbeat()): one cube's ALTER, as APPLY_LEASE. The job runs every
+     * fifteen minutes, so a run that died is taken over by the next tick
+     * after that, not after the six-hour default.
+     */
+    const JOB_LEASE = self::APPLY_LEASE;
+
     public function action() {
 
         $only  = (string) $this->param( 'property' );
@@ -74,6 +82,8 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
             $changed += $outcome['changed'];
             $failed  += $outcome['failed'];
             $busy    += $outcome['busy'];
+
+            $this->heartbeat();
         }
 
         if ( $busy ) {

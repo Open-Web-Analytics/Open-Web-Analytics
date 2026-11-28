@@ -1748,6 +1748,41 @@ final class ScheduleCliTest extends CliControllerTestCase
         $replacement->release();
     }
 
+    /**
+     * Through heartbeat(): a run whose lock another run has taken over is
+     * stopped, and the lock stays the replacement's.
+     */
+    public function testAHeartbeatAfterTheLockWasTakenOverStopsTheRun()
+    {
+        $name = $this->track('owa_test_hb_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $overrunning = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($overrunning->acquire(300));
+
+        $db->query(sprintf(
+            "UPDATE owa_job_lock SET expires_at = %d WHERE job_name = '%s'",
+            time() - 10, $db->prepare($name)
+        ));
+
+        $replacement = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($replacement->acquire(300));
+
+        $ctrl = new \OWA\Module\Base\Controller\PartitionStatusCli([]);
+        $ctrl->setJobLease($overrunning);
+
+        try {
+            $this->callProtected($ctrl, 'heartbeat');
+            $this->fail('the superseded run carried on');
+        } catch (\OWA\Core\Controller\JobLeaseLost $e) {
+            $this->assertStringContainsString('lost its job lease', $e->getMessage());
+        }
+
+        $this->assertSame($replacement->getOwner(), $db->getJobLock($name)['owner'], 'the lock is still the replacement\'s');
+
+        $replacement->release();
+    }
+
     /** Run by hand, with no lease injected, heartbeat() does nothing at all. */
     public function testHeartbeatIsANoOpWhenRunByHand()
     {

@@ -585,4 +585,45 @@ final class JobQueueTest extends TestCase
         (new JobQueueLease($id, 300))->refresh(900);
         $this->assertNull($this->row($id)['lease_until'], 'a finished job is not revived');
     }
+
+    /**
+     * A claim taken over after its lease ran out is not the first run's: its
+     * heartbeat answers false and does not extend the new claim. Two
+     * heartbeats in one second still hold it.
+     */
+    public function testALeaseTakenOverIsNoLongerTheFirstRunsToRefresh(): void
+    {
+        $id    = JobQueue::enqueue(self::CMD);
+        $first = JobQueue::claim();
+        $lease = new JobQueueLease($id, 300, $first['attempts']);
+
+        $this->assertTrue($lease->refresh(300));
+        $this->assertTrue($lease->refresh(300), 'the same lease_until again: still held');
+
+        // Its lease runs out while it works, and the next tick claims the job again.
+        $this->set($id, ['lease_until' => JobQueue::now() - 1]);
+        $second = JobQueue::claim();
+        $this->assertSame($id, (string) $second['id'], 'the expired claim is taken over');
+        $until = (int) $this->row($id)['lease_until'];
+
+        $this->later(10);
+        $this->assertFalse($lease->refresh(900), 'the first run no longer holds it');
+        $this->assertSame($until, (int) $this->row($id)['lease_until'], 'and did not extend the second run\'s claim');
+        $this->assertTrue((new JobQueueLease($id, 300, $second['attempts']))->refresh(300));
+    }
+
+    /** A run stopped by a lost lease records nothing: the row is the claim of the run that took it over. */
+    public function testARunThatLostItsLeaseLeavesTheRowToItsNewClaim(): void
+    {
+        $id = JobQueue::enqueue(self::CMD);
+
+        $counts = JobQueue::drain(JobQueue::now() + 60, function () {
+            throw new \OWA\Core\Controller\JobLeaseLost('lost');
+        });
+
+        $this->assertSame(['done' => 0, 'retried' => 0, 'failed' => 0, 'exhausted' => 0], $counts);
+        $row = $this->row($id);
+        $this->assertSame('running', $row['status'], 'not retried, failed or done');
+        $this->assertSame('', (string) $row['last_error']);
+    }
 }
