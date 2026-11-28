@@ -10,6 +10,7 @@ use OWA\Module\Base\Classes\Migration\VisitorMigrator;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/V1Schema.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * v1's clicks, actions and purchases, the visitor store and recorded goal
@@ -89,7 +90,7 @@ final class MigrateMoreSourcesTest extends TestCase
             \OWA\Core\CoreAPI::entityFactory('base.setting')->delete(((array) $row)['id']);
         }
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
-        $db->query('DELETE FROM owa_property WHERE id = ?', [self::PROPERTY]);
+        owa_test_remove_property(self::PROPERTY);
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         [$goals, $conditions, $column] = $this->renames

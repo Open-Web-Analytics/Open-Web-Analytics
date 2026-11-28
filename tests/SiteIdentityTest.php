@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/SiteIdentityHarness.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Tests\SiteIdentityHarness as Harness;
 
@@ -30,7 +31,9 @@ final class SiteIdentityTest extends TestCase
         foreach ( $this->created as $domain ) {
 
             $db->query( 'DELETE FROM owa_site WHERE domain = ?', [ $domain ] );
-            $db->query( 'DELETE FROM owa_property WHERE domain = ?', [ $domain ] );
+            foreach ( (array) $db->get_results( 'SELECT id FROM owa_property WHERE domain = ?', [ $domain ] ) as $row ) {
+                owa_test_remove_property( $row['id'] );
+            }
         }
     }
 

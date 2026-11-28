@@ -23,6 +23,7 @@ return [
     'activate'                    => 'base.moduleActivateCli',
     'deactivate'                  => 'base.moduleDeactivateCli',
     'add-site'                    => 'base.sitesAddCli',
+    'property'                    => 'base.propertyCli',
     'prune-event-queue-archives'  => 'base.pruneEventQueueArchivesCli',
     'partition-status'            => 'base.partitionStatusCli',
     'partition-drop'              => 'base.partitionDropCli',

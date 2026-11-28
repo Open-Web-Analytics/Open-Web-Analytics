@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * A freshly installed OWA and a migrated one must be indistinguishable.
@@ -90,8 +91,7 @@ final class FreshInstallHierarchyTest extends TestCase
             $site->delete( $site->get( 'id' ) );
 
             if ( ! empty( $property_id ) ) {
-                $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-                $property->delete( $property_id );
+                owa_test_remove_property( $property_id );
             }
         }
     }
@@ -246,8 +246,7 @@ final class FreshInstallHierarchyTest extends TestCase
         } finally {
 
             foreach ( $created as $id ) {
-                $p = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-                $p->delete( $id );
+                owa_test_remove_property( $id );
             }
         }
     }
@@ -292,8 +291,7 @@ final class FreshInstallHierarchyTest extends TestCase
         } finally {
 
             foreach ( array_unique( $created ) as $id ) {
-                $p = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-                $p->delete( $id );
+                owa_test_remove_property( $id );
             }
         }
     }
@@ -331,8 +329,7 @@ final class FreshInstallHierarchyTest extends TestCase
         } finally {
 
             foreach ( $created as $id ) {
-                $p = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-                $p->delete( $id );
+                owa_test_remove_property( $id );
             }
         }
     }

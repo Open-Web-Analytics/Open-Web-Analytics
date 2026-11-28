@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CliControllerTestCase.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Module\Base\Classes\JobQueue;
 
@@ -76,7 +77,7 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
         $property_id = 7778000000000091;
         $property    = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
-            'id' => $property_id, 'name' => 'Drain refusal fixture', 'domain' => 'example.test',
+            'id' => $property_id, 'name' => 'Drain refusal fixture', 'domain' => owa_test_property_domain($property_id),
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time(),
         ]);
         $this->assertTrue((bool) $property->create());

@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/CapturesLog.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Controller\CubeRebuildCli;
@@ -68,7 +69,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Cube backfill fixture',
-                'domain'        => 'example.test',
+                'domain'        => owa_test_property_domain($property_id),
                 'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
                 'creation_date' => time(),
             ]);
@@ -131,8 +132,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
 
         foreach ([self::PROPERTY, self::CUBED_PROPERTY, self::EMPTY_PROPERTY,
                   self::OLD_ONLY_PROPERTY] as $property_id) {
-            $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
+            owa_test_remove_property($property_id);
 
             $cube = Cubes::tableFor($property_id);
 

@@ -92,6 +92,7 @@ return [
     'base.profileSettings'              => 'OWA\\Module\\Base\\Controller\\ProfileSettings',
     'base.propertyAccess'               => 'OWA\\Module\\Base\\Controller\\PropertyAccess',
     'base.propertyAccessUpdate'         => 'OWA\\Module\\Base\\Controller\\PropertyAccessUpdate',
+    'base.propertyCli'                  => 'OWA\\Module\\Base\\Controller\\PropertyCli',
     'base.propertyDelete'               => 'OWA\\Module\\Base\\Controller\\PropertyDelete',
     'base.propertyEdit'                 => 'OWA\\Module\\Base\\Controller\\PropertyEdit',
     'base.organizationEdit'             => 'OWA\\Module\\Base\\Controller\\OrganizationEdit',

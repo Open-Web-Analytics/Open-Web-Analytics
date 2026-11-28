@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/PropertyFixtures.php';
+
 /**
  * Four ways the funnel counted what nobody did, each against the real cube.
  *
@@ -55,7 +57,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
 
             $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties(['id' => self::PROPERTY, 'name' => 'Funnel correctness fixture',
-                'domain' => 'funnel-correctness.test',
+                'domain' => owa_test_property_domain(self::PROPERTY),
                 'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time()]);
             $property->create();
 
@@ -102,7 +104,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
         }
 
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
-        $db->query(sprintf('DELETE FROM owa_property WHERE id = %d', self::PROPERTY));
+        owa_test_remove_property(self::PROPERTY);
         $db->query(sprintf('DELETE FROM %s WHERE property_id = %d',
             \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getTableName(), self::PROPERTY));
         // Deleted under it, so its memo of the Property's dimensions goes too.

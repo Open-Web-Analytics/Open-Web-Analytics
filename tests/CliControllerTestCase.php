@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/PropertyFixtures.php';
+
 /**
  * Shared base for the documented CLI command tests
  * (commands registered in modules/base/module.php:537-552, invoked via
@@ -84,6 +86,12 @@ abstract class CliControllerTestCase extends TestCase
         // Delete in LIFO order so relations go before the rows they reference.
         foreach (array_reverse($this->cleanup) as $row) {
             try {
+                // A Property goes with its Profiles and its cube.
+                if ($row['entity'] === 'base.property' && $row['col'] === 'id') {
+                    owa_test_remove_property($row['value']);
+                    continue;
+                }
+
                 \OWA\Core\CoreAPI::entityFactory($row['entity'])->delete($row['value'], $row['col']);
             } catch (\Throwable $ex) {
                 // best-effort

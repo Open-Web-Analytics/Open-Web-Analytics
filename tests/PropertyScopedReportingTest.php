@@ -5,6 +5,7 @@ require_once( __DIR__ . '/AsAdministrator.php' );
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * Reports are of a Property, and every Profile in it.
@@ -112,7 +113,9 @@ final class PropertyScopedReportingTest extends TestCase
             \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->delete(((array) $goal)['id']);
         }
 
-        $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d, %d)', self::PROPERTY, self::OTHER_PROPERTY, self::EMPTY_PROPERTY));
+        foreach ([self::PROPERTY, self::OTHER_PROPERTY, self::EMPTY_PROPERTY] as $property) {
+            owa_test_remove_property($property);
+        }
     }
 
     /** A user of the role granted the given Profiles, as the database holds them. @return array [entity, row id] */

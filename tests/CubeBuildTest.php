@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * A build, end to end: raw rows in, cube rows out of one Property's cube.
@@ -170,8 +171,7 @@ final class CubeBuildTest extends TestCase
         }
 
         foreach ([self::PROPERTY, self::FOREIGN_PROPERTY] as $property_id) {
-            $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
+            owa_test_remove_property($property_id);
 
             // The cube goes with the Property, and so do its working tables.
             // One per Property means a fixture that leaves its own behind
@@ -203,7 +203,7 @@ final class CubeBuildTest extends TestCase
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Cube build fixture',
-                'domain'        => 'example.test',
+                'domain'        => owa_test_property_domain($property_id),
                 'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
                 'creation_date' => time(),
             ]);

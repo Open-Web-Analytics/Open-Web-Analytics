@@ -128,6 +128,9 @@ class SiteManager extends \OWA\Core\Base {
      * Keyed on the domain, as 1.13's Update021 grouped them: two Profiles of one
      * website share a Property, and that is what makes adding a second way of
      * tracking a site produce a second Profile rather than a second website.
+     * Domains are compared by host (livePropertyWithHost()), so www.example.com
+     * finds the Property of example.com: only one live Property may have a
+     * host.
      *
      * The NAME given here lands on the Property, not the Profile. That is the
      * migration's rule too -- the human name describes the website, and the
@@ -146,11 +149,11 @@ class SiteManager extends \OWA\Core\Base {
 
         if ( $domain !== '' ) {
 
-            $existing = self::livePropertyWithDomain( $property->getTableName(), $domain );
+            $existing = self::livePropertyWithHost( $domain );
 
             if ( $existing ) {
 
-                return $existing;
+                return (string) $existing['id'];
             }
         }
 
@@ -162,7 +165,7 @@ class SiteManager extends \OWA\Core\Base {
          * derived from it would collide once a Property moved to another domain and a
          * new one was made for the old.
          *
-         * Grouping happens by the domain COLUMN, looked up above. PropertyEdit mints
+         * Grouping happens by the domain's host, looked up above. PropertyEdit mints
          * ids the same way.
          */
         $id = \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() );
@@ -191,45 +194,98 @@ class SiteManager extends \OWA\Core\Base {
      */
     public static function propertyIdForDomain( $domain ) {
 
-        $domain = self::normaliseDomain( $domain );
+        $row = self::livePropertyWithHost( self::normaliseDomain( $domain ) );
 
-        if ( $domain === '' ) {
-
-            return '';
-        }
-
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName();
-
-        return (string) self::livePropertyWithDomain( $table, $domain );
+        return $row ? (string) $row['id'] : '';
     }
 
     /**
-     * The oldest Property with this domain that is not archived. An archived
-     * Property is hidden from every screen, so a Profile put in one could not
-     * be found.
+     * The live web Property that has this domain's host, oldest first; null
+     * when none has, or the domain has no host. One at most once Update103
+     * has run (Entity\Property::LIVE_HOST_INDEX).
      *
-     * @param  string $table the Property table
-     * @param  string $domain
-     * @return string|null its id
+     * @param  mixed      $domain
+     * @param  int|string $except  a Property id to pass over: the one being edited
+     * @return array<string, mixed>|null its row
      */
-    private static function livePropertyWithDomain( $table, $domain ) {
+    public static function livePropertyWithHost( $domain, $except = '' ) {
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $table );
-        $db->selectColumn( 'id, archived_date' );
-        $db->where( 'domain', $domain );
-        $db->orderBy( 'creation_date', 'ASC' );
-        $db->orderBy( 'id', 'ASC' );
+        $host = Spam\Hosts::of( (string) $domain );
 
-        foreach ( (array) $db->getAllRows() as $row ) {
+        if ( $host === '' ) {
 
-            if ( empty( $row['archived_date'] ) ) {
+            return null;
+        }
 
-                return (string) $row['id'];
+        foreach ( self::propertiesWithHost( $host ) as $row ) {
+
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+            $property->setProperties( $row );
+
+            if ( (string) $row['id'] !== (string) $except && $property->liveHost() !== null ) {
+
+                return $row;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Every Property, live or archived, whose domain has this domain's host:
+     * oldest first. The table holds a few rows, so they are compared here,
+     * with the same parse as the rest of OWA.
+     *
+     * @param  mixed $domain
+     * @return list<array<string, mixed>> rows
+     */
+    public static function propertiesWithHost( $domain ) {
+
+        $host = Spam\Hosts::of( (string) $domain );
+
+        if ( $host === '' ) {
+
+            return [];
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName() );
+        $db->selectColumn( '*' );
+        $db->orderBy( 'creation_date', 'ASC' );
+        $db->orderBy( 'id', 'ASC' );
+
+        $out = [];
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( Spam\Hosts::of( (string) ( $row['domain'] ?? '' ) ) === $host ) {
+
+                $out[] = (array) $row;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Why a live web Property may not have this domain: the live Property
+     * that has its host already. '' when none has.
+     *
+     * @param  mixed      $domain
+     * @param  int|string $except  the Property being edited
+     * @return string
+     */
+    public static function domainTakenMessage( $domain, $except = '' ) {
+
+        $row = self::livePropertyWithHost( $domain, $except );
+
+        if ( ! $row ) {
+
+            return '';
+        }
+
+        return sprintf( \OWA\Core\CoreAPI::t( 'The Property %1$s (id %2$s) already has the domain %3$s. Only one live Property may have a domain.' ),
+            (string) $row['name'], (string) $row['id'], Spam\Hosts::of( (string) $domain ) );
     }
 
     /**

@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * What GET /v1/sites emits, and who it emits it to.
@@ -338,7 +339,7 @@ final class SiteListContractTest extends TestCase
 
             if ( ! empty( $site['id'] ) ) {
                 \OWA\Core\CoreAPI::entityFactory( 'base.site' )->delete( $site['id'], 'id' );
-                \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $site['property_id'], 'id' );
+                owa_test_remove_property( $site['property_id'] );
             }
         }
     }

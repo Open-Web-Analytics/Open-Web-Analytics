@@ -5,6 +5,7 @@ use OWA\Module\Base\Update\Update061;
 use OWA\Module\Base\Update\Update081;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * Update081: owa_custom_report gains property_id, and every row made before it
@@ -82,8 +83,9 @@ final class Update081Test extends TestCase
         }
 
         $db->query('DELETE FROM owa_site WHERE site_id IN (?, ?)', [self::FUNNEL_SITE, self::OWNER_SITE]);
-        $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%s, %s, %s)',
-            self::FUNNEL_PROPERTY, self::OWNER_PROPERTY, self::OTHER_PROPERTY));
+        foreach ([self::FUNNEL_PROPERTY, self::OWNER_PROPERTY, self::OTHER_PROPERTY] as $property) {
+            owa_test_remove_property($property);
+        }
 
         $this->users = [];
     }

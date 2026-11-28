@@ -13,4 +13,8 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+    <extensions>
+        <!-- Fails a run that leaves a cube with no Property row (tests/OrphanCubeCheck.php). -->
+        <bootstrap class="OrphanCubeCheck"/>
+    </extensions>
 </phpunit>

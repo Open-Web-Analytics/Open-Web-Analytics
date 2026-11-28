@@ -85,6 +85,7 @@ final class CliCommandsTest extends CliControllerTestCase
             'activate'                   => ['activate',                   'base.moduleActivateCli'],
             'deactivate'                 => ['deactivate',                 'base.moduleDeactivateCli'],
             'add-site'                   => ['add-site',                   'base.sitesAddCli'],
+            'property'                   => ['property',                   'base.propertyCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],

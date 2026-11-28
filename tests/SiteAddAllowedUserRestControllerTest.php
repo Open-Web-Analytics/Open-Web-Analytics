@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/PropertyFixtures.php';
+
 /**
  * Tests for the siteUsers REST controller (Base\Controller\SiteAddAllowedUserRest).
  *
@@ -87,7 +89,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         // The Property AFTER its Profile: a Property with a Profile still
         // pointing at it is a worse thing to leave than either alone.
         if ($this->site && !empty($this->site['property_id'])) {
-            $this->safeDelete('base.property', $this->site['property_id'], 'id');
+            owa_test_remove_property($this->site['property_id']);
         }
         if ($this->targetUser && !empty($this->targetUser['id'])) {
             $this->safeDelete('base.user', $this->targetUser['id'], 'id');

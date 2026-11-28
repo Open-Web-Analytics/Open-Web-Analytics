@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -85,7 +86,7 @@ final class UnknownSiteRejectionTest extends TestCase
          * alone.
          */
         foreach ($this->createdProperties as $id) {
-            $db->query(sprintf("DELETE FROM owa_property WHERE id = '%s'", $db->prepare($id)));
+            owa_test_remove_property($id);
         }
 
         $this->created           = [];

@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * enableEcommerceReporting moves from the Profile to the Property, and down()
@@ -83,8 +84,9 @@ final class Update070Test extends TestCase
             $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
         }
 
-        $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d, %d)',
-            self::PROPERTY, self::HELD_PROPERTY, self::OFF_PROPERTY));
+        foreach ([self::PROPERTY, self::HELD_PROPERTY, self::OFF_PROPERTY] as $property) {
+            owa_test_remove_property($property);
+        }
     }
 
     private function row(string $scope, string $id, string $value, string $name = 'enableEcommerceReporting'): void

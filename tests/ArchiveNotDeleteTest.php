@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/DeclaresProbeSettings.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * Removing a Profile or a Property archives it rather than destroying it.
@@ -70,11 +71,9 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archived = [];
 
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName();
-
         foreach ( $this->properties as $id ) {
 
-            \OWA\Core\CoreAPI::dbSingleton()->query( "DELETE FROM $table WHERE id = ?", [ $id ] );
+            owa_test_remove_property( $id );
         }
 
         $this->properties = [];

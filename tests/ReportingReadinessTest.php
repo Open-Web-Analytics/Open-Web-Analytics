@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Classes\Cube\Status;
@@ -39,7 +40,7 @@ final class ReportingReadinessTest extends TestCase
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Readiness fixture',
-                'domain'        => 'example.test',
+                'domain'        => owa_test_property_domain($property_id),
                 'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
                 'creation_date' => time(),
             ]);
@@ -108,8 +109,7 @@ final class ReportingReadinessTest extends TestCase
         }
 
         foreach ([self::READY_PROPERTY, self::WAITING_PROPERTY] as $property_id) {
-            $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
+            owa_test_remove_property($property_id);
 
             foreach (['', '_rebuild', '_computed'] as $suffix) {
                 $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor($property_id), $suffix));
