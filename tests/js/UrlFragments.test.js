@@ -7,20 +7,14 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * Stripped in the TRACKER rather than at ingest, so the hash never reaches the
  * wire instead of being removed by a server that has already received it.
  *
- * THE TWO HALVES HAVE TO AGREE, and that is what most of this file is about. A
- * fragment left out of the reported URL but kept in the route comparison gives
- * a hash-routed site one page view per anchor click, every one of them
- * reporting the same URL -- which is worse than either behaviour on its own.
- * One option moves both.
+ * The reported URL and the route comparison both leave it out, so a
+ * fragment-only change is not a route change. There is no option to keep it:
+ * a hash-routed site sends each route with trackPageView('/path').
  */
 
-function newTracker(options) {
+function newTracker() {
     const t = new OWATracker({ cookie_domain_set: true, cookie_domain: '.frag.example' });
     t.setSiteId('fragment-site');
-
-    if (options && options.fragments) {
-        t.setTrackUrlFragments(true);
-    }
 
     return t;
 }
@@ -134,52 +128,51 @@ describe('a hash change is not a route change', () => {
     });
 });
 
-describe('a site that routes on the hash turns both halves back on', () => {
+describe('a site that routes on the hash', () => {
 
     beforeEach(() => { jest.useFakeTimers(); });
     afterEach(() => { jest.useRealTimers(); });
 
-    test('the fragment comes back into the URL', () => {
+    test('setTrackUrlFragments is gone, and a trackUrlFragments option keeps nothing', () => {
+        expect(OWATracker.prototype.setTrackUrlFragments).toBeUndefined();
+
         window.history.replaceState({}, '', '/app#/settings');
 
-        expect(newTracker({ fragments: true }).getCurrentUrl()).toContain('#/settings');
+        const t = newTracker();
+        t.setOption('trackUrlFragments', true);
+
+        expect(t.getCurrentUrl()).not.toContain('#');
     });
 
-    test('and hash navigation becomes page views again', () => {
+    test('a hashchange to a new route sends no page view', () => {
         window.history.replaceState({}, '', '/app#/users');
 
-        const t = newTracker({ fragments: true });
+        const t = newTracker();
         const sent = captureSends(t);
 
         t.trackRouteChanges();
 
-        window.history.pushState({}, '', '/app#/settings');
+        window.location.hash = '#/settings';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        window.dispatchEvent(new PopStateEvent('popstate'));
         settle();
 
-        const views = sent.filter(e => e.event_type === 'page_view');
-
-        expect(views).toHaveLength(1);
-        expect(views[0].page_location).toContain('#/settings');
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 
-    test('the page views can be told apart, which is the point of moving both together', () => {
+    test('each route sent with trackPageView(path) is its own page view', () => {
         window.history.replaceState({}, '', '/app#/one');
 
-        const t = newTracker({ fragments: true });
+        const t = newTracker();
         const sent = captureSends(t);
 
-        t.trackRouteChanges();
-
-        window.history.pushState({}, '', '/app#/two');
-        settle();
-        window.history.pushState({}, '', '/app#/three');
-        settle();
+        t.trackPageView('/one');
+        t.trackPageView('/two');
 
         const urls = sent
             .filter(e => e.event_type === 'page_view')
             .map(e => e.page_location);
 
-        expect(urls).toHaveLength(2);
-        expect(new Set(urls).size).toBe(2);
+        expect(urls).toEqual(['/one', '/two']);
     });
 });

@@ -195,7 +195,7 @@ describe('downloads and outbound links', () => {
     test('a download carries the link\'s id and text, from the click', () => {
         const t = newTracker();
         const sent = captureSends(t);
-        t.setOption('logClicksAsTheyHappen', false);
+        t.setOption('logClicksAsTheyHappen', true);
         document.body.innerHTML =
             '<a id="header-cta" href="/files/report.pdf">Get the report</a>'
             + '<a id="inline" href="/files/report.pdf"><span id="in">annual   report</span></a>';
@@ -215,7 +215,7 @@ describe('downloads and outbound links', () => {
     test('a download from a link with no id or text carries neither', () => {
         const t = newTracker();
         const sent = captureSends(t);
-        t.setOption('logClicksAsTheyHappen', false);
+        t.setOption('logClicksAsTheyHappen', true);
         document.body.innerHTML = '<a href="/files/blank.pdf"></a>';
 
         t.clickEventHandler({ target: document.querySelector('a'), pageX: 1, pageY: 1 });
@@ -469,6 +469,27 @@ describe('forms', () => {
             .toEqual(['form_start', 'form_submit', 'form_submit']);
         expect(sent[0].first_field_id).toBe('a');
     });
+
+    test('a submit the page cancels is not a form_submit', () => {
+        document.body.innerHTML = '<form id="f"><input id="a"></form>';
+
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackForms();
+
+        const form = document.getElementById('f');
+        const cancel = (e) => e.preventDefault();
+        form.addEventListener('submit', cancel);
+
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type)).toEqual(['form_start']);
+
+        form.removeEventListener('submit', cancel);
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type)).toEqual(['form_start', 'form_submit']);
+    });
 });
 
 describe('scroll depth', () => {
@@ -694,10 +715,14 @@ describe('what a form event says about the form', () => {
      * A form with no action submits to the page itself, which is what the value
      * says rather than reporting an empty destination.
      */
-    test('no action means the page itself', () => {
+    test('no action means the page itself, without its fragment', () => {
+        window.history.replaceState({}, '', '/join?plan=pro#step-2');
+
         const start = startOn('<form id="f"><input id="a"></form>', '#a');
 
-        expect(start.form_destination).toBe(window.location.href);
+        expect(start.form_destination).toBe(window.location.origin + '/join?plan=pro');
+
+        window.history.replaceState({}, '', '/');
     });
 
     /*
