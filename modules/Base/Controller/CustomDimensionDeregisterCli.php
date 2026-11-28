@@ -28,28 +28,29 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
         return [
             'description' => 'Removes a custom dimension from a Property, and drops its cube column with the values in it. The collected values stay in the raw events, so registering again and rebuilding brings them back.',
             'arguments'   => [
-                'property=<id>' => 'Required. The Property.',
-                'key=<key>'     => 'Required. The collected key to stop reporting on.',
-                '--defer'       => 'Remove the registration now and leave the column drop to the next build or apply job.',
+                'property' => [
+                    'type'        => 'property',
+                    'required'    => true,
+                    'description' => 'The Property.',
+                ],
+                'key' => [
+                    'type'        => 'string',
+                    'value'       => '<key>',
+                    'required'    => true,
+                    'description' => 'The collected key to stop reporting on.',
+                ],
+                '--defer' => [
+                    'type'        => 'flag',
+                    'description' => 'Remove the registration now and leave the column drop to the next build or apply job.',
+                ],
             ],
         ];
     }
 
     public function action() {
 
-        $property_id = $this->property();
-
-        if ( $property_id === '' ) {
-
-            return;
-        }
-
-        $key = trim( (string) $this->getParam( 'key' ) );
-
-        if ( $key === '' ) {
-
-            return $this->usageError( 'key=<name> is required.' );
-        }
+        $property_id = (string) $this->param( 'property' );
+        $key         = trim( (string) $this->param( 'key' ) );
 
         $result = \OWA\Module\Base\Classes\Cube\Dimensions::deregister( $property_id, $key );
 
@@ -66,7 +67,7 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
           . 'owa_event_raw.',
             $key, implode( ', ', $result['columns'] ), $table ) );
 
-        if ( $this->getParam( 'defer' ) ) {
+        if ( $this->param( 'defer' ) ) {
 
             return \OWA\Core\CoreAPI::notice( sprintf(
                 'Deferred: the column goes at the next build of %s.', $table ) );

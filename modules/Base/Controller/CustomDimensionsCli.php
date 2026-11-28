@@ -21,26 +21,6 @@ abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The Property this command was given, or '' having already refused.
-     *
-     * @return string
-     */
-    protected function property() {
-
-        $id = trim( (string) $this->getParam( 'property' ) );
-
-        if ( ! ctype_digit( $id ) || $id === '0' ) {
-
-            $this->usageError( 'property=<id> is required. cmd=custom-dimension-list with no '
-                         . 'property lists every Property that has one.' );
-
-            return '';
-        }
-
-        return $id;
-    }
-
-    /**
      * One registration, as a line.
      *
      * @param Row $row an owa_custom_dimension row

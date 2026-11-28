@@ -40,7 +40,7 @@ final class ServerRoleBootTest extends TestCase
     private function exec(array $constants, array $args): array
     {
         $cmd = array_merge([PHP_BINARY, '-d', 'auto_prepend_file=' . self::PREPEND], $args);
-        $env = array_merge(getenv(), ['OWA_PROBE_CONSTANTS' => json_encode($constants)]);
+        $env = array_merge(getenv(), ['OWA_PROBE_CONSTANTS' => json_encode($constants), 'OWA_PROBE_STUB_HTTP' => '1']);
 
         $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__), $env);
         $stdout = stream_get_contents($pipes[1]);
@@ -126,6 +126,7 @@ final class ServerRoleBootTest extends TestCase
         $this->assertStringContainsString('its role is collector', $r['stderr']);
     }
 
+    /** server-check runs on api and runs api's checks only. Its HTTP requests are stubbed (OWA_PROBE_STUB_HTTP). */
     public function testACommandMarkedForTheRoleRuns(): void
     {
         $r = $this->cli(['OWA_SERVER_ROLE' => 'api'], 'cmd=server-check');
@@ -133,8 +134,11 @@ final class ServerRoleBootTest extends TestCase
         $this->assertSame(0, $r['code'], $r['stderr'] . $r['stdout']);
         $this->assertStringContainsString('Server role:      api', $r['stdout']);
         $this->assertStringContainsString('Serves:           rest, cli', $r['stdout']);
-        $this->assertStringContainsString('Scheduler:        does not run here', $r['stdout']);
-        $this->assertStringContainsString('Missing:          nothing', $r['stdout']);
+        $this->assertStringContainsString('Configuration:    ok', $r['stdout']);
+        $this->assertStringContainsString('Database:         ok: connected', $r['stdout']);
+        $this->assertStringContainsString('REST API:         ok: ', $r['stdout']);
+        $this->assertStringNotContainsString('Scheduler:', $r['stdout']);
+        $this->assertStringNotContainsString('Queue', $r['stdout']);
     }
 
     public function testAnUnknownRoleIsRefusedEverywhere(): void

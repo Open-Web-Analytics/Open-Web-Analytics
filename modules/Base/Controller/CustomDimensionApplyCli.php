@@ -35,7 +35,10 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
         return [
             'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes. Runs on the scheduler as apply-custom-dimensions.',
             'arguments'   => [
-                'property=<id>' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
+                ],
             ],
         ];
     }
@@ -51,51 +54,18 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
 
     public function action() {
 
-        $only = trim( (string) $this->getParam( 'property' ) );
+        $only  = (string) $this->param( 'property' );
+        $cubes = $this->cubesToApply( $only );
 
-        if ( $only !== '' && ! ctype_digit( $only ) ) {
+        if ( $only !== '' && ! $cubes ) {
 
-            return $this->usageError( 'property=<id> takes a Property id.' );
-        }
-
-        $existing = \OWA\Module\Base\Classes\Cube\Cubes::existing();
-
-        if ( $only !== '' ) {
-
-            $cubes = isset( $existing[ $only ] ) ? [ $only => $existing[ $only ] ] : [];
-
-            if ( ! $cubes ) {
-
-                return $this->refuse( sprintf(
-                    'Property %s has no cube, so it has no columns to change.', $only ) );
-            }
-
-        } else {
-
-            /*
-             * Only the Properties with something pending, found in one indexed
-             * read whatever the installation's size. Reconciling every cube on
-             * every run would be a hundred and fifty pairs of queries every
-             * fifteen minutes to discover there is nothing to do.
-             *
-             * A named Property is reconciled fully instead -- including drops,
-             * which leave no pending row to find -- because naming one is
-             * someone asking for it to be brought into line now.
-             */
-            $cubes = [];
-
-            foreach ( \OWA\Module\Base\Classes\Cube\Dimensions::propertiesWithPendingWork()
-                      as $property_id ) {
-
-                if ( isset( $existing[ $property_id ] ) ) {
-
-                    $cubes[ $property_id ] = $existing[ $property_id ];
-                }
-            }
+            return $this->refuse( sprintf(
+                'Property %s has no cube, so it has no columns to change.', $only ) );
         }
 
         $changed = 0;
         $failed  = 0;
+        $busy    = 0;
 
         foreach ( $cubes as $property_id => $table ) {
 
@@ -103,16 +73,26 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
 
             $changed += $outcome['changed'];
             $failed  += $outcome['failed'];
+            $busy    += $outcome['busy'];
         }
 
-        if ( ! $changed && ! $failed ) {
+        if ( $busy ) {
+
+            // A busy cube's build reconciles before it builds, so it is not a failure.
+            \OWA\Core\CoreAPI::notice( sprintf( \OWA\Core\CoreAPI::tn(
+                '%1$d cube busy: its build will apply the columns. %2$d changed.',
+                '%1$d cubes busy: their builds will apply the columns. %2$d changed.', $busy ), $busy, $changed ) );
+
+        } elseif ( ! $changed && ! $failed ) {
 
             return \OWA\Core\CoreAPI::notice( $cubes
                 ? sprintf( 'Every cube already matches its registry (%d checked).', count( $cubes ) )
                 : 'Nothing is waiting for a column.' );
-        }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d cube%s altered.', $changed, $changed === 1 ? '' : 's' ) );
+        } else {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%d cube%s altered.', $changed, $changed === 1 ? '' : 's' ) );
+        }
 
         if ( $failed ) {
 
@@ -123,9 +103,49 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
     }
 
     /**
+     * The cubes to reconcile, property id => table: the named Property's, or
+     * every cube with a registration pending or failed.
+     *
+     * @param string $only a Property id, or ''
+     * @return array<string, string>
+     */
+    protected function cubesToApply( $only ) {
+
+        $existing = \OWA\Module\Base\Classes\Cube\Cubes::existing();
+
+        if ( $only !== '' ) {
+
+            return isset( $existing[ $only ] ) ? [ $only => $existing[ $only ] ] : [];
+        }
+
+        /*
+         * Only the Properties with something pending, found in one indexed
+         * read whatever the installation's size. Reconciling every cube on
+         * every run would be a hundred and fifty pairs of queries every
+         * fifteen minutes to discover there is nothing to do.
+         *
+         * A named Property is reconciled fully instead -- including drops,
+         * which leave no pending row to find -- because naming one is
+         * someone asking for it to be brought into line now.
+         */
+        $cubes = [];
+
+        foreach ( \OWA\Module\Base\Classes\Cube\Dimensions::propertiesWithPendingWork()
+                  as $property_id ) {
+
+            if ( isset( $existing[ $property_id ] ) ) {
+
+                $cubes[ $property_id ] = $existing[ $property_id ];
+            }
+        }
+
+        return $cubes;
+    }
+
+    /**
      * @param string $property_id
      * @param string $table
-     * @return array{changed: int, failed: int}
+     * @return array{changed: int, failed: int, busy: int} busy: the cube's lock is held, by its build
      */
     protected function applyTo( $property_id, $table ) {
 
@@ -141,7 +161,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s is busy; its build will apply these.', $table ) );
 
-            return [ 'changed' => 0, 'failed' => 0 ];
+            return [ 'changed' => 0, 'failed' => 0, 'busy' => 1 ];
         }
 
         try {
@@ -171,6 +191,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
         return [
             'changed' => $result['changed'] ? 1 : 0,
             'failed'  => ( ! $result['ok'] || $result['skipped'] ) ? 1 : 0,
+            'busy'    => 0,
         ];
     }
 }

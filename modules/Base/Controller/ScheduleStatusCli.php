@@ -30,13 +30,23 @@ class ScheduleStatusCli extends SchedulerCli {
         return [
             'description' => 'Reports what the scheduler is doing and, for a job that is behind, the first cause that explains it. Read-only.',
             'arguments'   => [
-                'format=markdown' => 'Print the registered jobs as a Markdown table instead.',
+                'format' => [
+                    'type'        => 'select',
+                    'options'     => [ 'markdown' ],
+                    'description' => 'Print the registered jobs as a Markdown table instead.',
+                ],
             ],
         ];
     }
 
     /** See JobStatus::MIN_GRACE. */
     const MIN_GRACE = \OWA\Module\Base\Classes\JobStatus::MIN_GRACE;
+
+    /** Runs while schema updates are pending, and reports them. */
+    public function needsCurrentSchema() {
+
+        return false;
+    }
 
     public function action() {
 
@@ -74,9 +84,11 @@ class ScheduleStatusCli extends SchedulerCli {
 
         if ( $pending ) {
 
+            $while = array_keys( array_filter( $jobs, static fn ( $job ) => ! empty( $job['while_updates_pending'] ) ) );
+
             $lines[] = '';
-            $lines[] = 'ACTION: schema updates are pending, so the dispatcher refuses every job. '
-                     . 'Apply them with cmd=core-update-schema. Nothing below will run until you do.';
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'ACTION: schema updates are pending, so the dispatcher runs only %s. Apply them with cmd=core-update-schema. No other job below runs until you do.' ),
+                       $while ? implode( ', ', $while ) : \OWA\Core\CoreAPI::t( '(none)' ) );
         }
 
         if ( ! $pending && \OWA\Core\CoreAPI::isUpdateRequired() ) {

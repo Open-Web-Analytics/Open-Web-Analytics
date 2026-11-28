@@ -29,7 +29,11 @@ class PartitionStatusCli extends PartitionsCli {
         return [
             'description' => 'Reports how each partitioned table is laid out: what it covers, at what granularity, how much of the partition ceiling it uses, what is in the catch-all and how long the lead lasts. Read-only.',
             'arguments'   => [
-                'table=<name>' => 'Report only this table.',
+                'table' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'Report only this table.',
+                ],
             ],
         ];
     }
@@ -43,7 +47,7 @@ class PartitionStatusCli extends PartitionsCli {
             return;
         }
 
-        $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
+        $tables = $this->factTables( $this->param( 'table' ) );
 
         if ( ! $tables ) {
 

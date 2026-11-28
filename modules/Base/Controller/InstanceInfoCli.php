@@ -34,8 +34,14 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Prints one read-only report on the whole installation: versions, scheduler, retention, partitions and the other things that fail without an error. Exits 0 whatever it finds unless strict=1.',
             'arguments'   => [
-                'strict=1'   => 'Exit non-zero when anything is in a FAIL state, for monitoring.',
-                'no-color=1' => 'Plain output with no colour. Also off when NO_COLOR is set.',
+                '--strict' => [
+                    'type'        => 'flag',
+                    'description' => 'Exit non-zero when anything is in a FAIL state, for monitoring.',
+                ],
+                '--no-color' => [
+                    'type'        => 'flag',
+                    'description' => 'Plain output with no colour. Also off when NO_COLOR is set.',
+                ],
             ],
         ];
     }
@@ -102,7 +108,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $this->write( $lines );
 
-        if ( $this->getParam( 'strict' ) && $this->tally[ self::FAIL ] ) {
+        if ( $this->param( 'strict' ) && $this->tally[ self::FAIL ] ) {
 
             return $this->fail( sprintf( '%d check%s failed.', $this->tally[ self::FAIL ], $this->tally[ self::FAIL ] === 1 ? '' : 's' ) );
         }
@@ -948,7 +954,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function useColour() {
 
-        if ( $this->getParam( 'no-color' ) || getenv( 'NO_COLOR' ) !== false ) {
+        if ( $this->param( 'no-color' ) || getenv( 'NO_COLOR' ) !== false ) {
 
             return false;
         }

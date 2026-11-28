@@ -71,6 +71,13 @@ class Controller extends \OWA\Core\Base {
     public $state;
 
     /**
+     * param()'s values, read on its first call.
+     *
+     * @var array<string, mixed>|null
+     */
+    private $param_values = null;
+
+    /**
      * Flag for requiring nonce before performing write actions
      *
      * @var Bool
@@ -117,6 +124,58 @@ class Controller extends \OWA\Core\Base {
     }
     
     
+    /**
+     * The parameters this controller reads, declared: name => declaration, as
+     * Core\Params describes them. doAction() refuses a request whose value for
+     * one is not one it takes, after the capability and nonce checks and
+     * before validate() and action(). param() reads each as its type.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function params() {
+
+        return [];
+    }
+
+    /**
+     * A declared parameter's value, as its type (Core\Params::values()): its
+     * default when it was not given. Throws for a name params() does not
+     * declare.
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    protected function param( $name ) {
+
+        if ( $this->param_values === null ) {
+
+            $this->param_values = \OWA\Core\Params::values( static::params(), (array) $this->params );
+        }
+
+        if ( ! array_key_exists( $name, $this->param_values ) ) {
+
+            throw new \LogicException( sprintf( '%s reads %s, which its params() does not declare.', static::class, $name ) );
+        }
+
+        return $this->param_values[ $name ];
+    }
+
+    /**
+     * doAction()'s answer when a declared parameter is refused: the problems
+     * as validation_errors, then errorAction().
+     *
+     * @param  array<string, string> $problems name => message
+     * @return mixed
+     */
+    protected function paramsRefused( array $problems ) {
+
+        $this->set( 'validation_errors', $problems );
+
+        $result = $this->errorAction();
+
+        return ! empty( $result ) ? $result : $this->data;
+    }
+
     /**
      * Registers the param validators. doAction() calls it once the capability
      * and nonce checks have passed, so it runs only for an authorised caller.
@@ -234,6 +293,14 @@ class Controller extends \OWA\Core\Base {
                     return $this->refused($this->notAuthenticatedAction());
                 }
             }
+        }
+
+        // The declared parameters (params()), each refused here when its value is not one it takes.
+        $problems = \OWA\Core\Params::problems( static::params(), (array) $this->params );
+
+        if ( $problems ) {
+
+            return $this->paramsRefused( $problems );
         }
 
         // set param validators
@@ -620,6 +687,7 @@ class Controller extends \OWA\Core\Base {
     public function setParam($name, $value) {
 
         $this->params[$name] = $value;
+        $this->param_values  = null;
     }
 
     /**
@@ -1029,6 +1097,27 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
+     * The REST API's 401 for a request that carries no application password.
+     *
+     * @return string
+     */
+    public static function notAuthenticatedMessage() {
+
+        return \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' );
+    }
+
+    /**
+     * The REST API's 401 for a request whose application password was refused
+     * (Auth::carriesAppPassword()).
+     *
+     * @return string
+     */
+    public static function refusedAppPasswordMessage() {
+
+        return \OWA\Core\CoreAPI::t( 'The application password in the Authorization header was not accepted.' );
+    }
+
+    /**
      * The answer for a request without the credentials this controller needs:
      * a 401 for the REST API, a redirect to the login form otherwise.
      *
@@ -1039,9 +1128,10 @@ class Controller extends \OWA\Core\Base {
         if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
             
             $this->setView('base.restApi');
-            $this->set('error_msg', ['headline' => \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
+            $auth = \OWA\Core\Auth::get_instance();
+            $this->set('error_msg', ['headline' => \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => $auth->refusedLegacyApiKey()
                 ? self::legacyApiKeyMessage()
-                : \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
+                : ( $auth->carriesAppPassword() ? self::refusedAppPasswordMessage() : self::notAuthenticatedMessage() )] );
             http_response_code(401);
         } else {
             $this->setRedirectAction('base.loginForm');

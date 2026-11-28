@@ -17,8 +17,17 @@ class JobsCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Lists the one-off job queue.',
             'arguments'   => [
-                'status=<pending|running|failed|done>' => 'List only jobs in this state.',
-                'limit=<n>'                            => 'How many to list. Defaults to 50.',
+                'status' => [
+                    'type'        => 'select',
+                    'options'     => [ 'pending', 'running', 'failed', 'done' ],
+                    'description' => 'List only jobs in this state.',
+                ],
+                'limit' => [
+                    'type'        => 'integer',
+                    'min'         => 1,
+                    'default'     => 50,
+                    'description' => 'How many to list.',
+                ],
             ],
         ];
     }
@@ -41,12 +50,7 @@ class JobsCli extends \OWA\Core\Controller\Cli {
 
             case 'retry':
 
-                $id = (string) $this->getParam( 'id' );
-
-                if ( $id === '' ) {
-
-                    return $this->usageError( 'Say which job: cmd=jobs-retry id=<id>, or id=all for every failed job.' );
-                }
+                $id = (string) $this->param( 'id' );
 
                 $retried = $Q::retry( $id );
 
@@ -56,12 +60,7 @@ class JobsCli extends \OWA\Core\Controller\Cli {
 
             case 'forget':
 
-                $id = (string) $this->getParam( 'id' );
-
-                if ( $id === '' ) {
-
-                    return $this->usageError( 'Say which job: cmd=jobs-forget id=<id>.' );
-                }
+                $id = (string) $this->param( 'id' );
 
                 if ( ! $Q::forget( $id ) ) {
 
@@ -81,8 +80,7 @@ class JobsCli extends \OWA\Core\Controller\Cli {
                 return;
         }
 
-        $status = $this->getParam( 'status' ) ?: null;
-        $rows   = $Q::listJobs( $status, (int) ( $this->getParam( 'limit' ) ?: 50 ) );
+        $rows   = $Q::listJobs( $this->param( 'status' ), (int) $this->param( 'limit' ) );
         $q      = $Q::stats();
 
         $lines = [ sprintf( 'Queued jobs: due %d, delayed %d, running %d, failed %d, done %d.',

@@ -30,7 +30,10 @@ class TablesCleanupCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Reports the tables under OWA\'s prefix that this version does not use, such as a retired 1.x table, a removed module\'s, or the cube of a Property that no longer exists; with --drop, drops them. Leaves the cubes of Properties that exist, archived or not, and the 1.x tracking tables to cmd=v1-drop. Refused while updates are pending.',
             'arguments'   => [
-                '--drop' => 'Drop the tables.',
+                '--drop' => [
+                    'type'        => 'flag',
+                    'description' => 'Drop the tables.',
+                ],
             ],
         ];
     }

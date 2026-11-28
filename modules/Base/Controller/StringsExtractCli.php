@@ -21,7 +21,10 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Writes the English string catalogue, conf/strings/en.php, from the CoreAPI::t() and CoreAPI::tn() calls in the code and the OWA.l() and OWA.ln() calls in the reporting JavaScript. Also writes conf/strings/script-keys.php, the keys the JavaScript uses, and reports calls whose text is not a literal.',
             'arguments'   => [
-                'check=1' => 'Report whether the catalogue and the key list are current, and write nothing.',
+                '--check' => [
+                    'type'        => 'flag',
+                    'description' => 'Report whether the catalogue and the key list are current, and write nothing.',
+                ],
             ],
         ];
     }
@@ -47,7 +50,7 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
                 continue;
             }
 
-            if ( $this->getParam( 'check' ) ) {
+            if ( $this->param( 'check' ) ) {
 
                 $this->fail( sprintf( '%s is out of date. Run cmd=strings-extract.', $file ) );
                 continue;

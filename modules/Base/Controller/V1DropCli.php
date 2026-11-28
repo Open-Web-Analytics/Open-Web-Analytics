@@ -23,7 +23,10 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Reports the 1.x tracking tables and what they hold; with --drop, drops them. Refused until the 1.x history migration has run.',
             'arguments'   => [
-                '--drop' => 'Drop the tables.',
+                '--drop' => [
+                    'type'        => 'flag',
+                    'description' => 'Drop the tables.',
+                ],
             ],
         ];
     }
@@ -74,7 +77,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
                 isset( $read[ $table ] ) ? sprintf( ', %d read by the migration', $read[ $table ] ) : '' );
         }
 
-        if ( ! $this->getParam( 'drop' ) ) {
+        if ( ! $this->param( 'drop' ) ) {
 
             $lines[] = '';
             $lines[] = 'Nothing was dropped. Rows the migration did not read -- older than its cutoff,'

@@ -18,6 +18,9 @@ namespace OWA\Module\Base\Controller;
  *   cmd=schedule-run --force-release job=X  drop a lock left by a dead process
  *   cmd=schedule-run --prune-orphans        forget jobs that are no longer registered
  *
+ * --dry-run with --force-release or --prune-orphans says what would be
+ * released or pruned, and changes nothing. --force needs job=.
+ *
  * A no-op tick is SILENT -- debug(), never notice(). At a tick a minute, a
  * notice per tick would bury the one that matters within a week.
  *
@@ -32,11 +35,27 @@ class ScheduleRunCli extends SchedulerCli {
         return [
             'description' => 'Runs every scheduled job that is due. The one command that belongs in cron, every minute.',
             'arguments'   => [
-                '--dry-run'       => 'Report what would run, and change nothing.',
-                'job=<name>'      => 'With --force or --force-release: the job to act on.',
-                '--force'         => 'With job=: run the job now, whatever its schedule.',
-                '--force-release' => 'With job=: drop a lock left by a process that died.',
-                '--prune-orphans' => 'Forget the state of jobs that are no longer registered.',
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what would run, release or prune, and change nothing.',
+                ],
+                'job' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'With --force or --force-release: the job to act on.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'With job=: run the job now, whatever its schedule.',
+                ],
+                '--force-release' => [
+                    'type'        => 'flag',
+                    'description' => 'With job=: drop a lock left by a process that died.',
+                ],
+                '--prune-orphans' => [
+                    'type'        => 'flag',
+                    'description' => 'Forget the state of jobs that are no longer registered.',
+                ],
             ],
         ];
     }
@@ -49,9 +68,30 @@ class ScheduleRunCli extends SchedulerCli {
      */
     const MAX_RUNTIME = 240;
 
+    /**
+     * Runs while schema updates are pending: action() then runs only the jobs
+     * registered for it (core-update, which may install the release that
+     * fixes them).
+     */
+    public function needsCurrentSchema() {
+
+        return false;
+    }
+
     public function action() {
 
         $started = time();
+
+        $only          = $this->param( 'job' ) ?: null;
+        $force         = (bool) $this->param( 'force' );
+        $dry_run       = (bool) $this->param( 'dry-run' );
+        $prune_orphans = (bool) $this->param( 'prune-orphans' );
+        $force_release = (bool) $this->param( 'force-release' );
+
+        if ( $force && ! $only ) {
+
+            return $this->usageError( \OWA\Core\CoreAPI::t( '--force runs one job: name it with job=. Nothing was run.' ) );
+        }
 
         $role = \OWA\Core\ServerRole::current();
 
@@ -75,37 +115,34 @@ class ScheduleRunCli extends SchedulerCli {
         if ( $pending ) {
 
             // Never with a filtered list: pruning would forget every job left out.
-            $jobs = $this->getParam( 'prune-orphans' ) || $this->getParam( 'force-release' ) ? []
+            $jobs = $prune_orphans || $force_release ? []
                 : array_filter( $jobs, static fn ( $job ) => ! empty( $job['while_updates_pending'] ) );
 
             if ( ! $jobs ) {
 
-                return $this->refuse(
-                    'Schema updates are pending, so no job can run. Apply them with cmd=core-update-schema.'
-                );
+                return $this->refuse( sprintf(
+                    \OWA\Core\CoreAPI::t( 'Schema updates are pending, so only %s can run. Apply them with cmd=core-update-schema.' ),
+                    implode( ', ', array_keys( array_filter( $all, static fn ( $job ) => ! empty( $job['while_updates_pending'] ) ) ) ) ?: \OWA\Core\CoreAPI::t( '(none)' )
+                ) );
             }
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Schema updates are pending: running only %s. Apply them with cmd=core-update-schema.',
                 implode( ', ', array_keys( $jobs ) ) ) );
         }
 
-        if ( $this->getParam( 'prune-orphans' ) ) {
+        if ( $prune_orphans ) {
 
-            $this->pruneOrphans( $jobs );
-
-            return;
-        }
-
-        if ( $this->getParam( 'force-release' ) ) {
-
-            $this->forceRelease();
+            $this->pruneOrphans( $jobs, $dry_run );
 
             return;
         }
 
-        $only    = $this->getParam( 'job' ) ?: null;
-        $force   = (bool) $this->getParam( 'force' );
-        $dry_run = (bool) $this->getParam( 'dry-run' );
+        if ( $force_release ) {
+
+            $this->forceRelease( $dry_run );
+
+            return;
+        }
 
         if ( $only && $pending && isset( $all[ $only ] ) && ! isset( $jobs[ $only ] ) ) {
 
@@ -663,9 +700,10 @@ class ScheduleRunCli extends SchedulerCli {
      * when it comes back.
      *
      * @param array<string, JobRegistration> $jobs
+     * @param bool $dry_run say what would be pruned, and prune nothing
      * @return void
      */
-    protected function pruneOrphans( $jobs ) {
+    protected function pruneOrphans( $jobs, $dry_run = false ) {
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
         $pruned  = 0;
@@ -677,16 +715,25 @@ class ScheduleRunCli extends SchedulerCli {
                 continue;
             }
 
+            $pruned++;
+
+            if ( $dry_run ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( \OWA\Core\CoreAPI::t( 'Would prune orphaned job "%s".' ), $name ) );
+
+                continue;
+            }
+
             \OWA\Core\CoreAPI::entityFactory( 'base.scheduled_job' )->delete( $name, 'job_name' );
             $db->releaseJobLock( $name, $row['owner'] ?? '' );
             $db->deleteJobLock( $name, time() + 86400 * 3650 );
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Pruned orphaned job "%s".', $name ) );
-
-            $pruned++;
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d orphaned job%s pruned.', $pruned, $pruned === 1 ? '' : 's' ) );
+        \OWA\Core\CoreAPI::notice( $dry_run
+            ? sprintf( \OWA\Core\CoreAPI::tn( '%d orphaned job would be pruned. Nothing was changed.', '%d orphaned jobs would be pruned. Nothing was changed.', $pruned ), $pruned )
+            : sprintf( '%d orphaned job%s pruned.', $pruned, $pruned === 1 ? '' : 's' ) );
     }
 
     /**
@@ -696,11 +743,12 @@ class ScheduleRunCli extends SchedulerCli {
      * which is the real need behind wanting a shorter lease -- and a far better
      * one, since it carries no standing risk of a duplicate run.
      *
+     * @param bool $dry_run say what would be released, and release nothing
      * @return void
      */
-    protected function forceRelease() {
+    protected function forceRelease( $dry_run = false ) {
 
-        $name = $this->getParam( 'job' );
+        $name = $this->param( 'job' );
 
         if ( ! $name ) {
 
@@ -715,6 +763,15 @@ class ScheduleRunCli extends SchedulerCli {
         if ( ! $lock ) {
 
             \OWA\Core\CoreAPI::notice( sprintf( 'No lock held for "%s".', $name ) );
+
+            return;
+        }
+
+        if ( $dry_run ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                \OWA\Core\CoreAPI::t( 'Would release the lock on "%1$s", held since %2$s by %3$s. Nothing was changed.' ),
+                $name, $this->readable( $lock['acquired_at'] ), $lock['owner'] ) );
 
             return;
         }

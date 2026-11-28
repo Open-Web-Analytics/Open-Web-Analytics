@@ -6,10 +6,21 @@ namespace OWA\Module\Base\Classes;
  * the input rules and the creation, shared by the Add Profile screen
  * (Controller\SitesAdd) and cmd=add-site (Controller\SitesAddCli).
  *
- * For a controller: it reads the request through getParam() and adds its
- * rules with addValidation().
+ * For a controller: it reads the request through profileInput() and adds
+ * its rules with addValidation().
  */
 trait AddsProfile {
+
+    /**
+     * A request parameter this reads: getParam()'s.
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    protected function profileInput( $name ) {
+
+        return $this->getParam( $name );
+    }
 
     /**
      * No propertyId and no live Property with the domain: createSite() makes one.
@@ -30,14 +41,14 @@ trait AddsProfile {
      */
     protected function requestPropertyId() {
 
-        $propertyId = (string) $this->getParam( 'propertyId' );
+        $propertyId = (string) $this->profileInput( 'propertyId' );
 
         if ( $propertyId !== '' ) {
 
             return $propertyId;
         }
 
-        return SiteManager::propertyIdForDomain( (string) $this->getParam( 'domain' ) );
+        return SiteManager::propertyIdForDomain( (string) $this->profileInput( 'domain' ) );
     }
 
     /**
@@ -55,9 +66,9 @@ trait AddsProfile {
 
         $this->validateStreamIdentity();
 
-        if ( $this->getParam( 'propertyId' ) ) {
+        if ( $this->profileInput( 'propertyId' ) ) {
 
-            $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
+            $this->addValidation( 'propertyId', $this->profileInput( 'propertyId' ), 'entityExists',
                 [
                     'entity'   => 'base.property',
                     'column'   => 'id',
@@ -73,7 +84,7 @@ trait AddsProfile {
          * Property with no name has nothing to head its group in the site
          * selector.
          */
-        $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
+        $this->addValidation( 'name', trim( (string) $this->profileInput( 'name' ) ), 'required',
             [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
     }
 
@@ -88,17 +99,17 @@ trait AddsProfile {
      */
     protected function validateStreamIdentity() {
 
-        $type = $this->getParam( 'streamType' ) ?: \OWA\Module\Base\Entity\Site::STREAM_WEB;
+        $type = $this->profileInput( 'streamType' ) ?: \OWA\Module\Base\Entity\Site::STREAM_WEB;
 
         if ( $type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
-            $this->addValidation( 'domain', SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
+            $this->addValidation( 'domain', SiteManager::domainOnly( $this->profileInput( 'domain' ) ), 'required',
                 [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ] );
 
             return;
         }
 
-        $this->addValidation( 'appId', trim( (string) $this->getParam( 'appId' ) ), 'required',
+        $this->addValidation( 'appId', trim( (string) $this->profileInput( 'appId' ) ), 'required',
             [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Bundle ID or package name is required.' ) ] );
     }
 
@@ -110,7 +121,7 @@ trait AddsProfile {
      */
     protected function addProfile() {
 
-        $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
+        $this->set( 'domain', $this->profileInput( 'domain' ) );
 
         $sm = new SiteManager();
 
@@ -123,14 +134,14 @@ trait AddsProfile {
          * "Observation Profile 1", "2", "3"; that counter could never reach 2
          * through this screen.
          */
-        $site = $sm->createSite( $this->getParam( 'domain' ),
-                            $this->getParam( 'name' ),
-                            $this->getParam( 'description' ),
-                            $this->getParam( 'site_family' ),
+        $site = $sm->createSite( $this->profileInput( 'domain' ),
+                            $this->profileInput( 'name' ),
+                            $this->profileInput( 'description' ),
+                            $this->profileInput( 'site_family' ),
                             '',
-                            $this->getParam( 'propertyId' ),
-                            $this->getParam( 'streamType' ),
-                            $this->getParam( 'appId' )
+                            $this->profileInput( 'propertyId' ),
+                            $this->profileInput( 'streamType' ),
+                            $this->profileInput( 'appId' )
         );
 
         if ( $site ) {

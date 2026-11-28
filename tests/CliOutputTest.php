@@ -30,7 +30,16 @@ final class CliOutputTest extends CliControllerTestCase
         $r = $this->cli('cmd=change-password', 'password=owa-cli-output-pass');
 
         $this->assertSame(2, $r['code'], $r['out']);
-        $this->assertStringContainsString('Command failed. There were some errors:', $r['out']);
+        $this->assertStringContainsString('cmd=change-password: user=<user id> is required. Nothing was done.', $r['out']);
+    }
+
+    /** A value the argument does not take is named, with what it takes, and nothing is done. */
+    public function testAValueAnArgumentDoesNotTakeSaysWhatItTakesAndExits2(): void
+    {
+        $r = $this->cli('cmd=partition-rotate', 'months-ahead=abc');
+
+        $this->assertSame(2, $r['code'], $r['out']);
+        $this->assertStringContainsString('cmd=partition-rotate: months-ahead=abc: Must be a whole number of at least 1. Nothing was done.', $r['out']);
     }
 
     public function testAddSiteWithoutANameSaysWhyAndExits2(): void

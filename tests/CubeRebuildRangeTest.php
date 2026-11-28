@@ -216,13 +216,18 @@ final class CubeRebuildRangeTest extends TestCase
         $this->assertSame(['from' => 20260901, 'to' => 20260930], $range);
     }
 
+    /** Refused before the command runs (Core\Params), rather than guessed. */
     public function testAnUnreadableRangeIsRefusedRatherThanGuessed(): void
     {
-        $this->assertNull($this->range(['from' => 'yesterday']));
-        $this->assertNull($this->range(['from' => '20261301']), 'month 13 is not a date');
-        $this->assertNull($this->range(['days' => '0']));
-        $this->assertNull($this->range(['days' => 'lots']));
+        $declared = CubeRebuildCli::params();
+
+        foreach ([['from' => 'yesterday'], ['from' => '20261301'], ['days' => '0'], ['days' => 'lots'],
+                  ['from' => '20260930', 'to' => '20260901']] as $bad) {
+            $this->assertNotSame([], \OWA\Core\Params::problems($declared, $bad), json_encode($bad));
+        }
+
         $this->assertNull($this->range(['from' => '20260930', 'to' => '20260901']),
             'a backwards window is a typo, not an instruction');
+        $this->assertNull($this->range(['to' => '20200101']), 'to= alone starts today');
     }
 }

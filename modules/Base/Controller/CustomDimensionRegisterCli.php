@@ -41,36 +41,51 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         return [
             'description' => 'Registers a collected key as a custom dimension, adding a column to the Property\'s reporting cube. Existing rows are not backfilled; rebuild the range with cube-rebuild to fill them.',
             'arguments'   => [
-                'property=<id>'                 => 'Required. The Property.',
-                'key=<key>[,<key>...]'          => 'Required. The collected key, or several separated by commas, which are added in one table rebuild.',
-                'scope=<' . implode( '|', \OWA\Module\Base\Entity\CustomDimension::scopes() ) . '>'
-                    => 'Required. event reads the value from each event; user reads it from the visitor store.',
-                'type=<' . implode( '|', \OWA\Module\Base\Entity\CustomDimension::types() ) . '>'
-                    => 'The column type. Defaults to string.',
-                'label=<text>'                  => 'The name shown in reports. Only with a single key.',
-                '--defer'                       => 'Record the registration and leave the column to the next build or apply job.',
-                '--dry-run'                     => 'Report what would be registered, and change nothing.',
+                'property' => [
+                    'type'        => 'property',
+                    'required'    => true,
+                    'description' => 'The Property.',
+                ],
+                'key' => [
+                    'type'        => 'string',
+                    'value'       => '<key>',
+                    'list'        => true,
+                    'required'    => true,
+                    'description' => 'The collected key, or several separated by commas, which are added in one table rebuild.',
+                ],
+                'scope' => [
+                    'type'        => 'select',
+                    'options'     => \OWA\Module\Base\Entity\CustomDimension::scopes(),
+                    'required'    => true,
+                    'description' => 'event reads the value from each event; user reads it from the visitor store.',
+                ],
+                'type' => [
+                    'type'        => 'select',
+                    'options'     => \OWA\Module\Base\Entity\CustomDimension::types(),
+                    'default'     => \OWA\Module\Base\Entity\CustomDimension::TYPE_STRING,
+                    'description' => 'The column type.',
+                ],
+                'label' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'The name shown in reports. Only with a single key.',
+                ],
+                '--defer' => [
+                    'type'        => 'flag',
+                    'description' => 'Record the registration and leave the column to the next build or apply job.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what would be registered, and change nothing.',
+                ],
             ],
         ];
     }
 
     public function action() {
 
-        $property_id = $this->property();
-
-        if ( $property_id === '' ) {
-
-            return;
-        }
-
-        $keys = array_filter( array_map( 'trim',
-            explode( ',', (string) $this->getParam( 'key' ) ) ), static fn ( $key ) => $key !== '' );
-
-        if ( ! $keys ) {
-
-            return $this->usageError( 'key=<name> is required, or key=a,b,c to register '
-                                . 'several in one rebuild.' );
-        }
+        $property_id = (string) $this->param( 'property' );
+        $keys        = (array) $this->param( 'key' );
 
         $requests = [];
 
@@ -78,15 +93,15 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
 
             $requests[] = [
                 'key'    => $key,
-                'scope'  => (string) $this->getParam( 'scope' ),
-                'type'   => (string) $this->getParam( 'type' ),
+                'scope'  => (string) $this->param( 'scope' ),
+                'type'   => (string) $this->param( 'type' ),
                 // One label for several keys would be wrong, so a label is only
                 // taken when one key was named.
-                'label'  => count( $keys ) === 1 ? (string) $this->getParam( 'label' ) : '',
+                'label'  => count( $keys ) === 1 ? (string) $this->param( 'label' ) : '',
             ];
         }
 
-        if ( $this->getParam( 'dry-run' ) ) {
+        if ( $this->param( 'dry-run' ) ) {
 
             $this->reportPlan( $property_id, $requests );
 
@@ -110,7 +125,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         \OWA\Core\CoreAPI::notice( sprintf( 'Recorded %d dimension%s for %s.',
             count( $result['registered'] ), \OWA\Core\Lib::plural( count( $result['registered'] ), '', 's' ), $table ) );
 
-        if ( $this->getParam( 'defer' ) ) {
+        if ( $this->param( 'defer' ) ) {
 
             return \OWA\Core\CoreAPI::notice( sprintf(
                 'Deferred: the column goes on at the next build of %s, or sooner with '

@@ -31,8 +31,16 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Publishes the Profiles\' tracking bundles that are not current. Saves and cmd=core-update-schema publish on their own; run it after a change neither sees, such as a config-file constant.',
             'arguments'   => [
-                'force=1'   => 'Publish every bundle, current or not.',
-                'site=<id>' => 'Publish only this Profile\'s bundle.',
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'Publish every bundle, current or not.',
+                ],
+                'site' => [
+                    'type'        => 'profile',
+                    'live'        => true,
+                    'stream'      => \OWA\Module\Base\Entity\Site::STREAM_WEB,
+                    'description' => 'Publish only this Profile\'s bundle: a live web Profile.',
+                ],
             ],
         ];
     }
@@ -44,9 +52,9 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
         $B = '\OWA\Module\Base\Classes\TrackerBundle';
 
-        $site = (string) $this->getParam( 'site' );
+        $site = $this->param( 'site' );
 
-        $results = $B::publishStale( (bool) $this->getParam( 'force' ), $site !== '' ? [ $site ] : null );
+        $results = $B::publishStale( $this->param( 'force' ), $site !== null ? [ $site ] : null );
 
         $counts = array_count_values( $results );
 

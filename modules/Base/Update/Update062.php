@@ -150,7 +150,8 @@ class Update062 extends \OWA\Core\Update {
         }
 
         $raw_since = \OWA\Core\CoreAPI::getRequestParam( 'since' );
-        $all       = (bool) \OWA\Core\CoreAPI::getRequestParam( 'all' );
+        $all       = (bool) \OWA\Core\Params::values( \OWA\Module\Base\Controller\CoreUpdateSchemaCli::params(),
+            [ 'all' => \OWA\Core\CoreAPI::getRequestParam( 'all' ) ?? false ] )['all'];
 
         if ( (bool) $raw_since === $all ) {
 

@@ -50,30 +50,51 @@ class PartitionRotateCli extends PartitionsCli {
         return [
             'description' => 'Adds the partitions ahead, merges old periods, and drops what the retention settings say not to keep. Runs on the scheduler daily as rotate-partitions. How much is kept is set by raw_retention_months and each Property\'s cube_retention_months.',
             'arguments'   => [
-                'months-ahead=<n>'                               => 'How many months of future partitions to keep. Defaults to 12.',
-                'granularity=<monthly|half-month|quarter-month>' => 'Granularity for new lead partitions. Defaults to what each table is on.',
-                'table=<name>'                                   => 'Rotate only this table.',
-                '--force'                                        => 'Proceed when a table would go over the partition ceiling.',
-                '--dry-run'                                      => 'Report what a run would do now, and change nothing.',
-                'raw-months=<n>'                                 => 'With --dry-run: what keeping n months of raw events would do.',
-                'cube-months=<n>'                                => 'With --dry-run: what keeping n months in the cubes would do.',
-                'property=<id>'                                  => 'With --dry-run and cube-months=: try the window on this Property\'s cube.',
+                'months-ahead' => [
+                    'type'        => 'integer',
+                    'min'         => 1,
+                    'default'     => \OWA\Core\Db::PARTITION_MONTHS_AHEAD,
+                    'description' => 'How many months of future partitions to keep.',
+                ],
+                'granularity' => [
+                    'type'        => 'select',
+                    'options'     => [ 'monthly', 'half-month', 'quarter-month', 'daily' ],
+                    'description' => 'Granularity for new lead partitions. Defaults to what each table is on.',
+                ],
+                'table' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'Rotate only this table.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'Proceed when a table would go over the partition ceiling, or carve a cube\'s populated partition into days.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what a run would do now, and change nothing.',
+                ],
+                'raw-months' => [
+                    'type'        => 'integer',
+                    'min'         => 0,
+                    'description' => 'With --dry-run: what keeping n months of raw events would do. 0 keeps everything.',
+                ],
+                'cube-months' => [
+                    'type'        => 'integer',
+                    'min'         => 0,
+                    'description' => 'With --dry-run: what keeping n months in the cubes would do. 0 keeps everything.',
+                ],
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'With --dry-run and cube-months=: try the window on this Property\'s cube.',
+                ],
+                'keep' => [
+                    'retired' => 'keep= is gone: retention is the raw_retention_months setting, and '
+                        . 'cube_retention_months per Property. To try a window, --dry-run raw-months=N; '
+                        . 'to prune now, cmd=partition-drop.',
+                ],
             ],
         ];
-    }
-
-    /**
-     * The declared arguments and keep=, which is retired: read only to say
-     * what replaced it.
-     *
-     * @param string $class
-     * @return string[]|null
-     */
-    public static function acceptedArguments( $class ) {
-
-        $names = parent::acceptedArguments( $class );
-
-        return $names === null ? null : array_merge( $names, [ 'keep' ] );
     }
 
     /**
@@ -114,7 +135,7 @@ class PartitionRotateCli extends PartitionsCli {
             $through = \OWA\Core\Db::partitionLeadBoundary();
             $budget  = $this->factTableBudget();
 
-            foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
+            foreach ( $this->factTables( $this->param( 'table' ) ) as $table ) {
 
                 if ( ! $db->isPartitioned( $table ) ) {
 
@@ -201,7 +222,7 @@ class PartitionRotateCli extends PartitionsCli {
         }
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $dry_run = (bool) $this->getParam( 'dry-run' );
+        $dry_run = $this->param( 'dry-run' );
         $whatif  = $this->whatIf( $dry_run );
 
         if ( $whatif === false ) {
@@ -209,21 +230,10 @@ class PartitionRotateCli extends PartitionsCli {
             return;
         }
 
-        $months_ahead = $this->getParam( 'months-ahead' );
-        $months_ahead = $months_ahead === null || $months_ahead === ''
-            ? \OWA\Core\Db::PARTITION_MONTHS_AHEAD
-            : max( 1, (int) $months_ahead );
+        $months_ahead = (int) $this->param( 'months-ahead' );
+        $granularity  = $this->param( 'granularity' );
 
-        $granularity = $this->getParam( 'granularity' ) ?: null;
-
-        if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
-
-            return $this->usageError( sprintf(
-                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly.', $granularity
-            ) );
-        }
-
-        $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
+        $tables = $this->factTables( $this->param( 'table' ) );
 
         if ( ! $tables ) {
 
@@ -348,29 +358,13 @@ class PartitionRotateCli extends PartitionsCli {
 
         $out = [];
 
-        if ( $this->getParam( 'keep' ) !== null && $this->getParam( 'keep' ) !== '' ) {
-
-            $this->usageError( 'keep= is gone: retention is the raw_retention_months setting, and '
-                . 'cube_retention_months per Property. To try a window, --dry-run raw-months=N; '
-                . 'to prune now, cmd=partition-drop.' );
-
-            return false;
-        }
-
         foreach ( [ 'raw-months' => 'raw', 'cube-months' => 'cube' ] as $param => $key ) {
 
-            $value = $this->getParam( $param );
+            $value = $this->param( $param );
 
-            if ( $value === null || $value === '' ) {
+            if ( $value === null ) {
 
                 continue;
-            }
-
-            if ( ! ctype_digit( (string) $value ) ) {
-
-                $this->usageError( sprintf( '%s must be a whole number of months; 0 keeps everything.', $param ) );
-
-                return false;
             }
 
             if ( ! $dry_run ) {
@@ -382,15 +376,12 @@ class PartitionRotateCli extends PartitionsCli {
                 return false;
             }
 
-            if ( ! array_key_exists( $key, $out ) ) {
-
-                $out[ $key ] = (int) $value;
-            }
+            $out[ $key ] = (int) $value;
         }
 
-        $property = $this->getParam( 'property' );
+        $property = $this->param( 'property' );
 
-        if ( $property !== null && $property !== '' ) {
+        if ( $property !== null ) {
 
             if ( ! $dry_run ) {
 
