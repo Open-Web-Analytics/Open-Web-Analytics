@@ -302,15 +302,10 @@ final class ReportRegistryTest extends TestCase
     {
         $module = new class extends \OWA\Core\Module {
 
+            const NAME = 'owatest_lazy_reports';
+
             /** @var int */
             public static $asked = 0;
-
-            public function __construct() {
-
-                $this->name = 'owatest_lazy_reports';
-
-                parent::__construct();
-            }
 
             public function registerReports() {
 
@@ -399,7 +394,7 @@ final class ReportRegistryTest extends TestCase
         // was silently dropped and the name stayed null all the way into
         // moduleDirName(). Set the property, as a real module does.
         $module = new class extends \OWA\Core\Module {
-            public function __construct() { $this->name = 'base'; parent::__construct(); }
+            const NAME = 'base';
             public function takeIt() { return $this->registerReport( 'pages', 'x.json' ); }
         };
 

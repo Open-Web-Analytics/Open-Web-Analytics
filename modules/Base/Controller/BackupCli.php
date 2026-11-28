@@ -4,21 +4,24 @@ namespace OWA\Module\Base\Controller;
 use OWA\Module\Base\Classes\Backup;
 
 /**
- * Dump the tables this version uses to a gzipped SQL file (Classes\Backup).
+ * Dump OWA's tables to a gzipped SQL file (Classes\Backup).
  *
  *   php cli.php cmd=backup scope=application    configuration, users, Properties, goals, settings
  *   php cli.php cmd=backup scope=data           the tables tracking writes
- *   php cli.php cmd=backup scope=all            both
+ *   php cli.php cmd=backup scope=all            both, and every table no entity owns
  *   ... dir=/var/backups/owa                    in place of OWA_BACKUP_DIR
  *
  * The cubes are never dumped: cmd=cube-rebuild makes them from owa_event_raw.
- * Nor are tables nothing owns any more (cmd=tables-cleanup, cmd=v1-drop). The
- * directory must be outside the web root (Backup::dirProblem()). OWA never
- * applies the file; its header says how to restore it.
+ * Nor are the 1.x tracking tables, which cmd=v1-drop removes. The summary
+ * lists both, and the tables no entity owns. The directory must be outside
+ * OWA's directory (Backup::dirProblem()). OWA never applies the file; its
+ * header says how to restore it.
  *
  * v2 only: refused until the 1.x migration has run, since before it the
  * tables are 1.x's. Runs while later updates are pending, since that is when
  * a backup is taken: after new code is in place and before cmd=core-update-schema.
+ * A table a pending update is about to rename is owned by no entity until it
+ * runs, and scope=all includes it.
  */
 class BackupCli extends \OWA\Core\Controller\Cli {
 
@@ -26,18 +29,18 @@ class BackupCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Writes the tables this version of OWA uses to a gzipped SQL file, mode 0600, for restoring outside OWA. The cubes are never included (cmd=cube-rebuild rebuilds them), nor are old tables nothing uses (cmd=tables-cleanup). Refused before the 1.x migration has run.',
+            'description' => 'Writes OWA\'s tables to a gzipped SQL file, mode 0600, for restoring outside OWA. The cubes are never included (cmd=cube-rebuild rebuilds them), nor are the 1.x tracking tables (cmd=v1-drop removes them); the summary lists both, and the tables no entity owns. Refused before the 1.x migration has run.',
             'arguments'   => [
                 'scope' => [
                     'type'        => 'select',
                     'options'     => array_keys( Backup::SCOPES ),
                     'required'    => true,
-                    'description' => 'The tables this version uses, as each module\'s entities declare them. application: configuration, users, Properties, goals, settings, notices, jobs. data: the tables tracking writes. all: both.',
+                    'description' => 'application: configuration, users, Properties, goals, settings, notices, jobs. data: the tables tracking writes. Each module\'s entities declare which a table is in. all: both, and every other table under OWA\'s prefix, such as one a pending update is about to rename.',
                 ],
                 'dir' => [
                     'type'        => 'string',
                     'value'       => '<path>',
-                    'description' => 'The directory to write to, outside the web root. Defaults to OWA_BACKUP_DIR.',
+                    'description' => 'The directory to write to, outside OWA\'s directory. Defaults to OWA_BACKUP_DIR.',
                 ],
             ],
         ];
@@ -78,7 +81,7 @@ class BackupCli extends \OWA\Core\Controller\Cli {
 
         $dir = (string) ( $this->getParam( 'dir' ) ?: \OWA\Core\CoreAPI::getSetting( 'base', 'backup_dir' ) );
 
-        $problem = Backup::dirProblem( $dir, Backup::servedDirs() );
+        $problem = Backup::dirProblem( $dir, Backup::owaDirs() );
 
         if ( $problem !== null ) {
 
@@ -126,6 +129,42 @@ class BackupCli extends \OWA\Core\Controller\Cli {
 
         $this->write( sprintf( 'Wrote %s: %d tables, %s rows, %s.', $done['file'], count( $done['tables'] ),
             number_format( array_sum( $done['tables'] ) ), self::readableSize( (int) filesize( $done['file'] ) ) ) );
+
+        $this->write( $this->summary( $scope, $groups[ Backup::OTHER ], $backup->skipped() ) );
+    }
+
+    /**
+     * The tables the file does not hold, and those no entity owns.
+     *
+     * @param  string                                      $scope
+     * @param  list<string>                                $other   the tables no entity owns
+     * @param  array{cube: list<string>, v1: list<string>} $skipped Backup::skipped()
+     * @return list<string>
+     */
+    private function summary( $scope, array $other, array $skipped ) {
+
+        $lines = [];
+
+        if ( $skipped[ Backup::CUBE ] ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'Not included, the cubes, which cmd=cube-rebuild rebuilds from events: %s' ),
+                implode( ', ', $skipped[ Backup::CUBE ] ) );
+        }
+
+        if ( $skipped[ Backup::V1 ] ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'Not included, the 1.x tracking tables, which cmd=v1-drop removes: %s' ),
+                implode( ', ', $skipped[ Backup::V1 ] ) );
+        }
+
+        if ( $other ) {
+
+            $lines[] = in_array( Backup::OTHER, Backup::SCOPES[ $scope ], true )
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Included, owned by no entity: %s' ), implode( ', ', $other ) )
+                : sprintf( \OWA\Core\CoreAPI::t( 'Not included, owned by no entity (scope=all includes them): %s' ), implode( ', ', $other ) );
+        }
+
+        return $lines;
     }
 
     /**
