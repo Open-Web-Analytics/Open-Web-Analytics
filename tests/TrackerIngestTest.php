@@ -545,6 +545,22 @@ final class TrackerIngestTest extends TestCase
     /** A collector chooses the address and does not mask it, whatever the install says. */
     public function testACollectorQueuesTheAddressUnchanged(): void
     {
+        $had = $_SERVER['REMOTE_ADDR'] ?? null;
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+
+        try {
+            $this->assertCollectorQueuesTheAddressUnchanged();
+        } finally {
+            if ($had === null) {
+                unset($_SERVER['REMOTE_ADDR']);
+            } else {
+                $_SERVER['REMOTE_ADDR'] = $had;
+            }
+        }
+    }
+
+    private function assertCollectorQueuesTheAddressUnchanged(): void
+    {
         \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', \OWA\Core\ServerRole::COLLECTOR);
 

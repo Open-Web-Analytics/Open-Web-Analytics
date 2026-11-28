@@ -144,4 +144,3 @@ final class IngestTypedValuesTest extends TestCase
         $this->assertSame('EUR', Helpers::resolveCurrency('eur', $event));
     }
 }
-

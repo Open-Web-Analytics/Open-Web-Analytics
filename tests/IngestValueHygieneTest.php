@@ -294,4 +294,3 @@ final class IngestValueHygieneTest extends IngestionTestCase
         $this->assertSame('pro', $params['plan'] ?? null);
     }
 }
-

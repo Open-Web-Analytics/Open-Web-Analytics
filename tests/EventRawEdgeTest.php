@@ -177,4 +177,3 @@ final class EventRawEdgeTest extends TestCase
         $this->assertStringContainsString('2 named as a param of OWA\'s ("coupon", "form_length")', $log);
     }
 }
-
