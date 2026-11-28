@@ -1206,18 +1206,17 @@ class CoreAPI {
     }
 
     /**
-     * check to see if the current user has a capability
-     * always returns a bool
-     * @param  string      $capability
-     * @param  string|null $site_id
+     * Whether the current user's role holds a capability (ServiceUser::isCapable()).
+     *
+     * @param  string $capability
      * @return boolean
      */
-    public static function isCurrentUserCapable($capability, $site_id = null) {
+    public static function isCurrentUserCapable($capability) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         \OWA\Core\CoreAPI::debug("Current User Role: ".$cu->getRole());
         \OWA\Core\CoreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
-        $ret = $cu->isCapable($capability, $site_id);
+        $ret = $cu->isCapable($capability);
         \OWA\Core\CoreAPI::debug("Is current User capable: ".$ret);
         return $ret;
     }
@@ -3627,15 +3626,17 @@ class CoreAPI {
     }
 
     /**
-     * @param  string $module_name
+     * @param  string      $module_name
+     * @param  string|null $problem     set to why it failed (Module::$install_problem), '' when it did not
      * @return bool|void nothing for no module name
      */
-    public static function installModule( $module_name ) {
+    public static function installModule( $module_name, &$problem = null ) {
 
         if ($module_name) {
 
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             $status = $m->install();
+            $problem = (string) $m->install_problem;
             return $status;
         }
     }

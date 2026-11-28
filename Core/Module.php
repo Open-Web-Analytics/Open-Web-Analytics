@@ -120,6 +120,13 @@ abstract class Module {
     public $entities = [];
 
     /**
+     * Why the last install() returned false, translated; '' when it did not.
+     *
+     * @var string
+     */
+    public $install_problem = '';
+
+    /**
      * Required Schema Version
      *
      * @var int
@@ -917,6 +924,7 @@ abstract class Module {
         \OWA\Core\CoreAPI::notice('Starting installation of module: '.$this->name);
 
         $errors = '';
+        $this->install_problem = '';
 
         /*
          * Whether every table this module owns had to be created.
@@ -948,6 +956,8 @@ abstract class Module {
                 if ($status != true) {
                     \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
                     $errors = true;
+                    $this->install_problem = sprintf( \OWA\Core\CoreAPI::t( 'Its table %s could not be created. The error log says why.' ),
+                        $entity->getTableName() );
                 }
 
             }

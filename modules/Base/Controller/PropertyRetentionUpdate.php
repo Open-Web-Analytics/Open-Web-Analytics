@@ -11,6 +11,9 @@ namespace OWA\Module\Base\Controller;
  */
 class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
+    // edit_settings, and access to the Property the request names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_settings' );
@@ -68,10 +71,16 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         $this->setStatusCode( 2500 );
     }
 
+    /**
+     * The Property's Data Retention screen drawn again with what was posted
+     * and each refusal beside its field (SettingsForm::redrawRefused()).
+     *
+     * @return mixed the screen's answer
+     */
     public function errorAction() {
 
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
-        $this->setRedirectAction( 'base.propertyRetention' );
+        return \OWA\Module\Base\Classes\SettingsForm::redrawRefused( $this->params, (array) $this->getValidationErrorMsgs(),
+            PropertyRetention::class );
     }
 
     /**

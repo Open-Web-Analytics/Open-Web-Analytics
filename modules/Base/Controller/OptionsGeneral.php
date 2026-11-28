@@ -23,7 +23,7 @@ class OptionsGeneral extends \OWA\Core\AdminController {
         // loops over these; it does not know which settings it is showing.
         $this->setSubview( 'base.optionsGeneral', [
             'template' => 'options_general.php',
-            'vars'     => [ 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsGeneral' ) ] ] );
+            'vars'     => [ 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsGeneral' ), 'posted' ] ] );
 
         return $this->data;
 

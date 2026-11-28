@@ -51,7 +51,8 @@ class UpdatesState {
 
         return self::describe( $downloads->versions(), $downloads->failure(), \OWA\Core\Env::version(),
             Vcs::checkout( \OWA\Core\Env::root() ), (bool) CoreAPI::getSetting( 'base', 'auto_update' ), $downloads->count(),
-            $check->window(), Downloads::updater()['readMarker']( \OWA\Core\Env::root() ), Problem::stored() );
+            $check->window(), Downloads::updater()['readMarker']( \OWA\Core\Env::root() ), Problem::stored(),
+            ReleaseCheck::ignoredWindow( CoreAPI::getSetting( 'base', 'auto_update_window' ) ) );
     }
 
     /**
@@ -66,9 +67,10 @@ class UpdatesState {
      * @param  array{days: list<int>, start: string, end: string, timezone: string}|null $window
      * @param  array<string, mixed>|null                                                 $marker     the install marker, while an install is under way
      * @param  array<string, mixed>|null                                                 $problem    what stops a release before anything changes (Problem)
+     * @param  string|null                                                               $ignored    why the update window is ignored (ReleaseCheck::ignoredWindow())
      * @return array{lines: list<string>, actions: list<string>}
      */
-    public static function describe( array $downloaded, $failure, $installed, $checkout, $enabled, $dirs, $window, $marker = null, $problem = null ) {
+    public static function describe( array $downloaded, $failure, $installed, $checkout, $enabled, $dirs, $window, $marker = null, $problem = null, $ignored = null ) {
 
         $lines = [ sprintf( CoreAPI::t( 'Installed: OWA %s.' ), $installed ) ];
 
@@ -82,6 +84,11 @@ class UpdatesState {
         $lines[] = ! $enabled ? CoreAPI::t( 'Automatic updates are off.' )
             : ( $window === null ? CoreAPI::t( 'Automatic updates are on: a release installs as soon as it is downloaded.' )
                 : sprintf( CoreAPI::t( 'Automatic updates are on: a release installs %s.' ), ReleaseCheck::describeWindow( $window ) ) );
+
+        if ( $enabled && $ignored !== null ) {
+
+            $lines[] = $ignored;
+        }
 
         if ( $dirs > 1 ) {
 

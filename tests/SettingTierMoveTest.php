@@ -36,11 +36,12 @@ final class SettingTierMoveTest extends TestCase
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
-        $db->selectColumn( 'site_id, property_id' );
+        $db->selectColumn( 'site_id, property_id, archived_date' );
 
+        // A live Profile: an archived one is refused at the edge (CoreAPI::siteRegistration()).
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            if ( ! empty( $row['property_id'] ) ) {
+            if ( ! empty( $row['property_id'] ) && empty( $row['archived_date'] ) ) {
 
                 $this->siteId     = $row['site_id'];
                 $this->propertyId = $row['property_id'];
@@ -328,6 +329,10 @@ final class SettingTierMoveTest extends TestCase
             $this->assertSame( 0, $queued(), 'An event from an address its Profile excludes was queued.' );
 
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', 'excluded_ips' );
+
+            $this->assertNotTrue( (bool) \OWA\Core\CoreAPI::isIpAddressExcluded( $ip, $this->siteId ),
+                'The Profile\'s list is cleared, and nothing above it excludes the address.' );
+            $this->assertNotFalse( \OWA\Core\CoreAPI::siteRegistration( $this->siteId ), 'The Profile is registered.' );
 
             \OWA\Core\CoreAPI::logEvent( 'page_view', [ 'site_id' => $this->siteId, 'page_location' => 'https://tier.test/a' ] );
 

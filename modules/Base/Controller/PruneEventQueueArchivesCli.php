@@ -64,9 +64,22 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
             $interval = (int) ( $raw ?: 86400 );
         }
 
+        $known = array_values( array_unique( array_merge(
+            array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) ),
+            [ \OWA\Module\Base\Classes\TrackerIngest::QUEUE ] ) ) );
+
         $queues = $this->getParam( 'queues' )
-            ? explode( ',', (string) $this->getParam( 'queues' ) )
+            ? array_values( array_filter( array_map( 'trim', explode( ',', (string) $this->getParam( 'queues' ) ) ), static fn ( $name ) => $name !== '' ) )
             : array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) );
+
+        // Every name is checked before anything is pruned.
+        foreach ( $queues as $queue_name ) {
+
+            if ( ! in_array( $queue_name, $known, true ) ) {
+
+                return $this->usageError( sprintf( 'Unknown queue: %s. Queues: %s.', $queue_name, implode( ', ', $known ) ) );
+            }
+        }
 
         foreach ( $queues as $queue_name ) {
 

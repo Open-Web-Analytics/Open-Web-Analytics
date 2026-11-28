@@ -44,7 +44,7 @@ test('an event of the site\'s own offers the custom list', () => {
     expect(optionsFor(vocab, 'click', '').map((p) => p.name)).toEqual(['page_path', 'is_outbound']);
 });
 
-test('the trigger is named by the field beside "another event of yours"', () => {
+test('the trigger is named by the field beside "another custom event"', () => {
     expect(triggerName('click', 'ignored')).toBe('click');
     expect(triggerName(CUSTOM_TRIGGER, '  newsletter_signup ')).toBe('newsletter_signup');
     expect(triggerName(CUSTOM_TRIGGER, '')).toBe('custom');

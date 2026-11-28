@@ -60,7 +60,8 @@ final class RequestOriginTest extends TestCase
     {
         return [
             'https, by the server'     => [['HTTPS' => 'on', 'HTTP_HOST' => 'owa.example.com'], 'https://owa.example.com'],
-            'https, by the proxy'      => [['HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_HOST' => 'OWA.example.com'], 'https://owa.example.com'],
+            'https, by the proxy'      => [['HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_HOST' => 'OWA.example.com', 'REMOTE_ADDR' => '127.0.0.1'], 'https://owa.example.com'],
+            'https, said by a client'  => [['HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_HOST' => 'owa.example.com', 'REMOTE_ADDR' => '203.0.113.9'], 'http://owa.example.com'],
             'http'                     => [['HTTP_HOST' => 'owa.example.com'], 'http://owa.example.com'],
             'a port'                   => [['HTTP_HOST' => 'localhost:8080'], 'http://localhost:8080'],
             'the default port'         => [['HTTPS' => 'on', 'HTTP_HOST' => 'owa.example.com:443'], 'https://owa.example.com'],

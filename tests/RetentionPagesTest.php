@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/AsAdministrator.php' );
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -13,6 +15,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class RetentionPagesTest extends TestCase
 {
+    use AsAdministrator;
+
     const ACTIONS = [
         'base.optionsRetention'        => \OWA\Module\Base\Controller\OptionsRetention::class,
         'base.optionsRetentionUpdate'  => \OWA\Module\Base\Controller\OptionsRetentionUpdate::class,
@@ -152,7 +156,7 @@ final class RetentionPagesTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\PropertyRetention( [] );
         $nav = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $entries = array_filter( (array) ( $nav->invoke( $controller, '', '7781000000000009' )['Property'] ?? [] ),
+        $entries = array_filter( (array) ( self::asAdministrator( fn () => $nav->invoke( $controller, '', '7781000000000009' ) )['Property'] ?? [] ),
             fn ( $e ) => $e['do'] === 'base.propertyRetention' );
 
         $this->assertCount( 1, $entries );

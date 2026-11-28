@@ -293,25 +293,21 @@ final class ServerRoleTest extends TestCase
         $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'log_visitor_pii'));
     }
 
-    public function testTheOneXStaticSwitchOnlyStopsTheStoredSettingsRead(): void
+    /** The boot itself, with OWA_USE_STATIC_CONFIG_ONLY defined, is StaticConfigBootTest's. */
+    public function testStoredSettingsAreReadOnEveryRoleWithADatabase(): void
     {
-        $saved = \OWA\Core\CoreAPI::getSetting('base', 'skip_stored_settings');
-
-        try {
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', true);
-
-            $this->assertFalse(ServerRole::readsStoredSettings());
-            $this->assertTrue(ServerRole::current()->hasDatabase(), 'still a full server with its database');
-
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', false);
-            $this->assertTrue(ServerRole::readsStoredSettings());
-
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
-            $this->assertFalse(ServerRole::readsStoredSettings());
-        } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', $saved);
+        foreach (['full' => true, 'console,api' => true, 'worker' => true, 'collector' => false, 'collector,console' => true] as $role => $reads) {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
+            $this->assertSame($reads, ServerRole::readsStoredSettings(), $role);
         }
+    }
+
+    public function testTheStaticSwitchNoticeSaysItAppliesOnlyToCollectors(): void
+    {
+        $notice = ServerRole::upgradeNotices(['OWA_USE_STATIC_CONFIG_ONLY' => true])['OWA_USE_STATIC_CONFIG_ONLY'];
+
+        $this->assertStringContainsString('applies only to collectors', $notice);
+        $this->assertStringContainsString('on a role with a database it is ignored', $notice);
     }
 
     // ---------------------------------------------------------------------

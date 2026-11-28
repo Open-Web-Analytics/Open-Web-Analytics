@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/CliControllerTestCase.php';
 require_once __DIR__ . '/PartitionFixtures.php';
+require_once __DIR__ . '/CapturesLog.php';
 
 /**
  * The partition commands' own decisions: what they accept, what they refuse,
@@ -19,6 +20,8 @@ require_once __DIR__ . '/PartitionFixtures.php';
  */
 final class PartitionCliTest extends CliControllerTestCase
 {
+    use CapturesLog;
+
     /** @return mixed */
     private function callProtected(object $ctrl, string $method, array $args = [])
     {
@@ -441,6 +444,100 @@ final class PartitionCliTest extends CliControllerTestCase
 
         } finally {
             $db->query("DROP TABLE IF EXISTS $t");
+        }
+    }
+
+    /**
+     * A rotated table: three historical partitions, the current one holding
+     * today, two lead partitions and the catch-all.
+     *
+     * @return string the table
+     */
+    private function rotatedTable(): string
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (! $db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $t   = 'owa_test_drop_' . $this->tok;
+        $day = fn (int $n) => date('Ymd', strtotime("today $n days"));
+
+        $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
+        owa_test_partition_table($t, [
+            'p' . $day(-120) => $day(-90),
+            'p' . $day(-90)  => $day(-60),
+            'p' . $day(-60)  => $day(-30),
+            'p' . $day(-30)  => $day(1),
+            'p' . $day(1)    => $day(30),
+            'p' . $day(30)   => $day(60),
+        ]);
+
+        return $t;
+    }
+
+    /** @return list<string> */
+    private function partitionNames(string $t): array
+    {
+        return array_column(\OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans($t), 'name');
+    }
+
+    /**
+     * Only historical partitions count towards "all": a rotated table always
+     * has its current and lead partitions, so counting those let a drop of
+     * every historical partition through without --force.
+     */
+    public function testDroppingEveryHistoricalPartitionOfARotatedTableNeedsForce()
+    {
+        $t = $this->rotatedTable();
+
+        try {
+            $before = $this->partitionNames($t);
+            $cutoff = \OWA\Module\Base\Controller\PartitionsCli::resolveCutoff('1d');
+
+            $out = $this->logDuring(fn () => $this->assertSame(0,
+                $this->callProtected($this->drop(['older-than' => '1d']), 'dropOlderThan', [$t, $cutoff, false])));
+
+            $this->assertSame($before, $this->partitionNames($t), 'refused: nothing dropped');
+            $this->assertStringContainsString("$t: $cutoff would drop all 3 historical partitions", $out, 'the preview says how many');
+            $this->assertStringContainsString('re-run with --force', $out);
+
+            $this->assertSame(3, $this->callProtected($this->drop(['older-than' => '1d', 'force' => 1]), 'dropOlderThan', [$t, $cutoff, false]));
+            $this->assertSame(array_slice($before, 3), $this->partitionNames($t), 'the current and lead partitions are kept');
+        } finally {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DROP TABLE IF EXISTS $t");
+        }
+    }
+
+    /** partition-rotate drops to its retention windows: no --force, which the scheduled job cannot pass. */
+    public function testARotateWhoseRetentionDropsEveryHistoricalPartitionDropsThem()
+    {
+        $t = $this->rotatedTable();
+
+        try {
+            $before = $this->partitionNames($t);
+            $cutoff = \OWA\Module\Base\Controller\PartitionsCli::resolveCutoff('1d');
+
+            $this->assertSame(3, $this->callProtected($this->rotate(), 'dropOlderThan', [$t, $cutoff, false]));
+            $this->assertSame(array_slice($before, 3), $this->partitionNames($t), 'the current and lead partitions are kept');
+        } finally {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DROP TABLE IF EXISTS $t");
+        }
+    }
+
+    public function testADropThatKeepsSomeHistoryNeedsNoForce()
+    {
+        $t = $this->rotatedTable();
+
+        try {
+            $before = $this->partitionNames($t);
+            $cutoff = \OWA\Module\Base\Controller\PartitionsCli::resolveCutoff('45days');
+
+            $this->assertSame(2, $this->callProtected($this->drop(['older-than' => '45days']), 'dropOlderThan', [$t, $cutoff, false]));
+            $this->assertSame(array_slice($before, 2), $this->partitionNames($t));
+        } finally {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DROP TABLE IF EXISTS $t");
         }
     }
 

@@ -55,6 +55,11 @@ $_owa_messages = [
     3015 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'You cannot delete your own account.' )],
     3016 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account cannot be deleted. Give another user the admin role first.' )],
     3017 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account keeps the admin role. Give another user the admin role first.' )],
+    // The modules screen's refusals (OptionsModules::refuse()).
+    3030 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Module %1$s was not activated. %2$s' )],
+    3031 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no module named %s.' )],
+    3032 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Module %s is not active.' )],
+    3033 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'No module was named.' )],
 
     // Sites management
     3200 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Fill in all required fields.' )],

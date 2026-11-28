@@ -14,6 +14,9 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitions extends \OWA\Core\AdminController {
 
+    // edit_settings, and access to the Property the request names, or the goal's.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );

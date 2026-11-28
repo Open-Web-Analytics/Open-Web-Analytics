@@ -458,15 +458,16 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
-     * Whether the user holds this controller's capability for what the request
-     * is about. A site, here; ReportController answers for a Property.
+     * Whether the user's role holds this controller's capability. A
+     * controller whose request is about a Property also checks the user's
+     * access to it (PropertyScopedAccess).
      *
      * @param  \OWA\Module\Base\Classes\ServiceUser $currentUser
      * @return bool
      */
     protected function isCurrentUserCapable( $currentUser ) {
 
-        return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $this->getCurrentSiteId() );
+        return (bool) $currentUser->isCapable( $this->getRequiredCapability() );
     }
 
     /**
@@ -910,7 +911,6 @@ class Controller extends \OWA\Core\Base {
 
         if ( \OWA\Core\RequestType::isWebApp() ) {
             $navSite = (string) $this->resolveCurrentSiteId();
-            $this->set( 'nav_access_site', $navSite );
             $this->set( 'nav_property_id', $navSite !== ''
                 ? (string) \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $navSite ) : '' );
         }
@@ -1259,6 +1259,23 @@ class Controller extends \OWA\Core\Base {
 
             $site = \OWA\Module\Base\Entity\Site::forSiteId( $siteId );
             $propertyId = $site->get( 'property_id' );
+        }
+
+        /*
+         * The Property and Profile groups link to screens of that Property,
+         * so they are listed only for a Property and a Profile on the user's
+         * access list. The groups above them are about no Property.
+         */
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        if ( $propertyId && ! $user->canAccessProperty( $propertyId ) ) {
+
+            $propertyId = '';
+        }
+
+        if ( $siteId && ! $user->isSiteAccessible( $siteId ) ) {
+
+            $siteId = '';
         }
 
         $nav = [];

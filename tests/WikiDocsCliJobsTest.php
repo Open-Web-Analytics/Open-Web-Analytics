@@ -392,13 +392,17 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         return $seconds . ' seconds';
     }
 
-    /** The class and its parents' source, up to the framework's controller. */
+    /** The class and its parents' source, up to the framework's controller, with the traits each uses. */
     private function sourceOf(string $class): string
     {
         $src = '';
 
         for ($r = new ReflectionClass($class); $r && $r->getName() !== 'OWA\\Core\\Controller'; $r = $r->getParentClass()) {
             $src .= file_get_contents($r->getFileName());
+
+            foreach ($r->getTraits() as $trait) {
+                $src .= file_get_contents($trait->getFileName());
+            }
         }
 
         return $src;

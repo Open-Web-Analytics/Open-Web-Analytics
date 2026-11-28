@@ -117,7 +117,7 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Update Days' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun. Empty: any day.' ),
+                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun: within the Update Window on those days, or at any hour of them when there is no window. Empty: any day.' ),
             'pattern'  => '/^$|^' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . '(\s*,\s*' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . ')*$/i',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Days is a list of days such as sat,sun: mon, tue, wed, thu, fri, sat or sun, separated by commas.' ),
         ],
@@ -177,18 +177,17 @@ return [
          * changing the address on your own account, which moves where its
          * password resets go -- unlike your own name, and unlike edit_users,
          * which is about other people's accounts. Both are admin-only by
-         * default, granted to another role by OWA_ROLE_CAPABILITIES, and held on
-         * every Property (not in capabilitiesThatRequireSiteAccess): a custom
-         * report is of one Property, and drawing it asks view_reports there.
+         * default, and granted to another role by OWA_ROLE_CAPABILITIES. A
+         * custom report is of one Property, and drawing it asks view_reports
+         * there.
          *
-         * create_properties is making and deleting a Property. It is admin-only
-         * by default and held install-wide, unlike edit_sites, which is held
-         * on the Properties a user has been given and manages what is in
-         * them. PropertyScopedAccess applies both.
+         * create_properties is making and deleting a Property, and edit_sites
+         * manages what is in one. A capability is held by the role; a request
+         * about a Property also needs the Property on the user's access list
+         * (PropertyScopedAccess).
          */
         'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside the web root. Empty: cmd=backup needs dir=.' ],
         'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
-        'capabilitiesThatRequireSiteAccess' => [ 'default' => [ 'view_reports', 'edit_sites' ], 'description' => 'The capabilities a user holds only on the Properties they have been given access to.' ],
         'config_file' => [ 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ],
         'configuration_id' => [ 'default' => '1', 'internal' => true ],
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
@@ -301,7 +300,7 @@ return [
                 . 'paths already stored keep theirs.',
         ],
         'disableAllEndpoints' => [ 'config_constant' => 'OWA_DISABLE_ALL_ENDPOINTS', 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ],
-        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php, cli.php. Empty by default.' ],
+        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php, cli.php. A list, or a string of one or several separated by commas. Empty by default.' ],
         'enableEcommerceReporting' => [
             'default'  => false,
             'storable' => true,
@@ -323,7 +322,6 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'A comma-separated list of IP addresses whose requests are not recorded.' ),
         ],
-        'feed_subscription_param' => [ 'config_constant' => 'OWA_FEED_SUBSCRIPTION_PARAM', 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ],
         'geolocation_lookup' => [ 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ],
         'geolocation_service' => [ 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ],
         // Set by Update075 when it renamed goal event definitions to event names, so its
@@ -446,7 +444,6 @@ return [
         'tracking_url'        => [ 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ],
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => [ 'default' => 'ui', 'internal' => true ],
-        'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/conf/ua-parser/. Used only when nobody but the owner of OWA\'s files can write it.' ],
 
         /*
          * The tracking intake, OWA_QUEUE_TRACKING_EVENTS.
@@ -476,8 +473,6 @@ return [
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ],
-        // Set by the 1.x OWA_USE_STATIC_CONFIG_ONLY: stored settings are not read at boot.
-        'skip_stored_settings' => [ 'default' => false, 'internal' => true ],
         'session_length' => [ 'config_constant' => 'OWA_SESSION_LENGTH', 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ],
         /*
          * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score
@@ -536,7 +531,7 @@ return [
                 . 'recorded after it, and reports spanning the change mix the two. A day '
                 . 'boundary can move by up to 21 hours.' ),
         ],
-        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ],
+        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses owa-data/conf/ua-parser/regexes.php if present, otherwise the patterns that ship with this release.' ],
         /*
          * THE TRACKING TAG. What a Profile's tracking bundle does,
          * baked in at publish as the tracker's own options and commands -- the

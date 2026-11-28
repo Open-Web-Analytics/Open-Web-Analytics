@@ -76,16 +76,9 @@ class Browscap extends \OWA\Core\Base {
      *
      *   1. the `ua-regexes` setting, for an installation that keeps the file
      *      somewhere of its own choosing
-     *   2. owa-data/conf/ua-parser/regexes.php (or ua_regexes_dir's), where
-     *      cmd=ua-update-definitions puts it
+     *   2. owa-data/conf/ua-parser/regexes.php, an override an admin puts
+     *      there (Core\Overrides)
      *   3. nothing, meaning the copy bundled with the library
-     *
-     * The second is the point. The bundled copy is only as new as the PHP
-     * library's last release, while the patterns themselves come from uap-core
-     * and are updated far more often -- so an installation that refreshes them
-     * should get the benefit without also having to configure a path. Same
-     * arrangement the Maxmind module uses for its database: a known directory
-     * under owa-data, read if it is there.
      *
      * @param  string|null $data_dir a test's; else the installation's
      * @return string|null
@@ -99,8 +92,6 @@ class Browscap extends \OWA\Core\Base {
             return $configured;
         }
 
-        $dir = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' );
-
         /*
          * PHP, which the parser includes, and the cron user parses user agents
          * when it drains the queue: run only if nobody but the owner of OWA's
@@ -108,15 +99,7 @@ class Browscap extends \OWA\Core\Base {
          * unreadable file would otherwise take precedence over a bundled copy
          * that works.
          */
-        if ( $dir === '' ) {
-
-            $maintained = \OWA\Core\Overrides::file( \OWA\Core\Overrides::UA_PATTERNS, $data_dir );
-
-        } else {
-
-            $maintained = \OWA\Core\Env::withSlash( $dir ) . 'regexes.php';
-            $maintained = file_exists( $maintained ) && \OWA\Core\SafeFile::trustProblem( $maintained, $dir ) === null ? $maintained : null;
-        }
+        $maintained = \OWA\Core\Overrides::file( \OWA\Core\Overrides::UA_PATTERNS, $data_dir );
 
         return $maintained !== null && is_readable( $maintained ) ? $maintained : null;
     }

@@ -14,7 +14,8 @@
         <?php
             echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyRetention' ),
-                'property', (string) ( $view->property['id'] ?? '' ) );
+                'property', (string) ( $view->property['id'] ?? '' ), '',
+                is_array( $view->posted ?? null ) ? $view->posted : null );
         ?>
         <input class="owa-button" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save' ) ); ?>">
     </form>

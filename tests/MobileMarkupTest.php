@@ -227,7 +227,7 @@ final class MobileMarkupTest extends TestCase
         ];
 
         $xp = $this->render( 'generic_error.php', [
-            'report_nav' => $nav, 'nav_property_id' => 'p1', 'nav_access_site' => '', 'back_url' => '',
+            'report_nav' => $nav, 'nav_property_id' => 'p1', 'back_url' => '',
         ] );
 
         $this->assertSame( 1, $xp->query( '//*[@id="owa_reportNavRail"]//*[@data-ui="nav:Dashboard"]' )->length );

@@ -13,7 +13,7 @@ const path = require('path');
  *   base.installStart -> base.installCheckEnv -> base.installConfigEntry
  *     -> base.installConfig (writes owa-config.php, validates the DB connection)
  *     -> base.installDefaultsEntry -> base.installBase (schema + admin + site
- *        + install_complete) -> base.installFinish
+ *        + install_complete), which draws the finish screen
  *
  * ISOLATION (see install_harness.php + playwright.install.config.js): the harness
  * has already stashed the live owa-config.php out of the way and CREATEd an empty

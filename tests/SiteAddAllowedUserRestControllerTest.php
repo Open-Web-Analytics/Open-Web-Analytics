@@ -14,8 +14,9 @@ use PHPUnit\Framework\TestCase;
  *      an AdminController, not a CLI-only one that exits for web/REST.
  *   3. The password, temp_passkey and session_epoch are NOT disclosed in the
  *      response body.
- *   4. A bogus siteId / user_id is rejected by validation and NEVER writes
- *      a site_user relation row (the DoS / bad-foreign-key vector).
+ *   4. A bogus siteId is refused access, a bogus user_id is rejected by
+ *      validation, and neither EVER writes a site_user relation row (the
+ *      DoS / bad-foreign-key vector).
  *
  * The controller is driven at the controller layer (doAction) rather than
  * over HTTP so the authenticated success path can be exercised without a
@@ -166,8 +167,9 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     }
 
     /**
-     * Finding #4: a bogus siteId (site does not exist) is rejected by
-     * validation and NEVER writes a site_user relation row.
+     * Finding #4: a bogus siteId (site does not exist) names no Profile, so
+     * the access check refuses it (PropertyScopedAccess), administrator or
+     * not, before validation runs, and NO site_user relation row is written.
      */
     public function testBogusSiteIdIsRejectedAndWritesNoRelation(): void
     {
@@ -175,14 +177,24 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         $this->createTargetUserFixture(); // real user
         $this->authenticateAsAdmin();
 
+        $status = http_response_code() ?: 200;
+
         $ctrl = $this->makeController([
             'siteId'  => 'this-site-id-does-not-exist-' . $this->tok,
             'user_id' => $this->targetUser['user_id'],
         ]);
-        $data = $ctrl->doAction();
 
-        $this->assertArrayHasKey('validation_errors', $data,
-            'A non-existent siteId should fail entityExists validation.');
+        try {
+            $data = $ctrl->doAction();
+            $code = http_response_code();
+        } finally {
+            http_response_code($status);
+        }
+
+        $this->assertSame(403, $code, 'A siteId that names no Profile is refused access.');
+        $this->assertSame('base.restApi', $data['view'] ?? null);
+        $this->assertArrayNotHasKey('validation_errors', $data,
+            'The refusal comes before validation.');
         $this->assertArrayNotHasKey('response', $data,
             'A rejected request should not emit a success response payload.');
 

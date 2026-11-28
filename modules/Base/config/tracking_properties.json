@@ -1055,7 +1055,7 @@
         "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
     },
     "event_type": {
-        "description": "The event's name: one of the event types OWA defines, or the site's own custom event name.",
+        "description": "The event's name: the name of a built-in event or of a custom event.",
         "set_by": "client",
         "from": [
             "e_t"

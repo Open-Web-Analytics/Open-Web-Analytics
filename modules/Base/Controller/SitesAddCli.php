@@ -2,10 +2,16 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Add Site Controller
+ * cmd=add-site: adds a Profile as the Add Profile screen does
+ * (Classes\AddsProfile), with the same capability checks.
  */
 
-class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
+class SitesAddCli extends \OWA\Core\Controller\Cli {
+
+    use \OWA\Core\PropertyScopedAccess, \OWA\Module\Base\Classes\AddsProfile {
+        \OWA\Module\Base\Classes\AddsProfile::createsProperty insteadof \OWA\Core\PropertyScopedAccess;
+        \OWA\Module\Base\Classes\AddsProfile::requestPropertyId insteadof \OWA\Core\PropertyScopedAccess;
+    }
 
     /**
      * See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer.
@@ -37,41 +43,30 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
             ],
         ];
     }
-    
+
+    public function __construct( $params ) {
+
+        $this->setRequiredCapability( 'edit_sites' );
+
+        parent::__construct( $params );
+    }
+
+    public function action() {
+
+        $this->addProfile();
+
+        // Not created: exits 1, with nothing printed beyond what createSite() logged.
+        if ( empty( $this->data['site'] ) ) {
+
+            $this->markFailed( 'the Profile was not created', self::EXIT_FAILED );
+        }
+    }
+
     public function errorAction() {
 
         \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 
-    /**
-     * As a Controller\Cli does: invalid arguments exit 2, a refused capability
-     * or a Profile not created exits 1.
-     *
-     * @return mixed
-     */
-    public function doAction() {
-
-        $data = parent::doAction();
-        $view = is_array( $data ) && isset( $data['view'] ) ? $data['view'] : null;
-        $code = 0;
-
-        if ( ! empty( $this->v ) && $this->v->hasErrors === true ) {
-
-            $code = \OWA\Core\Controller\Cli::EXIT_USAGE;
-
-        } elseif ( $view === 'base.error' || $view === 'base.genericCli' || empty( $this->data['site'] ) ) {
-
-            $code = \OWA\Core\Controller\Cli::EXIT_FAILED;
-        }
-
-        if ( $code && ! \OWA\Core\Controller\Cli::$exit_code ) {
-
-            \OWA\Core\Controller\Cli::$exit_code = $code;
-        }
-
-        return $data;
-    }
-    
     public function success() {
 
         $site = (array) ( $this->data['site'] ?? [] );

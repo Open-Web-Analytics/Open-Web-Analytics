@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/AsAdministrator.php' );
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -13,6 +15,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class PropertyScopedReportingTest extends TestCase
 {
+    use AsAdministrator;
+
     /** High and fixed, like the funnel fixtures'. */
     const PROPERTY = 92000080;
 
@@ -186,8 +190,10 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertSame([self::ONE, self::TWO], $sites,
             'the sibling is missing, or an archived Profile or another Property came with it');
 
-        $this->assertTrue($su->isCapable('view_reports', self::TWO), 'a sibling of a granted Profile');
-        $this->assertFalse($su->isCapable('view_reports', self::OTHER), 'a Profile of another Property');
+        $this->assertTrue($su->isSiteAccessible(self::TWO), 'a sibling of a granted Profile');
+        $this->assertFalse($su->isSiteAccessible(self::OTHER), 'a Profile of another Property');
+        $this->assertTrue($su->canAccessProperty((string) self::PROPERTY));
+        $this->assertFalse($su->canAccessProperty((string) self::OTHER_PROPERTY));
     }
 
     /** The granted Profiles are one query however many there are, and a missing one keeps its place. */
@@ -717,7 +723,7 @@ final class PropertyScopedReportingTest extends TestCase
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
 
-        $property = (array) $nav->invoke($controller, '', (string) self::PROPERTY);
+        $property = (array) self::asAdministrator(fn () => $nav->invoke($controller, '', (string) self::PROPERTY));
 
         $this->assertArrayNotHasKey('Observation Profile', $property,
             'a Property screen offers one Profile\'s screens');
@@ -726,7 +732,7 @@ final class PropertyScopedReportingTest extends TestCase
         $access = array_column($property['Property'], 'params', 'do')['base.propertyAccess'] ?? null;
         $this->assertSame(['propertyId' => (string) self::PROPERTY], $access);
 
-        $this->assertArrayHasKey('Observation Profile', (array) $nav->invoke($controller, self::ONE, ''));
+        $this->assertArrayHasKey('Observation Profile', (array) self::asAdministrator(fn () => $nav->invoke($controller, self::ONE, '')));
     }
 
     // ------------------------------------------- Property-addressed screens
@@ -748,8 +754,8 @@ final class PropertyScopedReportingTest extends TestCase
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
 
-        // No Profile in context, and a Property whose Profiles this user may not see.
-        $params = array_column((array) $nav->invoke($controller, '', '7000000000000099')['Property'], 'params', 'do');
+        // No Profile in context, and a Property with no Profile.
+        $params = array_column((array) self::asAdministrator(fn () => $nav->invoke($controller, '', '7000000000000099'))['Property'], 'params', 'do');
 
         $this->assertSame(['propertyId' => '7000000000000099'], $params['base.goalEventDefinitions'] ?? null);
         $this->assertSame(['propertyId' => '7000000000000099'], $params['base.customDimensions'] ?? null);

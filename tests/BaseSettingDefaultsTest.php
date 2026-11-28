@@ -53,13 +53,13 @@ final class BaseSettingDefaultsTest extends TestCase
     }
 
     /**
-     * The static-config-only boot: owa-config.php and no stored settings.
+     * A collector's boot: owa-config.php and no stored settings.
      * Base is active, and every Base setting nothing set during boot is its
      * recorded default.
      */
     public function testABootThatReadsNoStoredSettingsRunsOnTheDefaults(): void
     {
-        $out     = shell_exec( escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( self::PROBE ) . ' static 2>/dev/null' );
+        $out     = shell_exec( escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( self::PROBE ) . ' static collector 2>/dev/null' );
         $verdict = json_decode( trim( (string) $out ), true );
 
         $this->assertIsArray( $verdict, 'the boot probe printed no JSON' );

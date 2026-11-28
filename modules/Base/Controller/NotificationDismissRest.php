@@ -32,14 +32,12 @@ class NotificationDismissRest extends \OWA\Core\AdminController {
          *     that; the application must not depend on it.
          *   - NOT `install_schema`: the `everyone` role holds it, so requiring
          *     it gates nothing.
-         *   - NOT `view_reports`: it is in capabilitiesThatRequireSiteAccess,
-         *     so it is checked against a SITE. A notification is not about a
-         *     site, this request carries no siteId, and the check fails with
-         *     "No access to any site" for a perfectly entitled user.
+         *   - NOT `view_reports`: a role can be given access without it, and
+         *     a notification is not a report.
          *
-         * `view_site_list` is held by viewer, analyst and admin, is not held by
-         * `everyone`, and is not site-scoped -- which is exactly "any signed-in
-         * user".
+         * `view_site_list` is held by viewer, analyst and admin and not by
+         * `everyone`: any signed-in user. A notification is about no
+         * Property, so no access list is checked.
          */
         $this->setRequiredCapability('view_site_list');
         $this->setNonceRequired();
