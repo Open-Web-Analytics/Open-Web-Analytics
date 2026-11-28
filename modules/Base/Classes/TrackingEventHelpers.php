@@ -1879,7 +1879,7 @@ class TrackingEventHelpers {
     /**
      * @param  mixed $version
      * @param  Event $event
-     * @return string
+     * @return string|null
      */
     public static function resolveOsVersion( $version, $event ) {
 
@@ -3080,25 +3080,26 @@ class TrackingEventHelpers {
         return (int) $revenue;
     }
 
-    /** @var \WeakMap<object, array{row: array<string, mixed>|null, refused: bool}>|null refundedPurchase(), once per event */
+    /** @var object|null the event refundedPurchase() last looked up */
+    private static $refunded_event = null;
+
+    /** @var array{row: array<string, mixed>|null, refused: bool}|null what it found */
     private static $refunded = null;
 
     /**
      * The stored purchase a refund's transaction id names, compared
      * case-sensitively: its revenue and currency in `row`, null when no
      * purchase is stored or the refund names no transaction, and `refused`
-     * when the lookup failed. Looked up once per event.
+     * when the lookup failed. Looked up once for the event being processed.
      *
      * @param  object $event
      * @return array{row: array<string, mixed>|null, refused: bool}
      */
     private static function refundedPurchase( $event ) {
 
-        self::$refunded = self::$refunded ?? new \WeakMap();
+        if ( self::$refunded_event === $event && self::$refunded !== null ) {
 
-        if ( isset( self::$refunded[ $event ] ) ) {
-
-            return self::$refunded[ $event ];
+            return self::$refunded;
         }
 
         $transaction = trim( (string) $event->get( 'ct_order_id' ) );
@@ -3121,7 +3122,9 @@ class TrackingEventHelpers {
             ];
         }
 
-        return self::$refunded[ $event ] = $found;
+        self::$refunded_event = $event;
+
+        return self::$refunded = $found;
     }
 
     /**
