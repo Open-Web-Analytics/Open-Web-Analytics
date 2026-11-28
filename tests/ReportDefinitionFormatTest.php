@@ -1447,9 +1447,51 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertGreaterThan( 10, $tabbed, 'too few tabbed reports read, so this proves nothing' );
         $this->assertSame( [], $own, 'these grids draw the same metrics on every tab' );
 
-        foreach ( [ 'entry-pages', 'exit-pages' ] as $report ) {
+    }
 
-            $this->assertArrayNotHasKey( 'metrics', self::shippedWidget( $report, 'dim' )['query'] ?? [ 'metrics' => 'missing' ], $report );
+    /**
+     * Entry Pages and Exit Pages measure fixed metrics: declared on the
+     * report, so no metric-set tabs are drawn, and their grids sort on the
+     * metric the report is about, largest first.
+     */
+    public function testEntryAndExitPagesHaveFixedMetrics(): void
+    {
+        foreach ( [ 'entry-pages' => [ 'sessions,bounceRate,engagementRate', 'sessions-' ],
+                    'exit-pages'  => [ 'pageViews,exits,exitRate', 'exits-' ] ] as $report => [ $metrics, $sort ] ) {
+
+            $definition = self::shippedById()[ $report ];
+
+            $this->assertSame( $metrics, $definition['metrics'] ?? null, $report );
+            $this->assertArrayNotHasKey( 'metricSets', $definition, $report );
+            $this->assertSame( $metrics, self::shippedWidget( $report, 'dim' )['query']['metrics'] ?? null, $report );
+            $this->assertSame( $sort, self::shippedWidget( $report, 'dim' )['query']['sort'] ?? null, $report );
+        }
+    }
+
+    /** A report with fixed metrics draws its widgets once, with no metric-set tabs. */
+    public function testAFixedMetricReportDrawsNoTabs(): void
+    {
+        $this->requireDbAsAdmin();
+
+        foreach ( [ 'exit-pages' => 'pageViews,exits,exitRate', 'entry-pages' => 'sessions,bounceRate,engagementRate' ] as $report => $metrics ) {
+
+            $html    = $this->renderedWith( self::shippedById()[ $report ], self::threeSets() );
+            $queries = \OWA\Tests\ReportRenderHarness::queriesIn( $html );
+
+            $this->assertCount( 2, $queries, "$report: the trend and the grid, once each" );
+
+            foreach ( $queries as $query ) {
+
+                $this->assertSame( $metrics, $query['query']['metrics'] ?? null, $report );
+            }
+
+            foreach ( \OWA\Tests\ReportRenderHarness::explorersIn( $html ) as $e ) {
+
+                foreach ( array_keys( self::threeSets() ) as $set ) {
+
+                    $this->assertStringStartsNotWith( $set . '_', (string) $e['container'], "$report drew a $set tab" );
+                }
+            }
         }
     }
 

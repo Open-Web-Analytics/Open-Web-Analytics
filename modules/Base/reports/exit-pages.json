@@ -1,6 +1,7 @@
 {
     "title": "Exit Pages",
-    "description": "Sessions by page, in each metric set.",
+    "description": "The pages sessions ended on, with exits and exit rate.",
+    "metrics": "pageViews,exits,exitRate",
     "widgets": [
         {
             "type": "trend",
@@ -16,8 +17,9 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
+                "metrics": "pageViews,exits,exitRate",
                 "dimensions": "pagePath",
-                "sort": "sessions-",
+                "sort": "exits-",
                 "resultsPerPage": 30
             },
             "link": {
