@@ -525,7 +525,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         $admin = $im->adminUserId();
 
         $this->write( [
-            CoreAPI::t( 'Tracking bundles: the stale ones republished' ),
+            CoreAPI::t( 'Tracking bundles:' ) . ' ' . ( $publish['message'] !== '' ? $publish['message'] : CoreAPI::t( 'published' ) ),
             $admin !== null
                 ? sprintf( CoreAPI::t( 'Admin "%s": already exists, not changed' ), $admin )
                 : CoreAPI::t( 'Admin: there is none, and none was created' ),

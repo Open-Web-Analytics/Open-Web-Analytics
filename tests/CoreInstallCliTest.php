@@ -247,7 +247,9 @@ final class CoreInstallCliTest extends TestCase
         $this->im->permissions = ['/owa-data is now writable by its owner only.'];
         $this->im->created     = ['owa_login_failure', 'owa_spam_block'];
 
-        $cli = $this->runCommand(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+        $cli           = $this->coreInstallCli(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+        $cli->outcomes = ['TrackerPublishCli' => ['outcome' => 'ok', 'message' => '0 published, 1 current, 0 failed, 0 removed', 'final' => false]];
+        $cli->doAction();
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
         $this->assertSame(0, Cli::$exit_code);
@@ -256,7 +258,7 @@ final class CoreInstallCliTest extends TestCase
             'Permissions: /owa-data is now writable by its owner only.',
             'Tables: created owa_login_failure, owa_spam_block',
             'Schema updates: applied',
-            'Tracking bundles: the stale ones republished',
+            'Tracking bundles: 0 published, 1 current, 0 failed, 0 removed',
             'Admin "owatest-admin": already exists, not changed',
             'Site: already exists, not changed',
         ], $cli->written);
