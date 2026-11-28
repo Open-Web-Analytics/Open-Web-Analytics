@@ -196,6 +196,34 @@ class InstallManager extends \OWA\Core\Base {
     }
 
     /**
+     * Each active module's missing tables, created from its entities
+     * (Module::createMissingTables()). Tables that exist and the schema
+     * versions are left as they are. Nothing is created on a server OWA
+     * cannot run on: problem says why.
+     *
+     * @return array{created: list<string>, failed: list<string>, problem: string|null} table names
+     */
+    public function createMissingTables() {
+
+        $out = [ 'created' => [], 'failed' => [], 'problem' => \OWA\Module\Base\Classes\DatabaseRequirement::problem() ];
+
+        if ( $out['problem'] !== null ) {
+
+            return $out;
+        }
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
+
+            $tables = $module->createMissingTables();
+
+            array_push( $out['created'], ...$tables['created'] );
+            array_push( $out['failed'], ...$tables['failed'] );
+        }
+
+        return $out;
+    }
+
+    /**
      * Create the first admin, unless there is one.
      *
      * @param  string $user_id

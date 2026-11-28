@@ -985,6 +985,50 @@ abstract class Module {
     }
 
     /**
+     * Creates each of this module's tables that does not exist, from its
+     * entity as it is defined now. A table that exists is left as it is, and
+     * no schema version is recorded.
+     *
+     * install() runs it. So do cmd=core-install on an installed system and
+     * the upgrade cycle (tests/tools/upgrade_cycle.php), before the pending
+     * updates: an update gives the same result when the tables this creates
+     * were there before it ran (v2-Schema-Updater).
+     *
+     * createTable() is CREATE TABLE IF NOT EXISTS and returns true either way,
+     * so whether a table was there is asked first.
+     *
+     * @return array{created: list<string>, existing: list<string>, failed: list<string>} table names
+     */
+    public function createMissingTables() {
+
+        $out = [ 'created' => [], 'existing' => [], 'failed' => [] ];
+
+        if ( empty( $this->entities ) ) {
+
+            return $out;
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( $this->entities as $name ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( $this->name . '.' . $name );
+            $table  = $entity->getTableName();
+
+            if ( is_object( $db ) && method_exists( $db, 'tableExists' ) && $db->tableExists( $table ) ) {
+
+                $out['existing'][] = $table;
+
+                continue;
+            }
+
+            $out[ $entity->createTable() ? 'created' : 'failed' ][] = $table;
+        }
+
+        return $out;
+    }
+
+    /**
      * Installation method
      *
      * Creates database tables and sets schema version
@@ -998,41 +1042,17 @@ abstract class Module {
         $errors = '';
         $this->install_problem = '';
 
-        /*
-         * Whether every table this module owns had to be created.
-         *
-         * createTable() is CREATE TABLE IF NOT EXISTS and returns true either
-         * way, so it cannot say whether it built the table or found it. That
-         * difference decides what the schema version may be set to below, so it
-         * is measured here instead.
-         */
-        $all_tables_are_new = true;
+        $tables = $this->createMissingTables();
 
-        // Install schema
-        if (!empty($this->entities)) {
+        // Whether every table this module owns had to be created, which decides what the schema version may be set to below.
+        $all_tables_are_new = ! $tables['existing'];
 
-            $db = \OWA\Core\CoreAPI::dbSingleton();
+        if ( $tables['failed'] ) {
 
-            foreach ($this->entities as $k => $v) {
-
-                $entity = \OWA\Core\CoreAPI::entityFactory($this->name.'.'.$v);
-
-                if ( is_object( $db ) && method_exists( $db, 'tableExists' )
-                     && $db->tableExists( $entity->getTableName() ) ) {
-
-                    $all_tables_are_new = false;
-                }
-
-                $status = $entity->createTable();
-
-                if ($status != true) {
-                    \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
-                    $errors = true;
-                    $this->install_problem = sprintf( \OWA\Core\CoreAPI::t( 'Its table %s could not be created. The error log says why.' ),
-                        $entity->getTableName() );
-                }
-
-            }
+            \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
+            $errors = true;
+            $this->install_problem = sprintf( \OWA\Core\CoreAPI::t( 'Its table %s could not be created. The error log says why.' ),
+                end( $tables['failed'] ) );
         }
 
         // activate module and persist configuration changes
