@@ -37,6 +37,7 @@
             "id": "orders",
             "container": "orders-grid",
             "title": "Orders",
+            "compare": false,
             "query": {
                 "metrics": "transactionRevenue,taxRevenue,shippingRevenue",
                 "dimensions": "transactionId",

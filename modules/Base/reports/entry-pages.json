@@ -1,6 +1,6 @@
 {
     "title": "Entry Pages",
-    "description": "Sessions by landing page, with bounce and engagement rates.",
+    "description": "Sessions by landing page, in each metric set.",
     "widgets": [
         {
             "type": "trend",
@@ -16,7 +16,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "sessions,bounceRate,engagementRate",
                 "dimensions": "landingPage",
                 "sort": "sessions-",
                 "resultsPerPage": 30

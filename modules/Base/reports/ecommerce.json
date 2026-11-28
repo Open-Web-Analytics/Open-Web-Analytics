@@ -34,6 +34,7 @@
             "container": "top-orders",
             "title": "Top Orders",
             "colspan": 6,
+            "compare": false,
             "query": {
                 "metrics": "transactionRevenue",
                 "dimensions": "transactionId",
@@ -53,15 +54,6 @@
                 "dimensions": "attributedSource",
                 "sort": "transactionRevenue-",
                 "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "attributedSource",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "sources",
-                    "attributedSource": "%s"
-                },
-                "valueColumns": "attributedSource"
             }
         }
     ]

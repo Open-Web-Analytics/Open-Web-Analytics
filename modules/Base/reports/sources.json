@@ -17,7 +17,7 @@
             "container": "dimension-grid",
             "query": {
                 "dimensions": "attributedSourceMedium",
-                "sort": "sessions",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }

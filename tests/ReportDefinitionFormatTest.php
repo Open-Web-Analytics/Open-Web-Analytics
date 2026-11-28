@@ -723,12 +723,15 @@ final class ReportDefinitionFormatTest extends TestCase
      * golden records each report's queries and commands but not its link
      * URLs, so it cannot catch this.
      *
-     * Only DECLARED parameters are checked. A link may carry extras -- the
-     * dispatcher ignores what a report does not read.
+     * And every parameter a link carries is one its target declares: the
+     * dispatcher ignores the rest, so the target would show every row while the
+     * link reads as a filter. `do` and `reportId` route the request and are
+     * not parameters.
      */
     public function testEveryLinkCarriesTheParametersItsTargetRequires(): void
     {
         $declared = [];
+        $accepted = [];
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
@@ -736,6 +739,8 @@ final class ReportDefinitionFormatTest extends TestCase
 
             $declared[ basename( $file, '.json' ) ] =
                 \OWA\Core\ConfiguredReport::constraintParams( (array) $def );
+
+            $accepted[ basename( $file, '.json' ) ] = array_keys( (array) ( $def['params'] ?? [] ) );
         }
 
         $this->assertNotEmpty( $declared, 'no definitions read, so this proves nothing' );
@@ -790,6 +795,13 @@ final class ReportDefinitionFormatTest extends TestCase
 
                         $broken[] = sprintf( '%s -> %s (missing "%s")', $name, $target, $param );
                     }
+
+                    $undeclared = array_diff( $supplied, [ 'do', 'reportId' ], $accepted[ $target ] );
+
+                    foreach ( $undeclared as $param ) {
+
+                        $broken[] = sprintf( '%s -> %s ("%s" is not a parameter of the target)', $name, $target, $param );
+                    }
                 }
             }
         }
@@ -797,7 +809,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertGreaterThan( 0, $checked, 'no links to configured reports were examined' );
 
         $this->assertSame( [], $broken,
-            'these links land on a report constrained on a parameter they do not carry: '
+            'these links do not carry the parameters their target declares: '
             . implode( ', ', $broken ) );
     }
 
@@ -1315,6 +1327,140 @@ final class ReportDefinitionFormatTest extends TestCase
 
             $this->assertFalse( $widget['compare'] ?? null, "$report $id" );
         }
+    }
+
+    /** Every shipped definition, by report id. */
+    private static function shippedById(): array
+    {
+        $out = [];
+
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
+
+            $out[ basename( $file, '.json' ) ] = json_decode( (string) file_get_contents( $file ), true );
+        }
+
+        return $out;
+    }
+
+    /** One widget of a shipped definition, by id. */
+    private static function shippedWidget( string $report, string $id ): array
+    {
+        $definition = self::shippedById()[ $report ] ?? [];
+
+        return array_values( array_filter( (array) ( $definition['widgets'] ?? [] ),
+            fn ( $w ) => ( $w['id'] ?? '' ) === $id ) )[0] ?? [];
+    }
+
+    /**
+     * Grids, cards and pies that sort on a METRIC sort descending, so the
+     * largest rows come first. A sort on a dimension (date, scroll depth,
+     * prior sessions) may ascend. A metric sort that ascends on purpose is
+     * listed here.
+     */
+    const ASCENDING_METRIC_SORTS = [];
+
+    public function testEveryMetricSortIsDescending(): void
+    {
+        $ascending = [];
+        $checked   = 0;
+
+        foreach ( self::shippedById() as $report => $definition ) {
+
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
+
+                $query = (array) ( $widget['query'] ?? [] );
+
+                if ( ! isset( $query['sort'] ) ) {
+
+                    continue;
+                }
+
+                $dimensions = array_filter( explode( ',', (string) ( $query['dimensions'] ?? '' ) ) );
+
+                foreach ( explode( ',', (string) $query['sort'] ) as $sort ) {
+
+                    $column = rtrim( $sort, '-' );
+
+                    if ( in_array( $column, $dimensions, true ) ) {
+
+                        continue;
+                    }
+
+                    $checked++;
+
+                    $key = $report . ':' . ( $widget['id'] ?? '' );
+
+                    if ( substr( $sort, -1 ) !== '-' && ! in_array( $key, self::ASCENDING_METRIC_SORTS, true ) ) {
+
+                        $ascending[] = $key . ' sorts ' . $sort;
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 40, $checked, 'too few metric sorts read, so this proves nothing' );
+        $this->assertSame( [], $ascending, 'these widgets rank their smallest rows first' );
+        $this->assertSame( 'sessions-', self::shippedWidget( 'sources', 'dim' )['query']['sort'] ?? null );
+    }
+
+    /** An order list holds single orders, which a comparison period cannot match. */
+    public function testTheOrderListsAreNotCompared(): void
+    {
+        foreach ( [ 'transactions' => 'orders', 'ecommerce' => 'topOrders' ] as $report => $id ) {
+
+            $widget = self::shippedWidget( $report, $id );
+
+            $this->assertSame( 'transactionId', $widget['query']['dimensions'] ?? null, "$report $id" );
+            $this->assertFalse( $widget['compare'] ?? null, "$report $id" );
+        }
+    }
+
+    /**
+     * A report drawn once per metric set (no `metrics`, no `metricSets`) has
+     * no grid with metrics of its own: the grid's own metrics win over the
+     * set's (report_widgets.php), so every tab would draw the same grid.
+     */
+    public function testATabbedReportsGridsFollowTheSet(): void
+    {
+        $own     = [];
+        $tabbed  = 0;
+
+        foreach ( self::shippedById() as $report => $definition ) {
+
+            if ( isset( $definition['metrics'] ) || isset( $definition['metricSets'] ) ) {
+
+                continue;
+            }
+
+            $tabbed++;
+
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
+
+                if ( in_array( $widget['type'] ?? '', [ 'grid', 'grid-card', 'pie' ], true )
+                     && ! empty( $widget['query']['metrics'] ) ) {
+
+                    $own[] = $report . ':' . ( $widget['id'] ?? '' );
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 10, $tabbed, 'too few tabbed reports read, so this proves nothing' );
+        $this->assertSame( [], $own, 'these grids draw the same metrics on every tab' );
+
+        foreach ( [ 'entry-pages', 'exit-pages' ] as $report ) {
+
+            $this->assertArrayNotHasKey( 'metrics', self::shippedWidget( $report, 'dim' )['query'] ?? [ 'metrics' => 'missing' ], $report );
+        }
+    }
+
+    /** Creative Performance counts the sessions credited to an ad, as Ad Performance does. */
+    public function testCreativePerformanceCountsOnlyAdSessions(): void
+    {
+        $definitions = self::shippedById();
+
+        $this->assertSame( 'attributedAd!=(not set)', $definitions['creative-performance']['settings']['constraints'] ?? null );
+        $this->assertSame( $definitions['ads']['settings']['constraints'] ?? null,
+            $definitions['creative-performance']['settings']['constraints'] ?? null );
     }
 
     /** A stand-in for a TimePeriod: only its two dates are read. */
