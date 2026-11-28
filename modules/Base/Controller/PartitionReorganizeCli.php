@@ -157,19 +157,24 @@ class PartitionReorganizeCli extends PartitionsCli {
                 // fit and nothing would be merged. Reserve the difference.
                 $extra = $plan['planned'] - count( $db->getPartitionSpans( $table ) );
 
-                $this->compactTable(
-                    $table,
-                    [
-                        'limit'  => max( 1, $budget['limit'] - max( 0, $extra ) ),
-                        'reason' => sprintf(
-                            '%s, less %d reserved for the finer granularity', $budget['reason'], max( 0, $extra )
-                        ),
-                    ],
-                    $dry_run
-                );
+                $room = [
+                    'limit'  => max( 1, $budget['limit'] - max( 0, $extra ) ),
+                    'reason' => sprintf(
+                        '%s, less %d reserved for the finer granularity', $budget['reason'], max( 0, $extra )
+                    ),
+                ];
 
-                // Re-plan against what the table now looks like.
-                $plan = $db->repartitionTable( $table, $granularity, true, $from, $to, $protect );
+                $this->compactTable( $table, $room, $dry_run );
+
+                // Re-plan against what the table now looks like. A dry run's
+                // compaction changed nothing, so it plans against the
+                // partitions that compaction would leave.
+                $spans = $dry_run
+                    ? \OWA\Core\Db::applyReshapes( $db->getPartitionSpans( $table ),
+                        $db->planPartitionCompaction( $table, $room['limit'], $this->detailMonths() )['operations'] )
+                    : null;
+
+                $plan = $db->repartitionTable( $table, $granularity, true, $from, $to, $protect, $spans );
             }
 
             if ( ! $this->withinPartitionBudget( $table, $plan['planned'], $budget ) ) {

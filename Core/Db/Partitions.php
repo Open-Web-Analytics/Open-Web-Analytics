@@ -1398,6 +1398,61 @@ class Partitions {
     }
 
     /**
+     * The partitions a table would have once $operations (planPartitionCompaction())
+     * are applied: each operation's partitions replaced by its ranges. For a
+     * dry run, which plans what follows a compaction it does not run.
+     *
+     * @param list<Span>    $spans       the table's, ascending
+     * @param list<Reshape> $operations
+     * @return list<Span>
+     */
+    public static function applyReshapes( array $spans, array $operations ) {
+
+        $replaced = [];
+
+        foreach ( $operations as $i => $op ) {
+
+            foreach ( $op['names'] as $name ) {
+
+                $replaced[ (string) $name ] = $i;
+            }
+        }
+
+        $out  = [];
+        $done = [];
+
+        foreach ( $spans as $span ) {
+
+            if ( ! isset( $replaced[ $span['name'] ] ) ) {
+
+                $out[] = $span;
+
+                continue;
+            }
+
+            $i = $replaced[ $span['name'] ];
+
+            if ( isset( $done[ $i ] ) ) {
+
+                continue;
+            }
+
+            $done[ $i ] = true;
+
+            // An operation's partitions are contiguous, so its ranges start where its first one did.
+            $start = (string) $span['start'];
+
+            foreach ( $operations[ $i ]['ranges'] as $name => $less_than ) {
+
+                $out[] = [ 'name' => (string) $name, 'start' => $start, 'less_than' => (string) $less_than ];
+                $start = (string) $less_than;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * The old tier around a retention cutoff.
      *
      * A partition ending on or before the cutoff is the drop's, and is left as
@@ -1767,13 +1822,21 @@ class Partitions {
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd
      * @param array{start: string, less_than: string}|null $skip  to leave untouched
+     * @param list<Span>|null $spans the partitions to plan against instead of the table's, with
+     *                               $dry_run: what a dry run's compaction would leave (applyReshapes())
      * @return array{changed: list<string>, skipped: int, failed: list<string>, planned: int}
      */
-    public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
+    public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null, $spans = null ) {
 
         $result = [ 'changed' => [], 'skipped' => 0, 'failed' => [], 'planned' => 0 ];
 
-        $spans = $this->db->getPartitionSpans( $table_name );
+        if ( $spans !== null && ! $dry_run ) {
+
+            throw new \LogicException( 'repartitionTable() plans against given spans only on a dry run.' );
+        }
+
+        $spans = $spans ?? $this->db->getPartitionSpans( $table_name );
+        $all   = $spans;
 
         if ( ! $spans ) {
 
@@ -1882,7 +1945,7 @@ class Partitions {
 
         $runs[] = $run;
 
-        $total    = count( $this->db->getPartitionSpans( $table_name ) );
+        $total    = count( $all );
         $selected = count( $spans );
         $targets  = [];
 
