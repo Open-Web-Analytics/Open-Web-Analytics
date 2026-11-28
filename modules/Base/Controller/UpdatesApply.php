@@ -74,6 +74,17 @@ class UpdatesApply extends \OWA\Core\Controller {
 
         $modules = $s->getModulesNeedingUpdates();
 
+        // Nothing is applied while a module's tables are in an unknown state (Core\Module::hasUnknownSchemaState()).
+        $unknown = CoreUpdateSchemaCli::unknownStateProblems();
+
+        if ( $unknown ) {
+
+            $this->set( 'error_msg', implode( ' ', $unknown ) );
+            $this->setView( 'base.error' );
+
+            return;
+        }
+
         // foreach do update in order
 
         $error = false;

@@ -163,6 +163,30 @@ PHP]);
         }
     }
 
+    /** core-install's scans (InstallManager) ask the loaded modules, an extension among them: its missing table is created, and its unknown schema state found. With a database only. */
+    public function testCoreInstallsScansCoverALoadedExtension(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database');
+        }
+
+        $s  = CoreAPI::serviceSingleton();
+        $m  = CoreAPI::moduleClassFactory('owatest_acme');
+        $db = CoreAPI::dbSingleton();
+        $this->assertTrue($s->loadModule($m));
+
+        try {
+            $tables = (new \OWA\Module\Base\Classes\InstallManager())->createMissingTables();
+            $this->assertContains('owa_owatest_acme_thing', $tables['created']);
+            $this->assertTrue((bool) $db->tableExists('owa_owatest_acme_thing'));
+            $this->assertContains('owatest_acme', (new \OWA\Module\Base\Classes\InstallManager())->unknownStateModules(),
+                'tables, and no recorded schema version');
+        } finally {
+            unset($s->modules['owatest_acme']);
+            $db->query('DROP TABLE IF EXISTS owa_owatest_acme_thing');
+        }
+    }
+
     /** OWA's NAME, or OWA's directory: refused when the modules are found, so neither is ever built in OWA's place. */
     public function testAnExtensionWithOwasNameIsRefused(): void
     {

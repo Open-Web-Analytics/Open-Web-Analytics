@@ -153,9 +153,10 @@ final class ModuleActivateInstallTest extends TestCase
      * base is the only module with entities AND a required version above 1, so
      * it is the only place the operands differ: its tables already exist, so a
      * missing version might mean 27 updates are pending rather than none.
-     * Guessing "current" there is precisely the migration skip, so install()
-     * must refuse and leave the version unset --
-     * getSchemaVersion() then reads 1 and cmd=core-update-schema replays properly.
+     * Guessing "current" there is precisely the migration skip, and replaying
+     * every update from 1 over tables of unknown shape is no better, so the
+     * state is unknown: install() and update() refuse, naming
+     * cmd=core-install --force, and nothing is changed.
      */
     public function testAMissingVersionIsNotRepairedWhenUpdatesCouldBePending(): void
     {
@@ -172,13 +173,21 @@ final class ModuleActivateInstallTest extends TestCase
             $this->assertEmpty(\OWA\Core\CoreAPI::getSetting('base', 'schema_version'),
                 'precondition: no version recorded');
 
-            \OWA\Core\CoreAPI::installModule('base');
+            $this->assertFalse(\OWA\Core\CoreAPI::installModule('base', $problem));
+            $this->assertSame(\OWA\Core\Module::unknownStateMessage('base'), $problem);
 
             $this->assertEmpty(
                 \OWA\Core\CoreAPI::getSetting('base', 'schema_version'),
                 'install() must NOT assume a module with existing tables is current: '
                 . 'recording the required version here would skip every pending update'
             );
+
+            $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+            $this->assertTrue($base->hasUnknownSchemaState());
+            $this->assertSame(0, $base->getSchemaVersion(), 'not read as 1, which would replay every update');
+            $this->assertFalse($base->update(), 'no update runs');
+            $this->assertSame(\OWA\Core\Module::unknownStateMessage('base'), $base->update_problem);
+            $this->assertEmpty(\OWA\Core\CoreAPI::getSetting('base', 'schema_version'), 'and none was recorded');
 
         } finally {
             \OWA\Core\CoreAPI::persistSetting('base', 'schema_version', $real);

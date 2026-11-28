@@ -142,8 +142,8 @@ final class Update076Test extends TestCase
         $this->assertCount(1, $definition->loadConditions());
     }
 
-    /** A table under both names is refused before anything is renamed, not merged or dropped. */
-    public function testATableUnderBothNamesIsRefused(): void
+    /** down() refuses a table under both names before anything is renamed. */
+    public function testDownRefusesATableUnderBothNames(): void
     {
         $this->requireDatabase();
 
@@ -157,11 +157,85 @@ final class Update076Test extends TestCase
             $this->assertTrue($db->tableExists('owa_goal_event_definition_condition'), 'nor the other table');
             $this->assertTrue($this->hasColumn('owa_goal_event_definition_condition', 'goal_event_definition_id'),
                 'nor its column');
-
-            $this->assertFalse($this->update->up(), 'up() refuses it too');
         } finally {
             $db->query('DROP TABLE IF EXISTS owa_goal_event');
         }
+    }
+
+    /**
+     * The new tables created empty before up() runs, as cmd=core-install creates
+     * missing tables before the updates: up() drops them and renames the old
+     * ones, so the result is the one an upgrade without them gets.
+     */
+    public function testEmptyTablesUnderTheNewNamesGiveTheSameResult(): void
+    {
+        $this->requireDatabase();
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $id     = $this->definition();
+        $shapes = $this->shapes();
+
+        $this->assertTrue($this->update->down());
+        $this->createUnderTheNewNames();
+
+        $this->assertTrue($this->update->up());
+
+        $this->assertFalse($db->tableExists('owa_goal_event'));
+        $this->assertFalse($db->tableExists('owa_goal_event_condition'));
+        $this->assertSame($shapes, $this->shapes(), 'the old tables, renamed, and not the ones created empty');
+        $this->assertSame('Renamed_76', $this->definitionNameIn('owa_goal_event_definition', $id), 'the rows go with the table');
+        $this->assertSame(1, $this->conditions('owa_goal_event_definition_condition', 'goal_event_definition_id', $id));
+    }
+
+    /**
+     * Rows under both names: up() copies the old tables' rows the new ones lack,
+     * by id, the condition's goal_event_id into goal_event_definition_id, keeps
+     * the new tables' own rows, and drops the old tables.
+     */
+    public function testRowsUnderBothNamesAreMovedIntoTheNewTables(): void
+    {
+        $this->requireDatabase();
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $id      = $this->definition();
+        $only    = '7600000000000076010';
+        $created = \OWA\Core\CoreAPI::getRequestTimestamp();
+
+        $this->assertTrue($this->update->down());
+        $this->createUnderTheNewNames();
+
+        try {
+            $this->assertTrue((bool) $db->query(
+                'INSERT INTO owa_goal_event_definition (id, name, trigger_event_type, is_active, creation_date) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)',
+                [$id, 'Kept_76', 'page_view', 1, $created, $only, 'Only_76', 'page_view', 1, $created]));
+
+            $this->assertTrue($this->update->up());
+            $this->assertTrue($this->update->up(), 'twice');
+
+            $this->assertFalse($db->tableExists('owa_goal_event'), 'the old tables are dropped');
+            $this->assertFalse($db->tableExists('owa_goal_event_condition'));
+            $this->assertSame('Kept_76', $this->definitionNameIn('owa_goal_event_definition', $id), 'a row the new table has is kept');
+            $this->assertSame('Only_76', $this->definitionNameIn('owa_goal_event_definition', $only));
+            $this->assertSame(1, $this->conditions('owa_goal_event_definition_condition', 'goal_event_definition_id', $id),
+                'the condition is copied, naming its definition in the new column');
+            $this->assertFalse($this->hasColumn('owa_goal_event_definition_condition', 'goal_event_id'));
+        } finally {
+            $db->query('DELETE FROM owa_goal_event_definition WHERE id = ?', [$only]);
+        }
+    }
+
+    /** Which old column each new one is copied from: the shared ones, and the definition key renamed. */
+    public function testTheColumnsCopiedAreTheSharedOnesWithTheKeyRenamed(): void
+    {
+        $this->assertSame(
+            ['id' => 'id', 'goal_event_definition_id' => 'goal_event_id', 'condition_value' => 'condition_value'],
+            \OWA\Module\Base\Update\Update076::columnMap(
+                ['id', 'goal_event_id', 'role', 'condition_value'],
+                ['id', 'goal_event_definition_id', 'condition_value', 'sort_order']));
+
+        $this->assertSame(['id' => 'id', 'goal_event_id' => 'goal_event_id'],
+            \OWA\Module\Base\Update\Update076::columnMap(['id', 'goal_event_id'], ['id', 'goal_event_id']),
+            'a new table with the old key is copied into as it is');
     }
 
     public function testAFunnelStepsKeyIsRenamedBothWaysAndNothingElseInTheDefinition(): void
@@ -196,6 +270,27 @@ final class Update076Test extends TestCase
     }
 
     /* ---------------- helpers ---------------- */
+
+    /** Both tables under the new names, empty, from the entities, as Module::createMissingTables() makes them. */
+    private function createUnderTheNewNames(): void
+    {
+        foreach (['base.goal_event_definition', 'base.goal_event_definition_condition'] as $name) {
+            $this->assertTrue(\OWA\Core\CoreAPI::entityFactory($name)->createTable(), $name);
+        }
+    }
+
+    /** @return array<string, string> table => SHOW CREATE TABLE, its AUTO_INCREMENT value removed */
+    private function shapes(): array
+    {
+        $out = [];
+
+        foreach (['owa_goal_event_definition', 'owa_goal_event_definition_condition'] as $table) {
+            $row         = array_values((array) \OWA\Core\CoreAPI::dbSingleton()->get_row("SHOW CREATE TABLE $table"));
+            $out[$table] = (string) preg_replace('/ AUTO_INCREMENT=\d+/', '', (string) ($row[1] ?? ''));
+        }
+
+        return $out;
+    }
 
     /** A definition with one condition, through the entities. @return string its id */
     private function definition(): string
