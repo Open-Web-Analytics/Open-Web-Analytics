@@ -154,6 +154,35 @@ final class ModuleScreensTest extends TestCase
         $this->assertSame(2502, (int) $step->data['status_code']);
     }
 
+    /** Base is refused on the screen, and nothing is deactivated. */
+    public function testDeactivatingBaseIsRefused(): void
+    {
+        $step = new class(['module' => 'base']) extends \OWA\Module\Base\Controller\ModuleDeactivate {
+            public array $deactivated = [];
+
+            protected function deactivate($module)
+            {
+                $this->deactivated[] = $module;
+
+                return true;
+            }
+        };
+
+        $data = (array) $step->action();
+
+        $this->assertSame('Module base cannot be deactivated: OWA needs it to run.', self::message($data));
+        $this->assertSame('base.optionsModules', $data['subview'] ?? null);
+        $this->assertArrayNotHasKey('status_code', $data, 'not "Module deactivated."');
+        $this->assertSame([], $step->deactivated);
+    }
+
+    /** Module::deactivate() answers false for base, as cmd=deactivate module=base reports it. */
+    public function testBaseDoesNotReportItselfDeactivated(): void
+    {
+        $this->assertFalse(\OWA\Core\CoreAPI::moduleClassFactory('base')->deactivate());
+        $this->assertNotSame(false, \OWA\Core\CoreAPI::getSetting('base', 'is_active'));
+    }
+
     /** The screen deactivates as cmd=deactivate does. */
     public function testDeactivatingIsCoreApis(): void
     {
@@ -169,5 +198,6 @@ final class ModuleScreensTest extends TestCase
         $this->assertSame('There is no module named %s.', $c->getMsg(3031)['message']);
         $this->assertSame('Module %s is not active.', $c->getMsg(3032)['message']);
         $this->assertSame('No module was named.', $c->getMsg(3033)['message']);
+        $this->assertSame('Module base cannot be deactivated: OWA needs it to run.', $c->getMsg(3034)['message']);
     }
 }

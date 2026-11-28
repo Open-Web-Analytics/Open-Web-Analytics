@@ -1318,6 +1318,14 @@ abstract class Module {
      */
     public function deactivate() {
 
+        // OWA runs on base: it is never deactivated.
+        if ( $this->name === 'base' ) {
+
+            \OWA\Core\CoreAPI::notice( 'Module base cannot be deactivated: OWA needs it to run.' );
+
+            return false;
+        }
+
         // A module its own constant activates stays active while it is set (ModuleActivation).
         $constant = self::activatedByConstant( $this->name );
 
@@ -1328,10 +1336,7 @@ abstract class Module {
             return false;
         }
 
-        if ($this->name != 'base') {
-
-            \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
-        }
+        \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
 
         return true;
     }

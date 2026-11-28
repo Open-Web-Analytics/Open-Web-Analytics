@@ -973,6 +973,7 @@ return [
     'Module %s was not installed. The error log says why.' => 'Module %s was not installed. The error log says why.',
     'Module %s: installed fresh' => 'Module %s: installed fresh',
     'Module activated.' => 'Module activated.',
+    'Module base cannot be deactivated: OWA needs it to run.' => 'Module base cannot be deactivated: OWA needs it to run.',
     'Module deactivated.' => 'Module deactivated.',
     'Modules' => 'Modules',
     'Modules with updates to apply' => 'Modules with updates to apply',
