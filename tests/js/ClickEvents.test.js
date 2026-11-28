@@ -326,3 +326,25 @@ describe('clickEventHandler builds the click event', () => {
         expect(heard).toEqual(['announced']);
     });
 });
+
+describe('the click\'s page_location', () => {
+
+    afterEach(() => { window.history.replaceState({}, '', '/'); });
+
+    test('is the page\'s URL without the fragment', () => {
+        window.history.replaceState({}, '', '/docs?tab=2#access_token=secret');
+
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.trackClicks();
+        document.body.innerHTML = '<button id="b">Go</button>';
+
+        t.clickEventHandler(clickOn(document.getElementById('b')));
+
+        const click = sent.find((p) => p.event_type === 'click');
+
+        expect(click.page_location).toMatch(/\/docs\?tab=2$/);
+        expect(click.page_location).not.toContain('#');
+    });
+});

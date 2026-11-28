@@ -694,10 +694,14 @@ describe('what a form event says about the form', () => {
      * A form with no action submits to the page itself, which is what the value
      * says rather than reporting an empty destination.
      */
-    test('no action means the page itself', () => {
+    test('no action means the page itself, without its fragment', () => {
+        window.history.replaceState({}, '', '/join?plan=pro#step-2');
+
         const start = startOn('<form id="f"><input id="a"></form>', '#a');
 
-        expect(start.form_destination).toBe(window.location.href);
+        expect(start.form_destination).toBe(window.location.origin + '/join?plan=pro');
+
+        window.history.replaceState({}, '', '/');
     });
 
     /*

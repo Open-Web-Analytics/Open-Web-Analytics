@@ -290,14 +290,6 @@ class OWATracker  {
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {
 	        /**
-	         * Whether the #fragment is kept as part of the page's URL, both in
-	         * the URL sent and in the URL route changes are compared on. Set it
-	         * with setTrackUrlFragments().
-	         *
-	         * @option
-	         */
-	        trackUrlFragments: false,
-	        /**
 	         * Seconds without an event after which the next event starts a new
 	         * session. A Profile's tracking bundle sets it from the install's
 	         * session length.
@@ -1474,43 +1466,20 @@ class OWATracker  {
      * /pricing and /pricing#faq are two URLs for one page.
      *
      * ONE FUNCTION, SO THE ROUTE COMPARISON AGREES WITH THE REPORT. This is
-     * also what trackRouteChanges() compares, which is the half that is easy to
-     * get wrong: strip the fragment from the reported URL but compare the raw
-     * one, and a hash-routed site fires a page view per anchor click with every
-     * one of them reporting the same URL.
+     * also what trackRouteChanges() compares, so a fragment-only change is not
+     * a route change.
      *
-     * trackUrlFragments turns both halves back on together, for a site that
-     * genuinely routes on the hash.
+     * collectPageProperties() fills every event's page_location from here,
+     * clicks included, and formDestination() falls back to it. A site that
+     * routes on the hash sends each route with trackPageView('/path').
      */
     getCurrentUrl() {
 
         var url = document.URL;
 
-        if ( this.getOption( 'trackUrlFragments' ) ) {
-
-            return url;
-        }
-
         var hash = url.indexOf( '#' );
 
         return hash === -1 ? url : url.substring( 0, hash );
-    }
-
-    /**
-     * Keep the #fragment as part of the page's URL. Route changes are then
-     * compared with the fragment too.
-     *
-     * For a site that routes on the hash -- example.com/app#/settings -- where
-     * the fragment IS the page. It moves the route comparison with it, so
-     * turning this on gives both the page views and the URLs to tell them
-     * apart, and leaving it off gives neither.
-     *
-     * @command
-     * @param {boolean} value
-     */
-    setTrackUrlFragments( value ) {
-
-        this.setOption( 'trackUrlFragments', ! ! value );
     }
 
     bindClickEvents() {
@@ -2217,7 +2186,7 @@ class OWATracker  {
 
         // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
         // whose merge() would overwrite anything set here -- so no duplicate set.
-        click.set("page_location", window.location.href);
+        // page_location is filled by collectPageProperties(), without the fragment.
         // view port dimensions - needed for calculating relative position
         var viewport = this.getViewportDimensions();
         click.set("page_width", viewport.width);
@@ -2678,9 +2647,9 @@ class OWATracker  {
     /**
      * Track route changes in a single-page application as page views.
      *
-     * A route change is a pushState, replaceState, popstate or hashchange
-     * that changes the page's URL; pushState and replaceState are patched,
-     * popstate and hashchange listened for. The page view is sent once the
+     * A route change is a pushState, replaceState or popstate that changes
+     * the page's URL without its fragment; pushState and replaceState are
+     * patched, popstate listened for. The page view is sent once the
      * URL has been still for ROUTE_SETTLE_MSEC, with the URL and title then,
      * so a redirect that pushes twice is one page view.
      *
@@ -2688,9 +2657,10 @@ class OWATracker  {
      * a page, and a site that sends its own page view per route would count
      * each one twice.
      *
-     * A hash change that is only an in-page anchor leaves the URL unchanged,
-     * since getCurrentUrl() leaves the fragment out, and is not a route
-     * change. A site that routes on the hash turns on trackUrlFragments.
+     * A change to the fragment alone (an in-page anchor, a hash route) leaves
+     * the URL unchanged, since getCurrentUrl() leaves the fragment out, and
+     * sends no page view. A site that routes on the hash sends each route
+     * with trackPageView('/path').
      *
      * @command
      */
@@ -2859,7 +2829,6 @@ class OWATracker  {
         }
 
         window.addEventListener( 'popstate', changed, false );
-        window.addEventListener( 'hashchange', changed, false );
     }
 
     /**
@@ -5224,7 +5193,7 @@ class OWATracker  {
      *
      * A relative action is resolved against the page, so two sites' /subscribe do
      * not read as one destination. A form with no action submits to the page
-     * itself, which is what the fallback says.
+     * itself: the fallback is the page's URL without its fragment.
      *
      * @param {Element} form
      * @return {string}
@@ -5232,8 +5201,7 @@ class OWATracker  {
     formDestination( form ) {
 
         var action = form.getAttribute( 'action' );
-        var here = ( typeof window !== 'undefined' && window.location )
-            ? window.location.href : '';
+        var here = this.getCurrentUrl();
 
         if ( ! action ) {
 
