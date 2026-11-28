@@ -214,6 +214,12 @@ class InstallManager extends \OWA\Core\Base {
 
         foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
 
+            // A module that is not a Core\Module declares no tables.
+            if ( ! $module instanceof \OWA\Core\Module ) {
+
+                continue;
+            }
+
             $tables = $module->createMissingTables();
 
             array_push( $out['created'], ...$tables['created'] );
@@ -235,7 +241,7 @@ class InstallManager extends \OWA\Core\Base {
 
         foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $name => $module ) {
 
-            if ( $module->hasUnknownSchemaState() ) {
+            if ( $module instanceof \OWA\Core\Module && $module->hasUnknownSchemaState() ) {
 
                 $out[] = (string) $name;
             }
@@ -282,7 +288,8 @@ class InstallManager extends \OWA\Core\Base {
     public function moveAsideForNewInstall( $stamp ) {
 
         $out     = [ 'moved' => [], 'modules' => [], 'problem' => '' ];
-        $modules = \OWA\Core\CoreAPI::serviceSingleton()->modules;
+        $modules = array_filter( \OWA\Core\CoreAPI::serviceSingleton()->modules,
+            static fn ( $m ) => $m instanceof \OWA\Core\Module );
 
         uksort( $modules, static fn ( $a, $b ) => ( $b === 'base' ) <=> ( $a === 'base' ) );
 

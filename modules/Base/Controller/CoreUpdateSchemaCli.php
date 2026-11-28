@@ -327,7 +327,8 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
                 continue;
             }
 
-            $problem = $module->unknownSchemaStateProblem();
+            // A module that is not a Core\Module has no recorded state to ask about.
+            $problem = $module instanceof \OWA\Core\Module ? $module->unknownSchemaStateProblem() : '';
 
             if ( $problem !== '' ) {
 

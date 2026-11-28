@@ -290,7 +290,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
              */
             $module = \OWA\Core\CoreAPI::serviceSingleton()->getModule( $name );
 
-            if ( ! $stored && $module && $module->hasUnknownSchemaState() ) {
+            if ( ! $stored && $module instanceof \OWA\Core\Module && $module->hasUnknownSchemaState() ) {
 
                 $rows[] = $this->row( self::FAIL, '  ' . $name, 'tables, but no recorded schema version',
                     \OWA\Core\Module::unknownStateMessage( $name ) );

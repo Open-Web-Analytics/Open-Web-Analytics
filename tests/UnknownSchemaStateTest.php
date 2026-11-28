@@ -307,6 +307,24 @@ final class UnknownSchemaStateTest extends TestCase
         }
     }
 
+    /** A module double that is not a Core\Module, as some tests put in the service, is asked nothing. */
+    public function testAModuleThatIsNotACoreModuleIsSkipped(): void
+    {
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $saved   = $service->modules;
+
+        try {
+            $service->modules = ['owatestdouble' => new class {
+                public function update() { return true; }
+            }];
+
+            $this->assertSame([], \OWA\Module\Base\Controller\CoreUpdateSchemaCli::unknownStateProblems());
+            $this->assertSame([], (new \OWA\Module\Base\Classes\InstallManager())->unknownStateModules());
+        } finally {
+            $service->modules = $saved;
+        }
+    }
+
     /** The updates screen and the CLI apply nothing while one is unknown: both ask unknownStateProblems() before their first update. */
     public function testEveryUpdatePathAsksFirst(): void
     {
