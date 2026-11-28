@@ -21,11 +21,11 @@ namespace OWA\Core;
 abstract class Module {
 
     /**
-     * Name of module: static::NAME, set by the constructor.
+     * Name of module: static::NAME, set by the constructor; '' until then.
      *
      * @var string
      */
-    public $name;
+    public $name = '';
 
     /**
      * The module's runtime name. Every module class declares its own:
@@ -431,7 +431,7 @@ abstract class Module {
      */
     public function registerSettingsField( $key, array $args = [] ) {
 
-        \OWA\Core\CoreAPI::configSingleton()->registerField( $this->name, $key, $args );
+        \OWA\Core\CoreAPI::configSingleton()->registerField( $this->moduleName(), $key, $args );
     }
 
     /**
@@ -456,21 +456,21 @@ abstract class Module {
      */
     public function registerSettingsFieldSet( array $set ) {
 
-        $set['module'] = $this->name;
+        $set['module'] = $this->moduleName();
 
         $id = (string) ( $set['id'] ?? '' );
 
         if ( $id === '' ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'A settings fieldset needs an id; ignoring one registered by %s.', $this->name ) );
+                'A settings fieldset needs an id; ignoring one registered by %s.', $this->moduleName() ) );
 
             return;
         }
 
         if ( strpos( $id, '.' ) === false ) {
 
-            $set['id'] = $this->name . '.' . $id;
+            $set['id'] = $this->moduleName() . '.' . $id;
         }
 
         \OWA\Core\CoreAPI::configSingleton()->registerFieldSet( $set );
@@ -784,6 +784,18 @@ abstract class Module {
      */
     public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports') {
         $this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
+    }
+
+    /**
+     * The module's runtime name, before the constructor has set $this->name
+     * too: a module declares its settings in its own constructor, before it
+     * calls parent::__construct().
+     *
+     * @return string
+     */
+    protected function moduleName() {
+
+        return $this->name !== '' ? $this->name : static::NAME;
     }
 
     /**
