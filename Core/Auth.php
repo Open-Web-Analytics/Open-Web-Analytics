@@ -291,6 +291,28 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
+     * Whether a REST request carries an application password: an
+     * `Authorization: Bearer` header with any value, or a credential
+     * appPasswordCredential() reads. A request refused with one is answered
+     * with Controller::refusedAppPasswordMessage(), so a client can tell that
+     * its header reached OWA.
+     *
+     * @return bool
+     */
+    public function carriesAppPassword() {
+
+        if ( ! \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
+
+            return false;
+        }
+
+        $header = (string) ( \OWA\Core\CoreAPI::getServerParam( 'HTTP_AUTHORIZATION' )
+            ?: \OWA\Core\CoreAPI::getServerParam( 'REDIRECT_HTTP_AUTHORIZATION' ) );
+
+        return (bool) preg_match( '/^Bearer\s+\S/i', $header ) || $this->appPasswordCredential() !== null;
+    }
+
+    /**
      * The application password a REST request carries, if it carries one.
      *
      * `Authorization: Bearer <token>`, or `Basic` with the user_id and the

@@ -21,6 +21,13 @@ final class Env {
      */
     const VERSION = 'master';
 
+    /**
+     * The oldest release this release installs over, by hand or
+     * automatically. cmd=version-info writes it into release.php as
+     * upgrades_from, where a release check reads it (ReleaseCheck::judge()).
+     */
+    const UPGRADES_FROM = '1.14.0';
+
     public static function version(): string {
 
         return self::VERSION;

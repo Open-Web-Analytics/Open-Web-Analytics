@@ -5,8 +5,8 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-install --version by hand
- * (byHand()).
+ * (ReleaseCheck) when a release is due, or cmd=core-install --version or
+ * --file by hand (byHand(), fromFile()).
  *
  * prepare() takes the install lock and proves both tarballs (Downloads::open(),
  * a private copy of each, checked against its signature): the release's, and
@@ -43,8 +43,10 @@ class Install {
     const WAIT = 300;
 
     /**
-     * Take the lock and prove both tarballs; set $pending. The caller has
-     * judged the release.
+     * Take the lock, or the caller's hold of it, and prove both tarballs; set
+     * $pending, which holds the lock until the copy. On any other outcome the
+     * lock is let go, the caller's hold too. The caller has judged the
+     * release.
      *
      * @param  Downloads $downloads
      * @param  string    $v         the release to install, downloaded
@@ -52,18 +54,24 @@ class Install {
      * @param  string    $root      the OWA directory
      * @param  bool         $quiet     say nothing after the copy (the scheduler's runs)
      * @param  list<string> $log       what the check did, which starts the install's log (the marker's)
+     * @param  array<string, mixed>|null $hold the install lock the caller took (lock()); null takes it here
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet, array $log = [] ) {
+    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet, array $log = [], $hold = null ) {
 
         $u = Downloads::updater();
 
         if ( $u['readMarker']( $root ) !== null ) {
 
+            if ( $hold !== null ) {
+
+                $u['unlock']( $hold );
+            }
+
             return self::answer( self::BUSY, 'An install is under way; php cli.php cmd=core-update-status says where it is.' );
         }
 
-        $hold = $u['tryLock']( dirname( InstallLock::path() ), sprintf( 'install %s', $v ) );
+        $hold = $hold ?? $u['tryLock']( dirname( InstallLock::path() ), sprintf( 'install %s', $v ) );
 
         if ( $hold === null ) {
 
@@ -128,13 +136,18 @@ class Install {
     /**
      * cmd=core-install --version=<x.y.z> [--force]: that release installed
      * now, whatever the automatic update settings say, its tarball and
-     * signature fetched from the download URL by its version every time
-     * (Releases::byTag()); the listing is read only when the installed
+     * signature fetched from the download URL by its version (Releases::byTag())
+     * unless they are held already; the listing is read only when the installed
      * release's tarball, which a failed install puts back, must be
-     * downloaded too (ReleaseCheck::ensureInstalled()). One not newer than the installed
-     * release only with $force, and never one older than the database
-     * schema. A failure recorded for it is cleared: whoever installs by hand
-     * has dealt with it. A release refused after its download is deleted.
+     * downloaded too (ReleaseCheck::ensureInstalled()). Any release whose
+     * requirements and upgrades_from this installation meets
+     * (ReleaseCheck::judge()), of any major version. The installed release
+     * again is reinstalled, copying the files that differ; an older one only
+     * with $force, and never one older than the database schema. A failure
+     * recorded for it is cleared: whoever installs by hand has dealt with it.
+     * A refused release's tarball stays, as the pending one (Downloads), so
+     * trying it again downloads nothing. The install lock is held from
+     * before the download until the copy has it (installNamed()).
      *
      * @param  string               $version
      * @param  bool                 $force
@@ -144,12 +157,170 @@ class Install {
      */
     public static function byHand( $version, $force = false, $downloads = null, array $context = [] ) {
 
-        $downloads = $downloads ?? new Downloads();
+        $v = (string) $version;
+
+        return self::installNamed( $v, $force, $downloads ?? new Downloads(), $context,
+            static function ( Downloads $downloads, array $c ) use ( $v ) {
+
+                // Held already, as one refused before: proved again when it is opened.
+                if ( $downloads->has( $v ) ) {
+
+                    return null;
+                }
+
+                try {
+
+                    $downloads->download( Releases::byTag( $v, (string) $c['installed'], (string) $c['download'] ) );
+
+                } catch ( \RuntimeException $e ) {
+
+                    return sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() );
+                }
+
+                return null;
+            },
+            sprintf( 'php cli.php cmd=core-install --version=%s%s, by hand.', $v, $force ? ' --force' : '' ) );
+    }
+
+    /**
+     * cmd=core-install --file=<tarball> [--sig=<path>] [--force]: the release
+     * in a tarball on this server installed, as byHand() installs one it
+     * downloads. Its version is read from its release.php, else its
+     * Core/Env.php; its signature is <tarball>.sig unless $sig names it, and
+     * is checked against the trusted keys (Signature) before anything else.
+     * A tarball that is not signed, or not by a trusted key, is refused. The
+     * proved tarball and its signature are put in the updates directory
+     * (Downloads::import()), and from there it installs as a download does.
+     * It makes no network request: the installed release's tarball, which a
+     * failed copy puts back, must be in the updates directory already, and
+     * it is refused before anything changes when it is not.
+     *
+     * @param  string               $file
+     * @param  string|null          $sig
+     * @param  bool                 $force
+     * @param  Downloads|null       $downloads
+     * @param  array<string, mixed> $context ReleaseCheck's, for a test
+     * @return array{outcome: string, message: string, lines: list<string>}
+     */
+    public static function fromFile( $file, $sig = null, $force = false, $downloads = null, array $context = [] ) {
+
+        // The operator's own path: a link to the tarball is followed.
+        $path     = (string) ( realpath( (string) $file ) ?: $file );
+        $sig_path = (string) ( $sig !== null ? ( realpath( (string) $sig ) ?: $sig ) : $path . '.sig' );
+
+        if ( ! is_file( $path ) ) {
+
+            return self::answer( self::REFUSED, sprintf( 'There is no file %s.', $file ) );
+        }
+
+        try {
+
+            [ $copy, $sha ] = Downloads::privateCopy( $path );
+
+        } catch ( \RuntimeException $e ) {
+
+            return self::answer( self::REFUSED, $e->getMessage() );
+        }
+
+        try {
+
+            try {
+
+                $v = self::tarballVersion( $copy );
+
+            } catch ( \RuntimeException $e ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is not a release tarball: %2$s', basename( $path ), $e->getMessage() ) );
+            }
+
+            if ( $v === null ) {
+
+                return self::answer( self::REFUSED, sprintf( '%s names no release version: it has no release.php or Core/Env.php that says one.', basename( $path ) ) );
+            }
+
+            if ( ! is_file( $sig_path ) ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is not signed: there is no %2$s. Give its signature with --sig=<path>.', basename( $path ), $sig_path ) );
+            }
+
+            $signature = (string) file_get_contents( $sig_path );
+
+            try {
+
+                Signature::verify( $v, $sha, $signature );
+
+            } catch ( \RuntimeException $e ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is refused: %2$s', basename( $path ), $e->getMessage() ) );
+            }
+
+            return self::installNamed( $v, $force, $downloads ?? new Downloads(), $context,
+                static function ( Downloads $downloads ) use ( $v, $copy, $signature ) {
+
+                    try {
+
+                        $downloads->import( $v, $copy, $signature );
+
+                    } catch ( \RuntimeException $e ) {
+
+                        return sprintf( 'Putting %s in the updates directory failed: %s', $v, $e->getMessage() );
+                    }
+
+                    return null;
+                },
+                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ), true );
+
+        } finally {
+
+            fclose( $copy );
+        }
+    }
+
+    /**
+     * The release version a tarball says it is: its release.php's, else the
+     * VERSION its Core/Env.php declares; null when neither says one.
+     *
+     * @param  resource $tar
+     * @return string|null
+     * @throws \RuntimeException when it is not a tarball a release may be
+     */
+    public static function tarballVersion( $tar ) {
+
+        rewind( $tar );
+        $info = \OWA\Core\VersionInfo::decode( Tar::member( $tar, \OWA\Core\VersionInfo::FILE ) );
+        $v    = is_array( $info ) ? (string) ( $info['version'] ?? '' ) : '';
+
+        if ( $v === '' ) {
+
+            rewind( $tar );
+            $v = preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", (string) Tar::member( $tar, 'Core/Env.php' ), $m ) ? $m[1] : '';
+        }
+
+        rewind( $tar );
+
+        return Version::parse( $v ) !== null ? $v : null;
+    }
+
+    /**
+     * byHand() and fromFile(): the release judged, $fetch putting its tarball
+     * in the updates directory, the installed release's fetched too, and the
+     * install prepared.
+     *
+     * @param  string                                               $v
+     * @param  bool                                                 $force
+     * @param  Downloads                                            $downloads
+     * @param  array<string, mixed>                                 $context
+     * @param  callable(Downloads, array<string, mixed>): ?string   $fetch    why it failed, or null
+     * @param  string                                               $how      the install log's first line
+     * @param  bool                                                 $offline  --file: no network request, so the installed release's tarball must be held
+     * @return array{outcome: string, message: string, lines: list<string>}
+     */
+    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how, $offline = false ) {
+
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
         $root      = (string) $c['root'];
         $installed = (string) $c['installed'];
-        $v         = (string) $version;
 
         $checkout = Vcs::checkout( $root );
 
@@ -168,14 +339,10 @@ class Install {
             return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $v ) );
         }
 
-        if ( Version::step( $installed, $v ) === Version::MAJOR || Version::step( $v, $installed ) === Version::MAJOR ) {
+        // The installed release again reinstalls it; an older one only with --force.
+        if ( Version::compare( $v, $installed ) < 0 && ! $force ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $v ) );
-        }
-
-        if ( Version::compare( $v, $installed ) <= 0 && ! $force ) {
-
-            return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
+            return self::answer( self::REFUSED, sprintf( '%s is older than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
         $foreign = $check->foreignProblems();
@@ -185,58 +352,101 @@ class Install {
             return self::answer( self::FAILED, implode( ' ', $foreign ) );
         }
 
+        if ( Downloads::updater()['readMarker']( $root ) !== null ) {
+
+            return self::answer( self::BUSY, 'An install is under way; php cli.php cmd=core-update-status says where it is.' );
+        }
+
+        // Held from before anything is fetched or deleted until the copy has it.
+        $hold = self::lock( sprintf( 'install %s', $v ) );
+
+        if ( $hold === null ) {
+
+            return self::answer( self::BUSY, 'Another install holds the install lock; try again in a minute.' );
+        }
+
+        $handed = false;
+
         try {
 
-            $downloads->download( Releases::byTag( $v, $installed, (string) $c['download'] ) );
+            // --file makes no network request: the installed release's tarball, which a
+            // failed copy puts back, must be held already, unless the file is that release.
+            if ( $offline && $v !== $installed && ! $downloads->has( $installed ) ) {
 
-        } catch ( \RuntimeException $e ) {
-
-            return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
-        }
-
-        // A release refused here was fetched for nothing: it goes, unless it is
-        // the installed one (a reinstall), which a failed install puts back.
-        $refuse = static function ( $outcome, $message, array $lines = [] ) use ( $downloads, $v, $installed ) {
-
-            if ( $v !== $installed ) {
-
-                @unlink( $downloads->tarball( $v ) );
-                @unlink( $downloads->tarball( $v ) . '.sig' );
+                return self::answer( self::REFUSED, sprintf( 'OWA %1$s\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. Install with --version, or place %2$s and its .sig in %3$s.',
+                    $installed, sprintf( Releases::ASSET, $installed ), $downloads->root() !== '' ? $downloads->root() . '/' : $downloads->dataDir() . '/updates-<id>/' ) );
             }
 
-            return self::answer( $outcome, $message, $lines );
-        };
+            $failed = $fetch( $downloads, $c );
 
-        $missing = $check->ensureInstalled();
+            if ( $failed !== null ) {
 
-        if ( $missing !== null ) {
+                return self::answer( self::FAILED, $failed );
+            }
 
-            return $refuse( self::REFUSED, $missing );
+            // The release named is the pending one, refused or not: any other goes.
+            $downloads->prune( [ $v, $installed ] );
+
+            $missing = $check->ensureInstalled();
+
+            if ( $missing !== null ) {
+
+                return self::answer( self::REFUSED, $missing );
+            }
+
+            $judged = $check->judge( $v );
+
+            if ( $judged['rollback'] ) {
+
+                return self::answer( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            }
+
+            if ( $judged['problems'] ) {
+
+                return self::answer( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
+            }
+
+            // prepare() takes the hold: it hands it to the copy, or lets it go.
+            $handed = true;
+            $result = self::prepare( $downloads, $v, $installed, $root, false, [ $how ], $hold );
+
+        } finally {
+
+            if ( ! $handed ) {
+
+                self::unlock( $hold );
+            }
         }
 
-        $judged = $check->judge( $v );
+        if ( $result['outcome'] === self::OK ) {
 
-        if ( $judged['rollback'] ) {
-
-            return $refuse( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            $downloads->clearFailure();
         }
-
-        if ( $judged['problems'] ) {
-
-            return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
-        }
-
-        $result = self::prepare( $downloads, $v, $installed, $root, false,
-            [ sprintf( 'php cli.php cmd=core-install --version=%s%s, by hand.', $v, $force ? ' --force' : '' ) ] );
-
-        if ( $result['outcome'] !== self::OK ) {
-
-            return $refuse( $result['outcome'], $result['message'], $result['lines'] );
-        }
-
-        $downloads->clearFailure();
 
         return $result;
+    }
+
+    /**
+     * The install lock, taken now (updater.php `tryLock`), or null when
+     * another process holds it.
+     *
+     * @param  string $who what takes it, for the lock file's line
+     * @return array<string, mixed>|null
+     */
+    public static function lock( $who ) {
+
+        return Downloads::updater()['tryLock']( dirname( InstallLock::path() ), (string) $who );
+    }
+
+    /**
+     * Let go of a hold lock() gave.
+     *
+     * @param  array<string, mixed> $hold
+     * @return void
+     */
+    public static function unlock( array $hold ) {
+
+        Downloads::updater()['unlock']( $hold );
     }
 
     /**

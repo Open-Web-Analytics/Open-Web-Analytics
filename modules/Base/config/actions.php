@@ -19,7 +19,6 @@ return [
     'base.stringsExtractCli'            => 'OWA\\Module\\Base\\Controller\\StringsExtractCli',
     'base.installBase'                  => 'OWA\\Module\\Base\\Controller\\InstallBase',
     'base.installCheckEnv'              => 'OWA\\Module\\Base\\Controller\\InstallCheckEnv',
-    'base.installCli'                   => 'OWA\\Module\\Base\\Controller\\InstallCli',
     'base.installConfig'                => 'OWA\\Module\\Base\\Controller\\InstallConfig',
     'base.installDefaultsEntry'         => 'OWA\\Module\\Base\\Controller\\InstallDefaultsEntry',
     'base.installStart'                 => 'OWA\\Module\\Base\\Controller\\InstallStart',

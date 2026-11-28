@@ -122,4 +122,32 @@ final class PartitionRetentionCutoffTest extends TestCase
         $this->assertSame(['tail' => $old, 'operations' => [], 'doomed' => 0, 'added' => 0],
             Db::splitAtCutoff($old, '20150601'));
     }
+
+    /** applyReshapes() replaces each operation's partitions with its ranges, and leaves the rest. */
+    public function testApplyingReshapesReplacesEachOperationsPartitions(): void
+    {
+        $spans = [
+            self::span('20200101', '20200201'),
+            self::span('20200201', '20200301'),
+            self::span('20200301', '20210101'),
+            self::span('20210101', '20220101'),
+            self::span('20220101', '20220201'),
+        ];
+
+        $out = Db::applyReshapes($spans, [
+            ['names' => ['p20200101', 'p20200201', 'p20200301'], 'ranges' => ['p20200101' => '20210101'],
+             'start' => '20200101', 'less_than' => '20210101'],
+            ['names' => ['p20210101'], 'ranges' => ['p20210101' => '20210701', 'p20210701' => '20220101'],
+             'start' => '20210101', 'less_than' => '20220101'],
+        ]);
+
+        $this->assertSame([
+            self::span('20200101', '20210101'),
+            self::span('20210101', '20210701'),
+            self::span('20210701', '20220101'),
+            self::span('20220101', '20220201'),
+        ], $out);
+
+        $this->assertSame($spans, Db::applyReshapes($spans, []));
+    }
 }

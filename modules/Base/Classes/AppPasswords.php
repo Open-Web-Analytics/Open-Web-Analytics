@@ -370,12 +370,14 @@ class AppPasswords {
     }
 
     /**
-     * $length characters from ALPHABET, each uniformly at random.
+     * $length characters from ALPHABET, each uniformly at random
+     * (random_int(), a CSPRNG). cmd=core-install makes the first admin's
+     * password with it.
      *
      * @param  int $length
      * @return string
      */
-    private static function randomString( $length ) {
+    public static function randomString( $length ) {
 
         $max = strlen( self::ALPHABET ) - 1;
         $out = '';

@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Every way of making an account refuses an email address that is not one:
  * the Add user screen and POST base/v1/users (base.usersAdd), and the web
- * installer (base.installBase). cmd=install is covered by CliExitCodeTest.
+ * installer (base.installBase). cmd=core-install is covered by CoreInstallCliTest.
  *
  * No database: the address check stops validation before anything is looked
  * up.

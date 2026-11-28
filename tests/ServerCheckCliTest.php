@@ -12,10 +12,11 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * cmd=server-check's queue round trip on a collector: send a test message,
- * receive it, delete it, and hand anything else it receives straight back.
- * SQS is Aws\MockHandler: nothing here reaches AWS. The report itself, run
- * through cli.php, is ServerRoleBootTest's.
+ * cmd=server-check, per role: each role runs only the checks it uses
+ * (ServerCheckCli::checks()). SQS is Aws\MockHandler and the HTTP requests
+ * are ServerCheckCli::$fetch: nothing here reaches AWS or the network. The
+ * database and scheduler checks are stubbed. The report run through cli.php
+ * is ServerRoleBootTest's.
  */
 final class ServerCheckCliTest extends TestCase
 {
@@ -49,6 +50,7 @@ final class ServerCheckCliTest extends TestCase
     protected function tearDown(): void
     {
         Sqs::$handler = null;
+        ServerCheckCli::$fetch = null;
         \OWA\Core\Controller\Cli::$exit_code = 0;
 
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedType);
@@ -88,42 +90,105 @@ final class ServerCheckCliTest extends TestCase
         return new ServerCheckCli([]);
     }
 
-    public function testItSendsReceivesAndDeletesItsOwnMessageAndReleasesAnyOther(): void
+    /** A check whose queue is the mocked one and whose database and scheduler checks answer ok. */
+    private function stubbed(): ServerCheckCli
     {
-        $this->answers(
-            ['MessageId' => 'm-1'],
-            fn () => ['Messages' => [
-                ['ReceiptHandle' => 'r-beacon', 'Body' => '{"v":1,"type":"page_view","properties":{},"queued_at":1}'],
-                ['ReceiptHandle' => 'r-check', 'Body' => $this->body],
-            ]],
-            [],   // ReceiveMessage again: nothing more
-            [],   // ChangeMessageVisibility: the beacon goes back
-            []    // DeleteMessage: the test message
-        );
+        $queue = $this->queue();
 
-        $trip = $this->check()->roundTrip($this->queue());
-
-        $this->assertTrue($trip['ok'], $trip['message']);
-        $this->assertStringStartsWith('ok: sent, received and deleted a test message', $trip['message']);
-        $this->assertSame(['SendMessage', 'ReceiveMessage', 'ReceiveMessage', 'ChangeMessageVisibility', 'DeleteMessage'],
-            array_column($this->sent, 0));
-        $this->assertSame('r-beacon', $this->sent[3][1]['ReceiptHandle']);
-        $this->assertSame(0, $this->sent[3][1]['VisibilityTimeout'], 'the beacon is visible to the drain again at once');
-        $this->assertSame('r-check', $this->sent[4][1]['ReceiptHandle']);
+        return new class([], $queue) extends ServerCheckCli {
+            private $q;
+            public function __construct($params, $q) { $this->q = $q; parent::__construct($params); }
+            protected function queue() { return $this->q; }
+            protected function databaseCheck() { return ['ok' => true, 'message' => 'ok: connected.']; }
+            protected function schedulerCheck() { return ['ok' => true, 'message' => 'ok: cron is running schedule-run.']; }
+        };
     }
 
-    /** Not a tracker envelope: a drain that takes it first dead-letters it rather than ingesting it. */
-    public function testTheTestMessageIsNotATrackerEnvelope(): void
+    /** The constants a role with a database needs. */
+    private static function databaseConstants(): array
     {
-        $this->answers(['MessageId' => 'm-1'], fn () => ['Messages' => [
-            ['ReceiptHandle' => 'r-check', 'Body' => $this->body]]], [], []);
+        return array_fill_keys(array_merge(\OWA\Core\Requirements::DATABASE_CONSTANTS, \OWA\Core\Requirements::URL_CONSTANTS), 'x');
+    }
 
-        $this->check()->roundTrip($this->queue());
+    /** A REST envelope as the REST API renders it, for a 401 with this message. */
+    private static function restRefusal(string $msg): string
+    {
+        $type = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
+        $code = http_response_code() ?: 200;
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
+
+        try {
+            http_response_code(401);
+            ob_start();
+            $returned = \OWA\Core\CoreAPI::displayView(['view' => 'base.restApi',
+                'error_msg' => ['headline' => 'Not authenticated.', 'msg' => $msg]]);
+            $captured = ob_get_clean();
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'request_type', $type);
+            http_response_code($code);
+        }
+
+        return ($returned !== null && $returned !== '') ? (string) $returned : (string) $captured;
+    }
+
+    /**
+     * The REST API's answers, recorded: without credentials, the general 401;
+     * with an Authorization header, $withHeader's message.
+     */
+    private function restAnswers(array &$asked, ?string $withHeader = null, int $status = 401): void
+    {
+        $withHeader = $withHeader ?? \OWA\Core\Controller::refusedAppPasswordMessage();
+
+        ServerCheckCli::$fetch = function ($url, $headers) use (&$asked, $withHeader, $status) {
+            $asked[] = [$url, $headers];
+
+            return [$status, 'application/json', self::restRefusal($headers
+                ? $withHeader : \OWA\Core\Controller::notAuthenticatedMessage())];
+        };
+    }
+
+    private static function labels(array $lines): array
+    {
+        return array_values(array_filter(array_map(static fn ($l) => preg_match('/^([A-Z][^:]+):/', $l, $m) ? $m[1] : null, $lines)));
+    }
+
+    /** A collector sends one test message, and makes no other queue call: a send-only IAM policy passes. */
+    public function testACollectorSendsOneTestMessageAndNothingElse(): void
+    {
+        $this->answers(['MessageId' => 'm-1']);
+
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('collector'), [],
+            ['sqs' => 'OWA_SQS_QUEUE_URL']);
+
+        $this->assertFalse($failed, implode("\n", $lines));
+        $this->assertSame(['SendMessage'], array_column($this->sent, 0));
+        $this->assertSame([
+            'Server role:      collector',
+            'Serves:           tracking, cli',
+            'Configuration:    ok',
+            'Queue backend:    sqs (OWA_SQS_QUEUE_URL)',
+            'Queue send:       ok: sent a test message, which the drain deletes.',
+        ], $lines);
+    }
+
+    /** The test message is not a tracker envelope, and the drain deletes it rather than dead-lettering it. */
+    public function testTheDrainDeletesTheTestMessage(): void
+    {
+        $this->answers(['MessageId' => 'm-1']);
+        $this->check()->sendCheck($this->queue());
 
         $envelope = json_decode((string) $this->body, true);
 
-        $this->assertSame('owa-server-check', $envelope['type']);
+        $this->assertSame(\OWA\Module\Base\Classes\TrackerIngest::CHECK_TYPE, $envelope['type']);
         $this->assertNull(\OWA\Module\Base\Classes\TrackerIngest::event($envelope));
+
+        $this->answers([]);   // DeleteMessage
+        $outcome = \OWA\Module\Base\Classes\TrackerIngest::ingestMessage($this->queue(),
+            new \OWA\Core\IntakeMessage('r-check', $envelope, 1, (string) $this->body));
+
+        $this->assertSame('discarded', $outcome);
+        $this->assertSame(['SendMessage', 'DeleteMessage'], array_column($this->sent, 0));
+        $this->assertSame('r-check', $this->sent[1][1]['ReceiptHandle']);
     }
 
     public function testASendRefusalIsReported(): void
@@ -131,34 +196,136 @@ final class ServerCheckCliTest extends TestCase
         $this->answers(new SqsException('denied', new \Aws\Command('SendMessage'),
             ['code' => 'InvalidClientTokenId', 'message' => 'The security token included in the request is invalid.']));
 
-        $trip = $this->check()->roundTrip($this->queue());
+        $sent = $this->check()->sendCheck($this->queue());
 
-        $this->assertFalse($trip['ok']);
-        $this->assertSame('failed to send: The security token included in the request is invalid.', $trip['message']);
+        $this->assertFalse($sent['ok']);
+        $this->assertSame('failed to send a test message: The security token included in the request is invalid.', $sent['message']);
     }
 
-    public function testAReceiveRefusalIsReported(): void
+    /**
+     * A full server with SQS reads the queue's attributes once, never
+     * receiving, and runs the database, scheduler and REST checks.
+     */
+    public function testAFullServerReadsTheQueueAttributesOnly(): void
     {
-        $this->answers(['MessageId' => 'm-1'], new SqsException('denied', new \Aws\Command('ReceiveMessage'),
-            ['code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:ReceiveMessage']));
+        $this->answers(['Attributes' => [
+            'ApproximateNumberOfMessages'           => '7',
+            'ApproximateNumberOfMessagesNotVisible' => '2',
+            'ApproximateNumberOfMessagesDelayed'    => '1',
+            'RedrivePolicy' => json_encode(['deadLetterTargetArn' => 'arn:aws:sqs:us-east-1:123456789012:owa-server-check-test-dlq',
+                'maxReceiveCount' => 6]),
+        ]]);
+        $asked = [];
+        $this->restAnswers($asked);
 
-        $trip = $this->check()->roundTrip($this->queue());
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('full'), self::databaseConstants(),
+            ['sqs' => 'OWA_SQS_QUEUE_URL']);
 
-        $this->assertFalse($trip['ok']);
-        $this->assertSame('sent, but receiving failed: not authorized to perform sqs:ReceiveMessage', $trip['message']);
+        $this->assertFalse($failed, implode("\n", $lines));
+        $this->assertSame(['GetQueueAttributes'], array_column($this->sent, 0));
+        $this->assertSame(['ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible',
+            'ApproximateNumberOfMessagesDelayed', 'RedrivePolicy'], $this->sent[0][1]['AttributeNames']);
+        $this->assertSame(['Server role', 'Serves', 'Configuration', 'Database', 'Scheduler', 'Queue backend', 'Queue', 'REST API'],
+            self::labels($lines));
+        $this->assertContains('Queue:            ok: about 10 messages waiting; a message goes to owa-server-check-test-dlq after 6 receives.', $lines);
+        $this->assertCount(2, $asked, 'the two REST requests');
     }
 
-    public function testADeleteRefusalIsReported(): void
+    /** A full server on the file queue asks no queue anything. */
+    public function testAFullServerOnTheFileQueueMakesNoQueueCall(): void
     {
-        $this->answers(['MessageId' => 'm-1'], fn () => ['Messages' => [
-            ['ReceiptHandle' => 'r-check', 'Body' => $this->body]]], [],
-            new SqsException('denied', new \Aws\Command('DeleteMessage'),
-                ['code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:DeleteMessage']));
+        $asked = [];
+        $this->restAnswers($asked);
 
-        $trip = $this->check()->roundTrip($this->queue());
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('full'), self::databaseConstants(), []);
 
-        $this->assertFalse($trip['ok']);
-        $this->assertStringContainsString('deleting failed: not authorized to perform sqs:DeleteMessage', $trip['message']);
+        $this->assertFalse($failed, implode("\n", $lines));
+        $this->assertSame([], $this->sent);
+        $this->assertSame(['Server role', 'Serves', 'Configuration', 'Database', 'Scheduler', 'Queue backend', 'REST API'],
+            self::labels($lines));
+        $this->assertContains('Queue backend:    file', $lines);
+    }
+
+    public function testAQueueWithoutADeadLetterQueueFails(): void
+    {
+        $this->answers(['Attributes' => ['ApproximateNumberOfMessages' => '1', 'ApproximateNumberOfMessagesNotVisible' => '0',
+            'ApproximateNumberOfMessagesDelayed' => '0']]);
+
+        $q = $this->check()->queueCheck($this->queue());
+
+        $this->assertFalse($q['ok']);
+        $this->assertSame('about 1 message waiting, and no dead-letter queue: the queue has no redrive policy. cmd=tracker-ingest-provision sets one.',
+            $q['message']);
+    }
+
+    public function testAnAttributesRefusalIsReported(): void
+    {
+        $this->answers(new SqsException('denied', new \Aws\Command('GetQueueAttributes'),
+            ['code' => 'AccessDenied', 'message' => 'not authorized to perform sqs:GetQueueAttributes']));
+
+        $q = $this->check()->queueCheck($this->queue());
+
+        $this->assertFalse($q['ok']);
+        $this->assertSame('reading the queue\'s attributes failed: not authorized to perform sqs:GetQueueAttributes', $q['message']);
+    }
+
+    /** An api server checks the database and the REST API, and nothing else. */
+    public function testAnApiServerChecksTheDatabaseAndTheRestApi(): void
+    {
+        $asked = [];
+        $this->restAnswers($asked);
+
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('api'), self::databaseConstants(),
+            ['sqs' => 'OWA_SQS_QUEUE_URL']);
+
+        $this->assertFalse($failed, implode("\n", $lines));
+        $this->assertSame([], $this->sent, 'no queue call');
+        $this->assertSame(['Server role', 'Serves', 'Configuration', 'Database', 'REST API'], self::labels($lines));
+    }
+
+    /**
+     * The REST check asks a route twice, without credentials and with an
+     * invalid Bearer token, and expects a different 401 for each.
+     */
+    public function testTheRestCheckExpectsTheRefusalForAnInvalidToken(): void
+    {
+        $asked = [];
+        $this->restAnswers($asked);
+
+        $rest = $this->check()->restCheck('https://a.example.test/api/index.php');
+
+        $this->assertTrue($rest['ok'], $rest['message']);
+        $this->assertSame([
+            ['https://a.example.test/api/index.php?owa_rest_params=base/v1/sites', []],
+            ['https://a.example.test/api/index.php?owa_rest_params=base/v1/sites', ['Authorization: Bearer x']],
+        ], $asked);
+        $this->assertSame('ok: https://a.example.test/api/index.php?owa_rest_params=base/v1/sites refuses a request without credentials, and one with an invalid application password as such.',
+            $rest['message']);
+    }
+
+    /** A web server that drops the Authorization header answers both requests alike, and the check says so. */
+    public function testTheRestCheckNamesADroppedAuthorizationHeader(): void
+    {
+        $asked = [];
+        $this->restAnswers($asked, \OWA\Core\Controller::notAuthenticatedMessage());
+
+        $rest = $this->check()->restCheck('https://a.example.test/api/index.php');
+
+        $this->assertFalse($rest['ok']);
+        $this->assertStringContainsString('the web server does not pass the header to PHP', $rest['message']);
+    }
+
+    public function testTheRestCheckFailsWhenTheApiDoesNotAnswer401(): void
+    {
+        $asked = [];
+        $this->restAnswers($asked, null, 404);
+
+        $rest = $this->check()->restCheck('https://a.example.test/api/index.php');
+
+        $this->assertFalse($rest['ok']);
+        $this->assertSame('https://a.example.test/api/index.php?owa_rest_params=base/v1/sites answered HTTP 404 without credentials, not the REST API\'s 401.',
+            $rest['message']);
+        $this->assertCount(1, $asked);
     }
 
     /** With OWA_TRACKING_URL, a collector requests its own log.php through it. */
@@ -169,21 +336,27 @@ final class ServerCheckCliTest extends TestCase
         ServerCheckCli::$fetch = function ($url) use (&$asked) {
             $asked[] = $url;
 
-            return count($asked) === 1 ? [200, 'image/gif'] : [403, 'text/html'];
+            return count($asked) === 1 ? [200, 'image/gif', ''] : [403, 'text/html', ''];
         };
 
-        try {
-            $ok = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
-            $no = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
-        } finally {
-            ServerCheckCli::$fetch = null;
-        }
+        $ok = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
+        $no = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
 
         $this->assertSame(['https://t.example.test/log.php', 'https://t.example.test/log.php'], $asked);
         $this->assertTrue($ok['ok']);
         $this->assertSame('ok: https://t.example.test/log.php answers.', $ok['message']);
         $this->assertFalse($no['ok']);
         $this->assertSame('https://t.example.test/log.php answered HTTP 403 (text/html), not log.php\'s image.', $no['message']);
+    }
+
+    /** Missing configuration stops the checks: none runs. */
+    public function testMissingConfigurationRunsNoCheck(): void
+    {
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('api'), [], []);
+
+        $this->assertTrue($failed);
+        $this->assertSame(['Server role', 'Serves', 'Configuration'], self::labels($lines));
+        $this->assertSame('Configuration:    incomplete', $lines[2]);
     }
 
     public function testItRunsOnEveryRoleAndAFailureExitsOne(): void

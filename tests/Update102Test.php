@@ -1,25 +1,20 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use OWA\Module\Base\Entity\Property;
 use OWA\Module\Base\Update\Update102;
 
 require_once __DIR__ . '/bootstrap_owa.php';
-require_once __DIR__ . '/CapturesLog.php';
 
 /**
- * Update102: owa_property gains live_host, the host of a live web Property's
- * domain and NULL otherwise, with a UNIQUE index; up() refuses while two live
- * Properties share a host, and down() drops both.
+ * Update102: a stored auto_update_level of patch becomes minor at every
+ * scope, and down() puts back every row up() changed.
  *
- * Against a scratch copy of owa_property, taken back to the shape before the
- * update.
+ * Against a scratch copy of the settings table, so the install's own rows are
+ * neither read nor changed.
  */
 final class Update102Test extends TestCase
 {
-    use CapturesLog;
-
-    const TABLE = 'owa_property_update102_test';
+    const TABLE = 'owa_setting_update102_test';
 
     private Update102 $update;
 
@@ -34,10 +29,9 @@ final class Update102Test extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query('DROP TABLE IF EXISTS ' . self::TABLE);
         $db->query(sprintf('CREATE TABLE %s LIKE %s', self::TABLE,
-            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName()));
+            \OWA\Core\CoreAPI::entityFactory('base.setting')->getTableName()));
 
-        $this->update->tables = ['base.property' => self::TABLE];
-        $this->update->down();
+        $this->update->tables = ['base.setting' => self::TABLE];
     }
 
     protected function tearDown(): void
@@ -50,139 +44,137 @@ final class Update102Test extends TestCase
     private function requireDb(): void
     {
         if (!owa_test_db_available()) {
-            $this->markTestSkipped('alters a scratch table');
+            $this->markTestSkipped('moves rows of the settings table');
         }
     }
 
-    /** @param array<string, mixed> $row */
-    private function insert(array $row): void
+    private function row(string $scope, string $id, string $name, $value, int $created = 1, string $module = 'base'): void
     {
-        $this->assertNotFalse(\OWA\Core\CoreAPI::dbSingleton()->query(sprintf('INSERT INTO %s (%s) VALUES (%s)',
-            self::TABLE, implode(', ', array_keys($row)), implode(', ', array_fill(0, count($row), '?'))),
-            array_values($row)));
+        $setting = \OWA\Core\CoreAPI::entityFactory('base.setting');
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
+            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
+            self::TABLE), [$setting->makeId($scope, $id, $module, $name), $scope, $id, $module, $name, serialize($value), $created]);
     }
 
-    /** @return array<string, string|null> id => live_host */
-    private function liveHosts(): array
+    /** @return array<string,array> "scope:id:module.name" => every column, every row */
+    private function rows(): array
     {
         $out = [];
 
-        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
-                sprintf('SELECT id, live_host FROM %s ORDER BY id', self::TABLE)) as $row) {
-            $out[(string) $row['id']] = $row['live_host'] === null ? null : (string) $row['live_host'];
+        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results('SELECT * FROM ' . self::TABLE) as $row) {
+            $row = (array) $row;
+            $out[$row['scope_type'] . ':' . $row['scope_id'] . ':' . $row['module'] . '.' . $row['name']] = $row;
         }
+
+        ksort($out);
 
         return $out;
     }
 
-    /** @return array<string, array{columns: string, unique: bool}> */
-    private function indexes(): array
+    /** @return array<string,array> the rows, without the record up() keeps */
+    private function settings(): array
     {
-        $out = [];
-
-        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
-                'SELECT INDEX_NAME AS name, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols, MIN(NON_UNIQUE) AS nu'
-              . ' FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
-              . ' GROUP BY INDEX_NAME', [self::TABLE]) as $row) {
-            $out[$row['name']] = ['columns' => $row['cols'], 'unique' => (int) $row['nu'] === 0];
-        }
-
-        return $out;
+        return array_diff_key($this->rows(), ['install:1:base.' . Update102::BEFORE => true]);
     }
 
-    private function hasColumn(): bool
-    {
-        return in_array('live_host', \OWA\Core\CoreAPI::dbSingleton()->listColumns(self::TABLE), true);
-    }
-
-    public function testTheSchemaNumber(): void
+    public function testTheModuleAsksForIt(): void
     {
         $this->assertSame(102, $this->update->schema_version);
         $this->assertFalse($this->update->is_cli_mode_required);
         $this->assertGreaterThanOrEqual(102, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
+        $this->assertSame('', $this->update->down_does_not_restore, 'down() is the exact inverse');
     }
 
-    /** A fresh install has what the update adds. */
-    public function testTheEntityDeclaresTheColumnAndItsIndex(): void
+    /** patch is no longer an option; minor, which replaces it, is; the record is declared. */
+    public function testTheDeclarations(): void
     {
-        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
+        $c        = \OWA\Core\CoreAPI::configSingleton();
+        $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings'][Update102::NAME];
 
-        $this->assertContains('live_host', $property->getColumns());
-        $this->assertSame(['live_host'], $property->getUniqueIndexes()[Property::LIVE_HOST_INDEX] ?? null);
+        $this->assertArrayNotHasKey(Update102::RETIRED, $declared['options']);
+        $this->assertArrayHasKey(Update102::REPLACEMENT, $declared['options']);
+        $this->assertTrue($c->isRegistered('base', Update102::BEFORE));
+        $this->assertNotSame([], \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::levelProblems(Update102::RETIRED), 'the constant is refused at boot');
     }
 
-    /** The host as OWA compares hosts, only while the Property is a live web one. */
-    public function testWhatLiveHostHolds(): void
-    {
-        $this->assertSame('example.com', Update102::liveHostOf(['domain' => 'https://WWW.Example.com:8080/path']));
-        $this->assertSame('example.com', Update102::liveHostOf(['domain' => 'example.com', 'archived_date' => 0]),
-            'a restored Property is live');
-        $this->assertSame('example.com', Update102::liveHostOf(['domain' => 'example.com', 'property_type' => 'web']));
-        $this->assertNull(Update102::liveHostOf(['domain' => 'example.com', 'archived_date' => 1764000000]));
-        $this->assertNull(Update102::liveHostOf(['domain' => 'example.com', 'property_type' => 'app']));
-        $this->assertNull(Update102::liveHostOf(['domain' => '']));
-    }
-
-    public function testUpDownAndAgain(): void
+    public function testNoPatchRowWritesNothing(): void
     {
         $this->requireDb();
 
-        $this->insert(['id' => 1, 'name' => 'Live', 'domain' => 'www.a.example']);
-        $this->insert(['id' => 2, 'name' => 'Archived', 'domain' => 'a.example', 'archived_date' => 1764000000]);
-        $this->insert(['id' => 3, 'name' => 'Restored', 'domain' => 'B.example:8080', 'archived_date' => 0]);
-        $this->insert(['id' => 4, 'name' => 'App', 'domain' => 'c.example', 'property_type' => 'app']);
-
-        $this->assertFalse($this->hasColumn());
+        $this->row('install', '1', 'timezone', 'UTC');
+        $this->row('install', '1', 'auto_update_level', 'major');
+        $before = $this->rows();
 
         $this->assertTrue($this->update->up());
-        $this->assertTrue($this->update->up(), 'up is idempotent');
-
-        $this->assertSame(['1' => 'a.example', '2' => null, '3' => 'b.example', '4' => null], $this->liveHosts());
-        $this->assertSame(['columns' => 'live_host', 'unique' => true], $this->indexes()[Property::LIVE_HOST_INDEX] ?? null);
-
-        $refused = \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
-            "INSERT INTO %s (id, name, domain, live_host) VALUES (5, 'Second', 'a.example', 'a.example')", self::TABLE));
-
-        $this->assertFalse((bool) $refused, 'the index refuses a second live row with the host');
+        $this->assertSame($before, $this->rows());
 
         $this->assertTrue($this->update->down());
-        $this->assertTrue($this->update->down(), 'down is idempotent');
-        $this->assertFalse($this->hasColumn());
-        $this->assertArrayNotHasKey(Property::LIVE_HOST_INDEX, $this->indexes());
-
-        $this->assertTrue($this->update->up());
-        $this->assertSame(['1' => 'a.example', '2' => null, '3' => 'b.example', '4' => null], $this->liveHosts());
+        $this->assertSame($before, $this->rows());
     }
 
-    /** Two live Properties with one host: nothing changes, and each is named. */
-    public function testUpRefusesLiveDuplicates(): void
+    /**
+     * The settings the update process saves are kept in step: boot loaded the
+     * install row, and a save of the old value would put it straight back.
+     */
+    public function testTheSettingsInMemoryFollowTheTable(): void
     {
         $this->requireDb();
 
-        $this->insert(['id' => 1, 'name' => 'First', 'domain' => 'dup.example']);
-        $this->insert(['id' => 2, 'name' => 'Second', 'domain' => 'https://WWW.dup.example/']);
-        $this->insert(['id' => 3, 'name' => 'Third', 'domain' => 'dup.example', 'archived_date' => 1764000000]);
+        $config = new class {
+            public $db_settings = ['base' => ['auto_update_level' => 'patch', 'timezone' => 'UTC']];
+            public $set = [];
+            public function removeSetting($module, $key) { unset($this->db_settings[$module][$key]); }
+            public function set($module, $key, $value) { $this->set[$module][$key] = $value; }
+        };
+        $this->update->settings = $config;
 
-        $log = $this->logDuring(function () use (&$result) {
-            $result = $this->update->up();
-        });
+        $this->row('install', '1', 'auto_update_level', 'patch', 5);
 
-        $this->assertFalse($result);
-        $this->assertFalse($this->hasColumn(), 'nothing was added');
-        $this->assertStringContainsString('Live Properties 1 (First), 2 (Second) all have the domain dup.example.', $log);
-        $this->assertStringNotContainsString('3 (Third)', $log, 'an archived Property is no duplicate');
-        $this->assertStringContainsString('cmd=property id=<property id> --archive', $log);
+        $this->assertTrue($this->update->up());
+        $this->assertSame(['base' => ['auto_update_level' => 'minor', 'timezone' => 'UTC']], $config->db_settings,
+            'the closing save writes minor, not patch');
+
+        $this->assertTrue($this->update->down());
+        $this->assertSame(['base' => ['auto_update_level' => 'patch', 'timezone' => 'UTC']], $config->db_settings,
+            'and patch again after down()');
     }
 
-    public function testArchivedDuplicatesAreAllowed(): void
+    /** Every patch row becomes minor, at every scope, others stay; down() is the exact inverse. */
+    public function testPatchBecomesMinorAndComesBack(): void
     {
         $this->requireDb();
 
-        $this->insert(['id' => 1, 'name' => 'Live', 'domain' => 'dup.example']);
-        $this->insert(['id' => 2, 'name' => 'Old', 'domain' => 'dup.example', 'archived_date' => 1764000000]);
-        $this->insert(['id' => 3, 'name' => 'Older', 'domain' => 'www.dup.example', 'archived_date' => 1763000000]);
+        $this->row('install', '1', 'auto_update_level', 'patch', 5);
+        $this->row('profile', 'abc', 'auto_update_level', 'patch', 6);
+        $this->row('property', 'def', 'auto_update_level', 'major', 7);
+        $this->row('install', '1', 'timezone', 'UTC');
+        $this->row('install', '1', 'link_template', 'patch', 8);
+        $this->row('profile', 'abc', 'auto_update_level', 'patch', 9, 'other_module');
+        $before = $this->rows();
 
         $this->assertTrue($this->update->up());
-        $this->assertSame(['1' => 'dup.example', '2' => null, '3' => null], $this->liveHosts());
+
+        $after = $this->settings();
+        $values = array_map(static fn ($row) => unserialize($row['value']), $after);
+        $this->assertSame([
+            'install:1:base.auto_update_level'          => 'minor',
+            'install:1:base.link_template'              => 'patch',
+            'install:1:base.timezone'                   => 'UTC',
+            'profile:abc:base.auto_update_level'        => 'minor',
+            'profile:abc:other_module.auto_update_level' => 'patch',
+            'property:def:base.auto_update_level'       => 'major',
+        ], $values);
+        $this->assertSame(array_diff_key($before, ['install:1:base.auto_update_level' => 1, 'profile:abc:base.auto_update_level' => 1]),
+            array_diff_key($after, ['install:1:base.auto_update_level' => 1, 'profile:abc:base.auto_update_level' => 1]), 'nothing else changes');
+
+        $this->assertTrue($this->update->up(), 'up again');
+        $this->assertSame($after, $this->settings(), 'the second run changes nothing');
+
+        $this->assertTrue($this->update->down());
+        $this->assertSame($before, $this->rows(), 'the exact inverse');
+
+        $this->assertTrue($this->update->down(), 'down again');
+        $this->assertSame($before, $this->rows());
     }
 }

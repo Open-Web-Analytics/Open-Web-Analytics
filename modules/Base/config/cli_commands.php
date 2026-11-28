@@ -20,7 +20,6 @@ return [
     'drain-tracker-ingest'        => 'base.drainTrackerIngestCli',
     'tracker-ingest-replay'       => 'base.trackerIngestReplayCli',
     'tracker-ingest-provision'    => 'base.trackerIngestProvisionCli',
-    'install'                     => 'base.installCli',
     'activate'                    => 'base.moduleActivateCli',
     'deactivate'                  => 'base.moduleDeactivateCli',
     'add-site'                    => 'base.sitesAddCli',

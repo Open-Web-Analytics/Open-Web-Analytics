@@ -30,7 +30,7 @@
  * redefine.
  *
  * NOTE: this makes the DB-dependent suites SKIP on CI rather than run. Standing up
- * a real installed schema in CI (mysql service + headless cmd=install) so they
+ * a real installed schema in CI (mysql service + headless cmd=core-install) so they
  * actually execute is tracked as its own install-testing phase.
  */
 

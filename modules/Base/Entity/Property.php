@@ -89,7 +89,7 @@ class Property extends \OWA\Core\Entity {
          * Property, NULL otherwise: archived, an app, or no domain. UNIQUE, so
          * two live Properties cannot share a host, and any number of archived
          * ones can. create() and update() keep it in step with domain,
-         * property_type and archived_date (liveHost()); Update102 adds it to an
+         * property_type and archived_date (liveHost()); Update103 adds it to an
          * existing table.
          */
         $live_host = new \OWA\Module\Base\Classes\DbColumn( 'live_host', OWA_DTD_VARCHAR255 );
@@ -199,8 +199,8 @@ class Property extends \OWA\Core\Entity {
     /**
      * Set live_host from the row's other columns before a write.
      *
-     * Before Update102 the table has no such column, and cmd=property runs
-     * then (to archive the duplicates Update102 refuses): the column is left
+     * Before Update103 the table has no such column, and cmd=property runs
+     * then (to archive the duplicates Update103 refuses): the column is left
      * out of this object's writes.
      *
      * @return void

@@ -10,8 +10,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * server, seen from the CLI: PHP, its extensions, the database server over
  * OWA's own connection, and owa-config.php's constants. The rest of the
  * environment -- the web server's PHP among it -- is taken as it was when OWA
- * was installed: requirements change only in major releases, which are never
- * automatic. install() judges what copying the release needs: every
+ * was installed. install() judges what copying the release needs: every
  * directory the release writes in writable, and room for its files.
  *
  * Each returns its problems as sentences, [] when there are none. Pure where
@@ -255,7 +254,7 @@ class Preflight {
     /**
      * The directories of OWA's code this process cannot write, relative to
      * $root ('' for the OWA directory itself): what an automatic update
-     * writes in, asked where the installer runs (cmd=install). The
+     * writes in, asked where the installer runs (cmd=core-install). The
      * installation's own directories are left out: owa-data/, the data
      * directory and the tracking bundles.
      *

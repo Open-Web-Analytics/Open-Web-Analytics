@@ -121,7 +121,7 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testItRunsWhileUpdatesArePending(): void
     {
-        $this->assertFalse((new PropertyCli([]))->needsCurrentSchema(), 'Update102 refuses duplicates this archives');
+        $this->assertFalse((new PropertyCli([]))->needsCurrentSchema(), 'Update103 refuses duplicates this archives');
     }
 
     public function testIdOrDomainIsGivenOnce(): void

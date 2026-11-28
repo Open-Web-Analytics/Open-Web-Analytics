@@ -14,8 +14,11 @@ use OWA\Core\SafeFile;
  *     owa_<v>_packaged.tar       0600: a release tarball, there only once its signature
  *     owa_<v>_packaged.tar.sig   0644  checked by a trusted key (Signature), and its SHA-256
  *                                      the listing's digest where it has one. Two at most: the installed
- *                                      release's, which a failed install puts back, and
- *                                      the one the release check chose, until it installs.
+ *                                      release's, which a failed install puts back, and the
+ *                                      pending one: the release the release check or
+ *                                      cmd=core-install chose last, refused or waiting, until it
+ *                                      installs, another chosen release replaces it, or a
+ *                                      release check runs with automatic updates off.
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
  *                                installs; written by updater.php `recordFailure` alone
@@ -169,6 +172,12 @@ class Downloads {
         return count( self::updater()['updatesDirs']( $this->data ) );
     }
 
+    /** @return string the data directory the updates directory is in */
+    public function dataDir() {
+
+        return $this->data;
+    }
+
     /** @return string the updates directory, '' while there is none */
     public function root() {
 
@@ -252,6 +261,22 @@ class Downloads {
         usort( $out, static fn ( $a, $b ) => Version::compare( $b, $a ) );
 
         return $out;
+    }
+
+    /**
+     * The pending release (the class docblock) a release check that chooses
+     * nothing keeps while automatic updates are on: the newest downloaded
+     * release newer than $installed, or null. With them off it goes.
+     *
+     * @param  string $installed
+     * @return string|null
+     */
+    public function pending( $installed ) {
+
+        $newest = $this->versions()[0] ?? null;
+
+        return $newest !== null && Version::parse( (string) $installed ) !== null && Version::compare( $newest, (string) $installed ) > 0
+            ? $newest : null;
     }
 
     /**
@@ -562,6 +587,72 @@ class Downloads {
             unset( $this->info[ $release['version'] ] );
 
             return $actual;
+
+        } catch ( \Throwable $e ) {
+
+            @unlink( $part );
+
+            throw $e instanceof \RuntimeException ? $e : new \RuntimeException( $e->getMessage(), 0, $e );
+        }
+    }
+
+    /**
+     * A release read from a tarball on this server (Install::fromFile()),
+     * given its name here as download() gives a download its: $copy, the
+     * private copy whose signature was checked, written out, with its
+     * signature beside it. open() proves it again before it is read.
+     *
+     * @param  string   $version
+     * @param  resource $copy
+     * @param  string   $signature the signature file's contents
+     * @return void
+     * @throws \RuntimeException
+     */
+    public function import( $version, $copy, $signature ) {
+
+        $this->ensureRoot();
+
+        $tar  = $this->tarball( $version );
+        $part = SafeFile::fresh( $tar . '.part' );
+
+        foreach ( (array) glob( $tar . '.part*' ) as $left ) {
+
+            @unlink( (string) $left );
+        }
+
+        try {
+
+            // Opened here under a fresh name, which no link can be waiting at.
+            $sink = SafeFile::create( $part, 0600 );
+
+            if ( $sink === false ) {
+
+                throw new \RuntimeException( sprintf( 'Could not write %s.', $part ) );
+            }
+
+            try {
+
+                rewind( $copy );
+
+                if ( stream_copy_to_stream( $copy, $sink ) === false || ! fflush( $sink ) ) {
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $part ) );
+                }
+
+            } finally {
+
+                fclose( $sink );
+                rewind( $copy );
+            }
+
+            SafeFile::replace( $tar . '.sig', trim( (string) $signature ) . "\n" );
+
+            if ( ! @rename( $part, $tar ) ) {
+
+                throw new \RuntimeException( sprintf( 'Could not write %s.', $tar ) );
+            }
+
+            unset( $this->info[ $version ], $this->proved[ $version ] );
 
         } catch ( \Throwable $e ) {
 

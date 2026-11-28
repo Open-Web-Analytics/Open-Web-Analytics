@@ -3,7 +3,7 @@
 require_once(__DIR__ . '/CliControllerTestCase.php');
 
 /**
- * What change-password, add-site and install print, run as a person runs them:
+ * What change-password, add-site and core-install print, run as a person runs them:
  * through notice(), with cli.php's exit code. Each refused case is refused
  * before the command acts.
  */
@@ -51,13 +51,25 @@ final class CliOutputTest extends CliControllerTestCase
         $this->assertStringContainsString('Name is required.', $r['out']);
     }
 
-    public function testInstallWithoutAPasswordSaysWhyAndExits2(): void
+    /** cmd=install is cmd=core-install now: cli.php says so and runs nothing. */
+    public function testInstallSaysItIsNowCoreInstallAndExits2(): void
     {
-        $r = $this->cli('cmd=install');
+        $r = $this->cli('cmd=install', 'user_id=owatest-admin');
 
         $this->assertSame(2, $r['code'], $r['out']);
-        $this->assertStringContainsString('Command failed. There were some errors:', $r['out']);
-        $this->assertStringContainsString('A password for the admin account is required', $r['out']);
+        $this->assertStringContainsString('cmd=install is now cmd=core-install.', $r['out']);
+        $this->assertStringNotContainsString('Schema:', $r['out']);
+    }
+
+    /** A password on the command line is refused, naming the two ways to give one, before anything is done. */
+    public function testCoreInstallRefusesAPasswordArgumentAndExits2(): void
+    {
+        $r = $this->cli('cmd=core-install', 'password=owa-cli-output-pass');
+
+        $this->assertSame(2, $r['code'], $r['out']);
+        $this->assertStringContainsString('cmd=core-install: password= is not taken: a password on the command line is seen by other users and kept in shell history. '
+            . 'Leave it out to have one generated and printed once, or give --password-stdin and pipe it in. Nothing was done.', $r['out']);
+        $this->assertStringNotContainsString('Schema:', $r['out']);
     }
 
     public function testAddSiteSaysWhatItAdded(): void

@@ -70,6 +70,37 @@ class RecordingInstallManager extends \OWA\Module\Base\Classes\InstallManager
     {
         return $this->installed;
     }
+
+    public function isInstalled()
+    {
+        return $this->installed;
+    }
+
+    /** @var string|null what adminUserId() answers */
+    public $admin = 'owatest-admin';
+
+    /** @var bool what hasSite() answers */
+    public $site = true;
+
+    /** @var list<string> what secureDataDir() says it changed */
+    public $permissions = [];
+
+    public function adminUserId()
+    {
+        return $this->admin;
+    }
+
+    public function hasSite()
+    {
+        return $this->site;
+    }
+
+    public function secureDataDir($web_group = '')
+    {
+        InstallerRecording::$calls[] = 'secureDataDir:' . $web_group;
+
+        return $this->permissions;
+    }
 }
 
 /** Settings whose writes are recorded rather than made; reads go to the real settings. */
@@ -157,24 +188,68 @@ trait InstallerHarness
     }
 
     /**
-     * cmd=install, built without its constructor's CLI-only gate and
-     * OWA_INSTALLING define, and installing through the recording manager.
+     * cmd=core-install, built without its constructor's CLI-only gate,
+     * installing through the recording manager. $stdin is the line
+     * --password-stdin reads; reading it when null fails the test. A release
+     * named is recorded in $releases, never installed; what it prints is in
+     * $written.
      */
-    protected function installCli(array $params): \OWA\Module\Base\Controller\InstallCli
+    protected function coreInstallCli(array $params, ?string $stdin = null): \OWA\Module\Base\Controller\CoreInstallCli
     {
         $im  = $this->im;
-        $cli = new class($params, $im) extends \OWA\Module\Base\Controller\InstallCli {
+        $cli = new class($params, $im, $stdin) extends \OWA\Module\Base\Controller\CoreInstallCli {
+            /** @var list<string> */
+            public $written = [];
+
+            /** @var list<array<int, mixed>> */
+            public $releases = [];
+
+            /** @var string what install() and installFile() answer */
+            public $answer = \OWA\Module\Base\Classes\AutoUpdate\Install::OK;
+
             private $recording;
 
-            public function __construct($params, $im)
+            private $stdin;
+
+            public function __construct($params, $im, $stdin)
             {
                 $this->recording = $im;
+                $this->stdin     = $stdin;
                 \OWA\Core\AdminController::__construct($params);
+                $this->setRequiredCapability('edit_modules');
             }
 
             protected function installManager()
             {
                 return $this->recording;
+            }
+
+            protected function readStdin()
+            {
+                if ($this->stdin === null) {
+                    throw new \LogicException('standard input was read');
+                }
+
+                return $this->stdin;
+            }
+
+            protected function write($lines)
+            {
+                array_push($this->written, ...(array) $lines);
+            }
+
+            protected function install($version, $force)
+            {
+                $this->releases[] = ['version', $version, $force];
+
+                return ['outcome' => $this->answer, 'message' => 'answered ' . $this->answer, 'lines' => []];
+            }
+
+            protected function installFile($file, $sig, $force)
+            {
+                $this->releases[] = ['file', $file, $sig, $force];
+
+                return ['outcome' => $this->answer, 'message' => 'answered ' . $this->answer, 'lines' => []];
             }
         };
 

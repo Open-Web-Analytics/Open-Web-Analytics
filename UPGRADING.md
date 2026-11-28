@@ -516,6 +516,20 @@ These 1.x commands are not in 2.0: `processEventQueue`,
 `update-document` and `partition-init`. The upgrade creates the event table and
 each reporting cube already partitioned.
 
+### `cmd=install` is `cmd=core-install`
+
+`cmd=install` runs nothing and says `cmd=install is now cmd=core-install.`
+`cmd=core-install` takes `user_id`, `email_address` and `domain` as `install`
+did. The admin's password is generated and printed once, or read from standard
+input with `--password-stdin`; `password=` is refused. On an installed system
+it checks the tables and the data directory's modes, and installs a release:
+
+| | |
+|---|---|
+| `--version=<x.y.z>` | Fetches that release through the update host and installs it |
+| `--file=<tarball>` | Installs the release in a tarball on the server, with no network request. Its signature is `<tarball>.sig`, or `--sig=<path>`. Needs the installed release's tarball, `owa_<installed>_packaged.tar`, and its `.sig` in the updates directory, `owa-data/updates-<id>/`, already: it is refused before anything changes when they are not there |
+| `--force` | Installs a release older than the installed one. The installed release again needs no `--force`: it reinstalls, copying the files that differ |
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,
@@ -823,6 +837,13 @@ screen, or `CoreAPI::getJsTrackerBundleTag()`.
 `subtrahend`). The 1.x `formula` with `child_metrics` -- an expression run
 through `eval()` with child values substituted in by name -- is refused with a
 notice, and nothing in OWA uses `eval()` any more.
+
+**A module declares its name and entities as constants.** The module class
+declares `const NAME = '<runtime name>';`. Setting `$this->name` in the
+constructor is not enough: a module class without its own `NAME` is not
+loaded, and a notice in the error log names the class.
+
+A module declares its tables in `const ENTITIES`.
 
 **Only declared settings can be stored.** `persistSetting()` and the options
 form refuse a key no module declares (in its `settings.php`, `storable` and with

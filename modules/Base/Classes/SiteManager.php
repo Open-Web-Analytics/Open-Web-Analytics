@@ -201,7 +201,7 @@ class SiteManager extends \OWA\Core\Base {
 
     /**
      * The live web Property that has this domain's host, oldest first; null
-     * when none has, or the domain has no host. One at most once Update102
+     * when none has, or the domain has no host. One at most once Update103
      * has run (Entity\Property::LIVE_HOST_INDEX).
      *
      * @param  mixed      $domain

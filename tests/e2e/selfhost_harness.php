@@ -22,7 +22,8 @@
  *   3. CREATE the scratch database fresh.
  *   4. WRITE a fresh owa-config.php from owa-config-dist.php pointing at the scratch
  *      DB and at the php -S public URL (http://HOST:PORT/).
- *   5. Run the real CLI installer (`php cli.php cmd=install`) to build the schema.
+ *   5. Run the real CLI installer (`php cli.php cmd=core-install`, the admin's
+ *      password on standard input) to build the schema.
  *
  * After `up`, the caller seeds fixtures (seed_reporting_fixtures.php) and starts
  * `php -S` at the repo root; every spec then runs against http://HOST:PORT/index.php.
@@ -302,7 +303,7 @@ function up(string $repoRoot): array
     writeConfig($repoRoot, $creds, $db);
 
     // Run the real CLI installer to build the schema/admin/site. It reads the
-    // config we just wrote and sets the admin password = OWA_DB_PASSWORD.
+    // config we just wrote; the admin's password goes in on standard input.
     $install = runInstaller($repoRoot);
     if (!preg_match('/Install Completed|Installation complete/i', $install['output'])) {
         // Roll back so a failed install doesn't strand the box.
@@ -495,12 +496,14 @@ function removeScratchLogs(string $repoRoot)
 /** Shell out to the real CLI installer; return its combined output + exit code. */
 function runInstaller(string $repoRoot): array
 {
+    // The admin's password on standard input: the fixtures sign in with it.
     $args = [
+        "printf '%s\\n' " . escapeshellarg(INSTALL_ADMIN_PASS) . ' |',
         escapeshellarg(PHP_BINARY),
         escapeshellarg($repoRoot . 'cli.php'),
-        'cmd=install',
+        'cmd=core-install',
+        '--password-stdin',
         'user_id=' . escapeshellarg(INSTALL_ADMIN_ID),
-        'password=' . escapeshellarg(INSTALL_ADMIN_PASS),
         'email_address=' . escapeshellarg(INSTALL_ADMIN_ID),
         'domain=' . escapeshellarg(INSTALL_DOMAIN),
     ];

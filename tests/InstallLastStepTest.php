@@ -19,7 +19,7 @@ require_once __DIR__ . '/SettingsSingletonSnapshot.php';
  *   failed is drawn again with what was submitted, but not its password.
  * - The pages anyone can open before OWA is installed show no absolute paths,
  *   and the database form escapes what it shows back.
- * - The CLI install never makes the database password the admin's.
+ * - cmd=core-install never makes the database password the admin's.
  */
 final class InstallLastStepTest extends TestCase
 {
@@ -118,12 +118,18 @@ final class InstallLastStepTest extends TestCase
             'the flag is set by finishInstall() only');
     }
 
-    /** cmd=install does the same, without a timezone of its own. */
+    /** The wizard's last form as cmd=core-install takes it: no password, no timezone. */
+    private function cliPost(): array
+    {
+        return array_diff_key($this->wizardPost(), ['password' => 1, 'timezone' => 1]);
+    }
+
+    /** cmd=core-install does the same, without a timezone of its own, then the permissions. */
     public function testTheCliInstallSavesTheLastStepTogetherThenAnnouncesIt(): void
     {
         $this->settings()->set('base', 'install_complete', false);
 
-        $this->installCli($this->wizardPost())->action();
+        $this->coreInstallCli($this->cliPost())->action();
 
         $this->assertSame([
             'installSchema',
@@ -132,6 +138,7 @@ final class InstallLastStepTest extends TestCase
             'createDefaultSite:https://example.test',
             'finishInstall:end',
             'announceInstallComplete:owatest-admin:owatest-site',
+            'secureDataDir:',
         ], InstallerRecording::$calls);
 
         $this->assertFalse((bool) $this->settings()->get('base', 'install_complete'),
@@ -150,7 +157,7 @@ final class InstallLastStepTest extends TestCase
         $this->assertStringContainsString('nothing was saved', (string) $wizard->data['error_msg']);
 
         InstallerRecording::$calls = [];
-        $cli = $this->installCli($this->wizardPost());
+        $cli = $this->coreInstallCli($this->cliPost());
         $cli->action();
 
         $this->assertSame([], $this->recorded('announceInstallComplete'));
@@ -323,25 +330,24 @@ final class InstallLastStepTest extends TestCase
     }
 
     /**
-     * cmd=install takes the admin's password from password= only: none given,
-     * none used, whatever the database password is.
+     * cmd=core-install generates the admin's password when none is piped in,
+     * whatever the database password is.
      */
     public function testTheCliInstallNeverUsesTheDatabasePassword(): void
     {
         $this->settings()->set('base', 'db_password', 'owatest-db-password');
 
-        $post = $this->wizardPost();
-        unset($post['password']);
+        $this->coreInstallCli($this->cliPost())->action();
 
-        $this->installCli($post)->action();
-
-        $this->assertSame([null], $this->im->passwords);
+        $this->assertCount(1, $this->im->passwords);
+        $this->assertNotSame('owatest-db-password', $this->im->passwords[0]);
+        $this->assertSame(\OWA\Module\Base\Classes\InstallManager::GENERATED_PASSWORD_LENGTH, strlen((string) $this->im->passwords[0]));
     }
 
     /**
      * The first Profile's tracking bundle, which the tag on the finish screen
      * loads, is published when the install completes, by the wizard and by
-     * cmd=install alike; one that cannot be written then is queued. Before,
+     * cmd=core-install alike; one that cannot be written then is queued. Before,
      * neither published it and the tag answered 404.
      */
     public function testTheFirstProfileSBundleIsPublishedOrQueued(): void

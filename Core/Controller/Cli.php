@@ -223,6 +223,7 @@ class Cli extends \OWA\Core\AdminController {
         'update'            => 'core-update-schema',
         'update-geoip-db'   => 'geoip-update-db',
         'install-module'    => 'activate',
+        'install'           => 'core-install',
     ];
 
     /** @var bool whether a failure of this command sets cli.php's exit code */

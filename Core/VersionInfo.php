@@ -2,8 +2,9 @@
 namespace OWA\Core;
 
 /**
- * What this code is, as data: its version and branch, what it needs of a
- * server (Requirements), each module's schema, and every schema update with
+ * What this code is, as data: its version and branch, the oldest release it
+ * installs over (Env::UPGRADES_FROM), what it needs of a server
+ * (Requirements), each module's schema, and every schema update with
  * whether its down() can restore what its up() changed. release.php, which
  * cmd=version-info writes at build time and a release check reads from a
  * newer release before installing it: a PHP file that exits (GUARD), so a
@@ -12,17 +13,19 @@ namespace OWA\Core;
  * has not installed.
  *
  * BOOT-FREE. No settings, no database, no CoreAPI, and no module is
- * constructed: a module's name and required_schema_version are read as its
- * class's declared defaults, and whether an update must be installed by hand
- * as its declared $manual_install, by reflection. The updates are the ones
+ * constructed: a module's name is its class's NAME, its
+ * required_schema_version is read as the class's declared default, and
+ * whether an update must be installed by hand as its declared
+ * $manual_install, by reflection. The updates are the ones
  * Module::updateClasses() finds, the list Module::update() applies.
  *
- * A module that sets its name or schema only in its constructor (an older
- * third-party one) is listed without a schema.
+ * A module class without its own NAME is not listed, as it is not loaded
+ * (Module::declaresName()). One that sets its schema only in its constructor
+ * is listed without a schema.
  *
  * @phpstan-import-type RequirementsArray from Requirements
  * @phpstan-type UpdateInfo array{module: string, sequence: int, manual_install: string}
- * @phpstan-type VersionInfoArray array{format: int, version: string, branch: string|null, requirements: RequirementsArray, modules: array<string, int|null>, updates: list<UpdateInfo>}
+ * @phpstan-type VersionInfoArray array{format: int, version: string, branch: string|null, upgrades_from: string, requirements: RequirementsArray, modules: array<string, int|null>, updates: list<UpdateInfo>}
  */
 class VersionInfo {
 
@@ -96,12 +99,13 @@ class VersionInfo {
         }
 
         return [
-            'format'       => self::FORMAT,
-            'version'      => Env::version(),
-            'branch'       => self::branch( Env::version() ),
-            'requirements' => Requirements::toArray(),
-            'modules'      => $modules,
-            'updates'      => $updates,
+            'format'        => self::FORMAT,
+            'version'       => Env::version(),
+            'branch'        => self::branch( Env::version() ),
+            'upgrades_from' => Env::UPGRADES_FROM,
+            'requirements'  => Requirements::toArray(),
+            'modules'       => $modules,
+            'updates'       => $updates,
         ];
     }
 
@@ -131,18 +135,13 @@ class VersionInfo {
 
             $class = '\\OWA\\Module\\' . basename( dirname( (string) $file ) ) . '\\Module';
 
-            if ( ! class_exists( $class ) ) {
+            if ( ! Module::declaresName( $class ) ) {
 
                 continue;
             }
 
             $defaults = ( new \ReflectionClass( $class ) )->getDefaultProperties();
-            $name     = (string) ( $defaults['name'] ?? '' );
-
-            if ( $name === '' ) {
-
-                continue;
-            }
+            $name     = (string) $class::NAME;
 
             $out[ $name ] = isset( $defaults['required_schema_version'] ) ? (int) $defaults['required_schema_version'] : null;
         }

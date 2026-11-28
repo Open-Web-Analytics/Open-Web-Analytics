@@ -1464,6 +1464,13 @@ class CoreAPI {
         $class = 'OWA\\Module\\' . $seg . '\\Module';
 
         if ( class_exists( $class ) ) {
+
+            // A module is known by its NAME, read before it is built.
+            if ( ! \OWA\Core\Module::declaresName( $class ) ) {
+
+                throw new \Exception( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+            }
+
             return new $class( [] );
         }
 
@@ -1988,11 +1995,12 @@ class CoreAPI {
     
     /**
      * The module directories: each one under modules/ that holds a PSR-4
-     * OWA\Module\<Dir>\Module class.
+     * OWA\Module\<Dir>\Module class that declares its own NAME.
      *
      * Anything else there is skipped with a notice naming it, once per
-     * process -- a module still in the pre-PSR-4 layout (a lowercase directory
-     * and module.php) loads nothing since v2.0, and saying so is how an
+     * process: a module class without its own NAME (Module::declaresName()),
+     * and a module still in the pre-PSR-4 layout (a lowercase directory and
+     * module.php), which loads nothing since v2.0. The notice is how an
      * administrator learns why it vanished.
      *
      * @return string[] directory names
@@ -2015,9 +2023,20 @@ class CoreAPI {
                 continue;
             }
 
-            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( 'OWA\\Module\\' . $dir . '\\Module' ) ) {
+            $class = 'OWA\\Module\\' . $dir . '\\Module';
 
-                $modules[] = $dir;
+            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( $class ) ) {
+
+                if ( \OWA\Core\Module::declaresName( $class ) ) {
+
+                    $modules[] = $dir;
+
+                } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
+
+                    self::$warned_modules[ $dir ] = true;
+
+                    \OWA\Core\CoreAPI::notice( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+                }
 
             } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
 
@@ -3168,7 +3187,8 @@ class CoreAPI {
      * These run BEFORE the controller authenticates, so the reply is readable by
      * anyone and says nothing a caller could not already supply: no route names,
      * no hint of whether a route exists, no suggestions. 401 reuses the wording
-     * of a genuine auth failure so the two cannot be told apart.
+     * of a genuine auth failure for the same credentials, so the two cannot be
+     * told apart.
      *
      * @param  int    $code  400 for a malformed request, 401 otherwise.
      * @return string        The rendered response body.
@@ -3182,7 +3202,10 @@ class CoreAPI {
             ],
             401 => [
                 'headline'  => \OWA\Core\CoreAPI::t( 'Not authenticated.' ),
-                'msg'       => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )
+                // As Controller::notAuthenticatedAction() answers the same request.
+                'msg'       => \OWA\Core\Auth::get_instance()->carriesAppPassword()
+                    ? \OWA\Core\Controller::refusedAppPasswordMessage()
+                    : \OWA\Core\Controller::notAuthenticatedMessage()
             ],
         ];
 

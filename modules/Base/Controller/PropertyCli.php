@@ -22,7 +22,7 @@ use OWA\Module\Base\Classes\SiteManager;
  *
  * No capability is asked for: cli.php runs as the administrator.
  *
- * Runs while updates are pending, so the duplicates Update102 refuses can be
+ * Runs while updates are pending, so the duplicates Update103 refuses can be
  * archived.
  */
 class PropertyCli extends \OWA\Core\Controller\Cli {
@@ -62,7 +62,7 @@ class PropertyCli extends \OWA\Core\Controller\Cli {
     /** The action flags, of which exactly one is given. */
     const ACTIONS = [ 'status', 'archive', 'restore' ];
 
-    /** Update102 refuses live duplicates, which this archives. */
+    /** Update103 refuses live duplicates, which this archives. */
     public function needsCurrentSchema() {
 
         return false;

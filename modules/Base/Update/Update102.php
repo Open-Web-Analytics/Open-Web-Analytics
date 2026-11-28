@@ -2,29 +2,42 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * One live Property per host: owa_property gains live_host, with a UNIQUE
- * index (Entity\Property::LIVE_HOST_INDEX).
+ * The patch level of automatic updates is retired: a stored auto_update_level
+ * of patch becomes minor, at every scope. The levels are minor (patch and
+ * minor releases) and major (patch, minor and major releases).
  *
- * live_host is the domain's host (Spam\Hosts::of(): lower case, no scheme,
- * port or path, no leading www.) while the Property is a live web Property,
- * and NULL otherwise. A real column the code keeps (Entity\Property::create()
- * and update()) rather than a generated one: the host is PHP's parse of the
- * domain, which SQL can only approximate, and an entity cannot write a row
- * that has a generated column it declares.
+ * A config that defines OWA_AUTO_UPDATE_LEVEL as patch is refused at boot
+ * (AutoUpdate\ReleaseCheck::levelProblems()).
  *
- * REFUSES live duplicates. When two live web Properties have one host, up()
- * changes nothing and fails, naming each; cmd=property id=<id> --archive
- * archives the ones to drop, and runs while this update is pending.
+ * THE INVERSE. Before anything changes, the rows, every column, are kept in
+ * the retired_settings_before_102 setting. down() puts them back and removes
+ * the record. A run of up() that finds no patch row changes nothing, so a
+ * second run leaves the record of the first; down() with no record changes
+ * nothing.
  *
- * Idempotent: the column and the index are added when missing, and live_host
- * is set on every row on each run. down() drops the index and the column,
- * and finds nothing to drop when run again.
+ * RAW SQL on owa_setting, as Update092. The install rows are autoloaded, so the
+ * settings this process saves are kept in step, as Update084 does.
  *
- * NOT CLI-ONLY. A handful of rows.
+ * NOT CLI-ONLY. One row at most.
  */
 class Update102 extends \OWA\Core\Update {
 
+    use SettingRows;
+
     public $schema_version = 102;
+
+    /** The base setting this changes. */
+    const NAME = 'auto_update_level';
+
+    /** The value it retires, and the one that replaces it. */
+    const RETIRED = 'patch';
+    const REPLACEMENT = 'minor';
+
+    /** What up() changed: { rows: id => row }. */
+    const BEFORE = 'retired_settings_before_102';
+
+    /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
+    const INSTALL_SCOPE_ID = '1';
 
     /**
      * @param  bool $force
@@ -33,124 +46,94 @@ class Update102 extends \OWA\Core\Update {
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->tableFor( 'base.property' );
+        $table = $this->settingTable();
 
-        $hosts = [];
+        $rows = (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE module = 'base' AND name = ? AND value = ?", $table ),
+            [ self::NAME, serialize( self::RETIRED ) ] );
 
-        foreach ( (array) $db->get_results( sprintf( 'SELECT * FROM %s ORDER BY id', $table ) ) as $row ) {
+        if ( ! $rows ) {
 
-            $host = self::liveHostOf( (array) $row );
+            return true;
+        }
 
-            if ( $host !== null ) {
+        $record = $this->record();
+        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : [];
 
-                $hosts[ $host ][] = sprintf( '%s (%s)', $row['id'], $row['name'] );
+        foreach ( $rows as $row ) {
+
+            $row = (array) $row;
+
+            // The first run's copy is the one down() restores.
+            if ( ! isset( $record['rows'][ (string) $row['id'] ] ) ) {
+
+                $record['rows'][ (string) $row['id'] ] = $row;
             }
         }
 
-        $twice = array_filter( $hosts, static fn ( $ids ) => count( $ids ) > 1 );
+        // Kept before anything changes, so a run that stops part way can still be undone.
+        if ( ! $this->writeRecord( serialize( $record ) ) ) {
 
-        if ( $twice ) {
-
-            foreach ( $twice as $host => $properties ) {
-
-                $this->e->notice( sprintf( 'Live Properties %s all have the domain %s.', implode( ', ', $properties ), $host ) );
-            }
-
-            $this->e->notice( 'Only one live Property may have a domain. Archive the others with cli.php cmd=property id=<property id> --archive, then run the update again.' );
+            $this->e->notice( sprintf( 'Keeping the %s rows in %s failed.', self::NAME, self::BEFORE ) );
 
             return false;
         }
 
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setTableName( $table, '' );
+        if ( $db->query( sprintf( "UPDATE %s SET value = ? WHERE module = 'base' AND name = ? AND value = ?", $table ),
+                [ serialize( self::REPLACEMENT ), self::NAME, serialize( self::RETIRED ) ] ) === false ) {
 
-        if ( $this->addColumnIfMissing( $property, 'live_host' ) === false ) {
-
-            $this->e->notice( sprintf( 'Adding %s.live_host failed.', $table ) );
+            $this->e->notice( sprintf( 'Changing %s from %s to %s failed.', self::NAME, self::RETIRED, self::REPLACEMENT ) );
 
             return false;
         }
 
-        foreach ( (array) $db->get_results( sprintf( 'SELECT * FROM %s', $table ) ) as $row ) {
+        foreach ( $rows as $row ) {
 
-            $row  = (array) $row;
-            $host = self::liveHostOf( $row );
+            $row = (array) $row;
 
-            if ( $db->query( sprintf( 'UPDATE %s SET live_host = ? WHERE id = ?', $table ), [ $host, $row['id'] ] ) === false ) {
+            if ( $row['scope_type'] === 'install' ) {
 
-                $this->e->notice( sprintf( 'Setting live_host on Property %s failed.', $row['id'] ) );
+                $this->hold( self::NAME, self::REPLACEMENT );
+            }
+        }
+
+        $this->e->notice( sprintf( '%s: %s is no longer a level, so it is %s (patch and minor releases); %d %s changed.',
+            self::NAME, self::RETIRED, self::REPLACEMENT, count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ) ) );
+
+        return true;
+    }
+
+    /** The exact inverse, from the record up() kept. */
+    public function down() {
+
+        $record = $this->record();
+
+        if ( ! $record ) {
+
+            return true;
+        }
+
+        foreach ( (array) ( $record['rows'] ?? [] ) as $row ) {
+
+            if ( ! $this->restoreRow( (array) $row ) ) {
+
+                $this->e->notice( sprintf( 'Restoring setting row %s failed.', $row['id'] ?? '' ) );
 
                 return false;
             }
+
+            if ( $row['scope_type'] === 'install' ) {
+
+                $this->hold( self::NAME, @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] ) );
+            }
         }
 
-        if ( ! $this->indexNamed( $table, \OWA\Module\Base\Entity\Property::LIVE_HOST_INDEX )
-             && $db->query( sprintf( 'ALTER TABLE %s ADD UNIQUE INDEX %s (live_host)',
-                    $table, \OWA\Module\Base\Entity\Property::LIVE_HOST_INDEX ) ) === false ) {
+        if ( ! $this->deleteRecord() ) {
 
-            $this->e->notice( sprintf( 'Adding the live_host index to %s failed.', $table ) );
+            $this->e->notice( sprintf( 'Removing %s failed.', self::BEFORE ) );
 
             return false;
         }
-
-        // The cached rows have no live_host.
-        \OWA\Core\CoreAPI::cacheSingleton()->flush();
 
         return true;
-    }
-
-    /** The exact inverse: the index and the column go. */
-    public function down() {
-
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->tableFor( 'base.property' );
-
-        if ( $this->indexNamed( $table, \OWA\Module\Base\Entity\Property::LIVE_HOST_INDEX )
-             && $db->query( sprintf( 'DROP INDEX %s ON %s', \OWA\Module\Base\Entity\Property::LIVE_HOST_INDEX, $table ) ) === false ) {
-
-            $this->e->notice( sprintf( 'Dropping the live_host index from %s failed.', $table ) );
-
-            return false;
-        }
-
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setTableName( $table, '' );
-
-        if ( $this->dropColumnIfPresent( $property, 'live_host' ) === false ) {
-
-            $this->e->notice( sprintf( 'Dropping %s.live_host failed.', $table ) );
-
-            return false;
-        }
-
-        \OWA\Core\CoreAPI::cacheSingleton()->flush();
-
-        return true;
-    }
-
-    /**
-     * What live_host holds for a row, as Entity\Property::liveHost() answers it.
-     *
-     * @param  array<string, mixed> $row
-     * @return string|null
-     */
-    public static function liveHostOf( array $row ) {
-
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setProperties( array_intersect_key( $row, array_flip( [ 'domain', 'property_type', 'archived_date' ] ) ) );
-
-        return $property->liveHost();
-    }
-
-    /**
-     * @param  string $table
-     * @param  string $name
-     * @return bool
-     */
-    private function indexNamed( $table, $name ) {
-
-        return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results(
-            'SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()'
-          . ' AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1', [ $table, $name ] );
     }
 }

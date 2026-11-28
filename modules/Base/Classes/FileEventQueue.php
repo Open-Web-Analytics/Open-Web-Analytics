@@ -776,7 +776,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         if ( ! is_writable( $this->inbox_dir ) ) {
 
             \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: %s cannot be written by this user, so its beacons cannot be taken in. '
-                . 'Give it the group of owa-data/logs/ and group write (cmd=install sets it).', $this->inbox_dir ) );
+                . 'Give it the group of owa-data/logs/ and group write (cmd=core-install sets it).', $this->inbox_dir ) );
 
             return;
         }
