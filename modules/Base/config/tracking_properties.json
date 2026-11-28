@@ -1642,7 +1642,7 @@
         "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
     },
     "os_version": {
-        "description": "The operating system's version, from the user agent.",
+        "description": "The operating system's version, from the user agent. Absent where a reduced user agent sends the same version for every release: Windows NT 10.0, macOS 10.15.7, ChromeOS 14541.0.0, and Android 10 with the model K.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1658,7 +1658,7 @@
         ]
     },
     "device_type": {
-        "description": "The kind of device, from the user agent: desktop, mobile or tablet. Absent when the device cannot be identified.",
+        "description": "The kind of device, from the user agent: desktop, mobile or tablet. An Android device whose user agent has no Mobile token is a tablet; an iPad whose Safari asks for the desktop site is a desktop. Absent when the device cannot be identified.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1675,7 +1675,7 @@
         "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
     },
     "device_brand": {
-        "description": "The device's manufacturer, from the user agent.",
+        "description": "The device's manufacturer, from the user agent. Absent when the user agent does not name one, as for a crawler.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1691,7 +1691,7 @@
         ]
     },
     "device_model": {
-        "description": "The device's model, from the user agent.",
+        "description": "The device's model, from the user agent. Absent when the user agent does not name one, such as the K of a reduced Android user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"

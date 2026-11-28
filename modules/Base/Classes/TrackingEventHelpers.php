@@ -1849,8 +1849,48 @@ class TrackingEventHelpers {
      */
     public static function resolveOsVersion( $version, $event ) {
 
-        return self::browscapFor( $event )->getOsVersion();
+        $bcap    = self::browscapFor( $event );
+        $os      = strtolower( (string) $bcap->getOsFamily() );
+        $version = (string) $bcap->getOsVersion();
+
+        if ( isset( self::FROZEN_OS_VERSIONS[ $os ] ) && in_array( $version, self::FROZEN_OS_VERSIONS[ $os ], true ) ) {
+
+            return null;
+        }
+
+        // Android's under reduction rides the reduced model K: "Android 10; K".
+        if ( $os === 'android' && $version === '10' && $bcap->getDeviceModel() === 'K' ) {
+
+            return null;
+        }
+
+        return $version;
     }
+
+    /**
+     * OS versions a browser's reduced user agent reports whatever the version
+     * is, by OS family as the parser names it, lower case: Windows 10 and 11
+     * both send NT 10.0, every macOS since 11 sends 10_15_7, and ChromeOS
+     * sends 14541.0.0.
+     */
+    const FROZEN_OS_VERSIONS = [
+        'windows'   => [ '10' ],
+        'mac os x'  => [ '10.15.7' ],
+        'chrome os' => [ '14541.0.0' ],
+    ];
+
+    /**
+     * Brands the parser answers when no rule names the maker: Generic,
+     * Generic_Android, Generic_Android_Tablet and the rest, and Spider for a
+     * crawler.
+     */
+    const PLACEHOLDER_BRAND = '/^(generic.*|spider|other)$/i';
+
+    /**
+     * Models the parser answers for no model: the reduced user agent's K, a
+     * class of device, or Other.
+     */
+    const PLACEHOLDER_MODELS = [ 'k', 'desktop', 'smartphone', 'tablet', 'feature phone', 'other' ];
 
     /**
      * Desktop, mobile or tablet -- DERIVED, because ua-parser has no such field.
@@ -1860,6 +1900,12 @@ class TrackingEventHelpers {
      * absence about a phone. The OS family is what tells those apart, so the rule
      * reads it and falls through to NULL rather than guessing desktop: a wrong
      * 'desktop' is indistinguishable from a real one.
+     *
+     * ANDROID WITHOUT THE "Mobile" TOKEN IS A TABLET, the rule Android's
+     * browsers follow, and it holds under user-agent reduction ("Android 10;
+     * K"). The parser's Generic_Android_Tablet brand and Kindle family say so
+     * too. An iPad whose Safari asks for the desktop site sends a Mac's user
+     * agent, and is stored as a desktop.
      *
      * @param  mixed $type
      * @param  Event $event
@@ -1871,12 +1917,18 @@ class TrackingEventHelpers {
 
         $family = strtolower( (string) $bcap->getDeviceFamily() );
 
-        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
+        if ( $family === 'ipad' || $family === 'kindle' || strpos( $family, 'tablet' ) !== false
+             || strtolower( (string) $bcap->getDeviceBrand() ) === 'generic_android_tablet' ) {
 
             return 'tablet';
         }
 
         $os = strtolower( (string) $bcap->getOsFamily() );
+
+        if ( $os === 'android' && ! preg_match( '/\bMobile\b/', (string) $event->get( 'HTTP_USER_AGENT' ) ) ) {
+
+            return 'tablet';
+        }
 
         if ( in_array( $os, self::MOBILE_OS, true ) ) {
 
@@ -1892,7 +1944,7 @@ class TrackingEventHelpers {
     }
 
     /**
-     * 'Other' is the parser saying it has no rule, not a brand.
+     * A brand the parser answers for no maker (PLACEHOLDER_BRAND) is absent.
      *
      * @param  mixed $brand
      * @param  Event $event
@@ -1902,11 +1954,11 @@ class TrackingEventHelpers {
 
         $value = (string) self::browscapFor( $event )->getDeviceBrand();
 
-        return strtolower( $value ) === 'other' ? null : $value;
+        return $value === '' || preg_match( self::PLACEHOLDER_BRAND, $value ) ? null : $value;
     }
 
     /**
-     * As the brand: 'Other' is an absence wearing a value.
+     * A model the parser answers for no model (PLACEHOLDER_MODELS) is absent.
      *
      * @param  mixed $model
      * @param  Event $event
@@ -1916,7 +1968,7 @@ class TrackingEventHelpers {
 
         $value = (string) self::browscapFor( $event )->getDeviceModel();
 
-        return strtolower( $value ) === 'other' ? null : $value;
+        return in_array( strtolower( $value ), self::PLACEHOLDER_MODELS, true ) ? null : $value;
     }
 
 
