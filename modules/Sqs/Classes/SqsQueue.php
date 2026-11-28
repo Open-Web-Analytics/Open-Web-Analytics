@@ -346,6 +346,48 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         ];
     }
 
+    /**
+     * What cmd=server-check reports, from one GetQueueAttributes call: the
+     * approximate number of messages waiting, visible or not, and the
+     * redrive policy. Receives nothing.
+     *
+     * When the attributes cannot be read, messages is null and error says
+     * why. dead_letter and max_receives are null when the queue has no
+     * redrive policy.
+     *
+     * @return array{messages: int|null, dead_letter: string|null, max_receives: int|null, error: string|null}
+     */
+    public function describe() {
+
+        $a = $this->attributes( [ 'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible',
+                                  'ApproximateNumberOfMessagesDelayed', 'RedrivePolicy' ] );
+
+        if ( $a === null ) {
+
+            return [ 'messages' => null, 'dead_letter' => null, 'max_receives' => null,
+                     'error' => (string) ( $this->last_error ?: \OWA\Core\CoreAPI::t( 'no answer' ) ) ];
+        }
+
+        $redrive = json_decode( (string) ( $a['RedrivePolicy'] ?? '' ), true );
+        $arn     = is_array( $redrive ) ? (string) ( $redrive['deadLetterTargetArn'] ?? '' ) : '';
+
+        unset( $a['RedrivePolicy'] );
+
+        return [
+            'messages'     => array_sum( array_map( 'intval', $a ) ),
+            // The queue's name is the ARN's last field.
+            'dead_letter'  => $arn !== '' ? substr( $arn, strrpos( $arn, ':' ) + 1 ) : null,
+            'max_receives' => is_array( $redrive ) && isset( $redrive['maxReceiveCount'] ) ? (int) $redrive['maxReceiveCount'] : null,
+            'error'        => null,
+        ];
+    }
+
+    /** @return int|null the receive limit this queue's redrive policy is created with */
+    public function maxReceives() {
+
+        return $this->max_receives;
+    }
+
     // ---------------------------------------------------------------------
     // The rest
     // ---------------------------------------------------------------------

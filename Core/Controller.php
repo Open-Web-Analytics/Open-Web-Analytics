@@ -1097,6 +1097,27 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
+     * The REST API's 401 for a request that carries no application password.
+     *
+     * @return string
+     */
+    public static function notAuthenticatedMessage() {
+
+        return \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' );
+    }
+
+    /**
+     * The REST API's 401 for a request whose application password was refused
+     * (Auth::carriesAppPassword()).
+     *
+     * @return string
+     */
+    public static function refusedAppPasswordMessage() {
+
+        return \OWA\Core\CoreAPI::t( 'The application password in the Authorization header was not accepted.' );
+    }
+
+    /**
      * The answer for a request without the credentials this controller needs:
      * a 401 for the REST API, a redirect to the login form otherwise.
      *
@@ -1107,9 +1128,10 @@ class Controller extends \OWA\Core\Base {
         if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
             
             $this->setView('base.restApi');
-            $this->set('error_msg', ['headline' => \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
+            $auth = \OWA\Core\Auth::get_instance();
+            $this->set('error_msg', ['headline' => \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => $auth->refusedLegacyApiKey()
                 ? self::legacyApiKeyMessage()
-                : \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
+                : ( $auth->carriesAppPassword() ? self::refusedAppPasswordMessage() : self::notAuthenticatedMessage() )] );
             http_response_code(401);
         } else {
             $this->setRedirectAction('base.loginForm');

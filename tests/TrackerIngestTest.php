@@ -286,13 +286,30 @@ final class TrackerIngestTest extends TestCase
         $this->assertSame([], IntakeTestProcessor::$seen);
     }
 
+    /** cmd=server-check's test message is deleted, not ingested or dead-lettered, and counted as discarded. */
+    public function testAServerCheckMessageIsDeleted(): void
+    {
+        $check = ['v' => 0, 'type' => TrackerIngest::CHECK_TYPE, 'properties' => ['check' => 'abc'], 'queued_at' => 1];
+
+        $q = new MemoryIntake();
+        $this->assertSame('discarded', TrackerIngest::ingestMessage($q, new IntakeMessage('r', $check, 1)));
+        $this->assertSame([['ack']], $q->calls);
+        $this->assertSame([], IntakeTestProcessor::$seen);
+
+        $q = new MemoryIntake();
+        $q->pending = [$this->message(), new IntakeMessage('r', $check, 1)];
+        TrackerIngest::$queue = $q;
+
+        $this->assertSame(['ingested' => 1, 'released' => 0, 'dead' => 0, 'discarded' => 1], TrackerIngest::drain(time() + 30));
+    }
+
     public function testTheDrainStopsWhenTheQueueIsEmpty(): void
     {
         $q = new MemoryIntake();
         $q->pending = [$this->message(), $this->message(), $this->message()];
         TrackerIngest::$queue = $q;
 
-        $this->assertSame(['ingested' => 3, 'released' => 0, 'dead' => 0], TrackerIngest::drain(time() + 30));
+        $this->assertSame(['ingested' => 3, 'released' => 0, 'dead' => 0, 'discarded' => 0], TrackerIngest::drain(time() + 30));
     }
 
     public function testAQuietQueueIsNotReceivedFrom(): void

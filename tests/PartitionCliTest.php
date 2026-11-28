@@ -611,6 +611,80 @@ final class PartitionCliTest extends CliControllerTestCase
         }
     }
 
+    /**
+     * Over the ceiling, a real reorganize compacts the tail and re-plans. A
+     * dry run plans against what that compaction would leave: it reports the
+     * same compaction and the same rewrites as the real run, and changes
+     * nothing.
+     */
+    public function testADryRunOverTheCeilingReportsTheRealRunsPlan()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (! $db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $t = 'owa_test_ceiling_' . $this->tok;
+
+        try {
+            $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
+            owa_test_partition_table($t, owa_test_tiered_ranges(
+                date('Ymd', strtotime(date('Ym') . '01 -180 months')),
+                \OWA\Core\Db::partitionLeadBoundary(),
+                'monthly',
+                \OWA\Core\Db::PARTITION_DETAIL_MONTHS
+            ));
+
+            $before = $db->getPartitionSpans($t);
+            $wanted = $db->repartitionTable($t, 'quarter-month', true)['planned'];
+
+            // One under what quarter-month needs: the plan is over the ceiling,
+            // and merging the tail makes room.
+            $reorganize = function (array $params) use ($t, $wanted) {
+                $c = new class($params) extends \OWA\Module\Base\Controller\PartitionReorganizeCli {
+                    public static $table;
+                    public static $limit;
+                    protected function factTables($only = null) { return [self::$table]; }
+                    protected function factTableBudget() { return ['limit' => self::$limit, 'reason' => 'test']; }
+                };
+                $c::$table = $t;
+                $c::$limit = $wanted - 1;
+
+                $lines = [];
+
+                foreach (explode("\n", $this->logDuring(fn () => $c->action())) as $line) {
+                    if (($at = strpos($line, $t . ':')) !== false) {
+                        $lines[] = substr($line, $at);
+                    }
+                }
+
+                return [$lines, $c->getCliOutcome()];
+            };
+
+            list($dry, $dry_outcome) = $reorganize(['granularity' => 'quarter-month', 'dry-run' => true]);
+
+            $this->assertSame($before, $db->getPartitionSpans($t), 'the dry run changes nothing');
+            $this->assertSame('ok', $dry_outcome['outcome'], implode("\n", $dry));
+            $this->assertStringContainsString('Merging old periods to make room.', implode("\n", $dry));
+            $this->assertStringContainsString('would reshape', implode("\n", $dry));
+            $this->assertStringContainsString('would rewrite', implode("\n", $dry));
+            $this->assertStringNotContainsString('refusing', implode("\n", $dry));
+
+            list($real, $real_outcome) = $reorganize(['granularity' => 'quarter-month']);
+
+            $this->assertSame('ok', $real_outcome['outcome'], implode("\n", $real));
+            $this->assertNotSame($before, $db->getPartitionSpans($t));
+            $this->assertSame(
+                $real,
+                str_replace(['would reshape', 'would rewrite'], ['reshaping', 'rewrote'], $dry),
+                'the dry run reports the real run\'s plan'
+            );
+        } finally {
+            $db->query("DROP TABLE IF EXISTS $t");
+        }
+    }
+
     // -----------------------------------------------------------------------
     // partition-status
     // -----------------------------------------------------------------------

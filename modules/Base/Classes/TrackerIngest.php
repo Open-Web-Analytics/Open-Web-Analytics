@@ -32,6 +32,12 @@ class TrackerIngest {
     const ENVELOPE_VERSION = 1;
 
     /**
+     * The type of cmd=server-check's test message. The drain deletes one
+     * (ingestMessage()), counted as discarded.
+     */
+    const CHECK_TYPE = 'owa-server-check';
+
+    /**
      * Attempts before a beacon goes to the dead-letter queue: the queue's
      * redrive limit (max_receives in its registration; maxReceiveCount on
      * SQS), and the attempt on which a failure is dead-lettered rather than
@@ -438,11 +444,20 @@ class TrackerIngest {
      * limit to the dead-letter queue before a consumer sees it -- the case of
      * a message that kills its consumer, which no code here survives.
      *
+     * A server-check test message (CHECK_TYPE) is deleted.
+     *
      * What an external consumer calls per message, with the same queue.
      *
-     * @return string ingested, released, dead
+     * @return string ingested, released, dead, discarded
      */
     public static function ingestMessage( \OWA\Core\IntakeQueue $queue, \OWA\Core\IntakeMessage $message ) {
+
+        if ( ( $message->envelope['type'] ?? null ) === self::CHECK_TYPE ) {
+
+            $queue->ack( $message );
+
+            return 'discarded';
+        }
 
         $event = $message->envelope !== null ? self::event( $message->envelope ) : null;
 
@@ -561,11 +576,11 @@ class TrackerIngest {
      * Receive and ingest until the intake is empty or the deadline passes.
      *
      * @param  int $deadline unix time
-     * @return array{ingested: int, released: int, dead: int} counts
+     * @return array{ingested: int, released: int, dead: int, discarded: int} counts; discarded counts server-check test messages
      */
     public static function drain( $deadline ) {
 
-        $counts = [ 'ingested' => 0, 'released' => 0, 'dead' => 0 ];
+        $counts = [ 'ingested' => 0, 'released' => 0, 'dead' => 0, 'discarded' => 0 ];
         $queue  = self::queue();
 
         // So queueError() afterwards speaks for this drain.
