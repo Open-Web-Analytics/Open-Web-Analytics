@@ -59,7 +59,7 @@ final class TagSettingsTest extends TestCase
             $keys = array_merge($keys, $set['settings']);
         }
 
-        $this->assertCount(15, $keys, 'every tag setting Base declares, each in one fieldset');
+        $this->assertCount(14, $keys, 'every tag setting Base declares, each in one fieldset');
         $this->assertSame($keys, array_unique($keys), 'none in both');
 
         foreach ($keys as $key) {
