@@ -5,6 +5,7 @@ require_once __DIR__ . '/CapturesLog.php';
 require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Core\Controller\Cli;
+use OWA\Module\Base\Classes\TrackerBundle;
 use OWA\Module\Base\Controller\PropertyCli;
 
 /**
@@ -29,8 +30,11 @@ final class PropertyCliTest extends CliControllerTestCase
     /** @var array{0: string, 1: string} the Property's live Profile and the one archived earlier, by site_id */
     private array $sites = [];
 
-    /** TrackerBundle::$outDir before the test, and the directory it writes to during it. */
-    private ?string $outWas = null;
+    /** TrackerBundle's $outDir, $distDir and $buildDir before the test. */
+    private array $bundleDirsWas = [];
+
+    /** The test's tracker build (dist/) and the directory bundles are written to (tracker/). */
+    private string $root = '';
     private string $out = '';
 
     /** Whether the database answers. The usage checks run without it. */
@@ -54,11 +58,28 @@ final class PropertyCliTest extends CliControllerTestCase
 
         parent::setUp();
 
-        // Bundles go to a directory of the test's own, not the install's public/tracker/.
-        $this->outWas = \OWA\Module\Base\Classes\TrackerBundle::$outDir;
-        $this->out    = sys_get_temp_dir() . '/owa-propcli-bundles-' . getmypid() . '/';
-        @mkdir($this->out, 0700, true);
-        \OWA\Module\Base\Classes\TrackerBundle::$outDir = $this->out;
+        /*
+         * A tracker build of the test's own, so a restore can publish bundles
+         * where no tracker has been built, and bundles go to a directory of
+         * the test's own, not the install's public/tracker/.
+         */
+        $this->bundleDirsWas = [TrackerBundle::$outDir, TrackerBundle::$distDir, TrackerBundle::$buildDir];
+        $this->root = sys_get_temp_dir() . '/owa-propcli-' . bin2hex(random_bytes(4)) . '/';
+        $this->out  = $this->root . 'tracker/';
+        $dist       = $this->root . 'dist/';
+        mkdir($dist, 0700, true);
+        mkdir($this->out, 0700, true);
+
+        file_put_contents($dist . 'owa.tracker.js', '/*core*/');
+        file_put_contents($dist . 'owa.domstream.js', '/*chunk*/');
+        file_put_contents($dist . 'owa.tracker.manifest.json', json_encode([
+            'core'    => ['file' => 'owa.tracker.js', 'sha256' => hash('sha256', '/*core*/')],
+            'plugins' => ['domstream' => ['file' => 'owa.domstream.js', 'sha256' => hash('sha256', '/*chunk*/')]],
+        ]));
+
+        TrackerBundle::$outDir   = $this->out;
+        TrackerBundle::$distDir  = $dist;
+        TrackerBundle::$buildDir = $dist;   // the manifest is beside the files
 
         $this->host  = 'propcli-' . $this->tok . '.example.test';
         $this->sites = ['pcli' . $this->tok . 'a', 'pcli' . $this->tok . 'b'];
@@ -76,8 +97,8 @@ final class PropertyCliTest extends CliControllerTestCase
         if ($this->host !== '') {
             $this->removeFixtures();
 
-            \OWA\Module\Base\Classes\TrackerBundle::$outDir = $this->outWas;
-            exec('rm -rf ' . escapeshellarg($this->out));
+            [TrackerBundle::$outDir, TrackerBundle::$distDir, TrackerBundle::$buildDir] = $this->bundleDirsWas;
+            exec('rm -rf ' . escapeshellarg($this->root));
         }
 
         parent::tearDown();
