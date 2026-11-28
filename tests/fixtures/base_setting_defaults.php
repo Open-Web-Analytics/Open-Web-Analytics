@@ -69,6 +69,8 @@ return [
     'is_active' => true,
     'link_template' => '%s?%s',
     'log_robots_before_084' => [],
+    'login_throttle_max_failures' => 5,
+    'login_throttle_window' => 900,
     'logo_image_path' => 'base/i/owa-logo.svg',
     'mailer-from' => '',
     'mailer-fromName' => 'OWA Server',

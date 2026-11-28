@@ -19,13 +19,26 @@ final class LoginThrottleTest extends TestCase
 {
     const USER = 'owa-test-throttle';
 
+    /** The limits these tests are written for: the shipped defaults. */
+    const LIMITS = ['login_throttle_max_failures' => 5, 'login_throttle_window' => 900];
+
     /** @var array<string, mixed>|null */
     private $server;
+
+    /** @var array<string, mixed> the limits before setUp() */
+    private $limits = [];
 
     protected function setUp(): void
     {
         LoginThrottle::$enabled = true;
         LoginThrottle::$rows    = [];
+
+        // Whatever the install's config says: a scratch install for the e2e
+        // run sets OWA_LOGIN_THROTTLE_MAX_FAILURES to 0.
+        foreach (self::LIMITS as $name => $value) {
+            $this->limits[$name] = \OWA\Core\CoreAPI::getSetting('base', $name);
+            \OWA\Core\CoreAPI::setSetting('base', $name, $value);
+        }
 
         $this->server = \OWA\Core\CoreAPI::serviceSingleton()->request->server;
         $this->from('198.51.100.20');
@@ -36,6 +49,12 @@ final class LoginThrottleTest extends TestCase
     {
         LoginThrottle::$enabled = false;
         LoginThrottle::$rows    = null;
+
+        foreach ($this->limits as $name => $value) {
+            \OWA\Core\CoreAPI::setSetting('base', $name, $value);
+        }
+
+        $this->limits = [];
 
         \OWA\Core\CoreAPI::serviceSingleton()->request->server = $this->server;
         $this->signOut();
@@ -108,8 +127,10 @@ final class LoginThrottleTest extends TestCase
     {
         $this->assertSame(5, LoginThrottle::MAX_FAILURES);
         $this->assertSame(900, LoginThrottle::WINDOW);
-        $this->assertSame(5, LoginThrottle::maxFailures(), 'the setting\'s default');
-        $this->assertSame(900, LoginThrottle::window(), 'the setting\'s default');
+        $defaults = \OWA\Module\Base\Classes\Settings::baseDefaults()['base'];
+        $this->assertSame(5, $defaults['login_throttle_max_failures'], 'the setting\'s default');
+        $this->assertSame(900, $defaults['login_throttle_window'], 'the setting\'s default');
+        $this->assertSame(5, LoginThrottle::maxFailures(), 'read from the setting');
     }
 
     public function testTheLimitsAreSetByConfigConstants(): void

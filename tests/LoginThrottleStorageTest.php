@@ -12,8 +12,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class LoginThrottleStorageTest extends TestCase
 {
+    /** The limits these tests are written for. */
+    const LIMITS = ['login_throttle_max_failures' => 5, 'login_throttle_window' => 900];
+
     /** @var list<string> */
     private $keys = [];
+
+    /** @var array<string, mixed> the limits before setUp() */
+    private $limits = [];
 
     protected function setUp(): void
     {
@@ -23,6 +29,13 @@ final class LoginThrottleStorageTest extends TestCase
 
         LoginThrottle::$enabled = true;
         LoginThrottle::$rows    = null;
+
+        // The defaults, whatever the install's config says: a scratch install
+        // for the e2e run sets OWA_LOGIN_THROTTLE_MAX_FAILURES to 0.
+        foreach (self::LIMITS as $name => $value) {
+            $this->limits[$name] = \OWA\Core\CoreAPI::getSetting('base', $name);
+            \OWA\Core\CoreAPI::setSetting('base', $name, $value);
+        }
 
         $tok        = bin2hex(random_bytes(6));
         $this->keys = LoginThrottle::keys('owa-test-throttle-' . $tok, '198.51.100.' . random_int(1, 254) . '-' . $tok);
@@ -35,6 +48,12 @@ final class LoginThrottleStorageTest extends TestCase
         }
 
         LoginThrottle::$enabled = false;
+
+        foreach ($this->limits as $name => $value) {
+            \OWA\Core\CoreAPI::setSetting('base', $name, $value);
+        }
+
+        $this->limits = [];
     }
 
     /** @return array<string, mixed>|null */
