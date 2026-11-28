@@ -3,7 +3,8 @@ namespace OWA\Module\Base\Classes;
 
 /**
  * The four secrets in owa-config.php, found and given new values in place
- * (cmd=reset-secrets).
+ * (cmd=reset-secrets); and OWA_SECRET, which they never include, added where
+ * the file has none (addInstanceSecret()).
  *
  * The file is read with PHP's tokenizer, so a define() is found however it is
  * spaced or quoted, and one inside a comment is not a define(). Only the value
@@ -17,8 +18,11 @@ namespace OWA\Module\Base\Classes;
  */
 class ConfigSecrets {
 
-    /** The constants rotated, in the order they are reported. */
+    /** The constants rotated, in the order they are reported. OWA_SECRET is never one of them. */
     const NAMES = [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ];
+
+    /** The line addInstanceSecret() writes above the define() it adds. */
+    const INSTANCE_SECRET_COMMENT = '// Names this server\'s private files (its error log, its file queue). Generated once; cmd=reset-secrets never changes it.';
 
     /** Characters in a new value. */
     const LENGTH = 64;
@@ -29,15 +33,17 @@ class ConfigSecrets {
     /**
      * Each secret's define() calls outside comments.
      *
-     * @param  string $source a PHP file's contents
+     * @param  string        $source a PHP file's contents
+     * @param  list<string>  $names  the constants looked for; NAMES when null
      * @return array<string, list<array{offset: int, literal: string|null}>>
      *         name => one entry per define(): the byte offset and text of its
      *         value's string literal, or null literal when the value is not a
      *         single quoted string
      */
-    public static function locate( $source ) {
+    public static function locate( $source, $names = null ) {
 
-        $found = array_fill_keys( self::NAMES, [] );
+        $names = $names ?? self::NAMES;
+        $found = array_fill_keys( $names, [] );
 
         // The byte offset of each token: token_get_all() does not give one,
         // but the tokens' texts concatenate to the source.
@@ -77,7 +83,7 @@ class ConfigSecrets {
 
             $name_text = substr( $name['text'], 1, -1 );
 
-            if ( ! in_array( $name_text, self::NAMES, true ) || ( $tokens[ $i + 3 ]['text'] ?? '' ) !== ',' ) {
+            if ( ! in_array( $name_text, $names, true ) || ( $tokens[ $i + 3 ]['text'] ?? '' ) !== ',' ) {
 
                 continue;
             }
@@ -189,41 +195,24 @@ class ConfigSecrets {
      */
     public static function rotate( $path, $random = null ) {
 
-        $result = [ 'error' => null, 'warnings' => [], 'path' => (string) $path ];
+        $file = self::read( $path );
 
-        // Write the file a symlink points to, not over the link.
-        $real = realpath( (string) $path );
+        if ( $file['error'] !== null ) {
 
-        if ( $real === false || ! is_file( $real ) ) {
-
-            $result['error'] = sprintf( '%s does not exist. Nothing was changed.', $path );
-
-            return $result;
+            return self::result( $file );
         }
 
-        $result['path'] = $real;
-        clearstatcache( true, $real );
-        $stat   = @stat( $real );
-        $source = @file_get_contents( $real );
-
-        if ( $stat === false || $source === false ) {
-
-            $result['error'] = sprintf( 'Could not read %s. Nothing was changed.', $real );
-
-            return $result;
-        }
-
-        $found = self::locate( $source );
+        $found = self::locate( $file['source'] );
         $problems = self::problems( $found );
 
         if ( $problems ) {
 
-            $result['error'] = sprintf( '%s was not changed. %s', $real, implode( ' ', $problems ) );
+            $file['error'] = sprintf( '%s was not changed. %s', $file['path'], implode( ' ', $problems ) );
 
-            return $result;
+            return self::result( $file );
         }
 
-        $random = $random ?: static fn () => \OWA\Core\CoreAPI::secureRandomString( self::LENGTH );
+        $random = self::generator( $random );
         $values = [];
 
         foreach ( self::NAMES as $name ) {
@@ -231,7 +220,258 @@ class ConfigSecrets {
             $values[ $name ] = (string) $random();
         }
 
-        $new = self::replace( $source, $found, $values );
+        return self::write( $file, self::replace( $file['source'], $found, $values ) );
+    }
+
+    /**
+     * What addInstanceSecret() adds to a file for this value: a blank line,
+     * INSTANCE_SECRET_COMMENT and the define(), each ending in a newline.
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function instanceSecretLines( $value ) {
+
+        return "\n" . self::INSTANCE_SECRET_COMMENT . "\n"
+            . sprintf( "define('%s', '%s');\n", \OWA\Core\Requirements::INSTANCE_SECRET, addcslashes( (string) $value, "\\'" ) );
+    }
+
+    /**
+     * Give a config file an OWA_SECRET when it has none:
+     *
+     *  - no define() of it: instanceSecretLines() are added at the end of the
+     *    file's PHP, before a closing ?> where it has one;
+     *  - one whose value is owa-config-dist.php's placeholder: the value is replaced;
+     *  - one with any other value: nothing is changed, and written is null.
+     *
+     * Written as rotate() writes. Nothing is changed when OWA_SECRET is
+     * defined more than once, or with a value that is not a quoted string.
+     *
+     * @param  string        $path
+     * @param  callable|null $random fn () => string, the new value; CoreAPI::secureRandomString() when null
+     * @return array{error: string|null, warnings: string[], path: string, written: string|null}
+     *         written: 'added', 'replaced', or null when nothing was written
+     */
+    public static function addInstanceSecret( $path, $random = null ) {
+
+        $name = \OWA\Core\Requirements::INSTANCE_SECRET;
+        $file = self::read( $path );
+
+        if ( $file['error'] !== null ) {
+
+            return self::result( $file ) + [ 'written' => null ];
+        }
+
+        $found = self::locate( $file['source'], [ $name ] )[ $name ];
+
+        if ( count( $found ) > 1 ) {
+
+            $file['error'] = sprintf( '%s was not changed. Defined more than once: %s (%d times).', $file['path'], $name, count( $found ) );
+
+            return self::result( $file ) + [ 'written' => null ];
+        }
+
+        if ( $found && $found[0]['literal'] === null ) {
+
+            $file['error'] = sprintf( '%s was not changed. Value is not a quoted string: %s.', $file['path'], $name );
+
+            return self::result( $file ) + [ 'written' => null ];
+        }
+
+        $value = (string) self::generator( $random )();
+
+        if ( $found ) {
+
+            // The placeholders hold nothing a quote escapes, so the literal's text is the value.
+            if ( ! in_array( substr( $found[0]['literal'], 1, -1 ), \OWA\Core\Requirements::SECRET_PLACEHOLDERS, true ) ) {
+
+                return self::result( $file ) + [ 'written' => null ];
+            }
+
+            $quote = $found[0]['literal'][0];
+            $literal = $quote . ( $quote === '"' ? addcslashes( $value, '\\"$' ) : addcslashes( $value, "\\'" ) ) . $quote;
+
+            $result = self::write( $file, substr_replace( $file['source'], $literal, $found[0]['offset'], strlen( $found[0]['literal'] ) ) );
+
+            return $result + [ 'written' => $result['error'] === null ? 'replaced' : null ];
+        }
+
+        $at  = self::endOfCode( $file['source'] );
+        $new = substr( $file['source'], 0, $at ) . self::instanceSecretLines( $value ) . substr( $file['source'], $at );
+
+        // The define() added is one PHP reads: the only one, outside a comment.
+        if ( count( self::locate( $new, [ $name ] )[ $name ] ) !== 1 ) {
+
+            $file['error'] = sprintf( '%s was not changed. Where its code ends could not be found.', $file['path'] );
+
+            return self::result( $file ) + [ 'written' => null ];
+        }
+
+        $result = self::write( $file, $new );
+
+        if ( $result['error'] !== null ) {
+
+            $result['error'] .= ' ' . self::byHand( $file['path'] );
+
+            return $result + [ 'written' => null ];
+        }
+
+        return $result + [ 'written' => 'added' ];
+    }
+
+    /**
+     * What to do when OWA cannot add OWA_SECRET itself. The line is given
+     * without a value: one is never printed or logged.
+     *
+     * @param  string $path
+     * @return string
+     */
+    public static function byHand( $path ) {
+
+        return sprintf( \OWA\Core\CoreAPI::t( 'Add this line to %1$s, above any closing ?>, with a random string of at least %2$d characters in place of RANDOM: define(\'OWA_SECRET\', \'RANDOM\'); This prints one: %3$s' ),
+            $path, \OWA\Core\Requirements::SECRET_MIN_LENGTH, \OWA\Core\Requirements::INSTANCE_SECRET_COMMAND );
+    }
+
+    /**
+     * Take out lines addInstanceSecret() added, when the file still holds
+     * them exactly: the lines whose SHA-256 is $sha256. Written as rotate()
+     * writes.
+     *
+     * @param  string $path
+     * @param  string $sha256 hash( 'sha256', instanceSecretLines( $value ) ) of the lines added
+     * @return array{error: string|null, warnings: string[], path: string, removed: bool}
+     *         removed is false, with no error, when the file does not hold them
+     */
+    public static function removeInstanceSecret( $path, $sha256 ) {
+
+        $file = self::read( $path );
+
+        if ( $file['error'] !== null ) {
+
+            return self::result( $file ) + [ 'removed' => false ];
+        }
+
+        $pattern = '/' . preg_quote( "\n" . self::INSTANCE_SECRET_COMMENT . "\n", '/' )
+            . preg_quote( sprintf( "define('%s', '", \OWA\Core\Requirements::INSTANCE_SECRET ), '/' )
+            . "(?:[^'\\\\]|\\\\.)*'\\);\n/";
+
+        preg_match_all( $pattern, $file['source'], $matches, PREG_OFFSET_CAPTURE );
+
+        foreach ( $matches[0] as [ $lines, $offset ] ) {
+
+            if ( hash_equals( (string) $sha256, hash( 'sha256', $lines ) ) ) {
+
+                return self::write( $file, substr_replace( $file['source'], '', $offset, strlen( $lines ) ) ) + [ 'removed' => true ];
+            }
+        }
+
+        return self::result( $file ) + [ 'removed' => false ];
+    }
+
+    /**
+     * The byte offset at which code added to the end of a file still runs:
+     * before its last closing ?> when nothing but output follows it, else the
+     * end of the file.
+     *
+     * @param  string $source
+     * @return int
+     */
+    private static function endOfCode( $source ) {
+
+        $offset = 0;
+        $close  = null;
+
+        foreach ( token_get_all( (string) $source ) as $t ) {
+
+            $id   = is_array( $t ) ? $t[0] : null;
+            $text = is_array( $t ) ? $t[1] : $t;
+
+            if ( $id === T_CLOSE_TAG ) {
+
+                $close = $offset;
+
+            } elseif ( $id !== T_INLINE_HTML ) {
+
+                $close = null;
+            }
+
+            $offset += strlen( $text );
+        }
+
+        return $close ?? strlen( (string) $source );
+    }
+
+    /**
+     * @param  callable|null $random
+     * @return callable fn () => string
+     */
+    private static function generator( $random ) {
+
+        return $random ?: static fn () => \OWA\Core\CoreAPI::secureRandomString( self::LENGTH );
+    }
+
+    /**
+     * A config file read for a rewrite: the file a symlink points to.
+     *
+     * @param  string $path
+     * @return array{error: string|null, warnings: string[], path: string, stat: array<mixed>|null, source: string}
+     */
+    private static function read( $path ) {
+
+        $file = [ 'error' => null, 'warnings' => [], 'path' => (string) $path, 'stat' => null, 'source' => '' ];
+
+        // Write the file a symlink points to, not over the link.
+        $real = realpath( (string) $path );
+
+        if ( $real === false || ! is_file( $real ) ) {
+
+            $file['error'] = sprintf( '%s does not exist. Nothing was changed.', $path );
+
+            return $file;
+        }
+
+        $file['path'] = $real;
+        clearstatcache( true, $real );
+        $stat   = @stat( $real );
+        $source = @file_get_contents( $real );
+
+        if ( $stat === false || $source === false ) {
+
+            $file['error'] = sprintf( 'Could not read %s. Nothing was changed.', $real );
+
+            return $file;
+        }
+
+        $file['stat']   = $stat;
+        $file['source'] = $source;
+
+        return $file;
+    }
+
+    /**
+     * @param  array{error: string|null, warnings: string[], path: string} $file read()'s answer
+     * @return array{error: string|null, warnings: string[], path: string}
+     */
+    private static function result( array $file ) {
+
+        return [ 'error' => $file['error'], 'warnings' => $file['warnings'], 'path' => $file['path'] ];
+    }
+
+    /**
+     * Replace a file read() read with $new: written beside it, readable by
+     * its owner only until complete, then given the old file's mode (and
+     * group, where it may be set) and renamed over it.
+     *
+     * @param  array{error: string|null, warnings: string[], path: string, stat: array<mixed>, source: string} $file read()'s answer, with no error
+     * @param  string $new
+     * @return array{error: string|null, warnings: string[], path: string}
+     *         error is null when the file was replaced; otherwise nothing was changed
+     */
+    private static function write( array $file, $new ) {
+
+        $result = self::result( $file );
+        $real   = $file['path'];
+        $stat   = $file['stat'];
 
         $temp = sprintf( '%s/.%s.%s.tmp', dirname( $real ), basename( $real ), bin2hex( random_bytes( 6 ) ) );
         $handle = self::createTemp( $temp );

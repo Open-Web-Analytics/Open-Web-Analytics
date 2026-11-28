@@ -147,6 +147,36 @@ final class ConfigFileConstantsTest extends TestCase
         $this->assertSame([], ConfigFile::problems($file));
     }
 
+    /** The web wizard's file has a random OWA_SECRET of its own, where the template has the placeholder. */
+    public function testTheInstallerWritesARandomOwaSecret(): void
+    {
+        $dist = \OWA\Module\Base\Classes\ConfigSecrets::locate((string) file_get_contents(__DIR__ . '/../owa-config-dist.php'), ['OWA_SECRET']);
+        $this->assertSame(["'yoursecretgoeshere'"], array_column($dist['OWA_SECRET'], 'literal'));
+        $this->assertContains('yoursecretgoeshere', \OWA\Core\Requirements::SECRET_PLACEHOLDERS);
+
+        $values = [];
+
+        foreach ([1, 2] as $run) {
+            $file = $this->tempConfig('');
+            unlink($file);
+            $this->settings()->set('base', 'config_file', $file);
+
+            $this->assertTrue($this->settings()->createConfigFile([
+                'db_type' => 'mysql', 'db_name' => 'owatest', 'db_user' => 'owatest', 'db_password' => 'owatest',
+                'db_host' => '127.0.0.1', 'db_port' => '3306', 'public_url' => 'https://owa.example.com/',
+            ]));
+
+            $found = \OWA\Module\Base\Classes\ConfigSecrets::locate((string) file_get_contents($file), ['OWA_SECRET'])['OWA_SECRET'];
+            $this->assertCount(1, $found, 'run ' . $run);
+            $value = eval('return ' . $found[0]['literal'] . ';');
+            $this->assertSame(64, strlen($value), 'run ' . $run);
+            $this->assertNotContains($value, \OWA\Core\Requirements::SECRET_PLACEHOLDERS);
+            $values[] = $value;
+        }
+
+        $this->assertNotSame($values[0], $values[1], 'each install its own');
+    }
+
     /** Every request type is refused, before anything else is checked. */
     public function testEveryRequestIsRefused(): void
     {

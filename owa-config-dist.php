@@ -20,9 +20,9 @@
  *                define('OWA_SERVER_ROLE', 'collector');
  *                define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
  *
- *              and no database settings or public URL. Credentials as in AWS
- *              SQS below. Run from its cron, to forward beacons the queue did
- *              not take:
+ *              and OWA_SECRET (below), but no database settings or public
+ *              URL. Credentials as in AWS SQS below. Run from its cron, to
+ *              forward beacons the queue did not take:
  *
  *                * * * * * cd /path/to/owa && php cli.php cmd=drain-tracker-ingest forward_only=1
  *
@@ -91,6 +91,8 @@ define('OWA_NONCE_KEY', 'yournoncekeygoeshere');
 define('OWA_NONCE_SALT', 'yournoncesaltgoeshere');
 define('OWA_AUTH_KEY', 'yourauthkeygoeshere');
 define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
+// Names this server's private files (its error log, its file queue). Generated once; cmd=reset-secrets never changes it.
+define('OWA_SECRET', 'yoursecretgoeshere');
 
 /**
  * PUBLIC URL

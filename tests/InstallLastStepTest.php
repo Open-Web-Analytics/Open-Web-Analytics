@@ -132,6 +132,7 @@ final class InstallLastStepTest extends TestCase
         $this->coreInstallCli($this->cliPost())->action();
 
         $this->assertSame([
+            'writeInstanceSecret',
             'installSchema',
             'finishInstall:begin',
             'createAdminUser:owatest-admin',

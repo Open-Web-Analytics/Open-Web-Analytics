@@ -580,6 +580,7 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
         'yournoncesaltgoeshere'      => $rand(),
         'yourauthkeygoeshere'        => $rand(),
         'yourauthsaltgoeshere'       => $rand(),
+        'yoursecretgoeshere'         => $rand(),
         'http://domain/path/to/owa/' => 'http://127.0.0.1/owa-self-update-test/',
     ] );
     $config = preg_replace( "/(OWA_DB_PORT'\s*,\s*')3306/", '${1}' . $db['port'], $config );

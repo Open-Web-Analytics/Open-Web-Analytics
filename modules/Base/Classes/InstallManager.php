@@ -169,6 +169,37 @@ class InstallManager extends \OWA\Core\Base {
     }
 
     /**
+     * Give owa-config.php an OWA_SECRET when it has none, or has
+     * owa-config-dist.php's placeholder (ConfigSecrets::addInstanceSecret()).
+     * Its value is never said.
+     *
+     * @return array{problem: string, lines: list<string>} problem: why it was
+     *         not written, '' when the file has one now; lines: what was done
+     */
+    public function writeInstanceSecret() {
+
+        $result = ConfigSecrets::addInstanceSecret( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' ) );
+
+        if ( $result['error'] !== null ) {
+
+            return [ 'problem' => $result['error'], 'lines' => [] ];
+        }
+
+        $lines = $result['warnings'];
+
+        if ( $result['written'] === 'added' ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'Added a generated OWA_SECRET to %s.' ), $result['path'] );
+
+        } elseif ( $result['written'] === 'replaced' ) {
+
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'Replaced the example OWA_SECRET in %s with a generated one.' ), $result['path'] );
+        }
+
+        return [ 'problem' => '', 'lines' => $lines ];
+    }
+
+    /**
      * Create the schema, on a server OWA can run on.
      *
      * @return bool

@@ -25,6 +25,16 @@ class RecordingInstallManager extends \OWA\Module\Base\Classes\InstallManager
     /** @var list<mixed> each password createAdminUser() was given */
     public $passwords = [];
 
+    /** @var string what writeInstanceSecret() answers as its problem */
+    public $secretProblem = '';
+
+    public function writeInstanceSecret()
+    {
+        InstallerRecording::$calls[] = 'writeInstanceSecret';
+
+        return ['problem' => $this->secretProblem, 'lines' => []];
+    }
+
     public function installSchema()
     {
         InstallerRecording::$calls[] = 'installSchema';

@@ -106,6 +106,7 @@ final class CoreInstallCliTest extends TestCase
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
         $this->assertSame(0, Cli::$exit_code);
         $this->assertSame([
+            'writeInstanceSecret',
             'installSchema',
             'finishInstall:begin',
             'createAdminUser:owatest-admin',
@@ -125,6 +126,20 @@ final class CoreInstallCliTest extends TestCase
         foreach ($this->log->logged as $line) {
             $this->assertStringNotContainsString($password, $line, 'the password was logged');
         }
+    }
+
+    /** OWA_SECRET is written first: a config file it cannot be written to stops the install before anything is created. */
+    public function testAnOwaSecretThatCannotBeWrittenStopsTheInstall(): void
+    {
+        $this->im->secretProblem = 'owa-config.php could not be written.';
+
+        $cli = $this->coreInstallCli(self::SETUP, '');
+        $cli->doAction();
+
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertSame('owa-config.php could not be written.', $cli->getCliOutcome()['message']);
+        $this->assertSame(['writeInstanceSecret'], InstallerRecording::$calls);
+        $this->assertSame([], $cli->written, 'no password printed');
     }
 
     /** Each run generates its own. */
@@ -417,6 +432,7 @@ final class CoreInstallCliTest extends TestCase
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
         $this->assertSame([
             'moveAsideForNewInstall:20261128120000',
+            'writeInstanceSecret',
             'installSchema',
             'finishInstall:begin',
             'createAdminUser:owatest-admin',
@@ -484,6 +500,7 @@ final class CoreInstallCliTest extends TestCase
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
         $this->assertSame([
+            'writeInstanceSecret',
             'installSchema',
             'finishInstall:begin',
             'createAdminUser:owatest-admin',

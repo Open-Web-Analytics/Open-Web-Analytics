@@ -3173,6 +3173,9 @@ namespace OWA\Module\Base\Classes;
                 case "define('OWA_AUTH_SAL":
                     fwrite($handle, str_replace("yourauthsaltgoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
                     break;
+                case "define('OWA_SECRET',":
+                    fwrite($handle, str_replace("yoursecretgoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
+                    break;
                 default:
                     fwrite($handle, $line);
             }
