@@ -156,4 +156,24 @@ final class EventRawEdgeTest extends TestCase
         $this->assertSame(1, substr_count($log, 'v2 ingest:'), $log);
         $this->assertStringContainsString('2 declared numeric and not ("a", "b")', $log);
     }
+
+    /**
+     * A custom event property named as one of OWA's params is refused, so it
+     * neither replaces OWA's value nor passes as it, and does not count against
+     * the cap.
+     */
+    public function testACustomPropertyNamedAsOneOfOwasParamsIsRefused(): void
+    {
+        $this->assertArrayHasKey('coupon', EventRawHandlers::owaParamKeys());
+        $this->assertArrayHasKey('items', EventRawHandlers::owaParamKeys());
+        $this->assertArrayNotHasKey('page_title', EventRawHandlers::owaParamKeys(), 'a column, not a param');
+
+        $row = null;
+        $log = $this->logDuring(function () use (&$row) {
+            $row = EventRawHandlers::rowFor($this->event(['eps_coupon' => 'SITE10', 'epn_form_length' => 3, 'eps_plan' => 'pro']));
+        });
+
+        $this->assertSame(['plan' => 'pro'], (array) json_decode((string) $row['params'], true));
+        $this->assertStringContainsString('2 named as a param of OWA\'s ("coupon", "form_length")', $log);
+    }
 }

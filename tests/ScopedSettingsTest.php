@@ -142,11 +142,11 @@ final class ScopedSettingsTest extends TestCase
         $this->skipUnlessParented();
 
         /*
-         * tracker_url_fragments defaults to false in code and may be held at
+         * tracker_route_changes defaults to false in code and may be held at
          * both levels. The writes are asserted: refused, they leave the default,
          * false, and the assertion below would pass on it.
          */
-        $key  = 'tracker_url_fragments';
+        $key  = 'tracker_route_changes';
         $held = [
             'property' => \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $this->propertyId, 'base', $key ),
             'profile'  => \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $this->siteId, 'base', $key ),

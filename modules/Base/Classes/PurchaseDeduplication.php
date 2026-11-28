@@ -74,9 +74,11 @@ class PurchaseDeduplication {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
+        // Case-sensitive: AB12 and ab12 are two orders, where the column's collation is case-blind.
         $found = $db->get_results( sprintf(
-            "SELECT id FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
+            "SELECT id FROM %s WHERE site_id = ? AND %s AND event_type = 'purchase' LIMIT 1",
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
+            sprintf( OWA_SQL_EQUALS_CASE_SENSITIVE, 'transaction_id', '?' ) ), [ $site, $transaction ] );
 
         return (bool) $found;
     }

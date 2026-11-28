@@ -402,6 +402,51 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'params' => $this->params( $event ),
         ];
 
+        return $this->withinColumnRanges( $row );
+    }
+
+    /** @var array<string, array{0: int, 1: int}>|null integer column => [ min, max ], once read */
+    private static $integer_ranges = null;
+
+    /**
+     * The row with each integer its column cannot hold set to NULL.
+     *
+     * A value outside a column's range fails the INSERT under a strict
+     * sql_mode, and with it every row of the beacon, which is then retried
+     * until it is dead-lettered.
+     *
+     * @param  array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function withinColumnRanges( array $row ) {
+
+        if ( self::$integer_ranges === null ) {
+
+            self::$integer_ranges = [];
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+
+            foreach ( $entity->getColumns() as $column ) {
+
+                $range = $entity->getColumn( $column )->integerRange();
+
+                if ( $range ) {
+
+                    self::$integer_ranges[ $column ] = $range;
+                }
+            }
+        }
+
+        foreach ( self::$integer_ranges as $column => [ $min, $max ] ) {
+
+            if ( is_int( $row[ $column ] ?? null ) && ( $row[ $column ] < $min || $row[ $column ] > $max ) ) {
+
+                \OWA\Core\CoreAPI::debug( sprintf( 'v2 ingest: %s %d is outside its column\'s range; stored as empty.',
+                    $column, $row[ $column ] ) );
+
+                $row[ $column ] = null;
+            }
+        }
+
         return $row;
     }
 
@@ -476,7 +521,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * goes to the visitor store, not here.
          */
         $custom  = 0;
-        $refused = [ 'over the cap' => [], 'declared numeric and not' => [] ];
+        $refused = [ 'over the cap' => [], 'declared numeric and not' => [], 'named as a param of OWA\'s' => [] ];
+        $owas    = self::owaParamKeys();
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
@@ -500,6 +546,19 @@ class EventRawHandlers extends \OWA\Core\Observer {
             }
 
             if ( $name === '' || $value === null || $value === false || $value === '' ) {
+
+                continue;
+            }
+
+            /*
+             * A name OWA stores a param under -- coupon, items, form_id -- is
+             * refused: written first, the custom value would be replaced by OWA's
+             * own on an event that carries it, and read as OWA's on one that does
+             * not.
+             */
+            if ( isset( $owas[ $name ] ) ) {
+
+                $refused['named as a param of OWA\'s'][] = $name;
 
                 continue;
             }
@@ -614,6 +673,27 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return $json;
+    }
+
+    /**
+     * Every params key the property registry declares, for any event, as
+     * key => true.
+     *
+     * @return array<string, true>
+     */
+    public static function owaParamKeys() {
+
+        $keys = [];
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::allProperties() as $definition ) {
+
+            if ( ! empty( $definition['param'] ) ) {
+
+                $keys[ (string) $definition['param'] ] = true;
+            }
+        }
+
+        return $keys;
     }
 
     /**
@@ -1287,11 +1367,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * A numeric value, or null when it is absent.
+     * A numeric value, or null when it is absent or beyond PHP's integer range.
      *
      * Kept apart from text() because 0 is a real number and an empty string is
      * not a zero -- collapsing the two is how a falsy check turns a legitimate
      * 0 into NULL.
+     *
+     * Beyond the range, (int) answers PHP_INT_MAX for a string and an
+     * undefined value for a float, either one a wrong number.
      *
      * @param mixed $value
      * @return int|null
@@ -1303,7 +1386,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        return (int) $value;
+        $number = $value + 0;
+
+        // 2^63 is the first float past PHP_INT_MAX; -2^63 is PHP_INT_MIN.
+        if ( is_float( $number ) && ( ! is_finite( $number ) || $number >= 9.2233720368547758E18 || $number < -9.2233720368547758E18 ) ) {
+
+            return null;
+        }
+
+        return (int) $number;
     }
 
     /**

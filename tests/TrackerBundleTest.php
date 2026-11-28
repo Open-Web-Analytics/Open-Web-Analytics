@@ -49,7 +49,7 @@ final class TrackerBundleTest extends TestCase
         // The whole tree, dotfiles and subdirectories too, even when clearing a setting throws.
         try {
             if (owa_test_db_available()) {
-                foreach (['tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments', 'tracker_honor_privacy_signals'] as $key) {
+                foreach (['tracker_clicks', 'tracker_session_cookie_days', 'tracker_honor_privacy_signals'] as $key) {
                     \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', $key);
                 }
             }
@@ -132,6 +132,15 @@ final class TrackerBundleTest extends TestCase
         $this->assertContains('wma', $json['downloadExtensions'], 'the tracker\'s longer list, which the Profile\'s had drifted from');
     }
 
+    /** No setting keeps URL fragments: ingest strips every one, so no bundle asks the tracker to send them. */
+    public function testNoBundleKeepsUrlFragments(): void
+    {
+        $this->assertSame([], array_values(array_filter(TrackerBundle::config(self::SITE)['options'],
+            fn ($c) => $c[0] === 'setTrackUrlFragments' || ($c[1] ?? null) === 'trackUrlFragments')));
+        $this->assertArrayNotHasKey('tracker_url_fragments',
+            (require \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings']);
+    }
+
     /** The session window is the install's, so the tracker and the cube agree. */
     public function testTheSessionLengthIsTheInstalls(): void
     {
@@ -146,7 +155,6 @@ final class TrackerBundleTest extends TestCase
 
         \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_clicks', false);
         \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_session_cookie_days', 0);
-        \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_url_fragments', true);
 
         $config = TrackerBundle::config(self::SITE);
 

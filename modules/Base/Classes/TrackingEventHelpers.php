@@ -985,7 +985,7 @@ class TrackingEventHelpers {
      * A URL property of a current beacon in its stored form
      * (V2Event::readableUrl()): the path decoded once, the query and fragment
      * as the page had them. The first callback of every data_type url
-     * property the client sets.
+     * property the client sets, and of file_name, a path.
      *
      * Only for a beacon decoded once (Beacon\Compat::decodesOnce()). An older
      * beacon's values were decoded a second time already, and an event with no
@@ -1097,7 +1097,20 @@ class TrackingEventHelpers {
                 $data_type = $property['data_type'];
             }
 
-            $value = $this->setDataType( $value, $data_type );
+            $typed = $this->setDataType( $value, $data_type );
+
+            /*
+             * A value its type refuses -- text for an integer, an array for a
+             * string -- is absent, so it goes from the event as well: a callback
+             * that returns null leaves the event's value in place (below), and
+             * the row would read what the beacon sent.
+             */
+            if ( $typed === null && $value !== null && $value !== false && $value !== '' ) {
+
+                $event->delete( $name );
+            }
+
+            $value = $typed;
 
             $required = false;
 
@@ -1199,27 +1212,19 @@ class TrackingEventHelpers {
                  *
                  * ABSENT IS NOT ZERO. Event::get() returns false for a property the event does
                  * not carry, and in v2 0 is a real reading: a beacon carrying no scroll_depth is
-                 * not reporting a scroll to the top. So absence stays absent and GARBAGE
-                 * becomes 0. A null reaching a non-nullable numeric column is written as 0 by
-                 * Entity::writeValue(), where a nullable column can opt out.
+                 * not reporting a scroll to the top. Absence stays absent, and so does a value
+                 * that is not a number: "49,17" is not an amount of 0. A null reaching a
+                 * non-nullable numeric column is written as 0 by Entity::writeValue(), where a
+                 * nullable column can opt out.
                  */
-                if ( $var === null || $var === false || $var === '' ) {
-
-                    $var = null;
-
-                } else {
-
-                    $var = is_numeric( $var ) ? $var + 0 : 0;
-                }
+                $var = is_numeric( $var ) ? $var + 0 : null;
 
                 break;
             case "string":
-
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
-                break;
             case "url":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
+                // A one-value property sent as name[]=: absent, not the text "Array".
+                $var = is_array( $var ) ? null : \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "json":
 
@@ -1240,7 +1245,7 @@ class TrackingEventHelpers {
                 break;
             default:
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
+                $var = is_array( $var ) ? null : \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
         }
 
         return $var;
@@ -1475,11 +1480,45 @@ class TrackingEventHelpers {
     }
 
     /**
-     * @return string
+     * The visitor's first language, from the request's Accept-Language
+     * (languageTag()).
+     *
+     * @return string|null
      */
     public static function languageDefault() {
 
-        return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
+        return self::languageTag( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ) );
+    }
+
+    /**
+     * The first language of an Accept-Language header as ll-RR: the language
+     * in lower case and the region, when the tag has one, in upper case. A
+     * script or variant is dropped, so zh-Hant-TW is zh-TW. Null when the
+     * first entry is not a language, such as *.
+     *
+     * @param  mixed $header
+     * @return string|null
+     */
+    public static function languageTag( $header ) {
+
+        $first = trim( (string) preg_replace( '/[,;].*$/s', '', trim( (string) $header ) ) );
+        $parts = preg_split( '/[-_]/', $first );
+        $lang  = strtolower( (string) array_shift( $parts ) );
+
+        if ( ! preg_match( '/^[a-z]{2,3}$/', $lang ) ) {
+
+            return null;
+        }
+
+        foreach ( $parts as $part ) {
+
+            if ( preg_match( '/^([A-Za-z]{2}|[0-9]{3})$/', $part ) ) {
+
+                return $lang . '-' . strtoupper( $part );
+            }
+        }
+
+        return $lang;
     }
 
     /**
@@ -1526,6 +1565,11 @@ class TrackingEventHelpers {
      * $event is read because anonymisation is a per-Profile decision; $value is
      * ignored, as the address is always recomputed from the request.
      *
+     * A COLLECTOR PASSES THE ADDRESS UNCHANGED. It has no database to read the
+     * Profile's anonymize_ips from, so the drain on the full server masks it
+     * (TrackerIngest::applyAddressRules()), after testing the full address
+     * against the Profile's excluded_ips.
+     *
      * @param  mixed      $value
      * @param  Event|null $event
      * @return string
@@ -1537,7 +1581,7 @@ class TrackingEventHelpers {
         // Anonymize IP if needed.
         $site_id = $event ? $event->get('site_id') : '';
 
-        if ( $chosen_ip && \OWA\Core\CoreAPI::getSetting(
+        if ( $chosen_ip && \OWA\Core\ServerRole::current()->hasDatabase() && \OWA\Core\CoreAPI::getSetting(
                  'base', 'anonymize_ips', 'profile', $site_id ) ) {
             
             $chosen_ip = \OWA\Core\Lib::anonymizeIp( $chosen_ip );
@@ -1835,12 +1879,52 @@ class TrackingEventHelpers {
     /**
      * @param  mixed $version
      * @param  Event $event
-     * @return string
+     * @return string|null
      */
     public static function resolveOsVersion( $version, $event ) {
 
-        return self::browscapFor( $event )->getOsVersion();
+        $bcap    = self::browscapFor( $event );
+        $os      = strtolower( (string) $bcap->getOsFamily() );
+        $version = (string) $bcap->getOsVersion();
+
+        if ( isset( self::FROZEN_OS_VERSIONS[ $os ] ) && in_array( $version, self::FROZEN_OS_VERSIONS[ $os ], true ) ) {
+
+            return null;
+        }
+
+        // Android's under reduction rides the reduced model K: "Android 10; K".
+        if ( $os === 'android' && $version === '10' && $bcap->getDeviceModel() === 'K' ) {
+
+            return null;
+        }
+
+        return $version;
     }
+
+    /**
+     * OS versions a browser's reduced user agent reports whatever the version
+     * is, by OS family as the parser names it, lower case: Windows 10 and 11
+     * both send NT 10.0, every macOS since 11 sends 10_15_7, and ChromeOS
+     * sends 14541.0.0.
+     */
+    const FROZEN_OS_VERSIONS = [
+        'windows'   => [ '10' ],
+        'mac os x'  => [ '10.15.7' ],
+        'chrome os' => [ '14541.0.0' ],
+    ];
+
+    /**
+     * Brands the parser answers when no rule names the maker: Generic,
+     * Generic_Android, Generic_Android_Tablet and the rest, and Spider for a
+     * crawler.
+     */
+    const PLACEHOLDER_BRAND = '/^(generic.*|spider|other)$/i';
+
+    /**
+     * Models the parser answers for no model: the reduced user agent's K, a
+     * class of device, or Other.
+     */
+    const PLACEHOLDER_MODELS = [ 'k', 'desktop', 'smartphone', 'tablet', 'feature phone', 'other' ];
 
     /**
      * Desktop, mobile or tablet -- DERIVED, because ua-parser has no such field.
@@ -1850,6 +1934,12 @@ class TrackingEventHelpers {
      * absence about a phone. The OS family is what tells those apart, so the rule
      * reads it and falls through to NULL rather than guessing desktop: a wrong
      * 'desktop' is indistinguishable from a real one.
+     *
+     * ANDROID WITHOUT THE "Mobile" TOKEN IS A TABLET, the rule Android's
+     * browsers follow, and it holds under user-agent reduction ("Android 10;
+     * K"). The parser's Generic_Android_Tablet brand and Kindle family say so
+     * too. An iPad whose Safari asks for the desktop site sends a Mac's user
+     * agent, and is stored as a desktop.
      *
      * @param  mixed $type
      * @param  Event $event
@@ -1861,12 +1951,18 @@ class TrackingEventHelpers {
 
         $family = strtolower( (string) $bcap->getDeviceFamily() );
 
-        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
+        if ( $family === 'ipad' || $family === 'kindle' || strpos( $family, 'tablet' ) !== false
+             || strtolower( (string) $bcap->getDeviceBrand() ) === 'generic_android_tablet' ) {
 
             return 'tablet';
         }
 
         $os = strtolower( (string) $bcap->getOsFamily() );
+
+        if ( $os === 'android' && ! preg_match( '/\bMobile\b/', (string) $event->get( 'HTTP_USER_AGENT' ) ) ) {
+
+            return 'tablet';
+        }
 
         if ( in_array( $os, self::MOBILE_OS, true ) ) {
 
@@ -1882,7 +1978,7 @@ class TrackingEventHelpers {
     }
 
     /**
-     * 'Other' is the parser saying it has no rule, not a brand.
+     * A brand the parser answers for no maker (PLACEHOLDER_BRAND) is absent.
      *
      * @param  mixed $brand
      * @param  Event $event
@@ -1892,11 +1988,11 @@ class TrackingEventHelpers {
 
         $value = (string) self::browscapFor( $event )->getDeviceBrand();
 
-        return strtolower( $value ) === 'other' ? null : $value;
+        return $value === '' || preg_match( self::PLACEHOLDER_BRAND, $value ) ? null : $value;
     }
 
     /**
-     * As the brand: 'Other' is an absence wearing a value.
+     * A model the parser answers for no model (PLACEHOLDER_MODELS) is absent.
      *
      * @param  mixed $model
      * @param  Event $event
@@ -1906,7 +2002,7 @@ class TrackingEventHelpers {
 
         $value = (string) self::browscapFor( $event )->getDeviceModel();
 
-        return strtolower( $value ) === 'other' ? null : $value;
+        return in_array( strtolower( $value ), self::PLACEHOLDER_MODELS, true ) ? null : $value;
     }
 
 
@@ -2883,8 +2979,9 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The currency a purchase's amounts are in: the one it sent, else its
-     * Property's (the currencyISO3 setting, which inherits from the install).
+     * The currency a purchase's amounts are in: the one it sent, else, for a
+     * refund, its purchase's, else its Property's (the currencyISO3 setting,
+     * which inherits from the install).
      *
      * Read here rather than off the resolved `currency` property so the money
      * callbacks do not depend on where currency sits in the registry.
@@ -2899,6 +2996,17 @@ class TrackingEventHelpers {
         if ( $sent !== '' ) {
 
             return $sent;
+        }
+
+        // A refund that names no currency is in its purchase's.
+        if ( (string) $event->getEventType() === 'refund' ) {
+
+            $purchase = Currency::normalize( self::refundedPurchase( $event )['row']['currency'] ?? '' );
+
+            if ( $purchase !== '' ) {
+
+                return $purchase;
+            }
         }
 
         $site = (string) $event->getSiteId();
@@ -2951,14 +3059,8 @@ class TrackingEventHelpers {
             return null;
         }
 
-        $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $refused = $db->queryErrorCount();
-
-        $row = $db->get_row( sprintf(
-            "SELECT revenue FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
-
-        $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
+        $purchase = self::refundedPurchase( $event );
+        $revenue  = $purchase['row']['revenue'] ?? null;
 
         /*
          * Stored without an amount, the refund leaves net revenue overstated for
@@ -2969,7 +3071,7 @@ class TrackingEventHelpers {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'v2 ingest: refund of transaction %s on %s carries no amount, and %s; its revenue is stored as empty.',
-                $transaction, $site, $db->queryErrorCount() !== $refused
+                $transaction, $site, $purchase['refused']
                     ? 'the purchase could not be looked up' : 'no purchase with that transaction is stored' ) );
 
             return null;
@@ -2978,10 +3080,83 @@ class TrackingEventHelpers {
         return (int) $revenue;
     }
 
+    /** @var object|null the event refundedPurchase() last looked up */
+    private static $refunded_event = null;
+
+    /** @var array{row: array<string, mixed>|null, refused: bool}|null what it found */
+    private static $refunded = null;
+
     /**
-     * The `currency` property: on a purchase, always a code -- the one sent, else
-     * the Property's -- so revenue never sits beside a NULL currency. On any other
-     * event a well-formed code is kept and anything else dropped.
+     * The stored purchase a refund's transaction id names, compared
+     * case-sensitively: its revenue and currency in `row`, null when no
+     * purchase is stored or the refund names no transaction, and `refused`
+     * when the lookup failed. Looked up once for the event being processed.
+     *
+     * @param  object $event
+     * @return array{row: array<string, mixed>|null, refused: bool}
+     */
+    private static function refundedPurchase( $event ) {
+
+        if ( self::$refunded_event === $event && self::$refunded !== null ) {
+
+            return self::$refunded;
+        }
+
+        $transaction = trim( (string) $event->get( 'ct_order_id' ) );
+        $site        = (string) $event->getSiteId();
+        $found       = [ 'row' => null, 'refused' => false ];
+
+        if ( $transaction !== '' && $site !== '' ) {
+
+            $db     = \OWA\Core\CoreAPI::dbSingleton();
+            $errors = $db->queryErrorCount();
+
+            $row = $db->get_row( sprintf(
+                "SELECT revenue, currency FROM %s WHERE site_id = ? AND %s AND event_type = 'purchase' LIMIT 1",
+                \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
+                sprintf( OWA_SQL_EQUALS_CASE_SENSITIVE, 'transaction_id', '?' ) ), [ $site, $transaction ] );
+
+            $found = [
+                'row'     => is_array( $row ) ? $row : ( is_object( $row ) ? (array) $row : null ),
+                'refused' => $db->queryErrorCount() !== $errors,
+            ];
+        }
+
+        self::$refunded_event = $event;
+
+        return self::$refunded = $found;
+    }
+
+    /**
+     * A transaction id sent as the text "undefined" or "null" is absent: an
+     * older tracker's addTransaction() sent an omitted argument that way, and
+     * every later purchase carrying it was dropped as a duplicate.
+     *
+     * Deleted rather than returned as null, which would leave the beacon's value
+     * on the event (setTrackerProperties()).
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
+    public static function orderId( $value, $event ) {
+
+        if ( is_string( $value ) && in_array( strtolower( trim( $value ) ), [ 'undefined', 'null' ], true ) ) {
+
+            $event->delete( 'ct_order_id' );
+
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * The `currency` property: on a purchase or refund, always a code -- the one
+     * sent, else a refund's purchase's, else the Property's -- so revenue never
+     * sits beside a NULL currency. Any other event stores none: setCurrency()
+     * puts the code on every event the page sends, where it describes no
+     * amount. A goal event's currency is set later, by Classes\GoalMarking.
      *
      * @param  mixed $value
      * @param  Event $event
@@ -2996,9 +3171,9 @@ class TrackingEventHelpers {
             return self::purchaseCurrency( $event );
         }
 
-        $code = Currency::normalize( $value );
+        $event->delete( 'currency' );
 
-        return $code !== '' ? $code : null;
+        return null;
     }
 
     /**
@@ -3072,10 +3247,7 @@ class TrackingEventHelpers {
 
         $ns = \OWA\Core\CoreAPI::NS;
 
-        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), [
-            $ns . 'overlay',
-            $ns . 'state',
-        ] );
+        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), self::controlParams() );
 
         foreach ( self::RETIRED_CAMPAIGN_KEYS as $suffix ) {
 
@@ -3121,45 +3293,117 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Remove the query_string_filters parameters from the URLs an event
-     * stores whole: page_location, HTTP_REFERER (referer_url) and
-     * referer_query.
+     * OWA's own parameters on a tracked page's URL that are not campaign tags,
+     * by suffix: the overlay launcher's and the cross-domain hand-off's, whose
+     * value is the visitor's state.
+     */
+    const CONTROL_PARAMS = [ 'overlay', 'state' ];
+
+    /** The longest URL a row stores, page_location's column. */
+    const MAX_STORED_URL = 1024;
+
+    /**
+     * CONTROL_PARAMS by their names.
+     *
+     * @return string[]
+     */
+    public static function controlParams() {
+
+        return array_map( static fn ( $suffix ) => \OWA\Core\CoreAPI::NS . $suffix, self::CONTROL_PARAMS );
+    }
+
+    /**
+     * Every URL property a row stores, in a column or in params: each one the
+     * registry declares with data_type url that has a column or a param.
+     *
+     * @return string[]
+     */
+    public static function storedUrlProperties() {
+
+        $out = [];
+
+        foreach ( self::allProperties() as $name => $definition ) {
+
+            if ( ( $definition['data_type'] ?? '' ) === 'url'
+                 && ( ! empty( $definition['column'] ) || ! empty( $definition['param'] ) ) ) {
+
+                $out[] = (string) $name;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * A URL as a row stores it: without its fragment, without the named
+     * parameters, and cut to MAX_STORED_URL characters.
+     *
+     * @param  string   $url
+     * @param  string[] $drop  parameter names
+     * @return string
+     */
+    public static function storedUrl( $url, array $drop ) {
+
+        $hash = strpos( $url, '#' );
+
+        if ( $hash !== false ) {
+
+            $url = substr( $url, 0, $hash );
+        }
+
+        $url = (string) \OWA\Module\Base\Classes\V2Event::removeUrlParams( $url, $drop );
+
+        return mb_strlen( $url, 'UTF-8' ) > self::MAX_STORED_URL
+            ? mb_substr( $url, 0, self::MAX_STORED_URL, 'UTF-8' ) : $url;
+    }
+
+    /**
+     * Every URL an event stores (storedUrlProperties(): page_location,
+     * HTTP_REFERER as referer_url, target_url, form_destination) as storedUrl()
+     * makes it, without the query_string_filters parameters and OWA's
+     * controlParams(); and referer_query without them.
+     *
+     * FRAGMENTS ARE NEVER STORED. A hash-routed site sends each route as the
+     * page view's path (trackPageView('/path')), and a tracker that sends the
+     * page's whole URL -- 1.x's, or one cached before 2.0 -- has the fragment
+     * removed here.
      *
      * RUN AFTER EVERY DERIVED PROPERTY (ProcessEvent), because those read the
      * URLs first: the campaign tags, page_path, page_query, host and the
      * referrer's host and query are taken from what arrived, so a filtered
      * name that is also a campaign key is still attributed. What is stored,
      * and what landing_page_location and every other copy of page_location
-     * are made from, is the filtered URL. A URL naming none of the filtered
-     * parameters is stored exactly as it arrived.
+     * are made from, is the filtered URL. A URL with no fragment, naming none
+     * of the parameters, is stored exactly as it arrived.
      *
-     * Only the configured names: OWA's own parameters and the campaign tags
-     * stay in page_location, which is the evidence they are read from.
+     * The campaign tags stay in page_location, which is the evidence they
+     * are read from.
      *
      * @param object $event
      * @return void
      */
     public static function filterStoredUrls( $event ) {
 
-        $drop = self::queryStringFilters( (string) $event->getSiteId() );
+        $drop = array_merge( self::controlParams(), self::queryStringFilters( (string) $event->getSiteId() ) );
 
-        if ( ! $drop ) {
-
-            return;
-        }
-
-        foreach ( [ 'page_location', 'HTTP_REFERER' ] as $name ) {
+        foreach ( self::storedUrlProperties() as $name ) {
 
             $url = $event->get( $name );
 
-            if ( is_string( $url ) && $url !== '' ) {
+            if ( ! is_string( $url ) || $url === '' ) {
 
-                $filtered = \OWA\Module\Base\Classes\V2Event::removeUrlParams( $url, $drop );
+                continue;
+            }
 
-                if ( $filtered !== $url ) {
+            $stored = self::storedUrl( $url, $drop );
 
-                    $event->set( $name, $filtered );
-                }
+            if ( $stored === '' ) {
+
+                $event->delete( $name );
+
+            } elseif ( $stored !== $url ) {
+
+                $event->set( $name, $stored );
             }
         }
 
@@ -3184,6 +3428,11 @@ class TrackingEventHelpers {
      * Filter function Strips a URL of certain defined session or tracking params
      *
      * The host is kept as it arrived, whether or not it is the Profile's domain.
+     *
+     * target_url's callback. A link whose scheme is not http or https --
+     * mailto:, tel:, javascript: -- is not stored: the click is, with no
+     * target. Deleted from the event rather than returned as '', which would
+     * leave the beacon's value on the event (setTrackerProperties()).
      *
      * @param  string|null $url
      * @param  Event       $event
@@ -3252,8 +3501,16 @@ class TrackingEventHelpers {
             $url = substr($url, 0, -1);
         }
 
-        return self::makeUrlStorageSafe( $url );
+        $url = self::makeUrlStorageSafe( $url );
 
+        if ( $url === '' ) {
+
+            $event->delete( 'target_url' );
+
+            return null;
+        }
+
+        return $url;
     }
 
 }

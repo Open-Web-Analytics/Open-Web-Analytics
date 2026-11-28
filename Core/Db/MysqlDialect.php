@@ -88,6 +88,12 @@ if ( ! defined( 'OWA_SQL_DROP_TABLE' ) ) { define('OWA_SQL_DROP_TABLE', 'DROP TA
 if ( ! defined( 'OWA_SQL_SHOW_TABLE' ) ) { define('OWA_SQL_SHOW_TABLE', "show tables like '%s'"); }
 if ( ! defined( 'OWA_SQL_INSERT_ROW' ) ) { define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)'); }
 if ( ! defined( 'OWA_SQL_UPDATE_ROW' ) ) { define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s'); }
+/*
+ * A comparison that tells case apart under a case-blind collation: column,
+ * value. BINARY on the value side, so an index on the column is still used.
+ * The transaction-id lookups (Classes\PurchaseDeduplication, refunds).
+ */
+if ( ! defined( 'OWA_SQL_EQUALS_CASE_SENSITIVE' ) ) { define('OWA_SQL_EQUALS_CASE_SENSITIVE', '%s = BINARY %s'); }
 
 /*
  * Insert a counter row, or add to the one already there: table, columns,

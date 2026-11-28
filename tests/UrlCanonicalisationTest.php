@@ -18,8 +18,8 @@ use OWA\Module\Base\Classes\V2Event;
  * canonicalised, because a reading that varies where the page does not is a
  * broken report.
  *
- * The fragment is not here: it is stripped in the TRACKER and never reaches the
- * server at all. See tests/js/UrlFragments.test.js.
+ * The fragment is not here: the tracker does not send it, and ingest removes it
+ * from every URL it stores (tests/StoredUrlFilteringTest.php).
  */
 final class UrlCanonicalisationTest extends TestCase
 {

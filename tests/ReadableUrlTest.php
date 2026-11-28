@@ -87,6 +87,21 @@ final class ReadableUrlTest extends TestCase
         $this->assertGreaterThanOrEqual(4, $urls);
     }
 
+    /** A download's path, a string property, is decoded once as a URL's path is. */
+    public function testADownloadsPathIsDecodedOnce(): void
+    {
+        $config = json_decode((string) file_get_contents(
+            \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json'), true);
+
+        $this->assertSame(['OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl'], $config['file_name']['callbacks']);
+
+        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+        $event->set('beacon_version', '2');
+
+        $this->assertSame('/docs/café 2.pdf', TrackingEventHelpers::readableUrl('/docs/caf%C3%A9%202.pdf', $event));
+        $this->assertSame('/docs/a%3Fb.pdf', TrackingEventHelpers::readableUrl('/docs/a%3Fb.pdf', $event));
+    }
+
     /**
      * The spam rules' copies of a current beacon's URLs come from the keys the
      * beacon sent, not from page_location and HTTP_REFERER, which readableUrl()

@@ -187,4 +187,30 @@ final class TrackerReservedEventNamesTest extends TestCase
         // 40 is the cap, so 40 passes and 41 does not.
         $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( str_repeat( 'a', 40 ) ) );
     }
+
+    /**
+     * A name that differs from one of OWA's only in case is refused: the
+     * database compares event_type case-blind, so a stored Purchase would be
+     * counted as a purchase. The name itself is admitted, and so is a site's
+     * own name in any case.
+     */
+    public function testACaseVariantOfAnOwaEventIsRefused(): void
+    {
+        foreach ( [ 'Page_View', 'Purchase', 'SCROLL', 'Click', 'Session_Start', 'First_Visit', 'View_Search_Results' ] as $variant ) {
+
+            $this->assertFalse( \OWA\Core\CoreAPI::isTrackingEventType( $variant ), $variant );
+            $this->assertSame( strtolower( $variant ), \OWA\Core\CoreAPI::eventNameDifferingInCase( $variant ), $variant );
+        }
+
+        foreach ( [ 'page_view', 'purchase', 'scroll' ] as $owas ) {
+
+            $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $owas ), $owas );
+            $this->assertNull( \OWA\Core\CoreAPI::eventNameDifferingInCase( $owas ), $owas );
+        }
+
+        foreach ( [ 'Newsletter_Signup', 'newsletter_signup', 'PurchaseIntent' ] as $sites ) {
+
+            $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $sites ), $sites );
+        }
+    }
 }

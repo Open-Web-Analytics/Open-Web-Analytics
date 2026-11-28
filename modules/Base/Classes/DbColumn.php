@@ -302,6 +302,39 @@ class DbColumn {
     }
 
     /**
+     * The values a signed integer column holds, as [ min, max ], or null for a
+     * column of another type.
+     *
+     * Resolved through the OWA_DTD_* constants, as maxLength() is. BIGINT's
+     * range is PHP's integer range.
+     *
+     * @return array{0: int, 1: int}|null
+     */
+    public function integerRange() {
+
+        $declared = [
+            'OWA_DTD_TINYINT'  => [ -128, 127 ],
+            'OWA_DTD_TINYINT2' => [ -128, 127 ],
+            'OWA_DTD_TINYINT4' => [ -128, 127 ],
+            'OWA_DTD_SMALLINT' => [ -32768, 32767 ],
+            'OWA_DTD_INT'      => [ -2147483648, 2147483647 ],
+            'OWA_DTD_BIGINT'   => [ PHP_INT_MIN, PHP_INT_MAX ],
+        ];
+
+        $type = (string) $this->get( 'data_type' );
+
+        foreach ( $declared as $constant => $range ) {
+
+            if ( defined( $constant ) && (string) constant( $constant ) === $type ) {
+
+                return $range;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The declared length of this column, or 0 if it does not have one.
      *
      * Resolved through the OWA_DTD_* constants rather than by reading a number

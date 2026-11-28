@@ -2325,6 +2325,10 @@ class CoreAPI {
      * and is at most 40 characters, case-sensitive. That is the same pattern a
      * custom PROPERTY name must match, so it is stated once.
      *
+     * A CASE VARIANT OF ONE OF OWA'S NAMES IS REFUSED (eventNameDifferingInCase()).
+     * event_type compares case-blind in the database, so a site's Purchase would
+     * be counted as a purchase by every report that counts them.
+     *
      * ADMISSION ONLY. This says nothing about routing: an internal event called
      * install_complete would pass the second test, which is exactly why the
      * dispatch key is set by logEvent() rather than inferred from a name.
@@ -2354,6 +2358,17 @@ class CoreAPI {
             return true;
         }
 
+        $owas = \OWA\Core\CoreAPI::eventNameDifferingInCase( $event_type );
+
+        if ( $owas !== null ) {
+
+            // Debug, as the edge's other refusals: any anonymous request can send one.
+            \OWA\Core\CoreAPI::debug( sprintf( 'Not logging event: %s differs from the event %s only in case.',
+                $event_type, $owas ) );
+
+            return false;
+        }
+
         /*
          * NO `owa_` PREFIX CHECK HERE, deliberately. The tracker refuses that
          * prefix, and the server does not need to: a tracking event dispatches as
@@ -2365,6 +2380,37 @@ class CoreAPI {
         return (bool) preg_match(
             \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN,
             $event_type );
+    }
+
+    /**
+     * The event name of OWA's, or of an active module's, that a name differs
+     * from only in case: purchase for Purchase. Null when the name is one of
+     * them exactly, or matches none.
+     *
+     * OWA's names are the ones config/tracking_events.php declares, materialized
+     * ones included, and every name something registered to process
+     * (trackingEventTypes()).
+     *
+     * @param  string $event_type
+     * @return string|null
+     */
+    public static function eventNameDifferingInCase( $event_type ) {
+
+        $event_type = (string) $event_type;
+        $lower      = strtolower( $event_type );
+
+        foreach ( array_merge( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(),
+                \OWA\Core\CoreAPI::trackingEventTypes() ) as $name ) {
+
+            $name = (string) $name;
+
+            if ( $name !== $event_type && strtolower( $name ) === $lower ) {
+
+                return $name;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -72,7 +72,7 @@ return [
         'order'       => 0,
         'legend'      => \OWA\Core\CoreAPI::t( 'Page views' ),
         'description' => \OWA\Core\CoreAPI::t( 'When the tracker sends a page view, and what identifies the page.' ),
-        'settings'    => [ 'tracker_page_views', 'tracker_route_changes', 'tracker_url_fragments' ],
+        'settings'    => [ 'tracker_page_views', 'tracker_route_changes' ],
     ],
     [
         'id'          => 'base.trackingClicks',

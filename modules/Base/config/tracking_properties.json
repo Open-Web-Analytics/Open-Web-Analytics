@@ -237,7 +237,7 @@
         "note": "A copy of the beacon parameter taken at the edge, before the property stage sanitizes the URL (Sanitize::cleanUrl() strips tags, escapes quotes and dollar signs) and before canonicalisation or the query filters, so the query_string spam rules see what the beacon actually carried. Request-set, so it is environmental: ProcessEvent neither sanitizes nor re-applies it, a beacon cannot name it (admitRequestParams()), and it rides the queue envelope to the drain. `from` is the request parameter it is copied from. Stored by nothing. Copied from HTTP_REFERER."
     },
     "language": {
-        "description": "The visitor's preferred language from the Accept-Language header, cut to its first five characters (for example en-US).",
+        "description": "The visitor's preferred language: the first language of the Accept-Language header, as language and region (for example en-US, or zh-TW for zh-Hant-TW), or the language alone when the header names no region.",
         "set_by": "request",
         "from": [
             "HTTP_ACCEPT_LANGUAGE"
@@ -270,7 +270,7 @@
         "note": "The device's screen as WIDTHxHEIGHT in CSS pixels, read from window.screen and rounded. On every event, as the other page-environment values are: the wire is one beacon per event, so what a batched request would carry once rides each. The SCREEN, not the viewport -- the viewport is a click's frame and rides clicks only. Anything not shaped WIDTHxHEIGHT is dropped (screenResolution()), so a hand-built beacon cannot add a value to group by."
     },
     "ip_address": {
-        "description": "The visitor's IP address: reading X-Forwarded-For's hops and then the connecting address from the right, the first that is neither private nor a trusted proxy (trusted_proxies); no other header is read. Anonymized when the Profile's anonymize_ips setting is on.",
+        "description": "The visitor's IP address: reading X-Forwarded-For's hops and then the connecting address from the right, the first that is neither private nor a trusted proxy (trusted_proxies); no other header is read. Anonymized when the Profile's anonymize_ips setting is on; a collector queues it unmasked, and the full server masks it when it ingests the queue.",
         "set_by": "request",
         "from": [
             "HTTP_X_FORWARDED_FOR",
@@ -304,7 +304,7 @@
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
     "page_location": {
-        "description": "The full URL of the page, its path decoded and its query string as the tracker sent it, without the parameters named in the query_string_filters setting.",
+        "description": "The full URL of the page, its path decoded and its query string as the tracker sent it, without the parameters named in the query_string_filters setting, owa_overlay and owa_state, and without its fragment. At most 1024 characters.",
         "set_by": "client",
         "from": [
             "p_l"
@@ -318,7 +318,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
         ],
-        "note": "The complete page URL, query included. Only the parameters query_string_filters names are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; OWA's own parameters and the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. One callback, readableUrl(), which decodes the path of a current beacon's URL once and leaves the query and fragment as they arrived, so the derivations read the query and the campaign tags as the page had them. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
+        "note": "The complete page URL, query included. The parameters query_string_filters names, owa_overlay, owa_state and the fragment are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. One callback, readableUrl(), which decodes the path of a current beacon's URL once and leaves the query and fragment as they arrived, so the derivations read the query and the campaign tags as the page had them. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
     },
     "page_title": {
         "description": "The page's title.",
@@ -453,7 +453,7 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
-        "description": "The URL of the page that referred the visitor to this page, its path decoded, on every event of the page, without the parameters named in the query_string_filters setting. Absent when the browser sent none.",
+        "description": "The URL of the page that referred the visitor to this page, its path decoded, on every event of the page, without the parameters named in the query_string_filters setting, owa_overlay and owa_state. Absent when the browser sent none.",
         "set_by": "client",
         "from": [
             "p_r"
@@ -897,8 +897,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::orderId"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. The text undefined or null is absent (TrackingEventHelpers::orderId()): an older tracker sent an omitted argument that way."
     },
     "ct_order_source": {
         "description": "Where the order was placed, as the site describes it.",
@@ -1176,7 +1178,7 @@
         "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, so the only basis for joining a person's devices. Stored as the beacon sent it. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
-        "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting. On a goal event, the currency of its value.",
+        "description": "The ISO 4217 code of the order's currency, on a purchase or refund. When the tracker sends none: on a refund, its purchase's currency; otherwise the Property's currency setting. On a goal event, the currency of its value. Absent on every other event.",
         "set_by": "client",
         "from": [
             "o_cur"
@@ -1224,7 +1226,7 @@
         "note": "Site-search term, on a view_search_results event. A COLUMN, and no migration: Update034 creates owa_event_raw from the entity, and v2 has never shipped, so there is no install predating this column. It was a param, and a params key is unreportable in v2 until a site registers it as a CUSTOM dimension, so \"what do people search for\" cost one of a Property's twenty slots for a value OWA set itself. Site search is a question every install with a search box asks.\nThe third promotion, after file_name and file_extension. The element and form params stay in the bag because most installs will never group by them.\nThe tracker reads it from the URL, from siteSearchParams -- which ships q, s, search, query and keyword by default now. Both the empty default and the missing caller made this event unraisable on every install."
     },
     "file_name": {
-        "description": "The name of the downloaded file.",
+        "description": "The path of the downloaded file on its host, percent-decoded once (/docs/café.pdf).",
         "set_by": "client",
         "from": [
             "f_nm"
@@ -1235,7 +1237,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
+        ],
         "note": "A COLUMN, not a param -- see Update054. A downloads report is a question every install asks, and in v2 a params key is unreportable until someone registers it as a CUSTOM dimension, which would have spent one of a Property's 20 slots on a value OWA set itself.\nThe element and form params deliberately stay in the bag: most installs will never group by them, and a column costs cube width on every row of every Property. MEASURED on MySQL 8.4: promoting nine of these took the custom-dimension ceiling from 62 to 37.\nTHE PATH, not the basename (/docs/guide.pdf, not guide.pdf). As the basename, /2024/report.pdf and /2025/report.pdf collapsed into one row of a downloads report. The host is deliberately dropped so the same document served from the site and from a CDN is one row; target_host on the same row says where it came from."
     },
     "file_extension": {
@@ -1270,7 +1274,7 @@
         "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
     },
     "form_destination": {
-        "description": "The absolute URL the form submits to, its path decoded; the page itself when the form has no action.",
+        "description": "The absolute URL the form submits to, its path decoded; the page itself when the form has no action. Stored as page_location is: without the parameters named in the query_string_filters setting, owa_overlay, owa_state and the fragment, at most 1024 characters.",
         "set_by": "client",
         "from": [
             "fm_dst"
@@ -1642,7 +1646,7 @@
         "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
     },
     "os_version": {
-        "description": "The operating system's version, from the user agent.",
+        "description": "The operating system's version, from the user agent. Absent where a reduced user agent sends the same version for every release: Windows NT 10.0, macOS 10.15.7, ChromeOS 14541.0.0, and Android 10 with the model K.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1658,7 +1662,7 @@
         ]
     },
     "device_type": {
-        "description": "The kind of device, from the user agent: desktop, mobile or tablet. Absent when the device cannot be identified.",
+        "description": "The kind of device, from the user agent: desktop, mobile or tablet. An Android device whose user agent has no Mobile token is a tablet; an iPad whose Safari asks for the desktop site is a desktop. Absent when the device cannot be identified.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1675,7 +1679,7 @@
         "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
     },
     "device_brand": {
-        "description": "The device's manufacturer, from the user agent.",
+        "description": "The device's manufacturer, from the user agent. Absent when the user agent does not name one, as for a crawler.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1691,7 +1695,7 @@
         ]
     },
     "device_model": {
-        "description": "The device's model, from the user agent.",
+        "description": "The device's model, from the user agent. Absent when the user agent does not name one, such as the K of a reduced Android user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
