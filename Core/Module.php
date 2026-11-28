@@ -787,11 +787,12 @@ abstract class Module {
     }
 
     /**
-     * Registers the module's ENTITIES.
+     * Registers the module's ENTITIES. Final: ENTITIES is how a module
+     * declares its tables, and the only list Classes\TableInventory reads.
      *
      * @return void
      */
-    public function _registerEntities() {
+    final public function _registerEntities() {
 
         $this->registerEntity( static::ENTITIES );
     }

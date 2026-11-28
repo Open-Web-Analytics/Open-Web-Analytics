@@ -804,13 +804,11 @@ through `eval()` with child values substituted in by name -- is refused with a
 notice, and nothing in OWA uses `eval()` any more.
 
 **A module declares its name and entities as constants.** The module class
-declares `const NAME = '<runtime name>';` and lists its entities in
-`const ENTITIES = [ ... ];`. Setting `$this->name` in the constructor is not
-enough: a module class without its own `NAME` is not loaded, and a notice in
-the error log names the class. `cmd=tables-cleanup` and `cmd=backup` read
-`ENTITIES` from the class without building the module. A table registered
-only by a `_registerEntities()` override is owned by no entity for them:
-`cmd=tables-cleanup --drop` drops it, and `cmd=backup` puts it in `other`.
+declares `const NAME = '<runtime name>';`. Setting `$this->name` in the
+constructor is not enough: a module class without its own `NAME` is not
+loaded, and a notice in the error log names the class.
+
+A module declares its tables in `const ENTITIES`.
 
 **Only declared settings can be stored.** `persistSetting()` and the options
 form refuse a key no module declares (in its `settings.php`, `storable` and with
