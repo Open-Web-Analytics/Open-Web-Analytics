@@ -27,6 +27,9 @@ final class ServerRoleTest extends TestCase
         'OWA_PUBLIC_URL' => 'https://owa.example.test/',
     ];
 
+    /** OWA_SECRET, which every role needs. */
+    private const SECRET = ['OWA_SECRET' => 'owatest-private-files-0123456789abcdef'];
+
     protected function setUp(): void
     {
         $this->savedRole = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
@@ -150,16 +153,87 @@ final class ServerRoleTest extends TestCase
         }
 
         $this->assertSame([], (new ServerRole('collector'))->configProblems(
-            ['OWA_PUBLIC_URL' => ''], ['sqs' => 'OWA_SQS_QUEUE_URL']));
+            ['OWA_PUBLIC_URL' => ''] + self::SECRET, ['sqs' => 'OWA_SQS_QUEUE_URL']));
     }
 
     public function testACollectorNeedsAQueueBackendAndNoDatabase(): void
     {
         $collector = new ServerRole('collector');
 
-        $this->assertSame([], $collector->configProblems([], ['sqs' => 'OWA_SQS_QUEUE_URL']));
+        $this->assertSame([], $collector->configProblems(self::SECRET, ['sqs' => 'OWA_SQS_QUEUE_URL']));
         $this->assertSame(['Role collector needs a queue backend to send beacons to: set OWA_SQS_QUEUE_URL.'],
-            $collector->configProblems([], [], ['OWA_SQS_QUEUE_URL']));
+            $collector->configProblems(self::SECRET, [], ['OWA_SQS_QUEUE_URL']));
+    }
+
+    private const MISSING_SECRET = 'OWA_SECRET is not defined in owa-config.php. Add define(\'OWA_SECRET\', \'RANDOM\'); with a random string of at least 32 characters in place of RANDOM. This prints one: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"';
+
+    /** A role without a database has no schema version to read: it needs OWA_SECRET always, for every request. */
+    public function testACollectorNeedsOwaSecret(): void
+    {
+        $this->assertSame([self::MISSING_SECRET],
+            (new ServerRole('collector'))->configProblems([], ['sqs' => 'OWA_SQS_QUEUE_URL']));
+
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
+        $queue = ['OWA_SQS_QUEUE_URL' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-test'];
+
+        foreach ([RequestType::TRACKING, RequestType::CLI] as $type) {
+            $problem = ServerRole::bootProblem($type, $queue, true, false);
+
+            $this->assertSame(503, $problem['status'] ?? null, $type);
+            $this->assertSame(self::MISSING_SECRET, $problem['message'], $type);
+            $this->assertNull(ServerRole::bootProblem($type, $queue + self::SECRET, true, false), $type);
+        }
+
+        $this->assertNull(ServerRole::settingsProblem(106, $queue), 'boot has asked already');
+    }
+
+    /**
+     * A role with a database: only once Base's schema is at Update106, which
+     * writes OWA_SECRET. Before it, the pending update stops every request
+     * but the update commands.
+     */
+    public function testARoleWithADatabaseNeedsOwaSecretOnlyFromUpdate106(): void
+    {
+        $this->assertSame(106, ServerRole::SECRET_SCHEMA_VERSION);
+
+        $defined = self::DATABASE + ['OWA_SQS_QUEUE_URL' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-test'];
+
+        foreach (['full', 'api', 'collector,api'] as $value) {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $value);
+
+            $this->assertSame([], (new ServerRole($value))->configProblems($defined, ['sqs' => 'OWA_SQS_QUEUE_URL']), $value . ': not at boot');
+            $this->assertNull(ServerRole::bootProblem(RequestType::CLI, $defined, true, false), $value);
+
+            $this->assertNull(ServerRole::settingsProblem(105, $defined), $value . ': before Update106');
+            $this->assertNull(ServerRole::settingsProblem(null, $defined), $value . ': no schema recorded');
+            $this->assertSame(['status' => 503, 'message' => self::MISSING_SECRET],
+                ServerRole::settingsProblem(106, $defined), $value);
+            $this->assertSame(['status' => 503, 'message' => self::MISSING_SECRET],
+                ServerRole::settingsProblem('107', $defined), $value);
+            $this->assertNull(ServerRole::settingsProblem(106, $defined + self::SECRET), $value);
+        }
+    }
+
+    /** The placeholder, or a value too short, is refused as the other secrets are, on every role. */
+    public function testAWeakOwaSecretIsRefusedOnEveryRole(): void
+    {
+        $queue = ['OWA_SQS_QUEUE_URL' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-test'];
+
+        foreach (['yoursecretgoeshere', 'short', ''] as $weak) {
+            foreach (['full' => [RequestType::UI, self::DATABASE], 'collector' => [RequestType::TRACKING, $queue]] as $role => [$type, $defined]) {
+                \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
+                $defined['OWA_SECRET'] = $weak;
+
+                $problem = ServerRole::bootProblem($type, $defined, true, false);
+
+                $this->assertSame(503, $problem['status'] ?? null, "$role / $weak");
+                $this->assertSame('OWA_SECRET in owa-config.php must be a random string of at least 32 characters, not empty and not the example value. This prints one: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"',
+                    $problem['message'], "$role / $weak");
+                $this->assertNull(ServerRole::bootProblem(RequestType::CLI, $defined, true, false), 'the command line warns');
+                $this->assertStringStartsWith('Warning: OWA_SECRET in owa-config.php', (string) ServerRole::secretsWarning('schedule-run', $defined));
+                $this->assertSame([], ServerRole::weakSecrets($defined), 'not one reset-secrets writes');
+            }
+        }
     }
 
     public function testTwoQueueBackendsAreRefusedOnEveryRole(): void
@@ -258,6 +332,20 @@ final class ServerRoleTest extends TestCase
         $this->assertSame('base.resetSecretsCli', \OWA\Core\CoreAPI::getCliCommandClass(ServerRole::RESET_SECRETS_COMMAND));
     }
 
+    /** The boot refuses a missing OWA_SECRET once the stored settings, and with them the schema version, are read. */
+    public function testBootAsksAboutOwaSecretOnceTheStoredSettingsAreRead(): void
+    {
+        $caller = (string) file_get_contents(__DIR__ . '/../Core/Caller.php');
+
+        $load  = strpos($caller, "\$this->c->load( \$this->c->get( 'base', 'configuration_id' ) );");
+        $asked = strpos($caller, "ServerRole::settingsProblem( \$this->c->get( 'base', 'schema_version' ) )");
+
+        $this->assertNotFalse($load);
+        $this->assertNotFalse($asked);
+        $this->assertGreaterThan($load, $asked);
+        $this->assertLessThan(strpos($caller, '$this->overloadConfig( $config );'), $asked);
+    }
+
     public function testEachExampleSecretIsWeak(): void
     {
         $dist = (string) file_get_contents(__DIR__ . '/../owa-config-dist.php');
@@ -267,8 +355,12 @@ final class ServerRoleTest extends TestCase
             $this->assertSame([$constant], ServerRole::weakSecrets([$constant => $m[1]]), $constant);
         }
 
+        $this->assertSame(1, preg_match("/define\\('OWA_SECRET', '([^']*)'\\)/", $dist, $m));
+        $this->assertTrue(ServerRole::isWeakSecret($m[1]), 'OWA_SECRET\'s');
+
         $this->assertSame([], ServerRole::weakSecrets(self::DATABASE));
         $this->assertNull(ServerRole::bootProblem(RequestType::UI, self::DATABASE, true, false));
+        $this->assertNull(ServerRole::bootProblem(RequestType::UI, self::DATABASE + self::SECRET, true, false));
     }
 
     public function testBootRefusesAnUnknownRoleForEveryRequest(): void

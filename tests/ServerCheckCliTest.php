@@ -157,8 +157,8 @@ final class ServerCheckCliTest extends TestCase
     {
         $this->answers(['MessageId' => 'm-1']);
 
-        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('collector'), [],
-            ['sqs' => 'OWA_SQS_QUEUE_URL']);
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('collector'),
+            ['OWA_SECRET' => 'owatest-private-files-0123456789abcdef'], ['sqs' => 'OWA_SQS_QUEUE_URL']);
 
         $this->assertFalse($failed, implode("\n", $lines));
         $this->assertSame(['SendMessage'], array_column($this->sent, 0));
@@ -347,6 +347,17 @@ final class ServerCheckCliTest extends TestCase
         $this->assertSame('ok: https://t.example.test/log.php answers.', $ok['message']);
         $this->assertFalse($no['ok']);
         $this->assertSame('https://t.example.test/log.php answered HTTP 403 (text/html), not log.php\'s image.', $no['message']);
+    }
+
+    /** A collector without OWA_SECRET: incomplete, saying how to make one, and no check runs. */
+    public function testACollectorWithoutOwaSecretIsIncomplete(): void
+    {
+        list($lines, $failed) = $this->stubbed()->report(new \OWA\Core\ServerRole('collector'), [], ['sqs' => 'OWA_SQS_QUEUE_URL']);
+
+        $this->assertTrue($failed);
+        $this->assertSame('Configuration:    incomplete', $lines[2]);
+        $this->assertStringStartsWith('  OWA_SECRET is not defined in owa-config.php.', $lines[3]);
+        $this->assertSame([], $this->sent, 'nothing sent');
     }
 
     /** Missing configuration stops the checks: none runs. */

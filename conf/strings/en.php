@@ -1134,6 +1134,8 @@ return [
     'OWA_ROLE_CAPABILITIES gives the role %s something other than a list of capability names.' => 'OWA_ROLE_CAPABILITIES gives the role %s something other than a list of capability names.',
     'OWA_ROLE_CAPABILITIES must be an array of role => list of capabilities.' => 'OWA_ROLE_CAPABILITIES must be an array of role => list of capabilities.',
     'OWA_ROLE_CAPABILITIES names the role %1$s, which does not exist. The roles are %2$s.' => 'OWA_ROLE_CAPABILITIES names the role %1$s, which does not exist. The roles are %2$s.',
+    'OWA_SECRET in owa-config.php must be a random string of at least %1$d characters, not empty and not the example value. This prints one: %2$s' => 'OWA_SECRET in owa-config.php must be a random string of at least %1$d characters, not empty and not the example value. This prints one: %2$s',
+    'OWA_SECRET is not defined in owa-config.php. Add define(\'OWA_SECRET\', \'RANDOM\'); with a random string of at least %1$d characters in place of RANDOM. This prints one: %2$s' => 'OWA_SECRET is not defined in owa-config.php. Add define(\'OWA_SECRET\', \'RANDOM\'); with a random string of at least %1$d characters in place of RANDOM. This prints one: %2$s',
     'OWA_SERVER_ROLE names %1$s, which OWA no longer has. The roles are %2$s; the scheduler and the admin and report screens run on the full server.' => 'OWA_SERVER_ROLE names %1$s, which OWA no longer has. The roles are %2$s; the scheduler and the admin and report screens run on the full server.',
     'Observation Profile' => 'Observation Profile',
     'Observation Profile added.' => 'Observation Profile added.',
