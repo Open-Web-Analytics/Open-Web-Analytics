@@ -75,8 +75,12 @@ class TrackerBundle {
         return self::$buildDir ?? \OWA\Core\Env::root() . '/' . self::BUILD;
     }
 
-    /** @return string */
-    private static function outDir() {
+    /**
+     * The directory bundles are written to, ending in '/'.
+     *
+     * @return string
+     */
+    public static function outDir() {
 
         if ( self::$outDir !== null ) {
 
@@ -513,8 +517,7 @@ class TrackerBundle {
         $path     = self::path( $site_id );
         $manifest = self::buildManifest();
 
-        // Read only as the plain file a publish leaves: the web server and the
-        // CLI both write this directory, and a FIFO here would hang the run.
+        // Read only as the plain file a publish leaves: a FIFO here would hang the run.
         if ( ! $path || ! $manifest || ! is_file( $path ) || is_link( $path ) || ! is_readable( $path ) ) {
 
             return false;
@@ -558,8 +561,8 @@ class TrackerBundle {
 
         $dir = dirname( $path );
 
-        // A settings save publishes from the web server, publish-trackers from the CLI.
-        if ( ! \OWA\Core\Lib::makeSharedDir( $dir ) ) {
+        // Only the cron user writes here (publish-trackers), so the directory is its own: 0755.
+        if ( ! \OWA\Core\SafeFile::makeDirs( $dir, 0755 ) ) {
 
             \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot create $dir." );
 
@@ -568,9 +571,8 @@ class TrackerBundle {
 
         /*
          * Under a fresh name, its mode set as it is made, then renamed over
-         * the bundle (SafeFile::replace()): the web server and the CLI both
-         * write here, so neither may write through a link the other could
-         * have put at a name it knows.
+         * the bundle (SafeFile::replace()), so a request never reads half of
+         * one and nothing is written through a link left at a name it knows.
          */
         try {
 
@@ -687,44 +689,56 @@ class TrackerBundle {
 
     /**
      * Take down one Profile's bundle: it was deleted, archived, or stopped
-     * being a web stream.
+     * being a web stream. Queued, as every write to the bundles is
+     * (publishNow()): the full publish-trackers run removes the bundle of a
+     * Profile that is not live (removeOrphans()).
      *
      * @param  string $site_id
-     * @return bool whether there was one
+     * @return string|false the job's id
      */
     public static function remove( $site_id ) {
 
-        $path = self::path( $site_id );
-
-        return $path && is_file( $path ) && @unlink( $path );
+        return self::scheduleFullPublish();
     }
 
     /**
-     * Publish one Profile's bundle now, as a save of its settings does
-     *; if that cannot be done, queue it for the scheduler
-     * rather than leave the Profile on its old settings.
+     * Queue one Profile's bundle for the scheduler, as a save of its settings
+     * or a new Profile does. Nothing is written here, on any server role:
+     * only the cron user writes public/tracker/, by publish-trackers. Saves
+     * within the minute leave one job.
      *
      * @param  string $site_id
-     * @return bool whether it was published now
+     * @return string|false the job's id
      */
     public static function publishNow( $site_id ) {
 
-        if ( self::publish( $site_id ) ) {
+        try {
 
-            return true;
+            $queued = \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [ 'site' => (string) $site_id ],
+                'publish-trackers:' . $site_id );
+            $why    = 'the job was not queued';
+
+        } catch ( \Throwable $t ) {
+
+            $queued = false;
+            $why    = $t->getMessage();
         }
 
-        \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [ 'site' => (string) $site_id ],
-            'publish-trackers:' . $site_id );
+        if ( ! $queued ) {
 
-        return false;
+            \OWA\Core\CoreAPI::error( sprintf( 'Tracker bundle %1$s: a publish could not be queued (%2$s). '
+                . 'Run php cli.php cmd=publish-trackers site=%1$s.', $site_id, $why ) );
+        }
+
+        return $queued;
     }
 
     /**
      * Queue one publish-trackers run for every Profile: what a
      * save above a single Profile asks for -- a Property's or the install's
-     * tag settings. Saves within the minute leave one job, and a run rewrites
-     * only the bundles that are stale.
+     * tag settings -- and what takes a Profile's bundle down (remove()).
+     * Saves within the minute leave one job, and a run rewrites only the
+     * bundles that are stale.
      *
      * Before the job queue exists -- an install mid-upgrade -- there is
      * nothing to queue on. Nothing runs publish-trackers on a schedule, so

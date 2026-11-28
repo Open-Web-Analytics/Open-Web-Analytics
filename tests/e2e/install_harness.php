@@ -570,6 +570,15 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
         }
     }
 
+    // 3b. The first Profile's tracking bundle, queued for the scheduler.
+    $checks['bundle_queued'] = false;
+    $r = mysqli_query($m, "SELECT COUNT(*) AS c FROM owa_job_queue j JOIN owa_site s
+        ON j.dedupe_key = CONCAT('publish-trackers:', s.site_id)
+        WHERE j.command = 'publish-trackers' AND j.status = 'pending'");
+    if ($r && ($row = mysqli_fetch_assoc($r))) {
+        $checks['bundle_queued'] = ((int) $row['c'] > 0);
+    }
+
     // 4. install_complete flag stored as an install-scope setting row.
     $checks['install_complete'] = false;
     $checks['no_legacy_blob_table'] = false;

@@ -105,7 +105,9 @@ class InstallManager extends \OWA\Core\Base {
      * conf/ are run (Core\Overrides), but for logs/, the one folder the web
      * server writes (its error log, the file event queue). logs/ is given
      * $web_group (else the OWA directory's group), group write, and setgid, so
-     * the files made there keep the group.
+     * the files made there keep the group. The tracking bundles' directory
+     * (TrackerBundle::outDir()) is its owner's only too: publish-trackers, run
+     * by this user, is its one writer.
      *
      * Changed only where this user owns the directory: OWA never changes
      * another's file modes. What it changed, or could not, is said.
@@ -124,8 +126,8 @@ class InstallManager extends \OWA\Core\Base {
         $data = rtrim( \OWA\Core\Env::dataDir(), '/' );
         $out  = [];
 
-        // The queue's own directory too: only the drain writes there.
-        foreach ( [ $data, $data . '/conf', $data . '/queue' ] as $dir ) {
+        // The queue's own directory too: only the drain writes there. And the bundles': only publish-trackers does.
+        foreach ( [ $data, $data . '/conf', $data . '/queue', rtrim( TrackerBundle::outDir(), '/' ) ] as $dir ) {
 
             if ( is_dir( $dir ) && @fileowner( $dir ) === $me && ( fileperms( $dir ) & 0022 ) ) {
 
@@ -528,10 +530,9 @@ class InstallManager extends \OWA\Core\Base {
         }
 
         /*
-         * The first Profile's tracking bundle, which its tag loads, as the
-         * Add profile screen publishes a new one. After the commit: the bundle
-         * is a file, outside the transaction. One that cannot be written now
-         * is queued for the scheduler.
+         * The first Profile's tracking bundle, which its tag loads, queued as
+         * the Add profile screen queues a new one: the scheduler publishes it.
+         * After the commit, so the job names a Profile that exists.
          */
         try {
 
@@ -539,7 +540,7 @@ class InstallManager extends \OWA\Core\Base {
 
         } catch ( \Throwable $e ) {
 
-            \OWA\Core\CoreAPI::notice( 'The first Profile\'s tracking bundle was not published: ' . $e->getMessage() . '. Run cmd=publish-trackers.' );
+            \OWA\Core\CoreAPI::notice( 'The first Profile\'s tracking bundle was not queued: ' . $e->getMessage() . '. Run cmd=publish-trackers.' );
         }
 
         return $site_id;

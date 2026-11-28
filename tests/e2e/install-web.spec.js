@@ -146,6 +146,8 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         //     got the schema, the admin user, a site, and install_complete=true.
         const result = assertWebInstalled();
         expect(result.status).toBe('installed');
+        // The first Profile's bundle is queued for the scheduler, not written by the wizard.
+        expect(result.checks.bundle_queued).toBe(true);
 
         // --- GUARD: re-hitting install.php now redirects (isInstallComplete),
         //     rather than re-rendering the wizard -- the install-complete guard.

@@ -99,6 +99,8 @@ test.describe('install: CLI installer (cli.php cmd=core-install into a scratch D
         expect(result.checks.install_complete).toBe(true);
         expect(result.checks.admin_user).toBe(true);
         expect(result.checks.has_site).toBe(true);
+        // The first Profile's bundle is queued for the scheduler, not written by the installer.
+        expect(result.checks.bundle_queued).toBe(true);
         // A fresh install must be partitioned from its first row, with a lead
         // of future periods. Nothing else here would notice its absence: the
         // install succeeds either way, and the loss only shows up much later,

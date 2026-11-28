@@ -2,6 +2,8 @@
 /**
  * A Profile's tracking bundle in a real browser: published by the
  * real CLI command, loaded by the minimal snippet, configured by its Profile.
+ * A save on the Tracking Tag screen only queues the bundle; publish() runs
+ * the command the queued job runs, as the scheduler would.
  *
  * The page carries one script tag and, where it needs one, a page-level
  * command. Everything else -- the site id, what to track, the recorder -- comes
@@ -51,6 +53,12 @@ function pageWith(root, cmds) {
         + '</head><body><button id="b">a button</button><p style="height:2000px">tall</p></body></html>';
 }
 
+/** Publish the Profile's bundle, as the scheduler runs a queued publish-trackers job. */
+function publish(force = false) {
+    execFileSync('php', ['cli.php', 'cmd=publish-trackers', `site=${SITE}`, ...(force ? ['force=1'] : [])],
+        { cwd: ROOT_DIR, encoding: 'utf8' });
+}
+
 /** The beacons' query parameters, in order. */
 function beaconsOf(page) {
     const sent = [];
@@ -67,8 +75,7 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
     test.skip(!SELFHOST, 'Publishes into public/tracker; runs only under the self-host e2e runner.');
 
     test.beforeAll(() => {
-        execFileSync('php', ['cli.php', 'cmd=publish-trackers', `site=${SITE}`, 'force=1'],
-            { cwd: ROOT_DIR, encoding: 'utf8' });
+        publish(true);
         expect(fs.existsSync(BUNDLE)).toBe(true);
     });
 
@@ -199,7 +206,8 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
     /**
      * A browser sending Global Privacy Control is left untracked until the
      * Profile turns Honor Privacy Signals off on the Tracking Tag screen, whose
-     * save republishes the bundle with the option.
+     * save queues the bundle: the screen says it is waiting until the
+     * scheduler's run (publish()) writes it with the option.
      */
     test('a Profile that does not honor privacy signals tracks a browser sending one', async ({ page }) => {
         const root = installRoot(test.info().project.use.baseURL);
@@ -212,10 +220,14 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
             await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });
             await page.getByText('Privacy signals', { exact: true }).click();
         };
-        const saveTag = () => Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.getByRole('button', { name: 'Save and republish' }).click(),
-        ]);
+        const saveTag = async () => {
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'networkidle' }),
+                page.getByRole('button', { name: 'Save and republish' }).click(),
+            ]);
+            await expect(page.locator('.owa-tagStatus')).toContainText('Waiting to publish.');
+            publish();
+        };
         const views = () => beacons.filter((q) => q.get('e_t') === 'page_view').length;
 
         await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'globalPrivacyControl',

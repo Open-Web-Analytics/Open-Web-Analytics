@@ -161,7 +161,7 @@ trait AddsProfile {
                 $site->applyAssignedUserChanges( [ $uid ], [ $uid ] );
             }
 
-            // A web Profile's bundle is there when its snippet is first pasted.
+            // A web Profile's bundle, queued: the scheduler publishes it within a minute.
             if ( $site->getStreamType() === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
                 TrackerBundle::publishNow( (string) $site->get( 'site_id' ) );

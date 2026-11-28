@@ -62,7 +62,7 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
             $this->setStatusCode( 3201 );
         }
 
-        // Visitors get the new settings on their next page view, not tomorrow.
+        // Queued: the scheduler republishes the bundle within a minute.
         \OWA\Module\Base\Classes\TrackerBundle::publishNow( $site_id );
 
         $this->set( 'siteId', $site_id );
