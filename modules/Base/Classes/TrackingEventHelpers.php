@@ -1531,6 +1531,11 @@ class TrackingEventHelpers {
      * $event is read because anonymisation is a per-Profile decision; $value is
      * ignored, as the address is always recomputed from the request.
      *
+     * A COLLECTOR PASSES THE ADDRESS UNCHANGED. It has no database to read the
+     * Profile's anonymize_ips from, so the drain on the full server masks it
+     * (TrackerIngest::applyAddressRules()), after testing the full address
+     * against the Profile's excluded_ips.
+     *
      * @param  mixed      $value
      * @param  Event|null $event
      * @return string
@@ -1542,7 +1547,7 @@ class TrackingEventHelpers {
         // Anonymize IP if needed.
         $site_id = $event ? $event->get('site_id') : '';
 
-        if ( $chosen_ip && \OWA\Core\CoreAPI::getSetting(
+        if ( $chosen_ip && \OWA\Core\ServerRole::current()->hasDatabase() && \OWA\Core\CoreAPI::getSetting(
                  'base', 'anonymize_ips', 'profile', $site_id ) ) {
             
             $chosen_ip = \OWA\Core\Lib::anonymizeIp( $chosen_ip );

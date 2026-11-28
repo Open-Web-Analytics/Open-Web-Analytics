@@ -425,6 +425,13 @@ class TrackerIngest {
             return true;
         }
 
+        if ( ! self::applyAddressRules( $event ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Tracker ingest: the IP address is excluded for this Profile; event dropped.' );
+
+            return true;
+        }
+
         $processor = \OWA\Core\CoreAPI::getEventProcessor( $event );
 
         if ( ! $processor ) {
@@ -436,6 +443,58 @@ class TrackerIngest {
         \OWA\Core\CoreAPI::performAction( $processor, [ 'event' => $event ] );
 
         return $event->getStatus() !== Event::failed;
+    }
+
+    /**
+     * The Profile's excluded_ips and anonymize_ips, applied to a queued event's
+     * address: false when it is excluded; otherwise true, with the address
+     * masked when the Profile anonymizes, and removed when it cannot be.
+     *
+     * At the drain because a collector has no database to read a Profile's
+     * settings from: it queues the address it chose unchanged
+     * (TrackingEventHelpers::ipAddressDefault()). Exclusion first, since an
+     * exclusion names a full address; the masked one is tested too, as at the
+     * edge, so a list written with masked addresses matches. For a beacon the
+     * full server queued itself, both were applied at the edge already, and
+     * applying them again changes nothing.
+     *
+     * @param  Event $event
+     * @return bool
+     */
+    public static function applyAddressRules( $event ) {
+
+        $ip = $event->get( 'ip_address' );
+
+        if ( ! is_string( $ip ) || $ip === '' ) {
+
+            return true;
+        }
+
+        $site      = (string) $event->getSiteId();
+        $anonymize = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'anonymize_ips', 'profile', $site );
+        $masked    = $anonymize ? \OWA\Core\Lib::anonymizeIp( $ip ) : null;
+
+        foreach ( array_unique( array_filter( [ $ip, (string) $masked ] ) ) as $address ) {
+
+            if ( \OWA\Core\CoreAPI::isIpAddressExcluded( $address, $site ) ) {
+
+                return false;
+            }
+        }
+
+        if ( $anonymize ) {
+
+            if ( $masked ) {
+
+                $event->set( 'ip_address', $masked );
+
+            } else {
+
+                $event->delete( 'ip_address' );
+            }
+        }
+
+        return true;
     }
 
     /**

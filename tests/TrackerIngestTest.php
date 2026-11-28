@@ -31,7 +31,7 @@ final class TrackerIngestTest extends TestCase
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
-        foreach (['queue_tracking_events', 'server_role', 'raw_retention_months'] as $key) {
+        foreach (['queue_tracking_events', 'server_role', 'raw_retention_months', 'anonymize_ips', 'excluded_ips'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -55,6 +55,7 @@ final class TrackerIngestTest extends TestCase
 
         IntakeTestProcessor::$outcome = 'ok';
         IntakeTestProcessor::$seen    = [];
+        IntakeTestProcessor::$ips     = [];
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->setMapValue('actions', 'test.intakeProcessor',
@@ -95,6 +96,12 @@ final class TrackerIngestTest extends TestCase
         $event->setProperties($properties + ['page_url' => 'https://example.test/', 'site_id' => self::SITE]);
 
         return $event;
+    }
+
+    /** An event as the drain reads it back from the queue. */
+    private function queued(array $properties): Event
+    {
+        return TrackerIngest::event(TrackerIngest::envelope($this->event($properties)));
     }
 
     private function message(array $envelope = null, int $count = 1): IntakeMessage
@@ -484,6 +491,72 @@ final class TrackerIngestTest extends TestCase
     }
 
     /** notify() marks the event failed rather than queueing it anywhere. */
+    // ---------------------------------------------------------------------
+    // The Profile's IP rules, at the drain
+    // ---------------------------------------------------------------------
+
+    /**
+     * A collector queues the address unchanged; the drain masks it when the
+     * Profile anonymizes, IPv4 and IPv6. Without a database the Profile's
+     * setting is the install's.
+     */
+    public function testTheDrainMasksTheAddressWhenTheProfileAnonymizes(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
+
+        foreach (['203.0.113.77' => '203.0.113.0', '2001:db8:1:2:3:4:5:6' => '2001:db8:1:2::'] as $sent => $stored) {
+            $this->assertTrue(TrackerIngest::ingest($this->queued(['ip_address' => $sent])));
+            $this->assertSame($stored, end(IntakeTestProcessor::$ips), $sent);
+        }
+
+        $this->assertTrue(TrackerIngest::ingest($this->queued(['ip_address' => 'not an address'])));
+        $this->assertFalse(end(IntakeTestProcessor::$ips), 'an address that cannot be masked is not kept');
+
+        \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', false);
+
+        $this->assertTrue(TrackerIngest::ingest($this->queued(['ip_address' => '203.0.113.77'])));
+        $this->assertSame('203.0.113.77', end(IntakeTestProcessor::$ips));
+    }
+
+    /**
+     * An excluded address is dropped at the drain, acked rather than retried.
+     * The full address is tested before it is masked, and the masked one too.
+     */
+    public function testTheDrainDropsAnExcludedAddressBeforeMaskingIt(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'excluded_ips', '198.51.100.9, 192.0.2.0');
+        \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
+
+        $q = new MemoryIntake();
+
+        foreach (['198.51.100.9', '192.0.2.44'] as $excluded) {
+            $message = $this->message(TrackerIngest::envelope($this->event(['ip_address' => $excluded])));
+
+            $this->assertSame('ingested', TrackerIngest::ingestMessage($q, $message), $excluded);
+        }
+
+        $this->assertSame(['ack', 'ack'], array_column($q->calls, 0));
+        $this->assertSame([], IntakeTestProcessor::$seen, 'nothing was processed');
+
+        $this->assertTrue(TrackerIngest::ingest($this->queued(['ip_address' => '198.51.100.10'])));
+        $this->assertSame(['198.51.100.0'], IntakeTestProcessor::$ips);
+    }
+
+    /** A collector chooses the address and does not mask it, whatever the install says. */
+    public function testACollectorQueuesTheAddressUnchanged(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', \OWA\Core\ServerRole::COLLECTOR);
+
+        $request = \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp();
+        $this->assertNotSame('', $request, 'the test request has an address');
+        $this->assertSame($request, \OWA\Module\Base\Classes\TrackingEventHelpers::ipAddressDefault('', $this->event()));
+
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', \OWA\Core\ServerRole::FULL);
+        $this->assertSame(\OWA\Core\Lib::anonymizeIp($request),
+            \OWA\Module\Base\Classes\TrackingEventHelpers::ipAddressDefault('', $this->event()));
+    }
+
     public function testAHandlerFailureMarksTheEventFailed(): void
     {
         $name  = 'zz_intake_dispatch_test';
@@ -506,10 +579,14 @@ class IntakeTestProcessor extends \OWA\Core\Controller
     /** @var string[] event types it was handed */
     public static array $seen = [];
 
+    /** @var array<int, mixed> the ip_address of each event it was handed */
+    public static array $ips = [];
+
     public function action()
     {
         $event = $this->getParam('event');
         self::$seen[] = $event->getEventType();
+        self::$ips[]  = $event->get('ip_address');
 
         if (self::$outcome === 'throw') {
             throw new \RuntimeException('ingest broke');
