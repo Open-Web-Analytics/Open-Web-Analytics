@@ -722,6 +722,11 @@ class OWATracker  {
      * Read visitor and session state passed on the URL by OWA running on
      * another domain, as shareStateByLink() or shareStateByPost() sends it.
      *
+     * Only the sharable stores (visitor, session, 'b') are restored; a store
+     * that does not parse is skipped and the rest are still restored. The
+     * token is then removed from the address bar (history.replaceState), so
+     * the page's events do not carry it.
+     *
      * Call it before any tracking command, or the state it reads arrives too
      * late for them.
      *
@@ -729,54 +734,207 @@ class OWATracker  {
      */
     checkForLinkedState() {
 
-        if ( this.linkedStateSet != true ) {
+        if ( this.linkedStateSet == true ) {
 
-            var ls = this.getUrlParam(NS + 'state');
+            return;
+        }
 
-            if ( ! ls ) {
-                ls = this.getAnchorParam(NS + 'state');
+        this.linkedStateSet = true;
+
+        var token = this.getUrlParam( NS + 'state' ) || this.getAnchorParam( NS + 'state' );
+
+        if ( ! token ) {
+
+            return;
+        }
+
+        OWA.debug( 'Shared OWA state detected...' );
+
+        var stores = OWATracker.readSharedState( token );
+
+        for ( var name in stores ) {
+
+            if ( ! stores.hasOwnProperty( name ) || this.sharableStateStores.indexOf( name ) === -1 ) {
+
+                OWA.debug( 'Shared state store ignored: %s', name );
+
+                continue;
             }
 
-            if ( ls ) {
-                OWA.debug('Shared OWA state detected...');
+            try {
 
-                ls = Util.base64_decode(Util.urldecode(ls));
-                OWA.debug('linked state: %s', ls);
+                var value  = stores[ name ].value;
+                var format = stores[ name ].format;
 
-                var state = ls.split('.');
-                OWA.debug('linked state: %s', JSON.stringify(state));
-                if ( state ) {
+                // Only a store that decoded to a populated object.
+                if ( ! value || typeof value !== 'object' || Array.isArray( value ) ) {
 
-                    for (var i=0; state.length > i; i++) {
-
-                        var pair = state[i].split('=');
-                        OWA.debug('pair: %s', pair);
-                        // add cookie domain hash for current cookie domain
-                        var value = Util.urldecode(pair[1]);
-                        OWA.debug('pair: %s', value);
-                        var decodedvalue = Util.decodeCookieValue(value);
-                        var format = Util.getCookieValueFormat(value);
-
-                        // Only restore stores that decoded to a populated object.
-                        // An empty sharable store (e.g. a visitor with no campaign
-                        // state) serializes to "" and decodes to a string/empty
-                        // value here; stamping .cdh onto that would throw in strict
-                        // mode and there is nothing worth carrying across anyway.
-                        if ( decodedvalue && typeof decodedvalue === 'object' ) {
-
-                            decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
-
-                            // The wire carries LOGICAL names (see the send
-                            // side); resolve against this page's site so an
-                            // arriving session store lands where this tracker
-                            // will actually look for it.
-                            OWA.replaceState( this.storeName( pair[0] ), decodedvalue, true, format );
-                        }
-                    }
+                    continue;
                 }
+
+                value.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
+
+                // The wire carries LOGICAL names; resolve against this page's
+                // site so an arriving session store lands where this tracker
+                // will look for it.
+                var physical = this.storeName( name );
+
+                OWA.replaceState( physical, value, true,
+                    format || OWA.getStateStoreFormat( physical ) || 'json' );
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state store %s could not be restored.', name );
+            }
+        }
+
+        OWATracker.removeSharedStateFromUrl();
+    }
+
+    /** The version marker of the shared-state token createSharedStateValue() makes. */
+    static get SHARED_STATE_VERSION() {
+
+        return 2;
+    }
+
+    /**
+     * The stores in a shared-state token, by logical name: { name: { value, format } }.
+     *
+     * Two formats are read. The current one is base64 of one JSON object,
+     * { version: 2, v: {...}, s: {...}, b: {...} }. The earlier one is base64
+     * of name=urlencoded_value pairs joined by dots; each pair is parsed on
+     * its own, so one that does not parse (a value containing a dot) loses
+     * only that store. A token that does not decode gives no stores.
+     *
+     * @param {string} token  the owa_state value
+     * @return {Object}
+     */
+    static readSharedState( token ) {
+
+        var stores = {};
+        var text;
+
+        try {
+
+            text = Util.base64_decode( Util.urldecode( token ) );
+
+        } catch ( e ) {
+
+            OWA.debug( 'Shared state token could not be decoded.' );
+
+            return stores;
+        }
+
+        if ( ! text || typeof text !== 'string' ) {
+
+            return stores;
+        }
+
+        if ( text.charAt( 0 ) === '{' ) {
+
+            var object;
+
+            try {
+
+                object = JSON.parse( text );
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state token is not JSON.' );
+
+                return stores;
             }
 
-            this.linkedStateSet = true;
+            if ( ! object || object.version !== OWATracker.SHARED_STATE_VERSION ) {
+
+                OWA.debug( 'Shared state token has an unknown version.' );
+
+                return stores;
+            }
+
+            Object.keys( object ).forEach( function ( name ) {
+
+                if ( name !== 'version' ) {
+
+                    stores[ name ] = { value: object[ name ], format: '' };
+                }
+            } );
+
+            return stores;
+        }
+
+        text.split( '.' ).forEach( function ( piece ) {
+
+            var equals = piece.indexOf( '=' );
+
+            if ( equals < 1 ) {
+
+                return;
+            }
+
+            try {
+
+                var value = Util.urldecode( piece.substring( equals + 1 ) );
+
+                stores[ piece.substring( 0, equals ) ] = {
+                    value:  Util.decodeCookieValue( value ),
+                    format: Util.getCookieValueFormat( value )
+                };
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state pair could not be read: %s', piece.substring( 0, equals ) );
+            }
+        } );
+
+        return stores;
+    }
+
+    /**
+     * Remove the owa_state token from the address bar, from the query and the
+     * fragment, keeping every other parameter and fragment pair.
+     *
+     * @internal
+     */
+    static removeSharedStateFromUrl() {
+
+        if ( typeof window === 'undefined' || ! window.history
+             || typeof window.history.replaceState !== 'function' ) {
+
+            return;
+        }
+
+        var url  = String( document.URL );
+        var hash = url.indexOf( '#' );
+        var fragment = hash === -1 ? '' : url.substring( hash + 1 );
+        var rest = hash === -1 ? url : url.substring( 0, hash );
+        var mark = rest.indexOf( '?' );
+        var query = mark === -1 ? '' : rest.substring( mark + 1 );
+        var path  = mark === -1 ? rest : rest.substring( 0, mark );
+        var name  = NS + 'state';
+
+        var params = query ? query.split( '&' ) : [];
+        var keptParams = params.filter( ( p ) => p.split( '=' )[0] !== name );
+
+        var pairs = fragment ? fragment.split( ',' ) : [];
+        var keptPairs = pairs.filter( ( p ) => p.split( '.' )[0] !== name );
+
+        if ( keptParams.length === params.length && keptPairs.length === pairs.length ) {
+
+            return;
+        }
+
+        var clean = path
+            + ( keptParams.length ? '?' + keptParams.join( '&' ) : '' )
+            + ( keptPairs.length ? '#' + keptPairs.join( ',' ) : '' );
+
+        try {
+
+            window.history.replaceState( window.history.state, '', clean );
+
+        } catch ( e ) {
+
+            OWA.debug( 'Shared state token could not be removed from the URL.' );
         }
     }
 
@@ -784,10 +942,10 @@ class OWATracker  {
      * Navigate to a URL on another domain, carrying this visitor's state on it
      * so the OWA tracker there continues the same visitor and session.
      *
-     * The state is the visitor's cookies, concatenated as
-     * name1=encoded_value1.name2=encoded_value2, base64 encoded and added to
-     * the URL's fragment (see addSharedStateToUrl()). The page receiving it
-     * calls checkForLinkedState().
+     * The state is the visitor's sharable stores as one JSON object with a
+     * version marker, base64 encoded and added to the URL's fragment (see
+     * addSharedStateToUrl()). The page receiving it calls
+     * checkForLinkedState(). With no state to carry, the URL is unchanged.
      *
      * @command
      * @param {string} url  the destination
@@ -809,13 +967,19 @@ class OWATracker  {
      * The token is a `owa_state.<payload>` pair. A URL with no fragment gets it
      * as the whole fragment; one that has a fragment keeps it and gets the
      * token after a comma, the pair separator getAnchorParam() splits on.
+     * With no state, the URL is returned unchanged.
      *
      * @internal
      * @param {string} url
-     * @param {string} state  createSharedStateValue()
+     * @param {string} [state]  createSharedStateValue()
      * @return {string}
      */
     addSharedStateToUrl(url, state) {
+
+        if ( ! state ) {
+
+            return url;
+        }
 
         var token = NS + 'state.' + state;
         var hash = url.indexOf('#');
@@ -829,46 +993,53 @@ class OWATracker  {
         return url.substring( 0, hash + 1 ) + ( fragment ? fragment + ',' : '' ) + token;
     }
 
+    /**
+     * The shared-state token: base64 of { version, <store>: {...} } for each
+     * sharable store that holds a value, URL-encoded; undefined when none does.
+     *
+     * Read from the PHYSICAL store, sent under the LOGICAL name: the receiving
+     * page resolves the name against its own tracker's site.
+     *
+     * @internal
+     * @return {string|undefined}
+     */
     createSharedStateValue() {
 
-        var state = '';
+        var state = { version: OWATracker.SHARED_STATE_VERSION };
+        var found = false;
 
-        for (var i=0; this.sharableStateStores.length > i;i++) {
+        for ( var i = 0; this.sharableStateStores.length > i; i++ ) {
 
-            /*
-             * Read from the PHYSICAL store, send under the LOGICAL name.
-             *
-             * The receiving page resolves the name against its own tracker, so
-             * putting this tracker's site id on the wire would hand the other
-             * domain a store it cannot match. The site axis is local to each
-             * page; what travels is 'this is the session store', and the
-             * receiver decides whose session store that is.
-             */
-            var physical = this.storeName( this.sharableStateStores[i] );
-            var value = OWA.getState( physical );
-            value = Util.encodeJsonForCookie(value, OWA.getStateStoreFormat(physical));
+            var name  = this.sharableStateStores[ i ];
+            var value = OWA.getState( this.storeName( name ) );
 
-            if (value) {
-                state += this.sharableStateStores[i] + '=' + Util.urlEncode(value);
-                if ( this.sharableStateStores.length != ( i + 1) ) {
-                    state += '.';
-                }
+            if ( value && typeof value === 'object' && Object.keys( value ).length ) {
+
+                state[ name ] = value;
+                found = true;
             }
         }
 
-        // base64 for transport
-        if ( state ) {
-            OWA.debug('linked state to send: %s', state);
+        if ( ! found ) {
 
-            state = Util.base64_encode(state);
-            state = Util.urlEncode(state);
-            return state;
+            return undefined;
         }
+
+        var json = JSON.stringify( state );
+
+        OWA.debug( 'linked state to send: %s', json );
+
+        return Util.urlEncode( Util.base64_encode( json ) );
     }
 
     /**
      * Submit a form to another domain, carrying this visitor's state in its
      * action URL, as shareStateByLink() does for a link.
+     *
+     * Submitted with requestSubmit() where the browser has it, so the form's
+     * submit handlers and validation run. Called from the form's own submit
+     * handler, those have already run, and the form is submitted with
+     * submit().
      *
      * @command
      * @param {HTMLFormElement} form  the form to submit
@@ -877,6 +1048,18 @@ class OWATracker  {
 
         var state = this.createSharedStateValue();
         form.action = this.addSharedStateToUrl( form.action, state );
+
+        // requestSubmit() inside the form's own submit event does nothing.
+        var current = ( typeof window !== 'undefined' ) ? window.event : undefined;
+        var inSubmit = !! current && current.type === 'submit' && current.target === form;
+
+        if ( ! inSubmit && typeof form.requestSubmit === 'function' ) {
+
+            form.requestSubmit();
+
+            return;
+        }
+
         form.submit();
     }
 
