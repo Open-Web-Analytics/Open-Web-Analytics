@@ -209,6 +209,14 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
 
+        // A module whose tables are in an unknown state stops the run before any update (Core\Module::hasUnknownSchemaState()).
+        $unknown = self::unknownStateProblems();
+
+        if ( $unknown ) {
+
+            return $this->fail( implode( ' ', $unknown ), true );
+        }
+
         $modules = $s->getModulesNeedingUpdates();
         
         // foreach do update in order
@@ -301,6 +309,36 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
     }
     
     /**
+     * Why each active module with tables but no recorded schema version is
+     * not updated (Core\Module::unknownSchemaStateProblem()), by module name.
+     * cmd=core-install asks too.
+     *
+     * @param  string|null $only one module's name, or null for every active module
+     * @return array<string, string>
+     */
+    public static function unknownStateProblems( $only = null ) {
+
+        $out = [];
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $name => $module ) {
+
+            if ( $only !== null && (string) $name !== (string) $only ) {
+
+                continue;
+            }
+
+            $problem = $module->unknownSchemaStateProblem();
+
+            if ( $problem !== '' ) {
+
+                $out[ (string) $name ] = $problem;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * <module>.<sequence> as array( module, sequence ), or null.
      *
      * @param mixed $update
@@ -327,6 +365,13 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
         if ( ! $name ) {
 
             return $this->usageError( sprintf( '%s= takes <module>.<sequence>, such as base.86.', $arg ) );
+        }
+
+        $unknown = self::unknownStateProblems( $name[0] );
+
+        if ( $unknown ) {
+
+            return $this->fail( implode( ' ', $unknown ), true );
         }
 
         try {

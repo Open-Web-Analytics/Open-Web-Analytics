@@ -96,10 +96,21 @@ class Module extends \OWA\Core\Module {
     /**
      * Refuse an installation older than 1.14.0 before applying anything.
      *
-     * No recorded version is refused too. Module::install() records one when it
-     * creates every table, so its absence means tables made by something older.
+     * No recorded version is refused too: with tables, the state of the tables
+     * is unknown (Core\Module::hasUnknownSchemaState()), and without them
+     * there is nothing to update.
      */
     public function update() {
+
+        // Tables with no recorded version: nothing is applied (Core\Module::hasUnknownSchemaState()).
+        $this->update_problem = $this->unknownSchemaStateProblem();
+
+        if ( $this->update_problem !== '' ) {
+
+            \OWA\Core\CoreAPI::notice( $this->update_problem );
+
+            return false;
+        }
 
         /*
          * Before any update: an installation on a server 2.0 cannot run on

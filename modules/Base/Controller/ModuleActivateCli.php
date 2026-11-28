@@ -47,11 +47,13 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
          * install() is idempotent (see Module::install), so this is safe to
          * run against a module that is already installed.
          */
-        $ret = \OWA\Core\CoreAPI::installModule( $module );
+        $ret = \OWA\Core\CoreAPI::installModule( $module, $problem );
 
         if ( ! $ret ) {
 
-            return $this->fail( sprintf( 'Module %s was not installed. See the messages above.', $module ) );
+            return $this->fail( (string) $problem !== ''
+                ? (string) $problem
+                : sprintf( 'Module %s was not installed. See the messages above.', $module ) );
         }
     }
 }

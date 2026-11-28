@@ -151,6 +151,15 @@ abstract class Module {
     public $install_problem = '';
 
     /**
+     * Why the last update() refused before applying anything, translated; ''
+     * when it did not. Set when the module's schema state is unknown
+     * (unknownSchemaStateProblem()).
+     *
+     * @var string
+     */
+    public $update_problem = '';
+
+    /**
      * Required Schema Version
      *
      * @var int
@@ -1042,6 +1051,16 @@ abstract class Module {
         $errors = '';
         $this->install_problem = '';
 
+        $problem = $this->unknownSchemaStateProblem();
+
+        if ( $problem !== '' ) {
+
+            \OWA\Core\CoreAPI::notice( $problem );
+            $this->install_problem = $problem;
+
+            return false;
+        }
+
         $tables = $this->createMissingTables();
 
         // Whether every table this module owns had to be created, which decides what the schema version may be set to below.
@@ -1080,18 +1099,16 @@ abstract class Module {
              * be skipped for good. The admin UI's "Activate" control calls
              * install(), so deactivate, upgrade, activate reaches here.
              *
-             * Three cases, and only the first two can be answered here:
+             * Three cases:
              *
              *  - Already recorded: leave it. cmd=core-update-schema migrates from there.
              *  - Not recorded, and every table was just created at the current
              *    definition (which includes a module with no tables at all).
              *    The required version is then the truth, and recording it
              *    REPAIRS a module that was activated without being installed.
-             *  - Not recorded, tables already existed, and updates exist between
-             *    1 and required: unknowable from here. Say so and leave it
-             *    absent -- getSchemaVersion() reads that as 1, so cmd=core-update-schema
-             *    replays the updates and records the version as it goes, which
-             *    is the safe direction.
+             *  - Not recorded, and a table was there: the state of the tables
+             *    is unknown, and install() refused above, before creating
+             *    anything (unknownSchemaStateProblem()).
              */
             $recorded = \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
 
@@ -1110,9 +1127,7 @@ abstract class Module {
 
                 } else {
 
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        'Module %s has tables but no recorded schema version. Its version is left unset. '
-                      . 'Run "cmd=core-update-schema" to apply any pending updates and record it.', $this->name ) );
+                    \OWA\Core\CoreAPI::notice( self::unknownStateMessage( $this->name ) );
                 }
             }
             //activate the module and save the configuration
@@ -1191,6 +1206,15 @@ abstract class Module {
      * @return bool
      */
     public function update() {
+
+        $this->update_problem = $this->unknownSchemaStateProblem();
+
+        if ( $this->update_problem !== '' ) {
+
+            \OWA\Core\CoreAPI::notice( $this->update_problem );
+
+            return false;
+        }
 
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
@@ -1329,17 +1353,183 @@ abstract class Module {
     }
 
     /**
-     * @return int|string the stored schema_version, as stored; 1 when none is
+     * The stored schema_version, as stored. None stored reads as 1 when none
+     * of the module's tables exists, and as 0 when one does: the state of the
+     * tables is unknown then (hasUnknownSchemaState()), and no update runs.
+     *
+     * @return int|string
      */
     public function getSchemaVersion() {
 
         $current_schema = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
         if (empty($current_schema)) {
-            $current_schema = 1;
+            $current_schema = $this->hasUnknownSchemaState() ? 0 : 1;
         }
 
         return $current_schema;
+    }
+
+    /** What a table is renamed to when cmd=core-install --force moves it aside: <table>_before_<yyyymmddHHMMSS>. */
+    const MOVED_ASIDE = '_before_';
+
+    /** The longest table name MySQL and MariaDB take. */
+    const TABLE_NAME_LIMIT = 64;
+
+    /**
+     * Whether no schema_version is recorded for this module while one of its
+     * entity tables exists. Nothing says which updates those tables have had,
+     * so none is applied: install(), update() and cmd=core-update-schema
+     * refuse, and cmd=core-install --force moves the tables aside
+     * (moveTablesAside()) and installs the module fresh.
+     *
+     * @return bool
+     */
+    public function hasUnknownSchemaState() {
+
+        return ! \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' ) && $this->existingTables();
+    }
+
+    /**
+     * Why nothing is applied to this module, translated; '' when its schema
+     * state is known.
+     *
+     * @return string
+     */
+    public function unknownSchemaStateProblem() {
+
+        return $this->hasUnknownSchemaState() ? self::unknownStateMessage( $this->name ) : '';
+    }
+
+    /**
+     * @param  string $name a module's name
+     * @return string
+     */
+    public static function unknownStateMessage( $name ) {
+
+        return sprintf( \OWA\Core\CoreAPI::t( 'Module %s has tables but no recorded schema version, so the state of its tables is unknown. Run php cli.php cmd=core-install --force to move them aside and install the module fresh.' ), $name );
+    }
+
+    /**
+     * This module's entity tables that exist.
+     *
+     * @return list<string> table names
+     */
+    public function existingTables() {
+
+        if ( empty( $this->entities ) ) {
+
+            return [];
+        }
+
+        $out = [];
+
+        // A server with no database to ask (a collector, an installer with no config yet) has none.
+        try {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+
+            if ( ! is_object( $db ) || ! method_exists( $db, 'tableExists' ) ) {
+
+                return [];
+            }
+
+            foreach ( $this->entities as $name ) {
+
+                $table = \OWA\Core\CoreAPI::entityFactory( $this->name . '.' . $name )->getTableName();
+
+                if ( $db->tableExists( $table ) ) {
+
+                    $out[] = $table;
+                }
+            }
+
+        } catch ( \Throwable $e ) {
+
+            return [];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The name a table is moved aside to.
+     *
+     * @param  string $table
+     * @param  string $stamp yyyymmddHHMMSS
+     * @return string
+     */
+    public static function movedAsideName( $table, $stamp ) {
+
+        return $table . self::MOVED_ASIDE . $stamp;
+    }
+
+    /**
+     * Why this module's tables cannot be moved aside under $stamp, translated:
+     * a new name over the length limit, or one a table has already; '' when
+     * they can.
+     *
+     * @param  string $stamp yyyymmddHHMMSS
+     * @return string
+     */
+    public function moveAsideProblem( $stamp ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( $this->existingTables() as $table ) {
+
+            $to = self::movedAsideName( $table, $stamp );
+
+            if ( strlen( $to ) > self::TABLE_NAME_LIMIT ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%1$s cannot be moved aside: %2$s is longer than %3$d characters. Nothing was renamed.' ),
+                    $table, $to, self::TABLE_NAME_LIMIT );
+            }
+
+            if ( $db->tableExists( $to ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%1$s cannot be moved aside: %2$s exists. Nothing was renamed.' ), $table, $to );
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Rename each of this module's tables that exists to
+     * <table>_before_<stamp>. Every new name is checked first, against the
+     * length limit and against the tables there, and nothing is renamed when
+     * one is refused. The tables are not dropped.
+     *
+     * @param  string $stamp yyyymmddHHMMSS
+     * @return array{moved: array<string, string>, problem: string} old name => new name; problem '' when none
+     */
+    public function moveTablesAside( $stamp ) {
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $tables = $this->existingTables();
+        $out    = [ 'moved' => [], 'problem' => $this->moveAsideProblem( $stamp ) ];
+
+        if ( $out['problem'] !== '' ) {
+
+            return $out;
+        }
+
+        foreach ( $tables as $table ) {
+
+            $to = self::movedAsideName( $table, $stamp );
+
+            if ( $db->renameTable( $table, $to ) === false ) {
+
+                $out['problem'] = sprintf( \OWA\Core\CoreAPI::t( 'Renaming %1$s to %2$s failed. The error log says why.' ), $table, $to );
+
+                return $out;
+            }
+
+            $out['moved'][ $table ] = $to;
+        }
+
+        return $out;
     }
 
     /**

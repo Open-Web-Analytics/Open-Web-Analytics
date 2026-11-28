@@ -1036,6 +1036,32 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * Forget every setting read from the database, and hold the defaults and
+      * the config file's constants again, as a new installation's process
+      * does. For cmd=core-install --force once Base's tables, owa_setting
+      * among them, are moved aside: what the old rows held is not written to
+      * the new table. Reads after this consult the store again.
+      *
+      * @return void
+      */
+     public function forgetStored() {
+
+        $this->db_settings    = [];
+        $this->config_from_db = false;
+        $this->is_dirty       = false;
+        $this->loaded         = [];
+        $this->loaded_at_boot = [];
+        $this->pending        = [];
+
+        $this->config->set( 'settings', $this->default_config );
+        $this->applyRegistry();
+        $this->setMailerDomain();
+        $this->applyConfigConstants();
+        $this->setupPaths();
+        $this->settingStoreRecheck();
+     }
+
+     /**
       * The pre-Update043 write path: one serialized blob in one row.
       *
       * Reachable only while owa_configuration exists.
