@@ -99,6 +99,7 @@ return [
     'retired_settings_before_098' => [],
     'retired_settings_before_100' => [],
     'retired_settings_before_101' => [],
+    'retired_settings_before_102' => [],
     'scheduled_jobs' => [],
     'server_role' => 'full',
     'session_length' => 1800,
