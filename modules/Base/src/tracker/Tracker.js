@@ -290,14 +290,6 @@ class OWATracker  {
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {
 	        /**
-	         * Whether the #fragment is kept as part of the page's URL, both in
-	         * the URL sent and in the URL route changes are compared on. Set it
-	         * with setTrackUrlFragments().
-	         *
-	         * @option
-	         */
-	        trackUrlFragments: false,
-	        /**
 	         * Seconds without an event after which the next event starts a new
 	         * session. A Profile's tracking bundle sets it from the install's
 	         * session length.
@@ -438,6 +430,8 @@ class OWATracker  {
 	    this.endpoint = OWA.config.baseUrl;
 	    // Active status of tracker
 	    this.active = true;
+	    // Set by an overlay session; restart() does not clear it.
+	    this.overlayPaused = false;
 	    /*
 	     * Whether this page sends nothing at all, whatever restart() says: a
 	     * browser that is not tracked (Util.isBrowserTrackable()) opened on an
@@ -527,6 +521,7 @@ class OWATracker  {
      *   name                a unique name
      *   reservedEventNames  event names it sends, which trackCustomEvent() then
      *                       refuses -- a site's event may not borrow one
+     *   passiveEventNames   event names that are passive (isPassiveEventType())
      *   methods             { name: function } added to the tracker, so a
      *                       snippet command can call them. A method the tracker
      *                       already has is NOT replaced, unless it is a lazy
@@ -727,6 +722,11 @@ class OWATracker  {
      * Read visitor and session state passed on the URL by OWA running on
      * another domain, as shareStateByLink() or shareStateByPost() sends it.
      *
+     * Only the sharable stores (visitor, session, 'b') are restored; a store
+     * that does not parse is skipped and the rest are still restored. The
+     * token is then removed from the address bar (history.replaceState), so
+     * the page's events do not carry it.
+     *
      * Call it before any tracking command, or the state it reads arrives too
      * late for them.
      *
@@ -734,54 +734,207 @@ class OWATracker  {
      */
     checkForLinkedState() {
 
-        if ( this.linkedStateSet != true ) {
+        if ( this.linkedStateSet == true ) {
 
-            var ls = this.getUrlParam(NS + 'state');
+            return;
+        }
 
-            if ( ! ls ) {
-                ls = this.getAnchorParam(NS + 'state');
+        this.linkedStateSet = true;
+
+        var token = this.getUrlParam( NS + 'state' ) || this.getAnchorParam( NS + 'state' );
+
+        if ( ! token ) {
+
+            return;
+        }
+
+        OWA.debug( 'Shared OWA state detected...' );
+
+        var stores = OWATracker.readSharedState( token );
+
+        for ( var name in stores ) {
+
+            if ( ! stores.hasOwnProperty( name ) || this.sharableStateStores.indexOf( name ) === -1 ) {
+
+                OWA.debug( 'Shared state store ignored: %s', name );
+
+                continue;
             }
 
-            if ( ls ) {
-                OWA.debug('Shared OWA state detected...');
+            try {
 
-                ls = Util.base64_decode(Util.urldecode(ls));
-                OWA.debug('linked state: %s', ls);
+                var value  = stores[ name ].value;
+                var format = stores[ name ].format;
 
-                var state = ls.split('.');
-                OWA.debug('linked state: %s', JSON.stringify(state));
-                if ( state ) {
+                // Only a store that decoded to a populated object.
+                if ( ! value || typeof value !== 'object' || Array.isArray( value ) ) {
 
-                    for (var i=0; state.length > i; i++) {
-
-                        var pair = state[i].split('=');
-                        OWA.debug('pair: %s', pair);
-                        // add cookie domain hash for current cookie domain
-                        var value = Util.urldecode(pair[1]);
-                        OWA.debug('pair: %s', value);
-                        var decodedvalue = Util.decodeCookieValue(value);
-                        var format = Util.getCookieValueFormat(value);
-
-                        // Only restore stores that decoded to a populated object.
-                        // An empty sharable store (e.g. a visitor with no campaign
-                        // state) serializes to "" and decodes to a string/empty
-                        // value here; stamping .cdh onto that would throw in strict
-                        // mode and there is nothing worth carrying across anyway.
-                        if ( decodedvalue && typeof decodedvalue === 'object' ) {
-
-                            decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
-
-                            // The wire carries LOGICAL names (see the send
-                            // side); resolve against this page's site so an
-                            // arriving session store lands where this tracker
-                            // will actually look for it.
-                            OWA.replaceState( this.storeName( pair[0] ), decodedvalue, true, format );
-                        }
-                    }
+                    continue;
                 }
+
+                value.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
+
+                // The wire carries LOGICAL names; resolve against this page's
+                // site so an arriving session store lands where this tracker
+                // will look for it.
+                var physical = this.storeName( name );
+
+                OWA.replaceState( physical, value, true,
+                    format || OWA.getStateStoreFormat( physical ) || 'json' );
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state store %s could not be restored.', name );
+            }
+        }
+
+        OWATracker.removeSharedStateFromUrl();
+    }
+
+    /** The version marker of the shared-state token createSharedStateValue() makes. */
+    static get SHARED_STATE_VERSION() {
+
+        return 2;
+    }
+
+    /**
+     * The stores in a shared-state token, by logical name: { name: { value, format } }.
+     *
+     * Two formats are read. The current one is base64 of one JSON object,
+     * { version: 2, v: {...}, s: {...}, b: {...} }. The earlier one is base64
+     * of name=urlencoded_value pairs joined by dots; each pair is parsed on
+     * its own, so one that does not parse (a value containing a dot) loses
+     * only that store. A token that does not decode gives no stores.
+     *
+     * @param {string} token  the owa_state value
+     * @return {Object}
+     */
+    static readSharedState( token ) {
+
+        var stores = {};
+        var text;
+
+        try {
+
+            text = Util.base64_decode( Util.urldecode( token ) );
+
+        } catch ( e ) {
+
+            OWA.debug( 'Shared state token could not be decoded.' );
+
+            return stores;
+        }
+
+        if ( ! text || typeof text !== 'string' ) {
+
+            return stores;
+        }
+
+        if ( text.charAt( 0 ) === '{' ) {
+
+            var object;
+
+            try {
+
+                object = JSON.parse( text );
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state token is not JSON.' );
+
+                return stores;
             }
 
-            this.linkedStateSet = true;
+            if ( ! object || object.version !== OWATracker.SHARED_STATE_VERSION ) {
+
+                OWA.debug( 'Shared state token has an unknown version.' );
+
+                return stores;
+            }
+
+            Object.keys( object ).forEach( function ( name ) {
+
+                if ( name !== 'version' ) {
+
+                    stores[ name ] = { value: object[ name ], format: '' };
+                }
+            } );
+
+            return stores;
+        }
+
+        text.split( '.' ).forEach( function ( piece ) {
+
+            var equals = piece.indexOf( '=' );
+
+            if ( equals < 1 ) {
+
+                return;
+            }
+
+            try {
+
+                var value = Util.urldecode( piece.substring( equals + 1 ) );
+
+                stores[ piece.substring( 0, equals ) ] = {
+                    value:  Util.decodeCookieValue( value ),
+                    format: Util.getCookieValueFormat( value )
+                };
+
+            } catch ( e ) {
+
+                OWA.debug( 'Shared state pair could not be read: %s', piece.substring( 0, equals ) );
+            }
+        } );
+
+        return stores;
+    }
+
+    /**
+     * Remove the owa_state token from the address bar, from the query and the
+     * fragment, keeping every other parameter and fragment pair.
+     *
+     * @internal
+     */
+    static removeSharedStateFromUrl() {
+
+        if ( typeof window === 'undefined' || ! window.history
+             || typeof window.history.replaceState !== 'function' ) {
+
+            return;
+        }
+
+        var url  = String( document.URL );
+        var hash = url.indexOf( '#' );
+        var fragment = hash === -1 ? '' : url.substring( hash + 1 );
+        var rest = hash === -1 ? url : url.substring( 0, hash );
+        var mark = rest.indexOf( '?' );
+        var query = mark === -1 ? '' : rest.substring( mark + 1 );
+        var path  = mark === -1 ? rest : rest.substring( 0, mark );
+        var name  = NS + 'state';
+
+        var params = query ? query.split( '&' ) : [];
+        var keptParams = params.filter( ( p ) => p.split( '=' )[0] !== name );
+
+        var pairs = fragment ? fragment.split( ',' ) : [];
+        var keptPairs = pairs.filter( ( p ) => p.split( '.' )[0] !== name );
+
+        if ( keptParams.length === params.length && keptPairs.length === pairs.length ) {
+
+            return;
+        }
+
+        var clean = path
+            + ( keptParams.length ? '?' + keptParams.join( '&' ) : '' )
+            + ( keptPairs.length ? '#' + keptPairs.join( ',' ) : '' );
+
+        try {
+
+            window.history.replaceState( window.history.state, '', clean );
+
+        } catch ( e ) {
+
+            OWA.debug( 'Shared state token could not be removed from the URL.' );
         }
     }
 
@@ -789,10 +942,10 @@ class OWATracker  {
      * Navigate to a URL on another domain, carrying this visitor's state on it
      * so the OWA tracker there continues the same visitor and session.
      *
-     * The state is the visitor's cookies, concatenated as
-     * name1=encoded_value1.name2=encoded_value2, base64 encoded and added to
-     * the URL's fragment (see addSharedStateToUrl()). The page receiving it
-     * calls checkForLinkedState().
+     * The state is the visitor's sharable stores as one JSON object with a
+     * version marker, base64 encoded and added to the URL's fragment (see
+     * addSharedStateToUrl()). The page receiving it calls
+     * checkForLinkedState(). With no state to carry, the URL is unchanged.
      *
      * @command
      * @param {string} url  the destination
@@ -814,13 +967,19 @@ class OWATracker  {
      * The token is a `owa_state.<payload>` pair. A URL with no fragment gets it
      * as the whole fragment; one that has a fragment keeps it and gets the
      * token after a comma, the pair separator getAnchorParam() splits on.
+     * With no state, the URL is returned unchanged.
      *
      * @internal
      * @param {string} url
-     * @param {string} state  createSharedStateValue()
+     * @param {string} [state]  createSharedStateValue()
      * @return {string}
      */
     addSharedStateToUrl(url, state) {
+
+        if ( ! state ) {
+
+            return url;
+        }
 
         var token = NS + 'state.' + state;
         var hash = url.indexOf('#');
@@ -834,46 +993,53 @@ class OWATracker  {
         return url.substring( 0, hash + 1 ) + ( fragment ? fragment + ',' : '' ) + token;
     }
 
+    /**
+     * The shared-state token: base64 of { version, <store>: {...} } for each
+     * sharable store that holds a value, URL-encoded; undefined when none does.
+     *
+     * Read from the PHYSICAL store, sent under the LOGICAL name: the receiving
+     * page resolves the name against its own tracker's site.
+     *
+     * @internal
+     * @return {string|undefined}
+     */
     createSharedStateValue() {
 
-        var state = '';
+        var state = { version: OWATracker.SHARED_STATE_VERSION };
+        var found = false;
 
-        for (var i=0; this.sharableStateStores.length > i;i++) {
+        for ( var i = 0; this.sharableStateStores.length > i; i++ ) {
 
-            /*
-             * Read from the PHYSICAL store, send under the LOGICAL name.
-             *
-             * The receiving page resolves the name against its own tracker, so
-             * putting this tracker's site id on the wire would hand the other
-             * domain a store it cannot match. The site axis is local to each
-             * page; what travels is 'this is the session store', and the
-             * receiver decides whose session store that is.
-             */
-            var physical = this.storeName( this.sharableStateStores[i] );
-            var value = OWA.getState( physical );
-            value = Util.encodeJsonForCookie(value, OWA.getStateStoreFormat(physical));
+            var name  = this.sharableStateStores[ i ];
+            var value = OWA.getState( this.storeName( name ) );
 
-            if (value) {
-                state += this.sharableStateStores[i] + '=' + Util.urlEncode(value);
-                if ( this.sharableStateStores.length != ( i + 1) ) {
-                    state += '.';
-                }
+            if ( value && typeof value === 'object' && Object.keys( value ).length ) {
+
+                state[ name ] = value;
+                found = true;
             }
         }
 
-        // base64 for transport
-        if ( state ) {
-            OWA.debug('linked state to send: %s', state);
+        if ( ! found ) {
 
-            state = Util.base64_encode(state);
-            state = Util.urlEncode(state);
-            return state;
+            return undefined;
         }
+
+        var json = JSON.stringify( state );
+
+        OWA.debug( 'linked state to send: %s', json );
+
+        return Util.urlEncode( Util.base64_encode( json ) );
     }
 
     /**
      * Submit a form to another domain, carrying this visitor's state in its
      * action URL, as shareStateByLink() does for a link.
+     *
+     * Submitted with requestSubmit() where the browser has it, so the form's
+     * submit handlers and validation run. Called from the form's own submit
+     * handler, those have already run, and the form is submitted with
+     * submit().
      *
      * @command
      * @param {HTMLFormElement} form  the form to submit
@@ -882,7 +1048,74 @@ class OWATracker  {
 
         var state = this.createSharedStateValue();
         form.action = this.addSharedStateToUrl( form.action, state );
+
+        OWATracker.submitForm( form );
+    }
+
+    /**
+     * Submit a form: requestSubmit() where the browser has it, so its submit
+     * handlers and validation run; submit() inside the form's own submit
+     * event, where requestSubmit() does nothing.
+     *
+     * @internal
+     * @param {HTMLFormElement} form
+     */
+    static submitForm( form ) {
+
+        var current = ( typeof window !== 'undefined' ) ? window.event : undefined;
+        var inSubmit = !! current && current.type === 'submit' && current.target === form;
+
+        if ( ! inSubmit && typeof form.requestSubmit === 'function' ) {
+
+            form.requestSubmit();
+
+            return;
+        }
+
         form.submit();
+    }
+
+    /**
+     * What window.OWATracker is in a browser that is not tracked
+     * (tracker-dom.js): every tracker method does nothing, so a page calling
+     * one directly does not throw, and shareStateByLink() and
+     * shareStateByPost() still navigate and submit, carrying no state.
+     *
+     * @internal
+     * @return {Object}
+     */
+    static untrackedStub() {
+
+        var stub = { untracked: true };
+        var proto = OWATracker.prototype;
+
+        Object.getOwnPropertyNames( proto ).forEach( function ( name ) {
+
+            var descriptor = Object.getOwnPropertyDescriptor( proto, name );
+
+            if ( name !== 'constructor' && descriptor && typeof descriptor.value === 'function' ) {
+
+                stub[ name ] = function () {};
+            }
+        } );
+
+        stub.shareStateByLink = function ( url ) {
+
+            if ( url ) {
+
+                document.location.href = url;
+            }
+        };
+
+        stub.shareStateByPost = function ( form ) {
+
+            if ( form ) {
+
+                OWATracker.submitForm( form );
+            }
+        };
+
+        return stub;
     }
 
     getCookieDomain() {
@@ -896,7 +1129,9 @@ class OWATracker  {
      *
      * Without an argument, the page's domain with any leading `www.` removed,
      * so the cookies are shared by its subdomains. Given a domain, exactly that
-     * one. Applied when the tracker is built, wherever it sits in the queue.
+     * one; a value that is not a string is ignored, as if none was given.
+     * Applied when the tracker is built, wherever it sits in the queue; when
+     * both the bundle and the page declare one, the page's wins.
      *
      * @command
      * @param {string} [domain]  e.g. example.com
@@ -904,6 +1139,12 @@ class OWATracker  {
     setCookieDomain(domain) {
 
         var not_passed = false;
+
+        if ( domain && typeof domain !== 'string' ) {
+
+            OWA.debug( 'setCookieDomain: ignored a domain that is not a string' );
+            domain = undefined;
+        }
 
         if ( ! domain ) {
             domain = ( typeof document !== 'undefined' ) ? document.domain : '';
@@ -987,7 +1228,8 @@ class OWATracker  {
             // readable by every other script there and re-sent to that site
             // on every request. startOverlaySession() holds it in memory
             // instead, which is all its lifetime requires.
-            // pause tracker so we dont log anything during an overlay session
+            // nothing is sent during an overlay session, restart() included
+            this.overlayPaused = true;
             this.pause();
             // start overlay session
             OWA.startOverlaySession( a );
@@ -1471,43 +1713,20 @@ class OWATracker  {
      * /pricing and /pricing#faq are two URLs for one page.
      *
      * ONE FUNCTION, SO THE ROUTE COMPARISON AGREES WITH THE REPORT. This is
-     * also what trackRouteChanges() compares, which is the half that is easy to
-     * get wrong: strip the fragment from the reported URL but compare the raw
-     * one, and a hash-routed site fires a page view per anchor click with every
-     * one of them reporting the same URL.
+     * also what trackRouteChanges() compares, so a fragment-only change is not
+     * a route change.
      *
-     * trackUrlFragments turns both halves back on together, for a site that
-     * genuinely routes on the hash.
+     * collectPageProperties() fills every event's page_location from here,
+     * clicks included, and formDestination() falls back to it. A site that
+     * routes on the hash sends each route with trackPageView('/path').
      */
     getCurrentUrl() {
 
         var url = document.URL;
 
-        if ( this.getOption( 'trackUrlFragments' ) ) {
-
-            return url;
-        }
-
         var hash = url.indexOf( '#' );
 
         return hash === -1 ? url : url.substring( 0, hash );
-    }
-
-    /**
-     * Keep the #fragment as part of the page's URL. Route changes are then
-     * compared with the fragment too.
-     *
-     * For a site that routes on the hash -- example.com/app#/settings -- where
-     * the fragment IS the page. It moves the route comparison with it, so
-     * turning this on gives both the page views and the URLs to tell them
-     * apart, and leaving it off gives neither.
-     *
-     * @command
-     * @param {boolean} value
-     */
-    setTrackUrlFragments( value ) {
-
-        this.setOption( 'trackUrlFragments', ! ! value );
     }
 
     bindClickEvents() {
@@ -1550,7 +1769,7 @@ class OWATracker  {
      */
     logEvent(properties, block, callback) {
 
-        if ( this.active && ! this.sendsNothing ) {
+        if ( this.active && ! this.overlayPaused && ! this.sendsNothing ) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
 
@@ -1619,9 +1838,10 @@ class OWATracker  {
      * wait around to complete on unload.
      *
      * NO IFRAME FALLBACK. Every browser that can run this tracker -- it ships
-     * untranspiled ES6 -- has fetch and sendBeacon, and the largest payload OWA
-     * makes is capped at 24,000 characters, inside the 64KB both allow. A
-     * payload both refuse is dropped, with a debug line.
+     * untranspiled ES6 -- has fetch and sendBeacon, and both refuse a body
+     * over 64 KiB (MAX_BEACON_BODY_BYTES). The largest payload OWA makes, a
+     * recording chunk, is held below that once encoded. A payload both refuse
+     * is dropped, with a debug line.
      */
     sendLargeRequest( data, event_type ) {
 
@@ -1693,6 +1913,16 @@ class OWATracker  {
 
         if ( typeof fetch !== 'function' || typeof Request !== 'function'
              || ! ( 'keepalive' in Request.prototype ) ) {
+
+            return false;
+        }
+
+        // A keepalive fetch over the quota rejects later, after this has
+        // answered that it was queued.
+        if ( body && body.size > OWATracker.MAX_BEACON_BODY_BYTES ) {
+
+            OWA.debug( 'Beacon body of %d bytes is over the %d a keepalive request allows; not sent by fetch.',
+                body.size, OWATracker.MAX_BEACON_BODY_BYTES );
 
             return false;
         }
@@ -2214,7 +2444,7 @@ class OWATracker  {
 
         // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
         // whose merge() would overwrite anything set here -- so no duplicate set.
-        click.set("page_location", window.location.href);
+        // page_location is filled by collectPageProperties(), without the fragment.
         // view port dimensions - needed for calculating relative position
         var viewport = this.getViewportDimensions();
         click.set("page_width", viewport.width);
@@ -2256,12 +2486,13 @@ class OWATracker  {
         // it is sent or classified.
         OWA.doAction( 'tracker.click', { tracker: this, click: click, domEvent: e } );
 
-        //if all that works then log
+        // The click, and the download it raises, only with click tracking on
+        // (trackClicks()): a click handler bound for something else, a
+        // recording say, sends neither.
         if (this.getOption('logClicksAsTheyHappen')) {
             this.trackEvent(click);
+            this.classifyClickTarget( click.get( 'target_url' ), click );
         }
-
-        this.classifyClickTarget( click.get( 'target_url' ), click );
 
 
         this.click = click;
@@ -2278,7 +2509,8 @@ class OWATracker  {
      * Note how deep the visitor has scrolled, and send it if nothing deeper is
      * possible. Called once per frame while the page scrolls.
      *
-     * ONE EVENT PER PAGE VIEW, at its deepest threshold.
+     * THE DEEPEST THRESHOLD, normally one event per page view; one resumed
+     * after a hide and scrolled further sends again (flushScrollDepth()).
      *
      * GATED ON A SCROLL. Nothing is noted until the page has moved from where it
      * sat when loading finished: a page that fits the window cannot scroll and
@@ -2675,9 +2907,9 @@ class OWATracker  {
     /**
      * Track route changes in a single-page application as page views.
      *
-     * A route change is a pushState, replaceState, popstate or hashchange
-     * that changes the page's URL; pushState and replaceState are patched,
-     * popstate and hashchange listened for. The page view is sent once the
+     * A route change is a pushState, replaceState or popstate that changes
+     * the page's URL without its fragment; pushState and replaceState are
+     * patched, popstate listened for. The page view is sent once the
      * URL has been still for ROUTE_SETTLE_MSEC, with the URL and title then,
      * so a redirect that pushes twice is one page view.
      *
@@ -2685,9 +2917,10 @@ class OWATracker  {
      * a page, and a site that sends its own page view per route would count
      * each one twice.
      *
-     * A hash change that is only an in-page anchor leaves the URL unchanged,
-     * since getCurrentUrl() leaves the fragment out, and is not a route
-     * change. A site that routes on the hash turns on trackUrlFragments.
+     * A change to the fragment alone (an in-page anchor, a hash route) leaves
+     * the URL unchanged, since getCurrentUrl() leaves the fragment out, and
+     * sends no page view. A site that routes on the hash sends each route
+     * with trackPageView('/path').
      *
      * @command
      */
@@ -2856,7 +3089,6 @@ class OWATracker  {
         }
 
         window.addEventListener( 'popstate', changed, false );
-        window.addEventListener( 'hashchange', changed, false );
     }
 
     /**
@@ -3091,7 +3323,7 @@ class OWATracker  {
     }
 
     /**
-     * Resume sending after pause().
+     * Resume sending after pause(). A page opened as an overlay stays paused.
      *
      * @command
      */
@@ -3202,9 +3434,9 @@ class OWATracker  {
      * Stored in the same shape trackPurchase() takes -- item_id, item_name,
      * item_category, price, quantity -- so every purchase's items read alike.
      *
-     * Refused, returning false, when no transaction is open: call
-     * addTransaction() first. order_id is not checked against the open
-     * transaction.
+     * Refused, returning false, when no transaction is open (call
+     * addTransaction() first) and when the item has neither a sku nor a
+     * product name. order_id is not checked against the open transaction.
      *
      * @command
      * @param {string} order_id
@@ -3223,15 +3455,24 @@ class OWATracker  {
             return false;
         }
 
-        var items = this.ecommerce_transaction.get( 'ct_line_items' );
-
-        items.push( OWATracker.purchaseItem( {
+        var item = OWATracker.purchaseItem( {
             item_id:       sku,
             item_name:     product_name,
             item_category: category,
             price:         unit_price,
             quantity:      quantity
-        } ) );
+        } );
+
+        if ( ! item ) {
+
+            OWA.debug( 'addTransactionLineItem: an item needs a sku or a product name; dropped.' );
+
+            return false;
+        }
+
+        var items = this.ecommerce_transaction.get( 'ct_line_items' );
+
+        items.push( item );
 
         this.ecommerce_transaction.set( 'ct_line_items', items );
 
@@ -4153,9 +4394,10 @@ class OWATracker  {
          * that mattered, and that is the one most likely to be lost.
          *
          * Not set on user_engagement, which carries its own residue and has
-         * already consumed it.
+         * already consumed it, nor on a passive event.
          */
-        if ( ! event.isSet( 'engagement_msec' ) ) {
+        if ( ! event.isSet( 'engagement_msec' )
+             && ! OWATracker.isPassiveEventType( event.get( 'event_type' ) ) ) {
 
             var delta = this.consumeEngagementDelta();
 
@@ -4206,8 +4448,12 @@ class OWATracker  {
          * Consumed rather than collected: these belong to ONE event, and taking
          * them off the tracker as they are applied is what makes that true.
          */
-        this.consumePendingFlag( event, 'is_new_session_start', 'pendingSessionStart' );
-        this.consumePendingFlag( event, 'is_new_visitor_created', 'pendingVisitorCreated' );
+        // A passive event leaves them for the next ordinary event.
+        if ( ! OWATracker.isPassiveEventType( event.get( 'event_type' ) ) ) {
+
+            this.consumePendingFlag( event, 'is_new_session_start', 'pendingSessionStart' );
+            this.consumePendingFlag( event, 'is_new_visitor_created', 'pendingVisitorCreated' );
+        }
 
         var collected = this.collectPageProperties();
         var state_properties = this.collectStateProperties();
@@ -4249,6 +4495,8 @@ class OWATracker  {
     manageState( event, callback ) {
 
         var that = this;
+        var passive = OWATracker.isPassiveEventType( event.get( 'event_type' ) );
+
         if ( ! this.stateInit ) {
 
             /*
@@ -4295,7 +4543,7 @@ class OWATracker  {
                 });
             });
 
-        } else {
+        } else if ( ! passive ) {
 
             this.continueSession( event );
         }
@@ -4307,9 +4555,12 @@ class OWATracker  {
          *
          * Placed after the identity block so the first event of a page still
          * decides sessionization against the PREVIOUS request before this one
-         * overwrites it.
+         * overwrites it. A passive event does not advance it.
          */
-        this.advanceLastRequestTime( event );
+        if ( ! passive ) {
+
+            this.advanceLastRequestTime( event );
+        }
 
         // Per event, and for the same reason: a page's events must not share a
         // position any more than they share a last-request time.
@@ -4385,6 +4636,10 @@ class OWATracker  {
      *
      * A restarted session takes this page's campaign tags and referrer, which
      * every event carries, so it is attributed as the page's own landing was.
+     *
+     * The engagement accrued before the gap is discarded, the delta a
+     * user_engagement event already carries included: the new session starts
+     * with no engagement time.
      */
     continueSession( event ) {
 
@@ -4422,6 +4677,9 @@ class OWATracker  {
 
         this.isNewSessionFlag    = true;
         this.pendingSessionStart = true;
+
+        this.consumeEngagementDelta();
+        event.unset( 'engagement_msec' );
 
         this.setNumberPriorSessions( event );
     }
@@ -4619,6 +4877,12 @@ class OWATracker  {
         return this.trackEvent( event, block );
     }
 
+    /** The largest body a keepalive fetch or sendBeacon sends, in bytes. */
+    static get MAX_BEACON_BODY_BYTES() {
+
+        return 65536;
+    }
+
     /**
      * The least unreported engagement, in milliseconds, that is sent as a
      * user_engagement event of its own. Less than this rides the next event.
@@ -4724,9 +4988,47 @@ class OWATracker  {
     }
 
     /**
+     * Event types that are passive: a passive event carries no engagement
+     * delta and no pending one-event flags (is_new_session_start,
+     * is_new_visitor_created), which are left for the next ordinary event; it
+     * never restarts a session and does not advance the session's last-request
+     * time. A plugin names its own (passiveEventNames).
+     */
+    static get PASSIVE_EVENT_NAMES() {
+
+        var names = [];
+
+        var specs = OWATracker.plugins().concat(
+            Object.values( OWATracker.lazyPlugins() ).map( ( state ) => state.spec ) );
+
+        specs.forEach( ( plugin ) => {
+
+            ( plugin.passiveEventNames || [] ).forEach( ( name ) => {
+
+                if ( names.indexOf( name ) === -1 ) {
+
+                    names.push( name );
+                }
+            } );
+        } );
+
+        return names;
+    }
+
+    /**
+     * @param {string} event_type
+     * @return {boolean} whether events of this type are passive
+     */
+    static isPassiveEventType( event_type ) {
+
+        return OWATracker.PASSIVE_EVENT_NAMES.indexOf( String( event_type ) ) !== -1;
+    }
+
+    /**
      * A name starts with a letter, uses only letters, numbers and underscores,
-     * and is at most 40 characters. Case-sensitive, so my_event and My_Event are
-     * two events.
+     * and is at most 40 characters. Names are stored case-blind, so a case
+     * variant of a reserved name (Page_View, PURCHASE) or of the owa_ prefix is
+     * refused too, and my_event and My_Event are counted as one event.
      *
      * The same pattern the server applies to a custom PROPERTY name -- one rule,
      * stated once on each side.
@@ -4742,7 +5044,11 @@ class OWATracker  {
             return false;
         }
 
-        if ( OWATracker.RESERVED_EVENT_NAMES.indexOf( name ) !== -1 ) {
+        var lowered = name.toLowerCase();
+
+        var reserved = OWATracker.RESERVED_EVENT_NAMES.map( ( n ) => String( n ).toLowerCase() );
+
+        if ( reserved.indexOf( lowered ) !== -1 ) {
 
             OWA.debug( 'Custom event name is reserved by OWA and cannot be used: ' + name );
 
@@ -4761,7 +5067,7 @@ class OWATracker  {
          * A leading underscore and a dotted name are refused by the pattern above
          * already.
          */
-        if ( name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
+        if ( lowered.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
 
             OWA.debug( 'Custom event names may not start with '
                 + OWATracker.RESERVED_EVENT_PREFIX + ', which OWA reserves: ' + name );
@@ -4792,7 +5098,7 @@ class OWATracker  {
 
         var block_flag = false;
 
-        if ( this.active && ! this.sendsNothing ) {
+        if ( this.active && ! this.overlayPaused && ! this.sendsNothing ) {
             if ( block ) {
 
                 block_flag = true;
@@ -4944,7 +5250,8 @@ class OWATracker  {
     }
 
     /**
-     * Raise file_download for a click that fetches a file.
+     * Raise file_download for a click that fetches a file. Sent beside the
+     * click, when trackClicks() is on.
      *
      * A SEPARATE EVENT beside the click, not a flag on it. The click is what
      * happened in the DOM; the download is what it MEANT, and the two are
@@ -5013,9 +5320,13 @@ class OWATracker  {
      * happens when nothing changed (a one-button form) or the value was set by
      * script. It carries no first-field properties: no field was interacted with.
      *
-     * Bound at the document with capture rather than per form, so forms added
-     * to the page after load are covered without re-binding -- which is the
-     * normal case on anything component-rendered.
+     * Bound at the document rather than per form, so forms added to the page
+     * after load are covered without re-binding -- which is the normal case on
+     * anything component-rendered.
+     *
+     * The submit listener is in the bubble phase, after the page's own
+     * handlers: a submit one of them cancelled (preventDefault()) is not a
+     * form_submit, though it still raises the form_start.
      *
      * @command
      */
@@ -5079,6 +5390,11 @@ class OWATracker  {
 
                 start( form );
 
+                if ( e.defaultPrevented ) {
+
+                    return;
+                }
+
                 var properties = that.formProperties( form );
 
                 /*
@@ -5101,7 +5417,7 @@ class OWATracker  {
                 that.raiseEvent( 'form_submit', properties );
             }
 
-        }, true );
+        }, false );
     }
 
     /**
@@ -5216,7 +5532,7 @@ class OWATracker  {
      *
      * A relative action is resolved against the page, so two sites' /subscribe do
      * not read as one destination. A form with no action submits to the page
-     * itself, which is what the fallback says.
+     * itself: the fallback is the page's URL without its fragment.
      *
      * @param {Element} form
      * @return {string}
@@ -5224,8 +5540,7 @@ class OWATracker  {
     formDestination( form ) {
 
         var action = form.getAttribute( 'action' );
-        var here = ( typeof window !== 'undefined' && window.location )
-            ? window.location.href : '';
+        var here = this.getCurrentUrl();
 
         if ( ! action ) {
 
@@ -5538,9 +5853,11 @@ class OWATracker  {
     }
 
     /**
-     * Report how far down each page view the visitor scrolls: one `scroll`
-     * event per page view, at the deepest scrollThresholds mark reached, and only
-     * after the visitor has scrolled.
+     * Report how far down each page view the visitor scrolls: a `scroll` event
+     * at the deepest scrollThresholds mark reached, and only after the visitor
+     * has scrolled. A page view the visitor comes back to and scrolls further
+     * sends again, deeper; the Scroll Depth report counts each page view once,
+     * at its deepest.
      *
      * Its listener is its own: it does not depend on any other feature or its
      * sample rate.

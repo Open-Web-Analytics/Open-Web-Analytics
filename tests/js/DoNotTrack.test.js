@@ -169,8 +169,8 @@ describe('tracker-dom.js — the DNT bootstrap gate', () => {
             // (never swapped for a CommandQueue)...
             expect(Array.isArray(window.owa_cmds)).toBe(true);
             expect(window.owa_cmds).toBe(cmds);
-            // ...the default tracker was never instantiated...
-            expect(window.OWATracker).toBeUndefined();
+            // ...the default tracker was never instantiated, only the no-op stub...
+            expect(window.OWATracker.untracked).toBe(true);
             // ...and, the actual user-facing guarantee, NOT ONE beacon was sent.
             expect(spy.sent).toHaveLength(0);
         } finally {

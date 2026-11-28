@@ -126,4 +126,65 @@ describe('a tracker is constructed knowing its site', () => {
         expect(window.OWATracker.getOption('cookie_domain')).toBe('.declared.example');
         expect(window.OWATracker.getOption('cookie_domain_set')).toBe(true);
     });
+
+    /*
+     * The bundle queues its setCookieDomain ahead of the page's commands; the
+     * page's declaration wins, at construction and after it.
+     */
+    test('with the bundle\'s and the page\'s setCookieDomain, the page\'s applies throughout', () => {
+        const seen = [];
+        const original = OWATracker.prototype.setCookieDomain;
+        OWATracker.prototype.setCookieDomain = function (domain) {
+            seen.push(domain);
+            return original.call(this, domain);
+        };
+
+        try {
+            const q = new CommandQueue();
+            q.loadCmds([
+                ['setSiteId', 'domain-site'],
+                ['setCookieDomain', 'bundle.example'],
+                ['setOption', 'features', []],
+                ['setCookieDomain', 'page.example'],
+                ['trackPageView'],
+            ]);
+            q.process();
+
+            expect(seen).not.toContain('bundle.example');
+            expect(window.OWATracker.getOption('cookie_domain')).toBe('.page.example');
+        } finally {
+            OWATracker.prototype.setCookieDomain = original;
+        }
+    });
+
+    test('a setCookieDomain pushed after load still applies', () => {
+        const q = new CommandQueue();
+        q.loadCmds([['setSiteId', 'domain-site'], ['setCookieDomain', 'first.example']]);
+        q.process();
+
+        q.push(['setCookieDomain', 'later.example']);
+
+        expect(window.OWATracker.getOption('cookie_domain')).toBe('.later.example');
+    });
+
+    test('a setCookieDomain that is not a string is ignored and the tracker still tracks', () => {
+        const sent = [];
+        const OrigImage = global.Image;
+        global.Image = class { set src(v) { sent.push(String(v)); } };
+
+        try {
+            const q = new CommandQueue();
+            q.loadCmds([
+                ['setSiteId', 'domain-site'],
+                ['setCookieDomain', 5],
+                ['trackPageView'],
+            ]);
+            q.process();
+
+            expect(window.OWATracker.getOption('cookie_domain')).toBe('.site.example');
+            expect(sent.filter((u) => /[?&]e_t=page_view/.test(u))).toHaveLength(1);
+        } finally {
+            global.Image = OrigImage;
+        }
+    });
 });
