@@ -213,7 +213,9 @@ class Finish {
 
     /**
      * After a successful install: the failure record, and every tarball but
-     * this release's, which the next install puts back if it fails.
+     * this release's, which the next install puts back if it fails, and the
+     * highest one newer than it, a release passed over for its upgrades_from
+     * that the next release check may now install.
      *
      * @param  Downloads $downloads
      * @param  string    $v
@@ -222,6 +224,9 @@ class Finish {
     public static function cleanup( Downloads $downloads, $v ) {
 
         $downloads->clearFailure();
-        $downloads->prune( [ $v ] );
+
+        $highest = $downloads->versions()[0] ?? null;
+
+        $downloads->prune( [ $v, $highest !== null && Version::compare( $highest, $v ) > 0 ? $highest : null ] );
     }
 }
