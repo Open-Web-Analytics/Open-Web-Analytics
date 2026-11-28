@@ -527,8 +527,23 @@ it checks the tables and the data directory's modes, and installs a release:
 | | |
 |---|---|
 | `--version=<x.y.z>` | Fetches that release through the update host and installs it |
-| `--file=<tarball>` | Installs the release in a tarball on the server, with no network request. Its signature is `<tarball>.sig`, or `--sig=<path>`. Needs the installed release's tarball, `owa_<installed>_packaged.tar`, and its `.sig` in the updates directory, `owa-data/updates-<id>/`, already: it is refused before anything changes when they are not there |
+| `--file=<tarball>` | Installs the release in a tarball on the server, with no network request. Its signature is `<tarball>.sig`, or `--sig=<path>` |
 | `--force` | Installs a release older than the installed one. The installed release again needs no `--force`: it reinstalls, copying the files that differ |
+
+### Third-party code goes in its own module directory
+
+Installing a release, by hand or as an automatic update, deletes the files the
+release does not ship from each directory it ships: `Core/`, `api/`, `conf/`,
+`public/`, `vendor/`, and under `modules/` each module directory the release
+has. A file added to one of them is deleted at the next install.
+
+Put a third-party module in its own `modules/<Name>/`, which an install never
+touches, and nothing of your own inside OWA's directories. Kept as they are:
+files at the top of the OWA directory (`owa-config.php`, `robots.txt`,
+`.htpasswd`), directories the release does not ship (`.well-known/`),
+`owa-data/` and the data directory, and the tracking bundles in
+`public/tracker/`. Overrides of `conf/` files go in the data directory's
+`conf/`.
 
 ### Server roles: `OWA_SERVER_ROLE`
 
