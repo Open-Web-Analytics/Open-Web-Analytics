@@ -440,16 +440,56 @@ final class CoreInstallCliTest extends TestCase
         $this->assertSame('--force: no module has tables without a recorded schema version, so nothing more is done.', $cli->written[0]);
     }
 
-    /** Not installed, Base's tables there with no version: refused without --force. */
-    public function testANewInstallationOverTablesInAnUnknownStateIsRefused(): void
+    /**
+     * A fresh install that stopped part way: some of Base's tables, no version,
+     * no install_complete. Run again with the setup arguments it carries on,
+     * as the wizard's re-submit does: InstallManager::unknownStateModules()
+     * names no module before the install is complete.
+     */
+    public function testAPartialFreshInstallCarriesOnWhenRunAgain(): void
     {
-        $this->im->unknown = ['base'];
+        $base = new class extends \OWA\Core\Module {
+            const NAME = 'base';
 
-        $cli = $this->runCommand(self::SETUP);
+            protected function installComplete()
+            {
+                return false;
+            }
 
-        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
-        $this->assertStringStartsWith('Module base has tables but no recorded schema version', $cli->getCliOutcome()['message']);
-        $this->assertSame([], InstallerRecording::$calls);
+            public function existingTables()
+            {
+                return ['owa_site', 'owa_setting'];
+            }
+        };
+
+        $this->im = new class extends RecordingInstallManager {
+            public function unknownStateModules()
+            {
+                return (new ReflectionMethod(InstallManager::class, 'unknownStateModules'))->invoke($this);
+            }
+        };
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $saved   = $service->modules;
+
+        try {
+            $service->modules = ['base' => $base];
+
+            $cli = $this->runCommand(self::SETUP + ['web-group' => 'owatest-web']);
+        } finally {
+            $service->modules = $saved;
+        }
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertSame([
+            'installSchema',
+            'finishInstall:begin',
+            'createAdminUser:owatest-admin',
+            'createDefaultSite:https://example.test',
+            'finishInstall:end',
+            'announceInstallComplete:owatest-admin:owatest-site',
+            'secureDataDir:owatest-web',
+        ], InstallerRecording::$calls);
     }
 
     /** Row 3, installed with --version or --file: that release installs; the database is not touched. */

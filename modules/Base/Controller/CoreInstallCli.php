@@ -389,17 +389,6 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
             return $this->fail( \OWA\Core\Module::unknownStateMessage( 'base' ), true );
         }
 
-        if ( $this->param( 'force' ) && ! $this->isInstalled() && in_array( 'base', $im->unknownStateModules(), true ) ) {
-
-            $moved = $im->moveAsideForNewInstall( $this->stamp() );
-            $this->sayMoved( $moved['moved'] );
-
-            if ( $moved['problem'] !== '' ) {
-
-                return $this->fail( $moved['problem'], true );
-            }
-        }
-
         if ( $im->installSchema() !== true ) {
 
             return $this->fail( CoreAPI::t( 'The database schema was not installed. The error log says why. Fix it, then run this command again.' ) );

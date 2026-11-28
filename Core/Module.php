@@ -1106,9 +1106,12 @@ abstract class Module {
              *    definition (which includes a module with no tables at all).
              *    The required version is then the truth, and recording it
              *    REPAIRS a module that was activated without being installed.
-             *  - Not recorded, and a table was there: the state of the tables
-             *    is unknown, and install() refused above, before creating
-             *    anything (unknownSchemaStateProblem()).
+             *  - Not recorded, and a table was there. Before the install is
+             *    complete the tables are from an earlier attempt of this
+             *    install, made from the current entities, so the required
+             *    version is recorded and the install finishes. After it, the
+             *    state of the tables is unknown, and install() refused above,
+             *    before creating anything (unknownSchemaStateProblem()).
              */
             $recorded = \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
 
@@ -1120,7 +1123,7 @@ abstract class Module {
                  * "requires schema 1" clause fails in the safe direction -- a version left
                  * unrecorded rather than one wrongly claimed current.
                  */
-                if ( $all_tables_are_new ) {
+                if ( $all_tables_are_new || ! $this->installComplete() ) {
 
                     \OWA\Core\CoreAPI::persistSetting(
                         $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
@@ -1353,9 +1356,10 @@ abstract class Module {
     }
 
     /**
-     * The stored schema_version, as stored. None stored reads as 1 when none
-     * of the module's tables exists, and as 0 when one does: the state of the
-     * tables is unknown then (hasUnknownSchemaState()), and no update runs.
+     * The stored schema_version, as stored. None stored reads as 1, and as 0
+     * when one of the module's tables exists on a completed install: the
+     * state of the tables is unknown then (hasUnknownSchemaState()), and no
+     * update runs.
      *
      * @return int|string
      */
@@ -1377,17 +1381,35 @@ abstract class Module {
     const TABLE_NAME_LIMIT = 64;
 
     /**
-     * Whether no schema_version is recorded for this module while one of its
-     * entity tables exists. Nothing says which updates those tables have had,
-     * so none is applied: install(), update() and cmd=core-update-schema
-     * refuse, and cmd=core-install --force moves the tables aside
-     * (moveTablesAside()) and installs the module fresh.
+     * Whether, on an installation whose install is complete, no
+     * schema_version is recorded for this module while one of its entity
+     * tables exists. Nothing says which updates those tables have had, so
+     * none is applied: install(), update() and cmd=core-update-schema refuse,
+     * and cmd=core-install --force moves the tables aside (moveTablesAside())
+     * and installs the module fresh.
+     *
+     * Before the install is complete the tables are from an earlier attempt
+     * of this install, and a re-run creates the missing ones and finishes.
      *
      * @return bool
      */
     public function hasUnknownSchemaState() {
 
-        return ! \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' ) && $this->existingTables();
+        return ! \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' )
+            && $this->installComplete() && $this->existingTables();
+    }
+
+    /**
+     * Whether this installation's install is complete: owa-config.php is
+     * there and install_complete is recorded, as InstallManager::isInstalled()
+     * asks.
+     *
+     * @return bool
+     */
+    protected function installComplete() {
+
+        return \OWA\Core\CoreAPI::configSingleton()->isConfigFilePresent()
+            && (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'install_complete' );
     }
 
     /**
