@@ -259,7 +259,9 @@ namespace OWA\Module\Base\Classes;
              \OWA\Core\ConfigFile::messages( $this->config_file_problems, $this->config_file_checked ),
              $this->role_capability_problems,
              defined( \OWA\Core\ClientAddress::CONSTANT )
-                 ? \OWA\Core\ClientAddress::configProblems( constant( \OWA\Core\ClientAddress::CONSTANT ) ) : [] );
+                 ? \OWA\Core\ClientAddress::configProblems( constant( \OWA\Core\ClientAddress::CONSTANT ) ) : [],
+             defined( \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::LEVEL_CONSTANT )
+                 ? \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::levelProblems( constant( \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::LEVEL_CONSTANT ) ) : [] );
      }
 
      /**

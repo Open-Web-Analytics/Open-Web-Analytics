@@ -16,7 +16,9 @@ use OWA\Core\CoreAPI;
  *   1. Not a full server role, a version control checkout (the bell has
  *      said what is new), an unreadable installed version, automatic updates
  *      off, or an install under way.
- *   2. With a listing: the release the settings choose. Its tarball is
+ *   2. With a listing: the release the settings choose (auto_update_level:
+ *      the highest newer release in the installed major, or of any major).
+ *      Its tarball is
  *      downloaded through the update host (auto_update_download_url, never
  *      the listing's GitHub address) and checked against its SHA-256 and
  *      its signature, again
@@ -33,6 +35,10 @@ use OWA\Core\CoreAPI;
  *   4. Outside the update window it waits. Inside it, or with no window,
  *      it installs (Install): the files are copied when this run of the
  *      scheduler has finished, and the next run finishes the install.
+ *
+ * A run that is not a dry run holds the install lock from before it
+ * downloads or deletes anything until the copy is handed off (Install::$pending)
+ * or the run ends; a run that finds it held changes nothing.
  *
  * Without a listing (the update host unreachable, or not a listing hour) only 3 and 4
  * apply, to what was downloaded before.
@@ -87,6 +93,9 @@ class ReleaseCheck {
 
     /** @var string|null where a failed run failed, when its outcome does not say (Problem::STAGES) */
     private $stage = null;
+
+    /** @var array<string, mixed>|null the install lock this run holds (updater.php `tryLock`) */
+    private $hold = null;
 
     /** @var string what failed and why, for a run whose problems do not say it */
     private $why = '';
@@ -161,7 +170,21 @@ class ReleaseCheck {
         $this->listed = false;
         $this->stage  = null;
         $this->why    = '';
-        $result       = $this->check( $dry_run );
+        $this->hold   = null;
+
+        try {
+
+            $result = $this->check( $dry_run );
+
+        } finally {
+
+            // Every outcome but an install handed to the copy lets the lock go.
+            if ( $this->hold !== null ) {
+
+                Install::unlock( $this->hold );
+                $this->hold = null;
+            }
+        }
 
         if ( ! $dry_run ) {
 
@@ -252,7 +275,7 @@ class ReleaseCheck {
         if ( $list !== null && ! $dry_run ) {
 
             // A release automatic updates will install is not announced: its notice is the one that says it installed.
-            $level    = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
+            $level    = $this->level();
             $installs = $this->context['enabled'] && $this->context['role'] === \OWA\Core\ServerRole::FULL
                 && Vcs::checkout( $this->root ) === null && Version::parse( $installed ) !== null;
             $announce = $installs ? array_values( array_filter( $list,
@@ -287,6 +310,17 @@ class ReleaseCheck {
             return $this->outcome( self::FOREIGN, null, $foreign, 'Automatic updates cannot run:' );
         }
 
+        if ( ! $dry_run ) {
+
+            $this->hold = Downloads::updater()['readMarker']( $this->root ) === null
+                ? Install::lock( 'release check' ) : null;
+
+            if ( $this->hold === null ) {
+
+                return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
+            }
+        }
+
         $failure = $this->downloads->failure();
 
         if ( $failure && ! $dry_run ) {
@@ -304,11 +338,6 @@ class ReleaseCheck {
             return $this->outcome( self::OFF, null, [], 'Automatic updates are off.' );
         }
 
-        if ( ! $dry_run && $this->installing() ) {
-
-            return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
-        }
-
         // Every run, not only when a release is due: the job fails, so System
         // Health says so before a security release needs it.
         $temp = $this->context['temp'] ?? Preflight::temp( $this->downloads->tarballBytes( $installed, $installed ) );
@@ -318,7 +347,7 @@ class ReleaseCheck {
             return $this->outcome( self::NO_TEMP, null, $temp, 'No release can be installed:' );
         }
 
-        $level   = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
+        $level   = $this->level();
         $missing = null;
 
         if ( $listed && $list === null ) {
@@ -331,13 +360,14 @@ class ReleaseCheck {
 
             if ( $release === null ) {
 
+                // A pending release newer than the installed one stays: a higher release can replace it.
                 if ( ! $dry_run ) {
 
-                    $this->downloads->prune( [ $installed ] );
+                    $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );
                 }
 
                 return $this->outcome( self::CURRENT, null, [], sprintf( 'No release newer than %s for automatic %s updates.', $installed,
-                    $level === Version::PATCH ? 'patch' : 'patch and minor' ) );
+                    self::describeLevel( $level ) ) );
             }
 
             $v = $release['version'];
@@ -378,7 +408,7 @@ class ReleaseCheck {
 
             $missing = $this->ensureInstalled( $list );
 
-            // The release to install, and the installed one a failed install puts back.
+            // The release to install, replacing any other pending one, and the installed one a failed install puts back.
             $this->downloads->prune( [ $v, $installed ] );
         }
 
@@ -429,8 +459,11 @@ class ReleaseCheck {
             return $this->outcome( self::WAITING, $v, [], sprintf( '%s installs %s.', $v, self::describeWindow( $window ) ) );
         }
 
-        $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
-            array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ) );
+        // prepare() takes the hold: it hands it to the copy, or lets it go.
+        $hold       = $this->hold;
+        $this->hold = null;
+        $result     = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
+            array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ), $hold );
 
         if ( $result['outcome'] !== Install::OK && $result['outcome'] !== Install::BUSY ) {
 
@@ -469,8 +502,8 @@ class ReleaseCheck {
 
     /**
      * The newest downloaded release the settings allow: newer than the
-     * installed one, the same major, a patch for patch-only updates, and not
-     * one whose install failed.
+     * installed one, a step the level allows, and not one whose install
+     * failed.
      *
      * @param  string $level
      * @return string|null
@@ -488,6 +521,69 @@ class ReleaseCheck {
         }
 
         return null;
+    }
+
+    /**
+     * A downloaded release's upgrades_from (release.php) when the installed
+     * release is older than it; null when it installs over the installed
+     * release, names no upgrades_from, or is not downloaded.
+     *
+     * @param  string $v
+     * @return string|null
+     */
+    private function upgradesFrom( $v ) {
+
+        $from      = (string) ( $this->downloads->releaseInfo( $v )['upgrades_from'] ?? '' );
+        $installed = (string) $this->context['installed'];
+
+        if ( Version::parse( $from ) === null || Version::parse( $installed ) === null ) {
+
+            return null;
+        }
+
+        return Version::compare( $installed, $from ) < 0 ? $from : null;
+    }
+
+    /** @return string Version::MAJOR when auto_update_level says so, else Version::MINOR */
+    private function level() {
+
+        return $this->context['level'] === Version::MAJOR ? Version::MAJOR : Version::MINOR;
+    }
+
+    /**
+     * The releases a level installs, in words.
+     *
+     * @param  string $level
+     * @return string
+     */
+    private static function describeLevel( $level ) {
+
+        return $level === Version::MAJOR ? 'patch, minor and major' : 'patch and minor';
+    }
+
+    /** The constant that sets auto_update_level. */
+    const LEVEL_CONSTANT = 'OWA_AUTO_UPDATE_LEVEL';
+
+    /** The values auto_update_level takes. */
+    const LEVELS = [ Version::MINOR, Version::MAJOR ];
+
+    /**
+     * What is wrong with OWA_AUTO_UPDATE_LEVEL: a value that is not one of
+     * LEVELS. Every request is refused while there is one
+     * (Settings::configProblems()).
+     *
+     * @param  mixed $value the constant's value
+     * @return list<string>
+     */
+    public static function levelProblems( $value ) {
+
+        if ( is_string( $value ) && in_array( $value, self::LEVELS, true ) ) {
+
+            return [];
+        }
+
+        return [ sprintf( CoreAPI::t( '%1$s is %2$s, which is not a level. It is minor (patch and minor releases) or major (patch, minor and major releases).' ),
+            self::LEVEL_CONSTANT, is_scalar( $value ) ? '"' . (string) $value . '"' : gettype( $value ) ) ];
     }
 
     /**
@@ -531,7 +627,7 @@ class ReleaseCheck {
         } else {
 
             $lines[] = sprintf( 'Automatic updates: %s releases, installed %s.',
-                $c['level'] === Version::PATCH ? 'patch' : 'patch and minor', $window === null ? 'as soon as they are downloaded' : self::describeWindow( $window ) );
+                self::describeLevel( $this->level() ), $window === null ? 'as soon as they are downloaded' : self::describeWindow( $window ) );
         }
 
         foreach ( $this->downloads->versions() as $v ) {
@@ -606,7 +702,8 @@ class ReleaseCheck {
 
     /**
      * A downloaded release's checks, read from its tarball: what stops it
-     * installing here (its requirements, and what the copy needs), the
+     * installing here (the oldest release it installs over, its
+     * requirements, and what the copy needs), the
      * updates in it that must be installed by hand, and, for one older than
      * the database, the rollbacks to run first.
      *
@@ -629,7 +726,10 @@ class ReleaseCheck {
         $req     = (array) ( $release['requirements'] ?? [] );
         $env     = $this->context['env'] ?? Preflight::environment( $req );
 
-        $problems = array_merge( Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
+        $from     = $this->upgradesFrom( $v );
+        $problems = array_merge( $from === null ? [] : [ sprintf( CoreAPI::t( 'OWA %1$s installs over %2$s or later; OWA %3$s is installed. Install %2$s first.' ),
+                $v, $from, (string) $this->context['installed'] ) ],
+            Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
             Preflight::temp( $this->downloads->tarballBytes( $v, (string) $this->context['installed'] ) ) );
 
         // What the next run of cli.php needs, before OWA loads, to boot it or put this one back.
@@ -697,12 +797,6 @@ class ReleaseCheck {
         $uid = $this->context['uid'];
 
         return $uid === null ? [] : Downloads::foreignProblems( $this->downloads->foreign( (int) $uid ), (int) $uid );
-    }
-
-    /** @return bool whether an install is under way: the install marker, or the lock */
-    private function installing() {
-
-        return Downloads::updater()['readMarker']( $this->root ) !== null || InstallLock::isHeld();
     }
 
     /**

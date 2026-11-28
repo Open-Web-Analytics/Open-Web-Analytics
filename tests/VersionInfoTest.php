@@ -16,9 +16,11 @@ final class VersionInfoTest extends TestCase
     {
         $info = VersionInfo::toArray();
 
-        $this->assertSame(['format', 'version', 'branch', 'requirements', 'modules', 'updates'], array_keys($info));
+        $this->assertSame(['format', 'version', 'branch', 'upgrades_from', 'requirements', 'modules', 'updates'], array_keys($info));
         $this->assertSame(1, $info['format']);
         $this->assertSame(\OWA\Core\Env::version(), $info['version']);
+        $this->assertSame(\OWA\Core\Env::UPGRADES_FROM, $info['upgrades_from']);
+        $this->assertNotNull(\OWA\Module\Base\Classes\AutoUpdate\Version::parse($info['upgrades_from']), 'a release version');
         $this->assertSame(\OWA\Core\Requirements::toArray(), $info['requirements']);
         $this->assertSame('base', array_key_first($info['modules']));
 
@@ -102,6 +104,7 @@ final class VersionInfoTest extends TestCase
             ob_end_clean();
             $this->assertStringStartsWith(VersionInfo::GUARD, (string) file_get_contents($php));
             $this->assertSame(VersionInfo::toArray(), VersionInfo::decode((string) file_get_contents($php)));
+            $this->assertSame(\OWA\Core\Env::UPGRADES_FROM, VersionInfo::decode((string) file_get_contents($php))['upgrades_from']);
             $this->assertSame('', (string) shell_exec(sprintf('%s -f %s', escapeshellarg(PHP_BINARY), escapeshellarg($php))));
             $this->assertNull(VersionInfo::decode('{"version": "2.0.1"}'), 'bare JSON is not release.php');
         } finally {
