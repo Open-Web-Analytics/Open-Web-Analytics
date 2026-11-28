@@ -14,16 +14,6 @@ class SitesAddCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer.
-     *
-     * @return string[]
-     */
-    public static function serverRoles() {
-
-        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
-    }
-
-    /**
      * See \OWA\Core\Controller\Cli::usage().
      *
      * @return array{description: string, arguments: array<string,string>}

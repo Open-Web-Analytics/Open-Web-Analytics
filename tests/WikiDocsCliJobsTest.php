@@ -166,9 +166,9 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $md = $this->section('cli');
 
         $this->assertStringContainsString("### schedule-run\n", $md);
-        $this->assertMatchesRegularExpression('/### schedule-run\n\n(?:.+\n\n)*?Runs on server roles: `full`, `worker`\.\n/', $md);
-        $this->assertMatchesRegularExpression('/### change-password\n\n(?:.+\n\n)*?Runs on server roles: `full`, `worker`, `console`\.\n/', $md);
-        $this->assertMatchesRegularExpression('/### server-check\n\n(?:.+\n\n)*?Runs on server roles: `full`, `collector`, `worker`, `console`, `api`\.\n/', $md);
+        $this->assertMatchesRegularExpression('/### schedule-run\n\n(?:.+\n\n)*?Runs on server roles: `full`\.\n/', $md);
+        $this->assertMatchesRegularExpression('/### change-password\n\n(?:.+\n\n)*?Runs on server roles: `full`\.\n/', $md);
+        $this->assertMatchesRegularExpression('/### server-check\n\n(?:.+\n\n)*?Runs on server roles: `full`, `collector`, `api`\.\n/', $md);
     }
 
     /*

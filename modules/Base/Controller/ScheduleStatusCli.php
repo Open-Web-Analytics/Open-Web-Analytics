@@ -24,12 +24,6 @@ namespace OWA\Module\Base\Controller;
  */
 class ScheduleStatusCli extends SchedulerCli {
 
-    /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
-    public static function serverRoles() {
-
-        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
-    }
-
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
@@ -74,7 +68,7 @@ class ScheduleStatusCli extends SchedulerCli {
         if ( ! $role->runsScheduler() ) {
 
             $lines[] = '';
-            $lines[] = sprintf( 'This server (role %s) does not run the scheduler: a full or worker server runs these jobs.',
+            $lines[] = sprintf( 'This server (role %s) does not run the scheduler: the full server runs these jobs.',
                 $role->name() );
         }
 

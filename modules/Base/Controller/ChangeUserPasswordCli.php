@@ -7,12 +7,6 @@ namespace OWA\Module\Base\Controller;
 class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 {
 
-    /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
-    public static function serverRoles() {
-
-        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
-    }
-
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 

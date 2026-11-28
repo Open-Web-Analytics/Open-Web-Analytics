@@ -74,8 +74,8 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Keeping the database current, weekly, on the servers whose role runs the
-     * scheduler (the command's default roles, full and worker).
+     * Keeping the database current, weekly, on the full server, which runs
+     * the scheduler (ServerRole::SCHEDULER).
      *
      * Registered here for the reason the command is: a module's jobs are
      * collected from active modules only (Service::loadJobs()). Registered

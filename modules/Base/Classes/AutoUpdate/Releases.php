@@ -32,6 +32,17 @@ class Releases {
     const PAGE = 'https://updates.openwebanalytics.com/tag/%s';
 
     /**
+     * The User-Agent of every request to the update host (get()): the
+     * listing, each download, its signature and SHA256SUMS.
+     *
+     * @return string
+     */
+    public static function userAgent() {
+
+        return 'OpenWebAnalytics/' . \OWA\Core\Env::version() . ' (+https://updates.openwebanalytics.com/updater)';
+    }
+
+    /**
      * @param  string $tag a release's tag: its version
      * @return string the release's page
      */
@@ -304,7 +315,7 @@ class Releases {
 
             $response = $client->request( 'GET', $url, array_filter( [
                 'headers'         => [
-                    'User-Agent' => (string) \OWA\Core\CoreAPI::getSetting( 'base', 'owa_user_agent' ),
+                    'User-Agent' => self::userAgent(),
                     'Accept'     => 'application/vnd.github+json, application/octet-stream;q=0.9, */*;q=0.1',
                 ],
                 'allow_redirects' => [ 'max' => 5, 'protocols' => [ 'https' ] ],

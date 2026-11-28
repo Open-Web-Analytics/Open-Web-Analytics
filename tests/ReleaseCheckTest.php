@@ -747,7 +747,7 @@ final class ReleaseCheckTest extends TestCase
         file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
         $this->check(['2.0.1']);
         $this->check(['2.0.1'], ['enabled' => false]);
-        $this->check(['2.0.1'], ['role' => 'worker']);
+        $this->check(['2.0.1'], ['role' => 'api']);
         $this->assertSame([2, 2, 2], $this->feeds, '2.0.1 and the installed 2.0.0');
 
         $this->check(null);
@@ -929,7 +929,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('Downloading 2.0.9 failed: Fetching https://example.test/download/2.0.9/owa_2.0.9_packaged.tar failed', $this->hand('2.0.9', ['2.0.1'])['message'], 'not published');
         $this->assertStringContainsString('cannot be installed here', $this->hand('2.0.1', ['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env()])['message']);
 
-        $this->assertStringContainsString('OWA is installed from a full server only', $this->hand('2.0.1', ['2.0.1'], ['role' => \OWA\Core\ServerRole::WORKER])['message']);
+        $this->assertStringContainsString('OWA is installed from a full server only', $this->hand('2.0.1', ['2.0.1'], ['role' => \OWA\Core\ServerRole::API])['message']);
         $this->assertStringContainsString('must be release versions', $this->hand('2.0.1-beta', ['2.0.1'])['message']);
         $this->assertStringContainsString('must be release versions', $this->hand('2.0.1', ['2.0.1'], ['installed' => 'master'])['message']);
 

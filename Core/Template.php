@@ -15,6 +15,9 @@ namespace OWA\Core;
 
 class Template extends TemplateEngine {
 
+    /** Where OWA's documentation is: the project's wiki (makeWikiLink()). */
+    const DOCS_URL = 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki';
+
     /**
      * Configuration
      *
@@ -251,12 +254,14 @@ class Template extends TemplateEngine {
 
 
     /**
-     * @param  string $page
+     * A page of OWA's documentation: DOCS_URL/<page>, such as v2-Home.
+     *
+     * @param  string $page the wiki page's name
      * @return string
      */
     public function makeWikiLink( $page ) {
 
-        return sprintf( '%s/%s', $this->config['wiki_url'], $page );
+        return self::DOCS_URL . '/' . rawurlencode( (string) $page );
     }
 
     /**
@@ -513,7 +518,7 @@ class Template extends TemplateEngine {
      * deployment deliberately: setEndpoint(), setLoggerEndpoint() and
      * setApiEndpoint() are independently settable, and OWA_SERVER_ROLE splits
      * an install across servers: a collector receives beacons and queues them
-     * on SQS for a worker to drain, and never touches the reporting database.
+     * on SQS for the full server to drain, and never touches the reporting database.
      * The admin interface can be on an entirely different domain from the
      * collector.
      *

@@ -5,7 +5,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Releases::get() against a real http:// server on loopback: a body larger
- * than it may be is refused, whether or not its size is declared.
+ * than it may be is refused, whether or not its size is declared, and every
+ * request sends Releases::userAgent().
  * ReleaseCheckTest replaces get() with Releases::$fetcher, so its Guzzle call
  * is only reached here.
  */
@@ -23,6 +24,10 @@ final class ReleasesGetTest extends TestCase
 
         file_put_contents(self::$docroot . '/router.php', <<<'PHP'
 <?php
+if (isset($_GET['ua'])) {
+    echo $_SERVER['HTTP_USER_AGENT'] ?? '';
+    return;
+}
 $mb = (int) ($_GET['mb'] ?? 0);
 if (isset($_GET['declared'])) {
     header('Content-Length: ' . ($mb << 20));
@@ -84,6 +89,25 @@ PHP
     public function testABodyWithinTheLimitIsRead(): void
     {
         $this->assertSame(2 << 20, strlen(Releases::get(self::$base . '/?mb=2', 20)));
+    }
+
+    /** The header as the server received it, for a body read and for one written to a file. */
+    public function testEveryRequestSendsTheUpdaterUserAgent(): void
+    {
+        $agent = 'OpenWebAnalytics/' . \OWA\Core\Env::version() . ' (+https://updates.openwebanalytics.com/updater)';
+
+        $this->assertSame($agent, Releases::get(self::$base . '/?ua=1', 20));
+
+        $file = self::$docroot . '/sink';
+        $sink = fopen($file, 'w+b');
+
+        try {
+            $this->assertSame('', Releases::get(self::$base . '/?ua=1', 20, $sink));
+        } finally {
+            fclose($sink);
+        }
+
+        $this->assertSame($agent, file_get_contents($file));
     }
 
     public function testADeclaredBodyOverTheLimitIsRefused(): void

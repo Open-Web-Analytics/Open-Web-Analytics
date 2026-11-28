@@ -46,7 +46,7 @@ namespace OWA\Core;
  * @method list<RailSection> navRail($nav, $propertyId, $params = [], $inSettings = false)
  * @method mixed makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '')
  * @method mixed makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true)
- * @method mixed makeWikiLink($page)
+ * @method string makeWikiLink($page)
  * @method mixed out($output, $sanitize = true, $decode_special_entities = false)
  * @method void outMarkup($text, ...$markup)
  * @method list<SettingsItem> profileTabs($hierarchyNav, $params = [])

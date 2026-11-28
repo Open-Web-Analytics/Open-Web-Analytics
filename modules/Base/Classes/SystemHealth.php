@@ -364,8 +364,8 @@ class SystemHealth {
 
         /*
          * A queue backend configured while beacons are written as they arrive:
-         * right for a worker that only drains it, worth saying on a server
-         * that receives beacons.
+         * right for a server that receives no beacons, worth saying on one
+         * that does.
          */
         if ( $backend !== 'file' && ! TrackerIngest::isQueued()
              && \OWA\Core\ServerRole::current()->serves( \OWA\Core\RequestType::TRACKING ) ) {

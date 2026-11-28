@@ -36,7 +36,7 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * The server roles this command runs under (Core\ServerRole); cli.php
      * refuses it on any other. full runs every command. A command a
-     * collector, console or api server may run names that role.
+     * collector or api server may run names that role.
      *
      * Static, like usage(): cli.php asks before the controller is built.
      *
@@ -44,7 +44,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     public static function serverRoles() {
 
-        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER ];
+        return [ \OWA\Core\ServerRole::FULL ];
     }
 
     /**
