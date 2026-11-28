@@ -30,9 +30,6 @@
         "base.installCheckEnv": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallCheckEnv"
         },
-        "base.installCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\InstallCli"
-        },
         "base.installConfig": {
             "class_name": "OWA\\Module\\Base\\Controller\\InstallConfig"
         },
@@ -398,7 +395,6 @@
         "drain-tracker-ingest": "base.drainTrackerIngestCli",
         "tracker-ingest-replay": "base.trackerIngestReplayCli",
         "tracker-ingest-provision": "base.trackerIngestProvisionCli",
-        "install": "base.installCli",
         "activate": "base.moduleActivateCli",
         "deactivate": "base.moduleDeactivateCli",
         "add-site": "base.sitesAddCli",

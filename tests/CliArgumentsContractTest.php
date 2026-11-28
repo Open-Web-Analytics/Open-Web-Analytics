@@ -19,7 +19,7 @@ final class CliArgumentsContractTest extends TestCase
 {
     /** Commands whose arguments are declared but still read with getParam(). */
     private const READS_WITH_GETPARAM = [
-        'install', 'core-install', 'schedule-run', 'schedule-status', 'server-check', 'tables-cleanup', 'backup',
+        'schedule-run', 'schedule-status', 'server-check', 'tables-cleanup', 'backup',
     ];
 
     /** Read in code these commands never reach: PartitionsCli's budget checks, and the JobsCli modes other than their own. */
