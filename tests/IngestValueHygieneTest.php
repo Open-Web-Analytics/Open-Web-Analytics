@@ -161,4 +161,72 @@ final class IngestValueHygieneTest extends IngestionTestCase
         $this->assertSame('https://owa-test-site/app?x=1', $rows['page_view']['page_location']);
         $this->assertSame('/app', $rows['page_view']['page_path']);
     }
+
+    /** An order id sent as the text undefined is absent, so one such purchase does not block the next. */
+    public function testPurchasesWithAnUndefinedOrderIdAreAllKept(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        foreach (['undefined', 'null'] as $sent) {
+            $row = $this->fire('ecommerce.transaction', [
+                'ct_order_id' => $sent,
+                'ct_total'    => '10',
+                'currency'    => 'USD',
+            ], $visitor)['purchase'] ?? null;
+
+            $this->assertNotNull($row, "$sent: the purchase is stored");
+            $this->assertNull($row['transaction_id'], $sent);
+        }
+
+        $again = $this->fire('ecommerce.transaction', ['ct_order_id' => 'undefined', 'ct_total' => '10', 'currency' => 'USD'], $visitor);
+        $this->assertArrayHasKey('purchase', $again, 'not a duplicate of the first');
+    }
+
+    /** AB12 and ab12 are two orders, though the column compares case-blind. */
+    public function testOrderIdsThatDifferInCaseAreTwoOrders(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $order   = 'Hygiene-AB12-' . $visitor;
+
+        foreach ([$order, strtolower($order)] as $id) {
+            $row = $this->fire('ecommerce.transaction', ['ct_order_id' => $id, 'ct_total' => '10', 'currency' => 'USD'], $visitor)['purchase'] ?? null;
+
+            $this->assertNotNull($row, "$id is stored");
+            $this->assertSame($id, $row['transaction_id']);
+        }
+
+        $this->assertArrayNotHasKey('purchase',
+            $this->fire('ecommerce.transaction', ['ct_order_id' => $order, 'ct_total' => '10', 'currency' => 'USD'], $visitor),
+            'the same id again is a duplicate');
+    }
+
+    /** setCurrency() is on every event the page sends; a page view stores no currency. */
+    public function testAPageViewStoresNoCurrency(): void
+    {
+        $row = $this->fire('page_view', ['currency' => 'EUR'])['page_view'] ?? null;
+
+        $this->assertNotNull($row);
+        $this->assertNull($row['currency']);
+    }
+
+    /** A refund that names no currency is in its purchase's, not the Property's. */
+    public function testARefundTakesItsPurchasesCurrency(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $order   = 'hygiene-refund-' . $visitor;
+
+        $this->fire('ecommerce.transaction', ['ct_order_id' => $order, 'ct_value' => '20', 'currency' => 'JPY'], $visitor);
+
+        $row = $this->fire('refund', ['ct_order_id' => $order, 'ct_value' => '5'], $visitor)['refund'] ?? null;
+
+        $this->assertNotNull($row);
+        $this->assertSame('JPY', $row['currency']);
+        $this->assertSame('5', (string) $row['revenue'], 'converted by the purchase\'s currency: yen have no minor unit');
+
+        $whole = $this->fire('refund', ['ct_order_id' => strtoupper($order)], $visitor)['refund'] ?? null;
+
+        $this->assertNotNull($whole);
+        $this->assertNull($whole['revenue'], 'a case variant of the id names no stored purchase');
+    }
 }
+

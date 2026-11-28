@@ -2945,8 +2945,9 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The currency a purchase's amounts are in: the one it sent, else its
-     * Property's (the currencyISO3 setting, which inherits from the install).
+     * The currency a purchase's amounts are in: the one it sent, else, for a
+     * refund, its purchase's, else its Property's (the currencyISO3 setting,
+     * which inherits from the install).
      *
      * Read here rather than off the resolved `currency` property so the money
      * callbacks do not depend on where currency sits in the registry.
@@ -2961,6 +2962,17 @@ class TrackingEventHelpers {
         if ( $sent !== '' ) {
 
             return $sent;
+        }
+
+        // A refund that names no currency is in its purchase's.
+        if ( (string) $event->getEventType() === 'refund' ) {
+
+            $purchase = Currency::normalize( self::refundedPurchase( $event )['row']['currency'] ?? '' );
+
+            if ( $purchase !== '' ) {
+
+                return $purchase;
+            }
         }
 
         $site = (string) $event->getSiteId();
@@ -3013,14 +3025,8 @@ class TrackingEventHelpers {
             return null;
         }
 
-        $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $refused = $db->queryErrorCount();
-
-        $row = $db->get_row( sprintf(
-            "SELECT revenue FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
-
-        $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
+        $purchase = self::refundedPurchase( $event );
+        $revenue  = $purchase['row']['revenue'] ?? null;
 
         /*
          * Stored without an amount, the refund leaves net revenue overstated for
@@ -3031,7 +3037,7 @@ class TrackingEventHelpers {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'v2 ingest: refund of transaction %s on %s carries no amount, and %s; its revenue is stored as empty.',
-                $transaction, $site, $db->queryErrorCount() !== $refused
+                $transaction, $site, $purchase['refused']
                     ? 'the purchase could not be looked up' : 'no purchase with that transaction is stored' ) );
 
             return null;
@@ -3040,10 +3046,80 @@ class TrackingEventHelpers {
         return (int) $revenue;
     }
 
+    /** @var \WeakMap<object, array{row: array<string, mixed>|null, refused: bool}>|null refundedPurchase(), once per event */
+    private static $refunded = null;
+
     /**
-     * The `currency` property: on a purchase, always a code -- the one sent, else
-     * the Property's -- so revenue never sits beside a NULL currency. On any other
-     * event a well-formed code is kept and anything else dropped.
+     * The stored purchase a refund's transaction id names, compared
+     * case-sensitively: its revenue and currency in `row`, null when no
+     * purchase is stored or the refund names no transaction, and `refused`
+     * when the lookup failed. Looked up once per event.
+     *
+     * @param  object $event
+     * @return array{row: array<string, mixed>|null, refused: bool}
+     */
+    private static function refundedPurchase( $event ) {
+
+        self::$refunded = self::$refunded ?? new \WeakMap();
+
+        if ( isset( self::$refunded[ $event ] ) ) {
+
+            return self::$refunded[ $event ];
+        }
+
+        $transaction = trim( (string) $event->get( 'ct_order_id' ) );
+        $site        = (string) $event->getSiteId();
+        $found       = [ 'row' => null, 'refused' => false ];
+
+        if ( $transaction !== '' && $site !== '' ) {
+
+            $db     = \OWA\Core\CoreAPI::dbSingleton();
+            $errors = $db->queryErrorCount();
+
+            $row = $db->get_row( sprintf(
+                "SELECT revenue, currency FROM %s WHERE site_id = ? AND %s AND event_type = 'purchase' LIMIT 1",
+                \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
+                sprintf( OWA_SQL_EQUALS_CASE_SENSITIVE, 'transaction_id', '?' ) ), [ $site, $transaction ] );
+
+            $found = [
+                'row'     => is_array( $row ) ? $row : ( is_object( $row ) ? (array) $row : null ),
+                'refused' => $db->queryErrorCount() !== $errors,
+            ];
+        }
+
+        return self::$refunded[ $event ] = $found;
+    }
+
+    /**
+     * A transaction id sent as the text "undefined" or "null" is absent: an
+     * older tracker's addTransaction() sent an omitted argument that way, and
+     * every later purchase carrying it was dropped as a duplicate.
+     *
+     * Deleted rather than returned as null, which would leave the beacon's value
+     * on the event (setTrackerProperties()).
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
+    public static function orderId( $value, $event ) {
+
+        if ( is_string( $value ) && in_array( strtolower( trim( $value ) ), [ 'undefined', 'null' ], true ) ) {
+
+            $event->delete( 'ct_order_id' );
+
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * The `currency` property: on a purchase or refund, always a code -- the one
+     * sent, else a refund's purchase's, else the Property's -- so revenue never
+     * sits beside a NULL currency. Any other event stores none: setCurrency()
+     * puts the code on every event the page sends, where it describes no
+     * amount. A goal event's currency is set later, by Classes\GoalMarking.
      *
      * @param  mixed $value
      * @param  Event $event
@@ -3058,9 +3134,9 @@ class TrackingEventHelpers {
             return self::purchaseCurrency( $event );
         }
 
-        $code = Currency::normalize( $value );
+        $event->delete( 'currency' );
 
-        return $code !== '' ? $code : null;
+        return null;
     }
 
     /**

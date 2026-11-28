@@ -110,4 +110,38 @@ final class IngestTypedValuesTest extends TestCase
         $this->assertNull($row['tax']);
         $this->assertSame(125, $row['shipping']);
     }
+
+    /** An older addTransaction() sent an omitted order id as the text undefined. */
+    public function testAnOrderIdOfUndefinedOrNullIsAbsent(): void
+    {
+        foreach (['undefined', 'null', ' Undefined '] as $sent) {
+            $event = new Event();
+            $event->set('ct_order_id', $sent);
+
+            $this->assertNull(Helpers::orderId($sent, $event), $sent);
+            $this->assertFalse($event->get('ct_order_id'), $sent);
+        }
+
+        $event = new Event();
+        $this->assertSame('undefined-42', Helpers::orderId('undefined-42', $event));
+    }
+
+    /** setCurrency() puts the code on every event; only a purchase or refund stores it. */
+    public function testOnlyAPurchaseOrRefundStoresACurrency(): void
+    {
+        foreach (['page_view', 'click', 'add_to_cart_custom'] as $type) {
+            $event = new Event();
+            $event->setEventType($type);
+            $event->set('currency', 'EUR');
+
+            $this->assertNull(Helpers::resolveCurrency('EUR', $event), $type);
+            $this->assertFalse($event->get('currency'), $type);
+        }
+
+        $event = new Event();
+        $event->setEventType('purchase');
+        $event->set('currency', 'eur');
+        $this->assertSame('EUR', Helpers::resolveCurrency('eur', $event));
+    }
 }
+

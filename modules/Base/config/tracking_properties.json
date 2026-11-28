@@ -897,8 +897,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::orderId"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. The text undefined or null is absent (TrackingEventHelpers::orderId()): an older tracker sent an omitted argument that way."
     },
     "ct_order_source": {
         "description": "Where the order was placed, as the site describes it.",
@@ -1176,7 +1178,7 @@
         "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, so the only basis for joining a person's devices. Stored as the beacon sent it. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
-        "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting. On a goal event, the currency of its value.",
+        "description": "The ISO 4217 code of the order's currency, on a purchase or refund. When the tracker sends none: on a refund, its purchase's currency; otherwise the Property's currency setting. On a goal event, the currency of its value. Absent on every other event.",
         "set_by": "client",
         "from": [
             "o_cur"
