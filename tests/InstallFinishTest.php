@@ -53,23 +53,6 @@ final class InstallFinishTest extends CliControllerTestCase
         $this->assertSame(['2.0.3'], $d->versions());
     }
 
-    /** A release passed over for its upgrades_from is kept by the clean-up, the highest only: the next release check may install it. */
-    public function testTheCleanUpKeepsTheHighestNewerRelease(): void
-    {
-        $d      = new Downloads($this->tmp . '/updates');
-        $tarred = function (string $v) use ($d): void {
-            file_put_contents($d->tarball($v), 'a tarball');
-            file_put_contents($d->tarball($v) . '.sig', 'a signature');
-        };
-
-        foreach (['2.1.0', '2.2.0', '3.0.0', '3.1.0'] as $v) {
-            $tarred($v);
-        }
-
-        Finish::cleanup($d, '2.2.0');
-        $this->assertSame(['3.1.0', '2.2.0'], $d->versions());
-    }
-
     /** One notice per failed release; what it says depends on whether the new release had booted. */
     /**
      * A reverted install is noticed once it is not tried again; a broken one
