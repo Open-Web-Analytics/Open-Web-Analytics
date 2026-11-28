@@ -1049,7 +1049,19 @@ class OWATracker  {
         var state = this.createSharedStateValue();
         form.action = this.addSharedStateToUrl( form.action, state );
 
-        // requestSubmit() inside the form's own submit event does nothing.
+        OWATracker.submitForm( form );
+    }
+
+    /**
+     * Submit a form: requestSubmit() where the browser has it, so its submit
+     * handlers and validation run; submit() inside the form's own submit
+     * event, where requestSubmit() does nothing.
+     *
+     * @internal
+     * @param {HTMLFormElement} form
+     */
+    static submitForm( form ) {
+
         var current = ( typeof window !== 'undefined' ) ? window.event : undefined;
         var inSubmit = !! current && current.type === 'submit' && current.target === form;
 
@@ -1061,6 +1073,49 @@ class OWATracker  {
         }
 
         form.submit();
+    }
+
+    /**
+     * What window.OWATracker is in a browser that is not tracked
+     * (tracker-dom.js): every tracker method does nothing, so a page calling
+     * one directly does not throw, and shareStateByLink() and
+     * shareStateByPost() still navigate and submit, carrying no state.
+     *
+     * @internal
+     * @return {Object}
+     */
+    static untrackedStub() {
+
+        var stub = { untracked: true };
+        var proto = OWATracker.prototype;
+
+        Object.getOwnPropertyNames( proto ).forEach( function ( name ) {
+
+            var descriptor = Object.getOwnPropertyDescriptor( proto, name );
+
+            if ( name !== 'constructor' && descriptor && typeof descriptor.value === 'function' ) {
+
+                stub[ name ] = function () {};
+            }
+        } );
+
+        stub.shareStateByLink = function ( url ) {
+
+            if ( url ) {
+
+                document.location.href = url;
+            }
+        };
+
+        stub.shareStateByPost = function ( form ) {
+
+            if ( form ) {
+
+                OWATracker.submitForm( form );
+            }
+        };
+
+        return stub;
     }
 
     getCookieDomain() {

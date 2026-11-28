@@ -170,7 +170,7 @@ test('with no overlay link, a privacy signal still runs nothing', () => {
     loadWith(cmds);
 
     expect(window.owa_cmds).toBe(cmds);
-    expect(window.OWATracker).toBeUndefined();
+    expect(window.OWATracker.untracked).toBe(true);
     expect(sent).toHaveLength(0);
 });
 

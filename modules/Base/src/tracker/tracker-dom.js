@@ -1,4 +1,5 @@
 import { CommandQueue as OwaCommandQueue } from './CommandQueue.js';
+import { OWATracker } from './Tracker.js';
 import { Util as OwaUtil } from '../common/Util.js';
 import { OWA_instance as OwaInstance } from '../common/owa.js';
 
@@ -63,7 +64,10 @@ if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseU
         ? q.optionFor( 'OWATracker', 'honorPrivacySignals' ) !== false
         : true;
 
-    if ( OwaUtil.isBrowserTrackable( honorPrivacySignals ) ) {
+    var trackable = OwaUtil.isBrowserTrackable( honorPrivacySignals );
+    var overlay   = ! trackable && !! q && OwaUtil.opensOverlay();
+
+    if ( trackable ) {
 
         window['owa_cmds'] = q;
         window['owa_cmds'].process();
@@ -73,7 +77,7 @@ if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseU
         // and any named one the commands created.
         q.startFeatures();
 
-    } else if ( q && OwaUtil.opensOverlay() ) {
+    } else if ( overlay ) {
 
         var signalled = honorPrivacySignals && OwaUtil.sendsPrivacySignal();
 
@@ -115,5 +119,15 @@ if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseU
             'automation and is treated as a crawler. Set window.owa_track_automated_browsers ' +
             '= true before the tracker loads if these visits should be recorded.'
         );
+    }
+
+    /*
+     * A browser that is not tracked still gets an OWATracker, whose methods do
+     * nothing (OWATracker.untrackedStub()), so a page calling it directly does
+     * not throw and its cross-domain links still navigate.
+     */
+    if ( ! trackable && ! overlay && typeof window.OWATracker === 'undefined' ) {
+
+        window.OWATracker = OWATracker.untrackedStub();
     }
 })();
