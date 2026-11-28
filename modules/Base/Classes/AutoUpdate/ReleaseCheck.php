@@ -18,11 +18,7 @@ use OWA\Core\CoreAPI;
  *      off, or an install under way.
  *   2. With a listing: the release the settings choose (auto_update_level:
  *      the highest newer release in the installed major, or of any major).
- *      One whose upgrades_from (release.php) is newer than the installed
- *      release is passed over for the highest lower one that installs over
- *      it: it follows on a later run. The highest release passed over stays
- *      downloaded; a lower one is deleted, and downloaded again when it is
- *      chosen. Its tarball is
+ *      Its tarball is
  *      downloaded through the update host (auto_update_download_url, never
  *      the listing's GitHub address) and checked against its SHA-256 and
  *      its signature, again
@@ -39,6 +35,10 @@ use OWA\Core\CoreAPI;
  *   4. Outside the update window it waits. Inside it, or with no window,
  *      it installs (Install): the files are copied when this run of the
  *      scheduler has finished, and the next run finishes the install.
+ *
+ * A run that is not a dry run holds the install lock from before it
+ * downloads or deletes anything until the copy is handed off (Install::$pending)
+ * or the run ends; a run that finds it held changes nothing.
  *
  * Without a listing (the update host unreachable, or not a listing hour) only 3 and 4
  * apply, to what was downloaded before.
@@ -93,6 +93,9 @@ class ReleaseCheck {
 
     /** @var string|null where a failed run failed, when its outcome does not say (Problem::STAGES) */
     private $stage = null;
+
+    /** @var array<string, mixed>|null the install lock this run holds (updater.php `tryLock`) */
+    private $hold = null;
 
     /** @var string what failed and why, for a run whose problems do not say it */
     private $why = '';
@@ -167,7 +170,21 @@ class ReleaseCheck {
         $this->listed = false;
         $this->stage  = null;
         $this->why    = '';
-        $result       = $this->check( $dry_run );
+        $this->hold   = null;
+
+        try {
+
+            $result = $this->check( $dry_run );
+
+        } finally {
+
+            // Every outcome but an install handed to the copy lets the lock go.
+            if ( $this->hold !== null ) {
+
+                Install::unlock( $this->hold );
+                $this->hold = null;
+            }
+        }
 
         if ( ! $dry_run ) {
 
@@ -293,6 +310,17 @@ class ReleaseCheck {
             return $this->outcome( self::FOREIGN, null, $foreign, 'Automatic updates cannot run:' );
         }
 
+        if ( ! $dry_run ) {
+
+            $this->hold = Downloads::updater()['readMarker']( $this->root ) === null
+                ? Install::lock( 'release check' ) : null;
+
+            if ( $this->hold === null ) {
+
+                return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
+            }
+        }
+
         $failure = $this->downloads->failure();
 
         if ( $failure && ! $dry_run ) {
@@ -304,15 +332,10 @@ class ReleaseCheck {
 
             if ( ! $dry_run ) {
 
-                $this->downloads->prune( [ $installed ] );
+                $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );
             }
 
             return $this->outcome( self::OFF, null, [], 'Automatic updates are off.' );
-        }
-
-        if ( ! $dry_run && $this->installing() ) {
-
-            return $this->outcome( self::BUSY, null, [], 'An install is under way; this run changed nothing.' );
         }
 
         // Every run, not only when a release is due: the job fails, so System
@@ -333,82 +356,59 @@ class ReleaseCheck {
 
         } elseif ( $list !== null ) {
 
-            $candidates = Releases::candidates( $list, $installed, $level );
+            $release = Releases::choose( $list, $installed, $level );
 
-            if ( ! $candidates ) {
+            if ( $release === null ) {
 
                 if ( ! $dry_run ) {
 
-                    $this->downloads->prune( [ $installed ] );
+                    $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );
                 }
 
                 return $this->outcome( self::CURRENT, null, [], sprintf( 'No release newer than %s for automatic %s updates.', $installed,
                     self::describeLevel( $level ) ) );
             }
 
-            // Releases passed over for a lower one, highest first: their
-            // upgrades_from is newer than the installed release.
-            $passed = [];
+            $v = $release['version'];
+            $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
 
-            foreach ( $candidates as $i => $release ) {
+            if ( $dry_run ) {
 
-                $v = $release['version'];
-                $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
+                return $this->outcome( self::CHOSEN, $v );
+            }
 
-                if ( $dry_run ) {
+            if ( $this->skips( $v ) ) {
 
-                    if ( $this->upgradesFrom( $v ) !== null && isset( $candidates[ $i + 1 ] ) ) {
+                $retry = (int) ( $this->downloads->failure()['retry_after'] ?? 0 );
 
-                        $this->lines[] = $this->passedOver( $v );
+                return $this->outcome( self::SKIPPED, $v, [], $retry > 0
+                    ? sprintf( 'Installing %s failed; it is tried again after %s UTC. To try it now: php cli.php cmd=core-install --version=%s', $v, gmdate( 'Y-m-d H:i', $retry ), $v )
+                    : sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
+            }
 
-                        continue;
-                    }
+            // Downloaded when it has not been, and again when the asset GitHub
+            // lists now is not the one downloaded (it was replaced).
+            $replaced = $this->downloads->has( $v ) && $release['sha256'] !== null
+                && ! hash_equals( (string) $release['sha256'], (string) hash_file( 'sha256', $this->downloads->tarball( $v ) ) );
 
-                    return $this->outcome( self::CHOSEN, $v );
+            if ( $replaced || ! $this->downloads->has( $v ) ) {
+
+                try {
+
+                    $this->downloads->download( Releases::via( $release, (string) $this->context['download'] ) );
+
+                } catch ( \RuntimeException $e ) {
+
+                    return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
                 }
 
-                if ( $this->skips( $v ) ) {
-
-                    $retry = (int) ( $this->downloads->failure()['retry_after'] ?? 0 );
-
-                    return $this->outcome( self::SKIPPED, $v, [], $retry > 0
-                        ? sprintf( 'Installing %s failed; it is tried again after %s UTC. To try it now: php cli.php cmd=core-install --version=%s', $v, gmdate( 'Y-m-d H:i', $retry ), $v )
-                        : sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
-                }
-
-                // Downloaded when it has not been, and again when the asset GitHub
-                // lists now is not the one downloaded (it was replaced).
-                $replaced = $this->downloads->has( $v ) && $release['sha256'] !== null
-                    && ! hash_equals( (string) $release['sha256'], (string) hash_file( 'sha256', $this->downloads->tarball( $v ) ) );
-
-                if ( $replaced || ! $this->downloads->has( $v ) ) {
-
-                    try {
-
-                        $this->downloads->download( Releases::via( $release, (string) $this->context['download'] ) );
-
-                    } catch ( \RuntimeException $e ) {
-
-                        return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
-                    }
-
-                    $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
-                }
-
-                // The lowest candidate is judged whatever its upgrades_from: judge() says what it needs.
-                if ( $this->upgradesFrom( $v ) === null || ! isset( $candidates[ $i + 1 ] ) ) {
-
-                    break;
-                }
-
-                $this->lines[] = $this->passedOver( $v );
-                $passed[]      = $v;
+                $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
             }
 
             $missing = $this->ensureInstalled( $list );
 
-            // The release to install, the installed one a failed install puts back, and the highest passed over.
-            $this->downloads->prune( [ $v, $installed, $passed[0] ?? null ] );
+            // The release to install, replacing any other pending one, and the installed one a failed install puts back.
+            $this->downloads->prune( [ $v, $installed ] );
         }
 
         $v = $this->candidate( $level );
@@ -458,8 +458,11 @@ class ReleaseCheck {
             return $this->outcome( self::WAITING, $v, [], sprintf( '%s installs %s.', $v, self::describeWindow( $window ) ) );
         }
 
-        $result = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
-            array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ) );
+        // prepare() takes the hold: it hands it to the copy, or lets it go.
+        $hold       = $this->hold;
+        $this->hold = null;
+        $result     = Install::prepare( $this->downloads, $v, $installed, $this->root, (bool) $this->context['scheduled'],
+            array_merge( [ sprintf( 'Release check (%s), OWA %s installed.', $this->context['scheduled'] ? 'the scheduler\'s' : 'by hand', $installed ) ], $this->lines ), $hold );
 
         if ( $result['outcome'] !== Install::OK && $result['outcome'] !== Install::BUSY ) {
 
@@ -498,10 +501,8 @@ class ReleaseCheck {
 
     /**
      * The newest downloaded release the settings allow: newer than the
-     * installed one, a step the level allows, not one whose install failed,
-     * and one that installs over the installed release (its upgrades_from).
-     * When none of them installs over it, the newest of the rest, for
-     * judge() to say why.
+     * installed one, a step the level allows, and not one whose install
+     * failed.
      *
      * @param  string $level
      * @return string|null
@@ -509,24 +510,16 @@ class ReleaseCheck {
     private function candidate( $level ) {
 
         $installed = (string) $this->context['installed'];
-        $fallback  = null;
 
         foreach ( $this->downloads->versions() as $v ) {
 
-            if ( ! Version::allows( $level, $installed, $v ) || $this->skips( $v ) ) {
-
-                continue;
-            }
-
-            if ( $this->upgradesFrom( $v ) === null ) {
+            if ( Version::allows( $level, $installed, $v ) && ! $this->skips( $v ) ) {
 
                 return $v;
             }
-
-            $fallback = $fallback ?? $v;
         }
 
-        return $fallback;
+        return null;
     }
 
     /**
@@ -548,18 +541,6 @@ class ReleaseCheck {
         }
 
         return Version::compare( $installed, $from ) < 0 ? $from : null;
-    }
-
-    /**
-     * The line that says a release was passed over for a lower one.
-     *
-     * @param  string $v
-     * @return string
-     */
-    private function passedOver( $v ) {
-
-        return sprintf( '%1$s installs over %2$s or later, and %3$s is installed: the highest lower release goes first, and %1$s follows once it has installed.',
-            $v, (string) $this->upgradesFrom( $v ), (string) $this->context['installed'] );
     }
 
     /** @return string Version::MAJOR when auto_update_level says so, else Version::MINOR */
@@ -815,12 +796,6 @@ class ReleaseCheck {
         $uid = $this->context['uid'];
 
         return $uid === null ? [] : Downloads::foreignProblems( $this->downloads->foreign( (int) $uid ), (int) $uid );
-    }
-
-    /** @return bool whether an install is under way: the install marker, or the lock */
-    private function installing() {
-
-        return Downloads::updater()['readMarker']( $this->root ) !== null || InstallLock::isHeld();
     }
 
     /**

@@ -43,8 +43,10 @@ class Install {
     const WAIT = 300;
 
     /**
-     * Take the lock and prove both tarballs; set $pending. The caller has
-     * judged the release.
+     * Take the lock, or the caller's hold of it, and prove both tarballs; set
+     * $pending, which holds the lock until the copy. On any other outcome the
+     * lock is let go, the caller's hold too. The caller has judged the
+     * release.
      *
      * @param  Downloads $downloads
      * @param  string    $v         the release to install, downloaded
@@ -52,18 +54,24 @@ class Install {
      * @param  string    $root      the OWA directory
      * @param  bool         $quiet     say nothing after the copy (the scheduler's runs)
      * @param  list<string> $log       what the check did, which starts the install's log (the marker's)
+     * @param  array<string, mixed>|null $hold the install lock the caller took (lock()); null takes it here
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet, array $log = [] ) {
+    public static function prepare( Downloads $downloads, $v, $installed, $root, $quiet, array $log = [], $hold = null ) {
 
         $u = Downloads::updater();
 
         if ( $u['readMarker']( $root ) !== null ) {
 
+            if ( $hold !== null ) {
+
+                $u['unlock']( $hold );
+            }
+
             return self::answer( self::BUSY, 'An install is under way; php cli.php cmd=core-update-status says where it is.' );
         }
 
-        $hold = $u['tryLock']( dirname( InstallLock::path() ), sprintf( 'install %s', $v ) );
+        $hold = $hold ?? $u['tryLock']( dirname( InstallLock::path() ), sprintf( 'install %s', $v ) );
 
         if ( $hold === null ) {
 
@@ -128,15 +136,18 @@ class Install {
     /**
      * cmd=core-install --version=<x.y.z> [--force]: that release installed
      * now, whatever the automatic update settings say, its tarball and
-     * signature fetched from the download URL by its version every time
-     * (Releases::byTag()); the listing is read only when the installed
+     * signature fetched from the download URL by its version (Releases::byTag())
+     * unless they are held already; the listing is read only when the installed
      * release's tarball, which a failed install puts back, must be
      * downloaded too (ReleaseCheck::ensureInstalled()). Any release whose
      * requirements and upgrades_from this installation meets
      * (ReleaseCheck::judge()), of any major version. The installed release
      * again is reinstalled, copying the files that differ; an older one only
      * with $force, and never one older than the database schema. A failure
-     * recorded for it is cleared: whoever installs by hand has dealt with it. A release refused after its download is deleted.
+     * recorded for it is cleared: whoever installs by hand has dealt with it.
+     * A refused release's tarball stays, as the pending one (Downloads), so
+     * trying it again downloads nothing. The install lock is held from
+     * before the download until the copy has it (installNamed()).
      *
      * @param  string               $version
      * @param  bool                 $force
@@ -150,6 +161,12 @@ class Install {
 
         return self::installNamed( $v, $force, $downloads ?? new Downloads(), $context,
             static function ( Downloads $downloads, array $c ) use ( $v ) {
+
+                // Held already, as one refused before: proved again when it is opened.
+                if ( $downloads->has( $v ) ) {
+
+                    return null;
+                }
 
                 try {
 
@@ -335,63 +352,101 @@ class Install {
             return self::answer( self::FAILED, implode( ' ', $foreign ) );
         }
 
-        // --file makes no network request: the installed release's tarball, which a
-        // failed copy puts back, must be held already, unless the file is that release.
-        if ( $offline && $v !== $installed && ! $downloads->has( $installed ) ) {
+        if ( Downloads::updater()['readMarker']( $root ) !== null ) {
 
-            return self::answer( self::REFUSED, sprintf( 'OWA %1$s\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. Install with --version, or place %2$s and its .sig in %3$s.',
-                $installed, sprintf( Releases::ASSET, $installed ), $downloads->root() !== '' ? $downloads->root() . '/' : $downloads->dataDir() . '/updates-<id>/' ) );
+            return self::answer( self::BUSY, 'An install is under way; php cli.php cmd=core-update-status says where it is.' );
         }
 
-        $failed = $fetch( $downloads, $c );
+        // Held from before anything is fetched or deleted until the copy has it.
+        $hold = self::lock( sprintf( 'install %s', $v ) );
 
-        if ( $failed !== null ) {
+        if ( $hold === null ) {
 
-            return self::answer( self::FAILED, $failed );
+            return self::answer( self::BUSY, 'Another install holds the install lock; try again in a minute.' );
         }
 
-        // A release refused here was fetched for nothing: it goes, unless it is
-        // the installed one (a reinstall), which a failed install puts back.
-        $refuse = static function ( $outcome, $message, array $lines = [] ) use ( $downloads, $v, $installed ) {
+        $handed = false;
 
-            if ( $v !== $installed ) {
+        try {
 
-                @unlink( $downloads->tarball( $v ) );
-                @unlink( $downloads->tarball( $v ) . '.sig' );
+            // --file makes no network request: the installed release's tarball, which a
+            // failed copy puts back, must be held already, unless the file is that release.
+            if ( $offline && $v !== $installed && ! $downloads->has( $installed ) ) {
+
+                return self::answer( self::REFUSED, sprintf( 'OWA %1$s\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. Install with --version, or place %2$s and its .sig in %3$s.',
+                    $installed, sprintf( Releases::ASSET, $installed ), $downloads->root() !== '' ? $downloads->root() . '/' : $downloads->dataDir() . '/updates-<id>/' ) );
             }
 
-            return self::answer( $outcome, $message, $lines );
-        };
+            $failed = $fetch( $downloads, $c );
 
-        $missing = $check->ensureInstalled();
+            if ( $failed !== null ) {
 
-        if ( $missing !== null ) {
+                return self::answer( self::FAILED, $failed );
+            }
 
-            return $refuse( self::REFUSED, $missing );
+            // The release named is the pending one, refused or not: any other goes.
+            $downloads->prune( [ $v, $installed ] );
+
+            $missing = $check->ensureInstalled();
+
+            if ( $missing !== null ) {
+
+                return self::answer( self::REFUSED, $missing );
+            }
+
+            $judged = $check->judge( $v );
+
+            if ( $judged['rollback'] ) {
+
+                return self::answer( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            }
+
+            if ( $judged['problems'] ) {
+
+                return self::answer( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
+            }
+
+            // prepare() takes the hold: it hands it to the copy, or lets it go.
+            $handed = true;
+            $result = self::prepare( $downloads, $v, $installed, $root, false, [ $how ], $hold );
+
+        } finally {
+
+            if ( ! $handed ) {
+
+                self::unlock( $hold );
+            }
         }
 
-        $judged = $check->judge( $v );
+        if ( $result['outcome'] === self::OK ) {
 
-        if ( $judged['rollback'] ) {
-
-            return $refuse( self::REFUSED, sprintf( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:', $v ), $judged['rollback'] );
+            $downloads->clearFailure();
         }
-
-        if ( $judged['problems'] ) {
-
-            return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
-        }
-
-        $result = self::prepare( $downloads, $v, $installed, $root, false, [ $how ] );
-
-        if ( $result['outcome'] !== self::OK ) {
-
-            return $refuse( $result['outcome'], $result['message'], $result['lines'] );
-        }
-
-        $downloads->clearFailure();
 
         return $result;
+    }
+
+    /**
+     * The install lock, taken now (updater.php `tryLock`), or null when
+     * another process holds it.
+     *
+     * @param  string $who what takes it, for the lock file's line
+     * @return array<string, mixed>|null
+     */
+    public static function lock( $who ) {
+
+        return Downloads::updater()['tryLock']( dirname( InstallLock::path() ), (string) $who );
+    }
+
+    /**
+     * Let go of a hold lock() gave.
+     *
+     * @param  array<string, mixed> $hold
+     * @return void
+     */
+    public static function unlock( array $hold ) {
+
+        Downloads::updater()['unlock']( $hold );
     }
 
     /**

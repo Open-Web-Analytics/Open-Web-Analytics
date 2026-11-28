@@ -13,10 +13,11 @@ use OWA\Core\SafeFile;
  *   updates-<id>/                0755: listed by the Updates screen (UpdatesState)
  *     owa_<v>_packaged.tar       0600: a release tarball, there only once its signature
  *     owa_<v>_packaged.tar.sig   0644  checked by a trusted key (Signature), and its SHA-256
- *                                      the listing's digest where it has one. Three at most: the installed
- *                                      release's, which a failed install puts back, the one
- *                                      the release check chose, until it installs, and the
- *                                      highest release passed over for its upgrades_from.
+ *                                      the listing's digest where it has one. Two at most: the installed
+ *                                      release's, which a failed install puts back, and the
+ *                                      pending one: the release the release check or
+ *                                      cmd=core-install chose last, refused or waiting, until it
+ *                                      installs or another chosen release replaces it.
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
  *                                installs; written by updater.php `recordFailure` alone
@@ -259,6 +260,21 @@ class Downloads {
         usort( $out, static fn ( $a, $b ) => Version::compare( $b, $a ) );
 
         return $out;
+    }
+
+    /**
+     * The pending release (the class docblock) a run that chooses nothing
+     * keeps: the newest downloaded release newer than $installed, or null.
+     *
+     * @param  string $installed
+     * @return string|null
+     */
+    public function pending( $installed ) {
+
+        $newest = $this->versions()[0] ?? null;
+
+        return $newest !== null && Version::parse( (string) $installed ) !== null && Version::compare( $newest, (string) $installed ) > 0
+            ? $newest : null;
     }
 
     /**

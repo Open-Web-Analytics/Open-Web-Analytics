@@ -623,8 +623,8 @@ final class ReleaseCheckTest extends TestCase
             'the listing, then the release by its version');
     }
 
-    /** A major downloaded for tonight, then automatic updates set to minor: it is deleted, and nothing installs. */
-    public function testALevelThatNoLongerChoosesItDeletesTheDownload(): void
+    /** A major downloaded for tonight, then automatic updates set to minor: nothing installs, and it stays as the pending tarball. */
+    public function testALevelThatNoLongerChoosesItInstallsNothing(): void
     {
         $this->check(['3.0.0'], ['level' => 'major']);
         $this->assertTrue($this->downloads()->has('3.0.0'));
@@ -632,16 +632,18 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check(['3.0.0'], ['level' => 'minor']);
         $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
         $this->assertStringContainsString('No release newer than 2.0.0 for automatic patch and minor updates.', implode("\n", $result['lines']));
-        $this->assertFalse($this->downloads()->has('3.0.0'));
+        $this->assertTrue($this->downloads()->has('3.0.0'));
+        $this->assertSame(ReleaseCheck::UNREACHED, $this->check(null, ['level' => 'minor', 'window' => '', 'days' => ''])['outcome'], 'not installed from the disk either');
+        $this->assertNull(Install::$pending);
     }
 
-    /** Automatic updates turned off: what was downloaded goes, but the installed release's. */
-    public function testTurningOffDeletesTheDownload(): void
+    /** Automatic updates turned off: nothing installs; the pending tarball stays, for an install by hand. */
+    public function testTurningOffKeepsThePendingTarball(): void
     {
         $this->check(['2.1.0']);
 
         $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false, 'window' => '', 'days' => ''])['outcome']);
-        $this->assertSame(['2.0.0'], $this->downloads()->versions());
+        $this->assertSame(['2.1.0', '2.0.0'], $this->downloads()->versions());
         $this->assertNull(Install::$pending);
     }
 
@@ -896,6 +898,7 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
 
         // The listing's 2.0.0 tarball is fine; this one is signed for another release.
+        @unlink($this->downloads()->tarball('2.0.3'));
         $this->served['https://example.test/download/2.0.3/owa_2.0.3_packaged.tar.sig'] = $this->tmp . '/bad.sig';
         file_put_contents($this->tmp . '/bad.sig', Signature::sign('2.0.4', hash_file('sha256', $tar), $this->signingKey));
         $result = $this->hand('2.0.3', [], []);
@@ -1055,7 +1058,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('This database is newer than 2.0.1 expects', $result['message']);
         $this->assertSame(['php cli.php cmd=core-update-schema rollback=base.095', 'php cli.php cmd=core-update-schema rollback=base.094'], $result['lines']);
         $this->assertNull(Install::$pending);
-        $this->assertFalse($this->downloads()->has('2.0.1'), 'refused after its download: deleted');
+        $this->assertTrue($this->downloads()->has('2.0.1'), 'refused, it stays as the pending tarball');
         $this->assertTrue($this->downloads()->has('2.0.4'), 'the installed release\'s stays');
 
         exec('rm -rf ' . escapeshellarg($this->tmp . '/build-2.0.1'));
@@ -1107,8 +1110,74 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(Install::REFUSED, $result['outcome']);
         $this->assertSame('4.0.0 cannot be installed here:', $result['message']);
         $this->assertSame(['OWA 4.0.0 installs over 3.0.0 or later; OWA 2.0.0 is installed. Install 3.0.0 first.'], $result['lines']);
-        $this->assertFalse($this->downloads()->has('4.0.0'), 'refused after its download: deleted');
+        $this->assertTrue($this->downloads()->has('4.0.0'), 'refused, it stays as the pending tarball');
         $this->assertNull(Install::$pending);
+        $this->assertFalse(InstallLock::isHeld(), 'the lock is let go');
+    }
+
+    /** A release refused by hand stays downloaded: trying it again downloads nothing; another one named replaces it. */
+    public function testARefusedReleaseIsNotDownloadedAgain(): void
+    {
+        $this->releaseJson['4.0.0'] = ['upgrades_from' => '3.0.0'];
+        $this->assertSame(Install::REFUSED, $this->hand('4.0.0', ['4.0.0'])['outcome']);
+        $this->assertSame(['4.0.0', '2.0.0'], $this->downloads()->versions());
+
+        $asked = [];
+        $serve = Releases::$fetcher;
+        Releases::$fetcher = function ($url, $timeout, $sink) use (&$asked, $serve) {
+            $asked[] = $url;
+
+            return $serve($url, $timeout, $sink);
+        };
+
+        $result = $this->hand('4.0.0', ['4.0.0']);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertSame(['OWA 4.0.0 installs over 3.0.0 or later; OWA 2.0.0 is installed. Install 3.0.0 first.'], $result['lines']);
+        $this->assertSame([], $asked, 'nothing downloaded');
+
+        $this->assertSame(Install::OK, $this->hand('3.0.0', ['3.0.0'])['outcome']);
+        $this->assertSame(['3.0.0', '2.0.0'], $this->downloads()->versions(), '4.0.0 is replaced');
+        $this->dropPending();
+    }
+
+    /** The install lock is taken before anything is downloaded or deleted: whoever starts second changes nothing. */
+    public function testTheLockIsTakenBeforeTheDownload(): void
+    {
+        $h = fopen(InstallLock::$path, 'c');
+        flock($h, LOCK_EX);
+
+        try {
+            $result = $this->hand('2.0.1', ['2.0.1']);
+            $this->assertSame(Install::BUSY, $result['outcome']);
+            $this->assertSame('Another install holds the install lock; try again in a minute.', $result['message']);
+            $this->assertSame([], glob($this->tmp . '/data/updates-*/owa_*'), 'by hand: nothing downloaded');
+
+            $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
+            $this->assertSame(ReleaseCheck::BUSY, $result['outcome']);
+            $this->assertStringContainsString('An install is under way; this run changed nothing.', implode("\n", $result['lines']));
+            $this->assertSame([], glob($this->tmp . '/data/updates-*/owa_*'), 'scheduled: nothing downloaded');
+        } finally {
+            flock($h, LOCK_UN);
+            fclose($h);
+        }
+
+        // A dry run takes no lock, so one held does not stop it.
+        $h = fopen(InstallLock::$path, 'c');
+        flock($h, LOCK_EX);
+        try {
+            $this->assertSame(ReleaseCheck::CHOSEN, $this->check(['2.0.1'], [], null, null, true)['outcome']);
+        } finally {
+            flock($h, LOCK_UN);
+            fclose($h);
+        }
+
+        // Refused, by hand or scheduled: the lock is let go.
+        $this->assertSame(Install::REFUSED, $this->hand('2.0.1', ['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env()])['outcome']);
+        $this->assertFalse(InstallLock::isHeld());
+        $this->assertSame(ReleaseCheck::UNMET, $this->check(['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env(), 'window' => '', 'days' => ''])['outcome']);
+        $this->assertFalse(InstallLock::isHeld());
+        $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.0.1'])['outcome']);
+        $this->assertFalse(InstallLock::isHeld(), 'waiting for its window');
     }
 
     /** judge(): below the release's upgrades_from it is refused; at or above it, or with none in its release.php, it is not. */
@@ -1126,78 +1195,39 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /**
-     * major: a release whose upgrades_from is newer than the installed release
-     * is passed over for the highest lower one that installs over it, and kept
-     * downloaded; once that has installed, it follows.
+     * A release whose upgrades_from is newer than the installed release waits as an unmet requirement does:
+     * no lower release instead, downloaded once, judged again each run from the file on disk.
      */
-    public function testALongJumpTakesSeveralRuns(): void
-    {
-        $this->releaseJson['3.1.0'] = ['upgrades_from' => '2.2.0'];
-        $this->releaseJson['3.0.0'] = ['upgrades_from' => '2.0.0'];
-        $now = ['window' => '', 'days' => '', 'level' => 'major'];
-
-        $result = $this->check(['2.1.0', '2.2.0', '3.0.0', '3.1.0'], $now);
-        $lines  = implode("\n", $result['lines']);
-        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], $lines);
-        $this->assertSame('3.0.0', Install::$pending['to'], 'the highest that installs over 2.0.0');
-        $this->assertStringContainsString('The release to update to is 3.1.0 (a major release)', $lines);
-        $this->assertStringContainsString('3.1.0 installs over 2.2.0 or later, and 2.0.0 is installed: the highest lower release goes first, and 3.1.0 follows once it has installed.', $lines);
-        $this->assertStringContainsString('The release to update to is 3.0.0 (a major release)', $lines);
-        $this->assertSame(['3.1.0', '3.0.0', '2.0.0'], $this->downloads()->versions(), 'the one passed over is kept');
-        $this->dropPending();
-
-        $result = $this->check(null, $now);
-        $this->assertSame('3.0.0', $result['version'], 'without a listing, the same choice from what is downloaded');
-        $this->dropPending();
-
-        $result = $this->check(['2.1.0', '2.2.0', '3.0.0', '3.1.0'], $now + ['installed' => '3.0.0']);
-        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
-        $this->assertSame('3.1.0', Install::$pending['to']);
-        $this->assertStringNotContainsString('Downloaded 3.1.0', implode("\n", $result['lines']), 'kept from the run that passed it over');
-        $this->dropPending();
-    }
-
-    /** Of three releases passed over, only the highest stays downloaded. */
-    public function testOnlyTheHighestReleasePassedOverIsKept(): void
-    {
-        $this->releaseJson['3.3.0'] = ['upgrades_from' => '3.2.0'];
-        $this->releaseJson['3.2.0'] = ['upgrades_from' => '3.1.0'];
-        $this->releaseJson['3.1.0'] = ['upgrades_from' => '3.0.0'];
-
-        $result = $this->check(['3.0.0', '3.1.0', '3.2.0', '3.3.0'], ['window' => '', 'days' => '', 'level' => 'major']);
-        $lines  = implode("\n", $result['lines']);
-        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], $lines);
-        $this->assertSame('3.0.0', Install::$pending['to']);
-        foreach (['3.3.0', '3.2.0', '3.1.0'] as $v) {
-            $this->assertStringContainsString("$v installs over", $lines);
-        }
-        $this->assertSame(['3.3.0', '3.0.0', '2.0.0'], $this->downloads()->versions(), 'not 3.2.0 or 3.1.0');
-        $this->dropPending();
-    }
-
-    /** minor: the same, within the installed major. */
-    public function testUnderMinorALongJumpStaysInTheMajor(): void
-    {
-        $this->releaseJson['2.2.0'] = ['upgrades_from' => '2.1.0'];
-
-        $result = $this->check(['2.1.0', '2.2.0', '3.0.0'], ['window' => '', 'days' => '']);
-        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
-        $this->assertSame('2.1.0', Install::$pending['to']);
-        $this->assertStringContainsString('2.2.0 installs over 2.1.0 or later, and 2.0.0 is installed', implode("\n", $result['lines']));
-        $this->assertStringNotContainsString('3.0.0', implode("\n", $result['lines']));
-        $this->dropPending();
-    }
-
-    /** When no newer release installs over the installed one, the highest is judged, and says what to install first. */
-    public function testNoReleaseThatInstallsOverTheInstalledOneWaits(): void
+    public function testAnUnmetUpgradesFromWaitsWithNoLowerRelease(): void
     {
         $this->releaseJson['2.3.0'] = ['upgrades_from' => '2.2.0'];
+        $none = ['window' => '', 'days' => ''];
 
-        $result = $this->check(['2.3.0'], ['window' => '', 'days' => '']);
+        $result = $this->check(['2.1.0', '2.2.0', '2.3.0'], $none);
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
         $this->assertSame('2.3.0', $result['version']);
-        $this->assertContains('OWA 2.3.0 installs over 2.2.0 or later; OWA 2.0.0 is installed. Install 2.2.0 first.', $result['problems']);
+        $this->assertSame(['OWA 2.3.0 installs over 2.2.0 or later; OWA 2.0.0 is installed. Install 2.2.0 first.'], $result['problems']);
+        $this->assertSame(['2.3.0', '2.0.0'], $this->downloads()->versions(), 'not 2.1.0 or 2.2.0');
         $this->assertNull(Install::$pending);
+
+        $again = $this->check(['2.1.0', '2.2.0', '2.3.0'], $none);
+        $this->assertSame(ReleaseCheck::UNMET, $again['outcome']);
+        $this->assertStringNotContainsString('Downloaded', implode("\n", $again['lines']), 'judged from the file on disk');
+
+        $this->assertSame(ReleaseCheck::UNMET, $this->check(null, $none)['outcome'], 'and without a listing');
+        $this->assertFalse(InstallLock::isHeld(), 'the lock is let go');
+    }
+
+    /** One pending tarball: a higher release chosen replaces the lower one. */
+    public function testAHigherReleaseReplacesThePendingOne(): void
+    {
+        $this->releaseJson['2.1.0'] = ['upgrades_from' => '2.0.5'];
+
+        $this->assertSame(ReleaseCheck::UNMET, $this->check(['2.1.0'], ['window' => '', 'days' => ''])['outcome']);
+        $this->assertSame(['2.1.0', '2.0.0'], $this->downloads()->versions());
+
+        $this->check(['2.1.0', '2.2.0']);
+        $this->assertSame(['2.2.0', '2.0.0'], $this->downloads()->versions(), '2.1.0 is pruned');
     }
 
     /** auto_update_level is minor or major; OWA_AUTO_UPDATE_LEVEL with anything else is a config problem, which refuses every request at boot. */
