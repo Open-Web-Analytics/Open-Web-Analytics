@@ -3168,7 +3168,8 @@ class CoreAPI {
      * These run BEFORE the controller authenticates, so the reply is readable by
      * anyone and says nothing a caller could not already supply: no route names,
      * no hint of whether a route exists, no suggestions. 401 reuses the wording
-     * of a genuine auth failure so the two cannot be told apart.
+     * of a genuine auth failure for the same credentials, so the two cannot be
+     * told apart.
      *
      * @param  int    $code  400 for a malformed request, 401 otherwise.
      * @return string        The rendered response body.
@@ -3182,7 +3183,10 @@ class CoreAPI {
             ],
             401 => [
                 'headline'  => \OWA\Core\CoreAPI::t( 'Not authenticated.' ),
-                'msg'       => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )
+                // As Controller::notAuthenticatedAction() answers the same request.
+                'msg'       => \OWA\Core\Auth::get_instance()->carriesAppPassword()
+                    ? \OWA\Core\Controller::refusedAppPasswordMessage()
+                    : \OWA\Core\Controller::notAuthenticatedMessage()
             ],
         ];
 

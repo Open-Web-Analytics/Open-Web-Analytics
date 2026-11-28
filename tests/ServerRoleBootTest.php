@@ -126,15 +126,23 @@ final class ServerRoleBootTest extends TestCase
         $this->assertStringContainsString('its role is collector', $r['stderr']);
     }
 
+    /**
+     * server-check runs on api and runs api's checks only. The REST API check
+     * requests the install's own rest_api_url, which a test run may not serve,
+     * so the exit code is not asserted.
+     */
     public function testACommandMarkedForTheRoleRuns(): void
     {
         $r = $this->cli(['OWA_SERVER_ROLE' => 'api'], 'cmd=server-check');
 
-        $this->assertSame(0, $r['code'], $r['stderr'] . $r['stdout']);
+        $this->assertStringNotContainsString('does not run on this server', $r['stderr']);
         $this->assertStringContainsString('Server role:      api', $r['stdout']);
         $this->assertStringContainsString('Serves:           rest, cli', $r['stdout']);
-        $this->assertStringContainsString('Scheduler:        does not run here', $r['stdout']);
-        $this->assertStringContainsString('Missing:          nothing', $r['stdout']);
+        $this->assertStringContainsString('Configuration:    ok', $r['stdout']);
+        $this->assertStringContainsString('Database:         ok: connected', $r['stdout']);
+        $this->assertStringContainsString('REST API:         ', $r['stdout']);
+        $this->assertStringNotContainsString('Scheduler:', $r['stdout']);
+        $this->assertStringNotContainsString('Queue', $r['stdout']);
     }
 
     public function testAnUnknownRoleIsRefusedEverywhere(): void

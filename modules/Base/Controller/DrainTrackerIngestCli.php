@@ -118,6 +118,13 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
                 $counts['ingested'], $counts['released'], $counts['dead'] ) );
         }
 
+        if ( $counts['discarded'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( \OWA\Core\CoreAPI::tn(
+                'Tracker ingest: %d server-check test message deleted.',
+                'Tracker ingest: %d server-check test messages deleted.', $counts['discarded'] ), $counts['discarded'] ) );
+        }
+
         if ( $error ) {
 
             return $this->fail( 'Tracker ingest: the intake failed: ' . $error );

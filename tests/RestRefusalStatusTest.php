@@ -68,6 +68,50 @@ final class RestRefusalStatusTest extends TestCase
         $this->assertSame('Profile: owatest-probe', $json['error'][0]['detail']);
     }
 
+    /**
+     * A request with an Authorization header whose application password is
+     * refused gets its own 401 message, whether the route exists or not; one
+     * without gets the general one. cmd=server-check tells the two apart.
+     */
+    public function testARefusedApplicationPasswordHasItsOwnMessage(): void
+    {
+        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
+        $server  = $request->server;
+        $rest    = new ReflectionMethod(\OWA\Core\CoreAPI::class, 'restError');
+
+        $answers = function () use ($rest): array {
+            $c = $this->controller();
+            $c->notAuthenticatedAction();
+            $known = $c->data()['error_msg']['msg'];
+
+            ob_start();
+            $returned = $rest->invoke(null, 401);
+            $captured = ob_get_clean();
+            $json = json_decode(($returned !== null && $returned !== '') ? (string) $returned : (string) $captured, true);
+
+            return [$known, $json['error'][0]['msg'] ?? null];
+        };
+
+        try {
+            $request->server = ['HTTP_AUTHORIZATION' => 'Bearer x'];
+            $this->assertSame(array_fill(0, 2, \OWA\Core\Controller::refusedAppPasswordMessage()), $answers());
+
+            $request->server = ['REDIRECT_HTTP_AUTHORIZATION' => 'Bearer x'];
+            $this->assertSame(array_fill(0, 2, \OWA\Core\Controller::refusedAppPasswordMessage()), $answers());
+
+            $request->server = [];
+            $this->assertSame(array_fill(0, 2, \OWA\Core\Controller::notAuthenticatedMessage()), $answers());
+
+            // A site behind HTTP Basic auth sends its own password: not an application password.
+            $request->server = ['HTTP_AUTHORIZATION' => 'Basic ' . base64_encode('someone:site-password')];
+            $this->assertSame(array_fill(0, 2, \OWA\Core\Controller::notAuthenticatedMessage()), $answers());
+        } finally {
+            $request->server = $server;
+        }
+
+        $this->assertNotSame(\OWA\Core\Controller::notAuthenticatedMessage(), \OWA\Core\Controller::refusedAppPasswordMessage());
+    }
+
     public function testAPendingUpdateAnswers503(): void
     {
         $c = $this->controller();

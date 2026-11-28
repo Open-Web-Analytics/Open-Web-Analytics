@@ -181,6 +181,25 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $this->assertSame('', $result['user_id']);
     }
 
+    /**
+     * A refused application password, a wrong one or one not shaped like one,
+     * is answered with its own 401 message; a request without one with the
+     * general message.
+     */
+    public function testARefusedPasswordIsAnsweredAsSuch(): void
+    {
+        list(, $made) = $this->userWithPassword();
+        $wrong = substr($made['token'], 0, 12) . str_repeat('x', 32);
+
+        foreach ([$wrong, 'x'] as $token) {
+            $this->assertFalse($this->authenticate(self::bearer($token))['auth_status']);
+            $this->assertSame(\OWA\Core\Controller::refusedAppPasswordMessage(), self::refusal()['msg'] ?? null, $token);
+        }
+
+        $this->assertFalse($this->authenticate([])['auth_status']);
+        $this->assertSame(\OWA\Core\Controller::notAuthenticatedMessage(), self::refusal()['msg'] ?? null);
+    }
+
     /** A site behind HTTP Basic auth sends its own password; that is not ours. */
     public function testABasicPasswordThatIsNotATokenIsLeftAlone(): void
     {
