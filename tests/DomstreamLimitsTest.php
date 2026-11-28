@@ -35,4 +35,12 @@ final class DomstreamLimitsTest extends TestCase
 
         $this->assertMatchesRegularExpression('/const MAX_TEXT = ' . $chunk::MAX_TEXT . ';/', self::recorder());
     }
+
+    public function testAChunkFitsABeaconBodyOnceEncoded(): void
+    {
+
+        // Form-urlencoded, a chunk's samples are about twice their characters;
+        // a keepalive fetch or sendBeacon takes at most 64 KiB.
+        $this->assertLessThan(65536, 2 * self::limit('domstreamMaxChars') + 4096);
+    }
 }

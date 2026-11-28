@@ -49,4 +49,30 @@ describe('OwaEvent', () => {
         e.set('numeric_value', 10);
         expect(e.getProperties().numeric_value).toBe(10);
     });
+
+    test('set ignores undefined and keeps a value already set', () => {
+        const e = new OwaEvent();
+        e.set('ct_order_id', undefined);
+        expect(e.isSet('ct_order_id')).toBeFalsy();
+
+        e.set('ct_order_id', 'o1');
+        e.set('ct_order_id', undefined);
+        expect(e.get('ct_order_id')).toBe('o1');
+    });
+
+    test('set keeps null, 0, false and the empty string', () => {
+        const e = new OwaEvent();
+        e.set('a', null);
+        e.set('b', 0);
+        e.set('c', false);
+        e.set('d', '');
+        expect(e.getProperties()).toMatchObject({ a: null, b: 0, c: false, d: '' });
+    });
+
+    test('unset removes a property', () => {
+        const e = new OwaEvent();
+        e.set('engagement_msec', 1200);
+        e.unset('engagement_msec');
+        expect(e.isSet('engagement_msec')).toBeFalsy();
+    });
 });

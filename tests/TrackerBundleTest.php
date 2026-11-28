@@ -156,7 +156,8 @@ final class TrackerBundleTest extends TestCase
         $this->assertNotContains('trackClicks', $features[0][2]);
         $this->assertContains('trackScroll', $features[0][2]);
         $this->assertContains(['setOption', 'stateStoreExpirations', ['v' => 364, 's' => 0]], $config['options']);
-        $this->assertContains(['setTrackUrlFragments', true], $config['options']);
+        // The tracker has no setTrackUrlFragments: a fragment is never part of a page.
+        $this->assertNotContains(['setTrackUrlFragments', true], $config['options']);
     }
 
     /**
