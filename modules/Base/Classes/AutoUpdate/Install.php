@@ -5,8 +5,8 @@ use OWA\Core\CoreAPI;
 
 /**
  * The install, in the booted process that decides it: the release check
- * (ReleaseCheck) when a release is due, or cmd=core-install --version by hand
- * (byHand()).
+ * (ReleaseCheck) when a release is due, or cmd=core-install --version or
+ * --file by hand (byHand(), fromFile()).
  *
  * prepare() takes the install lock and proves both tarballs (Downloads::open(),
  * a private copy of each, checked against its signature): the release's, and
@@ -144,12 +144,160 @@ class Install {
      */
     public static function byHand( $version, $force = false, $downloads = null, array $context = [] ) {
 
-        $downloads = $downloads ?? new Downloads();
+        $v = (string) $version;
+
+        return self::installNamed( $v, $force, $downloads ?? new Downloads(), $context,
+            static function ( Downloads $downloads, array $c ) use ( $v ) {
+
+                try {
+
+                    $downloads->download( Releases::byTag( $v, (string) $c['installed'], (string) $c['download'] ) );
+
+                } catch ( \RuntimeException $e ) {
+
+                    return sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() );
+                }
+
+                return null;
+            },
+            sprintf( 'php cli.php cmd=core-install --version=%s%s, by hand.', $v, $force ? ' --force' : '' ) );
+    }
+
+    /**
+     * cmd=core-install --file=<tarball> [--sig=<path>] [--force]: the release
+     * in a tarball on this server installed, as byHand() installs one it
+     * downloads. Its version is read from its release.php, else its
+     * Core/Env.php; its signature is <tarball>.sig unless $sig names it, and
+     * is checked against the trusted keys (Signature) before anything else.
+     * A tarball that is not signed, or not by a trusted key, is refused. The
+     * proved tarball and its signature are put in the updates directory
+     * (Downloads::import()), and from there it installs as a download does.
+     *
+     * @param  string               $file
+     * @param  string|null          $sig
+     * @param  bool                 $force
+     * @param  Downloads|null       $downloads
+     * @param  array<string, mixed> $context ReleaseCheck's, for a test
+     * @return array{outcome: string, message: string, lines: list<string>}
+     */
+    public static function fromFile( $file, $sig = null, $force = false, $downloads = null, array $context = [] ) {
+
+        // The operator's own path: a link to the tarball is followed.
+        $path     = (string) ( realpath( (string) $file ) ?: $file );
+        $sig_path = (string) ( $sig !== null ? ( realpath( (string) $sig ) ?: $sig ) : $path . '.sig' );
+
+        if ( ! is_file( $path ) ) {
+
+            return self::answer( self::REFUSED, sprintf( 'There is no file %s.', $file ) );
+        }
+
+        try {
+
+            [ $copy, $sha ] = Downloads::privateCopy( $path );
+
+        } catch ( \RuntimeException $e ) {
+
+            return self::answer( self::REFUSED, $e->getMessage() );
+        }
+
+        try {
+
+            try {
+
+                $v = self::tarballVersion( $copy );
+
+            } catch ( \RuntimeException $e ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is not a release tarball: %2$s', basename( $path ), $e->getMessage() ) );
+            }
+
+            if ( $v === null ) {
+
+                return self::answer( self::REFUSED, sprintf( '%s names no release version: it has no release.php or Core/Env.php that says one.', basename( $path ) ) );
+            }
+
+            if ( ! is_file( $sig_path ) ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is not signed: there is no %2$s. Give its signature with --sig=<path>.', basename( $path ), $sig_path ) );
+            }
+
+            $signature = (string) file_get_contents( $sig_path );
+
+            try {
+
+                Signature::verify( $v, $sha, $signature );
+
+            } catch ( \RuntimeException $e ) {
+
+                return self::answer( self::REFUSED, sprintf( '%1$s is refused: %2$s', basename( $path ), $e->getMessage() ) );
+            }
+
+            return self::installNamed( $v, $force, $downloads ?? new Downloads(), $context,
+                static function ( Downloads $downloads ) use ( $v, $copy, $signature ) {
+
+                    try {
+
+                        $downloads->import( $v, $copy, $signature );
+
+                    } catch ( \RuntimeException $e ) {
+
+                        return sprintf( 'Putting %s in the updates directory failed: %s', $v, $e->getMessage() );
+                    }
+
+                    return null;
+                },
+                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ) );
+
+        } finally {
+
+            fclose( $copy );
+        }
+    }
+
+    /**
+     * The release version a tarball says it is: its release.php's, else the
+     * VERSION its Core/Env.php declares; null when neither says one.
+     *
+     * @param  resource $tar
+     * @return string|null
+     * @throws \RuntimeException when it is not a tarball a release may be
+     */
+    public static function tarballVersion( $tar ) {
+
+        rewind( $tar );
+        $info = \OWA\Core\VersionInfo::decode( Tar::member( $tar, \OWA\Core\VersionInfo::FILE ) );
+        $v    = is_array( $info ) ? (string) ( $info['version'] ?? '' ) : '';
+
+        if ( $v === '' ) {
+
+            rewind( $tar );
+            $v = preg_match( "/const VERSION = '(\d+\.\d+\.\d+)';/", (string) Tar::member( $tar, 'Core/Env.php' ), $m ) ? $m[1] : '';
+        }
+
+        rewind( $tar );
+
+        return Version::parse( $v ) !== null ? $v : null;
+    }
+
+    /**
+     * byHand() and fromFile(): the release judged, $fetch putting its tarball
+     * in the updates directory, the installed release's fetched too, and the
+     * install prepared.
+     *
+     * @param  string                                               $v
+     * @param  bool                                                 $force
+     * @param  Downloads                                            $downloads
+     * @param  array<string, mixed>                                 $context
+     * @param  callable(Downloads, array<string, mixed>): ?string   $fetch    why it failed, or null
+     * @param  string                                               $how      the install log's first line
+     * @return array{outcome: string, message: string, lines: list<string>}
+     */
+    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how ) {
+
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
         $root      = (string) $c['root'];
         $installed = (string) $c['installed'];
-        $v         = (string) $version;
 
         $checkout = Vcs::checkout( $root );
 
@@ -185,13 +333,11 @@ class Install {
             return self::answer( self::FAILED, implode( ' ', $foreign ) );
         }
 
-        try {
+        $failed = $fetch( $downloads, $c );
 
-            $downloads->download( Releases::byTag( $v, $installed, (string) $c['download'] ) );
+        if ( $failed !== null ) {
 
-        } catch ( \RuntimeException $e ) {
-
-            return self::answer( self::FAILED, sprintf( 'Downloading %s failed: %s', $v, $e->getMessage() ) );
+            return self::answer( self::FAILED, $failed );
         }
 
         // A release refused here was fetched for nothing: it goes, unless it is
@@ -226,8 +372,7 @@ class Install {
             return $refuse( self::REFUSED, sprintf( '%s cannot be installed here:', $v ), $judged['problems'] );
         }
 
-        $result = self::prepare( $downloads, $v, $installed, $root, false,
-            [ sprintf( 'php cli.php cmd=core-install --version=%s%s, by hand.', $v, $force ? ' --force' : '' ) ] );
+        $result = self::prepare( $downloads, $v, $installed, $root, false, [ $how ] );
 
         if ( $result['outcome'] !== self::OK ) {
 

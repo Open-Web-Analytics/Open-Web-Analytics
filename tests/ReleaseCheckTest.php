@@ -898,6 +898,96 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
+    /** --file: a tarball on this server, its signature beside it, installs as a download does; its version is read from it. */
+    public function testInstallFromAFile(): void
+    {
+        $tar = $this->build('2.0.3', null);
+        $this->sign('2.0.3', $tar, "$tar.sig");
+        copy($tar, $this->tmp . '/release.tar');
+        copy("$tar.sig", $this->tmp . '/release.tar.sig');
+
+        $result = $this->fromFile($this->tmp . '/release.tar');
+        $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
+        $this->assertSame('2.0.3', Install::$pending['to'], 'the version inside, not the file name');
+        $this->assertSame(hash_file('sha256', $tar), Install::$pending['to_sha']);
+        $this->assertStringContainsString('cmd=core-install --file=' . $this->tmp . '/release.tar, by hand.', implode("\n", Install::$pending['log']));
+        $this->assertTrue($this->downloads()->has('2.0.3'), 'in the updates directory, as a download is');
+        $this->dropPending();
+    }
+
+    /** --sig names the signature when it is not beside the tarball. */
+    public function testAFilesSignatureCanBeNamed(): void
+    {
+        $tar = $this->build('2.0.3', null);
+        $this->sign('2.0.3', $tar, $this->tmp . '/elsewhere.sig');
+
+        $result = $this->fromFile($tar, $this->tmp . '/elsewhere.sig');
+        $this->assertSame(Install::OK, $result['outcome'], $result['message']);
+        $this->assertSame('2.0.3', Install::$pending['to']);
+        $this->dropPending();
+    }
+
+    /** A file with no signature, or one no trusted key made, or one for another release, is refused before anything changes. */
+    public function testAFileNotSignedByATrustedKeyIsRefused(): void
+    {
+        $tar = $this->build('2.0.3', null);
+        @unlink("$tar.sig");
+
+        $result = $this->fromFile($tar);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertSame(sprintf('owa_2.0.3_packaged.tar is not signed: there is no %s.sig. Give its signature with --sig=<path>.', $tar), $result['message']);
+
+        file_put_contents("$tar.sig", Signature::sign('2.0.3', hash_file('sha256', $tar), base64_encode(sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()))));
+        $result = $this->fromFile($tar);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertStringContainsString('is not signed by a key this installation trusts', $result['message'], 'another key');
+
+        $this->sign('2.0.4', $tar, "$tar.sig");
+        $result = $this->fromFile($tar);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertStringContainsString('is not signed by a key this installation trusts', $result['message'], 'another release\'s signature');
+
+        file_put_contents("$tar.sig", "not a signature\n");
+        $this->assertStringContainsString('is not a release signature', $this->fromFile($tar)['message']);
+
+        $this->assertNull(Install::$pending);
+        $this->assertFalse($this->downloads()->has('2.0.3'));
+    }
+
+    /** --file as --version: an older release only with --force; a file that is not a release, or not there, is refused. */
+    public function testAFileIsJudgedAsAReleaseByVersionIs(): void
+    {
+        $tar = $this->build('2.0.1', null);
+        $this->sign('2.0.1', $tar, "$tar.sig");
+
+        $result = $this->fromFile($tar, null, ['installed' => '2.0.4']);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertStringContainsString('add --force', $result['message']);
+
+        $result = $this->fromFile($tar, null, ['installed' => '2.0.4'], true);
+        $this->assertSame(Install::OK, $result['outcome'], $result['message']);
+        $this->dropPending();
+
+        file_put_contents($this->tmp . '/junk.tar', str_repeat("\0", 1024));
+        $this->assertStringContainsString('junk.tar names no release version', $this->fromFile($this->tmp . '/junk.tar')['message']);
+        $this->assertSame('There is no file ' . $this->tmp . '/none.tar.', $this->fromFile($this->tmp . '/none.tar')['message']);
+    }
+
+    /** The version is release.php's, else the VERSION Core/Env.php declares. */
+    public function testATarballsVersionIsReadFromIt(): void
+    {
+        $tar = $this->build('2.0.3', static function ($dir) {
+            unlink($dir . '/release.php');
+        });
+        $h = fopen($tar, 'rb');
+        $this->assertSame('2.0.3', Install::tarballVersion($h), 'from Core/Env.php');
+        fclose($h);
+
+        $h = fopen($this->build('2.0.5', null), 'rb');
+        $this->assertSame('2.0.5', Install::tarballVersion($h), 'from release.php');
+        fclose($h);
+    }
+
     /** By hand, going back: only with --force, and never to a release older than the database. */
     public function testAnOlderReleaseByHand(): void
     {
@@ -1318,6 +1408,33 @@ final class ReleaseCheckTest extends TestCase
             'schema'    => fn ($module) => $this->schema[$module] ?? null,
             'now'       => $this->now,
         ]);
+    }
+
+    /** Install::fromFile() of a tarball here, the installed release served for the way back. */
+    private function fromFile(string $file, ?string $sig = null, array $context = [], bool $force = false): array
+    {
+        $installed = (string) ($context['installed'] ?? '2.0.0');
+        $tar       = $this->build($installed, null);
+        $this->serve($installed, $tar);
+        $this->installed($installed);
+
+        return Install::fromFile($file, $sig, $force, $this->downloads(), $context + [
+            'root'      => $this->tmp . '/owa',
+            'installed' => '2.0.0',
+            'role'      => \OWA\Core\ServerRole::FULL,
+            'releases'  => [$this->listed($installed, 'https://example.test/' . $installed . '.tar', hash_file('sha256', $tar))],
+            'download'  => 'https://example.test/download/',
+            'env'       => $this->env(),
+            'notify'    => function (array $n) { $this->notices[$n['source_key']] = $n; },
+            'schema'    => fn ($module) => $this->schema[$module] ?? null,
+            'now'       => $this->now,
+        ]);
+    }
+
+    /** A signature of the tarball as release $v, by the test's trusted key, written to $to. */
+    private function sign(string $v, string $tar, string $to): void
+    {
+        file_put_contents($to, Signature::sign($v, hash_file('sha256', $tar), $this->signingKey) . "\n");
     }
 
     /** The installed release's Core/Env.php, which Install::prepare() reads. */
