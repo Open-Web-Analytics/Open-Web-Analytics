@@ -1074,7 +1074,9 @@ class OWATracker  {
      *
      * Without an argument, the page's domain with any leading `www.` removed,
      * so the cookies are shared by its subdomains. Given a domain, exactly that
-     * one. Applied when the tracker is built, wherever it sits in the queue.
+     * one; a value that is not a string is ignored, as if none was given.
+     * Applied when the tracker is built, wherever it sits in the queue; when
+     * both the bundle and the page declare one, the page's wins.
      *
      * @command
      * @param {string} [domain]  e.g. example.com
@@ -1082,6 +1084,12 @@ class OWATracker  {
     setCookieDomain(domain) {
 
         var not_passed = false;
+
+        if ( domain && typeof domain !== 'string' ) {
+
+            OWA.debug( 'setCookieDomain: ignored a domain that is not a string' );
+            domain = undefined;
+        }
 
         if ( ! domain ) {
             domain = ( typeof document !== 'undefined' ) ? document.domain : '';
