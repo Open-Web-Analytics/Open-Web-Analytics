@@ -619,10 +619,10 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
         : "printf '%s\\n' e2e-admin-password-1 | php cli.php cmd=core-install --password-stdin user_id=e2e-admin email_address=admin@example.test domain=example.test", $site );
 
     // What belongs to the installation, and must survive an update: the
-    // bundles cmd=core-install published, and a module of someone else's.
+    // bundles cmd=core-install published, and a module of someone else's, in extensions/.
     check( (bool) glob( "$site/public/tracker/*.js" ), 'cmd=core-install published no tracking bundle' );
-    @mkdir( "$site/modules/E2eThirdParty", 0755, true );
-    file_put_contents( "$site/modules/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
+    @mkdir( "$site/extensions/E2eThirdParty", 0755, true );
+    file_put_contents( "$site/extensions/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
 
     return $site;
 }
@@ -773,6 +773,8 @@ $scenarios = [
         file_put_contents( "$site/robots.txt", "User-agent: *\n" );
         // And one put inside a directory the release ships, which the install deletes.
         file_put_contents( "$site/Core/e2e-planted.php", '<?php // not the release\'s' );
+        @mkdir( "$site/modules/E2ePlanted", 0755 );
+        file_put_contents( "$site/modules/E2ePlanted/Module.php", '<?php // not the release\'s' );
 
         // No window: the release check downloads it and installs it, in one run.
         [ $code, $out ] = release_check( $site, $ca );
@@ -792,7 +794,8 @@ $scenarios = [
         installed( $site, $ca, TO );
         check( hash_file( 'sha256', "$site/owa-config.php" ) === $hash, 'owa-config.php changed' );
         check( glob( "$site/public/tracker/*.js" ) == $bundles, 'the tracking bundles changed' );
-        check( is_file( "$site/modules/E2eThirdParty/Module.php" ), 'a third-party module was deleted' );
+        check( is_file( "$site/extensions/E2eThirdParty/Module.php" ), 'a third-party module in extensions/ was deleted' );
+        check( ! file_exists( "$site/modules/E2ePlanted" ), 'a module directory ' . TO . ' does not ship is still in modules/' );
         check( is_file( "$site/.well-known/e2e.txt" ) && is_file( "$site/.htpasswd" ) && is_file( "$site/robots.txt" ), 'an operator\'s own file was deleted' );
         check( ! file_exists( "$site/modules/Base/e2e-only-in-" . FROM . '.txt' ), 'a file ' . TO . ' does not ship is still there' );
         check( ! file_exists( "$site/modules/Base/e2e-only-in-" . FROM ), 'a directory ' . TO . ' does not ship is still there' );
