@@ -124,4 +124,41 @@ final class IngestValueHygieneTest extends IngestionTestCase
         $this->assertNull($row['page_title']);
         $this->assertNull($row['target_url']);
     }
+
+    /**
+     * A form's destination is stored as page_location is: without the
+     * query_string_filters parameters, OWA's control parameters and the
+     * fragment.
+     */
+    public function testAFormDestinationIsFilteredAsThePageLocationIs(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters');
+        \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', 'email');
+
+        try {
+            $row = $this->fire('form_submit', [
+                'form_id'          => 'signup',
+                'form_destination' => 'https://owa-test-site/v2/send?email=a%40b.test&owa_state=v.1.s.2&keep=1#done',
+            ])['form_submit'] ?? null;
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', $before);
+        }
+
+        $this->assertNotNull($row);
+        $params = (array) json_decode((string) $row['params'], true);
+        $this->assertSame('https://owa-test-site/v2/send?keep=1', $params['form_destination'] ?? null);
+    }
+
+    /** A page URL's fragment is never stored, and the page path is the same with or without one. */
+    public function testAFragmentIsNeverStored(): void
+    {
+        $rows = $this->fire('page_view', [
+            'page_url'      => 'https://owa-test-site/app?x=1#/route/a',
+            'page_location' => 'https://owa-test-site/app?x=1#/route/a',
+        ]);
+
+        $this->assertArrayHasKey('page_view', $rows);
+        $this->assertSame('https://owa-test-site/app?x=1', $rows['page_view']['page_location']);
+        $this->assertSame('/app', $rows['page_view']['page_path']);
+    }
 }

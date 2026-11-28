@@ -3082,10 +3082,7 @@ class TrackingEventHelpers {
 
         $ns = \OWA\Core\CoreAPI::NS;
 
-        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), [
-            $ns . 'overlay',
-            $ns . 'state',
-        ] );
+        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), self::controlParams() );
 
         foreach ( self::RETIRED_CAMPAIGN_KEYS as $suffix ) {
 
@@ -3131,45 +3128,117 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Remove the query_string_filters parameters from the URLs an event
-     * stores whole: page_location, HTTP_REFERER (referer_url) and
-     * referer_query.
+     * OWA's own parameters on a tracked page's URL that are not campaign tags,
+     * by suffix: the overlay launcher's and the cross-domain hand-off's, whose
+     * value is the visitor's state.
+     */
+    const CONTROL_PARAMS = [ 'overlay', 'state' ];
+
+    /** The longest URL a row stores, page_location's column. */
+    const MAX_STORED_URL = 1024;
+
+    /**
+     * CONTROL_PARAMS by their names.
+     *
+     * @return string[]
+     */
+    public static function controlParams() {
+
+        return array_map( static fn ( $suffix ) => \OWA\Core\CoreAPI::NS . $suffix, self::CONTROL_PARAMS );
+    }
+
+    /**
+     * Every URL property a row stores, in a column or in params: each one the
+     * registry declares with data_type url that has a column or a param.
+     *
+     * @return string[]
+     */
+    public static function storedUrlProperties() {
+
+        $out = [];
+
+        foreach ( self::allProperties() as $name => $definition ) {
+
+            if ( ( $definition['data_type'] ?? '' ) === 'url'
+                 && ( ! empty( $definition['column'] ) || ! empty( $definition['param'] ) ) ) {
+
+                $out[] = (string) $name;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * A URL as a row stores it: without its fragment, without the named
+     * parameters, and cut to MAX_STORED_URL characters.
+     *
+     * @param  string   $url
+     * @param  string[] $drop  parameter names
+     * @return string
+     */
+    public static function storedUrl( $url, array $drop ) {
+
+        $hash = strpos( $url, '#' );
+
+        if ( $hash !== false ) {
+
+            $url = substr( $url, 0, $hash );
+        }
+
+        $url = (string) \OWA\Module\Base\Classes\V2Event::removeUrlParams( $url, $drop );
+
+        return mb_strlen( $url, 'UTF-8' ) > self::MAX_STORED_URL
+            ? mb_substr( $url, 0, self::MAX_STORED_URL, 'UTF-8' ) : $url;
+    }
+
+    /**
+     * Every URL an event stores (storedUrlProperties(): page_location,
+     * HTTP_REFERER as referer_url, target_url, form_destination) as storedUrl()
+     * makes it, without the query_string_filters parameters and OWA's
+     * controlParams(); and referer_query without them.
+     *
+     * FRAGMENTS ARE NEVER STORED. A hash-routed site sends each route as the
+     * page view's path (trackPageView('/path')), and a tracker that sends the
+     * page's whole URL -- 1.x's, or one cached before 2.0 -- has the fragment
+     * removed here.
      *
      * RUN AFTER EVERY DERIVED PROPERTY (ProcessEvent), because those read the
      * URLs first: the campaign tags, page_path, page_query, host and the
      * referrer's host and query are taken from what arrived, so a filtered
      * name that is also a campaign key is still attributed. What is stored,
      * and what landing_page_location and every other copy of page_location
-     * are made from, is the filtered URL. A URL naming none of the filtered
-     * parameters is stored exactly as it arrived.
+     * are made from, is the filtered URL. A URL with no fragment, naming none
+     * of the parameters, is stored exactly as it arrived.
      *
-     * Only the configured names: OWA's own parameters and the campaign tags
-     * stay in page_location, which is the evidence they are read from.
+     * The campaign tags stay in page_location, which is the evidence they
+     * are read from.
      *
      * @param object $event
      * @return void
      */
     public static function filterStoredUrls( $event ) {
 
-        $drop = self::queryStringFilters( (string) $event->getSiteId() );
+        $drop = array_merge( self::controlParams(), self::queryStringFilters( (string) $event->getSiteId() ) );
 
-        if ( ! $drop ) {
-
-            return;
-        }
-
-        foreach ( [ 'page_location', 'HTTP_REFERER' ] as $name ) {
+        foreach ( self::storedUrlProperties() as $name ) {
 
             $url = $event->get( $name );
 
-            if ( is_string( $url ) && $url !== '' ) {
+            if ( ! is_string( $url ) || $url === '' ) {
 
-                $filtered = \OWA\Module\Base\Classes\V2Event::removeUrlParams( $url, $drop );
+                continue;
+            }
 
-                if ( $filtered !== $url ) {
+            $stored = self::storedUrl( $url, $drop );
 
-                    $event->set( $name, $filtered );
-                }
+            if ( $stored === '' ) {
+
+                $event->delete( $name );
+
+            } elseif ( $stored !== $url ) {
+
+                $event->set( $name, $stored );
             }
         }
 

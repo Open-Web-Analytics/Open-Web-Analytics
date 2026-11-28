@@ -304,7 +304,7 @@
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
     "page_location": {
-        "description": "The full URL of the page, its path decoded and its query string as the tracker sent it, without the parameters named in the query_string_filters setting.",
+        "description": "The full URL of the page, its path decoded and its query string as the tracker sent it, without the parameters named in the query_string_filters setting, owa_overlay and owa_state, and without its fragment. At most 1024 characters.",
         "set_by": "client",
         "from": [
             "p_l"
@@ -318,7 +318,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
         ],
-        "note": "The complete page URL, query included. Only the parameters query_string_filters names are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; OWA's own parameters and the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. One callback, readableUrl(), which decodes the path of a current beacon's URL once and leaves the query and fragment as they arrived, so the derivations read the query and the campaign tags as the page had them. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
+        "note": "The complete page URL, query included. The parameters query_string_filters names, owa_overlay, owa_state and the fragment are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. One callback, readableUrl(), which decodes the path of a current beacon's URL once and leaves the query and fragment as they arrived, so the derivations read the query and the campaign tags as the page had them. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
     },
     "page_title": {
         "description": "The page's title.",
@@ -453,7 +453,7 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
-        "description": "The URL of the page that referred the visitor to this page, its path decoded, on every event of the page, without the parameters named in the query_string_filters setting. Absent when the browser sent none.",
+        "description": "The URL of the page that referred the visitor to this page, its path decoded, on every event of the page, without the parameters named in the query_string_filters setting, owa_overlay and owa_state. Absent when the browser sent none.",
         "set_by": "client",
         "from": [
             "p_r"
@@ -1270,7 +1270,7 @@
         "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
     },
     "form_destination": {
-        "description": "The absolute URL the form submits to, its path decoded; the page itself when the form has no action.",
+        "description": "The absolute URL the form submits to, its path decoded; the page itself when the form has no action. Stored as page_location is: without the parameters named in the query_string_filters setting, owa_overlay, owa_state and the fragment, at most 1024 characters.",
         "set_by": "client",
         "from": [
             "fm_dst"
