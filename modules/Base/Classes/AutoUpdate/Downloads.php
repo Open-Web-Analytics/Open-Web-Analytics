@@ -13,9 +13,10 @@ use OWA\Core\SafeFile;
  *   updates-<id>/                0755: listed by the Updates screen (UpdatesState)
  *     owa_<v>_packaged.tar       0600: a release tarball, there only once its signature
  *     owa_<v>_packaged.tar.sig   0644  checked by a trusted key (Signature), and its SHA-256
- *                                      the listing's digest where it has one. Two at most: the installed
- *                                      release's, which a failed install puts back, and
- *                                      the one the release check chose, until it installs.
+ *                                      the listing's digest where it has one. Three at most: the installed
+ *                                      release's, which a failed install puts back, the one
+ *                                      the release check chose, until it installs, and the
+ *                                      highest release passed over for its upgrades_from.
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
  *                                installs; written by updater.php `recordFailure` alone
