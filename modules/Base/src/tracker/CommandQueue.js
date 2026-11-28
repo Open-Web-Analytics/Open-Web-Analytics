@@ -35,14 +35,28 @@ class CommandQueue {
 		// default features start, not only OWATracker's.
 		this.trackers = [];
 		this.featuresStarted = false;
+
+		// startFeatures() was called while paused; unpause() runs it.
+		this.featuresDeferred = false;
 	}
 
     /**
      * Start the default features of every tracker the queue created, and of
      * any it creates from now on, once the command that created it has run.
+     *
+     * While the queue is paused nothing starts; unpause() starts them.
      */
     startFeatures() {
 
+        if ( this.is_paused ) {
+
+            this.featuresDeferred = true;
+            OWA.debug( 'Command queue paused: default features start on unpause-owa' );
+
+            return;
+        }
+
+        this.featuresDeferred = false;
         this.featuresStarted = true;
 
         if ( this.trackers.indexOf( 'OWATracker' ) === -1 ) {
@@ -88,8 +102,11 @@ class CommandQueue {
         OWA.debug('cmd queue object method name %s', method);
 
         /**
-         * Stop applying commands, from this one on, until `unpause-owa`.
-         * Commands pushed meanwhile are dropped, not held.
+         * Stop tracking until `unpause-owa`. Commands pushed meanwhile are
+         * dropped, not held; every tracker the queue made stops sending
+         * (pause()), so clicks, scrolls and other listeners already bound send
+         * nothing; and the default features (clicks, forms, scroll, site
+         * search, errors) do not start while paused.
          *
          *   owa_cmds.push(['pause-owa']);
          *
@@ -97,7 +114,9 @@ class CommandQueue {
          */
 
         /**
-         * Apply commands again after `pause-owa`.
+         * Apply commands again after `pause-owa`: every tracker the queue made
+         * sends again (restart()), and default features held by the pause
+         * start. Commands dropped during the pause are not replayed.
          *
          *   owa_cmds.push(['unpause-owa']);
          *
@@ -453,18 +472,47 @@ class CommandQueue {
      
     }
 
+    /** Call `method` on every tracker this queue made. */
+    eachTracker( method ) {
+
+        for ( var i = 0; i < this.trackers.length; i++ ) {
+
+            var tracker = window[ this.trackers[ i ] ];
+
+            if ( tracker && typeof tracker[ method ] === 'function' ) {
+
+                tracker[ method ]();
+            }
+        }
+    }
+
     /** @internal The `pause-owa` command. */
     pause() {
 
         this.is_paused = true;
+        this.eachTracker( 'pause' );
         OWA.debug('Pausing Command Queue');
     }
 
     /** @internal The `unpause-owa` command. */
     unpause() {
 
+        var wasPaused = this.is_paused;
+
         this.is_paused = false;
         OWA.debug('Un-pausing Command Queue');
+
+        if ( ! wasPaused ) {
+
+            return;
+        }
+
+        this.eachTracker( 'restart' );
+
+        if ( this.featuresDeferred ) {
+
+            this.startFeatures();
+        }
     }
 }
 

@@ -179,3 +179,16 @@ test('a tracked browser is tracked as before', () => {
 
     expect(sent.length).toBeGreaterThan(0);
 });
+
+test('in a tracked browser, restart() does not end an overlay session\'s pause', () => {
+    openOverlayLink();
+
+    loadWith([['setSiteId', 'overlay-site'], ['restart'], ['trackPageView']]);
+    window.OWATracker.restart();
+    window.OWATracker.trackPageView();
+    window.owa_cmds.push(['trackPageView']);
+
+    expect(window.OWATracker.overlayPaused).toBe(true);
+    expect(window.OWATracker.active).toBe(true);
+    expect(sent).toHaveLength(0);
+});

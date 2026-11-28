@@ -438,6 +438,8 @@ class OWATracker  {
 	    this.endpoint = OWA.config.baseUrl;
 	    // Active status of tracker
 	    this.active = true;
+	    // Set by an overlay session; restart() does not clear it.
+	    this.overlayPaused = false;
 	    /*
 	     * Whether this page sends nothing at all, whatever restart() says: a
 	     * browser that is not tracked (Util.isBrowserTrackable()) opened on an
@@ -987,7 +989,8 @@ class OWATracker  {
             // readable by every other script there and re-sent to that site
             // on every request. startOverlaySession() holds it in memory
             // instead, which is all its lifetime requires.
-            // pause tracker so we dont log anything during an overlay session
+            // nothing is sent during an overlay session, restart() included
+            this.overlayPaused = true;
             this.pause();
             // start overlay session
             OWA.startOverlaySession( a );
@@ -1550,7 +1553,7 @@ class OWATracker  {
      */
     logEvent(properties, block, callback) {
 
-        if ( this.active && ! this.sendsNothing ) {
+        if ( this.active && ! this.overlayPaused && ! this.sendsNothing ) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
 
@@ -3091,7 +3094,7 @@ class OWATracker  {
     }
 
     /**
-     * Resume sending after pause().
+     * Resume sending after pause(). A page opened as an overlay stays paused.
      *
      * @command
      */
@@ -4797,7 +4800,7 @@ class OWATracker  {
 
         var block_flag = false;
 
-        if ( this.active && ! this.sendsNothing ) {
+        if ( this.active && ! this.overlayPaused && ! this.sendsNothing ) {
             if ( block ) {
 
                 block_flag = true;

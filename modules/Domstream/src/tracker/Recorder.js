@@ -133,7 +133,7 @@ class Recorder {
     /** Start recording this page load, if it falls in the sample. */
     start() {
 
-        if ( this.recording || ! this.tracker.active ) {
+        if ( this.recording || ! this.tracker.active || this.tracker.overlayPaused ) {
 
             return false;
         }
