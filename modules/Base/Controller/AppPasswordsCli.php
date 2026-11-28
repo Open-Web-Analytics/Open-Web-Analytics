@@ -16,33 +16,4 @@ abstract class AppPasswordsCli extends \OWA\Core\Controller\Cli {
 
         parent::__construct( $params );
     }
-
-    /**
-     * The user this command was given, or '' having already refused.
-     *
-     * @return string
-     */
-    protected function user() {
-
-        $user_id = trim( (string) $this->getParam( 'user' ) );
-
-        if ( $user_id === '' ) {
-
-            $this->usageError( 'user=<user id> is required.' );
-
-            return '';
-        }
-
-        $u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
-        $u->getByColumn( 'user_id', $user_id );
-
-        if ( ! $u->wasPersisted() ) {
-
-            $this->fail( sprintf( 'There is no user %s.', $user_id ) );
-
-            return '';
-        }
-
-        return $user_id;
-    }
 }

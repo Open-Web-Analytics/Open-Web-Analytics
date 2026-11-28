@@ -29,28 +29,36 @@ class PartitionReorganizeCli extends PartitionsCli {
         return [
             'description' => 'Changes the partition granularity of the event tables, one month at a time. On a reporting cube the daily front is left to partition-rotate.',
             'arguments'   => [
-                'granularity=<monthly|half-month|quarter-month>' => 'Required. The new partition size. daily is refused for a cube.',
-                'from=<yyyymmdd>'                                => 'Reorganize from this date.',
-                'to=<yyyymmdd>'                                  => 'Reorganize up to this date.',
-                'table=<name>'                                   => 'Reorganize only this table.',
-                '--force'                                        => 'Proceed when the result needs more partitions than the ceiling allows.',
-                '--dry-run'                                      => 'Report the plan, and change nothing.',
+                'granularity' => [
+                    'type'        => 'select',
+                    'options'     => [ 'monthly', 'half-month', 'quarter-month', 'daily' ],
+                    'required'    => true,
+                    'description' => 'The new partition size. daily is refused for a cube.',
+                ],
+                'from' => [
+                    'type'        => 'date',
+                    'description' => 'Reorganize from this date.',
+                ],
+                'to' => [
+                    'type'        => 'date',
+                    'not_before'  => 'from',
+                    'description' => 'Reorganize up to this date.',
+                ],
+                'table' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'Reorganize only this table.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'Proceed when the result needs more partitions than the ceiling allows.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report the plan, and change nothing.',
+                ],
             ],
         ];
-    }
-
-    /**
-     * Whether a value is a real date written yyyymmdd.
-     *
-     * @param mixed $value
-     * @return bool
-     */
-    public static function isDate( $value ) {
-
-        $value = (string) $value;
-
-        return preg_match( '/^\d{8}$/', $value ) === 1
-            && checkdate( (int) substr( $value, 4, 2 ), (int) substr( $value, 6, 2 ), (int) substr( $value, 0, 4 ) );
     }
 
     public function action() {
@@ -61,35 +69,12 @@ class PartitionReorganizeCli extends PartitionsCli {
         }
 
         $db          = $this->db();
-        $granularity = $this->getParam( 'granularity' );
-        $dry_run     = (bool) $this->getParam( 'dry-run' );
-        $from        = $this->getParam( 'from' ) ?: null;
-        $to          = $this->getParam( 'to' ) ?: null;
+        $granularity = (string) $this->param( 'granularity' );
+        $dry_run     = $this->param( 'dry-run' );
+        $from        = $this->param( 'from' );
+        $to          = $this->param( 'to' );
 
-        foreach ( [ 'from' => $from, 'to' => $to ] as $name => $value ) {
-
-            if ( $value !== null && ! self::isDate( $value ) ) {
-
-                return $this->usageError( sprintf( '%s must be a date as yyyymmdd; got "%s".', $name, $value ) );
-            }
-        }
-
-        if ( ! $granularity ) {
-
-            return $this->usageError(
-                'granularity is required: quarter-month, half-month or monthly.'
-            );
-        }
-
-        if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
-
-            return $this->usageError( sprintf(
-                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly. '
-              . '(There is no "weekly": a week does not divide a month.)', $granularity
-            ) );
-        }
-
-        $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
+        $tables = $this->factTables( $this->param( 'table' ) );
         $budget = $this->factTableBudget();
 
         $touched = 0;
@@ -159,7 +144,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             // the tail exists to be traded for detail where detail is wanted.
             // Without this, moving to quarter-month on a long-history table would
             // simply be refused, with nothing the operator could do about it.
-            if ( $plan['planned'] > $budget['limit'] && ! $this->getParam( 'force' ) ) {
+            if ( $plan['planned'] > $budget['limit'] && ! $this->param( 'force' ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: %s needs %d partitions, over the ceiling of %d. Merging old periods to '

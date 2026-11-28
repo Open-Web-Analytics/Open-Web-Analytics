@@ -23,7 +23,6 @@ return [
     'install'                     => 'base.installCli',
     'activate'                    => 'base.moduleActivateCli',
     'deactivate'                  => 'base.moduleDeactivateCli',
-    'install-module'              => 'base.moduleInstallCli',
     'add-site'                    => 'base.sitesAddCli',
     'prune-event-queue-archives'  => 'base.pruneEventQueueArchivesCli',
     'partition-status'            => 'base.partitionStatusCli',

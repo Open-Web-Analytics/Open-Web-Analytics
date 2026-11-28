@@ -46,8 +46,14 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Automatic updates: stores new OWA releases as notifications, then finds the release this installation updates to, downloads and verifies it, checks that it can be installed here, and installs it if the settings allow. Runs on the scheduler every hour as core-update, listing the releases four times a day. A copy that fails puts the installed release back. To install one release by hand: cmd=core-install.',
             'arguments'   => [
-                '--dry-run'   => 'Only say which release automatic updates would install: nothing is downloaded, written or installed.',
-                'scheduled=1'       => 'Set by the scheduler: the releases are listed only in four of the day\'s hours, and nothing is said.',
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Only say which release automatic updates would install: nothing is downloaded, written or installed.',
+                ],
+                '--scheduled' => [
+                    'type'        => 'flag',
+                    'description' => 'Set by the scheduler: the releases are listed only in four of the day\'s hours, and nothing is said.',
+                ],
             ],
         ];
     }
@@ -67,8 +73,8 @@ class CoreUpdateCli extends \OWA\Core\Controller\Cli {
 
     public function action() {
 
-        $scheduled = (bool) $this->getParam( 'scheduled' );
-        $result    = $this->releaseCheck( $scheduled )->run( (bool) $this->getParam( 'dry-run' ) );
+        $scheduled = (bool) $this->param( 'scheduled' );
+        $result    = $this->releaseCheck( $scheduled )->run( (bool) $this->param( 'dry-run' ) );
 
         if ( ! $scheduled ) {
 

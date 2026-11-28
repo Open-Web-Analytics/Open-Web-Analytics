@@ -35,7 +35,10 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
         return [
             'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes. Runs on the scheduler as apply-custom-dimensions.',
             'arguments'   => [
-                'property=<id>' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
+                ],
             ],
         ];
     }
@@ -51,12 +54,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
 
     public function action() {
 
-        $only = trim( (string) $this->getParam( 'property' ) );
-
-        if ( $only !== '' && ! ctype_digit( $only ) ) {
-
-            return $this->usageError( 'property=<id> takes a Property id.' );
-        }
+        $only = (string) $this->param( 'property' );
 
         $existing = \OWA\Module\Base\Classes\Cube\Cubes::existing();
 

@@ -16,10 +16,10 @@ return function ( $arg = null ) {
 
     $arguments = static function ( array $c ) {
 
-        $out = "| Argument | Description |\n|---|---|\n";
+        $out = "| Argument | Value | Default | Description |\n|---|---|---|---|\n";
 
-        foreach ( $c['arguments'] as $name => $desc ) {
-            $out .= sprintf( "| `%s` | %s |\n", owa_wiki_cell( $name ), owa_wiki_cell( $desc ) );
+        foreach ( $c['arguments'] as $d ) {
+            $out .= vsprintf( "| `%s` | %s | %s | %s |\n", array_map( 'owa_wiki_cell', owa_wiki_cli_argument( $d ) ) );
         }
 
         return $out;

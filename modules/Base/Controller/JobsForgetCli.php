@@ -10,7 +10,12 @@ class JobsForgetCli extends JobsCli {
         return [
             'description' => 'Deletes one job from the one-off job queue.',
             'arguments'   => [
-                'id=<id>' => 'Required. The job to delete.',
+                'id' => [
+                    'type'        => 'string',
+                    'value'       => '<id>',
+                    'required'    => true,
+                    'description' => 'The job to delete.',
+                ],
             ],
         ];
     }

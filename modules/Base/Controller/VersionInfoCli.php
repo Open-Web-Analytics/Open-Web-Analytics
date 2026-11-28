@@ -16,7 +16,11 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Prints what this code is as JSON: its version, what it needs of a server, each module\'s schema and every schema update, with whether its rollback restores what it changed. Runs without OWA booted.',
             'arguments'   => [
-                '--file=<path>' => 'Write it to this file instead of printing it. A .php file, such as the release.php a release ships with, starts with a line that exits when a web server runs it.',
+                '--file' => [
+                    'type'        => 'string',
+                    'value'       => '<path>',
+                    'description' => 'Write it to this file instead of printing it. A .php file, such as the release.php a release ships with, starts with a line that exits when a web server runs it.',
+                ],
             ],
         ];
     }
@@ -34,7 +38,7 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
     public static function runWithoutBoot( array $params ) {
 
         $info = \OWA\Core\VersionInfo::toArray();
-        $file = $params['file'] ?? null;
+        $file = \OWA\Core\Params::values( static::params(), $params )['file'];
 
         // A .php file is release.php: guarded, so a web server shows nothing of it.
         return self::emit( is_string( $file ) && str_ends_with( $file, '.php' )
@@ -47,7 +51,7 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
      * over it, so a reader never sees half of one.
      *
      * @param  string $output
-     * @param  mixed  $file null to print; else --file's value
+     * @param  string|null $file null to print; else --file's value
      * @return int exit code
      */
     public static function emit( $output, $file ) {
@@ -57,13 +61,6 @@ class VersionInfoCli extends \OWA\Core\Controller\Cli {
             fwrite( STDOUT, $output );
 
             return 0;
-        }
-
-        if ( ! is_string( $file ) || $file === '' ) {
-
-            fwrite( STDERR, "--file needs a path: --file=<path>\n" );
-
-            return 2;
         }
 
         $tmp = $file . '.tmp' . getmypid();

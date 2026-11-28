@@ -91,4 +91,21 @@ final class CliWithoutBootTest extends TestCase
         $this->assertSame('', $out);
         $this->assertStringContainsString('cmd=version-info does not take bogus', $err);
     }
+
+    /** A declared argument is checked against its type without booting: --file needs a path. */
+    public function testAValueTheArgumentDoesNotTakeIsRefused(): void
+    {
+        $root   = \OWA\Core\Env::root();
+        $script = 'register_shutdown_function(function () { fwrite(STDERR, class_exists(\'OWA\\Module\\Base\\Classes\\Settings\', false) ? "BOOTED" : "NOT BOOTED"); });'
+            . ' $_SERVER["argv"] = ["cli.php", "cmd=version-info", "--file"]; $argv = $_SERVER["argv"]; $argc = 3;'
+            . ' require ' . var_export($root . '/cli.php', true) . ';';
+
+        $proc = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
+        $out  = stream_get_contents($pipes[1]);
+        $err  = stream_get_contents($pipes[2]);
+
+        $this->assertSame(2, proc_close($proc));
+        $this->assertSame('', $out);
+        $this->assertSame("cmd=version-info: --file needs a value. Nothing was done.\nNOT BOOTED", trim($err));
+    }
 }

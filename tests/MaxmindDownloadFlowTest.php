@@ -565,19 +565,14 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $this->assertTrue( $c->said( 'licence key' ) );
     }
 
+    /** Refused with the command's other arguments (Core\Params), before action() makes any request. */
     public function testAnEditionTheModuleCannotReadIsRefusedBeforeAnyRequest(): void {
 
-        $c = $this->controller( [
-            'params' => $this->withKey( [ 'edition' => 'GeoLite2-ASN' ] ),
-        ] );
-        $c->action();
-
-        $this->assertSame( 0, $c->downloads );
-        $this->assertTrue( $c->said( 'not an edition' ) );
-
-        // An argument the command cannot act on: a usage error, exit code 2.
-        $this->assertSame( 1, $c->usage_errors );
-        $this->assertSame( 'failed', $c->outcomeIs() );
+        $this->assertSame(
+            [ 'edition' => 'edition=GeoLite2-ASN: "GeoLite2-ASN" is not an allowed value. Allowed: '
+                . implode( ' | ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS ) ],
+            \OWA\Core\Params::problems( \OWA\Module\MaxmindGeoip\Controller\GeoipUpdateDbCli::params(),
+                $this->withKey( [ 'edition' => 'GeoLite2-ASN' ] ) ) );
     }
 
     private function installDatabase( $found, $destination ) {

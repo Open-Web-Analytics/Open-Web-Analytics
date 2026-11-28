@@ -778,7 +778,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             \OWA\Core\Controller\Cli::$exit_code = 0;
 
             $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli($bad);
-            $ctrl->action();
+            $ctrl->doAction();
 
             $this->assertSame('failed', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
             $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code, json_encode($bad));
@@ -2000,10 +2000,10 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [ 'description' => 'A test stub that reads its own state row.', 'arguments' => [
-            'job=<name>' => 'Its job name.',
-            'fail=1'     => 'Fail.',
-            'final=1'    => 'Fail, and give up.',
-            'usage=1'    => 'Fail with a usage error.',
+            'job'     => [ 'type' => 'string', 'description' => 'Its job name.' ],
+            '--fail'  => [ 'type' => 'flag', 'description' => 'Fail.' ],
+            '--final' => [ 'type' => 'flag', 'description' => 'Fail, and give up.' ],
+            '--usage' => [ 'type' => 'flag', 'description' => 'Fail with a usage error.' ],
         ] ];
     }
 
@@ -2018,19 +2018,19 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
 
         self::$seen = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'SELECT last_run_at, last_finished_at FROM owa_scheduled_job WHERE job_name = ?',
-            [ (string) $this->getParam( 'job' ) ] );
+            [ (string) $this->param( 'job' ) ] );
 
-        if ( $this->getParam( 'final' ) ) {
+        if ( $this->param( 'final' ) ) {
 
             return $this->fail( 'told to give up', true );
         }
 
-        if ( $this->getParam( 'usage' ) ) {
+        if ( $this->param( 'usage' ) ) {
 
             return $this->usageError( 'told to fail with a usage error' );
         }
 
-        if ( $this->getParam( 'fail' ) ) {
+        if ( $this->param( 'fail' ) ) {
 
             return $this->fail( 'told to fail' );
         }

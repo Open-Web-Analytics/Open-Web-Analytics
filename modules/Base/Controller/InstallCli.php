@@ -13,13 +13,41 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first.',
             'arguments'   => [
-                'user_id=<name>'        => 'Required. The admin account\'s user name.',
-                'password=<password>'   => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters and at most ' . \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES . ' bytes.',
-                'email_address=<email>' => 'Required. The admin account\'s email address, used for password recovery.',
-                'domain=<url>'          => 'Required. The domain of the first website to track.',
-                'description=<text>'    => 'A description of the first website.',
-                'site_family=<text>'    => 'A family name to group the first website under.',
-                'web-group=<group>'     => 'The group the web server runs as, which owa-data/logs/ is given. Default: the OWA directory\'s group.',
+                'user_id' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'Required. The admin account\'s user name.',
+                ],
+                'password' => [
+                    'type'        => 'string',
+                    'value'       => '<password>',
+                    'description' => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters and at most ' . \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES . ' bytes.',
+                ],
+                'email_address' => [
+                    'type'        => 'string',
+                    'value'       => '<email>',
+                    'description' => 'Required. The admin account\'s email address, used for password recovery.',
+                ],
+                'domain' => [
+                    'type'        => 'string',
+                    'value'       => '<url>',
+                    'description' => 'Required. The domain of the first website to track.',
+                ],
+                'description' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'A description of the first website.',
+                ],
+                'site_family' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'A family name to group the first website under.',
+                ],
+                'web-group' => [
+                    'type'        => 'string',
+                    'value'       => '<group>',
+                    'description' => 'The group the web server runs as, which owa-data/logs/ is given. Default: the OWA directory\'s group.',
+                ],
             ],
         ];
     }

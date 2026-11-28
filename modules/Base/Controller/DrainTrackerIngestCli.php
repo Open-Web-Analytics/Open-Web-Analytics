@@ -30,9 +30,20 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Ingests the beacons waiting in the tracker-ingest queue, until it is empty or the time budget runs out. First forwards any beacons the queue refused and the file queue kept. Runs on the scheduler every minute.',
             'arguments'   => [
-                'seconds=<n>'    => 'Time budget in seconds. Defaults to 45.',
-                'forward_only=1' => 'Only forward the beacons the file queue kept to the tracker-ingest queue, without ingesting. For a collector, from cron.',
-                'scheduled=1'    => 'Set by the scheduler. A scheduled run reports only when it did something.',
+                'seconds' => [
+                    'type'        => 'duration',
+                    'min'         => 1,
+                    'default'     => self::BUDGET,
+                    'description' => 'Time budget in seconds.',
+                ],
+                '--forward_only' => [
+                    'type'        => 'flag',
+                    'description' => 'Only forward the beacons the file queue kept to the tracker-ingest queue, without ingesting. For a collector, from cron.',
+                ],
+                '--scheduled' => [
+                    'type'        => 'flag',
+                    'description' => 'Set by the scheduler. A scheduled run reports only when it did something.',
+                ],
             ],
         ];
     }
@@ -49,7 +60,7 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
     /** @return int the time budget, in seconds */
     protected function budget() {
 
-        return max( 1, (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET ) );
+        return (int) $this->param( 'seconds' );
     }
 
     public function __construct( $params ) {
@@ -61,7 +72,7 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
 
     public function action() {
 
-        if ( ! $this->getParam( 'forward_only' ) && ! \OWA\Core\ServerRole::current()->hasDatabase() ) {
+        if ( ! $this->param( 'forward_only' ) && ! \OWA\Core\ServerRole::current()->hasDatabase() ) {
 
             return $this->refuse( 'This server has no database to ingest into (role '
                 . \OWA\Core\ServerRole::current()->name() . '). Run with forward_only=1.' );
@@ -84,7 +95,7 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
                 . '%d dead-lettered there.', $forwarded['forwarded'], $forwarded['waiting'], $forwarded['dead'] ) );
         }
 
-        if ( $this->getParam( 'forward_only' ) ) {
+        if ( $this->param( 'forward_only' ) ) {
 
             return $forwarded['waiting']
                 ? $this->fail( 'Tracker ingest: the intake did not answer; beacons wait in the file queue.' )
@@ -101,7 +112,7 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
             return $this->fail( 'Tracker ingest: ' . $t->getMessage() );
         }
 
-        if ( array_sum( $counts ) || ! $this->getParam( 'scheduled' ) ) {
+        if ( array_sum( $counts ) || ! $this->param( 'scheduled' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: %d ingested, %d to retry, %d dead-lettered.',
                 $counts['ingested'], $counts['released'], $counts['dead'] ) );

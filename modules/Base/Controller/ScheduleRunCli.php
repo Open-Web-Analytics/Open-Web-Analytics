@@ -32,11 +32,27 @@ class ScheduleRunCli extends SchedulerCli {
         return [
             'description' => 'Runs every scheduled job that is due. The one command that belongs in cron, every minute.',
             'arguments'   => [
-                '--dry-run'       => 'Report what would run, and change nothing.',
-                'job=<name>'      => 'With --force or --force-release: the job to act on.',
-                '--force'         => 'With job=: run the job now, whatever its schedule.',
-                '--force-release' => 'With job=: drop a lock left by a process that died.',
-                '--prune-orphans' => 'Forget the state of jobs that are no longer registered.',
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what would run, and change nothing.',
+                ],
+                'job' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'With --force or --force-release: the job to act on.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'With job=: run the job now, whatever its schedule.',
+                ],
+                '--force-release' => [
+                    'type'        => 'flag',
+                    'description' => 'With job=: drop a lock left by a process that died.',
+                ],
+                '--prune-orphans' => [
+                    'type'        => 'flag',
+                    'description' => 'Forget the state of jobs that are no longer registered.',
+                ],
             ],
         ];
     }

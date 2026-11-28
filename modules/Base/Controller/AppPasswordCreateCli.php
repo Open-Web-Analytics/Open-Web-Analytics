@@ -19,34 +19,32 @@ class AppPasswordCreateCli extends AppPasswordsCli {
         return [
             'description' => 'Makes an application password for a user and prints it. It is shown once and cannot be retrieved later.',
             'arguments'   => [
-                'user=<user id>'   => 'Required. The user the password authenticates as.',
-                'name=<name>'      => 'Required. A name for what will use it, shown in the user\'s list of application passwords.',
-                'scope=read|full'  => 'read allows GET and HEAD requests only; full allows everything the user\'s role can do. Defaults to read.',
+                'user' => [
+                    'type'        => 'user',
+                    'required'    => true,
+                    'description' => 'The user the password authenticates as.',
+                ],
+                'name' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'required'    => true,
+                    'description' => 'A name for what will use it, shown in the user\'s list of application passwords.',
+                ],
+                'scope' => [
+                    'type'        => 'select',
+                    'options'     => [ \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ, \OWA\Module\Base\Classes\AppPasswords::SCOPE_FULL ],
+                    'default'     => \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ,
+                    'description' => 'read allows GET and HEAD requests only; full allows everything the user\'s role can do.',
+                ],
             ],
         ];
     }
 
     public function action() {
 
-        $user_id = $this->user();
-
-        if ( $user_id === '' ) {
-
-            return;
-        }
-
-        $name  = trim( (string) $this->getParam( 'name' ) );
-        $scope = trim( (string) $this->getParam( 'scope' ) ) ?: \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ;
-
-        if ( $name === '' ) {
-
-            return $this->usageError( 'name=<name> is required.' );
-        }
-
-        if ( ! isset( \OWA\Module\Base\Classes\AppPasswords::scopes()[ $scope ] ) ) {
-
-            return $this->usageError( 'scope= takes read or full.' );
-        }
+        $user_id = (string) $this->param( 'user' );
+        $name    = trim( (string) $this->param( 'name' ) );
+        $scope   = (string) $this->param( 'scope' );
 
         $made = \OWA\Module\Base\Classes\AppPasswords::create( $user_id, $name, $scope );
 

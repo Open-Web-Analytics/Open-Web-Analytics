@@ -73,20 +73,22 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
 
     /**
      * A deprecated command is left out of the reference, by its usage()'s
-     * `deprecated` marker, and keeps running. The marker and a description that
-     * says "Deprecated" go together.
+     * `deprecated` marker. The marker and a description that says
+     * "Deprecated" go together.
      */
     public function testADeprecatedCommandIsLeftOut(): void
     {
         $md       = $this->section('cli');
         $commands = $this->registeredCommands();
 
-        $this->assertTrue(\OWA\Module\Base\Controller\ModuleInstallCli::usage()['deprecated'] ?? false);
-        $this->assertSame(\OWA\Module\Base\Controller\ModuleInstallCli::class, $commands['install-module']);
+        foreach ($commands as $command => $class) {
+            if (!empty($class::usage()['deprecated'])) {
+                $this->assertStringNotContainsString("\n### $command\n", $md);
+            }
+        }
+
         $this->assertStringNotContainsString('install-module', $md);
-        $this->assertStringNotContainsString('Deprecated', $md);
         $this->assertStringContainsString("\n### activate\n", $md);
-        $this->assertStringContainsString("\n- [`activate`](#activate) — ", $md);
 
         foreach ($commands as $command => $class) {
 
@@ -141,17 +143,39 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         }
     }
 
-    /** As documented, with a placeholder value where it names one, each argument is one cli.php accepts. */
+    /** As documented, with a placeholder value where it names one, each argument is one cli.php accepts, by its name. */
     public function testEveryDocumentedArgumentParses(): void
     {
-        foreach ($this->registeredCommands() as $command => $class) {
+        foreach (owa_wiki_cli_commands() as $command => $c) {
 
-            foreach (array_keys($class::usage()['arguments']) as $arg) {
+            foreach ($c['arguments'] as $name => $d) {
 
-                $parsed = \OWA\Core\Lib::parseCliArgs(['cli.php', preg_replace('/=<[^>]*>|=\S+$/', '=x', $arg)]);
+                $arg    = \OWA\Core\Params::written($d);
+                $parsed = \OWA\Core\Lib::parseCliArgs(['cli.php', preg_replace('/=\S+$/', '=x', $arg)]);
                 $this->assertIsArray($parsed, "cmd=$command documents $arg, which cli.php refuses: " . (is_string($parsed) ? $parsed : ''));
+                $this->assertSame([$name], array_keys($parsed), "cmd=$command documents $arg");
             }
         }
+    }
+
+    /** Each argument's row gives the value it takes, its default or that it is required, and its description. */
+    public function testEachArgumentsRowIsReadFromItsDeclaration(): void
+    {
+        $rotate = (require self::WIKI . '/sections/cli.php')('partition-rotate');
+
+        $this->assertStringContainsString("| `months-ahead=<n>` | A whole number of at least 1. | `12` | How many months of future partitions to keep. |\n", $rotate);
+        $this->assertStringContainsString("| `--dry-run` | A switch. |  | ", $rotate);
+        $this->assertStringContainsString("| `granularity=<monthly\\|half-month\\|quarter-month\\|daily>` | One of `monthly`, `half-month`, `quarter-month`, `daily`. |  | ", $rotate);
+        $this->assertStringNotContainsString('keep=', $rotate, 'a retired argument is left out');
+
+        $this->assertStringContainsString("| `module=<name>` | A module's name. | Required | The module's name. |\n",
+            (require self::WIKI . '/sections/cli.php')('activate'));
+        $this->assertStringContainsString("| `older-than=<cutoff>` | A date, yyyymmdd, or a period back from today, such as `90days`, `18m` or `2years`. | Required | ",
+            (require self::WIKI . '/sections/cli.php')('partition-drop'));
+        $this->assertStringContainsString("| `site=<id>` | An existing live web Profile's site id. |  | ",
+            (require self::WIKI . '/sections/cli.php')('publish-trackers'));
+        $this->assertStringContainsString("| `to=<yyyymmdd>` | A date, yyyymmdd. Not before `from=`. |  | ",
+            (require self::WIKI . '/sections/cli.php')('cube-rebuild'));
     }
 
     public function testACommandWithNoArgumentsSaysSo(): void
@@ -285,7 +309,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
                 continue;
             }
 
-            $this->assertStringStartsWith("| Argument | Description |\n|---|---|\n", $md);
+            $this->assertStringStartsWith("| Argument | Value | Default | Description |\n|---|---|---|---|\n", $md);
 
             if ($c['deprecated']) {
                 continue;
@@ -294,7 +318,8 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
             $this->assertStringContainsString("\n### $command\n", $full);
             $this->assertStringContainsString($md, $full, "cli-$command differs from its table in the full reference");
 
-            foreach (array_keys($c['arguments']) as $arg) {
+            foreach ($c['arguments'] as $d) {
+                $arg = \OWA\Core\Params::written($d);
                 $this->assertStringContainsString('| `' . owa_wiki_cell($arg) . '` |', $md, "cli-$command leaves out $arg");
             }
         }

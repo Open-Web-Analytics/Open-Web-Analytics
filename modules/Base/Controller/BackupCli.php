@@ -28,8 +28,17 @@ class BackupCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Writes the tables this version of OWA uses to a gzipped SQL file, mode 0600, for restoring outside OWA. The cubes are never included (cmd=cube-rebuild rebuilds them), nor are old tables nothing uses (cmd=tables-cleanup). Refused before the 1.x migration has run.',
             'arguments'   => [
-                'scope=<application|data|all>' => 'The tables this version uses, as each module\'s entities declare them. application: configuration, users, Properties, goals, settings, notices, jobs. data: the tables tracking writes. all: both.',
-                'dir=<path>'                   => 'The directory to write to, outside the web root. Defaults to OWA_BACKUP_DIR.',
+                'scope' => [
+                    'type'        => 'select',
+                    'options'     => array_keys( Backup::SCOPES ),
+                    'required'    => true,
+                    'description' => 'The tables this version uses, as each module\'s entities declare them. application: configuration, users, Properties, goals, settings, notices, jobs. data: the tables tracking writes. all: both.',
+                ],
+                'dir' => [
+                    'type'        => 'string',
+                    'value'       => '<path>',
+                    'description' => 'The directory to write to, outside the web root. Defaults to OWA_BACKUP_DIR.',
+                ],
             ],
         ];
     }

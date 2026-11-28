@@ -18,23 +18,29 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
         return [
             'description' => 'Revokes a user\'s application password, or all of them. Anything using one stops working immediately.',
             'arguments'   => [
-                'user=<user id>' => 'Required. The user the password belongs to.',
-                'id=<id>'        => 'The password\'s id, from app-password-list. Required unless --all is given.',
-                '--all'          => 'Revoke every application password the user has.',
+                'user' => [
+                    'type'        => 'user',
+                    'required'    => true,
+                    'description' => 'The user the password belongs to.',
+                ],
+                'id' => [
+                    'type'        => 'string',
+                    'value'       => '<id>',
+                    'description' => 'The password\'s id, from app-password-list. Required unless --all is given.',
+                ],
+                '--all' => [
+                    'type'        => 'flag',
+                    'description' => 'Revoke every application password the user has.',
+                ],
             ],
         ];
     }
 
     public function action() {
 
-        $user_id = $this->user();
+        $user_id = (string) $this->param( 'user' );
 
-        if ( $user_id === '' ) {
-
-            return;
-        }
-
-        if ( $this->getParam( 'all' ) ) {
+        if ( $this->param( 'all' ) ) {
 
             $count = count( \OWA\Module\Base\Classes\AppPasswords::forUser( $user_id ) );
 
@@ -46,7 +52,7 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
             return \OWA\Core\CoreAPI::notice( sprintf( '%d application password%s of %s revoked.', $count, $count === 1 ? '' : 's', $user_id ) );
         }
 
-        $lookup_id = trim( (string) $this->getParam( 'id' ) );
+        $lookup_id = trim( (string) $this->param( 'id' ) );
 
         if ( $lookup_id === '' ) {
 
