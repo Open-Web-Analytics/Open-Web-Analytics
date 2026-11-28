@@ -107,32 +107,47 @@ class Releases {
     public static $fetcher = null;
 
     /**
-     * The release to update to: not a draft or a pre-release, in the same
-     * major version (a major release is never automatic), higher than
-     * $installed, a step $level allows (PATCH: patches only; MINOR: patches and
-     * minors), and shipping the tarball. The highest version wins, whatever
-     * order or date GitHub lists them in.
+     * The release to update to: the highest of candidates().
      *
      * @param  array<int, mixed> $releases decoded from the listing
      * @param  string            $installed
-     * @param  string            $level     Version::PATCH or Version::MINOR
+     * @param  string            $level     Version::MINOR or Version::MAJOR
      * @return Release|null
      */
     public static function choose( array $releases, $installed, $level ) {
 
-        $best = null;
+        return self::candidates( $releases, $installed, $level )[0] ?? null;
+    }
+
+    /**
+     * The releases automatic updates may update to, highest first, whatever
+     * order or date GitHub lists them in: not a draft or a pre-release,
+     * higher than $installed, a step $level allows (MINOR: patches and
+     * minors in the same major; MAJOR: any major too), and shipping the
+     * tarball.
+     *
+     * @param  array<int, mixed> $releases decoded from the listing
+     * @param  string            $installed
+     * @param  string            $level     Version::MINOR or Version::MAJOR
+     * @return list<Release>
+     */
+    public static function candidates( array $releases, $installed, $level ) {
+
+        $out = [];
 
         foreach ( $releases as $r ) {
 
             $release = self::installable( is_array( $r ) ? $r : [], $installed, $level );
 
-            if ( $release && ( $best === null || Version::compare( $release['version'], $best['version'] ) > 0 ) ) {
+            if ( $release ) {
 
-                $best = $release;
+                $out[ $release['version'] ] = $release;
             }
         }
 
-        return $best;
+        usort( $out, static fn ( $a, $b ) => Version::compare( $b['version'], $a['version'] ) );
+
+        return $out;
     }
 
     /**

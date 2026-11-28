@@ -111,7 +111,7 @@ final class ReleaseListingNetworkTest extends TestCase
     public function testADownloadMatchesItsDigest(): void
     {
         $list    = Releases::fetch((string) \OWA\Core\CoreAPI::getSetting('base', 'auto_update_releases_url'));
-        $release = Releases::choose($list, '1.14.0', 'patch');
+        $release = array_values(array_filter(Releases::candidates($list, '1.14.0', 'minor'), static fn ($r) => $r['step'] === 'patch'))[0] ?? null;
 
         $this->assertNotNull($release);
         $this->assertSame('patch', $release['step']);

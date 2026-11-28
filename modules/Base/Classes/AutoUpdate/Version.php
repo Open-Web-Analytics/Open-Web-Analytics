@@ -73,8 +73,9 @@ class Version {
     }
 
     /**
-     * Whether automatic updates at $level (PATCH or MINOR) go from $from to
-     * $to: a higher release, never another major, a minor one only at MINOR.
+     * Whether automatic updates at $level (MINOR or MAJOR) go from $from to
+     * $to: a higher release, in the same major at MINOR, of any major at
+     * MAJOR.
      *
      * @param  string $level
      * @param  string $from
@@ -85,6 +86,6 @@ class Version {
 
         $step = self::step( $from, $to );
 
-        return $step === self::PATCH || ( $step === self::MINOR && $level === self::MINOR );
+        return $step === self::PATCH || $step === self::MINOR || ( $step === self::MAJOR && $level === self::MAJOR );
     }
 }

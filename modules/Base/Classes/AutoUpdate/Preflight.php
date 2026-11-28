@@ -10,8 +10,7 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * server, seen from the CLI: PHP, its extensions, the database server over
  * OWA's own connection, and owa-config.php's constants. The rest of the
  * environment -- the web server's PHP among it -- is taken as it was when OWA
- * was installed: requirements change only in major releases, which are never
- * automatic. install() judges what copying the release needs: every
+ * was installed. install() judges what copying the release needs: every
  * directory the release writes in writable, and room for its files.
  *
  * Each returns its problems as sentences, [] when there are none. Pure where

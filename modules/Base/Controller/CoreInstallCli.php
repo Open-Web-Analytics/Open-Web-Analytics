@@ -75,7 +75,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Installs OWA. With no installation yet (owa-config.php must exist), sets up the database: the schema, the first admin and the first tracked website, then the data directory\'s permissions. The admin\'s password is generated and printed once, unless --password-stdin is given. '
                 . 'On an installed system with no release named, checks and repairs: missing tables are created, the schema version is kept, the permissions are checked, and nothing else changes. '
-                . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release in this major version can be named. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
+                . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release can be named whose requirements this server meets and which installs over the installed release (its upgrades_from); a newer major version too. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
             'arguments'   => [
                 'user_id' => [
                     'type'        => 'string',
@@ -117,7 +117,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
                 '--version' => [
                     'type'        => 'string',
                     'value'       => '<x.y.z>',
-                    'description' => 'An installed system: the release to install, in this major version, fetched through the update host.',
+                    'description' => 'An installed system: the release to install, fetched through the update host.',
                 ],
                 '--file' => [
                     'type'        => 'string',

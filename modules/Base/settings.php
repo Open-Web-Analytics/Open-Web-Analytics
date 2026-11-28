@@ -96,7 +96,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Install Updates Automatically' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Whether OWA downloads and installs its own patch and minor releases. Never on a version control checkout, and never a major release.' ),
+                \OWA\Core\CoreAPI::t( 'Whether OWA downloads and installs its own releases, those Releases To Install names. Never on a version control checkout.' ),
         ],
         'auto_update_level' => [
             'config_constant' => 'OWA_AUTO_UPDATE_LEVEL',
@@ -106,8 +106,8 @@ return [
             'type'     => 'select',
             'label'    => \OWA\Core\CoreAPI::t( 'Releases To Install' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features.' ),
-            'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'patch' => \OWA\Core\CoreAPI::t( 'Patch releases only' ) ],
+                \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features; major releases can change what OWA needs and how it works. A release that does not install over the installed one is skipped for the highest that does, and installs on a later update.' ),
+            'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'major' => \OWA\Core\CoreAPI::t( 'Patch, minor and major releases' ) ],
         ],
         'auto_update_days' => [
             'config_constant' => 'OWA_AUTO_UPDATE_DAYS',
@@ -470,6 +470,8 @@ return [
         'retired_settings_before_098' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update101: the rows of the removed settings it deleted, for its down().
         'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update102: the auto_update_level rows of patch it changed to minor, for its down().
+        'retired_settings_before_102' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],
