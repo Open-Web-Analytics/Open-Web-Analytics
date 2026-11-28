@@ -140,6 +140,11 @@ final class TrackerBundleTest extends TestCase
             TrackerBundle::config(self::SITE)['options']);
     }
 
+    /**
+     * @covers-setting base.tracker_clicks
+     * @covers-setting base.tracker_url_fragments
+     * @covers-setting base.tracker_session_cookie_days
+     */
     public function testAProfilesOverridesChangeItsCommands(): void
     {
         $this->requireDb();
@@ -167,6 +172,9 @@ final class TrackerBundleTest extends TestCase
      * in a fresh install the module is not active, so its declared defaults have
      * not been loaded, and a test leaning on them passed only after another
      * test had loaded them.
+     *
+     * @covers-setting domstream.record
+     * @covers-setting domstream.sample_rate
      */
     public function testDomstreamContributesItsRecorder(): void
     {
@@ -211,6 +219,8 @@ final class TrackerBundleTest extends TestCase
      * What the Tracking Tag screen's pills show: a label for each feature the
      * saved settings turn on, in the order config() turns them on, and a
      * feature's command where nothing labels it.
+     *
+     * @covers-setting base.tracker_clicks
      */
     public function testTrackedEventsAreTheFeaturesTheSettingsTurnOn(): void
     {
@@ -392,7 +402,11 @@ final class TrackerBundleTest extends TestCase
         $this->assertSame([self::SITE => 'current'], TrackerBundle::publishStale(false, [self::SITE]));
     }
 
-    /** A saved setting is a new header too. */
+    /**
+     * A saved setting is a new header too.
+     *
+     * @covers-setting base.tracker_clicks
+     */
     public function testASavedSettingMakesABundleStale(): void
     {
         $this->requireDb();
@@ -424,7 +438,11 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    /** A changed tracking or assets URL is a new header: every bundle is republished. */
+    /**
+     * A changed tracking or assets URL is a new header: every bundle is republished.
+     *
+     * @covers-setting base.tracking_url
+     */
     public function testAChangedTrackingOrAssetsUrlMakesABundleStale(): void
     {
         $saved = self::urls();
@@ -446,7 +464,11 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    /** OWA_TRACKING_URL: the bundle and the classic tag send beacons there. */
+    /**
+     * OWA_TRACKING_URL: the bundle and the classic tag send beacons there.
+     *
+     * @covers-setting base.tracking_url
+     */
     public function testATrackingUrlIsTheBeaconEndpoint(): void
     {
         $saved = self::urls();
@@ -467,7 +489,11 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    /** OWA_ASSETS_URL: the bundle is loaded from there, and its chunks load from there. */
+    /**
+     * OWA_ASSETS_URL: the bundle is loaded from there, and its chunks load from there.
+     *
+     * @covers-setting base.assets_url
+     */
     public function testAnAssetsUrlServesTheBundleAndItsChunks(): void
     {
         $saved = self::urls();
@@ -521,6 +547,8 @@ final class TrackerBundleTest extends TestCase
      * Honoring privacy signals is the tracker's own default, so the bundle says
      * nothing about it until a level turns it off; then it is an option, ahead
      * of the page's commands, and the classic tag carries the same line.
+     *
+     * @covers-setting base.tracker_honor_privacy_signals
      */
     public function testPrivacySignalsAreAnOptionOnlyWhenNotHonored(): void
     {
@@ -546,7 +574,11 @@ final class TrackerBundleTest extends TestCase
         $this->assertStringContainsString('w.owa_cmds=o.concat(p,f)', $preamble, 'the options lead the queue');
     }
 
-    /** The Profile's value wins over its Property's, and a Profile that sets none inherits it. */
+    /**
+     * The Profile's value wins over its Property's, and a Profile that sets none inherits it.
+     *
+     * @covers-setting base.tracker_honor_privacy_signals
+     */
     public function testAProfileOverridesItsPropertyOnPrivacySignals(): void
     {
         $this->requireDb();
@@ -630,6 +662,8 @@ final class TrackerBundleTest extends TestCase
      * other than the one built here is an update pending, and the update publishes
      * every live Profile's bundle that is stale or missing -- which is how
      * Profiles from 1.x, which have none, get theirs on the upgrade.
+     *
+     * @covers-setting base.tracker_build
      */
     public function testANewTrackerIsAnUpdateThatRepublishesStaleBundles(): void
     {
@@ -837,6 +871,8 @@ final class TrackerBundleTest extends TestCase
      * Bundles are written to tracker/ in the public directory the install
      * names (public_path, OWA_PUBLIC_PATH), the directory assetsUrl() serves,
      * so the file and its URL are the same tracker/<id>.js.
+     *
+     * @covers-setting base.public_path
      */
     public function testBundlesAreWrittenUnderThePublicPath(): void
     {

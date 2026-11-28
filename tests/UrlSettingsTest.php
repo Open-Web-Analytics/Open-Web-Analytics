@@ -49,7 +49,11 @@ final class UrlSettingsTest extends TestCase
         $this->assertSame('https://elsewhere.example.test/owa/public/', $s->assetsUrl());
     }
 
-    /** And the booted install's, through the singleton every reader uses. */
+    /**
+     * And the booted install's, through the singleton every reader uses.
+     *
+     * @covers-setting base.public_url
+     */
     public function testTheBootedInstallFollowsItsPublicUrl(): void
     {
         $c     = \OWA\Core\CoreAPI::configSingleton();
@@ -84,6 +88,9 @@ final class UrlSettingsTest extends TestCase
         $this->assertSame('https://owa.example.test/public/', $s->assetsUrl());
     }
 
+    /**
+     * @covers-setting base.assets_url
+     */
     public function testAnAssetsUrlServesPublic(): void
     {
         $s = $this->settings(['public_url' => 'https://owa.example.test/', 'assets_url' => 'https://cdn.example.test/owa//']);
@@ -111,7 +118,11 @@ final class UrlSettingsTest extends TestCase
         yield 'none'              => ['', ''];
     }
 
-    /** @dataProvider publicUrls */
+    /**
+     * @dataProvider publicUrls
+     *
+     * @covers-setting base.public_url
+     */
     public function testThePublicUrlEndsInASlashAndSoDoesEveryUrlBuiltFromIt(string $given, string $public): void
     {
         $s = $this->settings(['public_url' => $given]);
@@ -124,6 +135,9 @@ final class UrlSettingsTest extends TestCase
         $this->assertSame($public, $s->trackingUrl());
     }
 
+    /**
+     * @covers-setting base.public_url
+     */
     public function testOwaPublicUrlWithoutItsSlashGetsOneAtBoot(): void
     {
         $this->assertSame([

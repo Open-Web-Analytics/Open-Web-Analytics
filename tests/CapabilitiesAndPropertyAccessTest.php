@@ -147,6 +147,9 @@ final class CapabilitiesAndPropertyAccessTest extends TestCase
         $this->assertTrue( $admin->isSiteAccessible( self::SITE_B ) );
     }
 
+    /**
+     * @covers-setting base.capabilities
+     */
     public function testACapabilityEveryoneHoldsIsHeldOnEveryProperty(): void
     {
         $this->settings()->addCapabilityToRole( 'everyone', 'view_reports' );

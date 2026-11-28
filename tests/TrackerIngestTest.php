@@ -149,7 +149,12 @@ final class TrackerIngestTest extends TestCase
     // Settings
     // ---------------------------------------------------------------------
 
-    /** queue_tracking_events decides, except on a collector, which always queues. */
+    /**
+     * queue_tracking_events decides, except on a collector, which always queues.
+     *
+     * @covers-setting base.queue_tracking_events
+     * @covers-setting base.server_role
+     */
     public function testQueueTrackingEventsDecidesAndACollectorAlwaysQueues(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
@@ -165,7 +170,11 @@ final class TrackerIngestTest extends TestCase
         $this->assertTrue(TrackerIngest::isQueued(), 'a collector has no database to write a beacon to');
     }
 
-    /** New code must not write against an old schema: while it is behind, every beacon waits for the drain, which waits too. */
+    /**
+     * New code must not write against an old schema: while it is behind, every beacon waits for the drain, which waits too.
+     *
+     * @covers-setting base.schema_version
+     */
     public function testASchemaBehindQueues(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
@@ -382,7 +391,11 @@ final class TrackerIngestTest extends TestCase
         $this->assertSame(['fresh', 'old-ts'], array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
     }
 
-    /** A 12-month window: dead letters of older events are deleted, replayed or not, by hand or daily; newer ones are not. */
+    /**
+     * A 12-month window: dead letters of older events are deleted, replayed or not, by hand or daily; newer ones are not.
+     *
+     * @covers-setting base.raw_retention_months
+     */
     public function testADeadLetterOlderThanTheRetentionWindowIsDeleted(): void
     {
         foreach ([true, false] as $once_only) {

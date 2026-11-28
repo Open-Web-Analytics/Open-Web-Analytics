@@ -64,7 +64,11 @@ final class RetentionTest extends TestCase
         $this->assertFalse(Retention::shorter(36, 24));
     }
 
-    /** The settings, read: the install's raw window, and a Property's own cube window over the install's. */
+    /**
+     * The settings, read: the install's raw window, and a Property's own cube window over the install's.
+     *
+     * @covers-setting base.cube_retention_months
+     */
     public function testWindowsAreReadFromTheSettings(): void
     {
         if (!owa_test_db_available()) {

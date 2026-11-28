@@ -243,7 +243,11 @@ final class Update062Test extends TestCase
         $this->assertSame([], (array) $db->get_results('SELECT id FROM owa_migration_progress WHERE site_id = ?', [self::SITE]));
     }
 
-    /** After cmd=v1-drop there is nothing to revert to, and down() says so. */
+    /**
+     * After cmd=v1-drop there is nothing to revert to, and down() says so.
+     *
+     * @covers-setting base.v1_tables_dropped
+     */
     public function testDownIsRefusedOnceV1IsDropped(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'v1_tables_dropped', true);

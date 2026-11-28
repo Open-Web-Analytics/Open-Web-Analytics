@@ -225,7 +225,11 @@ final class TrackerSnippetTest extends TestCase
         } );
     }
 
-    /** OWA_ASSETS_URL: the tracker loads from there, and its chunks follow owa_assetsUrl. */
+    /**
+     * OWA_ASSETS_URL: the tracker loads from there, and its chunks follow owa_assetsUrl.
+     *
+     * @covers-setting base.assets_url
+     */
     public function testAnAssetsUrlLoadsTheTrackerFromThere(): void
     {
         $this->withUrls( null, 'https://cdn.example.test/owa/', function () {
@@ -239,7 +243,11 @@ final class TrackerSnippetTest extends TestCase
         } );
     }
 
-    /** OWA_TRACKING_URL: beacons go there; the tag preconnects to it as well. */
+    /**
+     * OWA_TRACKING_URL: beacons go there; the tag preconnects to it as well.
+     *
+     * @covers-setting base.tracking_url
+     */
     public function testATrackingUrlIsWhereBeaconsGo(): void
     {
         $this->withUrls( 'https://t.example.test/', null, function () {

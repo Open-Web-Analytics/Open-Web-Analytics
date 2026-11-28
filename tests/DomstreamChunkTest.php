@@ -102,6 +102,8 @@ final class DomstreamChunkTest extends TestCase
     /**
      * The chunk's page_location is filtered as raw's is: a query_string_filters
      * parameter goes, and a URL naming none is stored exactly as it came.
+     *
+     * @covers-setting base.query_string_filters
      */
     public function testThePageLocationLosesTheFilteredParameters(): void
     {

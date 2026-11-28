@@ -238,7 +238,11 @@ final class CubeTodaySpacingTest extends TestCase
         return $usec;
     }
 
-    /** Needs a scratch-DB run. */
+    /**
+     * Needs a scratch-DB run.
+     *
+     * @covers-setting base.cube_last_build
+     */
     public function testABuildRecordsHowLongItTook(): void
     {
         $this->requireDb();
@@ -268,6 +272,8 @@ final class CubeTodaySpacingTest extends TestCase
     /**
      * Today is rebuilt by a routine run once due, and not before; a named
      * range is built as named. Needs a scratch-DB run.
+     *
+     * @covers-setting base.cube_last_build
      */
     public function testARoutineRunRebuildsTodayOnceItIsDue(): void
     {
@@ -302,6 +308,8 @@ final class CubeTodaySpacingTest extends TestCase
     /**
      * A record of another build leaves the duration unknown: the floor.
      * Needs a scratch-DB run.
+     *
+     * @covers-setting base.cube_last_build
      */
     public function testARecordOfAnotherBuildIsTheFloor(): void
     {

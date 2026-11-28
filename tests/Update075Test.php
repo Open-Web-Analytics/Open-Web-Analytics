@@ -85,6 +85,9 @@ final class Update075Test extends TestCase
             \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
+    /**
+     * @covers-setting base.goal_event_names_before_075
+     */
     public function testAGoalEventDefinitionIsRenamedToAUsableUniqueEventNameAndDownGivesItsNameBack(): void
     {
         $fine   = $this->goal('Already_fine_75', [['page_path', 'exact', '/z']]);

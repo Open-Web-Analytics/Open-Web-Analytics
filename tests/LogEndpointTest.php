@@ -158,7 +158,12 @@ PHP;
         $this->assertSame(strlen($body), (int) $m[1]);
     }
 
-    /** The tracking path does not ask whether updates are pending: nothing there acts on the answer. */
+    /**
+     * The tracking path does not ask whether updates are pending: nothing there acts on the answer.
+     *
+     * @covers-setting base.tracking_mode
+     * @covers-setting base.tracker_build
+     */
     public function testTheTrackingBootDoesNotCheckForUpdates(): void
     {
         $c    = \OWA\Core\CoreAPI::configSingleton();

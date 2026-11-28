@@ -235,6 +235,8 @@ final class InstanceInfoCliTest extends TestCase
      * which is not what install() does.
      *
      * maxmind_geoip owns no tables, so the warning is shown for it too.
+     *
+     * @covers-setting maxmind_geoip.schema_version
      */
     public function testAMissingSchemaVersionIsAWarningForEveryModule(): void
     {
@@ -338,6 +340,8 @@ final class InstanceInfoCliTest extends TestCase
     /**
      * The GeoIP line looks for the configured edition's file. An install on the
      * Country edition has no GeoLite2-City.mmdb and is not "not downloaded".
+     *
+     * @covers-setting maxmind_geoip.db_edition
      */
     public function testTheGeoipLineReadsTheConfiguredEdition(): void
     {

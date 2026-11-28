@@ -494,7 +494,11 @@ final class CliCommandsTest extends CliControllerTestCase
         }
     }
 
-    /** Scheduled, with a 12-month window: archives older than it go, in both queues; newer ones stay. */
+    /**
+     * Scheduled, with a 12-month window: archives older than it go, in both queues; newer ones stay.
+     *
+     * @covers-setting base.raw_retention_months
+     */
     public function testTheScheduledPruneDeletesArchivesOlderThanTheRetentionWindow(): void
     {
         $dir = $this->scheduledPrune(12);

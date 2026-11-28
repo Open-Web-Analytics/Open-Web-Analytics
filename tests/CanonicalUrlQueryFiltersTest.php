@@ -47,6 +47,9 @@ final class CanonicalUrlQueryFiltersTest extends TestCase
         $this->assertSame($url, $this->canonical($url));
     }
 
+    /**
+     * @covers-setting base.query_string_filters
+     */
     public function testAFilteredParameterLeavesTheOnesAfterIt(): void
     {
         $this->assertSame('http://shop.example.com/index.php?route=product/product&product_id=50',

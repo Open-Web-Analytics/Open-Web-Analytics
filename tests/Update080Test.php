@@ -208,6 +208,8 @@ final class Update080Test extends TestCase
      * list only when up() wrote it. A second down() changes nothing.
      *
      * @dataProvider stored
+     *
+     * @covers-setting base.default_page_before_080
      */
     public function testDownRestoresTheExactRows(callable $seed): void
     {

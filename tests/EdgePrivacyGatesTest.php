@@ -176,7 +176,11 @@ final class EdgePrivacyGatesTest extends TestCase
         return $ip;
     }
 
-    /** The full address in the list excludes the request, though only the masked one would be stored. */
+    /**
+     * The full address in the list excludes the request, though only the masked one would be stored.
+     *
+     * @covers-setting base.excluded_ips
+     */
     public function testAnExcludedAddressMatchesWithAnonymisationOn(): void
     {
         $ip = $this->requestIpOrSkip();
@@ -187,7 +191,11 @@ final class EdgePrivacyGatesTest extends TestCase
         $this->assertSame([], $this->logPageView());
     }
 
-    /** A list written with the masked address still matches. */
+    /**
+     * A list written with the masked address still matches.
+     *
+     * @covers-setting base.excluded_ips
+     */
     public function testAMaskedAddressInTheListStillMatches(): void
     {
         $ip = $this->requestIpOrSkip();
@@ -198,7 +206,11 @@ final class EdgePrivacyGatesTest extends TestCase
         $this->assertSame([], $this->logPageView());
     }
 
-    /** Not excluded: queued, carrying only the masked address. */
+    /**
+     * Not excluded: queued, carrying only the masked address.
+     *
+     * @covers-setting base.anonymize_ips
+     */
     public function testAnAddressNotListedIsQueuedMasked(): void
     {
         $ip = $this->requestIpOrSkip();

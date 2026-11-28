@@ -79,6 +79,9 @@ final class ClientAddressTest extends TestCase
         $this->assertSame('203.0.113.9', $hop->invoke(null), 'an application password records the same address');
     }
 
+    /**
+     * @covers-setting base.trusted_proxies
+     */
     public function testTheTrustedProxiesAreTheSetting(): void
     {
         $this->request(['REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '198.51.100.7, 192.0.2.10']);

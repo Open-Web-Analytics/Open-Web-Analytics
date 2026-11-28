@@ -109,6 +109,8 @@ final class DomstreamModuleTest extends TestCase
      * The Profile's recording is set here rather than read from the default:
      * run alone in a fresh install the module is inactive and its declared
      * defaults are not loaded.
+     *
+     * @covers-setting domstream.record
      */
     public function testTheTagConfigStartsTheRecorder(): void
     {

@@ -47,7 +47,11 @@ final class ConfigFilePathTest extends TestCase
         return $file;
     }
 
-    /** isConfigFilePresent() and createConfigFile() take the path from the setting. */
+    /**
+     * isConfigFilePresent() and createConfigFile() take the path from the setting.
+     *
+     * @covers-setting base.config_file
+     */
     public function testTheInstallerWritesTheFileTheSettingNames(): void
     {
         $c    = $this->settings();
@@ -65,7 +69,11 @@ final class ConfigFilePathTest extends TestCase
         $this->assertTrue($c->isConfigFilePresent());
     }
 
-    /** loadConfigFile() includes the file the setting names. */
+    /**
+     * loadConfigFile() includes the file the setting names.
+     *
+     * @covers-setting base.config_file
+     */
     public function testTheLoaderReadsTheFileTheSettingNames(): void
     {
         $c        = $this->settings();

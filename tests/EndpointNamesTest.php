@@ -20,6 +20,9 @@ final class EndpointNamesTest extends TestCase
             (string) file_get_contents(__DIR__ . '/../index.php'));
     }
 
+    /**
+     * @covers-setting base.disabledEndpoints
+     */
     public function testTheAdminAndTheApiAreTurnedOffApart(): void
     {
         // The check alone, on settings of the test's: the caller's boot is not what is tested.
@@ -57,6 +60,8 @@ final class EndpointNamesTest extends TestCase
      * entry point throw a TypeError (in_array() of a string).
      *
      * @dataProvider values
+     *
+     * @covers-setting base.disabledEndpoints
      */
     public function testEveryShapeOfTheSettingIsRead($value, array $disabled): void
     {

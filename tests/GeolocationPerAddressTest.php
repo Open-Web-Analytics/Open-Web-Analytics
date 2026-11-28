@@ -52,6 +52,9 @@ final class GeolocationPerAddressTest extends TestCase
         \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', $this->was );
     }
 
+    /**
+     * @covers-setting base.geolocation_lookup
+     */
     public function testEachAddressGetsItsOwnLocation(): void
     {
 

@@ -126,7 +126,11 @@ final class Update092Test extends TestCase
         $this->assertSame($before, $this->rows());
     }
 
-    /** Every retired row goes, at every scope, others stay; down() is the exact inverse. */
+    /**
+     * Every retired row goes, at every scope, others stay; down() is the exact inverse.
+     *
+     * @covers-setting base.retired_goals_before_092
+     */
     public function testTheRetiredRowsGoAndComeBack(): void
     {
         $this->requireDb();

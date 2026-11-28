@@ -87,6 +87,9 @@ final class DataDirConfigTest extends TestCase
         $this->fail("the probe printed nothing:\n" . $out . $err);
     }
 
+    /**
+     * @covers-setting base.data_dir
+     */
     public function testTheDataDirectoryMovesEverythingWrittenUnderIt(): void
     {
         $d = $this->probe(self::UNPINNED + self::SQS);
@@ -120,6 +123,9 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame([], $r['warnings']);
     }
 
+    /**
+     * @covers-setting base.data_dir
+     */
     public function testWithNothingSetEverythingStaysInOwaData(): void
     {
         $r    = $this->probe(self::SQS);

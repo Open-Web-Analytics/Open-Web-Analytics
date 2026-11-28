@@ -62,6 +62,8 @@ final class ErrorLogFilePermissionTest extends TestCase
      * A shell umask of 022 is what produced the unusable 0644 file, so set it
      * explicitly: without an explicit permission the file would come out 0644
      * and the assertion would fail.
+     *
+     * @covers-setting base.error_log_file
      */
     public function testLogFileIsCreatedGroupWritable()
     {

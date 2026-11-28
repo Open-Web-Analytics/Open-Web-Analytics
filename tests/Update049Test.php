@@ -151,7 +151,11 @@ final class Update049Test extends TestCase
             . 'to be a column would change what the author asked for.' );
     }
 
-    /** down() switches back on the goals up() switched off, and only those. */
+    /**
+     * down() switches back on the goals up() switched off, and only those.
+     *
+     * @covers-setting base.goals_switched_off_by_049
+     */
     public function testRollingBackSwitchesTheGoalBackOn(): void
     {
         \OWA\Core\CoreAPI::persistSetting( 'base', \OWA\Module\Base\Update\Update049::SWITCHED_OFF, [] );

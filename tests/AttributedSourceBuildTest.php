@@ -250,7 +250,11 @@ final class AttributedSourceBuildTest extends TestCase
         }, (array) $rows));
     }
 
-    /** The lookback is the Property's setting, applied at build: 150 days reaches the 120-day touch. */
+    /**
+     * The lookback is the Property's setting, applied at build: 150 days reaches the 120-day touch.
+     *
+     * @covers-setting base.attribution_lookback_days
+     */
     public function testAPropertysLookbackReachesHistoryOnRebuild(): void
     {
         \OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base', 'attribution_lookback_days', 150);

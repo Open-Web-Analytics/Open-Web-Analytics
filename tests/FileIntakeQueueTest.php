@@ -105,7 +105,11 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertSame(['c'], self::names($q->receive(2, 300)));
     }
 
-    /** A finished batch is archived when archive_old_events is on, and deleted when it is off. */
+    /**
+     * A finished batch is archived when archive_old_events is on, and deleted when it is off.
+     *
+     * @covers-setting base.archive_old_events
+     */
     public function testAFinishedBatchIsArchivedOrDeleted(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'archive_old_events', true);
@@ -612,6 +616,8 @@ PHP
      * events are ingested -- nor read again: it is set aside as .failed at
      * once, saying why, the batches behind it drain, and failedBatches() names
      * it for System Health.
+     *
+     * @covers-setting base.archive_old_events
      */
     public function testABatchThatCannotBeArchivedIsSetAside(): void
     {

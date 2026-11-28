@@ -109,6 +109,8 @@ final class CreateCookieOptionsTest extends TestCase
      * A sign-in cookie is host-only, on the install's path, and HttpOnly; and
      * the same name at cookie_domain and / is expired before it, as a browser
      * holding one there would send it first.
+     *
+     * @covers-setting base.cookie_domain
      */
     public function testASignInCookieIsSentOnlyToThisInstall(): void
     {
@@ -129,7 +131,11 @@ final class CreateCookieOptionsTest extends TestCase
         $this->assertMatchesRegularExpression('/; domain=\.?example\.com/i', $expired);
     }
 
-    /** At the root of its host with no cookie_domain, the one scope is the old one too: nothing else is expired. */
+    /**
+     * At the root of its host with no cookie_domain, the one scope is the old one too: nothing else is expired.
+     *
+     * @covers-setting base.cookie_domain
+     */
     public function testAtTheRootWithNoCookieDomainOnlyTheCookieIsSet(): void
     {
         $headers = $this->cgiHeaders('tests/fixtures/sign_in_cookie_probe.php', [

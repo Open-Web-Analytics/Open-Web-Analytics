@@ -83,6 +83,9 @@ final class PendingUpdateGateTest extends TestCase
         $this->assertFalse($c->stops(), 'the REST API runs');
     }
 
+    /**
+     * @covers-setting base.schema_version
+     */
     public function testASchemaUpdateStopsEverything(): void
     {
         $c = $this->controller();

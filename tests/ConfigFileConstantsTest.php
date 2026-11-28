@@ -225,6 +225,9 @@ final class ConfigFileConstantsTest extends TestCase
         $this->assertStringContainsString('OWA_MAXMIND_LICENSE_KEY', $html);
     }
 
+    /**
+     * @covers-setting base.capabilities
+     */
     public function testRoleCapabilitiesGrantTheDemosListToEveryone(): void
     {
         $c = $this->settings();

@@ -958,6 +958,8 @@ final class EventRawIngestionTest extends IngestionTestCase
      * page view and the markers materialised beside it, after the campaign
      * tags have been read: owa_campaign filtered out of the URL is still the
      * session's campaign.
+     *
+     * @covers-setting base.query_string_filters
      */
     public function testQueryStringFiltersLeaveEveryStoredUrl(): void
     {

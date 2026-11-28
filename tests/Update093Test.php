@@ -106,6 +106,8 @@ final class Update093Test extends TestCase
     /**
      * @dataProvider autoloadIndexShapes
      * @param list<string> $names
+     *
+     * @covers-setting base.autoload_indexes_before_093
      */
     public function testUpIndexesSiteIdAndDropsTheAutoloadIndex(array $names): void
     {

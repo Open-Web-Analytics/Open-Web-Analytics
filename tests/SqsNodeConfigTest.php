@@ -44,7 +44,11 @@ final class SqsNodeConfigTest extends TestCase
         yield 'collector' => ['collector'];
     }
 
-    /** @dataProvider urlModes */
+    /**
+     * @dataProvider urlModes
+     *
+     * @covers-setting OWA_SQS_QUEUE_URL
+     */
     public function testTheQueueUrlActivatesTheModuleAndMakesItTheBackend(string $mode): void
     {
         $r = $this->probe($mode);
@@ -61,6 +65,9 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertSame('eu-west-2', $this->probe($mode)['region']);
     }
 
+    /**
+     * @covers-setting sqs.region
+     */
     public function testOwaSqsRegionOverridesTheUrlsRegion(): void
     {
         $this->assertSame('eu-central-1', $this->probe('region')['region']);
@@ -75,7 +82,11 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertSame('eu-central-1', $r['region_setting']);
     }
 
-    /** OWA_SQS_QUEUE_URL names the queue, and its dead-letter queue is the same URL with -dlq. */
+    /**
+     * OWA_SQS_QUEUE_URL names the queue, and its dead-letter queue is the same URL with -dlq.
+     *
+     * @covers-setting OWA_SQS_QUEUE_URL
+     */
     public function testTheQueueUrlConstantNamesTheQueue(): void
     {
         $r = $this->probe('url');
@@ -87,7 +98,13 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertSame('https://sqs.eu-west-2.amazonaws.com/210987654321/my-own-queue-dlq', $r['dlq_url']);
     }
 
-    /** Temporary credentials: the session token goes with the key and secret. */
+    /**
+     * Temporary credentials: the session token goes with the key and secret.
+     *
+     * @covers-setting OWA_SQS_KEY
+     * @covers-setting OWA_SQS_SECRET
+     * @covers-setting OWA_SQS_TOKEN
+     */
     public function testASessionTokenIsPassedWithTheKeyAndSecret(): void
     {
         $r = $this->probe('url');
@@ -109,7 +126,12 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertTrue($this->probe('url')['connected'], 'a full server reads its stored settings');
     }
 
-    /** Switched on without a URL, the module derives the name, and the URL is built from the credentials' account. */
+    /**
+     * Switched on without a URL, the module derives the name, and the URL is built from the credentials' account.
+     *
+     * @covers-setting sqs.region
+     * @covers-setting OWA_SQS_TOKEN
+     */
     public function testWithoutAUrlTheQueueIsDerivedAndTheBackendStaysFile(): void
     {
         $r = $this->probe('derived');
@@ -124,6 +146,9 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertNull($r['token'], 'no session token unless one is given');
     }
 
+    /**
+     * @covers-setting OWA_SQS_QUEUE_URL
+     */
     public function testWithNoSqsConstantTheBackendIsTheFileQueue(): void
     {
         $r = $this->probe('none');

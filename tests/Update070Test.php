@@ -164,7 +164,11 @@ final class Update070Test extends TestCase
         $this->assertSame($after, $this->rows());
     }
 
-    /** down() is the exact inverse, the Property rows up() wrote or created included. */
+    /**
+     * down() is the exact inverse, the Property rows up() wrote or created included.
+     *
+     * @covers-setting base.ecommerce_reporting_before_070
+     */
     public function testDownIsTheExactInverse(): void
     {
         $before = $this->rows();
@@ -185,6 +189,8 @@ final class Update070Test extends TestCase
      * An installation that ran up() before the record was kept: each Profile
      * answers, after down(), as its Property did after up(), since the code
      * before this reads the Profile's row first.
+     *
+     * @covers-setting base.ecommerce_reporting_before_070
      */
     public function testWithNoRecordDownGivesEachProfileItsPropertysValue(): void
     {

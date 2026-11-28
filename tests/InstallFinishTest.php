@@ -159,6 +159,8 @@ final class InstallFinishTest extends CliControllerTestCase
      * public_path), the self-test (its listing unreachable, as a network
      * failure it shrugs off), the notice and the clean-up; a step that fails
      * again is recorded at that step, the install's log carried on.
+     *
+     * @covers-setting base.updates_dir
      */
     public function testAHandRunThatCompletesClearsTheFailedFinish(): void
     {

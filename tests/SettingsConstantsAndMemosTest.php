@@ -49,7 +49,11 @@ final class SettingsConstantsAndMemosTest extends TestCase
         $this->assertFalse( $this->settings()->mayPersistInstallWide( 'base', 'mailer-options' ) );
     }
 
-    /** An array constant reaches PHPMailer's SMTPOptions as it was defined. */
+    /**
+     * An array constant reaches PHPMailer's SMTPOptions as it was defined.
+     *
+     * @covers-setting base.mailer-options
+     */
     public function testOwaMailerOptionsBecomesSmtpOptions(): void
     {
         $options = [ 'ssl' => [ 'cafile' => '/owatest/ca.pem', 'peer_name' => 'smtp.example.com' ] ];

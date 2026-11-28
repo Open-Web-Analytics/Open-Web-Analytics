@@ -155,6 +155,9 @@ final class ServerRoleTest extends TestCase
         }
     }
 
+    /**
+     * @covers-setting base.server_role
+     */
     public function testBootRefusesARequestTheRoleDoesNotServeWith404(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');

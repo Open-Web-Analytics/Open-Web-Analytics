@@ -180,6 +180,8 @@ final class Update079Test extends TestCase
     /**
      * up, up again, down, down again: each definition ends with the bytes it
      * started with, plain JSON or entity-encoded, and the record is gone.
+     *
+     * @covers-setting base.funnel_steps_before_079
      */
     public function testUpAndDownRunTwiceAndDownGivesBackTheBytes(): void
     {
@@ -249,7 +251,11 @@ final class Update079Test extends TestCase
         $this->assertSame($encoded, $this->stored(self::ENCODED));
     }
 
-    /** A funnel edited after up() gets its converted steps back, and keeps the edit. */
+    /**
+     * A funnel edited after up() gets its converted steps back, and keeps the edit.
+     *
+     * @covers-setting base.funnel_steps_before_079
+     */
     public function testDownKeepsAnEditMadeSince(): void
     {
         $this->requireDatabase();
