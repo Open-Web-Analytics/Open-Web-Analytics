@@ -1386,6 +1386,9 @@ class ResultSetManager extends \OWA\Core\Base {
 
             } else {
 
+                // A money metric's input is expressed in this Property's currency.
+                $m->setPropertyId( $this->propertyIdForRequest() );
+
                 $this->metricObjects[ $metric_name ] = $m;
             }
         }

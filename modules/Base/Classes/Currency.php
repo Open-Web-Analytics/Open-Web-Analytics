@@ -104,6 +104,83 @@ class Currency {
     }
 
     /**
+     * SQL for one row's amount as reported: the amount in its own currency's
+     * major units, expressed in minor units of the Property's currency.
+     *
+     * ¥1000 is stored as 1000. In a USD Property it reads as 1000.00, which
+     * is 100000 minor units, so the row is multiplied by 10^(2 - 0). A row with
+     * no currency is in the Property's currency and is multiplied by 1. The
+     * product is rounded to a whole minor unit of the Property's currency.
+     *
+     * The CASE lists only the codes in EXPONENTS, grouped by exponent; every
+     * other code takes DEFAULT_EXPONENT, as exponent() does. CASE, IN and
+     * round() are the same on MySQL 8 and MariaDB 10.11.
+     *
+     * @param  string $amount_column   qualified column holding minor units
+     * @param  string $currency_column qualified column holding the row's code
+     * @param  string $property_currency
+     * @return string
+     */
+    public static function asReportedSql( $amount_column, $currency_column, $property_currency ) {
+
+        $target = self::exponent( $property_currency );
+
+        $by_exponent = [];
+
+        foreach ( self::EXPONENTS as $code => $exponent ) {
+
+            $by_exponent[ $exponent ][] = "'" . $code . "'";
+        }
+
+        ksort( $by_exponent );
+
+        $when = [ sprintf( "WHEN %1\$s IS NULL OR %1\$s = '' THEN 1", $currency_column ) ];
+
+        foreach ( $by_exponent as $exponent => $codes ) {
+
+            $when[] = sprintf( 'WHEN %s IN (%s) THEN %s',
+                $currency_column, implode( ', ', $codes ), self::powerOfTen( $target - $exponent ) );
+        }
+
+        return sprintf( 'round(%s * CASE %s ELSE %s END)',
+            $amount_column, implode( ' ', $when ), self::powerOfTen( $target - self::DEFAULT_EXPONENT ) );
+    }
+
+    /**
+     * 10^n as an exact SQL numeric literal: 100, 1, 0.01.
+     *
+     * @param  int $n
+     * @return string
+     */
+    private static function powerOfTen( $n ) {
+
+        return $n >= 0 ? '1' . str_repeat( '0', $n ) : '0.' . str_repeat( '0', -$n - 1 ) . '1';
+    }
+
+    /**
+     * The note under a currency setting: what happens to revenue in other
+     * currencies.
+     *
+     * A module answers through the `currency_conversion_status` filter, which
+     * is given null and the chosen currency. With no answer, Base's: such
+     * revenue is added as reported.
+     *
+     * @param  mixed $currency the currency chosen
+     * @return string
+     */
+    public static function conversionStatus( $currency ) {
+
+        $status = \OWA\Core\CoreAPI::filter( 'currency_conversion_status', null, (string) $currency );
+
+        if ( is_string( $status ) && trim( $status ) !== '' ) {
+
+            return $status;
+        }
+
+        return \OWA\Core\CoreAPI::t( 'Revenue in other currencies is added as reported, without conversion.' );
+    }
+
+    /**
      * Minor units back to a major-unit amount.
      *
      * @param  int|float $minor

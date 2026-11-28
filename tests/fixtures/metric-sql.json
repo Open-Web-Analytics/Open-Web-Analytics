@@ -223,7 +223,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "COALESCE(sum(CASE WHEN event.is_goal_event = 1 THEN COALESCE(event.value, 0) ELSE 0 END), 0)",
+            "expression": "COALESCE(sum(CASE WHEN event.is_goal_event = 1 THEN COALESCE(round(event.value * CASE WHEN event.currency IS NULL OR event.currency = '' THEN 1 WHEN event.currency IN ('BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF') THEN 100 WHEN event.currency IN ('BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND') THEN 0.1 WHEN event.currency IN ('CLF', 'UYW') THEN 0.01 ELSE 1 END), 0) ELSE 0 END), 0)",
             "alias": "goalValue"
         }
     ],
@@ -290,7 +290,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'refund' THEN COALESCE(event.revenue, 0) ELSE 0 END), 0)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'refund' THEN COALESCE(round(event.revenue * CASE WHEN event.currency IS NULL OR event.currency = '' THEN 1 WHEN event.currency IN ('BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF') THEN 100 WHEN event.currency IN ('BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND') THEN 0.1 WHEN event.currency IN ('CLF', 'UYW') THEN 0.01 ELSE 1 END), 0) ELSE 0 END), 0)",
             "alias": "refundAmount"
         }
     ],
@@ -370,7 +370,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.shipping, 0) ELSE 0 END), 0)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(round(event.shipping * CASE WHEN event.currency IS NULL OR event.currency = '' THEN 1 WHEN event.currency IN ('BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF') THEN 100 WHEN event.currency IN ('BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND') THEN 0.1 WHEN event.currency IN ('CLF', 'UYW') THEN 0.01 ELSE 1 END), 0) ELSE 0 END), 0)",
             "alias": "shippingRevenue"
         }
     ],
@@ -378,7 +378,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.tax, 0) ELSE 0 END), 0)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(round(event.tax * CASE WHEN event.currency IS NULL OR event.currency = '' THEN 1 WHEN event.currency IN ('BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF') THEN 100 WHEN event.currency IN ('BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND') THEN 0.1 WHEN event.currency IN ('CLF', 'UYW') THEN 0.01 ELSE 1 END), 0) ELSE 0 END), 0)",
             "alias": "taxRevenue"
         }
     ],
@@ -402,7 +402,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.revenue, 0) ELSE 0 END), 0)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(round(event.revenue * CASE WHEN event.currency IS NULL OR event.currency = '' THEN 1 WHEN event.currency IN ('BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF') THEN 100 WHEN event.currency IN ('BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND') THEN 0.1 WHEN event.currency IN ('CLF', 'UYW') THEN 0.01 ELSE 1 END), 0) ELSE 0 END), 0)",
             "alias": "transactionRevenue"
         }
     ],

@@ -10,7 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * A purchase with no tax holds NULL in `tax`, and SUM over NULL alone is NULL
  * -- which the Transactions report showed as a blank cell beside zeros.
  * Run against the metrics' own expressions, on a scratch table aliased as the
- * cube is.
+ * cube is. A money metric's expression reads `currency` too (Currency::asReportedSql()).
  */
 final class SumMetricZeroFillTest extends TestCase
 {
@@ -26,8 +26,8 @@ final class SumMetricZeroFillTest extends TestCase
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query(sprintf('CREATE TABLE %s (event_type VARCHAR(32), tax BIGINT NULL, engagement_msec BIGINT NULL, '
-            . 'is_entrance TINYINT NULL)', $this->table));
-        $db->query(sprintf("INSERT INTO %s VALUES ('purchase', NULL, NULL, NULL)", $this->table));
+            . 'is_entrance TINYINT NULL, currency CHAR(3) NULL)', $this->table));
+        $db->query(sprintf("INSERT INTO %s VALUES ('purchase', NULL, NULL, NULL, NULL)", $this->table));
     }
 
     protected function tearDown(): void
