@@ -93,6 +93,22 @@ final class TablesCleanupCliTest extends CliControllerTestCase
         $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('base', 'v1_tables_dropped'));
     }
 
+    /** A table cmd=core-install --force moved aside is owned by nothing: old here, and in a backup's other (scope=all). */
+    public function testATableMovedAsideIsOldAndBackedUpAsOther(): void
+    {
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $moved = \OWA\Core\Module::movedAsideName($this->prefix . 'site', '20261128120000');
+
+        $this->assertNotFalse($db->query(sprintf('CREATE TABLE %s (id BIGINT PRIMARY KEY)', $moved)));
+
+        try {
+            $this->assertContains($moved, (new TableInventory($db, $this->prefix))->classify()['old']);
+            $this->assertContains($moved, (new \OWA\Module\Base\Classes\Backup($db, $this->prefix))->tables()['other']);
+        } finally {
+            $db->query(sprintf('DROP TABLE IF EXISTS %s', $moved));
+        }
+    }
+
     /** A table a pending update is about to rename has no entity yet, so this waits for cmd=core-update-schema. */
     public function testItWaitsForPendingUpdates(): void
     {

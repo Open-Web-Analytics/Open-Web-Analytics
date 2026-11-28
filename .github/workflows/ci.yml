@@ -301,7 +301,9 @@ jobs:
     # same bug: a value that means two things, only distinguishable against a
     # database that already has a history. This job makes one -- it installs,
     # rewinds the schema through the rollbacks, and upgrades it forward again
-    # with the real `cli.php cmd=core-update-schema`.
+    # with the real `cli.php cmd=core-update-schema`. A second pass rewinds
+    # again, creates the missing tables as cmd=core-install does, upgrades,
+    # and compares every table's definition and rows with the first pass.
     #
     # See tests/tools/upgrade_cycle.php for what is asserted and why.
     services:
@@ -356,7 +358,8 @@ jobs:
             echo "## Schema upgrade cycle"
             echo
             if [ "${{ steps.cycle.outcome }}" = "success" ]; then
-              echo "The schema rewinds and rebuilds to something identical."
+              echo "The schema rewinds and rebuilds to something identical, with or"
+              echo "without the missing tables created first."
             else
               echo "**The upgrade path is broken.** An install upgrading from an older"
               echo "schema would hit this; a fresh install would not, which is why"

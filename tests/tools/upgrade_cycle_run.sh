@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# Install a schema, rewind it, and upgrade it forward again.
+# Install a schema, rewind it, and upgrade it forward again. Then rewind it
+# once more, create the missing tables as cmd=core-install does, upgrade, and
+# check that it ends where the first upgrade did.
 #
 # WHY: nothing else here ever upgrades a database. Every environment installs at
 # the current version and stamps schema_version at the latest, so the updates
@@ -62,4 +64,36 @@ if [ "$update_rc" -ne 0 ]; then
     exit "$update_rc"
 fi
 
-exit "$verify_rc"
+[ "$verify_rc" -eq 0 ] || exit "$verify_rc"
+
+# The second pass: the same rewind, then the missing tables created as
+# cmd=core-install creates them, then the upgrade. It must end where the
+# first pass did.
+echo
+echo "--- second pass: recording where the first pass ended ---"
+php tests/tools/upgrade_cycle.php snapshot "$@" || exit 1
+
+echo
+echo "--- rewinding the schema again ---"
+php tests/tools/upgrade_cycle.php rewind "$@" 2>&1 | sed 's/^/    /' || exit 1
+
+echo
+echo "--- creating the missing tables, as cmd=core-install does ---"
+php tests/tools/upgrade_cycle.php create-missing "$@" || exit 1
+
+echo
+echo "--- upgrading it again: cli.php cmd=core-update-schema ---"
+php cli.php cmd=core-update-schema 2>&1 | sed 's/^/    /'
+update_rc=$?
+
+echo
+echo "--- comparing with the first pass ---"
+php tests/tools/upgrade_cycle.php compare "$@"
+compare_rc=$?
+
+if [ "$update_rc" -ne 0 ]; then
+    echo "cli.php cmd=core-update-schema exited $update_rc after the missing tables were created" >&2
+    exit "$update_rc"
+fi
+
+exit "$compare_rc"

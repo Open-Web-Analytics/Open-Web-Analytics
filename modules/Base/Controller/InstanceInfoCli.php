@@ -256,9 +256,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
             /*
              * The STORED version, which is not the same question as the one the
-             * verdict beside it answers. Module::getSchemaVersion() defaults an
-             * absent value to 1, so a module that was never installed reads as
-             * current; printing the raw setting instead rendered "(schema )".
+             * verdict beside it answers. Module::getSchemaVersion() reads an
+             * absent value as 1 for a module with no tables, so a module that
+             * was never installed reads as current; printing the raw setting
+             * instead rendered "(schema )".
              * Both are reported, because the gap between them IS the finding.
              */
             $stored = \OWA\Core\CoreAPI::getSetting( $name, 'schema_version' );
@@ -287,7 +288,14 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
              * expected to be missing a version, which is not what install()
              * does.
              */
-            if ( ! $stored ) {
+            $module = \OWA\Core\CoreAPI::serviceSingleton()->getModule( $name );
+
+            if ( ! $stored && $module instanceof \OWA\Core\Module && $module->hasUnknownSchemaState() ) {
+
+                $rows[] = $this->row( self::FAIL, '  ' . $name, 'tables, but no recorded schema version',
+                    \OWA\Core\Module::unknownStateMessage( $name ) );
+
+            } elseif ( ! $stored ) {
 
                 $rows[] = $this->row( self::WARN, '  ' . $name,
                     'active, but never installed',

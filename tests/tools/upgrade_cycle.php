@@ -56,11 +56,37 @@
  * also mean the verify phase reads the schema version off a cold boot rather
  * than out of the config cache that just wrote it.
  *
- * Usage:  bash tests/tools/upgrade_cycle_run.sh      <- provisions, runs all three
+ * THE SECOND PASS: TABLES CREATED FIRST
+ * --------------------------------------
+ * cmd=core-install on an installed system creates every missing table from the
+ * current entities (Module::createMissingTables()) and then applies the pending
+ * updates, so an update can find its table already there. Each update has to
+ * give the same result either way. After the first pass:
+ *
+ *   6. snapshot every owa_ table: SHOW CREATE TABLE (AUTO_INCREMENT values
+ *      removed), its row count, and a hash of each row
+ *   7. rewind again, the same way, without the per-update measurements
+ *   8. create the missing tables, as cmd=core-install does, recording no
+ *      schema version
+ *   9. upgrade with cli.php cmd=core-update-schema
+ *  10. snapshot again: it must MATCH step 6, table for table and row for row
+ *
+ * The down phase seeds a goal event definition and its condition first, so the
+ * tables Update076 renames have rows to lose. Columns named for a time (_at,
+ * _date, _time, _timestamp) are not compared: an update that deletes a row and
+ * puts it back stamps it again.
+ *
+ * Usage:  bash tests/tools/upgrade_cycle_run.sh      <- provisions, runs both passes
  *
  *         php tests/tools/upgrade_cycle.php down   [--force] [--verbose]
  *         php cli.php cmd=core-update-schema
  *         php tests/tools/upgrade_cycle.php verify [--force] [--verbose]
+ *
+ *         php tests/tools/upgrade_cycle.php snapshot       [--force]
+ *         php tests/tools/upgrade_cycle.php rewind         [--force]
+ *         php tests/tools/upgrade_cycle.php create-missing [--force]
+ *         php cli.php cmd=core-update-schema
+ *         php tests/tools/upgrade_cycle.php compare        [--force]
  */
 
 require_once dirname( __DIR__, 2 ) . '/owa.php';
@@ -71,10 +97,10 @@ $phase   = isset( $argv[1] ) && $argv[1][0] !== '-' ? $argv[1] : '';
 $force   = in_array( '--force', $argv, true );
 $verbose = in_array( '--verbose', $argv, true );
 
-if ( ! in_array( $phase, [ 'down', 'verify' ], true ) ) {
+if ( ! in_array( $phase, [ 'down', 'verify', 'snapshot', 'rewind', 'create-missing', 'compare' ], true ) ) {
 
-    fwrite( STDERR, "usage: upgrade_cycle.php down|verify [--force] [--verbose]\n"
-        . "(or run tests/tools/upgrade_cycle_run.sh, which drives all three steps)\n" );
+    fwrite( STDERR, "usage: upgrade_cycle.php down|verify|snapshot|rewind|create-missing|compare [--force] [--verbose]\n"
+        . "(or run tests/tools/upgrade_cycle_run.sh, which drives both passes)\n" );
 
     exit( 2 );
 }
@@ -86,6 +112,9 @@ if ( ! in_array( $phase, [ 'down', 'verify' ], true ) ) {
  * between them, in its own process, deliberately.
  */
 define( 'OWA_UPGRADE_CYCLE_STATE', sys_get_temp_dir() . '/owa_upgrade_cycle.json' );
+
+/** The snapshot phase's record of the first pass's end state, which the compare phase reads. */
+define( 'OWA_UPGRADE_CYCLE_SNAPSHOT', sys_get_temp_dir() . '/owa_upgrade_cycle_snapshot.json' );
 
 $db     = \OWA\Core\CoreAPI::dbSingleton();
 $dbName = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' );
@@ -108,6 +137,13 @@ const OWA_UPGRADE_CYCLE_FLOOR = 33;
 
 /** The Property whose cube the cycle creates when the install has none. */
 const OWA_UPGRADE_CYCLE_PROPERTY = 7787000000000001;
+
+/** The goal event definition the down phase seeds, and its condition. */
+const OWA_UPGRADE_CYCLE_GOAL      = '7787000000000002';
+const OWA_UPGRADE_CYCLE_CONDITION = '7787000000000003';
+
+/** Rows hashed one by one, per table, so a difference names its row. A larger table is compared by count and checksum. */
+const OWA_UPGRADE_CYCLE_ROWS = 5000;
 
 $fail = [];
 $note = static function ( $line ) { fwrite( STDOUT, $line . "\n" ); };
@@ -156,6 +192,17 @@ if ( $phase === 'down' ) {
         }
 
         $note( 'created ' . \OWA\Module\Base\Classes\Cube\Cubes::tableFor( OWA_UPGRADE_CYCLE_PROPERTY ) );
+    }
+
+    /*
+     * Rows in the tables an update renames, so a pass that loses them shows.
+     * Written in the current vocabulary, which every down() and up() after
+     * it accepts.
+     */
+    if ( ! owa_upgrade_cycle_seed() ) {
+
+        fwrite( STDERR, "refusing: could not seed a goal event definition for Update076 to move.\n" );
+        exit( 2 );
     }
 
     $before = owa_schema_fingerprint( $db, $dbName );
@@ -261,6 +308,110 @@ if ( $phase === 'down' ) {
         fwrite( STDERR, "\nNothing rolled back at all, so nothing below was exercised.\n" );
         exit( 1 );
     }
+
+    exit( 0 );
+}
+
+/* ======================================================================
+ * THE SECOND PASS: snapshot, rewind, create-missing, then compare --
+ * `php cli.php cmd=core-update-schema` runs between the last two
+ * ==================================================================== */
+
+if ( $phase === 'snapshot' ) {
+
+    $snapshot = owa_state_snapshot( $db, $dbName );
+
+    if ( file_put_contents( OWA_UPGRADE_CYCLE_SNAPSHOT, json_encode( $snapshot ) ) === false ) {
+
+        fwrite( STDERR, 'could not write ' . OWA_UPGRADE_CYCLE_SNAPSHOT . "\n" );
+        exit( 2 );
+    }
+
+    $note( sprintf( 'snapshot: %d tables, %d rows, at schema %d', count( $snapshot['tables'] ),
+        array_sum( array_column( $snapshot['tables'], 'count' ) ), $snapshot['schema'] ) );
+
+    exit( 0 );
+}
+
+if ( $phase === 'rewind' ) {
+
+    $installed = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
+
+    for ( $v = $installed; $v >= 1; $v-- ) {
+
+        $update = owa_update_for( $v );
+
+        if ( ! $update || ! $update->rollback() ) {
+
+            break;
+        }
+    }
+
+    $floor = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
+
+    $note( sprintf( '--- rolled back from %d to schema %d ---', $installed, $floor ) );
+
+    if ( $floor > OWA_UPGRADE_CYCLE_FLOOR ) {
+
+        fwrite( STDERR, sprintf( "The second rewind stopped at schema %d, above %d: a down() refused or failed.\n",
+            $floor, OWA_UPGRADE_CYCLE_FLOOR ) );
+        exit( 1 );
+    }
+
+    exit( 0 );
+}
+
+if ( $phase === 'create-missing' ) {
+
+    // What cmd=core-install runs before the updates: every active module's missing tables, no schema version recorded.
+    $tables = ( new \OWA\Module\Base\Classes\InstallManager() )->createMissingTables();
+
+    if ( $tables['problem'] !== null || $tables['failed'] ) {
+
+        fwrite( STDERR, sprintf( "Creating the missing tables failed: %s\n",
+            $tables['problem'] ?? implode( ', ', $tables['failed'] ) ) );
+        exit( 1 );
+    }
+
+    $note( sprintf( '--- created %d missing table(s) at schema %d: %s ---', count( $tables['created'] ),
+        (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' ),
+        $tables['created'] ? implode( ', ', $tables['created'] ) : 'none' ) );
+
+    exit( 0 );
+}
+
+if ( $phase === 'compare' ) {
+
+    $plain = @json_decode( (string) @file_get_contents( OWA_UPGRADE_CYCLE_SNAPSHOT ), true );
+
+    if ( ! is_array( $plain ) || ! isset( $plain['tables'] ) ) {
+
+        fwrite( STDERR, "no snapshot of the first pass -- run `upgrade_cycle.php snapshot` first.\n" );
+        exit( 2 );
+    }
+
+    $differences = owa_state_diff( $plain, owa_state_snapshot( $db, $dbName ) );
+
+    @unlink( OWA_UPGRADE_CYCLE_SNAPSHOT );
+
+    if ( $differences ) {
+
+        fwrite( STDERR, "\n=== the upgrade path is broken when the missing tables are created first ===\n\n" );
+        fwrite( STDERR, "The upgrade after cmd=core-install's create-missing-tables step ended somewhere other\n"
+            . "than the plain upgrade. An update depends on its table not existing yet.\n\n" );
+        fwrite( STDERR, 'First difference: ' . $differences[0] . "\n" );
+
+        if ( count( $differences ) > 1 ) {
+
+            fwrite( STDERR, sprintf( "\n%d more:\n  %s\n", count( $differences ) - 1,
+                implode( "\n  ", array_slice( $differences, 1, 20 ) ) ) );
+        }
+
+        exit( 1 );
+    }
+
+    $note( sprintf( "\nOK: with the missing tables created first, the upgrade ends where the plain one did:\n"
+        . '%d tables, their definitions and their rows identical.', count( $plain['tables'] ) ) );
 
     exit( 0 );
 }
@@ -679,4 +830,227 @@ function owa_fingerprint_diff( $before, $after, $what = 'a down-and-up cycle' ) 
     }
 
     return $out;
+}
+
+/**
+ * A goal event definition and its condition, under the names they have now,
+ * unless they are there already.
+ *
+ * @return bool
+ */
+function owa_upgrade_cycle_seed() {
+
+    $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+    $definition->load( OWA_UPGRADE_CYCLE_GOAL );
+
+    if ( $definition->wasPersisted() ) {
+
+        return true;
+    }
+
+    $definition->setProperties( [
+        'id'                 => OWA_UPGRADE_CYCLE_GOAL,
+        'property_id'        => OWA_UPGRADE_CYCLE_PROPERTY,
+        'name'               => 'upgrade_cycle_signup',
+        'trigger_event_type' => 'page_view',
+        'count_mode'         => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION,
+        'condition_match'    => 'all',
+        'is_active'          => 1,
+        'creation_date'      => time(),
+    ] );
+
+    $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
+    $condition->setProperties( [
+        'id'                       => OWA_UPGRADE_CYCLE_CONDITION,
+        'goal_event_definition_id' => OWA_UPGRADE_CYCLE_GOAL,
+        'sort_order'               => 1,
+        'condition_property'       => 'page_path',
+        'condition_operator'       => 'exact',
+        'condition_value'          => '/signup/done',
+        'creation_date'            => time(),
+    ] );
+
+    return (bool) $definition->create() && (bool) $condition->create();
+}
+
+/**
+ * Whether a column is named for a time, and so is not compared: an update that
+ * deletes a row and puts it back stamps it again.
+ *
+ * @param  string $column
+ * @return bool
+ */
+function owa_state_column_is_time( $column ) {
+
+    return (bool) preg_match( '/(^|_)(at|date|time|timestamp)$/', (string) $column );
+}
+
+/**
+ * Every owa_ table as it is: SHOW CREATE TABLE with its AUTO_INCREMENT value
+ * removed, its row count, a checksum of its rows, and each row's hash by
+ * primary key while the table holds at most OWA_UPGRADE_CYCLE_ROWS.
+ *
+ * @return array{schema: int, tables: array<string, array{create: string, count: int, checksum: string, rows: array<string, array{h: string, c: array<string, string>, p: array<string, string>}>|null}>}
+ */
+function owa_state_snapshot( $db, $dbName ) {
+
+    $out = [ 'schema' => (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' ), 'tables' => [] ];
+
+    $names = (array) $db->get_results( sprintf(
+        "SELECT TABLE_NAME FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME LIKE 'owa\\_%%' ORDER BY TABLE_NAME", $dbName ) );
+
+    foreach ( $names as $r ) {
+
+        $table  = (string) ( (array) $r )['TABLE_NAME'];
+        $create = array_values( (array) $db->get_row( sprintf( 'SHOW CREATE TABLE `%s`', $table ) ) )[1] ?? '';
+
+        $pk = array_map( static fn ( $k ) => (string) ( (array) $k )['COLUMN_NAME'], (array) $db->get_results( sprintf(
+            "SELECT COLUMN_NAME FROM information_schema.STATISTICS
+              WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' AND INDEX_NAME = 'PRIMARY'
+              ORDER BY SEQ_IN_INDEX", $dbName, $table ) ) );
+
+        $rows = [];
+
+        foreach ( (array) $db->get_results( sprintf( 'SELECT * FROM `%s`', $table ) ) as $row ) {
+
+            $row = (array) $row;
+
+            foreach ( array_keys( $row ) as $column ) {
+
+                if ( owa_state_column_is_time( $column ) ) {
+
+                    unset( $row[ $column ] );
+                }
+            }
+
+            ksort( $row );
+
+            $hashes   = array_map( static fn ( $v ) => md5( serialize( $v ) ), $row );
+            $previews = array_map( static fn ( $v ) => $v === null ? 'NULL'
+                : var_export( mb_strimwidth( mb_scrub( (string) $v, 'UTF-8' ), 0, 80, '...' ), true ), $row );
+
+            $key = $pk
+                ? implode( '|', array_map( static fn ( $c ) => (string) ( $row[ $c ] ?? '' ), $pk ) )
+                : md5( serialize( $row ) );
+
+            $rows[ $key ] = [ 'h' => md5( serialize( $hashes ) ), 'c' => $hashes, 'p' => $previews ];
+        }
+
+        ksort( $rows, SORT_STRING );
+
+        $out['tables'][ $table ] = [
+            'create'   => (string) preg_replace( '/ AUTO_INCREMENT=\d+/', '', (string) $create ),
+            'count'    => count( $rows ),
+            'checksum' => md5( serialize( array_column( $rows, 'h' ) ) . serialize( array_keys( $rows ) ) ),
+            'rows'     => count( $rows ) <= OWA_UPGRADE_CYCLE_ROWS ? $rows : null,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * How two snapshots differ, table by table in name order: the plain pass's
+ * ($plain) against the pass with the missing tables created first ($first).
+ *
+ * @return list<string> one line or block per difference, the first difference first
+ */
+function owa_state_diff( array $plain, array $first ) {
+
+    $out = [];
+
+    if ( (int) $plain['schema'] !== (int) $first['schema'] ) {
+
+        $out[] = sprintf( 'the schema version is %d after the plain upgrade and %d with the tables created first.',
+            $plain['schema'], $first['schema'] );
+    }
+
+    $names = array_unique( array_merge( array_keys( $plain['tables'] ), array_keys( $first['tables'] ) ) );
+    sort( $names );
+
+    foreach ( $names as $table ) {
+
+        $a = $plain['tables'][ $table ] ?? null;
+        $b = $first['tables'][ $table ] ?? null;
+
+        if ( $a === null || $b === null ) {
+
+            $out[] = sprintf( '%s exists only %s.', $table,
+                $a === null ? 'with the tables created first' : 'after the plain upgrade' );
+
+            continue;
+        }
+
+        if ( $a['create'] !== $b['create'] ) {
+
+            $was = explode( "\n", $a['create'] );
+            $is  = explode( "\n", $b['create'] );
+            $at  = 0;
+
+            while ( $at < max( count( $was ), count( $is ) ) && ( $was[ $at ] ?? null ) === ( $is[ $at ] ?? null ) ) {
+
+                $at++;
+            }
+
+            $out[] = sprintf( "%s: SHOW CREATE TABLE differs at line %d.\n    plain upgrade:        %s\n    tables created first: %s",
+                $table, $at + 1, trim( $was[ $at ] ?? '(no line)' ), trim( $is[ $at ] ?? '(no line)' ) );
+        }
+
+        if ( $a['count'] !== $b['count'] || $a['checksum'] !== $b['checksum'] ) {
+
+            $out[] = sprintf( '%s: %d rows after the plain upgrade, %d with the tables created first%s',
+                $table, $a['count'], $b['count'], owa_state_row_diff( $a['rows'], $b['rows'] ) );
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * The first row two tables' rows differ in, said: a row only one has, or the
+ * columns that differ, with their values. Empty when either was too large to
+ * keep its rows.
+ *
+ * @param  array<string, array{h: string, c: array<string, string>, p: array<string, string>}>|null $a
+ * @param  array<string, array{h: string, c: array<string, string>, p: array<string, string>}>|null $b
+ * @return string
+ */
+function owa_state_row_diff( $a, $b ) {
+
+    if ( $a === null || $b === null ) {
+
+        return '; the rows differ (too many to compare one by one).';
+    }
+
+    foreach ( array_unique( array_merge( array_keys( $a ), array_keys( $b ) ) ) as $key ) {
+
+        if ( ! isset( $a[ $key ] ) || ! isset( $b[ $key ] ) ) {
+
+            $row = $a[ $key ] ?? $b[ $key ];
+
+            return sprintf( ".\n    row %s is only %s: %s", $key,
+                isset( $a[ $key ] ) ? 'after the plain upgrade' : 'with the tables created first',
+                implode( ', ', array_map( static fn ( $c, $v ) => "$c=$v", array_keys( $row['p'] ), $row['p'] ) ) );
+        }
+
+        if ( $a[ $key ]['h'] === $b[ $key ]['h'] ) {
+
+            continue;
+        }
+
+        $columns = [];
+
+        foreach ( array_unique( array_merge( array_keys( $a[ $key ]['c'] ), array_keys( $b[ $key ]['c'] ) ) ) as $c ) {
+
+            if ( ( $a[ $key ]['c'][ $c ] ?? null ) !== ( $b[ $key ]['c'][ $c ] ?? null ) ) {
+
+                $columns[] = sprintf( '%s: %s, not %s', $c, $b[ $key ]['p'][ $c ] ?? '(no column)', $a[ $key ]['p'][ $c ] ?? '(no column)' );
+            }
+        }
+
+        return sprintf( ".\n    row %s differs with the tables created first: %s", $key, implode( '; ', $columns ) );
+    }
+
+    return '.';
 }
