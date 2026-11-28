@@ -31,7 +31,6 @@ final class SaltConstantsTest extends TestCase
     private static function forgetSalts(): void
     {
         $ref = new ReflectionProperty(CoreAPI::class, 'salts');
-        $ref->setAccessible(true);
         $ref->setValue(null, null);
     }
 
