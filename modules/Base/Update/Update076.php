@@ -21,9 +21,20 @@ namespace OWA\Module\Base\Update;
  * (Entity\GoalEventDefinition::namedBefore076()).
  *
  * Every step is skipped when it is already done, so up() and down() can each
- * run twice. A table found under BOTH names is refused before anything is
- * renamed, rather than guessed at: either may hold definitions the other does
- * not.
+ * run twice.
+ *
+ * BOTH NAMES. A table can be under its new name before this runs: cmd=core-install
+ * creates every missing table from the entities (Module::createMissingTables())
+ * before it applies the updates. up() then moves the old table's rows into the
+ * new one and drops the old one (moveTable()):
+ *
+ *   new table empty   it is dropped and the old one renamed, as when only
+ *                     the old one exists
+ *   both have rows    the old table's rows the new one lacks, by id, are
+ *                     copied into it, goal_event_id into
+ *                     goal_event_definition_id, and the old table is dropped
+ *
+ * down() refuses when it finds both names, before anything is renamed.
  *
  * Neither direction touches the object cache, which is keyed by table name. An
  * entry cached under the names being restored is stale if a definition changed
@@ -51,14 +62,9 @@ class Update076 extends \OWA\Core\Update {
      */
     public function up( $force = false ) {
 
-        if ( $this->underBothNames() ) {
-
-            return false;
-        }
-
         foreach ( self::TABLES as $old => $new ) {
 
-            if ( ! $this->renameTable( $old, $new ) ) {
+            if ( ! $this->moveTable( $old, $new ) ) {
 
                 return false;
             }
@@ -94,8 +100,8 @@ class Update076 extends \OWA\Core\Update {
     }
 
     /**
-     * Whether a table is under both its names, said before anything is renamed
-     * so neither direction stops part way.
+     * Whether a table is under both its names, said before down() renames
+     * anything so it does not stop part way.
      *
      * @return bool
      */
@@ -116,6 +122,124 @@ class Update076 extends \OWA\Core\Update {
         }
 
         return $found;
+    }
+
+    /**
+     * The table under $from moved to $to: renamed, or, when $to exists too,
+     * its rows moved into $to and it is dropped. Nothing under $from is done.
+     *
+     * @param  string $from  without the prefix
+     * @param  string $to    without the prefix
+     * @return bool
+     */
+    private function moveTable( $from, $to ) {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $old = $this->tableFor( $from );
+        $new = $this->tableFor( $to );
+
+        if ( ! $db->tableExists( $old ) || ! $db->tableExists( $new ) ) {
+
+            return $this->renameTable( $from, $to );
+        }
+
+        if ( $db->get_row( sprintf( 'SELECT 1 AS x FROM %s LIMIT 1', $new ) ) ) {
+
+            return $this->mergeTable( $old, $new );
+        }
+
+        if ( $db->dropTable( $new ) === false ) {
+
+            $this->e->notice( sprintf( 'Dropping the empty %s failed, so %s is not renamed to it.', $new, $old ) );
+
+            return false;
+        }
+
+        $this->e->notice( sprintf( 'Both %1$s and %2$s existed. %2$s had no rows and is dropped.', $old, $new ) );
+
+        return $this->renameTable( $from, $to );
+    }
+
+    /**
+     * The rows of $old that $new lacks, by id, copied into $new, then $old
+     * dropped. A column of $old that $new does not have is not copied, and
+     * goal_event_id is copied into goal_event_definition_id.
+     *
+     * @param  string $old  with the prefix
+     * @param  string $new  with the prefix
+     * @return bool
+     */
+    private function mergeTable( $old, $new ) {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $map = self::columnMap( $this->columns( $old ), $this->columns( $new ) );
+
+        if ( ! isset( $map['id'] ) ) {
+
+            $this->e->notice( sprintf( '%s and %s do not both have an id column, so neither is changed.', $old, $new ) );
+
+            return false;
+        }
+
+        $lacking = ' FROM %1$s o LEFT JOIN %2$s n ON n.id = o.id WHERE n.id IS NULL';
+        $count   = $db->get_row( sprintf( 'SELECT COUNT(*) AS n' . $lacking, $old, $new ) );
+
+        if ( $db->query( sprintf( 'INSERT INTO %2$s (%3$s) SELECT %4$s' . $lacking, $old, $new,
+                implode( ', ', array_keys( $map ) ),
+                implode( ', ', array_map( static fn ( $c ) => 'o.' . $c, $map ) ) ) ) === false ) {
+
+            $this->e->notice( sprintf( 'Copying the rows of %s into %s failed. Both are left as they were.', $old, $new ) );
+
+            return false;
+        }
+
+        if ( $db->dropTable( $old ) === false ) {
+
+            $this->e->notice( sprintf( 'Dropping %s failed after its rows were copied into %s.', $old, $new ) );
+
+            return false;
+        }
+
+        $this->e->notice( sprintf( 'Both %1$s and %2$s existed. %3$d rows of %1$s that %2$s did not have are copied into it, and %1$s is dropped.',
+            $old, $new, (int) ( $count['n'] ?? 0 ) ) );
+
+        return true;
+    }
+
+    /**
+     * Which column of the old table each column of the new one is copied
+     * from: the columns both have, and goal_event_id into
+     * goal_event_definition_id where the new table has only the second.
+     *
+     * @param  list<string> $old_columns
+     * @param  list<string> $new_columns
+     * @return array<string, string> new column => old column
+     */
+    public static function columnMap( array $old_columns, array $new_columns ) {
+
+        $map = [];
+
+        foreach ( $old_columns as $column ) {
+
+            $to = $column === self::OLD_KEY && ! in_array( self::OLD_KEY, $new_columns, true ) ? self::NEW_KEY : $column;
+
+            if ( in_array( $to, $new_columns, true ) ) {
+
+                $map[ $to ] = $column;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  string $table  with the prefix
+     * @return list<string> its column names, in order
+     */
+    private function columns( $table ) {
+
+        return array_values( array_map( static fn ( $row ) => (string) ( (array) $row )['Field'],
+            (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SHOW COLUMNS FROM %s', $table ) ) ) );
     }
 
     /**
