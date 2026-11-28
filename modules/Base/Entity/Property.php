@@ -83,7 +83,23 @@ class Property extends \OWA\Core\Entity {
          */
         $archived_date = new \OWA\Module\Base\Classes\DbColumn( 'archived_date', OWA_DTD_BIGINT );
         $this->setProperty( $archived_date );
+
+        /*
+         * The domain's host (Spam\Hosts::of()) while this is a live web
+         * Property, NULL otherwise: archived, an app, or no domain. UNIQUE, so
+         * two live Properties cannot share a host, and any number of archived
+         * ones can. create() and update() keep it in step with domain,
+         * property_type and archived_date (liveHost()); Update102 adds it to an
+         * existing table.
+         */
+        $live_host = new \OWA\Module\Base\Classes\DbColumn( 'live_host', OWA_DTD_VARCHAR255 );
+        $live_host->setNullable();
+        $this->setProperty( $live_host );
+        $this->addUniqueIndex( self::LIVE_HOST_INDEX, [ 'live_host' ] );
     }
+
+    /** The UNIQUE index on live_host. */
+    const LIVE_HOST_INDEX = 'live_host_unique';
 
     /** Web is the default, and what every Property migrated from 1.x is. */
     const TYPE_WEB = 'web';
@@ -139,5 +155,74 @@ class Property extends \OWA\Core\Entity {
     public function isArchived() {
 
         return (bool) $this->get('archived_date');
+    }
+
+    /**
+     * What live_host holds for this row: the domain's host while this is a
+     * live web Property, else null.
+     *
+     * @return string|null
+     */
+    public function liveHost() {
+
+        if ( $this->isArchived() || ! $this->isWebProperty() ) {
+
+            return null;
+        }
+
+        $host = \OWA\Module\Base\Classes\Spam\Hosts::of( (string) $this->get( 'domain' ) );
+
+        return $host !== '' ? $host : null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function create() {
+
+        $this->syncLiveHost();
+
+        return parent::create();
+    }
+
+    /**
+     * @param  string $where
+     * @return bool
+     */
+    public function update( $where = '' ) {
+
+        $this->syncLiveHost();
+
+        return parent::update( $where );
+    }
+
+    /**
+     * Set live_host from the row's other columns before a write.
+     *
+     * Before Update102 the table has no such column, and cmd=property runs
+     * then (to archive the duplicates Update102 refuses): the column is left
+     * out of this object's writes.
+     *
+     * @return void
+     */
+    protected function syncLiveHost() {
+
+        if ( ! in_array( 'live_host', \OWA\Core\CoreAPI::dbSingleton()->listColumns( $this->getTableName() ), true ) ) {
+
+            unset( $this->properties['live_host'] );
+
+            return;
+        }
+
+        $host = $this->liveHost();
+
+        if ( $host === null ) {
+
+            $this->clear( 'live_host' );
+
+        } else {
+
+            $this->set( 'live_host', $host );
+        }
     }
 }

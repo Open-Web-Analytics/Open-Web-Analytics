@@ -2,7 +2,8 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Archive a Property, and every Observation Profile under it.
+ * Archive a Property, and every Observation Profile under it
+ * (Classes\PropertyArchive::archive(), which cmd=property --archive runs too).
  *
  * The cascade is downward and explicit: a Property is how someone says "this
  * website", so removing it means removing the ways it was being watched. It
@@ -12,8 +13,7 @@ namespace OWA\Module\Base\Controller;
  *
  * Nothing is destroyed. Both tiers take an archived_date, and everything
  * hanging off them -- grants, scoped settings, collected data -- is left where
- * it is. Each archived Profile's tracking bundle is removed, as SitesDelete
- * removes one.
+ * it is. cmd=property --restore brings them back.
  */
 class PropertyDelete extends \OWA\Core\AdminController {
 
@@ -41,45 +41,7 @@ class PropertyDelete extends \OWA\Core\AdminController {
 
     public function action() {
 
-        $propertyId = $this->getParam( 'propertyId' );
-        $archivedAt = \OWA\Core\CoreAPI::getRequestTimestamp();
-
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->load( $propertyId );
-
-        if ( $property->wasPersisted() ) {
-
-            $property->set( 'archived_date', $archivedAt );
-            $property->update();
-        }
-
-        /*
-         * The Profiles are archived one at a time rather than with a single
-         * UPDATE ... WHERE property_id: an entity write keeps the row cache
-         * and the entity's own update path in step, and the number of Profiles
-         * on one Property is small by construction.
-         */
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $site->getTableName() );
-        $db->selectColumn( 'id' );
-        $db->where( 'property_id', $propertyId );
-
-        foreach ( (array) $db->getAllRows() as $row ) {
-
-            $profile = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $profile->load( $row['id'] );
-
-            if ( $profile->wasPersisted() && ! $profile->isArchived() ) {
-
-                $profile->set( 'archived_date', $archivedAt );
-                $profile->update();
-
-                // An archived Profile stops collecting, so its tracking bundle is taken down now.
-                \OWA\Module\Base\Classes\TrackerBundle::remove( (string) $profile->get( 'site_id' ) );
-            }
-        }
+        \OWA\Module\Base\Classes\PropertyArchive::archive( $this->getParam( 'propertyId' ) );
 
         // Not to the Property just deleted: setRedirectAction() would carry it.
         $this->set( 'propertyId', '' );

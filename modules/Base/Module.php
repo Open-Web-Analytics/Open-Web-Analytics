@@ -13,7 +13,7 @@ class Module extends \OWA\Core\Module {
      */
     public $name = 'base';
 
-    public $required_schema_version = 101;
+    public $required_schema_version = 102;
 
     /**
      * Constructor

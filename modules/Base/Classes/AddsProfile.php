@@ -23,7 +23,7 @@ trait AddsProfile {
     }
 
     /**
-     * No propertyId and no live Property with the domain: createSite() makes one.
+     * No propertyId and no live Property with the domain's host: createSite() makes one.
      *
      * @return bool
      */

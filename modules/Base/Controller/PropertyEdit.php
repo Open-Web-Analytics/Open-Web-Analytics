@@ -67,6 +67,15 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
             $this->addValidation( 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
                 [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ] );
+
+            // One live Property per host. An archived Property being edited holds none.
+            $taken = $this->isArchivedProperty( $this->getParam( 'propertyId' ) ) ? ''
+                : \OWA\Module\Base\Classes\SiteManager::domainTakenMessage( $this->getParam( 'domain' ), (string) $this->getParam( 'propertyId' ) );
+
+            if ( $taken !== '' ) {
+
+                $this->addValidationError( 'domain', $taken );
+            }
         }
 
         // Each setting the screen would store, checked against its declaration.
@@ -240,6 +249,25 @@ class PropertyEdit extends \OWA\Core\AdminController {
         return $property->wasPersisted()
             ? $property->getPropertyType()
             : \OWA\Module\Base\Entity\Property::TYPE_WEB;
+    }
+
+    /**
+     * Whether the Property being edited is archived; false when creating.
+     *
+     * @param  string $propertyId
+     * @return bool
+     */
+    private function isArchivedProperty( $propertyId ) {
+
+        if ( ! $propertyId ) {
+
+            return false;
+        }
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $property->load( $propertyId );
+
+        return $property->wasPersisted() && $property->isArchived();
     }
 
     /**
