@@ -2431,12 +2431,13 @@ class OWATracker  {
         // it is sent or classified.
         OWA.doAction( 'tracker.click', { tracker: this, click: click, domEvent: e } );
 
-        //if all that works then log
+        // The click, and the download it raises, only with click tracking on
+        // (trackClicks()): a click handler bound for something else, a
+        // recording say, sends neither.
         if (this.getOption('logClicksAsTheyHappen')) {
             this.trackEvent(click);
+            this.classifyClickTarget( click.get( 'target_url' ), click );
         }
-
-        this.classifyClickTarget( click.get( 'target_url' ), click );
 
 
         this.click = click;
@@ -5193,7 +5194,8 @@ class OWATracker  {
     }
 
     /**
-     * Raise file_download for a click that fetches a file.
+     * Raise file_download for a click that fetches a file. Sent beside the
+     * click, when trackClicks() is on.
      *
      * A SEPARATE EVENT beside the click, not a flag on it. The click is what
      * happened in the DOM; the download is what it MEANT, and the two are

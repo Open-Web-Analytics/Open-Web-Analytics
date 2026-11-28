@@ -195,7 +195,7 @@ describe('downloads and outbound links', () => {
     test('a download carries the link\'s id and text, from the click', () => {
         const t = newTracker();
         const sent = captureSends(t);
-        t.setOption('logClicksAsTheyHappen', false);
+        t.setOption('logClicksAsTheyHappen', true);
         document.body.innerHTML =
             '<a id="header-cta" href="/files/report.pdf">Get the report</a>'
             + '<a id="inline" href="/files/report.pdf"><span id="in">annual   report</span></a>';
@@ -215,7 +215,7 @@ describe('downloads and outbound links', () => {
     test('a download from a link with no id or text carries neither', () => {
         const t = newTracker();
         const sent = captureSends(t);
-        t.setOption('logClicksAsTheyHappen', false);
+        t.setOption('logClicksAsTheyHappen', true);
         document.body.innerHTML = '<a href="/files/blank.pdf"></a>';
 
         t.clickEventHandler({ target: document.querySelector('a'), pageX: 1, pageY: 1 });

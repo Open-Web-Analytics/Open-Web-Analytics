@@ -151,6 +151,25 @@ test('a click on the page is recorded without click tracking being on', () => {
     r.stop();
 });
 
+test('with click tracking off, a recorded click on a download link sends no file_download', () => {
+    const t = newTracker();
+    const sent = [];
+    t.logEvent = (p) => { sent.push(p); };
+    const r = started(t);
+    document.body.innerHTML = '<a id="file" href="/files/report.pdf">Report</a>';
+    const link = document.getElementById('file');
+    link.addEventListener('click', (e) => e.preventDefault());
+
+    r.tick(10);
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    r.flush();
+
+    expect(sent.filter((e) => e.event_type === EVENT_NAME)).toHaveLength(1);
+    expect(sent.filter((e) => e.event_type === 'file_download')).toHaveLength(0);
+    expect(sent.filter((e) => e.event_type === 'click')).toHaveLength(0);
+    r.stop();
+});
+
 test('chunks carry the recording id, their seq and the page view they belong to', () => {
     const t = newTracker();
     const chunks = chunksOf(t);
