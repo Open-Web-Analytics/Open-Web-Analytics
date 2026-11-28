@@ -56,6 +56,7 @@ const DISTRIBUTION = [
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
+require_once(dirname(__DIR__) . '/PropertyFixtures.php');
 new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 $connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
@@ -365,10 +366,7 @@ function cleanup(): array
     $db->where('site_id', $site_id);
     $db->executeQuery();
 
-    $db = db();
-    $db->deleteFrom(\OWA\Core\CoreAPI::entityFactory('base.property')->getTableName());
-    $db->where('id', fixturePropertyId());
-    $db->executeQuery();
+    owa_test_remove_property(fixturePropertyId());
 
     $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser(FIXTURE_TAG . '-analyst@owatest.example.com');

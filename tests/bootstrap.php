@@ -36,6 +36,9 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// The extension phpunit.xml registers: a run may not leave a cube without its Property.
+require_once __DIR__ . '/OrphanCubeCheck.php';
+
 if (!defined('OWA_DB_TYPE') && !file_exists(__DIR__ . '/../owa-config.php')) {
     // No install config in this environment; give entityFactory() a storage
     // engine to load so the OWA_DTD_* column-type constants get defined.

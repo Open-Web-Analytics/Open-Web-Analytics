@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -42,7 +43,7 @@ final class EntityCacheEveryKeyTest extends TestCase
         $property = (string) $this->site->get('property_id');
 
         if ($property) {
-            \OWA\Core\CoreAPI::entityFactory('base.property')->delete($property, 'id');
+            owa_test_remove_property($property);
         }
     }
 

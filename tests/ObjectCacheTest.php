@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -47,7 +48,7 @@ final class ObjectCacheTest extends TestCase
                 'a request read the row as an earlier request had cached it');
         } finally {
             \OWA\Core\CoreAPI::entityFactory('base.site')->delete($site->get('id'), 'id');
-            \OWA\Core\CoreAPI::entityFactory('base.property')->delete((string) $site->get('property_id'), 'id');
+            owa_test_remove_property((string) $site->get('property_id'));
         }
     }
 

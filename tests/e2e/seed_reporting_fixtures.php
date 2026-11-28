@@ -277,6 +277,7 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '203.0.113.10';
 
 require_once($owa_root . 'owa.php');
+require_once(dirname(__DIR__) . '/PropertyFixtures.php');
 require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
@@ -1025,7 +1026,7 @@ function unseedPropertyIfEmpty($propertyId): void
         return;
     }
 
-    \OWA\Core\CoreAPI::entityFactory('base.property')->delete($propertyId, 'id');
+    owa_test_remove_property($propertyId);
 }
 
 /** Remove the fixture notifications and every per-user state row pointing at them. */

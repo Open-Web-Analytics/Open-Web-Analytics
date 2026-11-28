@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * A saved Profile returns to its own Profile Details.
@@ -30,7 +31,7 @@ final class SitesEditRedirectTest extends TestCase
         }
 
         \OWA\Core\CoreAPI::entityFactory( 'base.site' )->delete( $this->site['id'], 'id' );
-        \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $this->site['property_id'], 'id' );
+        owa_test_remove_property( $this->site['property_id'] );
     }
 
     private function data( $controller ): array

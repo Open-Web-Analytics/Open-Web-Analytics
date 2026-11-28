@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * A screen whose controller declares its template (Controller::setView(),
@@ -80,7 +81,7 @@ final class ScreenTemplateTest extends TestCase
         }
 
         if ( self::$propertyId !== '' ) {
-            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( self::$propertyId );
+            owa_test_remove_property( self::$propertyId );
         }
     }
 

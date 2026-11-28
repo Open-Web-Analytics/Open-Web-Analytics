@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * Adding a Property goes on to adding its first Profile.
@@ -95,7 +96,7 @@ final class NewPropertyFirstProfileTest extends TestCase
     {
         foreach ( [ self::WEB_PROPERTY, self::APP_PROPERTY, self::ARCHIVED_PROPERTY ] as $id ) {
 
-            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $id, 'id' );
+            owa_test_remove_property( $id );
         }
     }
 
@@ -111,7 +112,7 @@ final class NewPropertyFirstProfileTest extends TestCase
         $db->where( 'scope_id', (string) $id );
         $db->executeQuery();
 
-        \OWA\Core\CoreAPI::entityFactory( 'base.property' )->delete( $id, 'id' );
+        owa_test_remove_property( $id );
     }
 
     private function publishPending(): bool

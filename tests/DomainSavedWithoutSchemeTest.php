@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * Every save of a Profile or Property domain stores host[:port]: a scheme and
@@ -28,7 +29,13 @@ final class DomainSavedWithoutSchemeTest extends TestCase
     protected function tearDown(): void
     {
         foreach (array_reverse($this->created) as [$entity, $id]) {
-            if ((string) $id !== '') {
+            if ((string) $id === '') {
+                continue;
+            }
+
+            if ($entity === 'base.property') {
+                owa_test_remove_property($id);
+            } else {
                 \OWA\Core\CoreAPI::entityFactory($entity)->delete($id);
             }
         }

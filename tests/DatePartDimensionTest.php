@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Classes\DimensionExpression;
@@ -71,7 +72,7 @@ final class DatePartDimensionTest extends TestCase
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Date part fixture',
-            'domain'        => 'example.test',
+            'domain'        => owa_test_property_domain(self::PROPERTY),
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
         ]);
@@ -134,8 +135,7 @@ final class DatePartDimensionTest extends TestCase
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
             \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(), $db->prepare(self::SITE)));
 
-        $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+        owa_test_remove_property(self::PROPERTY);
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));

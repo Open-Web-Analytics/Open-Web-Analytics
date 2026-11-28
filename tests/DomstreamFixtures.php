@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/PropertyFixtures.php';
+
 /**
  * Fixtures for the Domstream module.
  *
@@ -69,7 +71,7 @@ final class DomstreamFixtures
 
         $row = \OWA\Core\CoreAPI::entityFactory('base.property');
         $row->setProperties(['id' => $property, 'name' => 'Domstream fixture ' . $property,
-            'domain' => 'domstream.test', 'creation_date' => time()]);
+            'domain' => owa_test_property_domain($property), 'creation_date' => time()]);
         $row->create();
 
         foreach (array_values($sites) as $i => $site) {
@@ -90,7 +92,7 @@ final class DomstreamFixtures
             $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
         }
 
-        $db->query(sprintf('DELETE FROM owa_property WHERE id = %d', $property));
+        owa_test_remove_property($property);
     }
 
     public static function deleteSite(string $site): void

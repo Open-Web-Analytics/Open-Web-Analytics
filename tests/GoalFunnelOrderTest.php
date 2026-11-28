@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/PropertyFixtures.php';
+
 /**
  * A funnel counts people who moved THROUGH it, in order.
  *
@@ -88,8 +90,7 @@ final class GoalFunnelOrderTest extends TestCase
             \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(),
             $db->prepare(self::SITE)));
 
-        $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+        owa_test_remove_property(self::PROPERTY);
 
         self::$seeded = false;
     }
@@ -109,7 +110,7 @@ final class GoalFunnelOrderTest extends TestCase
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Funnel order fixture',
-            'domain'        => 'funnel.test',
+            'domain'        => owa_test_property_domain(self::PROPERTY),
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
         ]);

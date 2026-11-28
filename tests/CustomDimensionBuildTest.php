@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Classes\Cube\Dimensions;
@@ -49,7 +50,7 @@ final class CustomDimensionBuildTest extends TestCase
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Custom dimension fixture',
-            'domain'        => 'example.test',
+            'domain'        => owa_test_property_domain(self::PROPERTY),
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
         ]);
@@ -130,8 +131,7 @@ final class CustomDimensionBuildTest extends TestCase
                 \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
         }
 
-        $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+        owa_test_remove_property(self::PROPERTY);
 
         $db->query(sprintf('DELETE FROM %s WHERE property_id = %d',
             \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getTableName(), self::PROPERTY));

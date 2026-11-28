@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/PropertyFixtures.php';
 
 /**
  * The site list an admin page draws its picker from: one query, whatever the
@@ -44,7 +45,9 @@ final class SitesAllowedListTest extends TestCase
 
         foreach ($this->domains as $domain) {
             $db->query('DELETE FROM owa_site WHERE domain = ?', [$domain]);
-            $db->query('DELETE FROM owa_property WHERE domain = ?', [$domain]);
+            foreach ((array) $db->get_results('SELECT id FROM owa_property WHERE domain = ?', [$domain]) as $row) {
+                owa_test_remove_property($row['id']);
+            }
         }
     }
 
