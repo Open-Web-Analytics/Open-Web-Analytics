@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * cmd=install leaves the data directory as a split setup needs it: writable
+ * cmd=core-install leaves the data directory as a split setup needs it: writable
  * by its owner only, so the overrides in its conf/ are run (Core\Overrides),
  * but for logs/, which the web server writes: group-writable and setgid.
  */
@@ -53,9 +53,7 @@ final class InstallSecureDataDirTest extends TestCase
 
     private function secure(string $group = ''): array
     {
-        $cli = (new ReflectionClass(\OWA\Module\Base\Controller\InstallCli::class))->newInstanceWithoutConstructor();
-
-        return (new ReflectionMethod($cli, 'secureDataDir'))->invoke($cli, $group);
+        return (new \OWA\Module\Base\Classes\InstallManager())->secureDataDir($group);
     }
 
     public function testOnlyLogsStaysWritableByTheWebServersGroup(): void

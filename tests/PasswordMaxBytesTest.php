@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * A new password longer than User::MAX_PASSWORD_BYTES (72) is refused
  * wherever one is set: the web installer, the reset and invitation link
  * (base.usersChangePassword), User profile (base.myProfileSave) and
- * cmd=change-password. cmd=install is in CliExitCodeTest. Bytes, not
+ * cmd=change-password. cmd=core-install is in CoreInstallCliTest. Bytes, not
  * characters: bcrypt reads 72 bytes.
  *
  * No database: each refusal is a validation, or comes before any query.

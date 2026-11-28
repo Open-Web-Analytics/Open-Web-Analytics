@@ -8,6 +8,166 @@ namespace OWA\Module\Base\Classes;
 
 class InstallManager extends \OWA\Core\Base {
 
+    /** The length of the first admin's password when cmd=core-install makes it. */
+    const GENERATED_PASSWORD_LENGTH = 24;
+
+    /**
+     * The rules the first admin and the first site are checked by, in the
+     * web wizard (base.installBase) and cmd=core-install alike: each
+     * [ name, value, validation, conf ], as Controller::addValidation()
+     * takes them, in order. A user name that is missing or not allowed stops
+     * the rest (stopOnError).
+     *
+     * @param  mixed $user_id
+     * @param  mixed $email_address
+     * @param  mixed $domain
+     * @param  mixed $password
+     * @return list<array{0: string, 1: mixed, 2: string, 3: array<string, mixed>}>
+     */
+    public static function setupRules( $user_id, $email_address, $domain, $password ) {
+
+        return [
+            [ 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $domain ), 'required', [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Site domain is required.' ) ] ],
+            [ 'user_id', $user_id, 'required', [ 'stopOnError' => true, 'errorMsg' => \OWA\Core\CoreAPI::t( 'A user name for the admin account is required.' ) ] ],
+            [ 'user_id', $user_id, 'userName', [ 'stopOnError' => true ] ],
+            // Valid, then required: a missing address fails both, and is said to be missing.
+            [ 'email_address', $email_address, 'emailAddress', [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' ) ] ],
+            [ 'email_address', $email_address, 'required', [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'An email address for the admin account is required.' ) ] ],
+            [ 'password', $password, 'required', [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Password is required.' ) ] ],
+            [ 'password_length', $password, 'stringLength', [
+                'operator' => '>=',
+                'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
+                'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
+            ] ],
+            [ 'password_max_length', $password, 'stringLength', [
+                'operator' => '<=',
+                'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+                'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
+            ] ],
+        ];
+    }
+
+    /**
+     * A password for the first admin: GENERATED_PASSWORD_LENGTH characters
+     * from the generator application passwords use (AppPasswords).
+     *
+     * @return string
+     */
+    public static function generatePassword() {
+
+        return AppPasswords::randomString( self::GENERATED_PASSWORD_LENGTH );
+    }
+
+    /**
+     * Whether this installation is installed, as the booted process read it:
+     * owa-config.php is there and the stored settings say the install
+     * completed. Reads no settings again: a scheduled run keeps what it has.
+     *
+     * @return bool
+     */
+    public function isInstalled() {
+
+        return \OWA\Core\CoreAPI::configSingleton()->isConfigFilePresent()
+            && (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'install_complete' );
+    }
+
+    /**
+     * The user name of the first admin account, or null when there is none.
+     *
+     * @return string|null
+     */
+    public function adminUserId() {
+
+        $u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+        $u->getByColumn( 'role', \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE );
+
+        return $u->get( 'id' ) ? (string) $u->get( 'user_id' ) : null;
+    }
+
+    /**
+     * Whether any tracked site (Profile) exists.
+     *
+     * @return bool
+     */
+    public function hasSite() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\Entity::TABLE_PREFIX . 'site' );
+        $db->selectColumn( 'id' );
+        $db->limit( 1 );
+
+        return (bool) $db->getOneRow();
+    }
+
+    /**
+     * The data directory as it should be where the web server runs as a user
+     * other than this one: writable only by its owner, so the overrides in its
+     * conf/ are run (Core\Overrides), but for logs/, the one folder the web
+     * server writes (its error log, the file event queue). logs/ is given
+     * $web_group (else the OWA directory's group), group write, and setgid, so
+     * the files made there keep the group.
+     *
+     * Changed only where this user owns the directory: OWA never changes
+     * another's file modes. What it changed, or could not, is said.
+     *
+     * @param  string $web_group
+     * @return list<string>
+     */
+    public function secureDataDir( $web_group = '' ) {
+
+        if ( PHP_OS_FAMILY === 'Windows' || ! function_exists( 'posix_geteuid' ) ) {
+
+            return [];
+        }
+
+        $me   = posix_geteuid();
+        $data = rtrim( \OWA\Core\Env::dataDir(), '/' );
+        $out  = [];
+
+        // The queue's own directory too: only the drain writes there.
+        foreach ( [ $data, $data . '/conf', $data . '/queue' ] as $dir ) {
+
+            if ( is_dir( $dir ) && @fileowner( $dir ) === $me && ( fileperms( $dir ) & 0022 ) ) {
+
+                $out[] = @chmod( $dir, fileperms( $dir ) & 07755 )
+                    ? sprintf( \OWA\Core\CoreAPI::t( '%s is now writable by its owner only.' ), $dir )
+                    : sprintf( \OWA\Core\CoreAPI::t( 'Could not remove group and other write from %s.' ), $dir );
+            }
+        }
+
+        $group = $web_group !== '' ? $web_group : ( posix_getgrgid( (int) @filegroup( \OWA\Core\Env::root() ) )['name'] ?? '' );
+
+        // logs/ and the tracking inbox in it: what the web server writes, and the cron user takes from.
+        foreach ( [ $data . '/logs', $data . '/logs/' . TrackerIngest::INBOX ] as $shared ) {
+
+            if ( ! is_dir( $shared ) || is_link( $shared ) || @fileowner( $shared ) !== $me ) {
+
+                continue;
+            }
+
+            $has = posix_getgrgid( (int) filegroup( $shared ) )['name'] ?? '';
+
+            if ( $group !== '' && $has !== $group ) {
+
+                $out[] = @chgrp( $shared, $group )
+                    ? sprintf( \OWA\Core\CoreAPI::t( '%1$s now belongs to group %2$s.' ), $shared, $group )
+                    : sprintf( \OWA\Core\CoreAPI::t( 'Could not give %1$s to group %2$s: make it writable by the user the web server runs as.' ), $shared, $group );
+            }
+
+            $mode = fileperms( $shared ) & 07777;
+            $want = ( $mode | 02070 ) & ~0002;
+
+            if ( $mode !== $want ) {
+
+                $out[] = @chmod( $shared, $want )
+                    ? sprintf( \OWA\Core\CoreAPI::t( '%s is now writable by its group.' ), $shared )
+                    : sprintf( \OWA\Core\CoreAPI::t( 'Could not make %s writable by its group.' ), $shared );
+            }
+        }
+
+        return $out;
+    }
+
     /**
      * Create the schema, on a server OWA can run on.
      *
@@ -255,7 +415,7 @@ class InstallManager extends \OWA\Core\Base {
 
     /**
      * Raises install_complete, for a module to hear: once the install's last
-     * step is saved, by the install wizard and by cmd=install alike. Base
+     * step is saved, by the install wizard and by cmd=core-install alike. Base
      * listens for nothing.
      *
      * @param  string $user_id the admin account's user name

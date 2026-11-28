@@ -58,9 +58,9 @@ const INSTALL_ADMIN_EMAIL = 'owa-e2e-install-admin@example.test';
 const INSTALL_SITE_PROTOCOL = 'https://';
 const INSTALL_SITE_DOMAIN   = 'owa-e2e-install.example.test';
 
-// The CLI installer takes user_id + email_address + domain and sets the admin
-// password = OWA_DB_PASSWORD of its config. Distinct id so the two paths don't
-// collide even if they ever shared a DB.
+// cmd=core-install takes user_id + email_address + domain, and the admin's
+// password on standard input (--password-stdin). Distinct id so the two paths
+// don't collide even if they ever shared a DB.
 const INSTALLCLI_ADMIN_ID = 'owa-e2e-installcli-admin@example.test';
 const INSTALLCLI_DOMAIN   = 'owa-e2e-installcli.example.test';
 
@@ -317,14 +317,14 @@ function stash(string $repoRoot): array
 
 /**
  * WRITECLI: write a scratch owa-config.php pointing at SCRATCH_DB_CLI, for the
- * CLI install path (cli.php cmd=install REQUIRES a pre-existing config file; it
- * does not write one). Reuses the live RDS host/user/password + generates fresh
+ * CLI install path (cli.php cmd=core-install REQUIRES a pre-existing config file;
+ * it does not write one). Reuses the live RDS host/user/password + generates fresh
  * random keys/salts (mirrors what createConfigFile would do). Must be called
  * while the live config is stashed (i.e. after `stash`, before the CLI spec) and
  * removed again before the web spec runs -- the web wizard needs NO config file.
  *
- * NOTE: the CLI installer sets the admin password = OWA_DB_PASSWORD, so the
- * assert step matches on the admin USER existing, not on a known password.
+ * NOTE: the assert step matches on the admin USER existing, not on a known
+ * password.
  */
 function writeCliConfig(string $repoRoot): array
 {

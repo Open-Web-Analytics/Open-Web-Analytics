@@ -559,6 +559,15 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     line-height: 1.5;
 }
 
+/* Shown, not blocking: the admin's password on a page served without HTTPS. */
+.owa_installWarning {
+    display: block;
+    margin-top: 5px;
+    color: #99321f;
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
 /* The environment report. Every check is listed, passed or not: a list of only
    the failures cannot distinguish "checked and fine" from "never looked at". */
 .owa_installChecks {

@@ -169,6 +169,12 @@ class Downloads {
         return count( self::updater()['updatesDirs']( $this->data ) );
     }
 
+    /** @return string the data directory the updates directory is in */
+    public function dataDir() {
+
+        return $this->data;
+    }
+
     /** @return string the updates directory, '' while there is none */
     public function root() {
 
@@ -562,6 +568,72 @@ class Downloads {
             unset( $this->info[ $release['version'] ] );
 
             return $actual;
+
+        } catch ( \Throwable $e ) {
+
+            @unlink( $part );
+
+            throw $e instanceof \RuntimeException ? $e : new \RuntimeException( $e->getMessage(), 0, $e );
+        }
+    }
+
+    /**
+     * A release read from a tarball on this server (Install::fromFile()),
+     * given its name here as download() gives a download its: $copy, the
+     * private copy whose signature was checked, written out, with its
+     * signature beside it. open() proves it again before it is read.
+     *
+     * @param  string   $version
+     * @param  resource $copy
+     * @param  string   $signature the signature file's contents
+     * @return void
+     * @throws \RuntimeException
+     */
+    public function import( $version, $copy, $signature ) {
+
+        $this->ensureRoot();
+
+        $tar  = $this->tarball( $version );
+        $part = SafeFile::fresh( $tar . '.part' );
+
+        foreach ( (array) glob( $tar . '.part*' ) as $left ) {
+
+            @unlink( (string) $left );
+        }
+
+        try {
+
+            // Opened here under a fresh name, which no link can be waiting at.
+            $sink = SafeFile::create( $part, 0600 );
+
+            if ( $sink === false ) {
+
+                throw new \RuntimeException( sprintf( 'Could not write %s.', $part ) );
+            }
+
+            try {
+
+                rewind( $copy );
+
+                if ( stream_copy_to_stream( $copy, $sink ) === false || ! fflush( $sink ) ) {
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $part ) );
+                }
+
+            } finally {
+
+                fclose( $sink );
+                rewind( $copy );
+            }
+
+            SafeFile::replace( $tar . '.sig', trim( (string) $signature ) . "\n" );
+
+            if ( ! @rename( $part, $tar ) ) {
+
+                throw new \RuntimeException( sprintf( 'Could not write %s.', $tar ) );
+            }
+
+            unset( $this->info[ $version ], $this->proved[ $version ] );
 
         } catch ( \Throwable $e ) {
 

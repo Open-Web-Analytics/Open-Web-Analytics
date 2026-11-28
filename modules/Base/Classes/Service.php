@@ -243,7 +243,7 @@ class Service extends \OWA\Core\Base {
      * cannot smuggle one past.
      */
     const NEVER_SCHEDULE = [
-        'install'       => 'Re-runs schema installation.',
+        'core-install'  => 'Re-runs schema installation, or installs a release by hand: core-update is the scheduled install.',
         'core-update-schema' => 'Changes the schema underneath the running process.',
         'reset-secrets' => 'Rewrites owa-config.php.',
     ];

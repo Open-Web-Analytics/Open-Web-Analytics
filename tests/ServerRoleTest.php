@@ -187,7 +187,7 @@ final class ServerRoleTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'api');
 
         // Installing stated, not read: OWA_INSTALLING is process-global, and
-        // InstallCli defines it for the rest of a suite run.
+        // the web installer's controllers define it for the rest of a suite run.
         $this->assertNull(ServerRole::bootProblem('cli', [], false, false), 'before install: nothing to check');
         $this->assertNull(ServerRole::bootProblem('cli', [], true, true), 'the installer writes the configuration');
         $this->assertSame(503, ServerRole::bootProblem('cli', [], true, false)['status']);

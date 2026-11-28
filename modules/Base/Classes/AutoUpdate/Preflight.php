@@ -255,7 +255,7 @@ class Preflight {
     /**
      * The directories of OWA's code this process cannot write, relative to
      * $root ('' for the OWA directory itself): what an automatic update
-     * writes in, asked where the installer runs (cmd=install). The
+     * writes in, asked where the installer runs (cmd=core-install). The
      * installation's own directories are left out: owa-data/, the data
      * directory and the tracking bundles.
      *

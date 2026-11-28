@@ -16,7 +16,7 @@
 # EITHER INSTALL PATH. The two are not interchangeable and only one of them
 # writes a config file:
 #
-#   --via cli   (default)  writecli supplies the config, cli.php cmd=install
+#   --via cli   (default)  writecli supplies the config, cli.php cmd=core-install
 #                          fills the schema. No browser, seconds.
 #   --via web              the real wizard, driven by Playwright, which WRITES
 #                          owa-config.php itself. Slower, needs the live vhost.
@@ -82,11 +82,11 @@ if [ "$VIA" = "cli" ]; then
     echo "--- writing the CLI scratch config ---"
     php "$HARNESS" writecli >/dev/null || exit 1
 
-    echo "--- installing (cli.php cmd=install) ---"
-    php cli.php \
-        cmd=install \
+    echo "--- installing (cli.php cmd=core-install) ---"
+    printf '%s\n' 'owa-scratch-admin-pass' | php cli.php \
+        cmd=core-install \
+        --password-stdin \
         "user_id=$(info installcli_admin_id)" \
-        "password=owa-scratch-admin-pass" \
         "email_address=$(info installcli_admin_id)" \
         "domain=$(info installcli_domain)" 2>&1 | tail -3
 else

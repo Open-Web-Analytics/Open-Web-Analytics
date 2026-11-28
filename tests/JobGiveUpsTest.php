@@ -40,11 +40,23 @@ final class JobGiveUpsTest extends TestCase
         return $cli->getCliOutcome();
     }
 
+    /** An installation that is installed, or not: for the commands built here. */
+    public static function installed(bool $installed): \OWA\Module\Base\Classes\InstallManager
+    {
+        return new class($installed) extends \OWA\Module\Base\Classes\InstallManager {
+            private $installed;
+            public function __construct($installed) { $this->installed = $installed; }
+            public function isInstalled() { return $this->installed; }
+        };
+    }
+
     private function coreInstall(string $outcome): array
     {
         $cli = new class(['version' => '2.0.1'], $outcome) extends CoreInstallCli {
             private $answer;
             public function __construct($params, $answer) { parent::__construct($params); $this->answer = $answer; }
+            protected function installManager() { return JobGiveUpsTest::installed(true); }
+            protected function write($lines) {}
             protected function install($version, $force) {
                 return ['outcome' => $this->answer, 'message' => 'answered ' . $this->answer, 'lines' => []];
             }
@@ -55,8 +67,19 @@ final class JobGiveUpsTest extends TestCase
         return $cli->getCliOutcome();
     }
 
+    /** @var mixed */
+    private $requestType;
+
+    /** A CLI request: Controller\Cli's constructor exits on any other, and ended the run here when this file ran on its own. */
+    protected function setUp(): void
+    {
+        $this->requestType = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'cli');
+    }
+
     protected function tearDown(): void
     {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->requestType);
         \OWA\Core\Controller\Cli::$exit_code = 0;
     }
 
@@ -94,10 +117,13 @@ final class JobGiveUpsTest extends TestCase
         $this->assertSame('ok', $this->coreInstall(Install::OK)['outcome']);
     }
 
-    /** With no version it is a usage error, which gives up on its own. */
-    public function testAnInstallWithoutAVersionGivesUp(): void
+    /** A release named before OWA is installed is refused, and gives up: nothing would change on a retry. */
+    public function testAReleaseBeforeTheInstallGivesUp(): void
     {
-        $cli = new CoreInstallCli([]);
+        $cli = new class(['version' => '2.0.1']) extends CoreInstallCli {
+            protected function installManager() { return JobGiveUpsTest::installed(false); }
+            protected function install($version, $force) { throw new \LogicException('installed a release'); }
+        };
         $cli->action();
 
         $this->assertSame(['outcome' => 'failed', 'final' => true],

@@ -93,7 +93,6 @@ final class ControllerCapabilityContractTest extends TestCase
 
         // CLI-only. Core\Controller\Cli::__construct() exits unless
         // request_type === 'cli', so these are not web-reachable.
-        'InstallCli',
         'CoreUpdateSchemaCli',
         // Publishes Profiles' tracking bundles; the scheduler and the shell only.
         'TrackerPublishCli',

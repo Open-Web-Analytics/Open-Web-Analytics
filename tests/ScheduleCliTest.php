@@ -791,7 +791,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testDangerousCommandsAreRefusedEvenFromConfig()
     {
-        foreach (['install', 'core-update-schema', 'reset-secrets'] as $command) {
+        foreach (['core-install', 'core-update-schema', 'reset-secrets'] as $command) {
             $jobs = $this->jobsWith(['harmless-sounding' => ['command' => $command, 'schedule' => '@daily']]);
 
             $this->assertArrayNotHasKey('harmless-sounding', $jobs, "$command must never be schedulable");
