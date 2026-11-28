@@ -85,7 +85,7 @@ jobs:
           test ! -e owa-config.php
           php cli.php cmd=version-info --file=release.php
           test -z "$(php release.php)"
-          php -r '$s = file_get_contents("release.php"); $d = json_decode(substr($s, strlen("<?php exit; ?>\n")), true); exit(str_starts_with($s, "<?php exit; ?>\n") && isset($d["format"], $d["requirements"], $d["modules"]["base"], $d["updates"]) ? 0 : 1);'
+          php -r '$s = file_get_contents("release.php"); $d = json_decode(substr($s, strlen("<?php exit; ?>\n")), true); exit(str_starts_with($s, "<?php exit; ?>\n") && isset($d["format"], $d["upgrades_from"], $d["requirements"], $d["modules"]["base"], $d["updates"]) ? 0 : 1);'
 
       - name: Unit tests (PHPUnit)
         run: composer run-script test
