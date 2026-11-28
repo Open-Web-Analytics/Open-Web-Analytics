@@ -55,6 +55,8 @@ $_owa_messages = [
     3015 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'You cannot delete your own account.' )],
     3016 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account cannot be deleted. Give another user the admin role first.' )],
     3017 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The only admin account keeps the admin role. Give another user the admin role first.' )],
+    // OptionsReset: Settings::reset() answered false.
+    3018 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The settings were not reset: the module is not installed, or the save failed. The error log says which.' )],
     // The modules screen's refusals (OptionsModules::refuse()).
     3030 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Module %1$s was not activated. %2$s' )],
     3031 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no module named %s.' )],

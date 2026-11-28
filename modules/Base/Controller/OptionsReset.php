@@ -25,6 +25,11 @@ class OptionsReset extends \OWA\Core\AdminController {
 
             $this->e->notice($this->getMsg(2503));
             $this->setStatusCode(2503);
+
+        } else {
+
+            // Settings::reset() refuses a module that is not installed, and answers its save's failure.
+            $this->setStatusCode(3018);
         }
 
         $this->setRedirectAction('base.optionsGeneral');

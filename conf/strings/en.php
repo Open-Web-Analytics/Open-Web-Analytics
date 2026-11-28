@@ -1799,6 +1799,7 @@ return [
     'The scroll depths, in percent of the page, that a page view\'s deepest point is reported at. Separate them with commas.' => 'The scroll depths, in percent of the page, that a page view\'s deepest point is reported at. Separate them with commas.',
     'The search terms the landing URL was tagged with (owa_search_terms or utm_term).' => 'The search terms the landing URL was tagged with (owa_search_terms or utm_term).',
     'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".' => 'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".',
+    'The settings were not reset: the module is not installed, or the save failed. The error log says which.' => 'The settings were not reset: the module is not installed, or the save failed. The error log says which.',
     'The share of page loads recorded, from 0 to 100.' => 'The share of page loads recorded, from 0 to 100.',
     'The share of page views that were the last in their session.' => 'The share of page views that were the last in their session.',
     'The share of sessions that completed a purchase.' => 'The share of sessions that completed a purchase.',

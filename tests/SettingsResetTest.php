@@ -114,4 +114,20 @@ final class SettingsResetTest extends TestCase
         $this->assertSame( 0, $s->saved );
         $this->assertArrayNotHasKey( 'no_such_module_installed', $s->db_settings );
     }
+
+    /** The Reset screen says when nothing was reset, rather than nothing at all. */
+    public function testTheResetScreenReportsARefusal(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'Settings need a booted install.' );
+        }
+
+        $c = new \OWA\Module\Base\Controller\OptionsReset( [ 'module' => 'no_such_module_installed' ] );
+        $c->action();
+
+        $this->assertSame( 3018, (int) $c->data['status_code'] );
+        $this->assertSame( 'base.optionsGeneral', $c->data['do'] ?? null );
+        $this->assertSame( 'The settings were not reset: the module is not installed, or the save failed. The error log says which.',
+            $c->getMsg( 3018 )['message'] );
+    }
 }
