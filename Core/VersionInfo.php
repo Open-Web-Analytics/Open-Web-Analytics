@@ -12,13 +12,15 @@ namespace OWA\Core;
  * has not installed.
  *
  * BOOT-FREE. No settings, no database, no CoreAPI, and no module is
- * constructed: a module's name and required_schema_version are read as its
- * class's declared defaults, and whether an update must be installed by hand
- * as its declared $manual_install, by reflection. The updates are the ones
+ * constructed: a module's name is its class's NAME, its
+ * required_schema_version is read as the class's declared default, and
+ * whether an update must be installed by hand as its declared
+ * $manual_install, by reflection. The updates are the ones
  * Module::updateClasses() finds, the list Module::update() applies.
  *
- * A module that sets its name or schema only in its constructor (an older
- * third-party one) is listed without a schema.
+ * A module class without its own NAME is not listed, as it is not loaded
+ * (Module::declaresName()). One that sets its schema only in its constructor
+ * is listed without a schema.
  *
  * @phpstan-import-type RequirementsArray from Requirements
  * @phpstan-type UpdateInfo array{module: string, sequence: int, manual_install: string}
@@ -131,18 +133,13 @@ class VersionInfo {
 
             $class = '\\OWA\\Module\\' . basename( dirname( (string) $file ) ) . '\\Module';
 
-            if ( ! class_exists( $class ) ) {
+            if ( ! Module::declaresName( $class ) ) {
 
                 continue;
             }
 
             $defaults = ( new \ReflectionClass( $class ) )->getDefaultProperties();
-            $name     = (string) ( $defaults['name'] ?? '' );
-
-            if ( $name === '' ) {
-
-                continue;
-            }
+            $name     = (string) $class::NAME;
 
             $out[ $name ] = isset( $defaults['required_schema_version'] ) ? (int) $defaults['required_schema_version'] : null;
         }

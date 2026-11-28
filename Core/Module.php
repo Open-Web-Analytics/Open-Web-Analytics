@@ -21,11 +21,34 @@ namespace OWA\Core;
 abstract class Module {
 
     /**
-     * Name of module
+     * Name of module: static::NAME, set by the constructor.
      *
      * @var string
      */
     public $name;
+
+    /**
+     * The module's runtime name. Every module class declares its own:
+     *
+     *     const NAME = 'acme';
+     *
+     * This empty one stands for none: a module class that does not declare
+     * its own is refused when it is loaded (declaresName(),
+     * CoreAPI::moduleClassFactory(), CoreAPI::getPresentModules()). Read
+     * without building the module by Core\VersionInfo and
+     * Classes\TableInventory.
+     *
+     * @var string
+     */
+    const NAME = '';
+
+    /**
+     * The entities this module implements, by name. Read without building the
+     * module (Classes\TableInventory), and registered by _registerEntities().
+     *
+     * @var list<string>
+     */
+    const ENTITIES = [];
 
     /**
      * Description of Module
@@ -113,7 +136,8 @@ abstract class Module {
     public $group;
 
     /**
-     * Array of Entities that are implmented by the module, by name
+     * The entities this module implements, by name: static::ENTITIES, and
+     * any registerEntity() adds.
      *
      * @var list<string>
      */
@@ -216,7 +240,9 @@ abstract class Module {
      *
      */
     public function __construct() {
-        
+
+        $this->name = static::NAME;
+
         // runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
         $this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
         
@@ -761,15 +787,48 @@ abstract class Module {
     }
 
     /**
-     * Abstract method for registering a module's entities
+     * Registers the module's ENTITIES.
      *
-     * This method must be defined in concrete module classes in order for entities to be registered.
-     *
-     * @return mixed unread: the constructor ignores it
+     * @return void
      */
     public function _registerEntities() {
 
-        return false;
+        $this->registerEntity( static::ENTITIES );
+    }
+
+    /**
+     * Whether $class declares its own NAME: a non-empty string constant of
+     * the class itself, not one it inherits from Core\Module or another
+     * module class. Boot-free, so Core\VersionInfo can ask.
+     *
+     * @param  string $class
+     * @return bool
+     */
+    public static function declaresName( $class ) {
+
+        $class = ltrim( (string) $class, '\\' );
+
+        if ( ! class_exists( $class ) || ! defined( $class . '::NAME' ) ) {
+
+            return false;
+        }
+
+        $constant = new \ReflectionClassConstant( $class, 'NAME' );
+
+        return strcasecmp( $constant->getDeclaringClass()->getName(), $class ) === 0
+            && is_string( $constant->getValue() ) && $constant->getValue() !== '';
+    }
+
+    /**
+     * The error a module class without its own NAME is refused with.
+     *
+     * @param  string $class
+     * @return string
+     */
+    public static function undeclaredNameProblem( $class ) {
+
+        return sprintf( \OWA\Core\CoreAPI::t( '%s is not loaded as a module: it declares no NAME of its own. A module class declares its runtime name, as in const NAME = \'acme\'.' ),
+            ltrim( (string) $class, '\\' ) );
     }
 
     /**

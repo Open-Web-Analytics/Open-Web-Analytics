@@ -136,6 +136,7 @@ return [
     '%s is not a valid sort column.' => '%s is not a valid sort column.',
     '%s is not an object.' => '%s is not an object.',
     '%s is not in the expected form.' => '%s is not in the expected form.',
+    '%s is not loaded as a module: it declares no NAME of its own. A module class declares its runtime name, as in const NAME = \'acme\'.' => '%s is not loaded as a module: it declares no NAME of its own. A module class declares its runtime name, as in const NAME = \'acme\'.',
     '%s is not read: it uses $this, which it cannot. Change these lines, then try again.' => '%s is not read: it uses $this, which it cannot. Change these lines, then try again.',
     '%s is not registered against Property %s.' => '%s is not registered against Property %s.',
     '%s is not usable for backups: it does not exist, or it is inside a directory the web server can serve. Set OWA_BACKUP_DIR to a directory outside the web root.' => '%s is not usable for backups: it does not exist, or it is inside a directory the web server can serve. Set OWA_BACKUP_DIR to a directory outside the web root.',

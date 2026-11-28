@@ -7,12 +7,68 @@ namespace OWA\Module\Base;
 
 class Module extends \OWA\Core\Module {
 
+    const NAME = 'base';
+
+    const ENTITIES = [
+        'site',
+        'organization',
+        'property',
+        /*
+         * 'configuration' is NOT here: Update043 unpacked that table into
+         * install-scope rows of owa_setting and dropped it, and its presence is what
+         * tells Settings the blob is still the store of record.
+         *
+         * The entity class stays: the rollback recreates the table, and entityFactory
+         * resolves by PSR-4 rather than from this list.
+         */
+        'setting',
+        'goal_event_definition',
+        'goal_event_definition_condition',
+        'user',
+        'scheduled_job',
+        'notification',
+        'notification_state',
+        'custom_report',
+        'custom_report_favorite',
+        'job_lock',
+        // One-off admin jobs, run by the scheduler.
+        'job_queue',
+        // Application passwords for the REST API.
+        'app_password',
+        // Failed sign-ins (Classes\LoginThrottle).
+        'login_failure',
+        'site_user',
+        /*
+         * v2. Registered unconditionally so cmd=core-update-schema creates them and
+         * the partition commands find them -- neither is conditional on
+         * anything, and a table nothing writes to costs an empty
+         * tablespace. Handler\EventRawHandlers writes both, for every
+         * site.
+         *
+         * `event` IS NOT HERE, and that is not an omission. There is no
+         * owa_event: the reporting cube is one table per Property,
+         * named and created by Classes\Cube\Cubes, so Entity\Event is
+         * a shape rather than a table. Registering it would have this
+         * module's install create owa_event, and would have the
+         * partition commands maintain a lead on a table nothing writes
+         * to.
+         */
+        'event_raw',
+        'visitor_acquisition',
+        'custom_dimension',
+        // Beacons spam detection blocked, per day, Profile and rule (Classes\Spam\Blocks).
+        'spam_block',
+        // How far the v1 migration has got, and what it wrote
+        // (Classes\Migration).
+        'migration_progress',
+        'migration_tally',
+        'migration_day_visitor',
+    ];
+
     /*
-     * Declared, not set in the constructor, so cmd=version-info reads both
+     * Declared, not set in the constructor, so cmd=version-info reads it
      * without constructing the module (Core\VersionInfo).
      */
-    public $name = 'base';
-
     public $required_schema_version = 99;
 
     /**
@@ -536,66 +592,6 @@ class Module extends \OWA\Core\Module {
          * the tracking.* namespace, resolved last by getEventProcessor().
          */
         $this->addEventProcessor( \OWA\Core\CoreAPI::anyTrackingEvent(), 'base.processRequest' );
-    }
-
-    public function _registerEntities() {
-
-        $this->registerEntity([
-                'site',
-                'organization',
-                'property',
-            /*
-             * 'configuration' is NOT here: Update043 unpacked that table into
-             * install-scope rows of owa_setting and dropped it, and its presence is what
-             * tells Settings the blob is still the store of record.
-             *
-             * The entity class stays: the rollback recreates the table, and entityFactory
-             * resolves by PSR-4 rather than from this list.
-             */
-            'setting',
-            'goal_event_definition',
-            'goal_event_definition_condition',
-                'user',
-                'scheduled_job',
-                'notification',
-                'notification_state',
-                'custom_report',
-                'custom_report_favorite',
-                'job_lock',
-                // One-off admin jobs, run by the scheduler.
-                'job_queue',
-                // Application passwords for the REST API.
-                'app_password',
-                // Failed sign-ins (Classes\LoginThrottle).
-                'login_failure',
-                'site_user',
-                /*
-                 * v2. Registered unconditionally so cmd=core-update-schema creates them and
-                 * the partition commands find them -- neither is conditional on
-                 * anything, and a table nothing writes to costs an empty
-                 * tablespace. Handler\EventRawHandlers writes both, for every
-                 * site.
-                 *
-                 * `event` IS NOT HERE, and that is not an omission. There is no
-                 * owa_event: the reporting cube is one table per Property,
-                 * named and created by Classes\Cube\Cubes, so Entity\Event is
-                 * a shape rather than a table. Registering it would have this
-                 * module's install create owa_event, and would have the
-                 * partition commands maintain a lead on a table nothing writes
-                 * to.
-                 */
-                'event_raw',
-                'visitor_acquisition',
-                'custom_dimension',
-                // Beacons spam detection blocked, per day, Profile and rule (Classes\Spam\Blocks).
-                'spam_block',
-                // How far the v1 migration has got, and what it wrote
-                // (Classes\Migration).
-                'migration_progress',
-                'migration_tally',
-                'migration_day_visitor']
-            );
-
     }
 
     /**

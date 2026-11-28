@@ -7,12 +7,12 @@ namespace OWA\Module\MaxmindGeoip;
 
 class Module extends \OWA\Core\Module {
 
+    const NAME = 'maxmind_geoip';
+
     /*
-     * Declared, not set in the constructor, so cmd=version-info reads both
+     * Declared, not set in the constructor, so cmd=version-info reads it
      * without constructing the module (Core\VersionInfo).
      */
-    public $name = 'maxmind_geoip';
-
     public $required_schema_version = 1;
 
     /**
