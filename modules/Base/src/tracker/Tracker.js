@@ -4725,8 +4725,9 @@ class OWATracker  {
 
     /**
      * A name starts with a letter, uses only letters, numbers and underscores,
-     * and is at most 40 characters. Case-sensitive, so my_event and My_Event are
-     * two events.
+     * and is at most 40 characters. Names are stored case-blind, so a case
+     * variant of a reserved name (Page_View, PURCHASE) or of the owa_ prefix is
+     * refused too, and my_event and My_Event are counted as one event.
      *
      * The same pattern the server applies to a custom PROPERTY name -- one rule,
      * stated once on each side.
@@ -4742,7 +4743,11 @@ class OWATracker  {
             return false;
         }
 
-        if ( OWATracker.RESERVED_EVENT_NAMES.indexOf( name ) !== -1 ) {
+        var lowered = name.toLowerCase();
+
+        var reserved = OWATracker.RESERVED_EVENT_NAMES.map( ( n ) => String( n ).toLowerCase() );
+
+        if ( reserved.indexOf( lowered ) !== -1 ) {
 
             OWA.debug( 'Custom event name is reserved by OWA and cannot be used: ' + name );
 
@@ -4761,7 +4766,7 @@ class OWATracker  {
          * A leading underscore and a dotted name are refused by the pattern above
          * already.
          */
-        if ( name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
+        if ( lowered.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
 
             OWA.debug( 'Custom event names may not start with '
                 + OWATracker.RESERVED_EVENT_PREFIX + ', which OWA reserves: ' + name );
