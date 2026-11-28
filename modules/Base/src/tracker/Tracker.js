@@ -2509,7 +2509,8 @@ class OWATracker  {
      * Note how deep the visitor has scrolled, and send it if nothing deeper is
      * possible. Called once per frame while the page scrolls.
      *
-     * ONE EVENT PER PAGE VIEW, at its deepest threshold.
+     * THE DEEPEST THRESHOLD, normally one event per page view; one resumed
+     * after a hide and scrolled further sends again (flushScrollDepth()).
      *
      * GATED ON A SCROLL. Nothing is noted until the page has moved from where it
      * sat when loading finished: a page that fits the window cannot scroll and
@@ -5852,9 +5853,11 @@ class OWATracker  {
     }
 
     /**
-     * Report how far down each page view the visitor scrolls: one `scroll`
-     * event per page view, at the deepest scrollThresholds mark reached, and only
-     * after the visitor has scrolled.
+     * Report how far down each page view the visitor scrolls: a `scroll` event
+     * at the deepest scrollThresholds mark reached, and only after the visitor
+     * has scrolled. A page view the visitor comes back to and scrolls further
+     * sends again, deeper; the Scroll Depth report counts each page view once,
+     * at its deepest.
      *
      * Its listener is its own: it does not depend on any other feature or its
      * sample rate.
