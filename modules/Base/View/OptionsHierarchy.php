@@ -92,8 +92,6 @@ class OptionsHierarchy extends \OWA\Core\View {
         // And every other link and form on the screen, so the next screen,
         // and the one a save lands on, is of the same Property and period.
         $this->keepStateInLinks( \OWA\Core\Controller::reportState() );
-        $this->body->set( 'nav_access_site', self::accessSiteFor(
-            (array) $this->get( 'site_hierarchy' ), $propertyId, (string) ( $params['siteId'] ?? '' ) ) );
 
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );
@@ -129,34 +127,6 @@ class OptionsHierarchy extends \OWA\Core\View {
             if ( ! empty( $entry['params']['propertyId'] ) ) {
 
                 return (string) $entry['params']['propertyId'];
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * A Profile of the Property the reader may see, which the rail's links
-     * are checked against: site access is held per Profile. The screen's own
-     * Profile when it has one.
-     *
-     * @param array<string, mixed> $siteHierarchy as Controller::getSiteHierarchy() returns it
-     * @param string $propertyId
-     * @param string $siteId
-     * @return string
-     */
-    public static function accessSiteFor( array $siteHierarchy, $propertyId, $siteId ) {
-
-        if ( $siteId !== '' ) {
-
-            return $siteId;
-        }
-
-        foreach ( (array) ( $siteHierarchy['properties'] ?? [] ) as $property ) {
-
-            if ( (string) $property['id'] === (string) $propertyId && ! empty( $property['profiles'] ) ) {
-
-                return (string) $property['profiles'][0]['site_id'];
             }
         }
 

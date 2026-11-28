@@ -229,7 +229,8 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
 
             expect(res.headers()['access-control-allow-origin'],
                 'a configured site must be allowed cross-origin').toBe(creds.domain);
-            expect(res.headers()['access-control-allow-credentials']).toBe('true');
+            // Nothing reads the API cross-origin with cookies.
+            expect(res.headers()['access-control-allow-credentials']).toBeUndefined();
 
             // Asserted as well as the headers: a change that emitted CORS correctly
             // while breaking the response would pass a headers-only test.
@@ -249,14 +250,25 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
                 'an origin this installation does not serve must not be allowed').toBeUndefined();
         });
 
-        test('a suffix or subdomain of a configured host is not that host', async ({ request }) => {
+        test('a subdomain of a configured host is allowed, as the overlays open pages there', async ({ request }) => {
+            const root = installRoot(test.info().project.use.baseURL);
+            const url = routeUrl(root, 'base/v1/sites', '');
+            const sub = new URL(creds.domain);
+            sub.hostname = 'shop.' + sub.hostname;
+
+            const res = await request.fetch(url, { method: 'GET', headers: authed(creds, { Origin: sub.origin }) });
+
+            expect(res.headers()['access-control-allow-origin']).toBe(sub.origin);
+        });
+
+        test('a suffix of a configured host is not that host', async ({ request }) => {
             // The classic allowlist bypass: prefix or substring matching lets
             // evil-<host> and <host>.evil.net through.
             const root = installRoot(test.info().project.use.baseURL);
             const url = routeUrl(root, 'base/v1/sites', '');
             const host = new URL(creds.domain).host;
 
-            for (const forged of [`https://evil-${host}`, `https://${host}.evil.net`, `https://sub.${host}`]) {
+            for (const forged of [`https://evil-${host}`, `https://${host}.evil.net`]) {
                 const res = await request.fetch(url, { method: 'GET', headers: authed(creds, { Origin: forged }) });
 
                 expect(res.headers()['access-control-allow-origin'],
@@ -350,6 +362,7 @@ test.describe('CORS preflight @selfhost-only', () => {
 
         expect(res.status()).toBe(200);
         expect(h['access-control-allow-origin']).toBe(FIXTURE.siteDomain);
+        expect(h['access-control-allow-credentials']).toBeUndefined();
         expect(h['access-control-allow-headers']).toContain('Authorization');
         expect(h['access-control-allow-methods']).toContain('GET');
     });

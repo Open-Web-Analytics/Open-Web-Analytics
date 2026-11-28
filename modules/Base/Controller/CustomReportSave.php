@@ -14,6 +14,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportSave extends \OWA\Core\AdminController {
 
+    // edit_reports, and access to the report's Property (CustomReports::requestProperty()).
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );

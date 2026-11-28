@@ -87,7 +87,7 @@ class Requirements {
      */
     const RETIRED_CONSTANTS = [
         'OWA_QUEUE_EVENTS'              => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',
-        'OWA_USE_STATIC_CONFIG_ONLY'    => 'The 1.x switch, still read: stored settings are not read at boot. Set OWA_SERVER_ROLE instead, collector for a server that only receives beacons.',
+        'OWA_USE_STATIC_CONFIG_ONLY'    => 'The 1.x switch. It applies only to collectors, which read no stored settings; on a role with a database it is ignored. Set OWA_SERVER_ROLE to collector for a server that only receives beacons.',
         'OWA_QUEUE_TRACKER_INGEST'      => 'No longer read. Use OWA_QUEUE_TRACKING_EVENTS.',
         'OWA_TRACKER_INGEST_QUEUE_TYPE' => 'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.',
         'OWA_TRACKER_INGEST_DRAIN'      => 'No longer read. The servers whose role runs the scheduler drain the queue.',
@@ -95,8 +95,11 @@ class Requirements {
         'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
         'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
         'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
+        'OWA_FEED_SUBSCRIPTION_PARAM'   => 'No longer read. Feed tracking is gone; list a parameter to remove from page URLs in query_string_filters.',
+        'OWA_UA_REGEXES_DIR'            => 'No longer read. The user-agent patterns ship with each release; OWA_UA_REGEXES names a file of your own.',
         'OWA_NEWS_URL'                  => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
         'OWA_NS'                        => 'No longer read. OWA\'s cookie names and the URL parameters it reads from tracked pages start with owa_.',
+        'OWA_LOG_VISITOR_PII'           => 'No longer read. A beacon\'s user_id, user_name and user_email are stored as it sends them.',
     ];
 
     /**

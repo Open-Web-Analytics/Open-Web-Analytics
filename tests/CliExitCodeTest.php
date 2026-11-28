@@ -116,8 +116,7 @@ final class CliExitCodeTest extends CliControllerTestCase
                 continue;
             }
 
-            // The command and the Cli classes it extends; a screen it extends
-            // (sitesAddCli) reads the screen's form fields.
+            // The command and the Cli classes it extends, not the traits it uses.
             $src = '';
             for ($r = new ReflectionClass($class); $r && ($r->getName() === ltrim($class, '\\') || $r->isSubclassOf(Cli::class)); $r = $r->getParentClass()) {
                 $src .= file_get_contents($r->getFileName());
@@ -148,6 +147,30 @@ final class CliExitCodeTest extends CliControllerTestCase
         yield 'partition-reorganize, none'  => [$C . 'PartitionReorganizeCli', []];
         yield 'partition-reorganize, 31 Feb'=> [$C . 'PartitionReorganizeCli', ['granularity' => 'monthly', 'from' => '20260231']];
         yield 'prune interval 7days'        => [$C . 'PruneEventQueueArchivesCli', ['interval' => '7days', 'queues' => 'owa-no-such-queue']];
+        yield 'prune, unknown queue'        => [$C . 'PruneEventQueueArchivesCli', ['queues' => 'owa-no-such-queue']];
+    }
+
+    /** Every name is checked first: an unknown one stops the command before any queue is pruned. */
+    public function testAnUnknownQueueIsNamedWithTheQueuesThereAre(): void
+    {
+        $known = array_values(array_unique(array_merge(
+            array_keys((array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('event_queues')),
+            [\OWA\Module\Base\Classes\TrackerIngest::QUEUE])));
+
+        $cli = new \OWA\Module\Base\Controller\PruneEventQueueArchivesCli(
+            ['queues' => \OWA\Module\Base\Classes\TrackerIngest::QUEUE . ', owa-no-such-queue']);
+
+        $log = '';
+        ob_start();
+        try {
+            $cli->action();
+        } finally {
+            $log = (string) ob_get_clean();
+        }
+
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+        $this->assertSame('Unknown queue: owa-no-such-queue. Queues: ' . implode(', ', $known) . '.', $cli->getCliOutcome()['message']);
+        $this->assertStringNotContainsString('Pruned', $log, 'nothing pruned before the names were checked');
     }
 
     /** @dataProvider usageErrors */
@@ -261,10 +284,11 @@ PHP;
     }
 
     /**
-     * cmd=install refused for its password -- none, or too short -- is a usage
-     * error, and exits 2 before installing anything. In its own process, as
-     * InstallCli defines OWA_INSTALLING; its action() is replaced, so nothing
-     * could be installed even if validation let it through.
+     * cmd=install refused for its password -- none, too short or too long --
+     * or for its email address is a usage error, and exits 2 before
+     * installing anything. In its own process, as InstallCli defines
+     * OWA_INSTALLING; its action() is replaced, so nothing could be installed
+     * even if validation let it through.
      *
      * @dataProvider refusedInstalls
      */
@@ -304,6 +328,9 @@ PHP;
 
         yield 'no password'    => [$base, 'password for the admin account is required'];
         yield 'short password' => [$base + ['password' => 'short'], 'at least'];
+        yield 'not an email address' => [['email_address' => 'owa-test-admin'] + $base + ['password' => 'owa-test-password'],
+            'valid email address for the admin account'];
+        yield 'password over 72 bytes' => [$base + ['password' => str_repeat('a', 73)], 'at most 72 bytes'];
     }
 
     /** A capability refused before action() is a failure. */

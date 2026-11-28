@@ -184,6 +184,15 @@ For module and template authors:
 - A settings page registered into the `Observation Profile` section is a tab of
   the Profile's page rather than an entry in the column. The hierarchy nav has a
   new `Profiles` section: one entry per Profile of the Property, and Add profile.
+  The Property and Profile sections are listed only for a Property the user has
+  access to.
+- `ServiceUser::isCapable()` and `CoreAPI::isCurrentUserCapable()` take a
+  capability and no site: they ask the role. `canAccessProperty()` asks the
+  user's access list, and `isCapableOnProperty()` asks both. A controller whose
+  request is about a Property uses the `\OWA\Core\PropertyScopedAccess` trait.
+  The `capabilitiesThatRequireSiteAccess` setting and the third argument of
+  `addCapabilityToRole()` are removed. `Template::navRail()` no longer takes a
+  site to check links against: they are checked on its Property.
 
 ### The report grid is a plain table, and jqGrid is gone
 
@@ -421,6 +430,16 @@ the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-
 Update091 deletes the stored `hello` rows, so an install that had it active no
 longer lists `hello` as an active module. The update's down() puts them back.
 
+### Three privacy and announcement settings are removed
+
+| Setting | What changes |
+|---|---|
+| Log Requests From Named Users (`log_named_users`) | A request from a user signed in to OWA is recorded like any other. |
+| `log_visitor_pii` (`OWA_LOG_VISITOR_PII`) | A beacon's `user_id`, `user_name` and `user_email` are stored as sent, and 1.x's `user_name` migrates as `user_id`. A config that still defines the constant gets a notice in `cmd=server-check` and System Health. |
+| Announce New Visitors Via E-mail (`announce_visitors`, `notice_email`) | No e-mail is sent when a session starts. The Admin Notice E-mail Address is unchanged. |
+
+Update098 deletes their stored rows at every scope. Its down() puts them back.
+
 ### The `ns` setting is removed
 
 OWA's cookie names and the URL parameters it reads from tracked pages, such as
@@ -511,7 +530,7 @@ error log. `php cli.php cmd=server-check` prints the role and what is missing.
 | 1.x / earlier 2.0 constant | 2.0 |
 |---|---|
 | `OWA_QUEUE_EVENTS` (1.x) | `OWA_QUEUE_TRACKING_EVENTS`. The 1.x name is still read while the new one is not set; System Health and `cmd=server-check` ask for the rename. |
-| `OWA_USE_STATIC_CONFIG_ONLY` (1.x) | `OWA_SERVER_ROLE`, `collector` for a server that only receives beacons. The 1.x switch is still read, and still only stops stored settings being read at boot: it does not make a server a collector. System Health and `cmd=server-check` ask for the role. |
+| `OWA_USE_STATIC_CONFIG_ONLY` (1.x) | `OWA_SERVER_ROLE`, `collector` for a server that only receives beacons. The 1.x switch applies only to collectors, which read no stored settings; on a role with a database it is ignored, and it does not make a server a collector. System Health and `cmd=server-check` ask for the role. |
 | `OWA_SCHEDULER_ENABLED` | Removed. The role decides: `full` and `worker` run the scheduler. |
 | `OWA_QUEUE_TRACKER_INGEST` | Removed: `OWA_QUEUE_TRACKING_EVENTS`. |
 | `OWA_TRACKER_INGEST_QUEUE_TYPE` | Removed. The queue is the file queue unless a queue module's own constant is set: `OWA_SQS_QUEUE_URL` makes it AWS SQS. |

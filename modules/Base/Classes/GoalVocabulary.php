@@ -507,12 +507,12 @@ class GoalVocabulary {
         foreach ( $yours as $name ) {
 
             $out[] = [ 'value' => (string) $name, 'label' => (string) $name, 'group' => 'yours',
-                'group_label' => \OWA\Core\CoreAPI::t( 'Your events' ), 'description' => '' ];
+                'group_label' => \OWA\Core\CoreAPI::t( 'Custom events' ), 'description' => '' ];
         }
 
         $out[] = [ 'value' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
-            'label' => \OWA\Core\CoreAPI::t( 'Another event of yours…' ), 'group' => 'yours',
-            'group_label' => \OWA\Core\CoreAPI::t( 'Your events' ),
+            'label' => \OWA\Core\CoreAPI::t( 'Another custom event…' ), 'group' => 'yours',
+            'group_label' => \OWA\Core\CoreAPI::t( 'Custom events' ),
             'description' => \OWA\Core\CoreAPI::t( 'An event your site sends that is not listed: type its name in the field beside this one.' ) ];
 
         return $out;

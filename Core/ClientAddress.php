@@ -61,7 +61,7 @@ class ClientAddress {
                 break;
             }
 
-            if ( Lib::isNotPrivateIp( $address ) && ! self::isTrusted( $address, $trusted ) ) {
+            if ( ! self::isProxy( $address, $trusted ) ) {
 
                 return $address;
             }
@@ -93,6 +93,33 @@ class ClientAddress {
         }
 
         return filter_var( $hop, FILTER_VALIDATE_IP ) !== false ? $hop : '';
+    }
+
+    /**
+     * Whether a hop is a proxy of this installation's: an address that is
+     * private or reserved (loopback among them), or a trusted proxy.
+     *
+     * @param  string       $hop
+     * @param  array<mixed> $trusted addresses and CIDR ranges of trusted proxies
+     * @return bool false for one that is not an address
+     */
+    public static function isProxy( $hop, array $trusted ) {
+
+        $address = self::address( (string) $hop );
+
+        return $address !== '' && ( ! Lib::isNotPrivateIp( $address ) || self::isTrusted( $address, $trusted ) );
+    }
+
+    /**
+     * Whether this request's connecting peer (REMOTE_ADDR) is a proxy of this
+     * installation's (isProxy(), with OWA_TRUSTED_PROXIES).
+     *
+     * @return bool
+     */
+    public static function peerIsProxy() {
+
+        return self::isProxy( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ),
+            (array) CoreAPI::getSetting( 'base', 'trusted_proxies' ) );
     }
 
     /**

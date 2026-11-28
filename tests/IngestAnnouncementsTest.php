@@ -18,9 +18,6 @@ final class IngestAnnouncementsTest extends IngestionTestCase
     /** @var array<string,int> announcement type => times seen */
     private $seen = [];
 
-    /** @var array<string,array> announcement type => the properties it carried */
-    private $carried = [];
-
     /** @var string */
     private $site;
 
@@ -43,7 +40,6 @@ final class IngestAnnouncementsTest extends IngestionTestCase
         $type = $event->getEventType();
 
         $this->seen[$type] = ($this->seen[$type] ?? 0) + 1;
-        $this->carried[$type] = $event->getProperties();
 
         return OWA_EHS_EVENT_HANDLED;
     }
@@ -67,9 +63,8 @@ final class IngestAnnouncementsTest extends IngestionTestCase
     /**
      * A first-ever page view announces all three, once each.
      *
-     * The counts matter as much as the presence: a session that announced twice
-     * would send two emails, which is the failure mode the request-scoped flags
-     * exist to prevent.
+     * The counts matter as much as the presence: a listener hears a session
+     * once.
      */
     public function testAFirstVisitAnnouncesSessionVisitorAndPageView(): void
     {
@@ -80,27 +75,6 @@ final class IngestAnnouncementsTest extends IngestionTestCase
         $this->assertSame(1, $this->seen['base.new_session'] ?? 0, 'one session announcement');
         $this->assertSame(1, $this->seen['base.new_visitor'] ?? 0, 'one visitor announcement');
         $this->assertSame(1, $this->seen['base.new_page_view'] ?? 0, 'one page view announcement');
-    }
-
-    /**
-     * And it carries what the announcement email actually reads.
-     *
-     * The template reads the BEACON's properties, not the stored row's, so the
-     * announcement passes the incoming event through rather than rebuilding it
-     * from columns.
-     */
-    public function testTheAnnouncementCarriesWhatTheEmailReads(): void
-    {
-        $this->listen(['base.new_session']);
-
-        $this->firePageView();
-
-        $carried = $this->carried['base.new_session'] ?? [];
-
-        foreach (['visitor_id', 'page_url', 'page_title'] as $field) {
-            $this->assertArrayHasKey($field, $carried,
-                'new_session_email reads ' . $field . ' off the event');
-        }
     }
 
     /**

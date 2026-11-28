@@ -1148,6 +1148,32 @@ class CoreAPI {
     }
 
     /**
+     * The assignable role with the fewest capabilities, the last of them
+     * when several tie, as the capabilities setting lists admin first: what
+     * the Add user form starts at.
+     *
+     * @return string '' when no role can be assigned
+     */
+    public static function leastPrivilegedRole() {
+
+        $least = '';
+        $count = PHP_INT_MAX;
+
+        foreach ( self::getAssignableRoles() as $role ) {
+
+            $n = count( (array) self::getCapabilities( $role ) );
+
+            if ( $n <= $count ) {
+
+                $least = (string) $role;
+                $count = $n;
+            }
+        }
+
+        return $least;
+    }
+
+    /**
      * Capabilities OWA no longer has. A role configuration that still names
      * one is not an error: getCapabilities() leaves the name out.
      * view_reports_ecommerce: view_reports covers the e-commerce reports.
@@ -1180,18 +1206,17 @@ class CoreAPI {
     }
 
     /**
-     * check to see if the current user has a capability
-     * always returns a bool
-     * @param  string      $capability
-     * @param  string|null $site_id
+     * Whether the current user's role holds a capability (ServiceUser::isCapable()).
+     *
+     * @param  string $capability
      * @return boolean
      */
-    public static function isCurrentUserCapable($capability, $site_id = null) {
+    public static function isCurrentUserCapable($capability) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         \OWA\Core\CoreAPI::debug("Current User Role: ".$cu->getRole());
         \OWA\Core\CoreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
-        $ret = $cu->isCapable($capability, $site_id);
+        $ret = $cu->isCapable($capability);
         \OWA\Core\CoreAPI::debug("Is current User capable: ".$ret);
         return $ret;
     }
@@ -2348,24 +2373,6 @@ class CoreAPI {
          */
         $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $event_type ) );
         
-        /*
-         * Named-user logging is a per-Profile decision, so this check runs AFTER the
-         * event is built: it needs a site_id, and before this point there is only
-         * $message, which may still be a raw array. Nothing is stored between the two
-         * points, so it is still an early bail.
-         */
-        // Check to see if named users should be logged
-        if ( \OWA\Core\CoreAPI::getSetting(
-                 'base', 'log_named_users', 'profile', $event->get('site_id') ) != true ) {
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-            $cu_user_id = $cu->getUserData('user_id');
-
-            if( ! empty( $cu_user_id ) ) {
-                \OWA\Core\CoreAPI::debug("Not logging named user.");
-                return false;
-            }
-        }
-        
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         
         // Tracking Event processing STAGE 1
@@ -2376,9 +2383,6 @@ class CoreAPI {
 
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
-
-        // Before anything is queued: log_visitor_pii off keeps the identity fields out of the intake.
-        \OWA\Module\Base\Classes\TrackingEventHelpers::gateVisitorPii( $event );
 
         // do not log if the do not log property is set on the event.
         if ($event->get('do_not_log')) {
@@ -3621,15 +3625,17 @@ class CoreAPI {
     }
 
     /**
-     * @param  string $module_name
+     * @param  string      $module_name
+     * @param  string|null $problem     set to why it failed (Module::$install_problem), '' when it did not
      * @return bool|void nothing for no module name
      */
-    public static function installModule( $module_name ) {
+    public static function installModule( $module_name, &$problem = null ) {
 
         if ($module_name) {
 
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             $status = $m->install();
+            $problem = (string) $m->install_problem;
             return $status;
         }
     }

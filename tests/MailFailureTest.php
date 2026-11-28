@@ -71,13 +71,13 @@ final class MailFailureTest extends TestCase
         $this->assertStringContainsString("[NOTICE] Mail sent with the subject 'OWA mail test'.", $log);
     }
 
-    /** PHPMailer's own default is 300 seconds, and announcements are sent during ingest. */
+    /** PHPMailer's own default is 300 seconds. */
     public function testTheSmtpServerIsGivenTenSeconds(): void
     {
         $this->assertSame(10, $this->message()->mailer->Timeout);
     }
 
-    /** A recipient the mailer refuses, on the ingest path: skipped, logged, and the send fails with no recipient. */
+    /** A recipient the mailer refuses: skipped, logged, and the send fails with no recipient. */
     public function testARecipientTheMailerRefusesIsSkippedNotThrown(): void
     {
         $m = $this->message();
@@ -92,7 +92,7 @@ final class MailFailureTest extends TestCase
         $this->assertStringContainsString("[ERROR] Mail recipient 'a@x, b@y' skipped", $log);
     }
 
-    /** notice_email may hold several addresses: each is a recipient. */
+    /** admin_notice_email may hold several addresses: each is a recipient. */
     public function testAListOfAddressesIsEachAdded(): void
     {
         $view = new \OWA\Core\View\Mail();
@@ -109,13 +109,13 @@ final class MailFailureTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
-    // notice_email
+    // admin_notice_email
     // ---------------------------------------------------------------------
 
     /** @return iterable<string, array{string, bool}> value, accepted */
     public static function noticeEmails(): iterable
     {
-        yield 'empty: announcements off'       => ['', true];
+        yield 'empty: every admin'             => ['', true];
         yield 'one address'                    => ['ops@example.com', true];
         yield 'a list'                         => ['ops@example.com, owner@example.org', true];
         yield 'dotless domains'                => ['a@x, b@y', false];
@@ -125,13 +125,13 @@ final class MailFailureTest extends TestCase
     }
 
     /** @dataProvider noticeEmails */
-    public function testNoticeEmailIsCheckedOnSave(string $value, bool $accepted): void
+    public function testAdminNoticeEmailIsCheckedOnSave(string $value, bool $accepted): void
     {
-        $problem = \OWA\Core\CoreAPI::configSingleton()->valueProblem('base', 'notice_email', $value);
+        $problem = \OWA\Core\CoreAPI::configSingleton()->valueProblem('base', 'admin_notice_email', $value);
 
         $accepted
             ? $this->assertNull($problem)
-            : $this->assertSame('Notice E-mail Address is an e-mail address, or several separated by commas.', $problem);
+            : $this->assertSame('Admin Notice E-mail Address is an e-mail address, or several separated by commas.', $problem);
     }
 
     // ---------------------------------------------------------------------
@@ -160,102 +160,5 @@ final class MailFailureTest extends TestCase
         $message = (new \OWA\Module\Base\Controller\PasswordResetRequest([]))->getMsg(3013);
 
         $this->assertStringContainsString('invitation email was not sent', $message['message']);
-    }
-
-    // ---------------------------------------------------------------------
-    // The new-visit announcement, on the ingest path
-    // ---------------------------------------------------------------------
-
-    /** The site the ingestion tests share (IngestionTestCase::ensureSiteRegistered()). */
-    private function announcingSite(string $notice_email): string
-    {
-        if (!owa_test_db_available()) {
-            $this->markTestSkipped('the announcement loads its site from the database');
-        }
-
-        $site_id = md5('owa-test-site');
-        $site    = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load($site->generateId($site_id));
-
-        if (!$site->wasPersisted()) {
-            \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager')
-                ->createNewSite('owa-test-site', 'OWA ingestion test site', '', '', $site_id);
-        }
-
-        foreach (['announce_visitors' => true, 'notice_email' => $notice_email] as $k => $v) {
-            $this->mail['@' . $k] = \OWA\Core\CoreAPI::getSetting('base', $k);
-            \OWA\Core\CoreAPI::setSetting('base', $k, $v);
-        }
-
-        return $site_id;
-    }
-
-    private function newSession(string $site_id)
-    {
-        $event = \OWA\Core\CoreAPI::getEventDispatch()->makeEvent('base.new_session');
-        $event->setProperties([
-            'site_id' => $site_id, 'visitor_id' => '1', 'user_name' => '', 'host' => '', 'city' => '',
-            'country' => '', 'page_title' => 'Announce', 'page_url' => 'https://owa-test-site/announce',
-        ]);
-
-        return $event;
-    }
-
-    private function restoreAnnouncementSettings(): void
-    {
-        foreach ($this->mail as $k => $v) {
-            if ($k[0] === '@') {
-                \OWA\Core\CoreAPI::setSetting('base', substr($k, 1), $v);
-                unset($this->mail[$k]);
-            }
-        }
-    }
-
-    /** An address the mailer refuses -- set before notice_email was checked on save -- costs a log line, not the beacon. */
-    public function testABadNoticeAddressDoesNotFailTheBeacon(): void
-    {
-        $site_id = $this->announcingSite('a@x, b@y');
-
-        try {
-            $log = $this->logDuring(function () use ($site_id, &$status) {
-                $status = (new \OWA\Module\Base\Handler\NotifyHandlers())->notify($this->newSession($site_id));
-            });
-        } finally {
-            $this->restoreAnnouncementSettings();
-        }
-
-        $this->assertSame(OWA_EHS_EVENT_HANDLED, $status);
-        $this->assertStringContainsString("[ERROR] Mail recipient 'a@x' skipped", $log);
-        $this->assertStringContainsString('[ERROR] Mail with the subject', $log);
-    }
-
-    public function testAnAnnouncementThatThrowsIsLoggedAndTheBeaconHandled(): void
-    {
-        $site_id = $this->announcingSite('ops@owatest.example.com');
-        $s       = \OWA\Core\CoreAPI::serviceSingleton();
-        $was     = $s->getMapValue('actions', 'base.notifyNewSession');
-        $s->setMapValue('actions', 'base.notifyNewSession',
-            ['class_name' => ThrowingAnnouncement::class, 'file' => __FILE__]);
-
-        try {
-            $log = $this->logDuring(function () use ($site_id, &$status) {
-                $status = (new \OWA\Module\Base\Handler\NotifyHandlers())->notify($this->newSession($site_id));
-            });
-        } finally {
-            $s->setMapValue('actions', 'base.notifyNewSession', $was);
-            $this->restoreAnnouncementSettings();
-        }
-
-        $this->assertSame(OWA_EHS_EVENT_HANDLED, $status);
-        $this->assertStringContainsString('[ERROR] New session announcement for site_id ' . $site_id . ' not sent: SMTP gave up', $log);
-    }
-}
-
-/** An announcement whose sending throws. */
-class ThrowingAnnouncement extends \OWA\Core\Controller
-{
-    public function action()
-    {
-        throw new \RuntimeException('SMTP gave up');
     }
 }

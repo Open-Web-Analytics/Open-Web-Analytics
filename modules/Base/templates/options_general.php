@@ -32,7 +32,7 @@
  */
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set ); // trusted: SettingsForm escapes what it prints
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, '', is_array( $view->posted ?? null ) ? $view->posted : null ); // trusted: SettingsForm escapes what it prints
     echo "<br>\n";
 }
 ?>

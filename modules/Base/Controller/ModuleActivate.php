@@ -2,7 +2,8 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Module Activation Controller
+ * Module Activation Controller: installs and activates a module in
+ * modules/ (CoreAPI::installModule()), as cmd=activate does.
  */
 
 class ModuleActivate extends \OWA\Core\AdminController {
@@ -18,18 +19,34 @@ class ModuleActivate extends \OWA\Core\AdminController {
 
         $module = $this->getParam('module');
 
-        if ( $module ) {
-            $ret = \OWA\Core\CoreAPI::installModule($module);
+        if ( ! is_string( $module ) || $module === '' ) {
+
+            return OptionsModules::refuse( $this->params, 3033, [] );
         }
 
-        $data = [];
+        if ( ! OptionsModules::isPresent( $module ) ) {
 
-        $data['do'] = 'base.optionsModules';
-        $data['view_method'] = 'redirect';
-        $data['status_code'] = 2501;
+            return OptionsModules::refuse( $this->params, 3031, [ $module ] );
+        }
 
-        return $data;
+        if ( ! $this->install( $module, $problem ) ) {
 
+            return OptionsModules::refuse( $this->params, 3030,
+                [ $module, $problem !== '' ? $problem : \OWA\Core\CoreAPI::t( 'The error log says why.' ) ] );
+        }
+
+        $this->setRedirectAction( 'base.optionsModules' );
+        $this->setStatusCode( 2501 );
+    }
+
+    /**
+     * @param  string      $module
+     * @param  string|null $problem set to why it failed, '' when it did not
+     * @return bool|void CoreAPI::installModule()'s answer
+     */
+    protected function install( $module, &$problem ) {
+
+        return \OWA\Core\CoreAPI::installModule( $module, $problem );
     }
 
 }

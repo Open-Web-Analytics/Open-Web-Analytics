@@ -14,11 +14,26 @@ namespace OWA\Module\Base\Controller;
  */
 class RetentionPreviewRest extends \OWA\Core\AdminController {
 
+    // edit_settings, and access to the Property its property_id names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );
 
         $this->setRequiredCapability( 'edit_settings' );
+    }
+
+    /**
+     * The Property the request's property_id names.
+     *
+     * @return string|null
+     */
+    protected function requestObjectPropertyId() {
+
+        $propertyId = (string) $this->getParam( 'property_id' );
+
+        return $propertyId === '' ? null : $propertyId;
     }
 
     public function action() {

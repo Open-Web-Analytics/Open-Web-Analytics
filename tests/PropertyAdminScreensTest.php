@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/AsAdministrator.php' );
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -15,6 +17,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class PropertyAdminScreensTest extends TestCase
 {
+    use AsAdministrator;
+
     private function data( $controller ): array
     {
         $property = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
@@ -532,7 +536,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $profiles = (array) ( $method->invoke( $controller, '', 'p' )['Profiles'] ?? [] );
+        $profiles = (array) ( self::asAdministrator( fn () => $method->invoke( $controller, '', 'p' ) )['Profiles'] ?? [] );
 
         $this->assertSame( 'base.sitesProfile', end( $profiles )['do'] ?? null,
             'No way from a Property to a new Profile.' );
@@ -649,7 +653,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* With no context at all, only the Organization can be offered: there
            is no Property or Profile to name. */
-        $bare = (array) $method->invoke( $controller, '', '' );
+        $bare = (array) self::asAdministrator( fn () => $method->invoke( $controller, '', '' ) );
 
         /* Installation is always present -- it is install-wide and needs no
            context. What must NOT appear without a site is Property or Profile. */
@@ -667,7 +671,7 @@ final class PropertyAdminScreensTest extends TestCase
             'User accounts live in the Organization, so Users belongs under it.' );
 
         /* Given a Property, its group appears -- still without a Profile. */
-        $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
+        $withProperty = (array) self::asAdministrator( fn () => $method->invoke( $controller, '', 'some-property-id' ) );
 
         $this->assertSame(
             [ 'My Preferences', 'Instance', 'Organization', 'Property', 'Profiles' ],
@@ -681,7 +685,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        foreach ( (array) $method->invoke( $controller, '', 'p' ) as $group => $items ) {
+        foreach ( (array) self::asAdministrator( fn () => $method->invoke( $controller, '', 'p' ) ) as $group => $items ) {
 
             foreach ( $items as $item ) {
 
@@ -725,7 +729,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $nav = (array) $method->invoke( $controller, 'a-site', 'a-property' );
+        $nav = (array) self::asAdministrator( fn () => $method->invoke( $controller, 'a-site', 'a-property' ) );
 
         // The tabs of the Profile's page, in this order.
         $this->assertSame(
@@ -1286,7 +1290,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $nav = (array) $method->invoke( $controller, '', '' );
+        $nav = (array) self::asAdministrator( fn () => $method->invoke( $controller, '', '' ) );
 
         /*
          * Install-wide options head the SCOPE CHAIN -- install, Organization,

@@ -11,11 +11,24 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitionDelete extends \OWA\Core\AdminController {
 
+    // edit_settings, and access to the Property the request names, or the goal's.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_settings' );
         $this->setNonceRequired();
+    }
+
+    /**
+     * The Property of the goal event definition the request names.
+     *
+     * @return string|null
+     */
+    protected function requestObjectPropertyId() {
+
+        return \OWA\Module\Base\Entity\GoalEventDefinition::propertyIdOf( (string) $this->getParam( 'goalEventDefinitionId' ) );
     }
 
     public function validate() {

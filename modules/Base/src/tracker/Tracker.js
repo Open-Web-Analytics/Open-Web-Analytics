@@ -386,10 +386,9 @@ class OWATracker  {
 	        /**
 	         * Whether a browser reporting Do Not Track or Global Privacy Control
 	         * is left untracked, with OWA's own cookies erased; false tracks it.
-	         * Read from the queue before any
-	         * command runs, so it has to be queued in the tag; setting it on a
+	         * Queue it in the tag, before any other command. Setting it on a
 	         * tracker that is already running changes nothing. Browsers under
-	         * automation are refused either way.
+	         * automation are not tracked either way.
 	         *
 	         *   owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
 	         *
@@ -439,6 +438,13 @@ class OWATracker  {
 	    this.endpoint = OWA.config.baseUrl;
 	    // Active status of tracker
 	    this.active = true;
+	    /*
+	     * Whether this page sends nothing at all, whatever restart() says: a
+	     * browser that is not tracked (Util.isBrowserTrackable()) opened on an
+	     * overlay link. tracker-dom.js runs the queue for the overlay and sets
+	     * OWA's sendsNothing setting first.
+	     */
+	    this.sendsNothing = OWA.getSetting( 'sendsNothing' ) === true;
 
 	
 	    if ( options ) {
@@ -1132,9 +1138,7 @@ class OWATracker  {
      *
      * Kept in the visitor cookie, so it survives the page and the session.
      * It is the one value that identifies the same person on another device
-     * or after their cookies are cleared. With the install's log_visitor_pii
-     * setting off, the server removes it as a beacon arrives, as it does the
-     * display name and email address.
+     * or after their cookies are cleared.
      *
      * Forward-only: events sent before the person identified themselves stay
      * anonymous, and are not relabelled afterwards.
@@ -1546,7 +1550,7 @@ class OWATracker  {
      */
     logEvent(properties, block, callback) {
 
-        if (this.active) {
+        if ( this.active && ! this.sendsNothing ) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
 
@@ -4788,7 +4792,7 @@ class OWATracker  {
 
         var block_flag = false;
 
-        if ( this.active ) {
+        if ( this.active && ! this.sendsNothing ) {
             if ( block ) {
 
                 block_flag = true;

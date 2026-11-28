@@ -20,7 +20,7 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
             'description' => 'Sets a user\'s password.',
             'arguments'   => [
                 'user=<user id>'      => 'Required. The user name of the account.',
-                'password=<password>' => 'Required. The new password, at least 6 characters.',
+                'password=<password>' => 'Required. The new password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters and at most ' . \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES . ' bytes.',
             ],
         ];
     }
@@ -57,6 +57,11 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
         // the operator/length config above; typed as 'required' the length rule
         // silently degraded to a bare non-empty check and short passwords passed.
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', $passwordLengthConf);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(false),
+        ]);
     }
 
     /**

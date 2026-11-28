@@ -16,10 +16,17 @@ class UsersAdd extends \OWA\Core\AdminController {
     }
 
     public function validate() {
-        
-        $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['stopOnError'  => true]);
-        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'  => true]);
-        $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'  => true]);
+
+        // As action() stores them.
+        $email   = trim( (string) $this->getParam( 'email_address' ) );
+        $user_id = trim( (string) $this->getParam( 'user_id' ) );
+
+        $this->addValidation('email_address', $email, 'required', ['stopOnError'  => true]);
+        // As base.usersEdit checks it.
+        $this->addValidation('email_address', $email, 'emailAddress',
+            ['stopOnError' => true, 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' )]);
+        $this->addValidation('user_id', $user_id, 'required', ['stopOnError'  => true]);
+        $this->addValidation('user_id', $user_id, 'userName', ['stopOnError'  => true]);
         $this->addValidation('role', $this->getParam('role'), 'required', ['stopOnError'    => true]);
         
         $roles = \OWA\Core\CoreAPI::getAssignableRoles();
@@ -38,7 +45,7 @@ class UsersAdd extends \OWA\Core\AdminController {
             'errorMsg'  => $this->getMsg(3009)
         ];
 
-        $this->addValidation('email_address', trim((string) $this->getParam('email_address')), 'entityDoesNotExist', $userEmailAddressEntityConf);
+        $this->addValidation('email_address', $email, 'entityDoesNotExist', $userEmailAddressEntityConf);
 
         // Check user name.
         $userEntityConf = [
@@ -47,7 +54,7 @@ class UsersAdd extends \OWA\Core\AdminController {
             'errorMsg'  => $this->getMsg(3001)
         ];
 
-        $this->addValidation('user_id', $this->getParam('user_id'), 'entityDoesNotExist', $userEntityConf);
+        $this->addValidation('user_id', $user_id, 'entityDoesNotExist', $userEntityConf);
     }
 
     public function action() {

@@ -5,7 +5,7 @@ use OWA\Core\PrivateFiles;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
-/** The install's hashed file names, and the index.php every directory OWA makes is given. */
+/** The install's hashed file names, those under an earlier hash, and the index.php every directory OWA makes is given. */
 final class PrivateFilesTest extends TestCase
 {
     private string $dir = '';
@@ -27,6 +27,33 @@ final class PrivateFilesTest extends TestCase
         $hash = \OWA\Core\CoreAPI::generateInstanceSpecificHash();
 
         $this->assertSame('events_' . $hash . '.txt', PrivateFiles::name('events', '.txt'));
+    }
+
+    public function testHashOfReadsAnyInstallsHash(): void
+    {
+        $other = str_repeat('a', 32);
+
+        $this->assertSame($other, PrivateFiles::hashOf('errors_' . $other . '.txt', 'errors', '.txt'));
+        $this->assertSame(\OWA\Core\CoreAPI::generateInstanceSpecificHash(), PrivateFiles::hashOf(PrivateFiles::name('errors', '.txt'), 'errors', '.txt'));
+        $this->assertNull(PrivateFiles::hashOf('errors_' . $other . '.txt', 'events', '.txt'));
+        $this->assertNull(PrivateFiles::hashOf('errors_short.txt', 'errors', '.txt'));
+        $this->assertNull(PrivateFiles::hashOf('errors_' . $other . '.txt.bak', 'errors', '.txt'));
+    }
+
+    public function testSystemHealthNamesAnErrorLogUnderAnotherHash(): void
+    {
+        file_put_contents($this->dir . PrivateFiles::name('errors', '.txt'), "now\n");
+        $this->assertNull(\OWA\Module\Base\Classes\SystemHealth::oldErrorLogs($this->dir), 'this install\'s own log is no finding');
+
+        $old = $this->dir . 'errors_' . str_repeat('b', 32) . '.txt';
+        file_put_contents($old, "before\n");
+        mkdir($this->dir . 'errors_' . str_repeat('c', 32) . '.txt');
+
+        $finding = \OWA\Module\Base\Classes\SystemHealth::oldErrorLogs($this->dir);
+        $this->assertSame('yellow', $finding['level']);
+        $this->assertSame('Earlier error logs', $finding['label']);
+        $this->assertSame('Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in ' . $old . '. Delete each once read.',
+            $finding['detail'], 'the file, not the directory of the same shape');
     }
 
     public function testGuardWritesTheShippedIndexOnceAndNeverThroughALink(): void

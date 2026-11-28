@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/AsAdministrator.php' );
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -13,6 +15,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class PropertyScopedReportingTest extends TestCase
 {
+    use AsAdministrator;
+
     /** High and fixed, like the funnel fixtures'. */
     const PROPERTY = 92000080;
 
@@ -111,14 +115,14 @@ final class PropertyScopedReportingTest extends TestCase
         $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d, %d)', self::PROPERTY, self::OTHER_PROPERTY, self::EMPTY_PROPERTY));
     }
 
-    /** A viewer granted the given Profiles, as the database holds them. @return array [entity, row id] */
-    private function viewer(array $sites): array
+    /** A user of the role granted the given Profiles, as the database holds them. @return array [entity, row id] */
+    private function viewer(array $sites, string $role = 'viewer'): array
     {
         $user_id = 'psr-' . substr(md5(uniqid('', true)), 0, 8);
 
         $um = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
         $this->assertNotFalse($um->createNewUser([
-            'user_id' => $user_id, 'role' => 'viewer', 'password' => 'psr-' . uniqid('', true),
+            'user_id' => $user_id, 'role' => $role, 'password' => 'psr-' . uniqid('', true),
             'email_address' => $user_id . '@example.test', 'real_name' => 'PSR probe',
         ]), 'could not create the probe user');
 
@@ -186,8 +190,10 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertSame([self::ONE, self::TWO], $sites,
             'the sibling is missing, or an archived Profile or another Property came with it');
 
-        $this->assertTrue($su->isCapable('view_reports', self::TWO), 'a sibling of a granted Profile');
-        $this->assertFalse($su->isCapable('view_reports', self::OTHER), 'a Profile of another Property');
+        $this->assertTrue($su->isSiteAccessible(self::TWO), 'a sibling of a granted Profile');
+        $this->assertFalse($su->isSiteAccessible(self::OTHER), 'a Profile of another Property');
+        $this->assertTrue($su->canAccessProperty((string) self::PROPERTY));
+        $this->assertFalse($su->canAccessProperty((string) self::OTHER_PROPERTY));
     }
 
     /** The granted Profiles are one query however many there are, and a missing one keeps its place. */
@@ -359,6 +365,125 @@ final class PropertyScopedReportingTest extends TestCase
         $viewer = $this->serviceUser($user);
         $own = new \OWA\Module\Base\Controller\PropertyEdit(['propertyId' => (string) self::PROPERTY]);
         $this->assertFalse((new ReflectionMethod($own, 'isCurrentUserCapable'))->invoke($own, $viewer));
+    }
+
+    /** Whether a controller of the class, built from the params, lets the user in. */
+    private function admits(string $class, array $params, \OWA\Module\Base\Classes\ServiceUser $su): bool
+    {
+        $controller = new $class($params);
+
+        return (bool) (new ReflectionMethod($controller, 'isCurrentUserCapable'))->invoke($controller, $su);
+    }
+
+    /**
+     * A request's siteId names its own Property. A user who may edit one
+     * Property's Profiles cannot open another Property's Profile by sending
+     * their own propertyId beside its siteId.
+     */
+    public function testAPropertyIdBesideAnotherPropertysSiteIdIsRefused(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+            ['propertyId' => (string) self::PROPERTY, 'siteId' => self::OTHER], $su), 'another Property\'s Profile');
+        $this->assertTrue($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+            ['propertyId' => (string) self::PROPERTY, 'siteId' => self::TWO], $su), 'a Profile of the Property named');
+
+        // Refused to an administrator too: the two ids name different Properties.
+        [$admin] = $this->viewer([], 'admin');
+        $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+            ['propertyId' => (string) self::PROPERTY, 'siteId' => self::OTHER], $this->serviceUser($admin)));
+    }
+
+    /** A siteId alone is checked on its Profile's Property, a propertyId alone on itself. */
+    public function testASiteIdAloneIsOfItsPropertyAndAPropertyIdAloneIsUnchanged(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        $property = function (array $params): string {
+            $controller = new \OWA\Module\Base\Controller\SitesProfile($params);
+
+            return (string) (new ReflectionMethod($controller, 'requestPropertyId'))->invoke($controller);
+        };
+
+        $this->assertSame((string) self::OTHER_PROPERTY, $property(['siteId' => self::OTHER]));
+        $this->assertSame((string) self::PROPERTY, $property(['site_id' => self::TWO]));
+        $this->assertSame((string) self::OTHER_PROPERTY, $property(['propertyId' => (string) self::OTHER_PROPERTY]));
+        $this->assertSame('', $property([]));
+
+        $this->assertTrue($this->admits(\OWA\Module\Base\Controller\SitesProfile::class, ['siteId' => self::TWO], $su));
+        $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class, ['siteId' => self::OTHER], $su));
+        $this->assertTrue($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+            ['propertyId' => (string) self::PROPERTY], $su));
+        $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+            ['propertyId' => (string) self::OTHER_PROPERTY], $su));
+    }
+
+    /** A siteId that is no Profile is refused, alone or beside a propertyId, to anyone. */
+    public function testASiteIdThatIsNoProfileIsRefused(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        [$admin] = $this->viewer([], 'admin');
+
+        foreach ([$su, $this->serviceUser($admin)] as $who) {
+            $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+                ['siteId' => 'psr-missing'], $who));
+            $this->assertFalse($this->admits(\OWA\Module\Base\Controller\SitesProfile::class,
+                ['propertyId' => (string) self::PROPERTY, 'siteId' => 'psr-missing'], $who));
+        }
+    }
+
+    /**
+     * Every controller with Property-scoped access refuses a siteId of one
+     * Property beside the propertyId of another, and admits the matching
+     * pair. Checked as an administrator, who holds every capability, so a
+     * refusal is the mismatch.
+     */
+    public function testEveryPropertyScopedControllerRefusesAMismatchedPair(): void
+    {
+        [$admin] = $this->viewer([], 'admin');
+        $su = $this->serviceUser($admin);
+
+        $root    = dirname(__DIR__);
+        $classes = [];
+
+        foreach (array_merge(glob($root . '/modules/*/Controller/*.php'), glob($root . '/Core/*.php')) as $file) {
+            $class = preg_match('#/modules/([^/]+)/Controller/#', $file, $m)
+                ? 'OWA\\Module\\' . $m[1] . '\\Controller\\' . basename($file, '.php')
+                : 'OWA\\Core\\' . basename($file, '.php');
+
+            if (!class_exists($class) || (new ReflectionClass($class))->isAbstract()) {
+                continue;
+            }
+
+            for ($r = new ReflectionClass($class); $r; $r = $r->getParentClass()) {
+                if (in_array(\OWA\Core\PropertyScopedAccess::class, $r->getTraitNames(), true)) {
+                    $classes[] = $class;
+                    break;
+                }
+            }
+        }
+
+        // The discovery found the trait's users, not nothing.
+        foreach ([\OWA\Module\Base\Controller\SitesProfile::class, \OWA\Module\Base\Controller\SitesAdd::class,
+                  \OWA\Module\Base\Controller\PropertyAccess::class, \OWA\Module\Base\Controller\ReportsRest::class,
+                  \OWA\Module\Base\Controller\CustomReportMarkFavorite::class, \OWA\Core\ConfiguredReport::class] as $known) {
+            $this->assertContains($known, $classes);
+        }
+
+        foreach ($classes as $class) {
+            $this->assertFalse($this->admits($class, ['propertyId' => (string) self::PROPERTY, 'siteId' => self::OTHER], $su),
+                "$class admitted a propertyId beside another Property's siteId");
+            $this->assertTrue($this->admits($class, ['propertyId' => (string) self::PROPERTY, 'siteId' => self::ONE], $su),
+                "$class refused a propertyId beside a siteId of that Property");
+        }
     }
 
     /**
@@ -598,7 +723,7 @@ final class PropertyScopedReportingTest extends TestCase
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
 
-        $property = (array) $nav->invoke($controller, '', (string) self::PROPERTY);
+        $property = (array) self::asAdministrator(fn () => $nav->invoke($controller, '', (string) self::PROPERTY));
 
         $this->assertArrayNotHasKey('Observation Profile', $property,
             'a Property screen offers one Profile\'s screens');
@@ -607,7 +732,7 @@ final class PropertyScopedReportingTest extends TestCase
         $access = array_column($property['Property'], 'params', 'do')['base.propertyAccess'] ?? null;
         $this->assertSame(['propertyId' => (string) self::PROPERTY], $access);
 
-        $this->assertArrayHasKey('Observation Profile', (array) $nav->invoke($controller, self::ONE, ''));
+        $this->assertArrayHasKey('Observation Profile', (array) self::asAdministrator(fn () => $nav->invoke($controller, self::ONE, '')));
     }
 
     // ------------------------------------------- Property-addressed screens
@@ -629,8 +754,8 @@ final class PropertyScopedReportingTest extends TestCase
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
 
-        // No Profile in context, and a Property whose Profiles this user may not see.
-        $params = array_column((array) $nav->invoke($controller, '', '7000000000000099')['Property'], 'params', 'do');
+        // No Profile in context, and a Property with no Profile.
+        $params = array_column((array) self::asAdministrator(fn () => $nav->invoke($controller, '', '7000000000000099'))['Property'], 'params', 'do');
 
         $this->assertSame(['propertyId' => '7000000000000099'], $params['base.goalEventDefinitions'] ?? null);
         $this->assertSame(['propertyId' => '7000000000000099'], $params['base.customDimensions'] ?? null);

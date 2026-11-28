@@ -8,6 +8,9 @@ namespace OWA\Core\Controller;
 
 class Install extends \OWA\Core\Controller {
 
+    /** The wizard's password fields, never drawn back after a failed nonce. */
+    const PASSWORD_PARAMS = [ 'password', 'db_password' ];
+
     /** @var \OWA\Module\Base\Classes\InstallManager */
     public $im;
 
@@ -54,6 +57,20 @@ class Install extends \OWA\Core\Controller {
         }
 
         return parent::doAction();
+    }
+
+    /**
+     * A post whose nonce failed: the same step drawn again (errorAction()),
+     * with the values submitted except the passwords, and message 2005.
+     *
+     * @return mixed errorAction()'s answer
+     */
+    public function nonceFailedAction() {
+
+        $this->params = array_diff_key( $this->params, array_flip( self::PASSWORD_PARAMS ) );
+        $this->set( 'error_msg', $this->getMsg( 2005 ) );
+
+        return $this->errorAction();
     }
 
     /**

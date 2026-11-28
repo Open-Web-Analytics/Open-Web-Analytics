@@ -632,6 +632,27 @@ class Util {
     }
 
     /**
+     * Whether the page was opened on an overlay link: its fragment has an
+     * ns + 'overlay' pair (#owa_overlay.<params>), as
+     * OWATracker.getAnchorParam() reads it. Whether the link's api_url is this
+     * OWA server's is the tracker's to decide (checkForOverlaySession()).
+     *
+     * @return {boolean}
+     */
+    static opensOverlay () {
+
+        var name = ( OWA.getSetting( 'ns' ) || 'owa_' ) + 'overlay';
+        var hash = ( typeof location !== 'undefined' && location.hash ) ? String( location.hash ).substring( 1 ) : '';
+
+        return hash.split( ',' ).some( function ( pair ) {
+
+            var pieces = pair.split( '.' );
+
+            return pieces[0] === name && !! pieces[1];
+        } );
+    }
+
+    /**
      * Whether the browser asks not to be tracked: Do Not Track ("1", or the
      * legacy msDoNotTrack) or Global Privacy Control (true).
      */

@@ -103,4 +103,12 @@ final class CanonicalUrlQueryFiltersTest extends TestCase
         $this->assertSame('http://shop.example.com/p?q=path%3D1&id=2',
             $this->canonical('http://shop.example.com/p?q=path%3D1&id=2', 'path'));
     }
+
+    /** The feed subscriber parameter (owa_sid) went with feed tracking: kept, like any parameter not listed. */
+    public function testTheFeedSubscriberParameterIsNoLongerDropped(): void
+    {
+        $this->assertNotContains(\OWA\Core\CoreAPI::getSetting('base', 'ns') . 'sid', Helpers::droppedQueryParams('no-such-site-for-this-test'));
+        $this->assertSame([], \OWA\Core\CoreAPI::configSingleton()->registeredField('base', 'feed_subscription_param'));
+        $this->assertArrayHasKey('OWA_FEED_SUBSCRIPTION_PARAM', \OWA\Core\Requirements::RETIRED_CONSTANTS);
+    }
 }

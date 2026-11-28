@@ -45,7 +45,7 @@ class Mail extends \OWA\Core\View {
 
     /**
      * Add the recipients: one address, or a comma-separated list of them, as
-     * notice_email may hold. An address the mailer refuses is logged and
+     * admin_notice_email may hold. An address the mailer refuses is logged and
      * skipped (Mailer::addAddress()).
      *
      * @param  string $email one address or a comma-separated list

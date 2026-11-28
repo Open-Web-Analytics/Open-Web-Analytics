@@ -406,12 +406,9 @@ class Sanitize {
 
         $illegals = \OWA\Core\CoreAPI::getSetting('base', 'user_id_illegal_chars');
 
-         foreach ( $illegals as $k => $char ) {
+         if ( is_scalar( $user_id ) ) {
 
-             if ( strpos( $user_id, $char ) ) {
-
-                 $user_id = str_replace( $char, "", $user_id);
-             }
+             $user_id = str_replace( array_map( 'strval', (array) $illegals ), '', (string) $user_id );
          }
 
          return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, [] );

@@ -24,11 +24,18 @@ class InstallBase extends \OWA\Core\Controller\Install {
         $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError'  => true]);
         $this->addValidation('timezone', $this->getParam('timezone'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress',
+            ['errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' )]);
         $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
             'operator' => '>=',
             'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
             'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
+        ]);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
         ]);
 
     }

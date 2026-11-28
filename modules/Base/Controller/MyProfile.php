@@ -94,7 +94,8 @@ class MyProfile extends \OWA\Core\AdminController {
 
         foreach ( MyProfileSave::carriedErrors( $carried ) as $code ) {
 
-            $msg = $this->getMsg( $code, [ 'message' => [ MyProfileSave::MIN_PASSWORD_LENGTH ] ] );
+            $limit = $code === 3239 ? \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES : MyProfileSave::MIN_PASSWORD_LENGTH;
+            $msg   = $this->getMsg( $code, [ 'message' => [ $limit ] ] );
 
             $errors[] = (string) ( $msg['message'] ?? '' );
         }

@@ -14,6 +14,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionEdit extends \OWA\Core\AdminController {
 
+    // edit_settings, and access to the Property the request names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         parent::__construct( $params );

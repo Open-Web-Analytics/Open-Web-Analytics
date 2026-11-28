@@ -855,12 +855,10 @@ class Template extends TemplateEngine {
      * @param array<array<string, mixed>> $nav the Reports navigation group: nav link structs
      * @param string|null $propertyId the Property every report link is of
      * @param array<string, mixed> $params the request's params, to mark what is current
-     * @param string $accessSiteId a Profile of the Property, which each link's
-     *                           capability is checked against
      * @param bool   $inSettings whether this screen is a settings screen
      * @return list<RailSection>
      */
-    public function navRail( $nav, $propertyId, $params = [], $accessSiteId = '', $inSettings = false ) {
+    public function navRail( $nav, $propertyId, $params = [], $inSettings = false ) {
 
         $user  = $this->getCurrentUser();
         $state = $propertyId !== '' && $propertyId !== null ? [ 'propertyId' => $propertyId ] : [];
@@ -868,7 +866,7 @@ class Template extends TemplateEngine {
 
         foreach ( (array) $nav as $key => $section ) {
 
-            if ( ! $user->isCapable( $section['priviledge'] ?? '', $accessSiteId ) ) {
+            if ( ! self::mayOpenRailLink( $user, $section['priviledge'] ?? '', $propertyId ) ) {
 
                 continue;
             }
@@ -887,7 +885,7 @@ class Template extends TemplateEngine {
                 foreach ( (array) ( $section['subgroup'] ?? [] ) as $link ) {
 
                     if ( $this->navLinkParams( $link ) == $own
-                         || ! $user->isCapable( $link['priviledge'] ?? '', $accessSiteId ) ) {
+                         || ! self::mayOpenRailLink( $user, $link['priviledge'] ?? '', $propertyId ) ) {
 
                         continue;
                     }
@@ -944,6 +942,27 @@ class Template extends TemplateEngine {
         }
 
         return $rail;
+    }
+
+    /**
+     * Whether the user may open a rail link, a report of the Property: its
+     * capability on that Property (ServiceUser::isCapableOnProperty()), as
+     * PropertyScopedAccess asks it. With no Property, the capability alone. A
+     * link that names no capability is shown.
+     *
+     * @param \OWA\Module\Base\Classes\ServiceUser $user
+     * @param string      $capability
+     * @param string|null $propertyId
+     * @return bool
+     */
+    private static function mayOpenRailLink( $user, $capability, $propertyId ) {
+
+        if ( (string) $propertyId === '' ) {
+
+            return (bool) $user->isCapable( $capability );
+        }
+
+        return (bool) $user->isCapableOnProperty( $capability, (string) $propertyId );
     }
 
     /**
@@ -1320,14 +1339,6 @@ class Template extends TemplateEngine {
         }
 
         return $safe;
-    }
-
-    /**
-     * @param  int|float $value minor units of the install's currency
-     * @return string
-     */
-    public function formatCurrency($value) {
-        return \OWA\Core\Lib::formatCurrency( $value, \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ), \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
 
     /**

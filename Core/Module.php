@@ -120,6 +120,13 @@ abstract class Module {
     public $entities = [];
 
     /**
+     * Why the last install() returned false, translated; '' when it did not.
+     *
+     * @var string
+     */
+    public $install_problem = '';
+
+    /**
      * Required Schema Version
      *
      * @var int
@@ -917,6 +924,7 @@ abstract class Module {
         \OWA\Core\CoreAPI::notice('Starting installation of module: '.$this->name);
 
         $errors = '';
+        $this->install_problem = '';
 
         /*
          * Whether every table this module owns had to be created.
@@ -948,6 +956,8 @@ abstract class Module {
                 if ($status != true) {
                     \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
                     $errors = true;
+                    $this->install_problem = sprintf( \OWA\Core\CoreAPI::t( 'Its table %s could not be created. The error log says why.' ),
+                        $entity->getTableName() );
                 }
 
             }
@@ -1009,9 +1019,8 @@ abstract class Module {
                 } else {
 
                     \OWA\Core\CoreAPI::notice( sprintf(
-                        'Module %s has tables but no recorded schema version, so its version '
-                      . 'was left unset rather than assumed current. Run "cmd=core-update-schema" to apply '
-                      . 'any pending updates and record it.', $this->name ) );
+                        'Module %s has tables but no recorded schema version. Its version is left unset. '
+                      . 'Run "cmd=core-update-schema" to apply any pending updates and record it.', $this->name ) );
                 }
             }
             //activate the module and save the configuration
@@ -1401,7 +1410,7 @@ abstract class Module {
         if ( $map['entity'] !== '' && $map['entity'] !== self::FACT_ENTITY ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'The metric "%s" is registered on %s and is ignored: metrics are computed from %s.',
+                'The metric "%s" is registered on %s and is ignored. Register metrics on %s.',
                 $map['name'], $map['entity'], self::FACT_ENTITY ) );
 
             return;

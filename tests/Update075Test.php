@@ -106,7 +106,7 @@ final class Update075Test extends TestCase
         // The two Bookshop ones are named in id order, which is not creation order.
         sort($names);
         $this->assertSame(['Bookshop_com_Buy', 'Bookshop_com_Buy_2', 'click_2'], $names,
-            'a second goal event of the Property cannot share the first one\'s rows, and click is an event OWA collects');
+            'a second goal event of the Property cannot share the first one\'s rows, and click is a built-in event');
 
         $before = (array) \OWA\Core\CoreAPI::getSetting('base', 'goal_event_names_before_075');
         $this->assertSame(['was' => 'click', 'now' => 'click_2'], $before[$click] ?? null);
