@@ -33,8 +33,25 @@ final class PropertyCliTest extends CliControllerTestCase
     private ?string $outWas = null;
     private string $out = '';
 
+    /** Whether the database answers. The usage checks run without it. */
+    private bool $db = false;
+
     protected function setUp(): void
     {
+        try {
+            $row      = \OWA\Core\CoreAPI::dbSingleton()->get_row('SELECT 1 AS ok');
+            $this->db = is_array($row) && ($row['ok'] ?? null) == 1;
+        } catch (\Throwable $e) {
+            $this->db = false;
+        }
+
+        if (!$this->db) {
+            Cli::$exit_code = 0;
+            $this->authenticateAs('admin');
+
+            return;
+        }
+
         parent::setUp();
 
         // Bundles go to a directory of the test's own, not the install's public/tracker/.
@@ -64,6 +81,13 @@ final class PropertyCliTest extends CliControllerTestCase
         }
 
         parent::tearDown();
+    }
+
+    private function requireDb(): void
+    {
+        if (!$this->db) {
+            $this->markTestSkipped('OWA database not reachable.');
+        }
     }
 
     private function removeFixtures(): void
@@ -121,28 +145,67 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testItRunsWhileUpdatesArePending(): void
     {
-        $this->assertFalse((new PropertyCli([]))->needsCurrentSchema(), 'Update103 refuses duplicates this archives');
+        $this->assertFalse((new PropertyCli([]))->needsCurrentSchema(), 'Update103 refuses the duplicates this archives');
     }
 
-    public function testIdOrDomainIsGivenOnce(): void
+    /** Each argument as cli.php reads and documents it. */
+    public function testTheArgumentsItTakes(): void
     {
-        [$cli, , $log] = $this->run_(['status' => true]);
+        $arguments = PropertyCli::usage()['arguments'];
+
+        $this->assertSame(['id', 'domain', '--status', '--archive', '--restore'], array_keys($arguments));
+        $this->assertSame('property', $arguments['id']['type']);
+        $this->assertSame('string', $arguments['domain']['type']);
+
+        foreach (['--status', '--archive', '--restore'] as $flag) {
+            $this->assertSame('flag', $arguments[$flag]['type'], $flag);
+        }
+
+        $commands = require dirname(__DIR__) . '/modules/Base/config/cli_commands.php';
+        $actions  = require dirname(__DIR__) . '/modules/Base/config/actions.php';
+
+        $this->assertSame('base.propertyCli', $commands['property'] ?? null);
+        $this->assertSame(PropertyCli::class, $actions['base.propertyCli'] ?? null);
+    }
+
+    public function testNeitherIdNorDomainIsAUsageError(): void
+    {
+        [, , $log] = $this->run_(['status' => true]);
 
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
         $this->assertStringContainsString('cmd=property: Give id=<property id> or domain=<domain>. Nothing was done.', $log);
+    }
+
+    public function testIdAndDomainTogetherAreAUsageError(): void
+    {
+        $this->requireDb();
 
         [, , $log] = $this->run_(['id' => (string) self::PROPERTY, 'domain' => $this->host, 'status' => true]);
 
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
         $this->assertStringContainsString('Give id= or domain=, not both.', $log);
+        $this->assertSame(0, $this->archivedDate('base.property', self::PROPERTY), 'nothing was done');
     }
 
-    public function testOneActionIsGiven(): void
+    public function testNoActionIsAUsageError(): void
     {
-        [, , $log] = $this->run_(['id' => (string) self::PROPERTY]);
+        [, , $log] = $this->run_(['domain' => 'propcli.example.test']);
+
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+        $this->assertStringContainsString('cmd=property: Give one of --status, --archive or --restore. Nothing was done.', $log);
+    }
+
+    public function testTwoActionsAreAUsageError(): void
+    {
+        [, , $log] = $this->run_(['domain' => 'propcli.example.test', 'archive' => true, 'restore' => true]);
 
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
         $this->assertStringContainsString('Give one of --status, --archive or --restore.', $log);
+    }
+
+    public function testTwoActionsArchiveNothing(): void
+    {
+        $this->requireDb();
 
         $this->run_(['id' => (string) self::PROPERTY, 'archive' => true, 'restore' => true]);
 
@@ -152,6 +215,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testAnIdOfNoPropertyIsAUsageError(): void
     {
+        $this->requireDb();
+
         [$cli] = $this->run_(['id' => '7710300000000099', 'status' => true]);
 
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
@@ -160,6 +225,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testADomainOfNoPropertyIsAUsageError(): void
     {
+        $this->requireDb();
+
         [, , $log] = $this->run_(['domain' => 'nothing-' . $this->host, 'status' => true]);
 
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
@@ -168,6 +235,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testStatusPrintsThePropertyItsProfilesAndItsCube(): void
     {
+        $this->requireDb();
+
         $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
         $db   = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -190,6 +259,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testStatusOfAPropertyWithNoCube(): void
     {
+        $this->requireDb();
+
         [, $out] = $this->run_(['id' => (string) self::PROPERTY, 'status' => true]);
 
         $this->assertStringContainsString('Cube: none yet', $out);
@@ -197,6 +268,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testAnAppPropertyIsReachedById(): void
     {
+        $this->requireDb();
+
         $this->property(self::APP, '', 'app');
 
         [, $out] = $this->run_(['id' => (string) self::APP, 'status' => true]);
@@ -208,6 +281,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testTheDomainIsComparedAsAHost(): void
     {
+        $this->requireDb();
+
         [, $out] = $this->run_(['domain' => 'HTTPS://WWW.' . strtoupper($this->host) . ':8080/', 'status' => true]);
 
         $this->assertSame(0, Cli::$exit_code);
@@ -216,6 +291,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testArchiveArchivesThePropertyAndItsLiveProfiles(): void
     {
+        $this->requireDb();
+
         file_put_contents($this->out . $this->sites[0] . '.js', '// bundle');
 
         [, , $log] = $this->run_(['domain' => $this->host, 'archive' => true]);
@@ -240,6 +317,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testRestoreBringsBackOnlyTheProfilesArchivedWithIt(): void
     {
+        $this->requireDb();
+
         $this->run_(['id' => (string) self::PROPERTY, 'archive' => true]);
 
         [, , $log] = $this->run_(['id' => (string) self::PROPERTY, 'restore' => true]);
@@ -247,6 +326,8 @@ final class PropertyCliTest extends CliControllerTestCase
         $this->assertSame(0, Cli::$exit_code);
         $this->assertStringContainsString('Property ' . self::PROPERTY . ' restored.', $log);
         $this->assertStringContainsString('Profiles restored, tracking bundles published: ' . $this->sites[0] . '.', $log);
+        $this->assertFileExists($this->out . $this->sites[0] . '.js', 'the restored Profile\'s bundle is served again');
+        $this->assertFileDoesNotExist($this->out . $this->sites[1] . '.js', 'the Profile still archived has none');
         $this->assertSame(0, $this->archivedDate('base.property', self::PROPERTY));
         $this->assertSame(0, $this->archivedDate('base.site', self::PROPERTY * 10));
         $this->assertSame(self::EARLIER, $this->archivedDate('base.site', self::PROPERTY * 10 + 1),
@@ -260,6 +341,8 @@ final class PropertyCliTest extends CliControllerTestCase
 
     public function testRestoreIsRefusedWhileALivePropertyHasTheDomain(): void
     {
+        $this->requireDb();
+
         $this->run_(['id' => (string) self::PROPERTY, 'archive' => true]);
         $this->property(self::OTHER, 'www.' . $this->host);
 
@@ -274,6 +357,8 @@ final class PropertyCliTest extends CliControllerTestCase
     /** Every Property with the host, live or archived, is shown, and none is acted on. */
     public function testADomainSeveralPropertiesHaveChangesNothing(): void
     {
+        $this->requireDb();
+
         $this->run_(['id' => (string) self::PROPERTY, 'archive' => true]);
         $this->property(self::OTHER, $this->host);
 

@@ -154,6 +154,35 @@ final class Update103Test extends TestCase
         $this->assertSame(['1' => 'a.example', '2' => null, '3' => 'b.example', '4' => null], $this->liveHosts());
     }
 
+    /**
+     * A table created from the current entity, as core-install creates a
+     * missing one before the updates run: up() fills live_host and adds
+     * nothing.
+     */
+    public function testUpOnATableCreatedFromTheEntity(): void
+    {
+        $this->requireDb();
+
+        \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
+
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.property');
+        $entity->setTableName(self::TABLE, '');
+        $this->assertNotFalse($entity->createTable());
+
+        $this->assertTrue($this->hasColumn());
+        $indexes = $this->indexes();
+
+        $this->insert(['id' => 1, 'name' => 'Live', 'domain' => 'www.a.example']);
+        $this->insert(['id' => 2, 'name' => 'Archived', 'domain' => 'a.example', 'archived_date' => 1764000000]);
+
+        $this->assertTrue($this->update->up());
+        $this->assertTrue($this->update->up(), 'up is idempotent');
+
+        $this->assertSame(['1' => 'a.example', '2' => null], $this->liveHosts());
+        $this->assertSame($indexes, $this->indexes(), 'no index was added');
+        $this->assertSame(['columns' => 'live_host', 'unique' => true], $indexes[Property::LIVE_HOST_INDEX] ?? null);
+    }
+
     /** Two live Properties with one host: nothing changes, and each is named. */
     public function testUpRefusesLiveDuplicates(): void
     {
