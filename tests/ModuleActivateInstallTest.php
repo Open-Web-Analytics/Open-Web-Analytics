@@ -259,24 +259,4 @@ final class ModuleActivateInstallTest extends TestCase
         $this->assertSame(1, (int) \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'schema_version'),
             'cmd=activate must install, matching the admin UI');
     }
-
-    /** cmd=install-module says it is deprecated, names cmd=activate, and still installs. */
-    public function testTheInstallModuleCommandIsDeprecatedButStillWorks(): void
-    {
-        $this->assertStringStartsWith('Deprecated', \OWA\Module\Base\Controller\ModuleInstallCli::usage()['description']);
-
-        list($cli, $log) = $this->runOnAnUninstalledModule(new class(['module' => 'maxmind_geoip'])
-            extends \OWA\Module\Base\Controller\ModuleInstallCli {
-            public function __construct($params)
-            {
-                \OWA\Core\AdminController::__construct($params);
-            }
-        });
-
-        $this->assertStringContainsString('cmd=install-module is deprecated', $log);
-        $this->assertStringContainsString('Use "cmd=activate module=maxmind_geoip" instead', $log);
-        $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
-        $this->assertSame(1, (int) \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'schema_version'),
-            'it must keep working for the scripts that call it');
-    }
 }

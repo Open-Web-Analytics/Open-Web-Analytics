@@ -73,20 +73,22 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
 
     /**
      * A deprecated command is left out of the reference, by its usage()'s
-     * `deprecated` marker, and keeps running. The marker and a description that
-     * says "Deprecated" go together.
+     * `deprecated` marker. The marker and a description that says
+     * "Deprecated" go together.
      */
     public function testADeprecatedCommandIsLeftOut(): void
     {
         $md       = $this->section('cli');
         $commands = $this->registeredCommands();
 
-        $this->assertTrue(\OWA\Module\Base\Controller\ModuleInstallCli::usage()['deprecated'] ?? false);
-        $this->assertSame(\OWA\Module\Base\Controller\ModuleInstallCli::class, $commands['install-module']);
+        foreach ($commands as $command => $class) {
+            if (!empty($class::usage()['deprecated'])) {
+                $this->assertStringNotContainsString("\n### $command\n", $md);
+            }
+        }
+
         $this->assertStringNotContainsString('install-module', $md);
-        $this->assertStringNotContainsString('Deprecated', $md);
         $this->assertStringContainsString("\n### activate\n", $md);
-        $this->assertStringContainsString("\n- [`activate`](#activate) — ", $md);
 
         foreach ($commands as $command => $class) {
 

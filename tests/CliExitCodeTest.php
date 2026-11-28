@@ -136,7 +136,6 @@ final class CliExitCodeTest extends CliControllerTestCase
 
         yield 'activate, no module'         => [$C . 'ModuleActivateCli', []];
         yield 'deactivate, no module'       => [$C . 'ModuleDeactivateCli', []];
-        yield 'install-module, no module'   => [$C . 'ModuleInstallCli', []];
         yield 'jobs-retry, no id'           => [$C . 'JobsRetryCli', []];
         yield 'jobs-forget, no id'          => [$C . 'JobsForgetCli', []];
         yield 'schedule-run, unknown job'   => [$C . 'ScheduleRunCli', ['job' => 'owa-no-such-job']];

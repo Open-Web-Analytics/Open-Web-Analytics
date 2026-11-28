@@ -144,6 +144,7 @@ class Cli extends \OWA\Core\AdminController {
     const RENAMED = [
         'update'            => 'core-update-schema',
         'update-geoip-db'   => 'geoip-update-db',
+        'install-module'    => 'activate',
     ];
 
     /** @var bool whether a failure of this command sets cli.php's exit code */

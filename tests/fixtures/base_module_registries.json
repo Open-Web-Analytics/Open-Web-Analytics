@@ -63,9 +63,6 @@
         "base.moduleDeactivateCli": {
             "class_name": "OWA\\Module\\Base\\Controller\\ModuleDeactivateCli"
         },
-        "base.moduleInstallCli": {
-            "class_name": "OWA\\Module\\Base\\Controller\\ModuleInstallCli"
-        },
         "base.optionsGeneral": {
             "class_name": "OWA\\Module\\Base\\Controller\\OptionsGeneral"
         },
@@ -404,7 +401,6 @@
         "install": "base.installCli",
         "activate": "base.moduleActivateCli",
         "deactivate": "base.moduleDeactivateCli",
-        "install-module": "base.moduleInstallCli",
         "add-site": "base.sitesAddCli",
         "prune-event-queue-archives": "base.pruneEventQueueArchivesCli",
         "partition-status": "base.partitionStatusCli",

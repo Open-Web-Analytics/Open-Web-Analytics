@@ -84,7 +84,6 @@ final class CliCommandsTest extends CliControllerTestCase
             'install'                    => ['install',                    'base.installCli'],
             'activate'                   => ['activate',                   'base.moduleActivateCli'],
             'deactivate'                 => ['deactivate',                 'base.moduleDeactivateCli'],
-            'install-module'             => ['install-module',             'base.moduleInstallCli'],
             'add-site'                   => ['add-site',                   'base.sitesAddCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
@@ -265,7 +264,7 @@ final class CliCommandsTest extends CliControllerTestCase
     }
 
     // =================================================================
-    // Module lifecycle: activate / deactivate / install-module
+    // Module lifecycle: activate / deactivate
     // (cap: edit_modules) -- exercised against the schema-less test fixture
     // module (tests/fixtures/TestFixtureModule.php) so there are no tables to
     // create/drop. Each test deletes the fixture's stored rows afterward.
@@ -338,28 +337,6 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertFalse($active, "{$module} should remain inactive after a no-op deactivate.");
     }
 
-    public function testInstallModuleActivatesTheModule(): void
-    {
-        $restore = $this->forgetFixtureAfter();
-        try {
-            \OWA\Core\CoreAPI::deactivateModule(self::MODULE);
-
-            // The fixture has no entities, so install-module just persists the schema
-            // version and activates -- no tables are created.
-            $result = $this->runCommand(
-                \OWA\Module\Base\Controller\ModuleInstallCli::class,
-                'moduleInstallCli.php',
-                ['module' => self::MODULE]
-            );
-
-            $this->assertNull($result['view'], 'install-module should run cleanly.');
-            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting(self::MODULE, 'is_active'),
-                'install-module should leave the module active.');
-        } finally {
-            $restore();
-        }
-    }
-
     public function testActivateModuleRejectsUnprivilegedUser(): void
     {
         $this->authenticateAs('viewer');
@@ -385,24 +362,6 @@ final class CliCommandsTest extends CliControllerTestCase
 
         $this->assertNotCapable($result, 'deactivate requires edit_modules.');
     }
-
-    public function testInstallModuleRejectsUnprivilegedUser(): void
-    {
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\ModuleInstallCli::class,
-            'moduleInstallCli.php',
-            ['module' => self::MODULE]
-        );
-
-        $this->assertNotCapable($result, 'install-module requires edit_modules.');
-    }
-
-    // =================================================================
-    // Event-queue maintenance: prune-event-queue-archives (cap: edit_modules).
-    // The intake's drain and replay are covered by TrackerIngestTest.
-    // =================================================================
 
     public function testPruneEventQueueArchivesRejectsUnprivilegedUser(): void
     {
