@@ -124,7 +124,7 @@ $state  = (string) ( $status['state'] ?? '' );
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
-                    $set, 'profile', (string) $view->site_id, '', null, true );
+                    $set, 'profile', (string) $view->site_id, '', is_array( $view->posted ?? null ) ? $view->posted : null, true );
             }
         ?>
 

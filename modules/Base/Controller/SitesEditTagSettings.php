@@ -69,10 +69,15 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.sitesInvocation' );
     }
 
+    /**
+     * The Tracking Tag screen drawn again with what was posted and each
+     * refusal beside its field (SettingsForm::redrawRefused()).
+     *
+     * @return mixed the screen's answer
+     */
     public function errorAction() {
 
-        $this->set( 'siteId', (string) $this->getParam( 'siteId' ) );
-        $this->setRedirectAction( 'base.sitesInvocation' );
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        return \OWA\Module\Base\Classes\SettingsForm::redrawRefused( $this->params, (array) $this->getValidationErrorMsgs(),
+            SitesInvocation::class );
     }
 }

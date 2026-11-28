@@ -177,4 +177,19 @@ final class SettingsScreenRefusalTest extends TestCase
         $this->assertSame('base.propertyRetention', $data['do'] ?? null);
         $this->assertSame(2500, (int) ($data['status_code'] ?? 0));
     }
+
+    /** A refused Organization rename draws its screen again with the posted name and the reason. */
+    public function testARefusedOrganizationRenameIsShownOnItsScreen(): void
+    {
+        $this->requireDb();
+
+        $data = $this->post(\OWA\Module\Base\Controller\OrganizationEdit::class, 'base.organizationEdit', ['name' => '   ']);
+
+        $this->assertSame('base.organizationProfile', $data['subview'] ?? null, 'the same screen, drawn');
+        $this->assertArrayNotHasKey('status_code', $data, 'not "Profile updated."');
+        $this->assertSame('Name is required.', $data['posted']['problems']['name']);
+        $this->assertContains('Name is required.', array_map(
+            fn ($m) => is_array($m) ? (string) ($m['message'] ?? '') : (string) $m, array_values((array) $data['validation_errors'])));
+        $this->assertSame('', trim((string) $data['organization']['name']), 'the name as posted, not the stored one');
+    }
 }
