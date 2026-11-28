@@ -282,8 +282,141 @@ test('the options are held to the server\'s limits', () => {
 
     expect(r.option('domstreamMaxSamples')).toBe(1000);
     expect(r.option('domstreamMaxChars')).toBe(24000);
+
+    t.setOption('domstreamMaxChars', 64000);
+    expect(r.option('domstreamMaxChars')).toBe(28000);
     expect(r.option('domstreamMaxDurationMsec')).toBe(3600000);
 
     t.setOption('domstreamMaxSamples', 50);
     expect(r.option('domstreamMaxSamples')).toBe(50);
+});
+
+test('a chunk is passive: no engagement, no pending flags; the next event takes them', () => {
+    const t = newTracker();
+    const sent = [];
+    t.logEvent = (p) => { sent.push(p); };
+    t.pendingSessionStart = true;
+    t.pendingVisitorCreated = true;
+    t.engagementAccrued = 4000;
+    t.engagementReported = 0;
+    t.engagementSince = null;
+
+    expect(OWATracker.isPassiveEventType('domstream')).toBe(true);
+
+    const r = started(t);
+    r.tick(150); r.onMove({ pageX: 1, pageY: 1 });
+    r.flush();
+
+    const chunk = sent.find((e) => e.event_type === EVENT_NAME);
+    expect(chunk.engagement_msec).toBeUndefined();
+    expect(chunk.is_new_session_start).toBeUndefined();
+    expect(chunk.is_new_visitor_created).toBeUndefined();
+
+    const event = t.makeEvent();
+    event.setEventType('click');
+    t.trackEvent(event);
+
+    const click = sent.find((e) => e.event_type === 'click');
+    expect(click.engagement_msec).toBe(4000);
+    expect(click.is_new_session_start).toBe(true);
+    expect(click.is_new_visitor_created).toBe(true);
+    r.stop();
+});
+
+test('a chunk after the inactivity window neither restarts the session nor advances it', () => {
+    const { Util } = require('../../modules/Base/src/common/Util.js');
+    const now = { t: 1800000000 };
+    const clock = jest.spyOn(Util, 'getCurrentUnixTimestamp').mockImplementation(() => now.t);
+
+    try {
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (p) => { sent.push(p); };
+        t.trackPageView();
+        const view = sent[0];
+        const r = started(t);
+
+        now.t += 31 * 60;
+        r.tick(150); r.onMove({ pageX: 1, pageY: 1 });
+        r.flush();
+
+        const chunk = sent.find((e) => e.event_type === EVENT_NAME);
+        expect(chunk.session_id).toBe(view.session_id);
+        expect(chunk.is_new_session_start).toBeUndefined();
+
+        const event = t.makeEvent();
+        event.setEventType('click');
+        t.trackEvent(event);
+
+        const click = sent.find((e) => e.event_type === 'click');
+        expect(click.session_id).not.toBe(view.session_id);
+        expect(click.is_new_session_start).toBe(true);
+
+        // The recording's chunks stay with the page view they belong to.
+        r.tick(150); r.onMove({ pageX: 2, pageY: 2 });
+        r.flush();
+
+        const chunks = sent.filter((e) => e.event_type === EVENT_NAME);
+        expect(chunks[1].session_id).toBe(view.session_id);
+        expect(chunks[1].page_view_seq).toBe(chunks[0].page_view_seq);
+        r.stop();
+    } finally {
+        clock.mockRestore();
+    }
+});
+
+test.each(['25%', 'abc', '', null, NaN, {}])('a sample rate that is not a number (%p) records nothing', (rate) => {
+    const t = newTracker();
+    t.setDomstreamSampleRate(rate);
+    const r = recorderFor(t);
+
+    if (rate === null) {
+        // Unset: the default, 100.
+        expect(r.sampleRate()).toBe(100);
+        return;
+    }
+
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    expect(t.trackDomStream()).toBe(false);
+    Math.random.mockRestore();
+});
+
+test('a sample rate outside 0-100 is held to it', () => {
+    const t = newTracker();
+    const r = recorderFor(t);
+
+    t.setDomstreamSampleRate(250);
+    expect(r.sampleRate()).toBe(100);
+    t.setDomstreamSampleRate(-5);
+    expect(r.sampleRate()).toBe(0);
+    t.setDomstreamSampleRate('25');
+    expect(r.sampleRate()).toBe(25);
+});
+
+test('a chunk at domstreamMaxChars fits a keepalive body once encoded', () => {
+    const { Util } = require('../../modules/Base/src/common/Util.js');
+    const t = newTracker();
+    t.setOption('domstreamMaxChars', 999999);
+    t.setOption('domstreamMaxSamples', 1000);
+    t.trackPageView();
+    const bodies = [];
+    t.sendLargeRequest = (data) => { bodies.push(Util.buildPostBody(data)); };
+    const r = started(t);
+    document.body.innerHTML = '<input id="field-with-a-long-id" name="customer_address_line">';
+    const field = document.getElementById('field-with-a-long-id');
+
+    for (let i = 0; i < 2000 && bodies.length === 0; i++) {
+        r.tick(i % 2 ? 1234 : 101);
+        if (i % 2) {
+            r.onKey({ target: field, key: 'a' });
+        } else {
+            r.onMove({ pageX: 1000 + i, pageY: 500 + i });
+        }
+    }
+
+    expect(recorderFor(t).option('domstreamMaxChars')).toBe(28000);
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0].length).toBeGreaterThan(28000);
+    expect(bodies[0].length).toBeLessThan(OWATracker.MAX_BEACON_BODY_BYTES);
+    r.stop();
 });

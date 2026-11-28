@@ -521,6 +521,7 @@ class OWATracker  {
      *   name                a unique name
      *   reservedEventNames  event names it sends, which trackCustomEvent() then
      *                       refuses -- a site's event may not borrow one
+     *   passiveEventNames   event names that are passive (isPassiveEventType())
      *   methods             { name: function } added to the tracker, so a
      *                       snippet command can call them. A method the tracker
      *                       already has is NOT replaced, unless it is a lazy
@@ -1591,9 +1592,10 @@ class OWATracker  {
      * wait around to complete on unload.
      *
      * NO IFRAME FALLBACK. Every browser that can run this tracker -- it ships
-     * untranspiled ES6 -- has fetch and sendBeacon, and the largest payload OWA
-     * makes is capped at 24,000 characters, inside the 64KB both allow. A
-     * payload both refuse is dropped, with a debug line.
+     * untranspiled ES6 -- has fetch and sendBeacon, and both refuse a body
+     * over 64 KiB (MAX_BEACON_BODY_BYTES). The largest payload OWA makes, a
+     * recording chunk, is held below that once encoded. A payload both refuse
+     * is dropped, with a debug line.
      */
     sendLargeRequest( data, event_type ) {
 
@@ -1665,6 +1667,16 @@ class OWATracker  {
 
         if ( typeof fetch !== 'function' || typeof Request !== 'function'
              || ! ( 'keepalive' in Request.prototype ) ) {
+
+            return false;
+        }
+
+        // A keepalive fetch over the quota rejects later, after this has
+        // answered that it was queued.
+        if ( body && body.size > OWATracker.MAX_BEACON_BODY_BYTES ) {
+
+            OWA.debug( 'Beacon body of %d bytes is over the %d a keepalive request allows; not sent by fetch.',
+                body.size, OWATracker.MAX_BEACON_BODY_BYTES );
 
             return false;
         }
@@ -4134,9 +4146,10 @@ class OWATracker  {
          * that mattered, and that is the one most likely to be lost.
          *
          * Not set on user_engagement, which carries its own residue and has
-         * already consumed it.
+         * already consumed it, nor on a passive event.
          */
-        if ( ! event.isSet( 'engagement_msec' ) ) {
+        if ( ! event.isSet( 'engagement_msec' )
+             && ! OWATracker.isPassiveEventType( event.get( 'event_type' ) ) ) {
 
             var delta = this.consumeEngagementDelta();
 
@@ -4187,8 +4200,12 @@ class OWATracker  {
          * Consumed rather than collected: these belong to ONE event, and taking
          * them off the tracker as they are applied is what makes that true.
          */
-        this.consumePendingFlag( event, 'is_new_session_start', 'pendingSessionStart' );
-        this.consumePendingFlag( event, 'is_new_visitor_created', 'pendingVisitorCreated' );
+        // A passive event leaves them for the next ordinary event.
+        if ( ! OWATracker.isPassiveEventType( event.get( 'event_type' ) ) ) {
+
+            this.consumePendingFlag( event, 'is_new_session_start', 'pendingSessionStart' );
+            this.consumePendingFlag( event, 'is_new_visitor_created', 'pendingVisitorCreated' );
+        }
 
         var collected = this.collectPageProperties();
         var state_properties = this.collectStateProperties();
@@ -4230,6 +4247,8 @@ class OWATracker  {
     manageState( event, callback ) {
 
         var that = this;
+        var passive = OWATracker.isPassiveEventType( event.get( 'event_type' ) );
+
         if ( ! this.stateInit ) {
 
             /*
@@ -4276,7 +4295,7 @@ class OWATracker  {
                 });
             });
 
-        } else {
+        } else if ( ! passive ) {
 
             this.continueSession( event );
         }
@@ -4288,9 +4307,12 @@ class OWATracker  {
          *
          * Placed after the identity block so the first event of a page still
          * decides sessionization against the PREVIOUS request before this one
-         * overwrites it.
+         * overwrites it. A passive event does not advance it.
          */
-        this.advanceLastRequestTime( event );
+        if ( ! passive ) {
+
+            this.advanceLastRequestTime( event );
+        }
 
         // Per event, and for the same reason: a page's events must not share a
         // position any more than they share a last-request time.
@@ -4607,6 +4629,12 @@ class OWATracker  {
         return this.trackEvent( event, block );
     }
 
+    /** The largest body a keepalive fetch or sendBeacon sends, in bytes. */
+    static get MAX_BEACON_BODY_BYTES() {
+
+        return 65536;
+    }
+
     /**
      * The least unreported engagement, in milliseconds, that is sent as a
      * user_engagement event of its own. Less than this rides the next event.
@@ -4709,6 +4737,43 @@ class OWATracker  {
         } );
 
         return names;
+    }
+
+    /**
+     * Event types that are passive: a passive event carries no engagement
+     * delta and no pending one-event flags (is_new_session_start,
+     * is_new_visitor_created), which are left for the next ordinary event; it
+     * never restarts a session and does not advance the session's last-request
+     * time. A plugin names its own (passiveEventNames).
+     */
+    static get PASSIVE_EVENT_NAMES() {
+
+        var names = [];
+
+        var specs = OWATracker.plugins().concat(
+            Object.values( OWATracker.lazyPlugins() ).map( ( state ) => state.spec ) );
+
+        specs.forEach( ( plugin ) => {
+
+            ( plugin.passiveEventNames || [] ).forEach( ( name ) => {
+
+                if ( names.indexOf( name ) === -1 ) {
+
+                    names.push( name );
+                }
+            } );
+        } );
+
+        return names;
+    }
+
+    /**
+     * @param {string} event_type
+     * @return {boolean} whether events of this type are passive
+     */
+    static isPassiveEventType( event_type ) {
+
+        return OWATracker.PASSIVE_EVENT_NAMES.indexOf( String( event_type ) ) !== -1;
     }
 
     /**
