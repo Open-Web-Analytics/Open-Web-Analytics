@@ -192,6 +192,30 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame(['plan' => 'pro'], json_decode((string) $entry['params'], true));
     }
 
+    /** maxCustomVars caps a beacon's custom variables; a migrated row keeps all five of 1.x's slots. */
+    public function testAMigratedRowKeepsEveryCustomVariableWhateverTheCap(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('base', 'maxCustomVars');
+
+        $this->visit();
+        $this->request('1790000000000000104', ['timestamp' => self::T + 60,
+            'cv1_name' => 'plan', 'cv1_value' => 'team', 'cv3_name' => 'region', 'cv3_value' => 'emea',
+            'cv5_name' => 'tier', 'cv5_value' => 'gold']);
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'maxCustomVars', 2);
+
+            $this->migrator()->migrateSite(self::SITE);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'maxCustomVars', $was);
+        }
+
+        $row = array_values(array_filter($this->rows(),
+            fn ($r) => $r['event_type'] === 'page_view' && (int) intdiv((int) $r['ts'], 1000000) === self::T + 60))[0];
+
+        $this->assertSame(['plan' => 'team', 'region' => 'emea', 'tier' => 'gold'], json_decode((string) $row['params'], true));
+    }
+
     public function testTheEntryPageRaisesTheSessionMarker(): void
     {
         $this->visit();

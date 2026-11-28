@@ -934,7 +934,8 @@ abstract class FactMigrator {
 
         $properties += $this->attribution( $r, $refs );
 
-        for ( $i = 1; $i <= 5; $i++ ) {
+        // All five slots, whatever maxCustomVars says: the cap is a beacon's (EventRawHandlers::params()).
+        for ( $i = 1; $i <= \OWA\Module\Base\Handler\EventRawHandlers::V1_CUSTOM_VARS; $i++ ) {
 
             $properties[ 'cv' . $i . '_name' ]  = $r[ 'cv' . $i . '_name' ] ?? null;
             $properties[ 'cv' . $i . '_value' ] = $r[ 'cv' . $i . '_value' ] ?? null;
