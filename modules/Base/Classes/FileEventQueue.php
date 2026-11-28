@@ -790,8 +790,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /**
      * The inbox's files of the queue's own names, under any install hash:
      * events_<hash>.txt (null) and delayed_<due>_<hash>.txt (its due time).
-     * A file named under an earlier OWA_SECRET, OWA_DB_USER or
-     * OWA_DB_PASSWORD is one of them.
+     * A file named under an earlier OWA_SECRET, or before it was set, is
+     * one of them.
      *
      * @return array<string, int|null> name => due time, null for an events file
      */

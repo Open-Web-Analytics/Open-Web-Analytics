@@ -700,7 +700,7 @@ return [
     'Entry Pages' => 'Entry Pages',
     'Equals' => 'Equals',
     'Error' => 'Error',
-    'Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in %s. Delete each once read.' => 'Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in %s. Delete each once read.',
+    'Errors logged before OWA_SECRET was set or changed are in %s. Delete each once read.' => 'Errors logged before OWA_SECRET was set or changed are in %s. Delete each once read.',
     'Estimated rebuild time: %s. It runs in the background, starting within a few minutes of saving when the scheduler is running. Until it finishes, reports show the months they hold now.' => 'Estimated rebuild time: %s. It runs in the background, starting within a few minutes of saving when the scheduler is running. Until it finishes, reports show the months they hold now.',
     'Event' => 'Event',
     'Event Name' => 'Event Name',

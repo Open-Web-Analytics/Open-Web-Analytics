@@ -3697,26 +3697,30 @@ class CoreAPI {
         }
     }
 
+    /** What the private-file hash is the HMAC of (privateFilesHash()). */
+    const PRIVATE_FILES_HMAC_DATA = 'owa-private-files';
+
     /**
-     * @return string
+     * This install's private-file hash (Core\PrivateFiles::name()):
+     * privateFilesHash() of OWA_SECRET, or of '' when it is not defined.
+     *
+     * @return string 32 hex characters
      */
     public static function generateInstanceSpecificHash() {
 
-        if ( defined( 'OWA_SECRET' ) ) {
-            $salt = OWA_SECRET;
-        } else {
-            $salt = '';
-        }
+        return self::privateFilesHash( defined( 'OWA_SECRET' ) ? (string) OWA_SECRET : '' );
+    }
 
-        if ( defined( 'OWA_DB_USER' ) ) {
-            $salt .= OWA_DB_USER;
-        }
+    /**
+     * HMAC-SHA256 of PRIVATE_FILES_HMAC_DATA keyed with $secret, cut to its
+     * first 32 hex characters.
+     *
+     * @param  string $secret
+     * @return string 32 hex characters
+     */
+    public static function privateFilesHash( $secret ) {
 
-        if ( defined( 'OWA_DB_PASSWORD' ) ) {
-            $salt .= OWA_DB_PASSWORD;
-        }
-
-        return md5( $salt );
+        return substr( hash_hmac( 'sha256', self::PRIVATE_FILES_HMAC_DATA, (string) $secret ), 0, 32 );
     }
 
     /**

@@ -29,6 +29,45 @@ final class PrivateFilesTest extends TestCase
         $this->assertSame('events_' . $hash . '.txt', PrivateFiles::name('events', '.txt'));
     }
 
+    /** HMAC-SHA256 of 'owa-private-files' keyed with OWA_SECRET, its first 32 hex characters. */
+    public function testTheHashIsAnHmacOfOwaSecret(): void
+    {
+        $hash = \OWA\Core\CoreAPI::privateFilesHash('a-secret');
+
+        $this->assertSame(substr(hash_hmac('sha256', 'owa-private-files', 'a-secret'), 0, 32), $hash);
+        $this->assertMatchesRegularExpression('/^' . PrivateFiles::HASH_PATTERN . '$/', $hash);
+        $this->assertSame($hash, \OWA\Core\CoreAPI::privateFilesHash('a-secret'), 'the same secret, the same hash');
+        $this->assertNotSame($hash, \OWA\Core\CoreAPI::privateFilesHash('another-secret'));
+        $this->assertSame(\OWA\Core\CoreAPI::privateFilesHash(defined('OWA_SECRET') ? (string) constant('OWA_SECRET') : ''),
+            \OWA\Core\CoreAPI::generateInstanceSpecificHash());
+    }
+
+    /** The hash a process with these constants defined computes. */
+    private static function hashUnder(array $constants): string
+    {
+        $code = 'require ' . var_export(dirname(__DIR__) . '/vendor/autoload.php', true) . ';';
+
+        foreach ($constants as $name => $value) {
+            $code .= sprintf('define(%s, %s);', var_export($name, true), var_export($value, true));
+        }
+
+        $code .= 'echo \OWA\Core\CoreAPI::generateInstanceSpecificHash();';
+
+        return (string) shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code));
+    }
+
+    /** OWA_DB_USER and OWA_DB_PASSWORD are not part of it; OWA_SECRET is all of it. */
+    public function testTheDatabaseCredentialsDoNotChangeTheHash(): void
+    {
+        $expected = \OWA\Core\CoreAPI::privateFilesHash('the-secret');
+
+        $this->assertSame($expected, self::hashUnder(['OWA_SECRET' => 'the-secret']));
+        $this->assertSame($expected, self::hashUnder(['OWA_SECRET' => 'the-secret', 'OWA_DB_USER' => 'one', 'OWA_DB_PASSWORD' => 'pw1']));
+        $this->assertSame($expected, self::hashUnder(['OWA_SECRET' => 'the-secret', 'OWA_DB_USER' => 'two', 'OWA_DB_PASSWORD' => 'pw2']));
+        $this->assertSame(\OWA\Core\CoreAPI::privateFilesHash(''), self::hashUnder(['OWA_DB_USER' => 'one', 'OWA_DB_PASSWORD' => 'pw1']),
+            'no OWA_SECRET: the key is empty, whatever the credentials');
+    }
+
     public function testHashOfReadsAnyInstallsHash(): void
     {
         $other = str_repeat('a', 32);
@@ -52,7 +91,7 @@ final class PrivateFilesTest extends TestCase
         $finding = \OWA\Module\Base\Classes\SystemHealth::oldErrorLogs($this->dir);
         $this->assertSame('yellow', $finding['level']);
         $this->assertSame('Earlier error logs', $finding['label']);
-        $this->assertSame('Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in ' . $old . '. Delete each once read.',
+        $this->assertSame('Errors logged before OWA_SECRET was set or changed are in ' . $old . '. Delete each once read.',
             $finding['detail'], 'the file, not the directory of the same shape');
     }
 

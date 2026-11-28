@@ -52,8 +52,8 @@ final class Sqs {
      * the names queues were created under. Another server computes the same
      * name from its own owa-config.php, and two installs on one server with
      * different databases do not share a queue. Not
-     * generateInstanceSpecificHash(): that is made from the credentials,
-     * which installs on one server often share.
+     * generateInstanceSpecificHash(): that is made from OWA_SECRET, which
+     * differs from server to server.
      *
      * @return string
      */

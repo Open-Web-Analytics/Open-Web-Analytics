@@ -7,9 +7,9 @@ namespace OWA\Core;
  * for nginx); these are for a server that serves it anyway.
  *
  *  - name(): a file name with the install's hash in it, which nobody can
- *    guess without its secrets (CoreAPI::generateInstanceSpecificHash()). The
- *    hash changes only with those secrets, so the name is computed, never
- *    stored. hashOf() reads the hash of a name made under any of them.
+ *    guess without OWA_SECRET (CoreAPI::generateInstanceSpecificHash()). The
+ *    hash changes only with OWA_SECRET, so the name is computed, never
+ *    stored. hashOf() reads the hash of a name made under any value of it.
  *  - guard(): an index.php in a directory, as owa-data/ and owa-data/logs/
  *    ship with, so a server that lists directories lists nothing there.
  */
