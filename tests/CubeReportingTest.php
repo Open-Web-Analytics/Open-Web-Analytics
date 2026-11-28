@@ -1235,7 +1235,7 @@ final class CubeReportingTest extends TestCase
         $this->assertSame(0, (int) $rs->aggregates['sessions']['value']);
 
         $this->assertSame(0, $rs->aggregates['pageViewsPerSession']['value']);
-        $this->assertSame('0', (string) $rs->aggregates['pageViewsPerSession']['formatted_value']);
+        $this->assertSame('0.00', (string) $rs->aggregates['pageViewsPerSession']['formatted_value']);
         $this->assertSame(0, (new \OWA\Core\Metric)->computeRatio(5, null), 'a missing denominator');
     }
 

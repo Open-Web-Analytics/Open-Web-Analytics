@@ -1872,6 +1872,12 @@ abstract class Module {
                 $options['internal'] = true;
             }
 
+            // Stored words shown and filtered in the locale (Classes\StoredLabels).
+            if ( ! empty( $d['label_set'] ) ) {
+
+                $options['label_set'] = (string) $d['label_set'];
+            }
+
             $this->registerDimension(
                 $name,
                 isset( $d['entity'] ) ? $d['entity'] : $declaration['entity'],

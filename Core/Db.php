@@ -52,6 +52,8 @@ class Db extends \OWA\Core\Base {
         '=~', '!~',
         '=@', '!@',
         'empty', 'notempty',
+        // The empty test of a number column, where '' would compare as 0.
+        'null', 'notnull',
         // Internal, like between: a list of values. Not in the REST
         // constraint syntax (ResultSetManager::CONSTRAINT_OPERATORS).
         'in',
@@ -1129,6 +1131,14 @@ class Db extends \OWA\Core\Base {
 
                     case 'notempty':
                         $constraint .= sprintf( "( %1\$s IS NOT NULL AND %1\$s <> '' )", $v['name'] );
+                        break;
+
+                    case 'null':
+                        $constraint .= sprintf( '%s IS NULL', $v['name'] );
+                        break;
+
+                    case 'notnull':
+                        $constraint .= sprintf( '%s IS NOT NULL', $v['name'] );
                         break;
 
                     case '!~':

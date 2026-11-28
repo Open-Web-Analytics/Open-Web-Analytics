@@ -42,6 +42,30 @@ final class InternalDimensionTest extends TestCase
         }
     }
 
+    /** Nor in a grid's table chooser or the segment picker, which read relatedDimensions(). */
+    public function testTheChoosersLeaveThemOut(): void
+    {
+        $offered = [];
+
+        foreach ( ( new \OWA\Module\Base\Classes\ResultSetManager() )->relatedDimensions() as $group ) {
+            $offered = array_merge( $offered, array_column( $group, 'name' ) );
+        }
+
+        $this->assertContains( 'viewportWidth', $offered );
+
+        foreach ( self::INTERNAL as $name ) {
+            $this->assertNotContains( $name, $offered, "$name is offered in a table chooser" );
+        }
+
+        $segment = ( new \OWA\Module\Base\Classes\ReportSegment( '', 'today', '', '' ) )->options();
+
+        foreach ( (array) $segment['dimensions'] as $group ) {
+            foreach ( self::INTERNAL as $name ) {
+                $this->assertNotContains( $name, array_column( $group, 'name' ), "$name is offered in the segment picker" );
+            }
+        }
+    }
+
     public function testOnlyTheDeclaredOnesAreLeftOut(): void
     {
         $all = array_keys( (array) \OWA\Core\CoreAPI::getAllDimensions() );

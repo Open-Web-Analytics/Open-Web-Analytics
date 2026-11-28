@@ -3575,14 +3575,9 @@
                 "screenResolution"
             ],
             "event": [
-                "anchorX",
-                "anchorY",
                 "clickTarget",
-                "clickX",
-                "clickY",
                 "domElementId",
                 "domElementTag",
-                "elementAnchor",
                 "eventName",
                 "fileExtension",
                 "fileName",
