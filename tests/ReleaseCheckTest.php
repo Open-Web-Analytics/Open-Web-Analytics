@@ -1157,6 +1157,24 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
+    /** Of three releases passed over, only the highest stays downloaded. */
+    public function testOnlyTheHighestReleasePassedOverIsKept(): void
+    {
+        $this->releaseJson['3.3.0'] = ['upgrades_from' => '3.2.0'];
+        $this->releaseJson['3.2.0'] = ['upgrades_from' => '3.1.0'];
+        $this->releaseJson['3.1.0'] = ['upgrades_from' => '3.0.0'];
+
+        $result = $this->check(['3.0.0', '3.1.0', '3.2.0', '3.3.0'], ['window' => '', 'days' => '', 'level' => 'major']);
+        $lines  = implode("\n", $result['lines']);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], $lines);
+        $this->assertSame('3.0.0', Install::$pending['to']);
+        foreach (['3.3.0', '3.2.0', '3.1.0'] as $v) {
+            $this->assertStringContainsString("$v installs over", $lines);
+        }
+        $this->assertSame(['3.3.0', '3.0.0', '2.0.0'], $this->downloads()->versions(), 'not 3.2.0 or 3.1.0');
+        $this->dropPending();
+    }
+
     /** minor: the same, within the installed major. */
     public function testUnderMinorALongJumpStaysInTheMajor(): void
     {

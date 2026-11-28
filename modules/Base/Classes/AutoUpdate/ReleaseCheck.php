@@ -20,7 +20,9 @@ use OWA\Core\CoreAPI;
  *      the highest newer release in the installed major, or of any major).
  *      One whose upgrades_from (release.php) is newer than the installed
  *      release is passed over for the highest lower one that installs over
- *      it, and kept downloaded: it follows on a later run. Its tarball is
+ *      it: it follows on a later run. The highest release passed over stays
+ *      downloaded; a lower one is deleted, and downloaded again when it is
+ *      chosen. Its tarball is
  *      downloaded through the update host (auto_update_download_url, never
  *      the listing's GitHub address) and checked against its SHA-256 and
  *      its signature, again
@@ -344,8 +346,8 @@ class ReleaseCheck {
                     self::describeLevel( $level ) ) );
             }
 
-            // Releases passed over for a lower one, their upgrades_from newer
-            // than the installed release: kept, not downloaded again.
+            // Releases passed over for a lower one, highest first: their
+            // upgrades_from is newer than the installed release.
             $passed = [];
 
             foreach ( $candidates as $i => $release ) {
@@ -405,8 +407,8 @@ class ReleaseCheck {
 
             $missing = $this->ensureInstalled( $list );
 
-            // The release to install, the installed one a failed install puts back, and those passed over.
-            $this->downloads->prune( array_merge( [ $v, $installed ], $passed ) );
+            // The release to install, the installed one a failed install puts back, and the highest passed over.
+            $this->downloads->prune( [ $v, $installed, $passed[0] ?? null ] );
         }
 
         $v = $this->candidate( $level );
