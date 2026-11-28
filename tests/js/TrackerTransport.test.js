@@ -295,6 +295,28 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(beacons[0]).toMatch(/[?&]e_t=page_view/);
         });
 
+        test('a body over 64 KiB is not handed to fetch', () => {
+            const beacons = [];
+            navigator.sendBeacon = (url, body) => { beacons.push(body); return false; };
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
+
+            const t = newTracker();
+            let accepted = 0;
+            t.sendAccepted = () => { accepted++; };
+
+            expect(t.queueWithoutCookies('https://owa.example.test/log.php',
+                new Blob(['x'.repeat(OWATracker.MAX_BEACON_BODY_BYTES + 1)]))).toBe(false);
+            expect(calls).toHaveLength(0);
+
+            expect(t.sendLargeRequest({ e_t: 'domstream', samples: 'y'.repeat(70000) }, 'domstream')).toBe(false);
+            expect(calls).toHaveLength(0);
+            expect(accepted).toBe(0);
+
+            expect(t.queueWithoutCookies('https://owa.example.test/log.php',
+                new Blob(['x'.repeat(OWATracker.MAX_BEACON_BODY_BYTES)]))).toBe(true);
+            expect(calls).toHaveLength(1);
+        });
+
         test('without keepalive support it falls back to sendBeacon', () => {
             delete global.Request.prototype.keepalive;
             const beacons = [];

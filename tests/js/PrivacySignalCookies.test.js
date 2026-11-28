@@ -93,7 +93,7 @@ describe('a privacy signal is honoured', () => {
 
         load(PAGE.slice());
 
-        expect(window.OWATracker).toBeUndefined();
+        expect(window.OWATracker.untracked).toBe(true);
         expect(cookieNames()).toEqual(NOT_THE_TRACKERS);
     });
 });
@@ -110,7 +110,7 @@ describe('nothing is erased when no privacy signal is the reason', () => {
             log.mockRestore();
         }
 
-        expect(window.OWATracker).toBeUndefined();
+        expect(window.OWATracker.untracked).toBe(true);
         expect(cookieNames()).toEqual(PLANTED);
     });
 

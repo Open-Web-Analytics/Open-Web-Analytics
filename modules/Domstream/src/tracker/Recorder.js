@@ -37,10 +37,14 @@ const EVENT_NAME = 'domstream';
  * characters -- less a sample's room, as a chunk is sent once it reaches the
  * limit, not before -- the longest gap a sample may record, and the longest
  * text. A site's options are held to these; DomstreamLimitsTest compares them.
+ *
+ * domstreamMaxChars is also held to what a browser sends: the chunk goes as a
+ * form-urlencoded body, about twice its characters once encoded, and a
+ * keepalive fetch or sendBeacon refuses a body over 64 KiB.
  */
 const LIMITS = {
     domstreamMaxSamples: 1000,
-    domstreamMaxChars: 64000,
+    domstreamMaxChars: 28000,
     domstreamMaxDurationMsec: 3600000,
 };
 
@@ -49,6 +53,8 @@ const MAX_TEXT = 255;
 const DEFAULTS = {
     /**
      * Percent of page loads recorded, 0-100. setDomstreamSampleRate() sets it.
+     * A value that is not a number records nothing; one outside 0-100 is
+     * held to it.
      *
      * @option
      */
@@ -107,6 +113,7 @@ class Recorder {
         this.timer       = null;
         this.recording   = false;
         this.pageViewSeq = null;
+        this.sessionId   = null;
         this.listeners   = [];
     }
 
@@ -130,15 +137,39 @@ class Recorder {
         return Date.now();
     }
 
+    /** @return {number|null} domstreamSampleRate held to 0-100, or null when not a number */
+    sampleRate() {
+
+        var value = this.option( 'domstreamSampleRate' );
+        var rate  = typeof value === 'number' || ( typeof value === 'string' && value.trim() !== '' )
+            ? Number( value ) : NaN;
+
+        if ( ! isFinite( rate ) ) {
+
+            return null;
+        }
+
+        return Math.min( 100, Math.max( 0, rate ) );
+    }
+
     /** Start recording this page load, if it falls in the sample. */
     start() {
 
-        if ( this.recording || ! this.tracker.active ) {
+        if ( this.recording || ! this.tracker.active || this.tracker.overlayPaused ) {
 
             return false;
         }
 
-        if ( Math.random() * 100 >= Number( this.option( 'domstreamSampleRate' ) ) ) {
+        var rate = this.sampleRate();
+
+        if ( rate === null ) {
+
+            OWA.debug( 'domstream: domstreamSampleRate is not a number; nothing is recorded.' );
+
+            return false;
+        }
+
+        if ( Math.random() * 100 >= rate ) {
 
             OWA.debug( 'domstream: this page load is outside the sample.' );
 
@@ -339,6 +370,13 @@ class Recorder {
             event.set( 'page_view_seq', this.pageViewSeq );
         }
 
+        // The session of the page view the chunk belongs to, which a session
+        // restarted since by another event does not change.
+        if ( this.sessionId ) {
+
+            event.set( 'session_id', this.sessionId );
+        }
+
         this.samples    = [];
         this.chars      = 0;
         this.chunkStart = null;
@@ -366,6 +404,9 @@ OWATracker.registerPlugin( {
     name: 'domstream',
 
     reservedEventNames: [ EVENT_NAME ],
+
+    // A chunk carries no engagement and never starts or restarts a session.
+    passiveEventNames: [ EVENT_NAME ],
 
     methods: {
 
@@ -403,10 +444,13 @@ OWATracker.registerPlugin( {
             return seq === undefined || seq === null || seq === '' ? null : Number( seq );
         };
 
+        var sessionOf = ( event ) => ( event && event.get( 'session_id' ) ) || null;
+
         // Loaded as a chunk after the page view was sent: pick that one up.
         if ( tracker.lastPageView ) {
 
             recorder.pageViewSeq = seqOf( tracker.lastPageView );
+            recorder.sessionId   = sessionOf( tracker.lastPageView );
         }
 
         // The page view a chunk belongs to: the latest this tracker sent.
@@ -415,6 +459,7 @@ OWATracker.registerPlugin( {
             if ( o && o.tracker === tracker ) {
 
                 recorder.pageViewSeq = seqOf( o.event );
+                recorder.sessionId   = sessionOf( o.event );
             }
         } );
 

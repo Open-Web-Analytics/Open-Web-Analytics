@@ -119,7 +119,7 @@ describe('the bootstrap reads honorPrivacySignals from the queue', () => {
 
         expect(sent).toHaveLength(0);
         expect(window.owa_cmds).toBe(cmds);
-        expect(window.OWATracker).toBeUndefined();
+        expect(window.OWATracker.untracked).toBe(true);
     });
 
     test.each([
@@ -227,5 +227,69 @@ describe('a Profile bundle\'s honorPrivacySignals option', () => {
 
         expect(sent).toHaveLength(0);
         expect(window.owa_cmds).toBe(cmds);
+    });
+});
+
+/*
+ * A browser that is not tracked gets an OWATracker whose methods do nothing,
+ * so a page calling it directly does not throw; a cross-domain link still
+ * navigates and a form still submits.
+ */
+describe('the untracked OWATracker', () => {
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+        window.history.replaceState(null, '', '/');
+    });
+
+    test('its methods do nothing and send nothing', () => {
+        setFlag('globalPrivacyControl', true);
+
+        const sent = loadWith(PAGE.slice());
+        const spy = installImageSpy();
+
+        try {
+            expect(() => {
+                window.OWATracker.trackEvent({});
+                window.OWATracker.trackCustomEvent('video_play', {});
+                window.OWATracker.trackPageView();
+                window.OWATracker.setEventProperty('eps_plan', 'pro');
+            }).not.toThrow();
+        } finally {
+            spy.restore();
+        }
+
+        expect(sent).toHaveLength(0);
+        expect(spy.sent).toHaveLength(0);
+    });
+
+    test('shareStateByLink still navigates, carrying no state', () => {
+        setFlag('doNotTrack', '1');
+        loadWith(PAGE.slice());
+
+        window.OWATracker.shareStateByLink(window.location.href.split('#')[0] + '#next');
+
+        expect(window.location.hash).toBe('#next');
+    });
+
+    test('shareStateByPost still submits the form', () => {
+        setFlag('webdriver', true);
+        loadWith(PAGE.slice());
+
+        document.body.innerHTML = '<form id="f" action="https://other.example/handler"></form>';
+        const form = document.getElementById('f');
+        const seen = [];
+        form.addEventListener('submit', (e) => { seen.push(form.action); e.preventDefault(); });
+
+        window.OWATracker.shareStateByPost(form);
+
+        expect(seen).toEqual(['https://other.example/handler']);
+    });
+
+    test('a tracked browser gets a real tracker, not the stub', () => {
+        loadWith(PAGE.slice());
+
+        expect(window.OWATracker.untracked).toBeUndefined();
+        expect(typeof window.OWATracker.getSiteId()).toBe('string');
     });
 });

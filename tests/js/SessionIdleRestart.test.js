@@ -214,3 +214,68 @@ describe('another tab of the same site', () => {
         expect(sent[1].is_new_session_start).toBe(true);
     });
 });
+
+/*
+ * Engagement accrued before the gap is discarded at the restart: the new
+ * session starts with no engagement time, as GA4 does.
+ */
+describe('engagement across an idle restart', () => {
+
+    function accrue(t, msec) {
+        t.engagementSince = null;
+        t.engagementAccrued += msec;
+    }
+
+    test('a hide after 31 minutes starts a new session and carries no engagement', () => {
+        const now = { t: T0 };
+        const { t, sent } = pageAt(now);
+
+        t.trackPageView();
+        accrue(t, 5000);
+
+        now.t = T0 + 31 * MINUTE;
+        t.trackEngagement();
+
+        const engagement = sent.find((e) => e.event_type === 'user_engagement');
+
+        expect(engagement).toBeDefined();
+        expect(engagement.session_id).not.toBe(sent[0].session_id);
+        expect(engagement.is_new_session_start).toBe(true);
+        expect(engagement.engagement_msec).toBeUndefined();
+    });
+
+    test('an event after the gap carries none of the pre-gap time; later time counts', () => {
+        const now = { t: T0 };
+        const { t, sent } = pageAt(now);
+
+        t.trackPageView();
+        accrue(t, 7000);
+
+        now.t = T0 + 40 * MINUTE;
+        click(t);
+
+        const restart = sent[1];
+        expect(restart.is_new_session_start).toBe(true);
+        expect(restart.engagement_msec).toBeUndefined();
+
+        accrue(t, 2000);
+        t.trackEngagement();
+
+        const engagement = sent.find((e) => e.event_type === 'user_engagement');
+        expect(engagement.session_id).toBe(restart.session_id);
+        expect(engagement.engagement_msec).toBe(2000);
+    });
+
+    test('inside the window the delta still rides the next event', () => {
+        const now = { t: T0 };
+        const { t, sent } = pageAt(now);
+
+        t.trackPageView();
+        accrue(t, 3000);
+
+        now.t = T0 + 10 * MINUTE;
+        click(t);
+
+        expect(sent[1].engagement_msec).toBe(3000);
+    });
+});

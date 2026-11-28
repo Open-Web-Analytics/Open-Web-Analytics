@@ -35,14 +35,28 @@ class CommandQueue {
 		// default features start, not only OWATracker's.
 		this.trackers = [];
 		this.featuresStarted = false;
+
+		// startFeatures() was called while paused; unpause() runs it.
+		this.featuresDeferred = false;
 	}
 
     /**
      * Start the default features of every tracker the queue created, and of
      * any it creates from now on, once the command that created it has run.
+     *
+     * While the queue is paused nothing starts; unpause() starts them.
      */
     startFeatures() {
 
+        if ( this.is_paused ) {
+
+            this.featuresDeferred = true;
+            OWA.debug( 'Command queue paused: default features start on unpause-owa' );
+
+            return;
+        }
+
+        this.featuresDeferred = false;
         this.featuresStarted = true;
 
         if ( this.trackers.indexOf( 'OWATracker' ) === -1 ) {
@@ -88,8 +102,11 @@ class CommandQueue {
         OWA.debug('cmd queue object method name %s', method);
 
         /**
-         * Stop applying commands, from this one on, until `unpause-owa`.
-         * Commands pushed meanwhile are dropped, not held.
+         * Stop tracking until `unpause-owa`. Commands pushed meanwhile are
+         * dropped, not held; every tracker the queue made stops sending
+         * (pause()), so clicks, scrolls and other listeners already bound send
+         * nothing; and the default features (clicks, forms, scroll, site
+         * search, errors) do not start while paused.
          *
          *   owa_cmds.push(['pause-owa']);
          *
@@ -97,7 +114,9 @@ class CommandQueue {
          */
 
         /**
-         * Apply commands again after `pause-owa`.
+         * Apply commands again after `pause-owa`: every tracker the queue made
+         * sends again (restart()), and default features held by the pause
+         * start. Commands dropped during the pause are not replayed.
          *
          *   owa_cmds.push(['unpause-owa']);
          *
@@ -188,6 +207,11 @@ class CommandQueue {
                     && window[obj_name].isFeatureDisabled( method ) ) {
 
                 OWA.debug( 'Skipping %s.%s: the page disabled it', obj_name, method );
+
+            } else if ( method === 'setCookieDomain' && this.isQueuedLater( obj_name, method ) ) {
+
+                // The last declaration in the queue is the one that applies.
+                OWA.debug( 'Skipping %s.%s: a later one in the queue applies', obj_name, method );
 
             } else if ( typeof window[obj_name][method] === 'function' ) {
 
@@ -280,8 +304,10 @@ class CommandQueue {
      * Commands pushed asynchronously AFTER processing begins cannot be seen
      * this way, but identity is never one of them in practice -- it is in the
      * static block the tag writes.
+     *
+     * The first matching command wins, or with `last` the last one.
      */
-    argFor( obj_name, methods, current ) {
+    argFor( obj_name, methods, current, last ) {
 
         var self = this;
 
@@ -300,9 +326,25 @@ class CommandQueue {
             return cmd[1] || '';
         };
 
+        var found;
+
+        if ( last ) {
+
+            for ( var j = self.asyncCmds.length - 1; j >= 0; j-- ) {
+
+                found = valueOf( self.asyncCmds[j] );
+
+                if ( found ) {
+                    return found;
+                }
+            }
+
+            return valueOf( current );
+        }
+
         // the command being applied right now counts too -- it has already been
         // shifted off the pending array
-        var found = valueOf( current );
+        found = valueOf( current );
 
         if ( found ) {
             return found;
@@ -318,6 +360,25 @@ class CommandQueue {
         }
 
         return '';
+    }
+
+    /**
+     * Whether a command for `obj_name` calling `method` is still waiting in
+     * the loaded queue.
+     */
+    isQueuedLater( obj_name, method ) {
+
+        for ( var i = 0; i < this.asyncCmds.length; i++ ) {
+
+            var parsed = CommandQueue.parseCmd( this.asyncCmds[i] );
+
+            if ( parsed && parsed.object === obj_name && parsed.method === method ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -384,8 +445,11 @@ class CommandQueue {
      *                 is not yet the real one, and is silently unreadable on
      *                 the next page load.
      *
-     * An explicit setCookieDomain() anywhere in the queue wins; otherwise the
-     * constructor is told nothing and resolves the domain itself.
+     * The LAST setCookieDomain() in the queue wins: a bundle queues its own
+     * ahead of the page's commands, so the page's declaration overrides it,
+     * and push() skips an earlier one so cookies are never written under the
+     * bundle's domain. With none, the constructor is told nothing and
+     * resolves the domain itself.
      */
     identityFor( obj_name, current ) {
 
@@ -397,7 +461,7 @@ class CommandQueue {
             identity.site_id = site_id;
         }
 
-        var domain = this.argFor( obj_name, ['setCookieDomain'], current );
+        var domain = this.argFor( obj_name, ['setCookieDomain'], current, true );
 
         if ( domain ) {
             identity.cookie_domain_declared = domain;
@@ -453,18 +517,47 @@ class CommandQueue {
      
     }
 
+    /** Call `method` on every tracker this queue made. */
+    eachTracker( method ) {
+
+        for ( var i = 0; i < this.trackers.length; i++ ) {
+
+            var tracker = window[ this.trackers[ i ] ];
+
+            if ( tracker && typeof tracker[ method ] === 'function' ) {
+
+                tracker[ method ]();
+            }
+        }
+    }
+
     /** @internal The `pause-owa` command. */
     pause() {
 
         this.is_paused = true;
+        this.eachTracker( 'pause' );
         OWA.debug('Pausing Command Queue');
     }
 
     /** @internal The `unpause-owa` command. */
     unpause() {
 
+        var wasPaused = this.is_paused;
+
         this.is_paused = false;
         OWA.debug('Un-pausing Command Queue');
+
+        if ( ! wasPaused ) {
+
+            return;
+        }
+
+        this.eachTracker( 'restart' );
+
+        if ( this.featuresDeferred ) {
+
+            this.startFeatures();
+        }
     }
 }
 

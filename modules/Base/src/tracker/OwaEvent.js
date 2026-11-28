@@ -51,9 +51,24 @@ class OwaEvent {
         }
     }
 
+    /**
+     * Set a property. An undefined value is ignored: an argument left out
+     * of a setter is not sent as the text "undefined".
+     */
     set(name, value) {
 
+        if ( value === undefined ) {
+
+            return;
+        }
+
         this.properties[name] = value;
+    }
+
+    /** Remove a property. */
+    unset( name ) {
+
+        delete this.properties[ name ];
     }
 
     setEventType(event_type) {

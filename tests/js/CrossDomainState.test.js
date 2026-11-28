@@ -13,15 +13,15 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  *
  *   - shareStateByLink(url) / shareStateByPost(form) run on the SOURCE domain.
  *     They serialize the visitor's sharable state stores (visitor 'v', session
- *     's', campaign 'c', and 'b') into a base64 "<ns>state.<payload>" token and
- *     attach it to the outbound URL's anchor (link) or the form action (post).
+ *     's' and 'b') into a "<ns>state.<payload>" token, the payload base64 of one
+ *     JSON object with a version marker, and attach it to the outbound URL's
+ *     anchor (link) or the form action (post).
  *   - checkForLinkedState() runs on the DESTINATION domain. It reads that token
  *     off the URL/anchor, decodes it, and replaces the local state stores so the
  *     visitor arrives already-identified instead of as a brand-new visitor.
  *
- * Two strict-mode cases in checkForLinkedState() are pinned at the bottom of this
- * file: any shared state found, and a sharable store that is empty (the common
- * case: a visitor with no campaign state serializes 'c'/'b' to "").
+ * Two strict-mode cases in checkForLinkedState() are pinned near the bottom of
+ * this file: any shared state found, and a sharable store that is empty.
  *
  * jsdom note: real navigation (assigning document.location.href in
  * shareStateByLink, or form.submit()) is not implemented in jsdom, so we drive
@@ -67,12 +67,11 @@ describe('cross-domain state: source-side serialization', () => {
         expect(typeof token).toBe('string');
         expect(token.length).toBeGreaterThan(0);
 
-        // The token is url-encoded base64 of "store=value.store=value..."; decode
-        // it the way the destination's checkForLinkedState() does and confirm the
-        // visitor id we seeded actually rode along.
-        const decoded = Util.base64_decode(Util.urldecode(token));
-        expect(decoded).toContain('v=');
-        expect(decoded).toContain('visitor-abc');
+        // The token is url-encoded base64 of one JSON object.
+        const decoded = JSON.parse(Util.base64_decode(Util.urldecode(token)));
+        expect(decoded.version).toBe(OWATracker.SHARED_STATE_VERSION);
+        expect(decoded.v.visitor_id).toBe('visitor-abc');
+        expect(decoded.s.session_id).toBe('session-xyz');
     });
 
     test('shareStateByPost appends the state token to the form action and submits', () => {
@@ -250,5 +249,197 @@ describe('cross-domain state: strict-mode regression guards', () => {
         expect(() => dest.checkForLinkedState()).not.toThrow();
         expect(dest.linkedStateSet).toBe(true);
         expect(OWA.getState('v').visitor_id).toBe('lonely-visitor');
+    });
+});
+
+/*
+ * The token format: one JSON object, so a value containing a dot (an e-mail
+ * address as user_id) survives; the earlier dot-joined format is still read.
+ */
+describe('cross-domain state: the token', () => {
+
+    const SITE = 'cross-site';
+
+    function siteTracker() {
+        const t = newTracker();
+        t.setSiteId(SITE);
+        return t;
+    }
+
+    function clearAll(t) {
+        ['v', 's', 'b'].forEach((store) => OWA.clearState(t.storeName(store)));
+    }
+
+    afterEach(() => {
+        ['v', 's', 'b', 'c'].forEach((store) => OWA.clearState(store + '_' + SITE));
+        window.history.replaceState(null, '', '/');
+    });
+
+    test('a user_id containing dots crosses with the real keys and the per-site session store', () => {
+        const source = siteTracker();
+        OWA.setState(source.storeName('v'), 'vid', '1111', true, 'json');
+        OWA.setState(source.storeName('v'), 'user_id', 'jane.doe@example.com', true, 'json');
+        OWA.setState(source.storeName('s'), 'sid', '2222', true, 'json');
+        expect(source.storeName('s')).toBe('s_' + SITE);
+
+        const token = source.createSharedStateValue();
+        clearAll(source);
+
+        window.history.replaceState(null, '', '/landing#owa_state.' + token);
+        const dest = siteTracker();
+        dest.checkForLinkedState();
+
+        expect(OWA.getState(dest.storeName('v')).vid).toBe('1111');
+        expect(OWA.getState(dest.storeName('v')).user_id).toBe('jane.doe@example.com');
+        expect(OWA.getState(dest.storeName('s')).sid).toBe('2222');
+    });
+
+    test('the earlier dot-joined token is still read', () => {
+        const legacy = 'v=' + Util.urlEncode('{"vid":"3333"}') + '.s=' + Util.urlEncode('{"sid":"4444"}');
+        window.history.replaceState(null, '', '/landing#owa_state.' + Util.urlEncode(Util.base64_encode(legacy)));
+
+        const dest = siteTracker();
+        dest.checkForLinkedState();
+
+        expect(OWA.getState(dest.storeName('v')).vid).toBe('3333');
+        expect(OWA.getState(dest.storeName('s')).sid).toBe('4444');
+    });
+
+    test('in an earlier token, a pair that does not parse loses only its own store', () => {
+        // The session value is cut at its dot: its JSON does not parse.
+        const legacy = 'v=' + Util.urlEncode('{"vid":"5555"}') + '.s=' + Util.urlEncode('{"sid":"x') + '.y"}';
+        window.history.replaceState(null, '', '/landing#owa_state.' + Util.urlEncode(Util.base64_encode(legacy)));
+
+        const dest = siteTracker();
+        expect(() => dest.checkForLinkedState()).not.toThrow();
+
+        expect(OWA.getState(dest.storeName('v')).vid).toBe('5555');
+        expect(OWA.getState(dest.storeName('s'))).toBeFalsy();
+    });
+
+    test.each([
+        ['not base64', '!!!'],
+        ['base64 of broken JSON', Util.base64_encode('{"version":2,"v":')],
+        ['an unknown version', Util.base64_encode('{"version":9,"v":{"vid":"6666"}}')],
+    ])('a malformed token (%s) restores nothing and does not throw', (_label, payload) => {
+        window.history.replaceState(null, '', '/landing#owa_state.' + Util.urlEncode(payload));
+
+        const dest = siteTracker();
+        expect(() => dest.checkForLinkedState()).not.toThrow();
+        expect(OWA.getState(dest.storeName('v'))).toBeFalsy();
+    });
+
+    test('a store name outside the sharable stores is ignored', () => {
+        const payload = JSON.stringify({ version: 2, v: { vid: '7777' }, c: { campaign: 'x' }, d: { page_title: 'y' } });
+        window.history.replaceState(null, '', '/landing#owa_state.' + Util.urlEncode(Util.base64_encode(payload)));
+
+        const dest = siteTracker();
+        dest.checkForLinkedState();
+
+        expect(OWA.getState(dest.storeName('v')).vid).toBe('7777');
+        expect(OWA.getState(dest.storeName('c'))).toBeFalsy();
+        expect(OWA.getState('d') && OWA.getState('d').page_title).toBeFalsy();
+    });
+
+    test('the token is removed from the address bar; the rest of the URL stays', () => {
+        const source = siteTracker();
+        OWA.setState(source.storeName('v'), 'vid', '8888', true, 'json');
+        const token = source.createSharedStateValue();
+        clearAll(source);
+
+        window.history.replaceState(null, '', '/landing?plan=pro#section-2,owa_state.' + token);
+        siteTracker().checkForLinkedState();
+
+        expect(window.location.pathname + window.location.search + window.location.hash)
+            .toBe('/landing?plan=pro#section-2');
+    });
+
+    test('a token on the query is removed too', () => {
+        const source = siteTracker();
+        OWA.setState(source.storeName('v'), 'vid', '9999', true, 'json');
+        const token = source.createSharedStateValue();
+        clearAll(source);
+
+        window.history.replaceState(null, '', '/landing?a=1&owa_state=' + token + '&b=2');
+        siteTracker().checkForLinkedState();
+
+        expect(window.location.search).toBe('?a=1&b=2');
+        expect(window.location.hash).toBe('');
+    });
+
+    test('with no state, nothing is added to a link or a form', () => {
+        const t = siteTracker();
+        clearAll(t);
+
+        expect(t.createSharedStateValue()).toBeUndefined();
+        expect(t.addSharedStateToUrl('https://other.example/p', t.createSharedStateValue()))
+            .toBe('https://other.example/p');
+
+        const form = { action: 'https://other.example/handler', submit() {} };
+        t.shareStateByPost(form);
+        expect(form.action).toBe('https://other.example/handler');
+    });
+});
+
+describe('cross-domain state: shareStateByPost submits a real form', () => {
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    function formWith(html) {
+        document.body.innerHTML = '<form id="f" action="https://other.example/handler">' + html + '</form>';
+        return document.getElementById('f');
+    }
+
+    test('the form\'s submit handlers run (requestSubmit)', () => {
+        const t = newTracker();
+        OWA.setState('v', 'vid', 'post-visitor', true, 'json');
+        const form = formWith('<input name="q" value="x">');
+        const seen = [];
+        form.addEventListener('submit', (e) => { seen.push(form.action); e.preventDefault(); });
+        let plainSubmit = 0;
+        form.submit = () => { plainSubmit++; };
+
+        t.shareStateByPost(form);
+
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toContain('#owa_state.');
+        expect(plainSubmit).toBe(0);
+    });
+
+    test('an invalid form is not submitted', () => {
+        const t = newTracker();
+        OWA.setState('v', 'vid', 'post-visitor', true, 'json');
+        const form = formWith('<input name="email" required>');
+        const seen = [];
+        form.addEventListener('submit', (e) => { seen.push(true); e.preventDefault(); });
+        let plainSubmit = 0;
+        form.submit = () => { plainSubmit++; };
+
+        t.shareStateByPost(form);
+
+        expect(seen).toHaveLength(0);
+        expect(plainSubmit).toBe(0);
+    });
+
+    test('called from the form\'s own submit handler, it submits with submit()', () => {
+        const t = newTracker();
+        OWA.setState('v', 'vid', 'post-visitor', true, 'json');
+        const form = formWith('<input name="q" value="x">');
+        let handled = 0;
+        let plainSubmit = 0;
+        form.submit = () => { plainSubmit++; };
+        form.addEventListener('submit', (e) => {
+            handled++;
+            t.shareStateByPost(form);
+            e.preventDefault();
+        });
+
+        form.requestSubmit();
+
+        expect(handled).toBe(1);
+        expect(plainSubmit).toBe(1);
+        expect(form.action).toContain('#owa_state.');
     });
 });

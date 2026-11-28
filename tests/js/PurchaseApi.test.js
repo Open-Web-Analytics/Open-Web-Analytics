@@ -81,6 +81,50 @@ describe('the legacy transaction API', () => {
         ]);
     });
 
+    test('addTransaction() with arguments left out sends none of them', () => {
+        const { t, sent } = newTracker();
+
+        t.addTransaction('o2');
+        t.trackTransaction();
+
+        const p = sent.find(e => e.event_type === 'purchase');
+        expect(p.ct_order_id).toBe('o2');
+        ['ct_order_source', 'ct_total', 'ct_tax', 'ct_shipping', 'ct_gateway'].forEach((name) => {
+            expect(p).not.toHaveProperty(name);
+        });
+    });
+
+    test('addTransaction() with no order id sends no ct_order_id on the wire', () => {
+        const t = new OWATracker({ cookie_domain_set: true, cookie_domain: '.shop.example' });
+        t.setSiteId('purchase-site');
+        const urls = [];
+        const OrigImage = global.Image;
+        global.Image = class { set src(v) { urls.push(String(v)); } };
+
+        try {
+            t.addTransaction();
+            t.trackTransaction();
+        } finally {
+            global.Image = OrigImage;
+        }
+
+        const purchase = urls.find((u) => /[?&]e_t=purchase(&|$)/.test(u));
+        expect(purchase).toBeDefined();
+        expect(purchase).not.toMatch(/undefined/);
+        expect(purchase).not.toMatch(/[?&](o_id|o_src|o_gw)=/);
+    });
+
+    test('a line item naming neither a sku nor a product name is dropped', () => {
+        const { t, sent } = newTracker();
+
+        t.addTransaction('o3', 'web', 10);
+        expect(t.addTransactionLineItem('o3', '', '', 'Kitchen', 5, 1)).toBe(false);
+        expect(t.addTransactionLineItem('o3', 'SKU-2')).toBe(true);
+        t.trackTransaction();
+
+        expect(sent.find(e => e.event_type === 'purchase').ct_line_items).toEqual([{ item_id: 'SKU-2' }]);
+    });
+
     /*
      * It opened a transaction called 'none set', so an item added out of order
      * became a purchase with no order id, total or currency.
