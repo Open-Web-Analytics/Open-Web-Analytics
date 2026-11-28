@@ -63,7 +63,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
         \OWA\Core\Controller\Cli::$exit_code = 0;
 
         $cli = new $map[$class]($params);
-        $cli->action();
+        $cli->doAction();
 
         return [$cli, $cli->written];
     }
@@ -134,7 +134,7 @@ final class AppPasswordCliTest extends CliControllerTestCase
     {
         return [
             'no user'      => [['name' => 'x'], 2],
-            'unknown user' => [['user' => 'nobody-' . uniqid() . '@owatest.example.com', 'name' => 'x'], 1],
+            'unknown user' => [['user' => 'nobody-' . uniqid() . '@owatest.example.com', 'name' => 'x'], 2],
             'no name'      => [['user' => '{user}'], 2],
             'bad scope'    => [['user' => '{user}', 'name' => 'x', 'scope' => 'admin'], 2],
         ];
@@ -202,6 +202,19 @@ final class AppPasswordCliTest extends CliControllerTestCase
         $made    = AppPasswords::create($user_id, 'Kept', AppPasswords::SCOPE_FULL);
 
         list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class, ['user' => $user_id]);
+
+        $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertSame(2, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertNotNull(AppPasswords::verify($made['token']));
+    }
+
+    /** --all=false is off: with no id, nothing is revoked. */
+    public function testRevokeWithAllSetToFalseRevokesNothing(): void
+    {
+        $user_id = $this->user();
+        $made    = AppPasswords::create($user_id, 'Kept', AppPasswords::SCOPE_FULL);
+
+        list($cli) = $this->run_(\OWA\Module\Base\Controller\AppPasswordRevokeCli::class, ['user' => $user_id, 'all' => 'false']);
 
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
         $this->assertSame(2, \OWA\Core\Controller\Cli::$exit_code);

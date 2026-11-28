@@ -13,9 +13,22 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Deletes archived files of the file-based event queues.',
             'arguments'   => [
-                'queues=<name>[,<name>...]' => 'The queues to prune. Defaults to every registered queue.',
-                'interval=<seconds>'        => 'Age beyond which an archive is deleted. Defaults to 86400.',
-                'scheduled=1'               => 'Set by the scheduler. Deletes only archives older than raw_retention_months, and none when it is not set; interval= is ignored.',
+                'queues' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'list'        => true,
+                    'description' => 'The queues to prune. Defaults to every registered queue.',
+                ],
+                'interval' => [
+                    'type'        => 'duration',
+                    'min'         => 1,
+                    'default'     => 86400,
+                    'description' => 'Age beyond which an archive is deleted.',
+                ],
+                '--scheduled' => [
+                    'type'        => 'flag',
+                    'description' => 'Set by the scheduler. Deletes only archives older than raw_retention_months, and none when it is not set; interval= is ignored.',
+                ],
             ],
         ];
     }
@@ -38,7 +51,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
      */
     public function action() {
 
-        if ( $this->getParam( 'scheduled' ) ) {
+        if ( $this->param( 'scheduled' ) ) {
 
             $keep_from = \OWA\Module\Base\Classes\Retention::rawCutoffTimestamp();
 
@@ -51,26 +64,14 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
         } else {
 
-            $raw = $this->getParam( 'interval' );
-
-            // Seconds, as digits: (int) "7days" would be 7 seconds.
-            if ( $raw !== null && $raw !== '' && ! ctype_digit( (string) $raw ) ) {
-
-                return $this->usageError( sprintf(
-                    'interval= takes a number of seconds, such as 604800 for a week; got "%s". Nothing was deleted.',
-                    is_string( $raw ) ? $raw : '--interval' ) );
-            }
-
-            $interval = (int) ( $raw ?: 86400 );
+            $interval = (int) $this->param( 'interval' );
         }
 
         $known = array_values( array_unique( array_merge(
             array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) ),
             [ \OWA\Module\Base\Classes\TrackerIngest::QUEUE ] ) ) );
 
-        $queues = $this->getParam( 'queues' )
-            ? array_values( array_filter( array_map( 'trim', explode( ',', (string) $this->getParam( 'queues' ) ) ), static fn ( $name ) => $name !== '' ) )
-            : array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) );
+        $queues = $this->param( 'queues' ) ?? array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) );
 
         // Every name is checked before anything is pruned.
         foreach ( $queues as $queue_name ) {

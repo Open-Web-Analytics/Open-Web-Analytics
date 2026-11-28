@@ -91,18 +91,96 @@ class Cli extends \OWA\Core\AdminController {
      * constructor exits outside a CLI request and the generator must not run
      * one to read it.
      *
-     * Each argument is keyed as it is typed -- `property=<id>`, `--dry-run` --
-     * and the name before any `=`, without the dashes, is what the controller
-     * reads with getParam(). WikiDocsCliJobsTest holds the source to that name.
+     * `arguments` are the command's params(): each keyed by its name, with
+     * the dashes it is written with for a switch (`--dry-run`), and declared
+     * as Core\Params describes: its type, description, and any range,
+     * options, required or default. The command reads each with param().
      *
      * `deprecated` => true marks a command kept only for scripts that still
      * call it. It still runs; the wiki's CLI reference leaves it out.
      *
-     * @return array{description: string, arguments: array<string,string>, deprecated?: bool}
+     * @return array{description: string, arguments: array<string, array<string, mixed>>, deprecated?: bool}
      */
     public static function usage() {
 
         return [ 'description' => '', 'arguments' => [] ];
+    }
+
+    /**
+     * usage()'s arguments.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function params() {
+
+        return (array) ( static::usage()['arguments'] ?? [] );
+    }
+
+    /**
+     * Refused arguments are a usage error, exiting 2: usageMessage().
+     *
+     * @param  array<string, string> $problems
+     * @return mixed this controller's data
+     */
+    protected function paramsRefused( array $problems ) {
+
+        $this->usageError( self::usageMessage( (string) ( $this->params['cmd'] ?? self::commandFor( static::class ) ), $problems ) );
+
+        return $this->data;
+    }
+
+    /**
+     * Why $params are refused by $class's declared arguments, as one line;
+     * null when they are not. For cli.php, which runs a command that needs no
+     * boot without constructing it.
+     *
+     * @param  class-string<Cli>   $class
+     * @param  array<mixed>        $params
+     * @return string|null
+     */
+    public static function argumentProblem( $class, array $params ) {
+
+        $problems = \OWA\Core\Params::problems( $class::params(), $params );
+
+        return $problems ? self::usageMessage( (string) ( $params['cmd'] ?? '' ), $problems ) : null;
+    }
+
+    /**
+     * The usage error for refused arguments: the command, then each problem,
+     * which names its argument and what it takes.
+     *
+     * @param  string                $command
+     * @param  array<string, string> $problems
+     * @return string
+     */
+    public static function usageMessage( $command, array $problems ) {
+
+        $problems = array_map( static fn ( $p ) => rtrim( $p, '.' ) . '.', array_values( $problems ) );
+
+        return $command !== ''
+            ? sprintf( \OWA\Core\CoreAPI::t( 'cmd=%1$s: %2$s Nothing was done.' ), $command, implode( ' ', $problems ) )
+            : sprintf( \OWA\Core\CoreAPI::t( '%s Nothing was done.' ), implode( ' ', $problems ) );
+    }
+
+    /**
+     * The command that runs $class, or '' when none is registered.
+     *
+     * @param  string $class
+     * @return string
+     */
+    protected static function commandFor( $class ) {
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ( (array) $s->getMap( 'cli_commands' ) as $command => $action ) {
+
+            if ( ( $s->getMapValue( 'actions', $action )['class_name'] ?? null ) === $class ) {
+
+                return (string) $command;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -299,8 +377,8 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /**
-     * The argument names a command reads: those its usage() declares, by the
-     * name before any `=` and without dashes, and GLOBAL_ARGUMENTS.
+     * The argument names a command reads: those its usage() declares, by
+     * name, and GLOBAL_ARGUMENTS.
      *
      * Null for a command that does not declare its own usage(), whose
      * arguments are therefore unknown.
@@ -327,7 +405,7 @@ class Cli extends \OWA\Core\AdminController {
 
         foreach ( array_keys( (array) ( $usage['arguments'] ?? [] ) ) as $arg ) {
 
-            $names[] = ltrim( explode( '=', (string) $arg, 2 )[0], '-' );
+            $names[] = \OWA\Core\Params::name( (string) $arg );
         }
 
         return $names;

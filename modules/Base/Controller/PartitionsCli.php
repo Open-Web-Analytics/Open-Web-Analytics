@@ -104,32 +104,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     public static function resolveCutoff( $value ) {
 
-        $value = trim( (string) $value );
-
-        if ( preg_match( '/^\d{8}$/', $value ) ) {
-
-            // Reject a date that is not one, rather than partitioning against it.
-            $d = \DateTimeImmutable::createFromFormat( 'Ymd|', $value );
-
-            return ( $d && $d->format( 'Ymd' ) === $value ) ? $value : null;
-        }
-
-        if ( preg_match( '/^(\d+)\s*(day|days|d|month|months|m|year|years|y)$/i', $value, $m ) ) {
-
-            $n    = (int) $m[1];
-            $unit = strtolower( $m[2] );
-
-            if ( $n < 1 ) {
-
-                return null;
-            }
-
-            $interval = ( $unit[0] === 'd' ) ? 'day' : ( ( $unit[0] === 'm' ) ? 'month' : 'year' );
-
-            return ( new \DateTimeImmutable( 'today' ) )->modify( sprintf( '-%d %s', $n, $interval ) )->format( 'Ymd' );
-        }
-
-        return null;
+        return \OWA\Core\Validation\Date::resolve( $value, true );
     }
 
     /**
@@ -212,7 +187,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function withinPartitionBudget( $table, $planned, $budget ) {
 
-        if ( $planned <= $budget['limit'] || $this->getParam( 'force' ) ) {
+        if ( $planned <= $budget['limit'] || $this->param( 'force' ) ) {
 
             return true;
         }
@@ -354,7 +329,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $today      = date( 'Ymd' );
         $historical = count( array_filter( $spans, static fn ( $span ) => (string) $span['less_than'] <= $today ) );
 
-        if ( $this->guardsAllHistory() && count( $plan['drop'] ) >= $historical && ! $this->getParam( 'force' ) ) {
+        if ( $this->guardsAllHistory() && count( $plan['drop'] ) >= $historical && ! $this->param( 'force' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s: %s would drop all %d historical partition%s, leaving only what is being '
@@ -769,7 +744,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
              */
             $current = $span['start'] <= $this->today() && $this->today() < $span['less_than'];
 
-            if ( $rows > 0 && ! $current && ! $this->getParam( 'force' ) ) {
+            if ( $rows > 0 && ! $current && ! $this->param( 'force' ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '  %s holds %s rows and is not the one taking writes, so carving it would '

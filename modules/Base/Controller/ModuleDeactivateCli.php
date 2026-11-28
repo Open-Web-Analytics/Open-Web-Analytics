@@ -19,7 +19,11 @@ class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Deactivates a module.',
             'arguments'   => [
-                'module=<name>' => 'Required. The module\'s name.',
+                'module' => [
+                    'type'        => 'module',
+                    'required'    => true,
+                    'description' => 'The module\'s name.',
+                ],
             ],
         ];
     }
@@ -32,20 +36,11 @@ class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
 
     public function action() {
         
-        $module = $this->getParam('module');
-        
-        if ( $module ) {
-    
-            $ret = \OWA\Core\CoreAPI::deactivateModule($module);
+        $module = (string) $this->param( 'module' );
 
-            if ( $ret === false ) {
+        if ( \OWA\Core\CoreAPI::deactivateModule( $module ) === false ) {
 
-                return $this->fail( sprintf( 'Module %s was not deactivated. See the messages above.', $module ) );
-            }
-
-        } else {
-            return $this->usageError('No module argument was specified. Use module=xxx');
+            return $this->fail( sprintf( 'Module %s was not deactivated. See the messages above.', $module ) );
         }
     }
-    
 }

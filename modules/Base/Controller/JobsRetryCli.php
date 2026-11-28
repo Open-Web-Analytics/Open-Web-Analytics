@@ -10,7 +10,12 @@ class JobsRetryCli extends JobsCli {
         return [
             'description' => 'Makes a failed one-off job due now, with its attempts cleared.',
             'arguments'   => [
-                'id=<id|all>' => 'Required. The job to retry, or all for every failed job.',
+                'id' => [
+                    'type'        => 'string',
+                    'value'       => '<id|all>',
+                    'required'    => true,
+                    'description' => 'The job to retry, or all for every failed job.',
+                ],
             ],
         ];
     }

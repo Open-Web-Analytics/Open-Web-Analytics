@@ -59,14 +59,30 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Downloads the MaxMind GeoLite2 database that IP lookups resolve against. Needs a MaxMind licence key.',
             'arguments'   => [
-                'license-key=<key>' => 'The licence key. Defaults to the module\'s db_license_key, then ws_license_key, setting.',
-                'edition=<name>'    => 'The edition to download: ' . implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
-                                    . '. Defaults to the one the module reads.',
-                '--force'           => 'Download even when the local copy is as new as MaxMind\'s.',
-                '--dry-run'         => 'Report what would be downloaded, and write nothing.',
-                'scheduled=1'       => 'Set by the scheduler. Skips quietly without a licence key, counts an already current '
-                                    . 'copy as success, never downloads when MaxMind\'s update check fails while a local copy exists, and '
-                                    . 'waits a day after a download that did not install.',
+                'license-key' => [
+                    'type'        => 'string',
+                    'value'       => '<key>',
+                    'description' => 'The licence key. Defaults to the module\'s db_license_key, then ws_license_key, setting.',
+                ],
+                'edition' => [
+                    'type'        => 'select',
+                    'options'     => \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
+                    'description' => 'The edition to download. Defaults to the one the module reads.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'Download even when the local copy is as new as MaxMind\'s.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what would be downloaded, and write nothing.',
+                ],
+                '--scheduled' => [
+                    'type'        => 'flag',
+                    'description' => 'Set by the scheduler. Skips quietly without a licence key, counts an already current '
+                        . 'copy as success, never downloads when MaxMind\'s update check fails while a local copy exists, and '
+                        . 'waits a day after a download that did not install.',
+                ],
             ],
         ];
     }
@@ -80,28 +96,17 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
 
     public function action() {
 
-        $dry_run   = (bool) $this->getParam( 'dry-run' );
-        $scheduled = (bool) $this->getParam( 'scheduled' );
+        $dry_run   = $this->param( 'dry-run' );
+        $scheduled = $this->param( 'scheduled' );
 
         // The same answer the reader uses, so what is downloaded is what gets
         // read. edition= overrides for a one-off, but only to something the
         // module can actually read -- an unrecognised edition would download
         // happily and resolve nothing.
-        $edition = (string) $this->getParam( 'edition' );
-
-        if ( $edition && ! in_array( $edition, \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS, true ) ) {
-
-            return $this->usageError( sprintf(
-                '"%s" is not an edition this module reads. Choose one of: %s.',
-                $edition,
-                implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
-            ) );
-        }
-
-        $edition = $edition ?: \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+        $edition = $this->param( 'edition' ) ?? \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
 
         $key = trim( (string) (
-            $this->getParam( 'license-key' )
+            $this->param( 'license-key' )
             ?: \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_license_key' )
             ?: \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_license_key' )
         ) );
@@ -160,11 +165,11 @@ class GeoipUpdateDbCli extends \OWA\Core\Controller\Cli {
         // Asked for whenever the answer could change what happens next: when
         // there is a local copy to compare against, and on a dry run, which
         // exists to report rather than to act.
-        $remote = ( $local && ! $this->getParam( 'force' ) ) || $dry_run
+        $remote = ( $local && ! $this->param( 'force' ) ) || $dry_run
             ? $this->lastModified( $url )
             : 0;
 
-        if ( $local && $remote && $remote <= $local && ! $this->getParam( 'force' ) ) {
+        if ( $local && $remote && $remote <= $local && ! $this->param( 'force' ) ) {
 
             $current = sprintf(
                 'Already current: MaxMind last changed %s on %s, and the local copy is from %s. Nothing downloaded.',

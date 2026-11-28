@@ -26,20 +26,48 @@ class SitesAddCli extends \OWA\Core\Controller\Cli {
     /**
      * See \OWA\Core\Controller\Cli::usage().
      *
-     * @return array{description: string, arguments: array<string,string>}
+     * @return array{description: string, arguments: array<string, array<string, mixed>>}
      */
     public static function usage() {
 
         return [
             'description' => 'Adds a tracked website or app as a Profile, under an existing Property or a new one.',
             'arguments'   => [
-                'domain=<url>'         => 'Required for a website. Its domain.',
-                'name=<text>'          => 'Required unless propertyId= is given. Names the new Property.',
-                'propertyId=<id>'      => 'Add the Profile to this existing Property instead of creating one.',
-                'streamType=<web|app>' => 'What the Profile observes. Defaults to web.',
-                'appId=<id>'           => 'Required for an app. Its bundle ID or package name.',
-                'description=<text>'   => 'A description.',
-                'site_family=<text>'   => 'A family name to group it under.',
+                'domain' => [
+                    'type'        => 'string',
+                    'value'       => '<url>',
+                    'description' => 'Required for a website. Its domain.',
+                ],
+                'name' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'Required unless propertyId= is given. Names the new Property.',
+                ],
+                'propertyId' => [
+                    'type'        => 'property',
+                    'description' => 'Add the Profile to this existing Property instead of creating one.',
+                ],
+                'streamType' => [
+                    'type'        => 'select',
+                    'options'     => [ \OWA\Module\Base\Entity\Site::STREAM_WEB, \OWA\Module\Base\Entity\Site::STREAM_APP ],
+                    'default'     => \OWA\Module\Base\Entity\Site::STREAM_WEB,
+                    'description' => 'What the Profile observes.',
+                ],
+                'appId' => [
+                    'type'        => 'string',
+                    'value'       => '<id>',
+                    'description' => 'Required for an app. Its bundle ID or package name.',
+                ],
+                'description' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'A description.',
+                ],
+                'site_family' => [
+                    'type'        => 'string',
+                    'value'       => '<text>',
+                    'description' => 'A family name to group it under.',
+                ],
             ],
         ];
     }
@@ -49,6 +77,17 @@ class SitesAddCli extends \OWA\Core\Controller\Cli {
         $this->setRequiredCapability( 'edit_sites' );
 
         parent::__construct( $params );
+    }
+
+    /**
+     * See Classes\AddsProfile::profileInput(): the declared arguments, as their types.
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    protected function profileInput( $name ) {
+
+        return $this->param( $name );
     }
 
     public function action() {

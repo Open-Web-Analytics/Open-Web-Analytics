@@ -17,19 +17,18 @@ class AppPasswordListCli extends AppPasswordsCli {
         return [
             'description' => 'Lists a user\'s application passwords, with the id app-password-revoke takes.',
             'arguments'   => [
-                'user=<user id>' => 'Required. The user whose passwords to list.',
+                'user' => [
+                    'type'        => 'user',
+                    'required'    => true,
+                    'description' => 'The user whose passwords to list.',
+                ],
             ],
         ];
     }
 
     public function action() {
 
-        $user_id = $this->user();
-
-        if ( $user_id === '' ) {
-
-            return;
-        }
+        $user_id = (string) $this->param( 'user' );
 
         $rows = \OWA\Module\Base\Classes\AppPasswords::forUser( $user_id );
 

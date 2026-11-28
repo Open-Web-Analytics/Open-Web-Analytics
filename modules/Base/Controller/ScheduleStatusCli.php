@@ -36,7 +36,11 @@ class ScheduleStatusCli extends SchedulerCli {
         return [
             'description' => 'Reports what the scheduler is doing and, for a job that is behind, the first cause that explains it. Read-only.',
             'arguments'   => [
-                'format=markdown' => 'Print the registered jobs as a Markdown table instead.',
+                'format' => [
+                    'type'        => 'select',
+                    'options'     => [ 'markdown' ],
+                    'description' => 'Print the registered jobs as a Markdown table instead.',
+                ],
             ],
         ];
     }

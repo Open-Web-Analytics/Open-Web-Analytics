@@ -90,12 +90,32 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Rebuilds the reporting cubes from the raw event table, one partition at a time. With no property=, covers every existing cube and every Property with raw events in the range, creating a cube on a Property\'s first data. Dates select partitions, so a range is widened to the whole partitions it touches.',
             'arguments'   => [
-                'from=<yyyymmdd>' => 'First date to rebuild. With no to=, the range runs through today. With no dates at all, the range is yesterday and today, and a cube that is behind is caught up from its oldest unsettled partition.',
-                'to=<yyyymmdd>'   => 'Last date to rebuild, inclusive. With no from=, the range starts today.',
-                'days=<n>'        => 'The last n days, today included. n must be 1 or more. Ignored when from= or to= is given.',
-                'property=<id>'   => 'Rebuild only this Property\'s cube, whether or not it has collected anything in the range.',
-                '--dry-run'       => 'Print each partition\'s build statement, and change nothing. Says whether a missing cube would be created.',
-                'steps=1'         => 'After each partition, print the time and row count of every build step.',
+                'from' => [
+                    'type'        => 'date',
+                    'description' => 'First date to rebuild. With no to=, the range runs through today. With no dates at all, the range is yesterday and today, and a cube that is behind is caught up from its oldest unsettled partition.',
+                ],
+                'to' => [
+                    'type'        => 'date',
+                    'not_before'  => 'from',
+                    'description' => 'Last date to rebuild, inclusive. With no from=, the range starts today.',
+                ],
+                'days' => [
+                    'type'        => 'integer',
+                    'min'         => 1,
+                    'description' => 'The last n days, today included. Ignored when from= or to= is given.',
+                ],
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'Rebuild only this Property\'s cube, whether or not it has collected anything in the range.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Print each partition\'s build statement, and change nothing. Says whether a missing cube would be created.',
+                ],
+                '--steps' => [
+                    'type'        => 'flag',
+                    'description' => 'After each partition, print the time and row count of every build step.',
+                ],
             ],
         ];
     }
@@ -141,16 +161,10 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         if ( ! $range ) {
 
             return $this->usageError(
-                'Could not read that range. Use from=yyyymmdd for that date through to now, '
-              . 'days=N for the same relatively, or from=yyyymmdd to=yyyymmdd for a closed window.' );
+                'That range ends before it starts. With no from=, the range starts today; with no to=, it runs through today.' );
         }
 
         $properties = $this->resolveProperties( $range );
-
-        if ( $properties === null ) {
-
-            return;
-        }
 
         if ( ! $properties ) {
 
@@ -158,7 +172,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 'No Property has a cube or has collected anything in that range. Nothing to do.' );
         }
 
-        $dry_run = (bool) $this->getParam( 'dry-run' );
+        $dry_run = $this->param( 'dry-run' );
         $failed  = 0;
         $built   = 0;
         $locked  = 0;
@@ -239,8 +253,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function isRoutine() {
 
-        return $this->getParam( 'from' ) === null && $this->getParam( 'to' ) === null
-            && $this->getParam( 'days' ) === null;
+        return $this->param( 'from' ) === null && $this->param( 'to' ) === null
+            && $this->param( 'days' ) === null;
     }
 
     /**
@@ -255,23 +269,14 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * cube with nothing to say costs one empty partition.
      *
      * @param DayRange $range from resolveRange()
-     * @return string[]|null  property ids, or null having already refused
+     * @return string[]  property ids
      */
     protected function resolveProperties( array $range ) {
 
         $cubes = \OWA\Module\Base\Classes\Cube\Cubes::existing();
-        $only  = $this->getParam( 'property' );
+        $only  = $this->param( 'property' );
 
         if ( $only !== null ) {
-
-            $only = trim( (string) $only );
-
-            if ( ! ctype_digit( $only ) ) {
-
-                $this->usageError( 'property= takes a Property id.' );
-
-                return null;
-            }
 
             /*
              * Named explicitly, so it is built whether or not it has collected
@@ -279,7 +284,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * and refusing it would make the command useless for the one case
              * an operator reaches for it.
              */
-            return [ $only ];
+            return [ (string) $only ];
         }
 
         /*
@@ -845,7 +850,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function reportSteps( $builder ) {
 
-        if ( ! $this->getParam( 'steps' ) ) {
+        if ( ! $this->param( 'steps' ) ) {
 
             return;
         }
@@ -867,41 +872,29 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * which is the whole point of it: a rebuild re-applies a correction or
      * picks up late arrivals, and both reach forward from a point in the past.
      *
-     * @return DayRange|null from and to as yyyymmdd
+     * @return DayRange|null from and to as yyyymmdd; null for one that ends before it starts
      */
     protected function resolveRange() {
 
         $today = (int) date( 'Ymd' );
 
-        /*
-         * Compared against null, not for truthiness. getParam() answers null
-         * for a parameter that was not given, and `days=0` is a string that is
-         * FALSY -- so a truthiness test reads "0" as "not supplied" and quietly
-         * runs the default window instead of refusing a nonsense one.
-         */
-        $from = $this->getParam( 'from' );
-        $to   = $this->getParam( 'to' );
+        $from = $this->param( 'from' );
+        $to   = $this->param( 'to' );
 
         if ( $from !== null || $to !== null ) {
 
-            $from = $from !== null ? $this->asDate( $from ) : $today;
-            $to   = $to !== null ? $this->asDate( $to ) : $today;
+            $from = $from !== null ? (int) $from : $today;
+            $to   = $to !== null ? (int) $to : $today;
 
-            return ( $from && $to && $from <= $to )
-                ? [ 'from' => $from, 'to' => $to ] : null;
+            return $from <= $to ? [ 'from' => $from, 'to' => $to ] : null;
         }
 
-        $days = $this->getParam( 'days' );
+        $days = $this->param( 'days' );
 
         if ( $days !== null ) {
 
-            if ( ! ctype_digit( (string) $days ) || (int) $days < 1 ) {
-
-                return null;
-            }
-
             return [
-                'from' => (int) date( 'Ymd', strtotime( '-' . ( (int) $days - 1 ) . ' days' ) ),
+                'from' => (int) date( 'Ymd', strtotime( '-' . ( $days - 1 ) . ' days' ) ),
                 'to'   => $today,
             ];
         }
@@ -929,23 +922,5 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             'from' => (int) date( 'Ymd', strtotime( '-1 day' ) ),
             'to'   => $today,
         ];
-    }
-
-    /**
-     * @param string $value
-     * @return int|null yyyymmdd, or null if it is not a real date
-     */
-    protected function asDate( $value ) {
-
-        $value = trim( (string) $value );
-
-        if ( ! preg_match( '/^\d{8}$/', $value ) ) {
-
-            return null;
-        }
-
-        $d = \DateTimeImmutable::createFromFormat( 'Ymd|', $value );
-
-        return ( $d && $d->format( 'Ymd' ) === $value ) ? (int) $value : null;
     }
 }

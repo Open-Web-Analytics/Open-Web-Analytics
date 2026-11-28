@@ -18,7 +18,10 @@ class CustomDimensionListCli extends CustomDimensionsCli {
         return [
             'description' => 'Lists registered custom dimensions and how many more each Property has room for.',
             'arguments'   => [
-                'property=<id>' => 'List only this Property\'s. Defaults to every Property that has one.',
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'List only this Property\'s. Defaults to every Property that has one.',
+                ],
             ],
         ];
     }
@@ -26,15 +29,10 @@ class CustomDimensionListCli extends CustomDimensionsCli {
     public function action() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $only  = trim( (string) $this->getParam( 'property' ) );
+        $only  = (string) $this->param( 'property' );
         $cubes = \OWA\Module\Base\Classes\Cube\Cubes::existing();
 
         if ( $only !== '' ) {
-
-            if ( ! ctype_digit( $only ) ) {
-
-                return $this->usageError( 'property=<id> takes a Property id.' );
-            }
 
             $cubes = isset( $cubes[ $only ] )
                 ? [ $only => $cubes[ $only ] ]

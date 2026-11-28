@@ -13,16 +13,44 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Applies pending schema updates for every module, in order. When an update needs a choice from the operator, it stops and says what to run.',
             'arguments'   => [
-                '--listpending'                => 'List the modules with pending updates, and apply nothing.',
-                'apply=<module>.<sequence>'    => 'Apply one update.',
-                'rollback=<module>.<sequence>' => 'Roll back one update.',
-                '--force'                      => 'With apply=: apply out of sequence.',
-                'since=<cutoff>'               => 'For the 1.x history migration: migrate events newer than a date (yyyymmdd) or a period such as 2years.',
-                '--all'                        => 'For the 1.x history migration: migrate everything.',
+                '--listpending' => [
+                    'type'        => 'flag',
+                    'description' => 'List the modules with pending updates, and apply nothing.',
+                ],
+                'apply' => [
+                    'type'            => 'string',
+                    'value'           => '<module>.<sequence>',
+                    'pattern'         => self::UPDATE_NAME,
+                    'pattern_problem' => 'Needs an update, such as base.98.',
+                    'description'     => 'Apply one update.',
+                ],
+                'rollback' => [
+                    'type'            => 'string',
+                    'value'           => '<module>.<sequence>',
+                    'pattern'         => self::UPDATE_NAME,
+                    'pattern_problem' => 'Needs an update, such as base.98.',
+                    'description'     => 'Roll back one update.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'With apply=: apply out of sequence.',
+                ],
+                'since' => [
+                    'type'        => 'date',
+                    'ago'         => true,
+                    'description' => 'For the 1.x history migration: migrate events newer than a date (yyyymmdd) or a period such as 2years.',
+                ],
+                '--all' => [
+                    'type'        => 'flag',
+                    'description' => 'For the 1.x history migration: migrate everything.',
+                ],
             ],
         ];
     }
     
+    /** An update's name: <module>.<sequence>. */
+    const UPDATE_NAME = '/^([A-Za-z0-9_]+)\.(\d+)$/';
+
     /** @var \OWA\Module\Base\Classes\JobLease|null the lease this run holds */
     protected $update_lease = null;
 
@@ -42,7 +70,7 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
      */
     public function action() {
 
-        if ($this->isParam('listpending')) {
+        if ( $this->param( 'listpending' ) ) {
 
             return $this->listPendingUpdates();
         }
@@ -79,14 +107,14 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
 
         try {
 
-            if ($this->getParam('apply')) {
+            if ( $this->param( 'apply' ) !== null ) {
 
-                return $this->apply($this->get('apply'));
+                return $this->apply( $this->param( 'apply' ) );
             }
 
-            if ($this->getParam('rollback')) {
+            if ( $this->param( 'rollback' ) !== null ) {
 
-                return $this->rollback($this->get('rollback'));
+                return $this->rollback( $this->param( 'rollback' ) );
             }
 
             return $this->applyPending();
@@ -280,7 +308,7 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
      */
     public static function parseUpdateName( $update ) {
 
-        return is_string( $update ) && preg_match( '/^([A-Za-z0-9_]+)\.(\d+)$/', $update, $m )
+        return is_string( $update ) && preg_match( self::UPDATE_NAME, $update, $m )
             ? [ $m[1], $m[2] ]
             : null;
     }
@@ -324,18 +352,7 @@ class CoreUpdateSchemaCli extends \OWA\Core\Controller\Cli {
             return null;
         }
         
-        // check for force command param
-        //
-        // The key is 'force', not '--force': cli.php strips a leading -- and treats
-        // a valueless switch as true, so --force, --force=1 and force=1 all arrive
-        // here as 'force'.
-        $force = false;
-        if ($this->isParam('force')) {
-            
-            $force = true;
-        }
-        
-        $ret = $u->apply($force);
+        $ret = $u->apply( $this->param( 'force' ) );
         
         if ($ret) {
             \OWA\Core\CoreAPI::notice("Updates applied successfully.");

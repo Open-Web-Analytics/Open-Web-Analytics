@@ -20,7 +20,10 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Sends the tracker-ingest dead letters that decode back to the intake, and deletes those older than raw_retention_months. Runs on the scheduler daily as replay-tracker-ingest.',
             'arguments'   => [
-                'scheduled=1' => 'Set by the scheduler. Replays only dead letters not replayed before.',
+                '--scheduled' => [
+                    'type'        => 'flag',
+                    'description' => 'Set by the scheduler. Replays only dead letters not replayed before.',
+                ],
             ],
         ];
     }
@@ -41,7 +44,7 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
 
         try {
 
-            $counts = $I::replay( (bool) $this->getParam( 'scheduled' ), time() + self::BUDGET );
+            $counts = $I::replay( (bool) $this->param( 'scheduled' ), time() + self::BUDGET );
             $main   = $I::queue();
             $dlq    = $main->deadLetterQueue();
             $error  = $I::queueError( $main ) ?: ( $dlq ? $I::queueError( $dlq ) : null );
@@ -56,7 +59,7 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
             return $this->fail( 'Tracker ingest dead letters: the queue failed: ' . $error );
         }
 
-        if ( array_sum( $counts ) || ! $this->getParam( 'scheduled' ) ) {
+        if ( array_sum( $counts ) || ! $this->param( 'scheduled' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'Tracker ingest dead letters: %d replayed, %d replayed before and kept, %d unreadable and kept, '

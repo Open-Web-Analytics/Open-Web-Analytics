@@ -150,17 +150,22 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertArrayHasKey('validation_errors', $result['data']);
     }
 
-    public function testAddSiteRejectsDomainWithoutProtocol(): void
+    public function testAddSiteRejectsAStreamTypeItDoesNotKnow(): void
     {
-        // The 'http' substring-position validation requires a protocol prefix.
-        $result = $this->runCommand(
+        $domain = 'owatest-cli-streamtype-' . $this->tok . '.example.com';
+
+        $this->runCommand(
             \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
-            ['domain' => 'owatest-cli-noproto-' . $this->tok . '.example.com']
+            ['domain' => 'https://' . $domain, 'name' => 'CLI stream type ' . $this->tok, 'streamType' => 'App']
         );
 
         $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code,
-            'add-site should reject a domain missing the http(s):// protocol.');
+            'add-site takes streamType=web or streamType=app.');
+
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
+        $site->load($domain, 'domain');
+        $this->assertEmpty($site->get('id'), 'nothing was created');
     }
 
     public function testAddSiteRejectsUnprivilegedUser(): void
@@ -498,7 +503,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $result = $this->runCommand(
             \OWA\Module\Base\Controller\CoreUpdateSchemaCli::class,
             'updatesApplyCli.php',
-            ['listpending' => '']
+            ['listpending' => true]
         );
 
         // listpending returns its own data payload and never mutates schema;

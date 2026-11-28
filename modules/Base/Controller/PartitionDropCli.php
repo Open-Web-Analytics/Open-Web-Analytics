@@ -34,12 +34,34 @@ class PartitionDropCli extends PartitionsCli {
         return [
             'description' => 'Drops partitions holding only data older than a cutoff. A partition that straddles the cutoff is kept, and the command reports the date before which data no longer exists. Not bound by the retention settings.',
             'arguments'   => [
-                'older-than=<cutoff>' => 'Required. A date (yyyymmdd) or a period back from today, such as 12months, 18m or 2years.',
-                'only=<raw|cubes>'    => 'Drop from the raw event tables only, or from every reporting cube only.',
-                'property=<id>'       => 'Drop only from this Property\'s cube.',
-                'table=<name>'        => 'Drop only from this table.',
-                '--force'             => 'Proceed when every historical partition of a table would be dropped.',
-                '--dry-run'           => 'Report what would be dropped, and change nothing.',
+                'older-than' => [
+                    'type'        => 'date',
+                    'ago'         => true,
+                    'required'    => true,
+                    'description' => 'A date (yyyymmdd) or a period back from today, such as 12months, 18m or 2years.',
+                ],
+                'only' => [
+                    'type'        => 'select',
+                    'options'     => [ 'raw', 'cubes' ],
+                    'description' => 'Drop from the raw event tables only, or from every reporting cube only.',
+                ],
+                'property' => [
+                    'type'        => 'property',
+                    'description' => 'Drop only from this Property\'s cube.',
+                ],
+                'table' => [
+                    'type'        => 'string',
+                    'value'       => '<name>',
+                    'description' => 'Drop only from this table.',
+                ],
+                '--force' => [
+                    'type'        => 'flag',
+                    'description' => 'Proceed when every historical partition of a table would be dropped.',
+                ],
+                '--dry-run' => [
+                    'type'        => 'flag',
+                    'description' => 'Report what would be dropped, and change nothing.',
+                ],
             ],
         ];
     }
@@ -58,26 +80,10 @@ class PartitionDropCli extends PartitionsCli {
         }
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $dry_run = (bool) $this->getParam( 'dry-run' );
-        $raw     = $this->getParam( 'older-than' );
+        $dry_run = $this->param( 'dry-run' );
+        $cutoff  = (string) $this->param( 'older-than' );
 
-        if ( ! $raw ) {
-
-            return $this->usageError(
-                'older-than is required: a date as yyyymmdd, or a period such as 12months, 18m, 2years, 90days.'
-            );
-        }
-
-        $cutoff = $this->resolveCutoff( $raw );
-
-        if ( ! $cutoff ) {
-
-            return $this->usageError( sprintf(
-                'Could not read "%s" as a date or period. Use yyyymmdd, or 12months / 18m / 2years / 90days.', $raw
-            ) );
-        }
-
-        \OWA\Core\CoreAPI::notice( sprintf( 'Retention cutoff: %s (from "%s").', $cutoff, $raw ) );
+        \OWA\Core\CoreAPI::notice( sprintf( 'Retention cutoff: %s.', $cutoff ) );
 
         $touched = 0;
 
@@ -130,16 +136,9 @@ class PartitionDropCli extends PartitionsCli {
      */
     protected function selectTables() {
 
-        $only     = (string) $this->getParam( 'only' );
-        $property = (string) $this->getParam( 'property' );
-        $tables   = $this->factTables( $this->getParam( 'table' ) ?: null );
-
-        if ( $only !== '' && ! in_array( $only, [ 'raw', 'cubes' ], true ) ) {
-
-            $this->usageError( sprintf( 'only=%s: use only=raw (event data) or only=cubes (reporting cubes).', $only ) );
-
-            return false;
-        }
+        $only     = (string) $this->param( 'only' );
+        $property = (string) $this->param( 'property' );
+        $tables   = $this->factTables( $this->param( 'table' ) );
 
         if ( $property !== '' ) {
 

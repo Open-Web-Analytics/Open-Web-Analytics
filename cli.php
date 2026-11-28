@@ -97,6 +97,13 @@ if ($without_boot) {
         exit(2);
     }
 
+    $refused = \OWA\Core\Controller\Cli::argumentProblem($without_boot, $params);
+
+    if ($refused !== null) {
+        fwrite(STDERR, $refused . "\n");
+        exit(2);
+    }
+
     exit((int) $without_boot::runWithoutBoot($params));
 }
 

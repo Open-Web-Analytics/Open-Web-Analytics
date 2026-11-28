@@ -89,46 +89,6 @@ final class CliExitCodeTest extends CliControllerTestCase
         $this->assertSame([], Cli::undeclaredArguments(\OWA\Module\Base\Controller\SchedulerCli::class, ['anything' => 1]));
     }
 
-    /**
-     * Every argument a command reads is one it accepts, so refusing undeclared
-     * arguments never refuses one that works.
-     */
-    public function testEveryArgumentACommandReadsIsAccepted(): void
-    {
-        // Set by Controller::doAction() from validation, not typed.
-        $internal = ['validation_errors'];
-        // Read in code these commands never reach: PartitionsCli's budget
-        // checks, and the JobsCli modes other than their own.
-        $unreached = [
-            'partition-status' => ['force'],
-            'jobs'             => ['id'],
-            'jobs-retry'       => ['status', 'limit'],
-            'jobs-forget'      => ['status', 'limit'],
-            'jobs-prune'       => ['id', 'status', 'limit'],
-        ];
-        $s        = \OWA\Core\CoreAPI::serviceSingleton();
-
-        foreach ((array) $s->getMap('cli_commands') as $command => $action) {
-            $map   = $s->getMapValue('actions', $action);
-            $class = is_array($map) ? (string) ($map['class_name'] ?? '') : '';
-
-            if ($class === '' || ($accepted = Cli::acceptedArgumentsFor($class)) === null) {
-                continue;
-            }
-
-            // The command and the Cli classes it extends, not the traits it uses.
-            $src = '';
-            for ($r = new ReflectionClass($class); $r && ($r->getName() === ltrim($class, '\\') || $r->isSubclassOf(Cli::class)); $r = $r->getParentClass()) {
-                $src .= file_get_contents($r->getFileName());
-            }
-
-            preg_match_all('/(?:getParam|isParam)\(\s*[\'"]([^\'"]+)[\'"]/', $src, $m);
-
-            $this->assertSame([], array_values(array_diff(array_unique($m[1]), $accepted, $internal, $unreached[$command] ?? [])),
-                "cmd=$command reads arguments its usage() does not declare");
-        }
-    }
-
     /** @return iterable<string, array{class-string, array}> */
     public static function usageErrors(): iterable
     {
@@ -136,6 +96,22 @@ final class CliExitCodeTest extends CliControllerTestCase
 
         yield 'activate, no module'         => [$C . 'ModuleActivateCli', []];
         yield 'deactivate, no module'       => [$C . 'ModuleDeactivateCli', []];
+        yield 'activate, unknown module'    => [$C . 'ModuleActivateCli', ['module' => 'owa_no_such_module']];
+        yield 'deactivate, unknown module'  => [$C . 'ModuleDeactivateCli', ['module' => 'owa_no_such_module']];
+        yield 'drain, seconds=abc'          => [$C . 'DrainTrackerIngestCli', ['seconds' => 'abc']];
+        yield 'drain, seconds=0'            => [$C . 'DrainTrackerIngestCli', ['seconds' => '0']];
+        yield 'prune, interval=0'           => [$C . 'PruneEventQueueArchivesCli', ['interval' => '0']];
+        yield 'rotate, months-ahead=abc'    => [$C . 'PartitionRotateCli', ['months-ahead' => 'abc']];
+        yield 'rotate, months-ahead=-3'     => [$C . 'PartitionRotateCli', ['months-ahead' => '-3']];
+        yield 'rotate, keep='               => [$C . 'PartitionRotateCli', ['keep' => '24']];
+        yield 'cube-rebuild, no Property'   => [$C . 'CubeRebuildCli', ['property' => '999999999']];
+        yield 'publish-trackers, no Profile'=> [$C . 'TrackerPublishCli', ['site' => 'owa-no-such-site']];
+        yield 'add-site, streamType=App'    => [$C . 'SitesAddCli', ['streamType' => 'App', 'name' => 'x', 'domain' => 'https://owa-no-site.example.com']];
+        yield 'revoke, --all=maybe'         => [$C . 'AppPasswordRevokeCli', ['user' => 'owa-no-such-user', 'all' => 'maybe']];
+        yield 'jobs, limit=abc'             => [$C . 'JobsCli', ['limit' => 'abc']];
+        yield 'reorganize, from after to'   => [$C . 'PartitionReorganizeCli', ['granularity' => 'monthly', 'from' => '20260301', 'to' => '20260201']];
+        yield 'partition-drop, only=x'      => [$C . 'PartitionDropCli', ['older-than' => '20years', 'only' => 'x']];
+        yield 'register, scope=visit'       => [$C . 'CustomDimensionRegisterCli', ['property' => '999999999', 'key' => 'k', 'scope' => 'visit']];
         yield 'jobs-retry, no id'           => [$C . 'JobsRetryCli', []];
         yield 'jobs-forget, no id'          => [$C . 'JobsForgetCli', []];
         yield 'schedule-run, unknown job'   => [$C . 'ScheduleRunCli', ['job' => 'owa-no-such-job']];
@@ -179,24 +155,68 @@ final class CliExitCodeTest extends CliControllerTestCase
 
         ob_start();
         try {
-            $cli->action();
+            $cli->doAction();
         } finally {
             ob_end_clean();
         }
 
         $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+        $this->assertTrue($cli->getCliOutcome()['final']);
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
     }
 
-    public function testPartitionReorganizeReadsRealDates(): void
+    /** A refused argument is named, with what it takes, and the command does nothing. */
+    public function testARefusedArgumentIsNamedWithWhatItTakes(): void
     {
-        $R = \OWA\Module\Base\Controller\PartitionReorganizeCli::class;
+        $cli = new \OWA\Module\Base\Controller\ModuleActivateCli(['cmd' => 'activate', 'module' => 'owa_no_such_module']);
+        $cli->doAction();
 
-        $this->assertTrue($R::isDate('20260228'));
-        $this->assertTrue($R::isDate('20240229'));
-        $this->assertFalse($R::isDate('20260229'));
-        $this->assertFalse($R::isDate('20261301'));
-        $this->assertFalse($R::isDate('2026-01-01'));
+        $this->assertSame('cmd=activate: module=owa_no_such_module: There is no module named owa_no_such_module. Modules: '
+            . implode(', ', \OWA\Core\Validation\ModuleExists::names()) . '. Nothing was done.', $cli->getCliOutcome()['message']);
+
+        Cli::$exit_code = 0;
+        $cli = new \OWA\Module\Base\Controller\CubeRebuildCli(['property' => '999999999']);
+        $cli->doAction();
+
+        $this->assertSame('cmd=cube-rebuild: property=999999999: There is no Property 999999999. Nothing was done.', $cli->getCliOutcome()['message']);
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+    }
+
+    /** publish-trackers site= takes a live web Profile: an archived one and an app's are refused. */
+    public function testPublishTrackersTakesOnlyALiveWebProfile(): void
+    {
+        $sm   = new \OWA\Module\Base\Classes\SiteManager();
+        $web  = $sm->createSite('https://owatest-publish-' . $this->tok . '.example.com', 'Publish ' . $this->tok);
+        $app  = $sm->createSite('', 'Publish app ' . $this->tok, '', '', '', '', \OWA\Module\Base\Entity\Site::STREAM_APP, 'com.example.owatest' . $this->tok);
+
+        foreach ([$web, $app] as $site) {
+            $this->assertNotEmpty($site);
+            $this->trackForCleanup('base.site', $site->get('id'), 'id');
+            $this->trackForCleanup('base.property', $site->get('property_id'), 'id');
+        }
+
+        $declared = \OWA\Module\Base\Controller\TrackerPublishCli::params();
+
+        $this->assertSame([], \OWA\Core\Params::problems($declared, ['site' => $web->get('site_id')]));
+        $this->assertSame(['site' => 'site=' . $app->get('site_id') . ': Profile ' . $app->get('site_id') . ' observes app, not web.'],
+            \OWA\Core\Params::problems($declared, ['site' => $app->get('site_id')]));
+
+        $web->set('archived_date', time());
+        $web->update();
+
+        $this->assertSame(['site' => 'site=' . $web->get('site_id') . ': Profile ' . $web->get('site_id') . ' is archived.'],
+            \OWA\Core\Params::problems($declared, ['site' => $web->get('site_id')]));
+    }
+
+    /** core-update-schema apply= or rollback= with no update is refused before anything is applied. */
+    public function testAnEmptyUpdateNameIsAUsageError(): void
+    {
+        $declared = \OWA\Module\Base\Controller\CoreUpdateSchemaCli::params();
+
+        $this->assertSame(['apply' => 'apply=: Needs an update, such as base.98.'], \OWA\Core\Params::problems($declared, ['apply' => '']));
+        $this->assertSame(['rollback' => 'rollback=: Needs an update, such as base.98.'], \OWA\Core\Params::problems($declared, ['rollback' => '']));
+        $this->assertSame(['apply' => '--apply: Needs an update, such as base.98.'], \OWA\Core\Params::problems($declared, ['apply' => true]));
+        $this->assertSame([], \OWA\Core\Params::problems($declared, ['apply' => 'base.98']));
     }
 
     public function testAnUpdateIsNamedModuleDotSequence(): void

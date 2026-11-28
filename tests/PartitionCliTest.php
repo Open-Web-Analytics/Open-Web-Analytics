@@ -173,7 +173,7 @@ final class PartitionCliTest extends CliControllerTestCase
                   ['property' => '1'], ['raw-months' => 'lots', 'dry-run' => 1], ['raw-months' => '-4', 'dry-run' => 1]]
                  as $params) {
             $cli = $this->rotate($params + ['table' => 'owa_event_raw']);
-            $cli->action();
+            $cli->doAction();
 
             // An argument the command will not act on is a usage error.
             $this->assertSame('failed', $cli->getCliOutcome()['outcome'], json_encode($params) . ' must be refused');
@@ -207,12 +207,16 @@ final class PartitionCliTest extends CliControllerTestCase
             $this->assertSame([$cubes[0]], $this->callProtected($this->drop(['property' => $pid]), 'selectTables'));
         }
 
-        // An unreadable only= is a usage error; a Property without a cube, a refusal.
-        foreach ([['failed', ['only' => 'everything']], ['refused', ['property' => '999999999999']]] as [$outcome, $bad]) {
-            $cli = $this->drop($bad);
-            $this->assertFalse($this->callProtected($cli, 'selectTables'), json_encode($bad));
-            $this->assertSame($outcome, $cli->getCliOutcome()['outcome']);
+        // An unreadable only= and a Property that does not exist are usage errors, before anything is dropped.
+        foreach ([['only' => 'everything'], ['property' => '999999999999']] as $bad) {
+            \OWA\Core\Controller\Cli::$exit_code = 0;
+            $cli = $this->drop($bad + ['older-than' => '20years', 'dry-run' => true]);
+            $cli->doAction();
+            $this->assertSame('failed', $cli->getCliOutcome()['outcome'], json_encode($bad));
+            $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code, json_encode($bad));
         }
+
+        \OWA\Core\Controller\Cli::$exit_code = 0;
     }
 
     /** A dry run reports and changes nothing, which is what makes it safe to suggest. */
@@ -304,7 +308,7 @@ final class PartitionCliTest extends CliControllerTestCase
                 "$bad must not be a granularity"
             );
 
-            $this->rotate(['granularity' => $bad, 'table' => 'owa_event_raw'])->action();
+            $this->rotate(['granularity' => $bad, 'table' => 'owa_event_raw'])->doAction();
         }
 
         $this->assertSame(
