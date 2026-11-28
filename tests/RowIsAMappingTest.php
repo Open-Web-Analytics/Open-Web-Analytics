@@ -69,8 +69,10 @@ final class RowIsAMappingTest extends TestCase
         $event = new \OWA\Module\Base\Classes\Event();
         $event->setEventType( 'page_view' );
 
-        $set = [];
-        $i   = 0;
+        $set    = [];
+        $i      = 0;
+        $narrow = 0;
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
         foreach ( Helpers::allProperties() as $property => $definition ) {
 
@@ -80,6 +82,15 @@ final class RowIsAMappingTest extends TestCase
             }
 
             $set[ $property ] = ( $definition['data_type'] ?? '' ) === 'boolean' ? true : $value( $property, $i++ );
+
+            // A number of its own that a TINYINT or SMALLINT column holds: row() stores NULL for one it cannot.
+            $range = in_array( Helpers::columnFor( $property ), $entity->getColumns(), true )
+                ? $entity->getColumn( Helpers::columnFor( $property ) )->integerRange() : null;
+
+            if ( $range && $range[1] < 50000 && is_numeric( $set[ $property ] ) ) {
+
+                $set[ $property ] = (string) ( 10 + $narrow++ );
+            }
 
             // An id the guard accepts: a positive integer (V2Event::isId()).
             if ( in_array( $property, [ 'visitor_id', 'session_id' ], true ) ) {

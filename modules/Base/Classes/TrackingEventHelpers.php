@@ -1097,7 +1097,20 @@ class TrackingEventHelpers {
                 $data_type = $property['data_type'];
             }
 
-            $value = $this->setDataType( $value, $data_type );
+            $typed = $this->setDataType( $value, $data_type );
+
+            /*
+             * A value its type refuses -- text for an integer, an array for a
+             * string -- is absent, so it goes from the event as well: a callback
+             * that returns null leaves the event's value in place (below), and
+             * the row would read what the beacon sent.
+             */
+            if ( $typed === null && $value !== null && $value !== false && $value !== '' ) {
+
+                $event->delete( $name );
+            }
+
+            $value = $typed;
 
             $required = false;
 
@@ -1199,27 +1212,19 @@ class TrackingEventHelpers {
                  *
                  * ABSENT IS NOT ZERO. Event::get() returns false for a property the event does
                  * not carry, and in v2 0 is a real reading: a beacon carrying no scroll_depth is
-                 * not reporting a scroll to the top. So absence stays absent and GARBAGE
-                 * becomes 0. A null reaching a non-nullable numeric column is written as 0 by
-                 * Entity::writeValue(), where a nullable column can opt out.
+                 * not reporting a scroll to the top. Absence stays absent, and so does a value
+                 * that is not a number: "49,17" is not an amount of 0. A null reaching a
+                 * non-nullable numeric column is written as 0 by Entity::writeValue(), where a
+                 * nullable column can opt out.
                  */
-                if ( $var === null || $var === false || $var === '' ) {
-
-                    $var = null;
-
-                } else {
-
-                    $var = is_numeric( $var ) ? $var + 0 : 0;
-                }
+                $var = is_numeric( $var ) ? $var + 0 : null;
 
                 break;
             case "string":
-
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
-                break;
             case "url":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
+                // A one-value property sent as name[]=: absent, not the text "Array".
+                $var = is_array( $var ) ? null : \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "json":
 
@@ -1240,7 +1245,7 @@ class TrackingEventHelpers {
                 break;
             default:
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
+                $var = is_array( $var ) ? null : \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
         }
 
         return $var;
