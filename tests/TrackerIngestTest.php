@@ -545,17 +545,18 @@ final class TrackerIngestTest extends TestCase
     /** A collector chooses the address and does not mask it, whatever the install says. */
     public function testACollectorQueuesTheAddressUnchanged(): void
     {
-        $had = $_SERVER['REMOTE_ADDR'] ?? null;
-        $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+        // requestIp() reads the request the service holds, captured at boot, not $_SERVER.
+        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
+        $had     = $request->server;
+        $request->server = ['REMOTE_ADDR' => '203.0.113.7'] + array_diff_key((array) $had, ['HTTP_X_FORWARDED_FOR' => 1]);
+        $proxies = \OWA\Core\CoreAPI::getSetting('base', 'trusted_proxies');
+        \OWA\Core\CoreAPI::setSetting('base', 'trusted_proxies', []);
 
         try {
             $this->assertCollectorQueuesTheAddressUnchanged();
         } finally {
-            if ($had === null) {
-                unset($_SERVER['REMOTE_ADDR']);
-            } else {
-                $_SERVER['REMOTE_ADDR'] = $had;
-            }
+            $request->server = $had;
+            \OWA\Core\CoreAPI::setSetting('base', 'trusted_proxies', $proxies);
         }
     }
 
@@ -565,7 +566,7 @@ final class TrackerIngestTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', \OWA\Core\ServerRole::COLLECTOR);
 
         $request = \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp();
-        $this->assertNotSame('', $request, 'the test request has an address');
+        $this->assertSame('203.0.113.7', $request, 'the test request has an address');
         $this->assertSame($request, \OWA\Module\Base\Classes\TrackingEventHelpers::ipAddressDefault('', $this->event()));
 
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', \OWA\Core\ServerRole::FULL);

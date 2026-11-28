@@ -32,8 +32,9 @@ class PurchaseMigrator extends FactMigrator {
 
         $event = $this->baseEvent( $r, $refs, 'purchase', [
             'ct_order_id'      => $r['order_id'] ?? null,
-            'eps_order_source' => $r['order_source'] ?? null,
-            'eps_gateway'      => $r['gateway'] ?? null,
+            // The declared properties a live purchase carries them in, stored as params.order_source and params.gateway.
+            'ct_order_source' => $r['order_source'] ?? null,
+            'ct_gateway'      => $r['gateway'] ?? null,
         ] );
 
         $currency = \OWA\Module\Base\Classes\TrackingEventHelpers::purchaseCurrency( $event );
