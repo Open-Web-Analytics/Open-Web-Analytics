@@ -414,6 +414,18 @@ class Metric extends \OWA\Core\Base {
     protected $property_id = '';
 
     /**
+     * The Property's currency, as the caller resolved it.
+     *
+     * Given rather than looked up here: getSelect() runs while a query is
+     * being built on the shared database object, and a settings lookup for a
+     * Property loads the Property through that same object, which clears the
+     * query being built.
+     *
+     * @var string|null null for the install's
+     */
+    protected $property_currency = null;
+
+    /**
      * The metric as declared (config/metrics.php), given to the input filters.
      *
      * @var array<string, mixed> empty for a metric built from a class
@@ -421,12 +433,14 @@ class Metric extends \OWA\Core\Base {
     protected $definition = [];
 
     /**
-     * @param  int|string $property_id
+     * @param  int|string  $property_id
+     * @param  string|null $currency    the Property's currency (Classes\Currency::ofProperty()); null for the install's
      * @return void
      */
-    public function setPropertyId( $property_id ) {
+    public function setPropertyId( $property_id, $currency = null ) {
 
-        $this->property_id = (string) $property_id;
+        $this->property_id       = (string) $property_id;
+        $this->property_currency = $currency === null ? null : (string) $currency;
     }
 
     /** @return string */
@@ -509,7 +523,8 @@ class Metric extends \OWA\Core\Base {
             'currency_column'   => $this->entity->getProperty( 'currency' ) ? $alias . '.currency' : null,
             'date_column'       => $partition ? $alias . '.' . $partition : null,
             'property_id'       => $this->property_id,
-            'property_currency' => \OWA\Module\Base\Classes\Currency::ofProperty( $this->property_id ),
+            // The install's currency needs no Property lookup, so no query.
+            'property_currency' => $this->property_currency ?? \OWA\Module\Base\Classes\Currency::ofProperty( '' ),
         ];
     }
 

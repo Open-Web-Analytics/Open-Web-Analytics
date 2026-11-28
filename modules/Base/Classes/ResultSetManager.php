@@ -1386,8 +1386,10 @@ class ResultSetManager extends \OWA\Core\Base {
 
             } else {
 
-                // A money metric's input is expressed in this Property's currency.
-                $m->setPropertyId( $this->propertyIdForRequest() );
+                // A money metric's input is expressed in this Property's currency,
+                // resolved here, before any query is being built.
+                $property_id = $this->propertyIdForRequest();
+                $m->setPropertyId( $property_id, \OWA\Module\Base\Classes\Currency::ofProperty( $property_id ) );
 
                 $this->metricObjects[ $metric_name ] = $m;
             }
