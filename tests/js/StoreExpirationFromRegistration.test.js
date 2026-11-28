@@ -20,7 +20,6 @@ describe('store expiration', () => {
         jest.spyOn(Util, 'setCookie').mockImplementation((name, value, days) => {
             cookies.push({ name: name, value: value, days: days });
         });
-        OWA.setSetting('ns', 'owa_');
         OWA.setSetting('cookie_domain', 'example.com');
     });
 

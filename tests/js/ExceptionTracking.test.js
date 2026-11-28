@@ -28,7 +28,6 @@ function exceptions(sent) {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
     window.onerror = null;
 });

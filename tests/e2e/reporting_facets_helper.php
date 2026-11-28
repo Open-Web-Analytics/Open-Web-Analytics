@@ -128,7 +128,7 @@ function provision(): array
     $pairs    = [];
 
     $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
-    $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+    $ns = \OWA\Core\CoreAPI::NS;
 
     foreach (DISTRIBUTION as $source => $mediums) {
 

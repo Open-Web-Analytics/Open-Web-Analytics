@@ -12,6 +12,9 @@
 // as the tracker files.
 import * as jQuery from 'jquery';
 
+/** The prefix nsAll() puts on each param name, the server's CoreAPI::NS. */
+const NS = 'owa_';
+
 var OWA = {
 
     items: {},
@@ -40,9 +43,6 @@ var OWA = {
     ],
 
     config: {
-        // Wire namespace: cookie names, and anything shared with the
-        // tracker. OWA's own links carry no prefix.
-        ns: 'owa_',
         baseUrl: '',
         debug: false
     },
@@ -221,7 +221,7 @@ OWA.util =  {
         
         for(var param in obj) {  // print out the params
             if (obj.hasOwnProperty(param)) {
-                nsObj[OWA.config.ns+param] = obj[param];
+                nsObj[NS + param] = obj[param];
             }
         }
         

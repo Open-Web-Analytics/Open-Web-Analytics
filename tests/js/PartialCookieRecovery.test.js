@@ -68,7 +68,7 @@ function seed({ visitor = false, session = false } = {}) {
     const cdh = OWA.getSetting('hashCookiesToDomain')
         ? Util.getCookieDomainHash(OWA.getSetting('cookie_domain'))
         : undefined;
-    const ns = OWA.getSetting('ns');
+    const ns = 'owa_';
     const domain = OWA.getSetting('cookie_domain');
 
     if (visitor) {
@@ -152,7 +152,7 @@ describe('one OWA cookie cleared but not the other', () => {
 
         // The cookie as the browser now holds it, read from the jar itself.
         const raw = document.cookie.split(';').map((c) => c.trim())
-            .find((c) => c.startsWith(OWA.getSetting('ns') + 's_partial-cookie-site='));
+            .find((c) => c.startsWith('owa_s_partial-cookie-site='));
         const stored = JSON.parse(unescape(raw.split('=').slice(1).join('=')));
         expect(stored.sid).toBe(first.session_id);
         expect(stored.sid).not.toBe(SESSION_SID);

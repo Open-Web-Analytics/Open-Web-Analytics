@@ -11,8 +11,6 @@ $owa_config = [
     'images_url'           => (string) \OWA\Core\CoreAPI::configSingleton()->assetsUrl(),
     // Read by OWA.getApiEndpoint().
     'rest_api_endpoint'    => (string) \OWA\Core\CoreAPI::getSetting( 'base', 'rest_api_url' ),
-    // 'ns' names cookies -- it must stay the wire namespace. OWA's own links carry no prefix.
-    'ns'                   => (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ),
     'link_template'        => (string) \OWA\Core\CoreAPI::getSetting( 'base', 'link_template' ),
     // The operators a constraints string is parsed with, in the server's order (OWA.dataGrid.operators()).
     'constraint_operators' => array_keys( \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS ),

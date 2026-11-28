@@ -1,5 +1,5 @@
 import { Util } from './Util.js';
-import { OWA_instance as OWA } from './owa.js';
+import { OWA_instance as OWA, NS } from './owa.js';
 
 class StateManager {
 	
@@ -163,7 +163,7 @@ class StateManager {
 	isPersistedNow( store_name ) {
 
 		var jar = Util.readAllCookies() || {};
-		var values = jar[ OWA.getSetting( 'ns' ) + store_name ] || [];
+		var values = jar[ NS + store_name ] || [];
 		var hashing = OWA.getSetting( 'hashCookiesToDomain' );
 		var dhash = hashing ? Util.getCookieDomainHash( OWA.getSetting( 'cookie_domain' ) ) : null;
 
@@ -944,7 +944,7 @@ class StateManager {
         // set or reset the campaign cookie
         OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
         var domain = OWA.getSetting('cookie_domain') || document.domain;
-        Util.setCookie( OWA.getSetting('ns') + store_name, state_value, expiration_days, '/', domain );
+        Util.setCookie( NS + store_name, state_value, expiration_days, '/', domain );
     }
     
     replaceStore(store_name, value, is_perminant, format) {
@@ -970,7 +970,7 @@ class StateManager {
         
     getStateFromCookie(store_name) {
         
-        var store = unescape( Util.readCookie( OWA.getSetting('ns') + store_name ) );
+        var store = unescape( Util.readCookie( NS + store_name ) );
         if ( store ) {
             return store;
         }
@@ -1019,8 +1019,8 @@ class StateManager {
         var format = '';
         // A jar passed in (a live read) instead of the page-load snapshot.
         var cookie_values = jar
-            ? jar[ OWA.getSetting('ns') + store_name ]
-            : this.getCookieValues( OWA.getSetting('ns') + store_name );
+            ? jar[ NS + store_name ]
+            : this.getCookieValues( NS + store_name );
 
         if (cookie_values) {
 
@@ -1104,7 +1104,7 @@ class StateManager {
         
         if ( ! key ) {
             delete this.stores[store_name];
-            Util.eraseCookie(OWA.getSetting('ns') + store_name);
+            Util.eraseCookie(NS + store_name);
             //reload cookies
             this.cookies = Util.readAllCookies();
         } else {

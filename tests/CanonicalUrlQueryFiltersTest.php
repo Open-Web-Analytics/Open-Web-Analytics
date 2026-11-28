@@ -85,7 +85,7 @@ final class CanonicalUrlQueryFiltersTest extends TestCase
 
         $this->assertContains('sessionid', $dropped);
 
-        $this->assertContains(\OWA\Core\CoreAPI::getSetting('base', 'ns') . 'search_terms', $dropped);
+        $this->assertContains(\OWA\Core\CoreAPI::NS . 'search_terms', $dropped);
 
         foreach ($dropped as $name) {
             $this->assertSame('http://shop.example.com/p?a=1',

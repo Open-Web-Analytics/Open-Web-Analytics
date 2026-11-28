@@ -189,14 +189,14 @@ final class ForgetSingletonsTest extends TestCase
 
         $this->assertArrayHasKey( 'features', $defaults::all(), 'defaults.json was not read again' );
         $this->assertSame( 'owatest.old', $compat::eventName( 'owatest.old' ) );
-        $this->assertArrayHasKey( 'base|ns', $module::settingsRegistry()['fields'],
+        $this->assertArrayHasKey( 'base|link_template', $module::settingsRegistry()['fields'],
             'the modules\' settings.php files were not read again' );
     }
 
     /** The salts are read from the constants again after the reset. */
     public function testTheSaltsAreReadAgainAfterTheReset(): void
     {
-        self::set( CoreAPI::class, 'salts', [ 'AUTH_KEY' => 'owatest-key', 'AUTH_SALT' => 'owatest-salt' ] );
+        self::set( CoreAPI::class, 'salts', [ 'AUTH' => [ 'owatest-key', 'owatest-salt' ] ] );
 
         $this->assertStringContainsString( 'owatest-key', CoreAPI::getSalt( 'auth' ) );
 

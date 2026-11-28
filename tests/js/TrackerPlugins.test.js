@@ -7,7 +7,6 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  */
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
 });
 

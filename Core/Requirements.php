@@ -98,6 +98,7 @@ class Requirements {
         'OWA_FEED_SUBSCRIPTION_PARAM'   => 'No longer read. Feed tracking is gone; list a parameter to remove from page URLs in query_string_filters.',
         'OWA_UA_REGEXES_DIR'            => 'No longer read. The user-agent patterns ship with each release; OWA_UA_REGEXES names a file of your own.',
         'OWA_NEWS_URL'                  => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
+        'OWA_NS'                        => 'No longer read. OWA\'s cookie names and the URL parameters it reads from tracked pages start with owa_.',
         'OWA_LOG_VISITOR_PII'           => 'No longer read. A beacon\'s user_id, user_name and user_email are stored as it sends them.',
     ];
 
