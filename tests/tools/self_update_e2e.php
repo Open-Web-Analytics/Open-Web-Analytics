@@ -1019,7 +1019,7 @@ $scenarios = [
     'by-file' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
         // A tarball on this server, its signature beside it: --file installs it
-        // with no download of it, once a trusted key's signature proves it.
+        // with no network request, once a trusted key's signature proves it.
         $to  = package( $build, $work, 'by-file-listed', TO );
         $old = package( $build, $work, 'by-file', '2.0.92' );
         publish( $www, $base, $to, TO );
@@ -1032,6 +1032,17 @@ $scenarios = [
 
             return 'the installed release has no cmd=core-install --file';
         }
+
+        file_put_contents( "$tar.sig", $old['sig'] );
+
+        // No network request: without the installed release's tarball, which a failed copy puts back, it is refused.
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );
+        check( $code !== 0 && str_contains( $out, "OWA " . FROM . "'s tarball is needed to put it back" ) && envVersion( $site ) === FROM,
+            "core-install --file went ahead without the installed release's tarball (exit $code):\n$out" );
+
+        // The release check downloads it (the window is hours away, so nothing installs).
+        release_check( $site, $ca );
+        check( downloaded( $site, FROM ), 'the release check did not download the installed release' );
 
         file_put_contents( "$tar.sig", base64_encode( str_repeat( "\0", 64 ) ) . "\n" );
         [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );

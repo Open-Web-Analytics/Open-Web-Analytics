@@ -516,6 +516,20 @@ These 1.x commands are not in 2.0: `processEventQueue`,
 `update-document` and `partition-init`. The upgrade creates the event table and
 each reporting cube already partitioned.
 
+### `cmd=install` is `cmd=core-install`
+
+`cmd=install` runs nothing and says `cmd=install is now cmd=core-install.`
+`cmd=core-install` takes `user_id`, `email_address` and `domain` as `install`
+did. The admin's password is generated and printed once, or read from standard
+input with `--password-stdin`; `password=` is refused. On an installed system
+it checks the tables and the data directory's modes, and installs a release:
+
+| | |
+|---|---|
+| `--version=<x.y.z>` | Fetches that release through the update host and installs it |
+| `--file=<tarball>` | Installs the release in a tarball on the server, with no network request. Its signature is `<tarball>.sig`, or `--sig=<path>`. Needs the installed release's tarball, `owa_<installed>_packaged.tar`, and its `.sig` in the updates directory, `owa-data/updates-<id>/`, already: it is refused before anything changes when they are not there |
+| `--force` | Installs a release older than the installed one. The installed release again needs no `--force`: it reinstalls, copying the files that differ |
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,

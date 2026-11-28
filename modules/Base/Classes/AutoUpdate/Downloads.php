@@ -169,6 +169,12 @@ class Downloads {
         return count( self::updater()['updatesDirs']( $this->data ) );
     }
 
+    /** @return string the data directory the updates directory is in */
+    public function dataDir() {
+
+        return $this->data;
+    }
+
     /** @return string the updates directory, '' while there is none */
     public function root() {
 

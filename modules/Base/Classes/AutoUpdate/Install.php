@@ -131,9 +131,9 @@ class Install {
      * signature fetched from the download URL by its version every time
      * (Releases::byTag()); the listing is read only when the installed
      * release's tarball, which a failed install puts back, must be
-     * downloaded too (ReleaseCheck::ensureInstalled()). One not newer than the installed
-     * release only with $force, and never one older than the database
-     * schema. A failure recorded for it is cleared: whoever installs by hand
+     * downloaded too (ReleaseCheck::ensureInstalled()). The installed
+     * release again is reinstalled, copying the files that differ; an older
+     * one only with $force, and never one older than the database schema. A failure recorded for it is cleared: whoever installs by hand
      * has dealt with it. A release refused after its download is deleted.
      *
      * @param  string               $version
@@ -172,6 +172,9 @@ class Install {
      * A tarball that is not signed, or not by a trusted key, is refused. The
      * proved tarball and its signature are put in the updates directory
      * (Downloads::import()), and from there it installs as a download does.
+     * It makes no network request: the installed release's tarball, which a
+     * failed copy puts back, must be in the updates directory already, and
+     * it is refused before anything changes when it is not.
      *
      * @param  string               $file
      * @param  string|null          $sig
@@ -246,7 +249,7 @@ class Install {
 
                     return null;
                 },
-                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ) );
+                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ), true );
 
         } finally {
 
@@ -290,9 +293,10 @@ class Install {
      * @param  array<string, mixed>                                 $context
      * @param  callable(Downloads, array<string, mixed>): ?string   $fetch    why it failed, or null
      * @param  string                                               $how      the install log's first line
+     * @param  bool                                                 $offline  --file: no network request, so the installed release's tarball must be held
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how ) {
+    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how, $offline = false ) {
 
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
@@ -321,9 +325,10 @@ class Install {
             return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $v ) );
         }
 
-        if ( Version::compare( $v, $installed ) <= 0 && ! $force ) {
+        // The installed release again reinstalls it; an older one only with --force.
+        if ( Version::compare( $v, $installed ) < 0 && ! $force ) {
 
-            return self::answer( self::REFUSED, sprintf( '%s is not newer than the installed %s; add --force to install it anyway.', $v, $installed ) );
+            return self::answer( self::REFUSED, sprintf( '%s is older than the installed %s; add --force to install it anyway.', $v, $installed ) );
         }
 
         $foreign = $check->foreignProblems();
@@ -331,6 +336,14 @@ class Install {
         if ( $foreign ) {
 
             return self::answer( self::FAILED, implode( ' ', $foreign ) );
+        }
+
+        // --file makes no network request: the installed release's tarball, which a
+        // failed copy puts back, must be held already, unless the file is that release.
+        if ( $offline && $v !== $installed && ! $downloads->has( $installed ) ) {
+
+            return self::answer( self::REFUSED, sprintf( 'OWA %1$s\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. Install with --version, or place %2$s and its .sig in %3$s.',
+                $installed, sprintf( Releases::ASSET, $installed ), $downloads->root() !== '' ? $downloads->root() . '/' : $downloads->dataDir() . '/updates-<id>/' ) );
         }
 
         $failed = $fetch( $downloads, $c );

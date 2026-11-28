@@ -122,7 +122,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
                 '--file' => [
                     'type'        => 'string',
                     'value'       => '<path>',
-                    'description' => 'An installed system: the release in this tarball, installed without a download. Its version is read from it.',
+                    'description' => 'An installed system: the release in this tarball, installed with no network request. Its version is read from it. The installed release\'s tarball and its .sig must be in the updates directory already, to put it back if the copy fails.',
                 ],
                 '--sig' => [
                     'type'        => 'string',
@@ -131,7 +131,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
                 ],
                 '--force' => [
                     'type'        => 'flag',
-                    'description' => 'With --version or --file: install it even when it is not newer than the installed release (going back, or the same release again). Never one older than the database schema: the rollbacks to run first are listed instead.',
+                    'description' => 'With --version or --file: install a release older than the installed one. The installed release again needs no --force: it is reinstalled, copying the files that differ. Never one older than the database schema: the rollbacks to run first are listed instead.',
                 ],
             ],
         ];
