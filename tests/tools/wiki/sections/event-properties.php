@@ -28,7 +28,7 @@ return function ( $event = null ) {
     if ( $event !== null ) {
 
         if ( ! in_array( $event, TrackingEventHelpers::eventNames(), true ) ) {
-            throw new RuntimeException( "'$event' is not a first-class event." );
+            throw new RuntimeException( "'$event' is not a built-in event." );
         }
 
         $config = array_intersect_key( $config,

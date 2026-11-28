@@ -9,7 +9,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * The event picker's choices (a goal's trigger, a funnel step's event), as
  * the field chooser groups them: "Built-in events", each described, then
- * "Your events" and "Another event of yours…".
+ * "Custom events" and "Another custom event…".
  */
 final class EventTriggerChoicesTest extends TestCase
 {
@@ -19,13 +19,13 @@ final class EventTriggerChoicesTest extends TestCase
 
         $this->assertSame(['click', 'page_view', 'newsletter_signup', GoalEventDefinition::TRIGGER_CUSTOM],
             array_column($choices, 'value'));
-        $this->assertSame(['Built-in events', 'Built-in events', 'Your events', 'Your events'],
+        $this->assertSame(['Built-in events', 'Built-in events', 'Custom events', 'Custom events'],
             array_column($choices, 'group_label'));
         $this->assertSame(['built_in', 'built_in', 'yours', 'yours'], array_column($choices, 'group'));
 
         $this->assertStringStartsWith('A page was viewed.', $choices[1]['description']);
-        $this->assertSame('', $choices[2]['description'], 'a site\'s own event says nothing about itself');
-        $this->assertSame('Another event of yours…', $choices[3]['label']);
+        $this->assertSame('', $choices[2]['description'], 'a custom event says nothing about itself');
+        $this->assertSame('Another custom event…', $choices[3]['label']);
         $this->assertNotSame('', $choices[3]['description']);
     }
 

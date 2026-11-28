@@ -221,11 +221,11 @@ test.describe('goal event definitions', () => {
     });
 
     /**
-     * A SITE'S OWN EVENT is a trigger too: one its Profiles sent lately, or any
+     * A CUSTOM EVENT is a trigger too: one its Profiles sent lately, or any
      * other typed beside the picker. It needs no condition, because its name
      * already says what happened.
      */
-    test('a goal on an event of the site\'s own needs no condition', async ({ page }) => {
+    test('a goal on a custom event needs no condition', async ({ page }) => {
         const stamp = Date.now();
         const name  = 'E2E_Custom_' + stamp;
         const event = 'e2e_signup_' + stamp;
@@ -235,7 +235,7 @@ test.describe('goal event definitions', () => {
         const custom = page.locator('input.owa_goalCustomTrigger');
         await expect(custom).toBeHidden();
 
-        await choose(page, 'select.owa_goalTrigger', 'Another event');
+        await choose(page, 'select.owa_goalTrigger', 'Another custom event');
         await expect(custom).toBeVisible();
         await custom.fill(event);
         await page.fill('input[name="name"]', name);
@@ -252,7 +252,7 @@ test.describe('goal event definitions', () => {
         const params = new URL(editHref, page.url()).searchParams;
         const id = params.get('owa_goalEventDefinitionId') || params.get('goalEventDefinitionId');
 
-        // It comes back as a choice of its own, not as "another event".
+        // It comes back as a choice of its own, not as "another custom event".
         await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}&owa_goalEventDefinitionId=${id}`);
         await expect(page.locator('select.owa_goalTrigger')).toHaveValue(event);
         await expect(custom).toBeHidden();
