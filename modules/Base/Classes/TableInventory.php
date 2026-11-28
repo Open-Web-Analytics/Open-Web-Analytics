@@ -4,12 +4,14 @@ namespace OWA\Module\Base\Classes;
 /**
  * The tables in OWA's database, by what the running code makes of them.
  *
- * A table is IN USE when an entity of a module present owns it: one the
- * module registers (Core\Module::registerEntity()), whether or not the module
- * is active, since a deactivated module's tables are still its own. Each such
- * entity declares its backup group (Entity::getBackupGroup()). The cubes are
- * in use too, but owned by no entity: one table per Property, named
- * owa_event_<id>, with build tables named after it.
+ * A table is IN USE when an entity of a module present owns it: one in the
+ * module class's ENTITIES, whether or not the module is active, since a
+ * deactivated module's tables are still its own. The modules are not built
+ * to ask: each module directory's class is read for its NAME and ENTITIES,
+ * and each entity for its table name and its backup group
+ * (Entity::getBackupGroup()). The cubes are in use too, but owned by no
+ * entity: one table per Property, named owa_event_<id>, with build tables
+ * named after it.
  *
  * Everything else under the prefix is OLD: a 1.x table no v2 update renamed
  * or dropped, a table of a module no longer installed, a table nothing has
@@ -88,29 +90,56 @@ class TableInventory {
     }
 
     /**
-     * Every module's entities' tables, unprefixed, with the backup group each
-     * declares. A module that boot did not load is built for the question.
+     * Every present module's entities' tables, unprefixed, with the backup
+     * group each declares. No module is built: each is read from its class.
      *
      * @return array<string, string> APPLICATION or DATA
      */
     public static function owned() {
 
-        if ( self::$owned !== null ) {
+        return self::$owned ??= self::ownedBy( self::moduleClasses() );
+    }
 
-            return self::$owned;
+    /**
+     * The module class of every module directory, active or not, that
+     * declares its own NAME (Core\Module::declaresName()).
+     *
+     * @return list<class-string<\OWA\Core\Module>>
+     */
+    public static function moduleClasses() {
+
+        $classes = [];
+
+        foreach ( (array) glob( \OWA\Core\Env::modulesDir() . '*/Module.php' ) as $file ) {
+
+            $class = 'OWA\\Module\\' . basename( dirname( (string) $file ) ) . '\\Module';
+
+            if ( \OWA\Core\Module::declaresName( $class ) ) {
+
+                $classes[] = $class;
+            }
         }
 
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $owned   = [];
+        return $classes;
+    }
 
-        foreach ( array_keys( \OWA\Core\VersionInfo::modules() ) as $name ) {
+    /**
+     * The tables the ENTITIES of $classes own, unprefixed, with the backup
+     * group each entity declares. Each entity is built by the entity factory;
+     * the modules are not built.
+     *
+     * @param  list<class-string<\OWA\Core\Module>> $classes
+     * @return array<string, string> APPLICATION or DATA
+     */
+    public static function ownedBy( array $classes ) {
 
-            $class  = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $name ) . '\\Module';
-            $module = $service->getModule( $name ) ?: new $class();
+        $owned = [];
 
-            foreach ( $module->getEntities() as $entity ) {
+        foreach ( $classes as $class ) {
 
-                $e     = \OWA\Core\CoreAPI::entityFactory( $name . '.' . $entity );
+            foreach ( (array) $class::ENTITIES as $entity ) {
+
+                $e     = \OWA\Core\CoreAPI::entityFactory( $class::NAME . '.' . $entity );
                 $table = substr( $e->getTableName(), strlen( \OWA\Core\Entity::TABLE_PREFIX ) );
 
                 $owned[ $table ] = $e->getBackupGroup() === self::DATA ? self::DATA : self::APPLICATION;
@@ -119,6 +148,6 @@ class TableInventory {
 
         ksort( $owned );
 
-        return self::$owned = $owned;
+        return $owned;
     }
 }

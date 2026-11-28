@@ -68,6 +68,8 @@ final class ModuleNameTest extends TestCase
 
         $this->assertNotContains(basename($this->dir), $present);
         $this->assertContains('Base', $present);
+        $this->assertNotContains(basename($this->dir), array_map(static fn ($c) => explode('\\', $c)[2],
+            \OWA\Module\Base\Classes\TableInventory::moduleClasses()));
         $this->assertSame(['base', 'domstream', 'maxmind_geoip', 'sqs'], array_keys(\OWA\Core\VersionInfo::modules()));
     }
 
