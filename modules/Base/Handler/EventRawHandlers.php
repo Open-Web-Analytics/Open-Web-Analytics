@@ -521,7 +521,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * goes to the visitor store, not here.
          */
         $custom  = 0;
-        $refused = [ 'over the cap' => [], 'declared numeric and not' => [] ];
+        $refused = [ 'over the cap' => [], 'declared numeric and not' => [], 'named as a param of OWA\'s' => [] ];
+        $owas    = self::owaParamKeys();
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
@@ -545,6 +546,19 @@ class EventRawHandlers extends \OWA\Core\Observer {
             }
 
             if ( $name === '' || $value === null || $value === false || $value === '' ) {
+
+                continue;
+            }
+
+            /*
+             * A name OWA stores a param under -- coupon, items, form_id -- is
+             * refused: written first, the custom value would be replaced by OWA's
+             * own on an event that carries it, and read as OWA's on one that does
+             * not.
+             */
+            if ( isset( $owas[ $name ] ) ) {
+
+                $refused['named as a param of OWA\'s'][] = $name;
 
                 continue;
             }
@@ -659,6 +673,27 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return $json;
+    }
+
+    /**
+     * Every params key the property registry declares, for any event, as
+     * key => true.
+     *
+     * @return array<string, true>
+     */
+    public static function owaParamKeys() {
+
+        $keys = [];
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::allProperties() as $definition ) {
+
+            if ( ! empty( $definition['param'] ) ) {
+
+                $keys[ (string) $definition['param'] ] = true;
+            }
+        }
+
+        return $keys;
     }
 
     /**

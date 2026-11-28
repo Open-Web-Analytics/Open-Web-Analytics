@@ -228,5 +228,70 @@ final class IngestValueHygieneTest extends IngestionTestCase
         $this->assertNotNull($whole);
         $this->assertNull($whole['revenue'], 'a case variant of the id names no stored purchase');
     }
+
+    /** A click on a mailto: link is stored, with no target. */
+    public function testAClickOnANonHttpLinkHasNoTarget(): void
+    {
+        foreach (['mailto:someone@example.test', 'javascript:void(0)', 'tel:+15550100'] as $target) {
+            $row = $this->fire('click', ['target_url' => $target])['click'] ?? null;
+
+            $this->assertNotNull($row, "$target: the click is stored");
+            $this->assertNull($row['target_url'], $target);
+            $this->assertNull($row['target_host'], $target);
+        }
+    }
+
+    /** A current beacon's download path is stored decoded once. */
+    public function testADownloadsPathIsStoredDecoded(): void
+    {
+        $row = $this->fire('file_download', [
+            'beacon_version' => '2',
+            'target_url'     => 'https://owa-test-site/docs/caf%C3%A9.pdf',
+            'file_name'      => '/docs/caf%C3%A9.pdf',
+            'file_extension' => 'pdf',
+        ])['file_download'] ?? null;
+
+        $this->assertNotNull($row);
+        $this->assertSame('/docs/café.pdf', $row['file_name']);
+    }
+
+    /** The language is the header's first language as ll-RR. */
+    public function testTheLanguageIsTheFirstTag(): void
+    {
+        $rc     = \OWA\Core\CoreAPI::requestContainerSingleton();
+        $before = $rc->server['HTTP_ACCEPT_LANGUAGE'] ?? null;
+
+        try {
+            foreach (['de,en-US;q=0.7' => 'de', 'zh-Hant-TW,zh;q=0.8' => 'zh-TW', 'en-us' => 'en-US'] as $header => $stored) {
+                $rc->server['HTTP_ACCEPT_LANGUAGE'] = $header;
+
+                $row = $this->fire('page_view', [])['page_view'] ?? null;
+
+                $this->assertNotNull($row, $header);
+                $this->assertSame($stored, $row['language'], $header);
+            }
+        } finally {
+            if ($before === null) {
+                unset($rc->server['HTTP_ACCEPT_LANGUAGE']);
+            } else {
+                $rc->server['HTTP_ACCEPT_LANGUAGE'] = $before;
+            }
+        }
+    }
+
+    /** A custom event property named as one of OWA's params is not stored. */
+    public function testACustomPropertyCannotTakeOneOfOwasParams(): void
+    {
+        $row = $this->fire('form_submit', [
+            'form_id'    => 'signup',
+            'eps_form_id' => 'site-value',
+            'eps_plan'   => 'pro',
+        ])['form_submit'] ?? null;
+
+        $this->assertNotNull($row);
+        $params = (array) json_decode((string) $row['params'], true);
+        $this->assertSame('signup', $params['form_id'] ?? null);
+        $this->assertSame('pro', $params['plan'] ?? null);
+    }
 }
 

@@ -985,7 +985,7 @@ class TrackingEventHelpers {
      * A URL property of a current beacon in its stored form
      * (V2Event::readableUrl()): the path decoded once, the query and fragment
      * as the page had them. The first callback of every data_type url
-     * property the client sets.
+     * property the client sets, and of file_name, a path.
      *
      * Only for a beacon decoded once (Beacon\Compat::decodesOnce()). An older
      * beacon's values were decoded a second time already, and an event with no
@@ -1480,11 +1480,45 @@ class TrackingEventHelpers {
     }
 
     /**
-     * @return string
+     * The visitor's first language, from the request's Accept-Language
+     * (languageTag()).
+     *
+     * @return string|null
      */
     public static function languageDefault() {
 
-        return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
+        return self::languageTag( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ) );
+    }
+
+    /**
+     * The first language of an Accept-Language header as ll-RR: the language
+     * in lower case and the region, when the tag has one, in upper case. A
+     * script or variant is dropped, so zh-Hant-TW is zh-TW. Null when the
+     * first entry is not a language, such as *.
+     *
+     * @param  mixed $header
+     * @return string|null
+     */
+    public static function languageTag( $header ) {
+
+        $first = trim( (string) preg_replace( '/[,;].*$/s', '', trim( (string) $header ) ) );
+        $parts = preg_split( '/[-_]/', $first );
+        $lang  = strtolower( (string) array_shift( $parts ) );
+
+        if ( ! preg_match( '/^[a-z]{2,3}$/', $lang ) ) {
+
+            return null;
+        }
+
+        foreach ( $parts as $part ) {
+
+            if ( preg_match( '/^([A-Za-z]{2}|[0-9]{3})$/', $part ) ) {
+
+                return $lang . '-' . strtoupper( $part );
+            }
+        }
+
+        return $lang;
     }
 
     /**
@@ -3392,6 +3426,11 @@ class TrackingEventHelpers {
      *
      * The host is kept as it arrived, whether or not it is the Profile's domain.
      *
+     * target_url's callback. A link whose scheme is not http or https --
+     * mailto:, tel:, javascript: -- is not stored: the click is, with no
+     * target. Deleted from the event rather than returned as '', which would
+     * leave the beacon's value on the event (setTrackerProperties()).
+     *
      * @param  string|null $url
      * @param  Event       $event
      * @return string|null
@@ -3459,8 +3498,16 @@ class TrackingEventHelpers {
             $url = substr($url, 0, -1);
         }
 
-        return self::makeUrlStorageSafe( $url );
+        $url = self::makeUrlStorageSafe( $url );
 
+        if ( $url === '' ) {
+
+            $event->delete( 'target_url' );
+
+            return null;
+        }
+
+        return $url;
     }
 
 }

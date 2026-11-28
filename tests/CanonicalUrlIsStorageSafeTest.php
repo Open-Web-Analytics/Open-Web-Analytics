@@ -25,18 +25,11 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
     /**
      * THE CALLBACK DIRECTLY, not through setTrackerProperties().
      *
-     * page_url was the vehicle until the registry stopped declaring it -- it is
-     * v1's name for the page's URL and a compat rename now. Its replacement
-     * cannot be another property, because of an asymmetry worth naming:
-     * setTrackerProperties() writes a filtered value back only when the property
-     * is `required` or the value is truthy, so a callback CANNOT blank a
-     * non-required property. makeUrlCanonical() answers '' for an unusable
-     * scheme, and on target_url -- required: false -- that answer is discarded
-     * and the original survives on the event.
-     *
-     * What this file is about is the canonicaliser, so it calls it. The
-     * write-back gate is a separate question about the pipeline, and hiding it
-     * behind a property that happens to be required is how it stayed unnoticed.
+     * setTrackerProperties() writes a filtered value back only when the
+     * property is `required` or the value is truthy, so a callback answering
+     * null leaves the beacon's value on the event. makeUrlCanonical() deletes
+     * target_url from the event for an unusable scheme, and answers null
+     * (testARejectedTargetLeavesTheEvent()).
      */
     private function stored( string $wire ): string
     {
@@ -90,6 +83,19 @@ final class CanonicalUrlIsStorageSafeTest extends TestCase
             // no scheme at all, skipping a check that only fires when one parses.
             'tab in scheme'   => [ "java\tscript:alert(1)" ],
         ];
+    }
+
+    /** A click on a mailto:, tel: or javascript: link is stored with no target. */
+    public function testARejectedTargetLeavesTheEvent(): void
+    {
+        foreach ( [ 'javascript:alert(1)', 'mailto:someone@example.test', 'tel:+15550100', 'data:text/html,x' ] as $wire ) {
+            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+            $event->setSiteId( 'no-such-site-for-this-test' );
+            $event->set( 'target_url', $wire );
+
+            $this->assertNull( Helpers::makeUrlCanonical( $wire, $event ), $wire );
+            $this->assertFalse( $event->get( 'target_url' ), $wire );
+        }
     }
 
     /** @dataProvider keptIntact */

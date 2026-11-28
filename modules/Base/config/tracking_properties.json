@@ -237,7 +237,7 @@
         "note": "A copy of the beacon parameter taken at the edge, before the property stage sanitizes the URL (Sanitize::cleanUrl() strips tags, escapes quotes and dollar signs) and before canonicalisation or the query filters, so the query_string spam rules see what the beacon actually carried. Request-set, so it is environmental: ProcessEvent neither sanitizes nor re-applies it, a beacon cannot name it (admitRequestParams()), and it rides the queue envelope to the drain. `from` is the request parameter it is copied from. Stored by nothing. Copied from HTTP_REFERER."
     },
     "language": {
-        "description": "The visitor's preferred language from the Accept-Language header, cut to its first five characters (for example en-US).",
+        "description": "The visitor's preferred language: the first language of the Accept-Language header, as language and region (for example en-US, or zh-TW for zh-Hant-TW), or the language alone when the header names no region.",
         "set_by": "request",
         "from": [
             "HTTP_ACCEPT_LANGUAGE"
@@ -1226,7 +1226,7 @@
         "note": "Site-search term, on a view_search_results event. A COLUMN, and no migration: Update034 creates owa_event_raw from the entity, and v2 has never shipped, so there is no install predating this column. It was a param, and a params key is unreportable in v2 until a site registers it as a CUSTOM dimension, so \"what do people search for\" cost one of a Property's twenty slots for a value OWA set itself. Site search is a question every install with a search box asks.\nThe third promotion, after file_name and file_extension. The element and form params stay in the bag because most installs will never group by them.\nThe tracker reads it from the URL, from siteSearchParams -- which ships q, s, search, query and keyword by default now. Both the empty default and the missing caller made this event unraisable on every install."
     },
     "file_name": {
-        "description": "The name of the downloaded file.",
+        "description": "The path of the downloaded file on its host, percent-decoded once (/docs/café.pdf).",
         "set_by": "client",
         "from": [
             "f_nm"
@@ -1237,7 +1237,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::readableUrl"
+        ],
         "note": "A COLUMN, not a param -- see Update054. A downloads report is a question every install asks, and in v2 a params key is unreportable until someone registers it as a CUSTOM dimension, which would have spent one of a Property's 20 slots on a value OWA set itself.\nThe element and form params deliberately stay in the bag: most installs will never group by them, and a column costs cube width on every row of every Property. MEASURED on MySQL 8.4: promoting nine of these took the custom-dimension ceiling from 62 to 37.\nTHE PATH, not the basename (/docs/guide.pdf, not guide.pdf). As the basename, /2024/report.pdf and /2025/report.pdf collapsed into one row of a downloads report. The host is deliberately dropped so the same document served from the site and from a CDN is one row; target_host on the same row says where it came from."
     },
     "file_extension": {
