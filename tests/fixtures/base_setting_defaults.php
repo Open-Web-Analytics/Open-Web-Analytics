@@ -83,7 +83,6 @@ return [
     'mailer-username' => '',
     'maxCustomVars' => 5,
     'nonce_expiration_period' => 7200,
-    'owa_user_agent' => 'Open Web Analytics Bot ' . \OWA\Core\Env::version(),
     'partition_detail_months' => 36,
     'partition_max_partitions' => 0,
     'password_length' => 4,
@@ -99,6 +98,7 @@ return [
     'retired_settings_before_085' => [],
     'retired_settings_before_098' => [],
     'retired_settings_before_100' => [],
+    'retired_settings_before_101' => [],
     'scheduled_jobs' => [],
     'server_role' => 'full',
     'session_length' => 1800,
@@ -131,5 +131,4 @@ return [
     'use_32bit_hash_before_v2' => false,
     'user_id_illegal_chars' => [ ' ', ';', '\'', '"', '|', ')', '(' ],
     'v1_tables_dropped' => false,
-    'wiki_url' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
 ];

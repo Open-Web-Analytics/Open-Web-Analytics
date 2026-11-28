@@ -146,7 +146,7 @@ $state  = (string) ( $status['state'] ?? '' );
     <p class="owa-tagScreen__lede"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The tag works as it is. To send what the tracker cannot see for itself, such as the section of the site a page belongs to, who is signed in, or a purchase, queue commands on '
     . '%1$s before the tag. See the %2$s for every command.' ),
     '<code>owa_cmds</code>',
-    '<a href="' . $view->makeWikiLink( 'Javascript-Tracker' ) . '">' . $view->escape( \OWA\Core\CoreAPI::t( 'JavaScript tracker reference' ) ) . '</a>' ); ?></p>
+    '<a href="' . $view->escape( $view->makeWikiLink( 'v2-Javascript-Tracker' ) ) . '">' . $view->escape( \OWA\Core\CoreAPI::t( 'JavaScript tracker reference' ) ) . '</a>' ); ?></p>
 
     <?php echo $view->codeBlock( "<script>\n  var owa_cmds = owa_cmds || [];\n  owa_cmds.push(['setContentGroup', 'Blog']);\n</script>", 'HTML' ); ?>
 

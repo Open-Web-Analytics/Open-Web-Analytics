@@ -21,7 +21,7 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::serverRoles(). A collector runs it with forward_only=1, from cron. */
     public static function serverRoles() {
 
-        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::COLLECTOR ];
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::COLLECTOR ];
     }
 
     /** See \OWA\Core\Controller\Cli::usage(). */

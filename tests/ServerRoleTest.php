@@ -40,13 +40,11 @@ final class ServerRoleTest extends TestCase
     /** @return iterable<string, array{string, string[], bool, bool}> */
     public static function matrix(): iterable
     {
-        yield 'full'        => ['full',        ['tracking', 'ui', 'rest', 'cli', 'install'], true,  true];
-        yield 'collector'   => ['collector',   ['tracking', 'cli'],                          false, false];
-        yield 'worker'      => ['worker',      ['cli'],                                      true,  true];
-        yield 'console'     => ['console',     ['ui', 'cli'],                                false, true];
-        yield 'api'         => ['api',         ['rest', 'cli'],                              false, true];
-        yield 'console,api' => ['console,api', ['ui', 'rest', 'cli'],                        false, true];
-        yield 'blank'       => ['',            ['tracking', 'ui', 'rest', 'cli', 'install'], true,  true];
+        yield 'full'          => ['full',          ['tracking', 'ui', 'rest', 'cli', 'install'], true,  true];
+        yield 'collector'     => ['collector',     ['tracking', 'cli'],                          false, false];
+        yield 'api'           => ['api',           ['rest', 'cli'],                              false, true];
+        yield 'collector,api' => ['collector,api', ['tracking', 'rest', 'cli'],                  false, true];
+        yield 'blank'         => ['',              ['tracking', 'ui', 'rest', 'cli', 'install'], true,  true];
     }
 
     /** @dataProvider matrix */
@@ -65,36 +63,55 @@ final class ServerRoleTest extends TestCase
 
     public function testFullIsEveryRoleAndAListIsNormalised(): void
     {
-        $this->assertSame(['full'], (new ServerRole('console, FULL'))->roles());
-        $this->assertSame(['console', 'api'], (new ServerRole(' Console ,api,console'))->roles());
-        $this->assertSame('console,api', (new ServerRole('console,api'))->name());
+        $this->assertSame(['full'], (new ServerRole('api, FULL'))->roles());
+        $this->assertSame(['collector', 'api'], (new ServerRole(' Collector ,api,collector'))->roles());
+        $this->assertSame('collector,api', (new ServerRole('collector,api'))->name());
+    }
+
+    public function testTheRolesAreFullCollectorAndApi(): void
+    {
+        $this->assertSame(['full', 'collector', 'api'], ServerRole::ALL);
+        $this->assertSame(['full'], ServerRole::SCHEDULER);
+        $this->assertSame(['full', 'collector', 'api'], array_keys(ServerRole::SERVES));
+        $this->assertFalse(defined(ServerRole::class . '::WORKER'));
+        $this->assertFalse(defined(ServerRole::class . '::CONSOLE'));
     }
 
     public function testUnknownNamesAreKeptForTheRefusal(): void
     {
-        $role = new ServerRole('colector,console');
+        $role = new ServerRole('colector,api');
 
         $this->assertSame(['colector'], $role->unknown());
-        $this->assertSame(['console'], $role->roles());
+        $this->assertSame([], $role->removed());
+        $this->assertSame(['api'], $role->roles());
+    }
+
+    public function testRemovedRolesAreKeptApartFromUnknownNames(): void
+    {
+        $role = new ServerRole('Worker,console,colector,api');
+
+        $this->assertSame(['worker', 'console'], $role->removed());
+        $this->assertSame(['colector'], $role->unknown());
+        $this->assertSame(['api'], $role->roles());
+        $this->assertSame(['full'], (new ServerRole('worker'))->roles(), 'nothing left: full, and boot refuses it');
     }
 
     public function testOnlyACollectorQueuesWhateverTheSetting(): void
     {
         $this->assertTrue((new ServerRole('collector'))->queuesTrackingEvents());
         $this->assertFalse((new ServerRole('full'))->queuesTrackingEvents());
-        $this->assertTrue((new ServerRole('collector,worker'))->hasDatabase(), 'combined with a database role');
+        $this->assertTrue((new ServerRole('collector,api'))->hasDatabase(), 'combined with a database role');
     }
 
     public function testFullRunsEveryCommandAndOtherRolesOnlyTheirs(): void
     {
         $default = \OWA\Core\Controller\Cli::serverRoles();
 
-        $this->assertSame(['full', 'worker'], $default);
-        $this->assertTrue((new ServerRole('full'))->mayRun(['console']));
-        $this->assertTrue((new ServerRole('worker'))->mayRun($default));
-        $this->assertFalse((new ServerRole('console'))->mayRun($default));
+        $this->assertSame(['full'], $default);
+        $this->assertTrue((new ServerRole('full'))->mayRun(['api']));
+        $this->assertFalse((new ServerRole('api'))->mayRun($default));
         $this->assertFalse((new ServerRole('collector'))->mayRun($default));
-        $this->assertTrue((new ServerRole('console,api'))->mayRun(['api']));
+        $this->assertTrue((new ServerRole('collector,api'))->mayRun(['api']));
         $this->assertSame(['full'], \OWA\Module\Base\Controller\CoreInstallCli::serverRoles(), 'a release installs from a full server only');
     }
 
@@ -104,15 +121,15 @@ final class ServerRoleTest extends TestCase
 
     public function testARoleWithADatabaseNeedsItsConstants(): void
     {
-        foreach (['full', 'worker', 'console', 'api'] as $value) {
+        foreach (['full', 'api'] as $value) {
             $this->assertSame([], (new ServerRole($value))->configProblems(self::DATABASE, []), $value);
         }
 
         $defined = self::DATABASE;
         unset($defined['OWA_DB_HOST'], $defined['OWA_AUTH_KEY']);
 
-        $this->assertSame(['Role worker needs OWA_DB_HOST, OWA_AUTH_KEY in owa-config.php.'],
-            (new ServerRole('worker'))->configProblems($defined, []));
+        $this->assertSame(['Role api needs OWA_DB_HOST, OWA_AUTH_KEY in owa-config.php.'],
+            (new ServerRole('api'))->configProblems($defined, []));
     }
 
     /** OWA_PUBLIC_URL, not empty, on every role with a database; a collector builds no links. */
@@ -126,7 +143,7 @@ final class ServerRoleTest extends TestCase
                 unset($defined['OWA_PUBLIC_URL']);
             }
 
-            foreach (['full', 'worker', 'console', 'api'] as $value) {
+            foreach (['full', 'api'] as $value) {
                 $this->assertSame(["Role $value needs OWA_PUBLIC_URL in owa-config.php."],
                     (new ServerRole($value))->configProblems($defined, []), $value);
             }
@@ -149,7 +166,7 @@ final class ServerRoleTest extends TestCase
     {
         $two = ['sqs' => 'OWA_SQS_QUEUE_URL', 'zzq' => 'OWA_ZZQ_URL'];
 
-        foreach (['full', 'collector', 'worker'] as $value) {
+        foreach (['full', 'collector', 'api'] as $value) {
             $this->assertContains('Two queue backends are configured (OWA_SQS_QUEUE_URL, OWA_ZZQ_URL): set one.',
                 (new ServerRole($value))->configProblems(self::DATABASE, $two), $value);
         }
@@ -167,7 +184,7 @@ final class ServerRoleTest extends TestCase
 
     public function testBootChecksTheConfigurationOnlyOnceThereIsOne(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'api');
 
         // Installing stated, not read: OWA_INSTALLING is process-global, and
         // InstallCli defines it for the rest of a suite run.
@@ -214,7 +231,7 @@ final class ServerRoleTest extends TestCase
     /** Every command but reset-secrets warns of a weak secret, so a scheduler's log says it. */
     public function testACommandWarnsOfAWeakSecret(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
 
         $weak = ['OWA_NONCE_SALT' => 'yournoncesaltgoeshere'] + self::DATABASE;
 
@@ -261,6 +278,32 @@ final class ServerRoleTest extends TestCase
         foreach (RequestType::ALL as $type) {
             $this->assertSame(503, ServerRole::bootProblem($type, self::DATABASE, true, false)['status'], $type);
         }
+
+        $this->assertSame('OWA_SERVER_ROLE names nonsense, which is not a role. The roles are full, collector, api.',
+            ServerRole::bootProblem(RequestType::UI, self::DATABASE, true, false, [])['message']);
+    }
+
+    /** worker and console are refused with their own message, naming the roles there are. */
+    public function testBootRefusesARemovedRoleForEveryRequest(): void
+    {
+        foreach (['worker', 'console', 'console,api', 'worker,nonsense'] as $value) {
+
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $value);
+
+            foreach (RequestType::ALL as $type) {
+                $problem = ServerRole::bootProblem($type, self::DATABASE, true, false, []);
+
+                $this->assertSame(503, $problem['status'], "$value / $type");
+                $this->assertStringContainsString('which OWA no longer has. The roles are full, collector, api;',
+                    $problem['message'], "$value / $type");
+            }
+        }
+
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker,console');
+
+        $this->assertSame('OWA_SERVER_ROLE names worker, console, which OWA no longer has. The roles are full, collector, api; '
+            . 'the scheduler and the admin and report screens run on the full server.',
+            ServerRole::bootProblem(RequestType::CLI, self::DATABASE, true, false, [])['message']);
     }
 
     public function testRetiredConstantsGetAnUpgradeNotice(): void
@@ -306,7 +349,7 @@ final class ServerRoleTest extends TestCase
     /** The boot itself, with OWA_USE_STATIC_CONFIG_ONLY defined, is StaticConfigBootTest's. */
     public function testStoredSettingsAreReadOnEveryRoleWithADatabase(): void
     {
-        foreach (['full' => true, 'console,api' => true, 'worker' => true, 'collector' => false, 'collector,console' => true] as $role => $reads) {
+        foreach (['full' => true, 'api' => true, 'collector' => false, 'collector,api' => true, '' => true] as $role => $reads) {
             \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
             $this->assertSame($reads, ServerRole::readsStoredSettings(), $role);
         }
@@ -345,13 +388,14 @@ final class ServerRoleTest extends TestCase
     {
         yield 'server-check'         => ['server-check',         ServerRole::ALL];
         yield 'instance-info'        => ['instance-info',        ServerRole::ALL];
-        yield 'drain-tracker-ingest' => ['drain-tracker-ingest', ['full', 'worker', 'collector']];
-        yield 'change-password'      => ['change-password',      ['full', 'worker', 'console']];
-        yield 'app-password-create'  => ['app-password-create',  ['full', 'worker', 'console']];
-        yield 'add-site'             => ['add-site',             ['full', 'worker', 'console']];
-        yield 'schedule-status'      => ['schedule-status',      ['full', 'worker', 'console']];
-        yield 'schedule-run'         => ['schedule-run',         ['full', 'worker']];
-        yield 'core-update-schema'   => ['core-update-schema',   ['full', 'worker']];
+        yield 'drain-tracker-ingest' => ['drain-tracker-ingest', ['full', 'collector']];
+        yield 'change-password'      => ['change-password',      ['full']];
+        yield 'app-password-create'  => ['app-password-create',  ['full']];
+        yield 'add-site'             => ['add-site',             ['full']];
+        yield 'activate'             => ['activate',             ['full']];
+        yield 'schedule-status'      => ['schedule-status',      ['full']];
+        yield 'schedule-run'         => ['schedule-run',         ['full']];
+        yield 'core-update-schema'   => ['core-update-schema',   ['full']];
     }
 
     /** @dataProvider marks */
@@ -366,9 +410,9 @@ final class ServerRoleTest extends TestCase
     {
         $action = \OWA\Core\CoreAPI::getCliCommandClass('schedule-run');
 
-        $this->assertSame('cmd=schedule-run does not run on this server: its role is collector, and the command runs on full, worker.',
+        $this->assertSame('cmd=schedule-run does not run on this server: its role is collector, and the command runs on full.',
             (new ServerRole('collector'))->commandProblem('schedule-run', $action));
-        $this->assertNull((new ServerRole('worker'))->commandProblem('schedule-run', $action));
+        $this->assertNull((new ServerRole('full'))->commandProblem('schedule-run', $action));
     }
 
     // ---------------------------------------------------------------------

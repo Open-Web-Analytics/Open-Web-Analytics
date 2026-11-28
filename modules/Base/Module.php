@@ -69,7 +69,7 @@ class Module extends \OWA\Core\Module {
      * Declared, not set in the constructor, so cmd=version-info reads it
      * without constructing the module (Core\VersionInfo).
      */
-    public $required_schema_version = 100;
+    public $required_schema_version = 101;
 
     /**
      * Constructor

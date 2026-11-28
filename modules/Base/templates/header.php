@@ -176,7 +176,7 @@
         <div id="owa_helpMenuPanel" class="owa_helpMenuPanel owa_headerMenuPanel" role="menu" hidden>
             <?php foreach ( \OWA\Core\Navigation::links( 'nav_help_menu', [
                 [ 'id' => 'documentation', 'label' => \OWA\Core\CoreAPI::t( 'Documentation' ),
-                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ],
+                       'href' => $view->makeWikiLink( 'v2-Home' ) ],
                 [ 'id' => 'bugs', 'label' => \OWA\Core\CoreAPI::t( 'Report a Bug' ),
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ],
                 [ 'id' => 'github', 'label' => 'GitHub',

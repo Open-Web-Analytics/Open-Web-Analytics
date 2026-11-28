@@ -31,8 +31,8 @@ final class ReleaseListingNetworkTest extends TestCase
         if ($token !== '') {
             // For the listing, an API call. Redirects followed here, so the
             // token goes to api.github.com behind the update host and nowhere else.
-            // The user agent OWA sends: the update host's WAF lets only that through.
-            $agent = (string) \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent');
+            // The User-Agent OWA sends.
+            $agent = Releases::userAgent();
             Releases::$fetcher = static function ($url, $timeout, $sink) use ($token, $agent) {
                 $client = new \GuzzleHttp\Client(['timeout' => $timeout, 'allow_redirects' => false]);
                 // As Releases::get(): one stream, emptied for each response, the handle left open.

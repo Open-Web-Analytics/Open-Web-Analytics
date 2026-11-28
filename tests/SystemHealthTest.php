@@ -460,8 +460,8 @@ final class SystemHealthTest extends TestCase
             $this->assertSame('full (serves tracking, ui, rest, cli, install; runs the scheduler)',
                 SystemHealth::installation()['facts']['Server role']);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'console,api');
-            $this->assertSame('console,api (serves ui, rest, cli)', SystemHealth::installation()['facts']['Server role']);
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector,api');
+            $this->assertSame('collector,api (serves tracking, rest, cli)', SystemHealth::installation()['facts']['Server role']);
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'server_role', $saved);
         }
@@ -484,7 +484,7 @@ final class SystemHealthTest extends TestCase
             $this->assertSame('green', $full['SQS configured, tracking events not queued'] ?? null);
             $this->assertSame('sqs', SystemHealth::intake()['type']);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'api');
             $this->assertArrayNotHasKey('SQS configured, tracking events not queued',
                 array_column(SystemHealth::intake()['findings'], 'level', 'label'));
 

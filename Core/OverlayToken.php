@@ -24,7 +24,7 @@ namespace OWA\Core;
  * could build its own request URL and the fragment could carry the token alone.
  * It cannot: the tracker's base URL is where it *logs*, and OWA supports split
  * deployment on purpose (independent logger/API endpoints, server roles: a
- * collector that only receives beacons, a console and an api elsewhere). The reporting origin is
+ * collector that only receives beacons, an api elsewhere). The reporting origin is
  * the only party that knows where reporting lives. See the note on
  * Template::makeOverlayApiLink().
  */

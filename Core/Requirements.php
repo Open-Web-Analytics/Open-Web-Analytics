@@ -91,7 +91,7 @@ class Requirements {
         'OWA_QUEUE_TRACKER_INGEST'      => 'No longer read. Use OWA_QUEUE_TRACKING_EVENTS.',
         'OWA_TRACKER_INGEST_QUEUE_TYPE' => 'No longer read. The queue backend follows from the queue module\'s constant, such as OWA_SQS_QUEUE_URL.',
         'OWA_TRACKER_INGEST_DRAIN'      => 'No longer read. The servers whose role runs the scheduler drain the queue.',
-        'OWA_SCHEDULER_ENABLED'         => 'No longer read. The role decides: full and worker run the scheduler.',
+        'OWA_SCHEDULER_ENABLED'         => 'No longer read. The full server runs the scheduler.',
         'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
         'OWA_ERROR_HANDLER'             => 'No longer read. Set OWA_DEBUG to true for debug logging.',
         'OWA_LOG_PHP_ERRORS'            => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
@@ -100,6 +100,8 @@ class Requirements {
         'OWA_NEWS_URL'                  => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
         'OWA_NS'                        => 'No longer read. OWA\'s cookie names and the URL parameters it reads from tracked pages start with owa_.',
         'OWA_LOG_VISITOR_PII'           => 'No longer read. A beacon\'s user_id, user_name and user_email are stored as it sends them.',
+        'OWA_USER_AGENT'                => 'No longer read. Requests to the update host send a fixed User-Agent naming OWA\'s version.',
+        'OWA_WIKI_URL'                  => 'No longer read. OWA\'s screens link to the documentation on GitHub.',
     ];
 
     /**
