@@ -169,26 +169,14 @@ class TableInventory {
     }
 
     /**
-     * The module class of every module directory, active or not, that
-     * declares its own NAME (Core\Module::declaresName()).
+     * The module class of every module directory, OWA's and the extensions',
+     * active or not, that declares its own NAME (Core\Env::moduleClasses()).
      *
      * @return list<class-string<\OWA\Core\Module>>
      */
     public static function moduleClasses() {
 
-        $classes = [];
-
-        foreach ( (array) glob( \OWA\Core\Env::modulesDir() . '*/Module.php' ) as $file ) {
-
-            $class = 'OWA\\Module\\' . basename( dirname( (string) $file ) ) . '\\Module';
-
-            if ( \OWA\Core\Module::declaresName( $class ) ) {
-
-                $classes[] = $class;
-            }
-        }
-
-        return $classes;
+        return \OWA\Core\Env::moduleClasses();
     }
 
     /**

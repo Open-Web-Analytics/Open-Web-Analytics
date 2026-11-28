@@ -678,7 +678,11 @@ final class SystemHealthTest extends TestCase
 
             $finding = SystemHealth::writableCode($root, $owner + 1);
             $this->assertSame('yellow', $finding['level']);
-            $this->assertStringContainsString('(the OWA directory, owa.php, Core/, modules/)', $finding['detail']);
+            $this->assertStringContainsString('(the OWA directory, owa.php, Core/, modules/)', $finding['detail'], 'no extensions/: nothing said of it');
+
+            mkdir($root . '/extensions', 0775);
+            $this->assertStringContainsString('(the OWA directory, owa.php, Core/, modules/, extensions/)', SystemHealth::writableCode($root, $owner + 1)['detail']);
+            chmod($root . '/extensions', 0555);
 
             chmod($root . '/owa.php', 0444);
             chmod($root . '/Core', 0555);
@@ -694,6 +698,7 @@ final class SystemHealthTest extends TestCase
             chmod($root, 0755);
             chmod($root . '/Core', 0755);
             chmod($root . '/modules', 0755);
+            @chmod($root . '/extensions', 0755);
             exec('rm -rf ' . escapeshellarg($root));
         }
     }

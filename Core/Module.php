@@ -210,6 +210,16 @@ abstract class Module {
     public $scheduled_jobs = [];
 
     /**
+     * An extension's registrations that write to the service, waiting until
+     * the service adds the module (Service::addModule()): a refused
+     * extension's never reach it (Core\Extensions). Each is
+     * ['route', version, route, method, value], ['map', map, key, value].
+     *
+     * @var list<array<int, mixed>>
+     */
+    public $pending_registrations = [];
+
+    /**
      * Update from CLI Required flag
      *
      * Used by controllers to see if an update error was becuase it needs
@@ -244,7 +254,7 @@ abstract class Module {
         $this->name = static::NAME;
 
         // runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
-        $this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
+        $this->path = \OWA\Core\Env::moduleDir( $this->name );
         
         /**
          * Initial registration calls
@@ -566,8 +576,7 @@ abstract class Module {
 
         foreach ( \OWA\Core\CoreAPI::getPresentModules() as $dir ) {
 
-            $file = \OWA\Core\Env::modulesDir() . $dir
-                  . DIRECTORY_SEPARATOR . 'settings.php';
+            $file = \OWA\Core\Env::moduleDir( $dir ) . 'settings.php';
 
             if ( ! file_exists( $file ) ) {
 
@@ -998,6 +1007,20 @@ abstract class Module {
         $errors = '';
         $this->install_problem = '';
 
+        // An extension that declares what a loaded module registers is not installed or activated.
+        if ( \OWA\Core\Extensions::isExtension( $this ) ) {
+
+            $clashes = \OWA\Core\Extensions::clashes( $this, array_diff_key( \OWA\Core\CoreAPI::serviceSingleton()->modules, [ $this->name => true ] ) );
+
+            if ( $clashes ) {
+
+                \OWA\Core\Extensions::refuse( \OWA\Core\Extensions::dirOf( $this ), implode( ' ', $clashes ) );
+                $this->install_problem = implode( ' ', $clashes );
+
+                return false;
+            }
+        }
+
         /*
          * Whether every table this module owns had to be created.
          *
@@ -1142,7 +1165,7 @@ abstract class Module {
     public static function updateClasses( $name ) {
 
         $dir   = \OWA\Core\Lib::moduleDirName( $name );
-        $files = \OWA\Core\Lib::listDir( \OWA\Core\Env::modulesDir() . $dir . '/Update', false ) ?: [];
+        $files = \OWA\Core\Lib::listDir( \OWA\Core\Env::moduleDir( $dir ) . 'Update', false ) ?: [];
         $out   = [];
 
         foreach ( $files as $file ) {
@@ -1155,7 +1178,7 @@ abstract class Module {
             }
 
             /** @var class-string $class */
-            $class = '\\OWA\\Module\\' . $dir . '\\Update\\' . $basename;
+            $class = '\\' . \OWA\Core\Env::moduleNamespace( $dir ) . '\\Update\\' . $basename;
 
             $out[ (int) $m[1] ] = $class;
         }
@@ -1770,8 +1793,16 @@ abstract class Module {
             $params = $legacy_params;
         }
 
-        \OWA\Core\CoreAPI::serviceSingleton()->setRestApiRoute( $this->name, $version, $route_name, $request_method,
-            [ 'class_name' => $class_name, 'conf' => $params ] );
+        $route = [ 'class_name' => $class_name, 'conf' => $params ];
+
+        if ( \OWA\Core\Extensions::isExtension( $this ) ) {
+
+            $this->pending_registrations[] = [ 'route', $version, $route_name, $request_method, $route ];
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::serviceSingleton()->setRestApiRoute( $this->name, $version, $route_name, $request_method, $route );
     }
 
     /**
@@ -2140,7 +2171,28 @@ abstract class Module {
         }
 
         // The second element is a class file path, kept empty so the shape stays.
-        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $type, $key, [ $class_name, '', $params ] );
+        $this->setServiceMapValue( $type, $key, [ $class_name, '', $params ] );
+    }
+
+    /**
+     * A value in one of the service's maps: at once for OWA's modules; for an
+     * extension, once the service adds it (pending_registrations).
+     *
+     * @param  string $map
+     * @param  string $key
+     * @param  mixed  $value
+     * @return void
+     */
+    private function setServiceMapValue( $map, $key, $value ) {
+
+        if ( \OWA\Core\Extensions::isExtension( $this ) ) {
+
+            $this->pending_registrations[] = [ 'map', $map, $key, $value ];
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $map, $key, $value );
     }
 
     /**
@@ -2193,11 +2245,9 @@ abstract class Module {
 
         if ( is_array( $properties ) && $map_key ) {
 
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-
             foreach ( $properties as $k => $property ) {
 
-                $s->setMapValue( $map_key, $k, $property);
+                $this->setServiceMapValue( $map_key, $k, $property );
             }
         }
     }

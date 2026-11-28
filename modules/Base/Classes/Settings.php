@@ -2569,7 +2569,7 @@ namespace OWA\Module\Base\Classes;
              return null;
          }
 
-         if ( ! is_dir( \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( (string) $module ) ) ) {
+         if ( ! is_dir( \OWA\Core\Env::moduleDir( (string) $module ) ) ) {
 
              return null;
          }

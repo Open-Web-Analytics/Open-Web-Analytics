@@ -54,18 +54,23 @@ class CliWithoutBoot {
     }
 
     /**
-     * The module directories present: Base first, then by name.
+     * The module directories present: OWA's, Base first, then by name; then
+     * the extensions' that OWA has none of by that name, by name.
      *
      * @return list<string> directory names, such as Base and MaxmindGeoip
      */
     public static function moduleDirs() {
 
-        $dirs = array_map( static fn ( $path ) => basename( (string) $path ),
-            (array) glob( Env::modulesDir() . '*', GLOB_ONLYDIR ) );
+        $list = static fn ( $root ) => array_map( static fn ( $path ) => basename( (string) $path ),
+            (array) glob( $root . '*', GLOB_ONLYDIR ) );
 
+        $dirs = $list( Env::modulesDir() );
         usort( $dirs, static fn ( $a, $b ) => [ $a !== 'Base', $a ] <=> [ $b !== 'Base', $b ] );
 
-        return $dirs;
+        $extensions = array_values( array_diff( $list( Env::extensionsDir() ), $dirs ) );
+        sort( $extensions );
+
+        return array_merge( $dirs, $extensions );
     }
 
     /**
@@ -77,7 +82,7 @@ class CliWithoutBoot {
      */
     private static function config( $dir, $file ) {
 
-        $path = Env::modulesDir() . $dir . '/config/' . $file . '.php';
+        $path = Env::moduleDir( $dir ) . 'config/' . $file . '.php';
 
         if ( ! is_file( $path ) ) {
 

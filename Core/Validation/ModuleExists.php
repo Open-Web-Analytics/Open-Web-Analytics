@@ -43,7 +43,7 @@ class ModuleExists extends \OWA\Core\Validation\Validation {
             return false;
         }
 
-        $class = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $name ) . '\\Module';
+        $class = \OWA\Core\Env::moduleNamespace( $name ) . '\\Module';
 
         return class_exists( $class ) && is_subclass_of( $class, \OWA\Core\Module::class );
     }
@@ -59,7 +59,7 @@ class ModuleExists extends \OWA\Core\Validation\Validation {
 
         foreach ( \OWA\Core\CliWithoutBoot::moduleDirs() as $dir ) {
 
-            if ( class_exists( 'OWA\\Module\\' . $dir . '\\Module' ) ) {
+            if ( class_exists( \OWA\Core\Env::moduleNamespace( $dir ) . '\\Module' ) ) {
 
                 $names[] = strtolower( (string) preg_replace( '/(?<!^)[A-Z]/', '_$0', $dir ) );
             }

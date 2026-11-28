@@ -139,7 +139,12 @@ class Service extends \OWA\Core\Base {
     public function _loadModules() {
 
         $present_modules = \OWA\Core\CoreAPI::getPresentModules();
-        $am = \OWA\Core\CoreAPI::getActiveModules();
+
+        // OWA's modules first, in getPresentModules()'s order, then the extensions': OWA's register first.
+        $order = array_flip( $present_modules );
+        $am    = array_values( (array) \OWA\Core\CoreAPI::getActiveModules() );
+        usort( $am, static fn ( $a, $b ) => ( $order[ \OWA\Core\Lib::moduleDirName( $a ) ] ?? PHP_INT_MAX )
+            <=> ( $order[ \OWA\Core\Lib::moduleDirName( $b ) ] ?? PHP_INT_MAX ) );
 
         /*
          * Not asked on the tracking path (log.php boots with tracking_mode):
@@ -155,8 +160,11 @@ class Service extends \OWA\Core\Base {
             // runtime name to its dir name for the presence check.
             if ( in_array( \OWA\Core\Lib::moduleDirName( $v ), $present_modules ) ) {
                 $m = \OWA\Core\CoreAPI::moduleClassFactory($v);
-    
-                $this->addModule($m);
+
+                if ( ! $this->loadModule( $m ) ) {
+
+                    continue;
+                }
     
                 if ( $check_updates && ! $m->isUpToDate() ) {
 
@@ -171,6 +179,33 @@ class Service extends \OWA\Core\Base {
         }
     }
     
+    /**
+     * Add a module built for this boot, after those loaded before it. An
+     * extension that declares what one of them registers is refused
+     * (Core\Extensions::clashes()), and nothing of it is registered.
+     *
+     * @param  \OWA\Core\Module $m
+     * @return bool whether it was added
+     */
+    public function loadModule( $m ) {
+
+        if ( \OWA\Core\Extensions::isExtension( $m ) ) {
+
+            $clashes = \OWA\Core\Extensions::clashes( $m, $this->modules );
+
+            if ( $clashes ) {
+
+                \OWA\Core\Extensions::refuse( \OWA\Core\Extensions::dirOf( $m ), implode( ' ', $clashes ) );
+
+                return false;
+            }
+        }
+
+        $this->addModule( $m );
+
+        return true;
+    }
+
     /**
      * @return void
      */
@@ -639,6 +674,21 @@ class Service extends \OWA\Core\Base {
     public function addModule($module) {
 
         $this->modules[$module->name] = $module;
+
+        // An extension's: what is registered already stays.
+        foreach ( $module->pending_registrations as $r ) {
+
+            if ( $r[0] === 'route' && ! $this->getRestApiRoute( $module->name, $r[1], $r[2], $r[3] ) ) {
+
+                $this->setRestApiRoute( $module->name, $r[1], $r[2], $r[3], $r[4] );
+
+            } elseif ( $r[0] === 'map' && ! isset( $this->maps[ $r[1] ][ $r[2] ] ) ) {
+
+                $this->setMapValue( $r[1], $r[2], $r[3] );
+            }
+        }
+
+        $module->pending_registrations = [];
     }
 
     /**
