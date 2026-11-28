@@ -470,6 +470,8 @@ return [
         'retired_settings_before_098' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update101: the rows of the removed settings it deleted, for its down().
         'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update102: the auto_update_level rows of patch it changed to minor, for its down().
+        'retired_settings_before_102' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],
