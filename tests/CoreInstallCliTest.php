@@ -39,7 +39,12 @@ final class CoreInstallRecordingError extends \OWA\Module\Base\Classes\Error
  * the data directory or OWA's code.
  *
  *   not installed                    the schema, the admin, the site, the permissions
- *   installed                        tables checked, permissions; nothing else changes
+ *   installed                        permissions, missing tables, schema updates,
+ *                                    tracking bundles, in that order; the admin and
+ *                                    the sites are not changed
+ *   installed, unknown schema state  refused, nothing done; with --force the
+ *                                    module's tables moved aside and it installed
+ *                                    fresh, Base as a new installation
  *   installed, --version or --file   that release (Install::byHand(), Install::fromFile())
  *   not installed, a release named   refused
  */
@@ -228,23 +233,96 @@ final class CoreInstallCliTest extends TestCase
         $this->assertSame(1, preg_match_all("/addValidation\\(\\s*'/", $source), 'one rule of its own: the timezone');
     }
 
-    /** Row 2, installed and no release named: tables checked, nothing else changed, each step said. */
-    public function testAnInstalledSystemIsCheckedAndRepaired(): void
+    /** The four steps on an installed system, in order. */
+    private const STEPS = ['secureDataDir:owatest-web', 'createMissingTables', 'run:CoreUpdateSchemaCli', 'run:TrackerPublishCli'];
+
+    /**
+     * Row 2, installed and no release named: the permissions, the missing
+     * tables, the schema updates and the tracking bundles, in that order, each
+     * outcome said; the admin and the site not changed.
+     */
+    public function testAnInstalledSystemRunsTheFourStepsInOrder(): void
     {
         $this->im->installed   = true;
         $this->im->permissions = ['/owa-data is now writable by its owner only.'];
+        $this->im->created     = ['owa_login_failure', 'owa_spam_block'];
 
         $cli = $this->runCommand(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
         $this->assertSame(0, Cli::$exit_code);
-        $this->assertSame(['installSchema', 'secureDataDir:owatest-web'], InstallerRecording::$calls);
+        $this->assertSame(self::STEPS, InstallerRecording::$calls);
         $this->assertSame([
-            'Schema: already installed, tables checked',
+            'Permissions: /owa-data is now writable by its owner only.',
+            'Tables: created owa_login_failure, owa_spam_block',
+            'Schema updates: applied',
+            'Tracking bundles: the stale ones republished',
             'Admin "owatest-admin": already exists, not changed',
             'Site: already exists, not changed',
-            'Permissions: /owa-data is now writable by its owner only.',
         ], $cli->written);
+    }
+
+    /** Nothing missing and nothing pending: each step says so. */
+    public function testEachStepSaysWhenItHadNothingToDo(): void
+    {
+        $this->im->installed = true;
+
+        $cli          = $this->coreInstallCli(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+        $cli->pending = false;
+        $cli->doAction();
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertSame(self::STEPS, InstallerRecording::$calls, 'the updates and the bundles run anyway, as their commands do');
+        $this->assertSame(['Permissions: nothing to change', 'Tables: none missing', 'Schema updates: none pending'],
+            array_slice($cli->written, 0, 3));
+    }
+
+    /** A failed update stops the command, non-zero, naming the update; the bundles are not republished. */
+    public function testAFailedUpdateStopsTheRunAndIsNamed(): void
+    {
+        $this->im->installed = true;
+
+        $cli           = $this->coreInstallCli(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+        $cli->outcomes = ['CoreUpdateSchemaCli' => ['outcome' => 'failed', 'message' => 'The updates failed. See the error log.', 'final' => false]];
+        $cli->doAction();
+
+        $this->assertSame(['outcome' => 'failed', 'message' => 'Schema updates: update base.76 did not apply. The updates failed. See the error log.', 'final' => false],
+            $cli->getCliOutcome());
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertSame(array_slice(self::STEPS, 0, 3), InstallerRecording::$calls);
+    }
+
+    /** A table that cannot be created stops the command before any update runs. */
+    public function testATableThatCannotBeCreatedStopsTheRunBeforeTheUpdates(): void
+    {
+        $this->im->installed  = true;
+        $this->im->notCreated = ['owa_job_queue'];
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+
+        $this->assertSame('Tables: owa_job_queue could not be created. The error log says why.', $cli->getCliOutcome()['message']);
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertSame(array_slice(self::STEPS, 0, 2), InstallerRecording::$calls);
+    }
+
+    /** Bundles that are not published fail the command. */
+    public function testBundlesNotPublishedFailTheRun(): void
+    {
+        $this->im->installed = true;
+
+        $cli           = $this->coreInstallCli(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+        $cli->outcomes = ['TrackerPublishCli' => ['outcome' => 'failed', 'message' => 'Tracker bundle for 1 was not published; see the log.', 'final' => false]];
+        $cli->doAction();
+
+        $this->assertSame('Tracking bundles: Tracker bundle for 1 was not published; see the log.', $cli->getCliOutcome()['message']);
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertSame(self::STEPS, InstallerRecording::$calls);
+    }
+
+    /** The command runs while updates are pending: applying them is its third step. */
+    public function testItRunsWhileUpdatesArePending(): void
+    {
+        $this->assertFalse($this->coreInstallCli(['cmd' => 'core-install'])->needsCurrentSchema());
     }
 
     /** Setup arguments given to an installed system are ignored and said to be; standard input is not read. */
@@ -257,15 +335,121 @@ final class CoreInstallCliTest extends TestCase
         $cli = $this->runCommand(self::SETUP + ['password-stdin' => true]);
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
-        $this->assertSame(['installSchema', 'secureDataDir:'], InstallerRecording::$calls);
+        $this->assertSame(['secureDataDir:', 'createMissingTables', 'run:CoreUpdateSchemaCli', 'run:TrackerPublishCli'], InstallerRecording::$calls);
         $this->assertSame([], $this->im->passwords);
         $this->assertContains('OWA is already installed, so these arguments are ignored: user_id, email_address, domain, password-stdin.', $this->log->logged);
         $this->assertSame([
-            'Schema: already installed, tables checked',
             'Admin: there is none, and none was created',
             'Site: there is none, and none was created; add one with cmd=add-site',
-            'Permissions: nothing to change',
-        ], $cli->written);
+        ], array_slice($cli->written, -2));
+    }
+
+    /** A module with tables and no recorded schema version: refused before the first step, nothing done. */
+    public function testAModuleInAnUnknownStateIsRefusedAndNothingIsDone(): void
+    {
+        $this->im->installed = true;
+        $this->im->unknown   = ['domstream'];
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'web-group' => 'owatest-web']);
+
+        $this->assertSame(['outcome' => 'failed', 'message' => 'Module domstream has tables but no recorded schema version, so the state of its tables is unknown. '
+            . 'Run php cli.php cmd=core-install --force to move them aside and install the module fresh.', 'final' => true], $cli->getCliOutcome());
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertSame([], InstallerRecording::$calls);
+        $this->assertSame([], $cli->written);
+    }
+
+    /** --force: a module other than Base has its tables moved aside and is installed fresh, each rename said; then the four steps. */
+    public function testForceInstallsAModuleInAnUnknownStateFresh(): void
+    {
+        $this->im->installed = true;
+        $this->im->unknown   = ['domstream'];
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'force' => true, 'web-group' => 'owatest-web']);
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertSame(array_merge(['reinstallModule:domstream:20261128120000'], self::STEPS), InstallerRecording::$calls);
+        $this->assertSame([
+            'Moved aside: owa_domstream_chunk is now owa_domstream_chunk_before_20261128120000',
+            'Module domstream: installed fresh',
+        ], array_slice($cli->written, 0, 2));
+    }
+
+    /** --force: a new name that would collide, or is too long, is refused and nothing more is done. */
+    public function testForceStopsWhenATableCannotBeMovedAside(): void
+    {
+        $this->im->installed   = true;
+        $this->im->unknown     = ['domstream'];
+        $this->im->moveProblem = 'owa_domstream_chunk cannot be moved aside: owa_domstream_chunk_before_20261128120000 exists. Nothing was renamed.';
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'force' => true]);
+
+        $this->assertSame($this->im->moveProblem, $cli->getCliOutcome()['message']);
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertSame(['reinstallModule:domstream:20261128120000'], InstallerRecording::$calls);
+        $this->assertSame([], $cli->written);
+    }
+
+    /** --force with Base in an unknown state is a new installation: the setup arguments are required, and nothing is done without them. */
+    public function testForcedBaseNeedsTheSetupArguments(): void
+    {
+        $this->im->installed = true;
+        $this->im->unknown   = ['base'];
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'force' => true]);
+
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+        $this->assertStringContainsString('user_id: A user name for the admin account is required.', $cli->getCliOutcome()['message']);
+        $this->assertSame([], InstallerRecording::$calls);
+    }
+
+    /** --force with Base in an unknown state and the setup arguments: every module's tables moved aside, a new installation, the other modules installed fresh. */
+    public function testForcedBaseIsANewInstallation(): void
+    {
+        $this->im->installed = true;
+        $this->im->unknown   = ['base'];
+        $this->im->others    = ['domstream'];
+
+        $cli = $this->runCommand(self::SETUP + ['force' => true, 'web-group' => 'owatest-web']);
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertSame([
+            'moveAsideForNewInstall:20261128120000',
+            'installSchema',
+            'finishInstall:begin',
+            'createAdminUser:owatest-admin',
+            'createDefaultSite:https://example.test',
+            'finishInstall:end',
+            'announceInstallComplete:owatest-admin:owatest-site',
+            'secureDataDir:owatest-web',
+            'reinstallModule:domstream:20261128120000',
+        ], InstallerRecording::$calls);
+        $this->assertSame('Moved aside: owa_site is now owa_site_before_20261128120000', $cli->written[0]);
+        $this->assertContains('Module domstream: installed fresh', $cli->written);
+    }
+
+    /** --force with no module in an unknown state: says so, and runs the four steps as without it. */
+    public function testForceWithNothingUnknownChangesNothingMore(): void
+    {
+        $this->im->installed = true;
+
+        $cli = $this->runCommand(['cmd' => 'core-install', 'force' => true, 'web-group' => 'owatest-web']);
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertSame(self::STEPS, InstallerRecording::$calls);
+        $this->assertSame('--force: no module has tables without a recorded schema version, so nothing more is done.', $cli->written[0]);
+    }
+
+    /** Not installed, Base's tables there with no version: refused without --force. */
+    public function testANewInstallationOverTablesInAnUnknownStateIsRefused(): void
+    {
+        $this->im->unknown = ['base'];
+
+        $cli = $this->runCommand(self::SETUP);
+
+        $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
+        $this->assertStringStartsWith('Module base has tables but no recorded schema version', $cli->getCliOutcome()['message']);
+        $this->assertSame([], InstallerRecording::$calls);
     }
 
     /** Row 3, installed with --version or --file: that release installs; the database is not touched. */
@@ -327,7 +511,6 @@ final class CoreInstallCliTest extends TestCase
         foreach ([
             'Give --version or --file, not both.'      => ['version' => '2.0.3', 'file' => '/tmp/a.tar'],
             '--sig goes with --file.'                  => ['version' => '2.0.3', 'sig' => '/tmp/a.sig'],
-            '--force goes with --version or --file.'   => ['force' => true],
         ] as $says => $params) {
             Cli::$exit_code = 0;
 

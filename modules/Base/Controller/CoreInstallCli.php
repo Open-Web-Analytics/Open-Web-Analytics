@@ -13,7 +13,13 @@ use OWA\Module\Base\Classes\InstallManager;
  *       and printed once, or read with --password-stdin) and the first site,
  *       then the data directory's permissions
  *   php cli.php cmd=core-install
- *       installed: missing tables created, the permissions checked; nothing else changes
+ *       installed: the permissions checked, missing tables created, pending
+ *       schema updates applied, stale tracking bundles republished; the admin
+ *       and the sites are not changed
+ *   php cli.php cmd=core-install --force
+ *       installed: each module with tables but no recorded schema version
+ *       has its tables moved aside and is installed fresh, Base with the
+ *       setup arguments; then as above
  *   php cli.php cmd=core-install --version=2.0.3 [--force]
  *   php cli.php cmd=core-install --file=owa_2.0.3_packaged.tar [--sig=<path>] [--force]
  *       installed: that release's code (Classes\AutoUpdate\Install), fetched
@@ -74,7 +80,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
 
         return [
             'description' => 'Installs OWA. With no installation yet (owa-config.php must exist), sets up the database: the schema, the first admin and the first tracked website, then the data directory\'s permissions. The admin\'s password is generated and printed once, unless --password-stdin is given. '
-                . 'On an installed system with no release named, checks and repairs: missing tables are created, the schema version is kept, the permissions are checked, and nothing else changes. '
+                . 'On an installed system with no release named, in this order: the permissions are checked, missing tables are created, pending schema updates are applied as cmd=core-update-schema applies them, and stale tracking bundles are republished as cmd=publish-trackers does. The admin and the sites are not changed. A module with tables but no recorded schema version stops it, unless --force is given. '
                 . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release in this major version can be named. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
             'arguments'   => [
                 'user_id' => [
@@ -131,7 +137,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
                 ],
                 '--force' => [
                     'type'        => 'flag',
-                    'description' => 'With --version or --file: install a release older than the installed one. The installed release again needs no --force: it is reinstalled, copying the files that differ. Never one older than the database schema: the rollbacks to run first are listed instead.',
+                    'description' => 'With --version or --file: install a release older than the installed one. The installed release again needs no --force: it is reinstalled, copying the files that differ. Never one older than the database schema: the rollbacks to run first are listed instead. With no release named: each module with tables but no recorded schema version has its tables renamed <table>_before_<yyyymmddHHMMSS>, not dropped, and is installed fresh. When that module is Base, it is a new installation, and the setup arguments are required.',
                 ],
             ],
         ];
@@ -158,7 +164,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
      */
     public function validate() {
 
-        if ( $this->isInstalled() || $this->releaseNamed() ) {
+        if ( $this->releaseNamed() || ( $this->isInstalled() && ! $this->baseForced() ) ) {
 
             return;
         }
@@ -209,9 +215,130 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
             return $this->installRelease();
         }
 
+        if ( $this->param( 'force' ) ) {
+
+            return $this->installUnknownFresh();
+        }
+
         $this->sayIgnored( self::SETUP_ARGUMENTS );
 
         return $this->checkAndRepair();
+    }
+
+    /**
+     * Whether Base is to be installed fresh: --force, no release named, and
+     * Base's tables in an unknown state (Core\Module::hasUnknownSchemaState()).
+     *
+     * @return bool
+     */
+    private function baseForced() {
+
+        return $this->param( 'force' ) && ! $this->releaseNamed()
+            && in_array( 'base', $this->installManager()->unknownStateModules(), true );
+    }
+
+    /**
+     * An installed system, --force and no release named: each module with
+     * tables but no recorded schema version has them moved aside and is
+     * installed fresh, then checkAndRepair(). Base is a new installation
+     * (setUp()), after the tables of every active module are moved aside,
+     * and those modules are installed fresh after it.
+     *
+     * @return null
+     */
+    private function installUnknownFresh() {
+
+        $im      = $this->installManager();
+        $unknown = $im->unknownStateModules();
+        $stamp   = $this->stamp();
+
+        if ( ! $unknown ) {
+
+            $this->sayIgnored( self::SETUP_ARGUMENTS );
+            $this->write( CoreAPI::t( '--force: no module has tables without a recorded schema version, so nothing more is done.' ) );
+
+            return $this->checkAndRepair();
+        }
+
+        if ( $unknown[0] === 'base' ) {
+
+            $moved = $im->moveAsideForNewInstall( $stamp );
+            $this->sayMoved( $moved['moved'] );
+
+            if ( $moved['problem'] !== '' ) {
+
+                return $this->fail( $moved['problem'], true );
+            }
+
+            $this->setUp();
+
+            if ( $this->getCliOutcome()['outcome'] === 'failed' ) {
+
+                return null;
+            }
+
+            return $this->reinstall( $moved['modules'], $stamp );
+        }
+
+        $this->sayIgnored( self::SETUP_ARGUMENTS );
+
+        if ( $this->reinstall( $unknown, $stamp ) === false ) {
+
+            return null;
+        }
+
+        return $this->checkAndRepair();
+    }
+
+    /**
+     * Each of $modules moved aside and installed fresh (InstallManager::reinstallModule()), each step said.
+     *
+     * @param  list<string> $modules
+     * @param  string       $stamp yyyymmddHHMMSS
+     * @return false|null false when one failed, and the run with it
+     */
+    private function reinstall( array $modules, $stamp ) {
+
+        foreach ( $modules as $name ) {
+
+            $result = $this->installManager()->reinstallModule( $name, $stamp );
+            $this->sayMoved( $result['moved'] );
+
+            if ( $result['problem'] !== '' ) {
+
+                $this->fail( $result['problem'] );
+
+                return false;
+            }
+
+            $this->write( sprintf( CoreAPI::t( 'Module %s: installed fresh' ), $name ) );
+        }
+
+        return null;
+    }
+
+    /**
+     * Each table renamed, said.
+     *
+     * @param  array<string, string> $moved old name => new name
+     * @return void
+     */
+    private function sayMoved( array $moved ) {
+
+        foreach ( $moved as $from => $to ) {
+
+            $this->write( sprintf( CoreAPI::t( 'Moved aside: %1$s is now %2$s' ), $from, $to ) );
+        }
+    }
+
+    /**
+     * The yyyymmddHHMMSS the tables moved aside are named with. A method so a test can answer for it.
+     *
+     * @return string
+     */
+    protected function stamp() {
+
+        return date( 'YmdHis' );
     }
 
     /**
@@ -230,11 +357,6 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         if ( $this->given( 'sig' ) && ! $this->given( 'file' ) ) {
 
             return CoreAPI::t( '--sig goes with --file.' );
-        }
-
-        if ( $this->param( 'force' ) && ! $this->releaseNamed() ) {
-
-            return CoreAPI::t( '--force goes with --version or --file.' );
         }
 
         return null;
@@ -261,6 +383,22 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         }
 
         $this->c->applyConfigConstants();
+
+        if ( ! $this->param( 'force' ) && in_array( 'base', $im->unknownStateModules(), true ) ) {
+
+            return $this->fail( \OWA\Core\Module::unknownStateMessage( 'base' ), true );
+        }
+
+        if ( $this->param( 'force' ) && ! $this->isInstalled() && in_array( 'base', $im->unknownStateModules(), true ) ) {
+
+            $moved = $im->moveAsideForNewInstall( $this->stamp() );
+            $this->sayMoved( $moved['moved'] );
+
+            if ( $moved['problem'] !== '' ) {
+
+                return $this->fail( $moved['problem'], true );
+            }
+        }
 
         if ( $im->installSchema() !== true ) {
 
@@ -336,39 +474,130 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * An installed system, no release named: missing tables created (the
-     * schema version kept, Module::install()), the permissions checked, and
-     * each step's outcome said. The admin and the sites are not changed.
+     * An installed system, no release named, in this order: the permissions
+     * (InstallManager::secureDataDir()), the missing tables
+     * (InstallManager::createMissingTables()), the pending schema updates
+     * (cmd=core-update-schema, run here) and the stale tracking bundles
+     * (cmd=publish-trackers, run here), each step's outcome said. A step that
+     * fails stops the run. The admin and the sites are not changed. A module
+     * with tables but no recorded schema version stops it before the first.
      *
      * @return null
      */
     private function checkAndRepair() {
 
-        $im = $this->installManager();
+        $im      = $this->installManager();
+        $unknown = $im->unknownStateModules();
 
-        if ( $im->installSchema() !== true ) {
+        if ( $unknown ) {
 
-            return $this->fail( CoreAPI::t( 'Schema: a table could not be created. The error log says why.' ) );
+            return $this->fail( implode( ' ', array_map( [ \OWA\Core\Module::class, 'unknownStateMessage' ], $unknown ) ), true );
+        }
+
+        $changed = $im->secureDataDir( (string) $this->param( 'web-group' ) );
+
+        $this->write( $changed
+            ? array_map( static fn ( $said ) => CoreAPI::t( 'Permissions:' ) . ' ' . $said, $changed )
+            : [ CoreAPI::t( 'Permissions: nothing to change' ) ] );
+
+        $tables = $im->createMissingTables();
+
+        if ( $tables['problem'] !== null ) {
+
+            return $this->fail( CoreAPI::t( 'Tables:' ) . ' ' . $tables['problem'], true );
+        }
+
+        if ( $tables['failed'] ) {
+
+            return $this->fail( sprintf( CoreAPI::t( 'Tables: %s could not be created. The error log says why.' ), implode( ', ', $tables['failed'] ) ) );
+        }
+
+        $this->write( $tables['created']
+            ? sprintf( CoreAPI::t( 'Tables: created %s' ), implode( ', ', $tables['created'] ) )
+            : CoreAPI::t( 'Tables: none missing' ) );
+
+        $pending = $this->updatesPending();
+        $updates = $this->runCommand( CoreUpdateSchemaCli::class );
+
+        if ( $updates['outcome'] !== 'ok' ) {
+
+            return $this->fail( sprintf( CoreAPI::t( 'Schema updates: update %1$s did not apply. %2$s' ), $this->nextUpdate(), $updates['message'] ) );
+        }
+
+        $this->write( $pending ? CoreAPI::t( 'Schema updates: applied' ) : CoreAPI::t( 'Schema updates: none pending' ) );
+
+        $publish = $this->runCommand( TrackerPublishCli::class );
+
+        if ( $publish['outcome'] !== 'ok' ) {
+
+            return $this->fail( CoreAPI::t( 'Tracking bundles:' ) . ' ' . $publish['message'] );
         }
 
         $admin = $im->adminUserId();
-        $lines = [
-            CoreAPI::t( 'Schema: already installed, tables checked' ),
+
+        $this->write( [
+            CoreAPI::t( 'Tracking bundles: the stale ones republished' ),
             $admin !== null
                 ? sprintf( CoreAPI::t( 'Admin "%s": already exists, not changed' ), $admin )
                 : CoreAPI::t( 'Admin: there is none, and none was created' ),
             $im->hasSite()
                 ? CoreAPI::t( 'Site: already exists, not changed' )
                 : CoreAPI::t( 'Site: there is none, and none was created; add one with cmd=add-site' ),
-        ];
-
-        $changed = $im->secureDataDir( (string) $this->param( 'web-group' ) );
-
-        $this->write( array_merge( $lines, $changed
-            ? array_map( static fn ( $said ) => CoreAPI::t( 'Permissions:' ) . ' ' . $said, $changed )
-            : [ CoreAPI::t( 'Permissions: nothing to change' ) ] ) );
+        ] );
 
         return null;
+    }
+
+    /**
+     * A CLI command run in this process, as cli.php runs it
+     * (AutoUpdate\Finish::command()), and how it ended. A method so a test
+     * can answer for it.
+     *
+     * @param  class-string $class
+     * @return array{outcome: string, message: string, final: bool}
+     */
+    protected function runCommand( $class ) {
+
+        return \OWA\Module\Base\Classes\AutoUpdate\Finish::command( $class );
+    }
+
+    /**
+     * Whether a module has an update pending (CoreAPI::getModulesNeedingUpdates()).
+     * A method so a test can answer for it.
+     *
+     * @return bool
+     */
+    protected function updatesPending() {
+
+        return (bool) CoreAPI::getModulesNeedingUpdates();
+    }
+
+    /**
+     * The update a stopped run of the schema updates stopped at:
+     * <module>.<sequence>, the first pending one of the first module behind.
+     * A method so a test can answer for it.
+     *
+     * @return string
+     */
+    protected function nextUpdate() {
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ( $s->getModulesNeedingUpdates() as $name ) {
+
+            $module   = $s->modules[ $name ] ?? null;
+            $recorded = (int) CoreAPI::getSetting( $name, 'schema_version' );
+
+            foreach ( \OWA\Core\Module::updateClasses( $name ) as $seq => $class ) {
+
+                if ( $seq > $recorded && ( ! $module || $seq <= $module->getRequiredSchemaVersion() ) ) {
+
+                    return $name . '.' . $seq;
+                }
+            }
+        }
+
+        return CoreAPI::t( '(unknown)' );
     }
 
     /**

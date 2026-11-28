@@ -182,9 +182,9 @@ class Finish {
      * say how it ended.
      *
      * @param  string $class
-     * @return array{outcome: string, message: string, retry: bool}
+     * @return array{outcome: string, message: string, final: bool}
      */
-    private static function command( $class ) {
+    public static function command( $class ) {
 
         $cli = new $class( [] );
         $cli->doAction();
