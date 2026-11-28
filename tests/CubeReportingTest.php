@@ -890,6 +890,53 @@ final class CubeReportingTest extends TestCase
     }
 
     /**
+     * The per-user and per-session ratios no shipped report shows, reachable
+     * from custom reports and REST, over the fixture: 8 events, 4 page views,
+     * 2 sessions, 2 users, 1 engaged session, 1500 ms of engagement and two
+     * entrances.
+     */
+    public function testTheRatiosNoShippedReportShowsComputeWhatTheFixtureHolds(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'entrances,eventCountPerUser,pageViewsPerUser,averageEngagementTimePerUser,revenuePerUser,'
+          . 'sessionsPerUser,eventsPerSession,averageEngagementTimePerPageView,engagedSessionsPerUser,'
+          . 'transactionRevenue,totalUsers');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $got = [];
+
+        foreach ((array) $rs->aggregates as $name => $a) {
+            $got[$name] = (float) $a['value'];
+        }
+
+        // Revenue per user is checked against its own two sides: what revenue reads as is the currency metrics' business.
+        $this->assertGreaterThan(0.0, $got['transactionRevenue']);
+        $this->assertEqualsWithDelta($got['transactionRevenue'] / $got['totalUsers'], $got['revenuePerUser'], 0.5, 'revenue / 2 users');
+
+        unset($got['transactionRevenue'], $got['totalUsers'], $got['revenuePerUser']);
+        ksort($got);
+
+        $this->assertEqualsWithDelta([
+            'averageEngagementTimePerPageView' => 375.0,   // 1500 / 4 page views
+            'averageEngagementTimePerUser'     => 750.0,   // 1500 / 2 users
+            'engagedSessionsPerUser'           => 0.5,     // 1 / 2
+            'entrances'                        => 2.0,     // rows 0 and 4
+            'eventCountPerUser'                => 4.0,     // 8 / 2
+            'eventsPerSession'                 => 4.0,     // 8 / 2
+            'pageViewsPerUser'                 => 2.0,     // 4 / 2
+            'sessionsPerUser'                  => 1.0,     // 2 / 2
+        ], $got, 0.0001);
+    }
+
+    /**
      * Entrances, exits and the exit rate, by page. /one is viewed twice and
      * never last; /two is viewed twice and last both times.
      */
