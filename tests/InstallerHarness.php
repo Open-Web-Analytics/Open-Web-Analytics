@@ -101,6 +101,58 @@ class RecordingInstallManager extends \OWA\Module\Base\Classes\InstallManager
 
         return $this->permissions;
     }
+
+    /** @var list<string> the tables createMissingTables() says it created */
+    public $created = [];
+
+    /** @var list<string> the tables createMissingTables() says it could not create */
+    public $notCreated = [];
+
+    public function createMissingTables()
+    {
+        InstallerRecording::$calls[] = 'createMissingTables';
+
+        return ['created' => $this->created, 'failed' => $this->notCreated, 'problem' => null];
+    }
+
+    /** @var list<string> what unknownStateModules() answers: the modules with tables and no recorded version */
+    public $unknown = [];
+
+    /** @var list<string> the other modules moveAsideForNewInstall() says it moved */
+    public $others = [];
+
+    /** @var string what reinstallModule() and moveAsideForNewInstall() answer as their problem */
+    public $moveProblem = '';
+
+    public function unknownStateModules()
+    {
+        return $this->unknown;
+    }
+
+    public function reinstallModule($name, $stamp)
+    {
+        InstallerRecording::$calls[] = 'reinstallModule:' . $name . ':' . $stamp;
+
+        if ($this->moveProblem === '') {
+            $this->unknown = array_values(array_diff($this->unknown, [$name]));
+        }
+
+        return ['moved' => $this->moveProblem === '' ? ['owa_' . $name . '_chunk' => 'owa_' . $name . '_chunk_before_' . $stamp] : [],
+            'problem' => $this->moveProblem];
+    }
+
+    public function moveAsideForNewInstall($stamp)
+    {
+        InstallerRecording::$calls[] = 'moveAsideForNewInstall:' . $stamp;
+
+        if ($this->moveProblem !== '') {
+            return ['moved' => [], 'modules' => [], 'problem' => $this->moveProblem];
+        }
+
+        $this->unknown = [];
+
+        return ['moved' => ['owa_site' => 'owa_site_before_' . $stamp], 'modules' => $this->others, 'problem' => ''];
+    }
 }
 
 /** Settings whose writes are recorded rather than made; reads go to the real settings. */
@@ -207,6 +259,12 @@ trait InstallerHarness
             /** @var string what install() and installFile() answer */
             public $answer = \OWA\Module\Base\Classes\AutoUpdate\Install::OK;
 
+            /** @var array<string, array{outcome: string, message: string, final: bool}> a command run in the process => how it ended; ok when not here */
+            public $outcomes = [];
+
+            /** @var bool whether updates are pending before the schema updates run */
+            public $pending = true;
+
             private $recording;
 
             private $stdin;
@@ -243,6 +301,29 @@ trait InstallerHarness
                 $this->releases[] = ['version', $version, $force];
 
                 return ['outcome' => $this->answer, 'message' => 'answered ' . $this->answer, 'lines' => []];
+            }
+
+            protected function runCommand($class)
+            {
+                $short = substr($class, strrpos($class, '\\') + 1);
+                \InstallerRecording::$calls[] = 'run:' . $short;
+
+                return $this->outcomes[$short] ?? ['outcome' => 'ok', 'message' => '', 'final' => false];
+            }
+
+            protected function updatesPending()
+            {
+                return $this->pending;
+            }
+
+            protected function nextUpdate()
+            {
+                return 'base.76';
+            }
+
+            protected function stamp()
+            {
+                return '20261128120000';
             }
 
             protected function installFile($file, $sig, $force)

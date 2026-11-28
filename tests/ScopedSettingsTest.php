@@ -71,6 +71,24 @@ final class ScopedSettingsTest extends TestCase
         }
     }
 
+    /**
+     * A scoped row is stored with autoload 1, as an install row is and as the
+     * column defaults, so Update043's rollback and re-apply, which drops the
+     * column and adds it back, leaves the row as it was.
+     */
+    public function testAScopedRowIsStoredWithAutoloadOne(): void
+    {
+        $this->skipUnlessParented();
+
+        $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting( 'property', $this->propertyId, 'base', $this->key, 'x' ) );
+
+        $id  = \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId( 'property', $this->propertyId, 'base', $this->key );
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            sprintf( 'SELECT autoload FROM %s WHERE id = ?', \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), [ $id ] );
+
+        $this->assertSame( '1', (string) ( $row['autoload'] ?? '' ) );
+    }
+
     /** Unscoped means exactly what it always meant. */
     public function testWithoutAScopeItIsTheInstallValue(): void
     {

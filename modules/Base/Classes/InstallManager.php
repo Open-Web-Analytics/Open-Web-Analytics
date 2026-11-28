@@ -196,6 +196,138 @@ class InstallManager extends \OWA\Core\Base {
     }
 
     /**
+     * Each active module's missing tables, created from its entities
+     * (Module::createMissingTables()). Tables that exist and the schema
+     * versions are left as they are. Nothing is created on a server OWA
+     * cannot run on: problem says why.
+     *
+     * @return array{created: list<string>, failed: list<string>, problem: string|null} table names
+     */
+    public function createMissingTables() {
+
+        $out = [ 'created' => [], 'failed' => [], 'problem' => \OWA\Module\Base\Classes\DatabaseRequirement::problem() ];
+
+        if ( $out['problem'] !== null ) {
+
+            return $out;
+        }
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
+
+            // A module that is not a Core\Module declares no tables.
+            if ( ! $module instanceof \OWA\Core\Module ) {
+
+                continue;
+            }
+
+            $tables = $module->createMissingTables();
+
+            array_push( $out['created'], ...$tables['created'] );
+            array_push( $out['failed'], ...$tables['failed'] );
+        }
+
+        return $out;
+    }
+
+    /**
+     * The active modules with tables but no recorded schema version
+     * (Core\Module::hasUnknownSchemaState()), Base first when it is one.
+     *
+     * @return list<string> module names
+     */
+    public function unknownStateModules() {
+
+        $out = [];
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $name => $module ) {
+
+            if ( $module instanceof \OWA\Core\Module && $module->hasUnknownSchemaState() ) {
+
+                $out[] = (string) $name;
+            }
+        }
+
+        usort( $out, static fn ( $a, $b ) => ( $b === 'base' ) <=> ( $a === 'base' ) );
+
+        return $out;
+    }
+
+    /**
+     * A module's tables moved aside to <table>_before_<stamp>
+     * (Core\Module::moveTablesAside()), then created fresh and its required
+     * schema version recorded (Core\Module::install()).
+     *
+     * @param  string $name  a module's name
+     * @param  string $stamp yyyymmddHHMMSS
+     * @return array{moved: array<string, string>, problem: string} old name => new name; problem '' when none
+     */
+    public function reinstallModule( $name, $stamp ) {
+
+        $module = \OWA\Core\CoreAPI::serviceSingleton()->getModule( $name ) ?: \OWA\Core\CoreAPI::moduleClassFactory( $name );
+        $out    = $module->moveTablesAside( $stamp );
+
+        if ( $out['problem'] === '' && ! $module->install() ) {
+
+            $out['problem'] = $module->install_problem !== ''
+                ? $module->install_problem
+                : sprintf( \OWA\Core\CoreAPI::t( 'Module %s was not installed. The error log says why.' ), $name );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Base's tables, then those of every other active module, moved aside to
+     * <table>_before_<stamp>, and the settings read from the old owa_setting
+     * forgotten (Settings::forgetStored()): a new installation follows. Every
+     * new name is checked before any table is renamed.
+     *
+     * @param  string $stamp yyyymmddHHMMSS
+     * @return array{moved: array<string, string>, modules: list<string>, problem: string} old name => new name; the other modules moved; problem '' when none
+     */
+    public function moveAsideForNewInstall( $stamp ) {
+
+        $out     = [ 'moved' => [], 'modules' => [], 'problem' => '' ];
+        $modules = array_filter( \OWA\Core\CoreAPI::serviceSingleton()->modules,
+            static fn ( $m ) => $m instanceof \OWA\Core\Module );
+
+        uksort( $modules, static fn ( $a, $b ) => ( $b === 'base' ) <=> ( $a === 'base' ) );
+
+        // Every new name checked before any table is renamed.
+        foreach ( $modules as $module ) {
+
+            $out['problem'] = $module->moveAsideProblem( $stamp );
+
+            if ( $out['problem'] !== '' ) {
+
+                return $out;
+            }
+        }
+
+        foreach ( $modules as $name => $module ) {
+
+            $moved        = $module->moveTablesAside( $stamp );
+            $out['moved'] = array_merge( $out['moved'], $moved['moved'] );
+
+            if ( $moved['problem'] !== '' ) {
+
+                $out['problem'] = $moved['problem'];
+
+                return $out;
+            }
+
+            if ( $name !== 'base' && $moved['moved'] ) {
+
+                $out['modules'][] = (string) $name;
+            }
+        }
+
+        \OWA\Core\CoreAPI::configSingleton()->forgetStored();
+
+        return $out;
+    }
+
+    /**
      * Create the first admin, unless there is one.
      *
      * @param  string $user_id

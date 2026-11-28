@@ -58,8 +58,10 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
         $counts = array_count_values( $results );
 
-        $this->e->notice( sprintf( 'Tracker bundles: %d published, %d current, %d failed, %d removed.',
-            $counts['published'] ?? 0, $counts['current'] ?? 0, $counts['failed'] ?? 0, $counts['removed'] ?? 0 ) );
+        $summary = sprintf( '%d published, %d current, %d failed, %d removed',
+            $counts['published'] ?? 0, $counts['current'] ?? 0, $counts['failed'] ?? 0, $counts['removed'] ?? 0 );
+
+        $this->e->notice( 'Tracker bundles: ' . $summary . '.' );
 
         foreach ( $results as $id => $state ) {
 
@@ -67,6 +69,12 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
                 $this->fail( "Tracker bundle for $id was not published; see the log." );
             }
+        }
+
+        // A run that published what it had to says what it did, as its outcome's message (cmd=core-install prints it).
+        if ( $this->cli_outcome === 'ok' ) {
+
+            $this->cli_message = $summary;
         }
 
         $last = (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cache_headers' );

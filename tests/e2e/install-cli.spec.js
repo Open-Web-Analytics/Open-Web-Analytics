@@ -106,10 +106,13 @@ test.describe('install: CLI installer (cli.php cmd=core-install into a scratch D
         expect(result.checks.raw_partitioned).toBe(true);
         expect(result.checks.raw_has_lead).toBe(true);
 
-        // 4. Run again on the installed system: check and repair, nothing else.
+        // 4. Run again on the installed system: its four steps, and the admin and site unchanged.
         const again = run(setup);
         expect(again.code, again.out).toBe(0);
-        expect(again.out).toMatch(/Schema: already installed, tables checked/);
+        expect(again.out).toMatch(/Permissions: /);
+        expect(again.out).toMatch(/Tables: none missing/);
+        expect(again.out).toMatch(/Schema updates: none pending/);
+        expect(again.out).toMatch(/Tracking bundles: \d+ published, \d+ current, 0 failed, \d+ removed/);
         expect(again.out).toContain(`Admin "${INFO.installcli_admin_id}": already exists, not changed`);
         expect(again.out).toMatch(/Site: already exists, not changed/);
         expect(again.out).toMatch(/so these arguments are ignored: user_id, email_address, domain/);

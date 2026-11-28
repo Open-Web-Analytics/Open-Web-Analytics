@@ -842,6 +842,13 @@ class CoreAPI {
         $setting->set( 'id', $id );
         $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
 
+        /*
+         * 1, as an install row is written and as the column defaults. Left
+         * unset, the entity writes 0, and Update043's rollback and re-apply,
+         * which drops the column and adds it back, turns the row into 1.
+         */
+        $setting->set( 'autoload', 1 );
+
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         return $setting->create();

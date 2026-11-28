@@ -112,7 +112,9 @@ class Update extends \OWA\Core\Base {
          * An update at or below the schema has been applied, and running it
          * again re-runs it over the changes of every update after it; one
          * further ahead skips the updates between. --force applies any of them.
-         * No recorded version reads as 1, as Module::getSchemaVersion() does.
+         * No recorded version reads as 1. With the module's tables there, its
+         * state is unknown and cmd=core-update-schema refuses apply= and
+         * rollback= before this runs (Module::hasUnknownSchemaState()).
          */
         if ( ! $force ) {
 
