@@ -3418,12 +3418,21 @@ class CoreAPI {
         return $s->geolocation;
     }
 
+    /** The nonce window, in seconds, when nonce_expiration_period is not a positive number. */
+    const NONCE_EXPIRATION_PERIOD = 7200;
+
     /**
+     * The current nonce window: time() in windows of nonce_expiration_period
+     * seconds, rounded up. A period of 0 or less, or not a number, is
+     * NONCE_EXPIRATION_PERIOD.
+     *
      * @return float
      */
     public static function getNonceTimeInterval() {
 
-        return  ceil( time() / \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period') );
+        $period = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period' );
+
+        return ceil( time() / ( $period > 0 ? $period : self::NONCE_EXPIRATION_PERIOD ) );
     }
 
     /**
