@@ -500,6 +500,14 @@ class GoalEventDefinition extends \OWA\Core\Entity {
             return \OWA\Core\CoreAPI::t( 'An event name starts with a letter and has up to 40 letters, digits and underscores.' );
         }
 
+        // Refused at ingest (CoreAPI::isTrackingEventType()), so a goal on it would never be met.
+        $owas = \OWA\Core\CoreAPI::eventNameDifferingInCase( $trigger );
+
+        if ( $owas !== null ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( '%1$s differs from the built-in event %2$s only in case, and is not collected.' ), $trigger, $owas );
+        }
+
         if ( stripos( $trigger, 'owa_' ) === 0 ) {
 
             return \OWA\Core\CoreAPI::t( 'The tracker does not send a custom event under a name starting owa_.' );

@@ -378,7 +378,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $modules = array_values( array_diff( \OWA\Core\CoreAPI::trackingEventTypes(),
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
 
-        foreach ( array_merge( [ 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words',
+        foreach ( array_merge( [ 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words', 'Purchase', 'PAGE_VIEW', 'Session_Start',
                 \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ], $modules ) as $refused ) {
             $this->assertNotSame( '', $problem( $refused ), $refused );
             $this->assertFalse( $custom( $refused ), $refused );
