@@ -31,7 +31,6 @@ function pageOf(t, { height, viewport, scrolled }) {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
     document.body.innerHTML = '';
 });

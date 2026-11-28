@@ -67,7 +67,6 @@ function reset() {
 
 beforeEach(() => {
     reset();
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', 'example.com');
 });
 

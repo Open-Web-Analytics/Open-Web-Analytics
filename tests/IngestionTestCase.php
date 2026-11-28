@@ -333,7 +333,7 @@ abstract class IngestionTestCase extends TestCase
         return $row;
     }
     /**
-     * A landing URL carrying campaign tags, built from the configured `ns`.
+     * A landing URL carrying campaign tags, prefixed with CoreAPI::NS.
      *
      * The tracker carries the landing URL and the server parses it, so an
      * ingestion test fires the URL rather than tagged_*: the beacon contract guard
@@ -341,7 +341,7 @@ abstract class IngestionTestCase extends TestCase
      */
     protected function landingUrlWithTags(string $path, array $tags): string
     {
-        $ns    = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        $ns    = \OWA\Core\CoreAPI::NS;
         $query = [];
 
         foreach ($tags as $suffix => $value) {

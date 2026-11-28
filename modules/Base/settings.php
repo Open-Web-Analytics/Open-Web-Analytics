@@ -358,9 +358,6 @@ return [
         'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
         'login_throttle_max_failures' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_MAX_FAILURES', 'default' => \OWA\Module\Base\Classes\LoginThrottle::MAX_FAILURES, 'description' => 'How many failed sign-ins by one user name, or from one client address, within login_throttle_window refuse its further sign-ins. 0 counts and refuses nothing. Default 5.' ],
         'login_throttle_window' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_WINDOW', 'default' => \OWA\Module\Base\Classes\LoginThrottle::WINDOW, 'description' => 'The time, in seconds, after a first failed sign-in within which the next ones are counted with it, and after the last one that sign-ins are refused. Default 900 (15 minutes).' ],
-        // The wire namespace only. OWA's own admin and reporting URLs carry no
-        // prefix; RequestContainer still accepts prefixed ones.
-        'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],
 
         /*
          * Whether the utm_ parameters are read as well as OWA's own, which win
@@ -382,8 +379,8 @@ return [
         ],
         /*
          * The URL parameter each campaign role arrives under, in place of
-         * OWA's own name for it. A role left out is ns-prefixed: owa_source,
-         * owa_medium and so on, honouring a custom `ns`.
+         * OWA's own name for it. A role left out is prefixed with CoreAPI::NS:
+         * owa_source, owa_medium and so on.
          *
          * Install, Property and Profile scoped. Read by the server, which
          * parses the tags (TrackingEventHelpers::campaignKeysFor()).
@@ -468,6 +465,8 @@ return [
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update093: the names of the autoload indexes it dropped, for its down().
         'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update100: the rows of the removed ns setting it deleted, for its down().
+        'retired_settings_before_100' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update098: the rows of the removed privacy and announcement settings it deleted, for its down().
         'retired_settings_before_098' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],

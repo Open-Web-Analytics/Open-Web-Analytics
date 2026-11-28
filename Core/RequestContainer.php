@@ -131,7 +131,7 @@ class RequestContainer {
         }
 
         // populate owa_cookie container with just the cookies that have the owa namespace.
-        $this->owa_cookies = \OWA\Core\Lib::stripParams( $this->cookies, \OWA\Core\CoreAPI::getSetting('base', 'ns') );
+        $this->owa_cookies = \OWA\Core\Lib::stripParams( $this->cookies, \OWA\Core\CoreAPI::NS );
 
 
         // session
@@ -145,7 +145,7 @@ class RequestContainer {
         $this->state = new \OWA\Module\Base\Classes\State();
         // merges session
         if (!empty($this->session)) {
-            $this->state->addStores(\OWA\Core\Lib::stripParams($this->session, \OWA\Core\CoreAPI::getSetting('base', 'ns')));
+            $this->state->addStores(\OWA\Core\Lib::stripParams($this->session, \OWA\Core\CoreAPI::NS));
         }
 
         // merges cookies
@@ -222,8 +222,7 @@ class RequestContainer {
             }
         }
 
-        // get namespace
-        $ns = \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        $ns = \OWA\Core\CoreAPI::NS;
 
         // strip action and do params of nasty include exploits.
         //
@@ -264,7 +263,7 @@ class RequestContainer {
          * supported. Cookies and the session are still read prefixed-only
          * (stripParams()).
          */
-        $ns_len = strlen( (string) $ns );
+        $ns_len = strlen( $ns );
 
         $from_ns      = [];
 
@@ -274,7 +273,7 @@ class RequestContainer {
 
             $n = (string) $n;
 
-            if ( $ns && strpos( $n, $ns ) === 0 ) {
+            if ( strpos( $n, $ns ) === 0 ) {
 
                 $name = substr( $n, $ns_len );
 

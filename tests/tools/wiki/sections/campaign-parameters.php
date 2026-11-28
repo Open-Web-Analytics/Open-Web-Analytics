@@ -1,22 +1,21 @@
 <?php
 /**
  * The campaign parameters OWA reads off a landing URL: each role's own
- * parameter (the `ns` setting's default plus the role,
+ * parameter (CoreAPI::NS plus the role,
  * TrackingEventHelpers::CAMPAIGN_KEYS), its utm_ counterpart (UTM_KEYS), and
  * the raw column the value is stored in, from the property registry
  * (modules/Base/config/tracking_properties.json).
  */
 
-use OWA\Core\Module;
 use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 return function () {
 
-    $ns       = (string) ( Module::settingsRegistry()['fields']['base|ns']['default'] ?? '' );
+    $ns       = \OWA\Core\CoreAPI::NS;
     $registry = json_decode( (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
-    if ( $ns === '' || ! is_array( $registry ) ) {
-        throw new RuntimeException( 'Could not read the ns default or the property registry.' );
+    if ( ! is_array( $registry ) ) {
+        throw new RuntimeException( 'Could not read the property registry.' );
     }
 
     $out = "| Role | OWA parameter | `utm_` parameter | Stored in |\n|---|---|---|---|\n";

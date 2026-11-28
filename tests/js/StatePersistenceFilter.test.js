@@ -64,7 +64,6 @@ function coldPage() {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', 'persist.example');
     OWA.setSetting('hashCookiesToDomain', false);
     ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));

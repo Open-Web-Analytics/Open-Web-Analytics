@@ -25,7 +25,7 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 const SITE = 'restore-site';
 const SESSION = 's_' + SITE;
 
-function ns(name) { return OWA.getSetting('ns') + name; }
+function ns(name) { return 'owa_' + name; }
 
 function eraseEverything() {
     OWA.initializeStateManager();
