@@ -96,7 +96,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Install Updates Automatically' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Whether OWA downloads and installs its own patch and minor releases. Never on a version control checkout, and never a major release.' ),
+                \OWA\Core\CoreAPI::t( 'Whether OWA downloads and installs its own releases, those Releases To Install names. Never on a version control checkout.' ),
         ],
         'auto_update_level' => [
             'config_constant' => 'OWA_AUTO_UPDATE_LEVEL',
@@ -106,8 +106,8 @@ return [
             'type'     => 'select',
             'label'    => \OWA\Core\CoreAPI::t( 'Releases To Install' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features.' ),
-            'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'patch' => \OWA\Core\CoreAPI::t( 'Patch releases only' ) ],
+                \OWA\Core\CoreAPI::t( 'Patch releases fix bugs and security problems; minor releases also add features; major releases can change what OWA needs and how it works. A release that does not install over the installed one is skipped for the highest that does, and installs on a later update.' ),
+            'options'  => [ 'minor' => \OWA\Core\CoreAPI::t( 'Patch and minor releases' ), 'major' => \OWA\Core\CoreAPI::t( 'Patch, minor and major releases' ) ],
         ],
         'auto_update_days' => [
             'config_constant' => 'OWA_AUTO_UPDATE_DAYS',

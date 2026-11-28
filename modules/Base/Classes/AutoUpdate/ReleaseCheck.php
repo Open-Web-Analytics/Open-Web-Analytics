@@ -16,7 +16,11 @@ use OWA\Core\CoreAPI;
  *   1. Not a full server role, a version control checkout (the bell has
  *      said what is new), an unreadable installed version, automatic updates
  *      off, or an install under way.
- *   2. With a listing: the release the settings choose. Its tarball is
+ *   2. With a listing: the release the settings choose (auto_update_level:
+ *      the highest newer release in the installed major, or of any major).
+ *      One whose upgrades_from (release.php) is newer than the installed
+ *      release is passed over for the highest lower one that installs over
+ *      it, and kept downloaded: it follows on a later run. Its tarball is
  *      downloaded through the update host (auto_update_download_url, never
  *      the listing's GitHub address) and checked against its SHA-256 and
  *      its signature, again
@@ -252,7 +256,7 @@ class ReleaseCheck {
         if ( $list !== null && ! $dry_run ) {
 
             // A release automatic updates will install is not announced: its notice is the one that says it installed.
-            $level    = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
+            $level    = $this->level();
             $installs = $this->context['enabled'] && $this->context['role'] === \OWA\Core\ServerRole::FULL
                 && Vcs::checkout( $this->root ) === null && Version::parse( $installed ) !== null;
             $announce = $installs ? array_values( array_filter( $list,
@@ -318,7 +322,7 @@ class ReleaseCheck {
             return $this->outcome( self::NO_TEMP, null, $temp, 'No release can be installed:' );
         }
 
-        $level   = $this->context['level'] === Version::PATCH ? Version::PATCH : Version::MINOR;
+        $level   = $this->level();
         $missing = null;
 
         if ( $listed && $list === null ) {
@@ -327,9 +331,9 @@ class ReleaseCheck {
 
         } elseif ( $list !== null ) {
 
-            $release = Releases::choose( $list, $installed, $level );
+            $candidates = Releases::candidates( $list, $installed, $level );
 
-            if ( $release === null ) {
+            if ( ! $candidates ) {
 
                 if ( ! $dry_run ) {
 
@@ -337,49 +341,72 @@ class ReleaseCheck {
                 }
 
                 return $this->outcome( self::CURRENT, null, [], sprintf( 'No release newer than %s for automatic %s updates.', $installed,
-                    $level === Version::PATCH ? 'patch' : 'patch and minor' ) );
+                    self::describeLevel( $level ) ) );
             }
 
-            $v = $release['version'];
-            $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
+            // Releases passed over for a lower one, their upgrades_from newer
+            // than the installed release: kept, not downloaded again.
+            $passed = [];
 
-            if ( $dry_run ) {
+            foreach ( $candidates as $i => $release ) {
 
-                return $this->outcome( self::CHOSEN, $v );
-            }
+                $v = $release['version'];
+                $this->lines[] = sprintf( 'The release to update to is %s (a %s release): %s', $v, $release['step'], $release['url'] );
 
-            if ( $this->skips( $v ) ) {
+                if ( $dry_run ) {
 
-                $retry = (int) ( $this->downloads->failure()['retry_after'] ?? 0 );
+                    if ( $this->upgradesFrom( $v ) !== null && isset( $candidates[ $i + 1 ] ) ) {
 
-                return $this->outcome( self::SKIPPED, $v, [], $retry > 0
-                    ? sprintf( 'Installing %s failed; it is tried again after %s UTC. To try it now: php cli.php cmd=core-install --version=%s', $v, gmdate( 'Y-m-d H:i', $retry ), $v )
-                    : sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
-            }
+                        $this->lines[] = $this->passedOver( $v );
 
-            // Downloaded when it has not been, and again when the asset GitHub
-            // lists now is not the one downloaded (it was replaced).
-            $replaced = $this->downloads->has( $v ) && $release['sha256'] !== null
-                && ! hash_equals( (string) $release['sha256'], (string) hash_file( 'sha256', $this->downloads->tarball( $v ) ) );
+                        continue;
+                    }
 
-            if ( $replaced || ! $this->downloads->has( $v ) ) {
-
-                try {
-
-                    $this->downloads->download( Releases::via( $release, (string) $this->context['download'] ) );
-
-                } catch ( \RuntimeException $e ) {
-
-                    return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
+                    return $this->outcome( self::CHOSEN, $v );
                 }
 
-                $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
+                if ( $this->skips( $v ) ) {
+
+                    $retry = (int) ( $this->downloads->failure()['retry_after'] ?? 0 );
+
+                    return $this->outcome( self::SKIPPED, $v, [], $retry > 0
+                        ? sprintf( 'Installing %s failed; it is tried again after %s UTC. To try it now: php cli.php cmd=core-install --version=%s', $v, gmdate( 'Y-m-d H:i', $retry ), $v )
+                        : sprintf( 'Installing %s failed before, so it is skipped until a newer release; to try it again: php cli.php cmd=core-install --version=%s', $v, $v ) );
+                }
+
+                // Downloaded when it has not been, and again when the asset GitHub
+                // lists now is not the one downloaded (it was replaced).
+                $replaced = $this->downloads->has( $v ) && $release['sha256'] !== null
+                    && ! hash_equals( (string) $release['sha256'], (string) hash_file( 'sha256', $this->downloads->tarball( $v ) ) );
+
+                if ( $replaced || ! $this->downloads->has( $v ) ) {
+
+                    try {
+
+                        $this->downloads->download( Releases::via( $release, (string) $this->context['download'] ) );
+
+                    } catch ( \RuntimeException $e ) {
+
+                        return $this->outcome( self::FAILED, $v, [ $e->getMessage() ], sprintf( 'Downloading %s failed; the next listing tries again.', $v ) );
+                    }
+
+                    $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
+                }
+
+                // The lowest candidate is judged whatever its upgrades_from: judge() says what it needs.
+                if ( $this->upgradesFrom( $v ) === null || ! isset( $candidates[ $i + 1 ] ) ) {
+
+                    break;
+                }
+
+                $this->lines[] = $this->passedOver( $v );
+                $passed[]      = $v;
             }
 
             $missing = $this->ensureInstalled( $list );
 
-            // The release to install, and the installed one a failed install puts back.
-            $this->downloads->prune( [ $v, $installed ] );
+            // The release to install, the installed one a failed install puts back, and those passed over.
+            $this->downloads->prune( array_merge( [ $v, $installed ], $passed ) );
         }
 
         $v = $this->candidate( $level );
@@ -469,8 +496,10 @@ class ReleaseCheck {
 
     /**
      * The newest downloaded release the settings allow: newer than the
-     * installed one, the same major, a patch for patch-only updates, and not
-     * one whose install failed.
+     * installed one, a step the level allows, not one whose install failed,
+     * and one that installs over the installed release (its upgrades_from).
+     * When none of them installs over it, the newest of the rest, for
+     * judge() to say why.
      *
      * @param  string $level
      * @return string|null
@@ -478,16 +507,99 @@ class ReleaseCheck {
     private function candidate( $level ) {
 
         $installed = (string) $this->context['installed'];
+        $fallback  = null;
 
         foreach ( $this->downloads->versions() as $v ) {
 
-            if ( Version::allows( $level, $installed, $v ) && ! $this->skips( $v ) ) {
+            if ( ! Version::allows( $level, $installed, $v ) || $this->skips( $v ) ) {
+
+                continue;
+            }
+
+            if ( $this->upgradesFrom( $v ) === null ) {
 
                 return $v;
             }
+
+            $fallback = $fallback ?? $v;
         }
 
-        return null;
+        return $fallback;
+    }
+
+    /**
+     * A downloaded release's upgrades_from (release.php) when the installed
+     * release is older than it; null when it installs over the installed
+     * release, names no upgrades_from, or is not downloaded.
+     *
+     * @param  string $v
+     * @return string|null
+     */
+    private function upgradesFrom( $v ) {
+
+        $from      = (string) ( $this->downloads->releaseInfo( $v )['upgrades_from'] ?? '' );
+        $installed = (string) $this->context['installed'];
+
+        if ( Version::parse( $from ) === null || Version::parse( $installed ) === null ) {
+
+            return null;
+        }
+
+        return Version::compare( $installed, $from ) < 0 ? $from : null;
+    }
+
+    /**
+     * The line that says a release was passed over for a lower one.
+     *
+     * @param  string $v
+     * @return string
+     */
+    private function passedOver( $v ) {
+
+        return sprintf( '%1$s installs over %2$s or later, and %3$s is installed: the highest lower release goes first, and %1$s follows once it has installed.',
+            $v, (string) $this->upgradesFrom( $v ), (string) $this->context['installed'] );
+    }
+
+    /** @return string Version::MAJOR when auto_update_level says so, else Version::MINOR */
+    private function level() {
+
+        return $this->context['level'] === Version::MAJOR ? Version::MAJOR : Version::MINOR;
+    }
+
+    /**
+     * The releases a level installs, in words.
+     *
+     * @param  string $level
+     * @return string
+     */
+    private static function describeLevel( $level ) {
+
+        return $level === Version::MAJOR ? 'patch, minor and major' : 'patch and minor';
+    }
+
+    /** The constant that sets auto_update_level. */
+    const LEVEL_CONSTANT = 'OWA_AUTO_UPDATE_LEVEL';
+
+    /** The values auto_update_level takes. */
+    const LEVELS = [ Version::MINOR, Version::MAJOR ];
+
+    /**
+     * What is wrong with OWA_AUTO_UPDATE_LEVEL: a value that is not one of
+     * LEVELS. Every request is refused while there is one
+     * (Settings::configProblems()).
+     *
+     * @param  mixed $value the constant's value
+     * @return list<string>
+     */
+    public static function levelProblems( $value ) {
+
+        if ( is_string( $value ) && in_array( $value, self::LEVELS, true ) ) {
+
+            return [];
+        }
+
+        return [ sprintf( CoreAPI::t( '%1$s is %2$s, which is not a level. It is minor (patch and minor releases) or major (patch, minor and major releases).' ),
+            self::LEVEL_CONSTANT, is_scalar( $value ) ? '"' . (string) $value . '"' : gettype( $value ) ) ];
     }
 
     /**
@@ -531,7 +643,7 @@ class ReleaseCheck {
         } else {
 
             $lines[] = sprintf( 'Automatic updates: %s releases, installed %s.',
-                $c['level'] === Version::PATCH ? 'patch' : 'patch and minor', $window === null ? 'as soon as they are downloaded' : self::describeWindow( $window ) );
+                self::describeLevel( $this->level() ), $window === null ? 'as soon as they are downloaded' : self::describeWindow( $window ) );
         }
 
         foreach ( $this->downloads->versions() as $v ) {
@@ -606,7 +718,8 @@ class ReleaseCheck {
 
     /**
      * A downloaded release's checks, read from its tarball: what stops it
-     * installing here (its requirements, and what the copy needs), the
+     * installing here (the oldest release it installs over, its
+     * requirements, and what the copy needs), the
      * updates in it that must be installed by hand, and, for one older than
      * the database, the rollbacks to run first.
      *
@@ -629,7 +742,10 @@ class ReleaseCheck {
         $req     = (array) ( $release['requirements'] ?? [] );
         $env     = $this->context['env'] ?? Preflight::environment( $req );
 
-        $problems = array_merge( Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
+        $from     = $this->upgradesFrom( $v );
+        $problems = array_merge( $from === null ? [] : [ sprintf( CoreAPI::t( 'OWA %1$s installs over %2$s or later; OWA %3$s is installed. Install %2$s first.' ),
+                $v, $from, (string) $this->context['installed'] ) ],
+            Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
             Preflight::temp( $this->downloads->tarballBytes( $v, (string) $this->context['installed'] ) ) );
 
         // What the next run of cli.php needs, before OWA loads, to boot it or put this one back.

@@ -122,10 +122,14 @@ final class ReleaseCheckTest extends TestCase
             $this->listed('2.0.3'),
         ];
 
-        $this->assertSame('2.1.0', Releases::choose($list, '2.0.3', 'minor')['version'], 'not 3.0.0: a major is never automatic');
-        $this->assertSame('2.0.7', Releases::choose($list, '2.0.3', 'patch')['version'],
-            'not the draft, the pre-release, or 2.0.8 which ships no tarball');
+        $this->assertSame('2.1.0', Releases::choose($list, '2.0.3', 'minor')['version'], 'not 3.0.0: minor stays in the installed major');
+        $this->assertSame('3.0.0', Releases::choose($list, '2.0.3', 'major')['version'], 'major: any major');
+        $this->assertSame(['3.0.0', '2.1.0', '2.0.7', '2.0.4'], array_column(Releases::candidates($list, '2.0.3', 'major'), 'version'),
+            'highest first; not the draft, the pre-release, 2.0.8 which ships no tarball, or anything not newer');
+        $this->assertSame(['2.1.0', '2.0.7', '2.0.4'], array_column(Releases::candidates($list, '2.0.3', 'minor'), 'version'));
         $this->assertNull(Releases::choose($list, '2.1.0', 'minor'), 'nothing newer');
+        $this->assertSame('3.0.0', Releases::choose($list, '2.1.0', 'major')['version']);
+        $this->assertSame('major', Releases::choose($list, '2.1.0', 'major')['step']);
 
         $chosen = Releases::choose([$this->listed('2.0.4')], '2.0.3', 'minor');
         $this->assertSame(str_repeat('a', 64), $chosen['sha256']);
@@ -462,9 +466,20 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /** @return array{problems: list<string>, manual: list<array<string, mixed>>, rollback: list<string>} */
-    private function judge(string $v): array
+    private function judge(string $v, string $installed = '2.0.0'): array
     {
-        return (new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'env' => $this->env(), 'installed' => '2.0.0']))->judge($v);
+        return (new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'env' => $this->env(), 'installed' => $installed]))->judge($v);
+    }
+
+    /** Release $v built, signed and put in the updates directory, as a download leaves it. */
+    private function held(string $v): void
+    {
+        $tar = $this->build($v, null);
+        $this->sign($v, $tar, "$tar.sig");
+        $d = $this->downloads();
+        $d->ensureRoot();
+        copy($tar, $d->tarball($v));
+        copy("$tar.sig", $d->tarball($v) . '.sig');
     }
 
     /** A long name or pax record is read whole, so none larger than a release has is read at all. */
@@ -608,14 +623,16 @@ final class ReleaseCheckTest extends TestCase
             'the listing, then the release by its version');
     }
 
-    /** A minor downloaded for tonight, then automatic updates set to patch only: it is deleted, and nothing installs. */
+    /** A major downloaded for tonight, then automatic updates set to minor: it is deleted, and nothing installs. */
     public function testALevelThatNoLongerChoosesItDeletesTheDownload(): void
     {
-        $this->check(['2.1.0']);
-        $this->assertTrue($this->downloads()->has('2.1.0'));
+        $this->check(['3.0.0'], ['level' => 'major']);
+        $this->assertTrue($this->downloads()->has('3.0.0'));
 
-        $this->assertSame(ReleaseCheck::CURRENT, $this->check(['2.1.0'], ['level' => 'patch'])['outcome']);
-        $this->assertFalse($this->downloads()->has('2.1.0'));
+        $result = $this->check(['3.0.0'], ['level' => 'minor']);
+        $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
+        $this->assertStringContainsString('No release newer than 2.0.0 for automatic patch and minor updates.', implode("\n", $result['lines']));
+        $this->assertFalse($this->downloads()->has('3.0.0'));
     }
 
     /** Automatic updates turned off: what was downloaded goes, but the installed release's. */
@@ -730,15 +747,15 @@ final class ReleaseCheckTest extends TestCase
     /** A release automatic updates will install is not announced: the notice is the one that says it installed. The rest are. */
     public function testAReleaseThatInstallsItselfIsNotAnnounced(): void
     {
-        $this->check(['2.0.1', '2.1.0', '3.0.0'], ['level' => 'patch']);
         $this->check(['2.0.1', '2.1.0', '3.0.0'], ['level' => 'minor']);
+        $this->check(['2.0.1', '2.1.0', '3.0.0'], ['level' => 'major']);
         $this->check(['2.0.1', '2.1.0', '3.0.0'], ['enabled' => false]);
 
         $this->assertSame([
-            ['2.0.0', '2.1.0', '3.0.0'],
             ['2.0.0', '3.0.0'],
+            ['2.0.0'],
             ['2.0.0', '2.0.1', '2.1.0', '3.0.0'],
-        ], array_map(function ($tags) { sort($tags); return $tags; }, $this->fed), 'patches only: a minor is announced; minors too: only the major; off: all');
+        ], array_map(function ($tags) { sort($tags); return $tags; }, $this->fed), 'minor: the major is announced; major: none newer; off: all');
     }
 
     /** The bell's release feed comes from the listing on every run: off, a checkout or another role. */
@@ -1049,10 +1066,9 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
-    /** By hand: a major, an unpublished release, unmet requirements and a checkout are refused. */
+    /** By hand: an unpublished release, unmet requirements and a checkout are refused. */
     public function testInstallByHandRefuses(): void
     {
-        $this->assertStringContainsString('another major version', $this->hand('3.0.0', ['3.0.0'])['message']);
         $this->assertStringContainsString('Downloading 2.0.9 failed: Fetching https://example.test/download/2.0.9/owa_2.0.9_packaged.tar failed', $this->hand('2.0.9', ['2.0.1'])['message'], 'not published');
         $this->assertStringContainsString('cannot be installed here', $this->hand('2.0.1', ['2.0.1'], ['env' => ['php' => '8.1.0'] + $this->env()])['message']);
 
@@ -1076,6 +1092,123 @@ final class ReleaseCheckTest extends TestCase
         file_put_contents($this->tmp . '/owa/.git', 'gitdir: elsewhere');
         $this->assertStringContainsString('version control checkout', $this->hand('2.0.1', ['2.0.1'])['message']);
         $this->assertNull(Install::$pending);
+    }
+
+    /** By hand, a newer major installs as any release does; one whose upgrades_from is newer than the installed release is refused. */
+    public function testANewerMajorInstallsByHand(): void
+    {
+        $result = $this->hand('3.0.0', ['3.0.0']);
+        $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
+        $this->assertSame('3.0.0', Install::$pending['to']);
+        $this->dropPending();
+
+        $this->releaseJson['4.0.0'] = ['upgrades_from' => '3.0.0'];
+        $result = $this->hand('4.0.0', ['4.0.0']);
+        $this->assertSame(Install::REFUSED, $result['outcome']);
+        $this->assertSame('4.0.0 cannot be installed here:', $result['message']);
+        $this->assertSame(['OWA 4.0.0 installs over 3.0.0 or later; OWA 2.0.0 is installed. Install 3.0.0 first.'], $result['lines']);
+        $this->assertFalse($this->downloads()->has('4.0.0'), 'refused after its download: deleted');
+        $this->assertNull(Install::$pending);
+    }
+
+    /** judge(): below the release's upgrades_from it is refused; at or above it, or with none in its release.php, it is not. */
+    public function testUpgradesFromIsJudged(): void
+    {
+        $this->releaseJson['3.0.0'] = ['upgrades_from' => '2.1.0'];
+        $this->held('3.0.0');
+        $this->held('2.1.0');
+
+        $this->assertSame(['OWA 3.0.0 installs over 2.1.0 or later; OWA 2.0.0 is installed. Install 2.1.0 first.'], $this->judge('3.0.0')['problems']);
+        $this->assertSame([], $this->judge('3.0.0', '2.1.0')['problems'], 'at it');
+        $this->assertSame([], $this->judge('3.0.0', '2.1.5')['problems'], 'above it');
+        $this->assertArrayNotHasKey('upgrades_from', (array) $this->downloads()->releaseInfo('2.1.0'));
+        $this->assertSame([], $this->judge('2.1.0', '1.0.0')['problems'], 'none: any installed release');
+    }
+
+    /**
+     * major: a release whose upgrades_from is newer than the installed release
+     * is passed over for the highest lower one that installs over it, and kept
+     * downloaded; once that has installed, it follows.
+     */
+    public function testALongJumpTakesSeveralRuns(): void
+    {
+        $this->releaseJson['3.1.0'] = ['upgrades_from' => '2.2.0'];
+        $this->releaseJson['3.0.0'] = ['upgrades_from' => '2.0.0'];
+        $now = ['window' => '', 'days' => '', 'level' => 'major'];
+
+        $result = $this->check(['2.1.0', '2.2.0', '3.0.0', '3.1.0'], $now);
+        $lines  = implode("\n", $result['lines']);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], $lines);
+        $this->assertSame('3.0.0', Install::$pending['to'], 'the highest that installs over 2.0.0');
+        $this->assertStringContainsString('The release to update to is 3.1.0 (a major release)', $lines);
+        $this->assertStringContainsString('3.1.0 installs over 2.2.0 or later, and 2.0.0 is installed: the highest lower release goes first, and 3.1.0 follows once it has installed.', $lines);
+        $this->assertStringContainsString('The release to update to is 3.0.0 (a major release)', $lines);
+        $this->assertSame(['3.1.0', '3.0.0', '2.0.0'], $this->downloads()->versions(), 'the one passed over is kept');
+        $this->dropPending();
+
+        $result = $this->check(null, $now);
+        $this->assertSame('3.0.0', $result['version'], 'without a listing, the same choice from what is downloaded');
+        $this->dropPending();
+
+        $result = $this->check(['2.1.0', '2.2.0', '3.0.0', '3.1.0'], $now + ['installed' => '3.0.0']);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertSame('3.1.0', Install::$pending['to']);
+        $this->assertStringNotContainsString('Downloaded 3.1.0', implode("\n", $result['lines']), 'kept from the run that passed it over');
+        $this->dropPending();
+    }
+
+    /** minor: the same, within the installed major. */
+    public function testUnderMinorALongJumpStaysInTheMajor(): void
+    {
+        $this->releaseJson['2.2.0'] = ['upgrades_from' => '2.1.0'];
+
+        $result = $this->check(['2.1.0', '2.2.0', '3.0.0'], ['window' => '', 'days' => '']);
+        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertSame('2.1.0', Install::$pending['to']);
+        $this->assertStringContainsString('2.2.0 installs over 2.1.0 or later, and 2.0.0 is installed', implode("\n", $result['lines']));
+        $this->assertStringNotContainsString('3.0.0', implode("\n", $result['lines']));
+        $this->dropPending();
+    }
+
+    /** When no newer release installs over the installed one, the highest is judged, and says what to install first. */
+    public function testNoReleaseThatInstallsOverTheInstalledOneWaits(): void
+    {
+        $this->releaseJson['2.3.0'] = ['upgrades_from' => '2.2.0'];
+
+        $result = $this->check(['2.3.0'], ['window' => '', 'days' => '']);
+        $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
+        $this->assertSame('2.3.0', $result['version']);
+        $this->assertContains('OWA 2.3.0 installs over 2.2.0 or later; OWA 2.0.0 is installed. Install 2.2.0 first.', $result['problems']);
+        $this->assertNull(Install::$pending);
+    }
+
+    /** auto_update_level is minor or major; OWA_AUTO_UPDATE_LEVEL with anything else is a config problem, which refuses every request at boot. */
+    public function testTheLevels(): void
+    {
+        $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings']['auto_update_level'];
+
+        $this->assertSame(ReleaseCheck::LEVELS, array_keys($declared['options']));
+        $this->assertSame('minor', $declared['default']);
+        $this->assertSame(ReleaseCheck::LEVEL_CONSTANT, $declared['config_constant']);
+
+        $this->assertSame([], ReleaseCheck::levelProblems('minor'));
+        $this->assertSame([], ReleaseCheck::levelProblems('major'));
+        $this->assertSame(['OWA_AUTO_UPDATE_LEVEL is "patch", which is not a level. It is minor (patch and minor releases) or major (patch, minor and major releases).'],
+            ReleaseCheck::levelProblems('patch'));
+        $this->assertCount(1, ReleaseCheck::levelProblems(['minor']));
+        $this->assertCount(1, ReleaseCheck::levelProblems(''));
+
+        $this->assertTrue(Version::allows('minor', '2.0.0', '2.1.0'));
+        $this->assertFalse(Version::allows('minor', '2.0.0', '3.0.0'));
+        $this->assertTrue(Version::allows('major', '2.0.0', '3.0.0'));
+        $this->assertTrue(Version::allows('major', '2.0.0', '2.0.1'));
+        $this->assertFalse(Version::allows('major', '2.0.0', '2.0.0'));
+
+        $status = implode("\n", (new ReleaseCheck($this->downloads(), [
+            'root' => $this->tmp . '/owa', 'installed' => '2.0.0', 'enabled' => true, 'level' => 'major',
+            'window' => '', 'days' => '', 'timezone' => 'UTC', 'env' => $this->env(),
+        ]))->status());
+        $this->assertStringContainsString('Automatic updates: patch, minor and major releases, installed as soon as they are downloaded.', $status);
     }
 
     /** The installed release again, without --force: it reinstalls, and its tarball, the way back, is kept. */

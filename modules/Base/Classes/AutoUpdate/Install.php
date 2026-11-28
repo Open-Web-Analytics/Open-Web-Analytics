@@ -131,10 +131,12 @@ class Install {
      * signature fetched from the download URL by its version every time
      * (Releases::byTag()); the listing is read only when the installed
      * release's tarball, which a failed install puts back, must be
-     * downloaded too (ReleaseCheck::ensureInstalled()). The installed
-     * release again is reinstalled, copying the files that differ; an older
-     * one only with $force, and never one older than the database schema. A failure recorded for it is cleared: whoever installs by hand
-     * has dealt with it. A release refused after its download is deleted.
+     * downloaded too (ReleaseCheck::ensureInstalled()). Any release whose
+     * requirements and upgrades_from this installation meets
+     * (ReleaseCheck::judge()), of any major version. The installed release
+     * again is reinstalled, copying the files that differ; an older one only
+     * with $force, and never one older than the database schema. A failure
+     * recorded for it is cleared: whoever installs by hand has dealt with it. A release refused after its download is deleted.
      *
      * @param  string               $version
      * @param  bool                 $force
@@ -318,11 +320,6 @@ class Install {
         if ( Version::parse( $installed ) === null || Version::parse( $v ) === null ) {
 
             return self::answer( self::REFUSED, sprintf( 'Both versions must be release versions: installed %s, asked for %s.', $installed, $v ) );
-        }
-
-        if ( Version::step( $installed, $v ) === Version::MAJOR || Version::step( $v, $installed ) === Version::MAJOR ) {
-
-            return self::answer( self::REFUSED, sprintf( '%s is another major version: that is a migration, done by hand from its release notes.', $v ) );
         }
 
         // The installed release again reinstalls it; an older one only with --force.
