@@ -3174,9 +3174,9 @@ class OWATracker  {
      * Stored in the same shape trackPurchase() takes -- item_id, item_name,
      * item_category, price, quantity -- so every purchase's items read alike.
      *
-     * Refused, returning false, when no transaction is open: call
-     * addTransaction() first. order_id is not checked against the open
-     * transaction.
+     * Refused, returning false, when no transaction is open (call
+     * addTransaction() first) and when the item has neither a sku nor a
+     * product name. order_id is not checked against the open transaction.
      *
      * @command
      * @param {string} order_id
@@ -3195,15 +3195,24 @@ class OWATracker  {
             return false;
         }
 
-        var items = this.ecommerce_transaction.get( 'ct_line_items' );
-
-        items.push( OWATracker.purchaseItem( {
+        var item = OWATracker.purchaseItem( {
             item_id:       sku,
             item_name:     product_name,
             item_category: category,
             price:         unit_price,
             quantity:      quantity
-        } ) );
+        } );
+
+        if ( ! item ) {
+
+            OWA.debug( 'addTransactionLineItem: an item needs a sku or a product name; dropped.' );
+
+            return false;
+        }
+
+        var items = this.ecommerce_transaction.get( 'ct_line_items' );
+
+        items.push( item );
 
         this.ecommerce_transaction.set( 'ct_line_items', items );
 
