@@ -102,6 +102,9 @@ final class ControllerCapabilityContractTest extends TestCase
         // What the code is (release.php), from the files alone: run before
         // OWA boots, so there is no user.
         'VersionInfoCli',
+        // Archives and restores a Property from the shell, where cli.php
+        // runs as the administrator.
+        'PropertyCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',
