@@ -1,4 +1,6 @@
 /vendor/
+# Third-party modules (Core\Extensions): never in the repository or a release.
+/extensions/
 /owa-data/
 owa-config.php
 node_modules/

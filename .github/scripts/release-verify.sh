@@ -12,6 +12,7 @@
 #   - a member that is not a regular file or a directory;
 #   - a name that does not start ./, or has an empty, . or .. segment;
 #   - a name that appears twice;
+#   - anything under extensions/, which is third-party code;
 #   - a file of this directory (release-tarball.sh --list) missing or changed;
 #   - any other file, outside vendor/, public/, modules/Base/build/ and
 #     release.php. Those are what composer install, npm run build and
@@ -44,6 +45,9 @@ bad=$(awk '$0 == "./" { next }
     { s = substr($0, 3); sub(/\/$/, "", s); k = split(s, p, "/")
       for (i = 1; i <= k; i++) if (p[i] == "" || p[i] == "." || p[i] == "..") { print; exit } }' "$scratch/names")
 [ -z "$bad" ] || refuse "a member's name is not a plain path: $bad"
+
+bad=$(grep -m1 '^\./extensions\(/\|$\)' "$scratch/names" || true)
+[ -z "$bad" ] || refuse "it holds $bad: extensions/ is third-party code, which no release ships."
 
 bad=$(sort "$scratch/names" | uniq -d | head -1)
 [ -z "$bad" ] || refuse "$bad is in it twice."

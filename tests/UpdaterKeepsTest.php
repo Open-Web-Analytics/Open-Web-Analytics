@@ -118,12 +118,12 @@ final class UpdaterKeepsTest extends TestCase
         try {
             $keeps = $u['keeps']($root, $root . '/vendor/data/', $root . '/public/alt/');
 
-            $this->assertSame(['owa-data', 'public/tracker', 'owa-update.php', 'owa-update-lock.php', 'vendor/data', 'public/alt/tracker'], $keeps);
+            $this->assertSame(['owa-data', 'extensions', 'public/tracker', 'owa-update.php', 'owa-update-lock.php', 'vendor/data', 'public/alt/tracker'], $keeps);
             $this->assertTrue($u['kept']('vendor/data/logs/errors.txt', $keeps));
             $this->assertTrue($u['kept']('public/alt/tracker/OWA-site.js', $keeps));
             $this->assertFalse($u['kept']('public/alt/other.js', $keeps));
             $this->assertFalse($u['kept']('vendor/database.php', $keeps), 'a path is kept, not a prefix of a name');
-            $this->assertSame(['owa-data', 'public/tracker', 'owa-update.php', 'owa-update-lock.php'], $u['keeps']($root, '/var/owa-data', ''), 'outside the OWA directory: nothing to keep');
+            $this->assertSame(['owa-data', 'extensions', 'public/tracker', 'owa-update.php', 'owa-update-lock.php'], $u['keeps']($root, '/var/owa-data', ''), 'outside the OWA directory: nothing to keep');
         } finally {
             exec('rm -rf ' . escapeshellarg($root));
         }

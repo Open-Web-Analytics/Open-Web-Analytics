@@ -231,10 +231,22 @@ return ( static function () {
         return [ $copy, hash_final( $ctx ) ];
     };
 
-    /* Whether the copy writes $rel: not owa-data/, the installation's own, which the web user writes too (a new installation unpacks it from the tarball). */
+    /*
+     * Whether the copy writes $rel: not owa-data/, the installation's own,
+     * which the web user writes too (a new installation unpacks it from the
+     * tarball), nor extensions/, third-party modules no release ships.
+     */
     $copies = static function ( $rel ) {
 
-        return $rel !== 'owa-data' && strncmp( (string) $rel, 'owa-data/', 9 ) !== 0;
+        foreach ( [ 'owa-data', 'extensions' ] as $own ) {
+
+            if ( $rel === $own || strncmp( (string) $rel, $own . '/', strlen( $own ) + 1 ) === 0 ) {
+
+                return false;
+            }
+        }
+
+        return true;
     };
 
     $writeMarker = static function ( $root, array $data ) use ( $marker, $writeFile ) {
@@ -741,11 +753,12 @@ return ( static function () {
 
     /*
      * WHAT THE COPY NEVER DELETES. In each top-level directory a release
-     * ships, but owa-data/, and under modules/ in each module directory it
-     * ships, the copy deletes every file the release does not ship, except
-     * these paths, relative to the OWA directory, with all that is under them:
+     * ships but owa-data/, modules/ among them, the copy deletes every file
+     * the release does not ship, except these paths, relative to the OWA
+     * directory, with all that is under them:
      *
      *   owa-data             the data directory a release ships
+     *   extensions           third-party modules, which no release ships
      *   public/tracker       the tracking bundles (TrackerBundle::DIR)
      *   owa-update.php       the install marker
      *   owa-update-lock.php  the install lock
@@ -753,10 +766,10 @@ return ( static function () {
      *   $public_path/tracker the tracking bundles under OWA_PUBLIC_PATH, when it is
      *
      * Nothing else is deleted: a file at the top of the OWA directory
-     * (owa-config.php, .htaccess, an operator's robots.txt or .htpasswd), a
-     * directory the release does not ship (.well-known/), and a module
-     * directory it does not ship. Everything else OWA writes as it runs goes
-     * in the data directory. tests/UpdaterKeepsTest.php fails when a path OWA
+     * (owa-config.php, .htaccess, an operator's robots.txt or .htpasswd), and
+     * a directory the release does not ship (.well-known/). modules/ is OWA's
+     * alone: a module directory the release no longer ships goes. Everything
+     * else OWA writes as it runs goes in the data directory. tests/UpdaterKeepsTest.php fails when a path OWA
      * writes is not kept.
      *
      * The list of paths, '' when one is the OWA directory itself (nothing is
@@ -768,7 +781,7 @@ return ( static function () {
 
         $real   = static fn ( $p ) => rtrim( (string) ( @realpath( (string) $p ) ?: $p ), '/' );
         $root   = $real( $root );
-        $keeps  = [ 'owa-data', 'public/tracker', 'owa-update.php', 'owa-update-lock.php' ];
+        $keeps  = [ 'owa-data', 'extensions', 'public/tracker', 'owa-update.php', 'owa-update-lock.php' ];
         $public = (string) $public_path !== '' ? $real( $public_path ) . '/tracker' : '';
 
         foreach ( [ (string) $data_dir !== '' ? $real( $data_dir ) : '', $public ] as $dir ) {
@@ -806,9 +819,9 @@ return ( static function () {
      *   writes   each file the release ships that is not on disk as it
      *            ships it: missing, or with other contents
      *   deletes  each plain file or link on disk that the release does not
-     *            ship, in a top-level directory it ships (not owa-data/), and
-     *            under modules/ in a module directory it ships; not one
-     *            $keeps names. A link is deleted, never followed.
+     *            ship, in a top-level directory it ships (not owa-data/),
+     *            modules/ among them; not one $keeps names. A link is
+     *            deleted, never followed.
      *   dirs     each directory the release ships, its files' included
      *   bytes    the size of the files on disk that writes replaces and
      *            deletes removes: what the backup holds
@@ -876,24 +889,12 @@ return ( static function () {
             $bytes   += $plain ? (int) filesize( $target ) : 0;
         } );
 
-        // The directories the mirror deletes in: each top-level one shipped, and under modules/ each module's.
+        // The directories the mirror deletes in: each top-level one shipped.
         $tops = [];
 
         foreach ( array_keys( $dirs ) as $dir ) {
 
-            $parts = explode( '/', (string) $dir );
-
-            if ( $parts[0] === 'modules' ) {
-
-                if ( isset( $parts[1] ) ) {
-
-                    $tops[ 'modules/' . $parts[1] ] = true;
-                }
-
-            } else {
-
-                $tops[ $parts[0] ] = true;
-            }
+            $tops[ explode( '/', (string) $dir )[0] ] = true;
         }
 
         $deletes = [];

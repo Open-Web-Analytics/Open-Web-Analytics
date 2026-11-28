@@ -280,7 +280,7 @@ class Preflight {
      * $root ('' for the OWA directory itself): what an automatic update
      * writes in, asked where the installer runs (cmd=core-install). The
      * installation's own directories are left out: owa-data/, the data
-     * directory and the tracking bundles.
+     * directory, the tracking bundles and extensions/, which no install writes.
      *
      * @param  string       $root
      * @param  list<string> $own  more of the installation's own directories
@@ -289,7 +289,7 @@ class Preflight {
     public static function unwritableCode( $root, array $own = [] ) {
 
         $root = rtrim( (string) $root, '/' );
-        $own  = array_map( static fn ( $d ) => rtrim( (string) $d, '/' ), array_merge( [ $root . '/owa-data', $root . '/public/tracker' ], $own ) );
+        $own  = array_map( static fn ( $d ) => rtrim( (string) $d, '/' ), array_merge( [ $root . '/owa-data', $root . '/public/tracker', $root . '/extensions' ], $own ) );
         $out  = is_writable( $root ) ? [] : [ '' ];
 
         $dirs = new \RecursiveIteratorIterator(

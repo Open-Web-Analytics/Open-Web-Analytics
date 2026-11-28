@@ -75,6 +75,13 @@ tar --directory ./ "${EXCLUDES[@]}" -pcvf "./owa_${VERSION}_packaged.tar" ./
 # What proves the tarball is its signature (.github/scripts/release-sign.php),
 # made after this.
 listing=$(tar -tf "./owa_${VERSION}_packaged.tar")
+
+# extensions/ is third-party code: an install never touches it, and no release ships it.
+if grep -q '^\./extensions\(/\|$\)' <<< "$listing"; then
+    rm -f "./owa_${VERSION}_packaged.tar"
+    echo "The tarball holds extensions/, which is third-party code no release ships: build from a checkout without it." >&2
+    exit 1
+fi
 for f in release.php updater.php cli.php owa_env.php Core/Env.php modules/Base/Classes/AutoUpdate/Tar.php; do
     grep -qx "./$f" <<< "$listing" || { echo "The tarball has no $f." >&2; exit 1; }
 done

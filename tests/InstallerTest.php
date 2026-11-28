@@ -73,7 +73,8 @@ final class InstallerTest extends TestCase
             'owa-config.php'                => '<?php // the installation\'s',
             'owa-data/logs/errors.txt'      => 'the data directory',
             'public/tracker/OWA-site.js'    => 'a tracking bundle',
-            'modules/ThirdParty/Module.php' => 'someone else\'s module',
+            'modules/ThirdParty/Module.php' => 'a module put in OWA\'s modules/',
+            'extensions/Acme/Module.php'    => 'someone else\'s module',
             '.htpasswd'                     => 'the operator\'s',
             'robots.txt'                    => 'the operator\'s',
             '.well-known/security.txt'      => 'the operator\'s',
@@ -110,8 +111,9 @@ final class InstallerTest extends TestCase
     /**
      * 2.0.1 over 2.0.0: what differs is written, and in each directory 2.0.1
      * ships the files it does not ship go, with the directories that leaves
-     * empty. Nothing else is touched: files at the top, directories it does
-     * not ship, modules it does not ship, owa-data/, the tracking bundles.
+     * empty: modules/ is OWA's alone, so a module it does not ship goes too.
+     * Nothing else is touched: files at the top, directories it does not
+     * ship, extensions/, owa-data/, the tracking bundles.
      */
     public function testTheCopyMirrorsTheReleaseInItsDirectories(): void
     {
@@ -127,13 +129,15 @@ final class InstallerTest extends TestCase
         $this->assertSame(1700000000, filemtime($this->root . '/same.php'), 'a file that is already the release\'s is left as it is');
         $this->assertSame('0700', sprintf('%04o', fileperms($this->root . '/cli.php') & 0777), 'a replaced file keeps its mode');
 
-        foreach (['modules/Base/Retired.php', 'public/base/old.js', 'Core/Planted.php'] as $gone) {
+        foreach (['modules/Base/Retired.php', 'public/base/old.js', 'Core/Planted.php', 'modules/Gone/Module.php', 'modules/ThirdParty/Module.php'] as $gone) {
             $this->assertFileDoesNotExist($this->root . '/' . $gone, '2.0.1 does not ship it, in a directory it ships');
         }
-        $this->assertDirectoryDoesNotExist($this->root . '/public/base/chunks', 'the directory it leaves empty goes too');
+        foreach (['public/base/chunks', 'modules/Gone', 'modules/ThirdParty'] as $dir) {
+            $this->assertDirectoryDoesNotExist($this->root . '/' . $dir, 'the directory it leaves empty goes too');
+        }
 
         foreach (['owa-config.php', 'robots.txt', '.htpasswd', '.well-known/security.txt', 'updater.php', 'owa-data/logs/errors.txt',
-            'public/tracker/OWA-site.js', 'modules/ThirdParty/Module.php', 'modules/Gone/Module.php', 'api/extra.php'] as $kept) {
+            'public/tracker/OWA-site.js', 'extensions/Acme/Module.php', 'api/extra.php'] as $kept) {
             $this->assertFileExists($this->root . '/' . $kept, 'outside the directories 2.0.1 ships, or kept: never deleted');
         }
 
@@ -157,12 +161,12 @@ final class InstallerTest extends TestCase
 
         $plan = $this->u['plan']($this->root, $this->open('2.0.1'), $this->u['keeps']($this->root, $this->root . '/Core/data', $this->root . '/public/alt'));
 
-        $this->assertSame(['Core/Planted.php', 'Core/linked', 'modules/Base/Retired.php', 'public/alt/other.js', 'public/base/chunks/a.js', 'public/base/linked.js', 'public/base/old.js'],
-            $plan['deletes']);
+        $this->assertSame(['Core/Planted.php', 'Core/linked', 'modules/Base/Retired.php', 'modules/Gone/Module.php', 'modules/ThirdParty/Module.php',
+            'public/alt/other.js', 'public/base/chunks/a.js', 'public/base/linked.js', 'public/base/old.js'], $plan['deletes'], 'never extensions/');
         $this->assertEqualsCanonicalizing(['cli.php', 'Core/Env.php', 'modules/Base/Module.php', 'modules/Base/Added.php', 'public/base/new.js', 'owa.php'], $plan['writes'],
             'only what differs');
-        $this->assertSame(array_sum(array_map(fn ($p) => strlen(self::OLD[$p] ?? ''), ['cli.php', 'Core/Env.php', 'modules/Base/Module.php', 'owa.php', 'modules/Base/Retired.php', 'public/base/old.js', 'public/base/chunks/a.js']))
-            + strlen('in a directory 2.0.1 ships') + strlen('not a bundle'), $plan['bytes'], 'what the backup holds; a link holds nothing');
+        $this->assertSame(array_sum(array_map(fn ($p) => strlen(self::OLD[$p] ?? ''), ['cli.php', 'Core/Env.php', 'modules/Base/Module.php', 'owa.php', 'modules/Base/Retired.php', 'public/base/old.js', 'public/base/chunks/a.js', 'modules/Gone/Module.php']))
+            + strlen('in a directory 2.0.1 ships') + strlen('not a bundle') + strlen('a module put in OWA\'s modules/'), $plan['bytes'], 'what the backup holds; a link holds nothing');
 
         unlink($this->root . '/Core/Env.php.owa-update');
         $this->u['apply']($this->root, $this->open('2.0.1'), $plan);
@@ -172,6 +176,19 @@ final class InstallerTest extends TestCase
 
         // The data directory as the OWA directory itself: nothing is deleted.
         $this->assertSame([], $this->u['plan']($this->root, $this->open('2.0.1'), $this->u['keeps']($this->root, $this->root, null))['deletes']);
+    }
+
+    /** extensions/ is third-party code: a tarball that holds it writes nothing there, and the mirror never deletes there. */
+    public function testTheCopyNeverTouchesExtensions(): void
+    {
+        $this->release('2.0.2', self::NEW + ['extensions/Acme/Module.php' => 'not the extension\'s', 'extensions/Shipped/Module.php' => 'shipped']);
+
+        $plan = $this->plan('2.0.2');
+        $this->assertSame([], preg_grep('#^extensions/#', array_merge($plan['writes'], $plan['deletes'])));
+        $this->u['apply']($this->root, $this->open('2.0.2'), $plan);
+
+        $this->assertSame('someone else\'s module', file_get_contents($this->root . '/extensions/Acme/Module.php'));
+        $this->assertFileDoesNotExist($this->root . '/extensions/Shipped/Module.php');
     }
 
     /** The copy changes only what the plan backed up: a file that changed after it stops the copy. */
@@ -197,7 +214,8 @@ final class InstallerTest extends TestCase
 
         $this->assertMatchesRegularExpression('#^' . preg_quote($this->updates, '#') . '/backup-[0-9a-f]{32}$#', $taken['backup']);
         $this->assertSame('0700', sprintf('%04o', fileperms($taken['backup']) & 0777));
-        $this->assertEqualsCanonicalizing(['cli.php', 'Core/Env.php', 'modules/Base/Module.php', 'owa.php', 'Core/Planted.php', 'modules/Base/Retired.php', 'public/base/chunks/a.js', 'public/base/old.js'],
+        $this->assertEqualsCanonicalizing(['cli.php', 'Core/Env.php', 'modules/Base/Module.php', 'owa.php', 'Core/Planted.php', 'modules/Base/Retired.php', 'public/base/chunks/a.js', 'public/base/old.js',
+            'modules/Gone/Module.php', 'modules/ThirdParty/Module.php'],
             array_keys($taken['saved']));
         foreach ($taken['saved'] as $rel => $entry) {
             $this->assertSame(hash_file('sha256', $this->root . '/' . $rel), $entry['sha256'], $rel);
@@ -625,7 +643,7 @@ final class InstallerTest extends TestCase
             $this->assertSame($after, $this->snapshot(), "$case: nothing written, not even the files that check");
             $this->assertFileExists($this->u['marker']($this->root), "$case: the marker stays, so OWA does not run on the mixed files");
             $this->assertFalse($this->u['isLocked']($this->data));
-            $this->assertStringContainsString('1 of the 8 files backed up before the copy are missing or changed', $this->failure()['error'], $case);
+            $this->assertStringContainsString('1 of the 10 files backed up before the copy are missing or changed', $this->failure()['error'], $case);
             $this->assertStringContainsString(': modules/Base/Module.php.', $this->failure()['error'], "$case: the file is named");
             @unlink($saved);
         }
@@ -646,7 +664,7 @@ final class InstallerTest extends TestCase
 
         $this->assertStringContainsString('Putting OWA 2.0.0 back failed: ', $err);
         $this->assertStringContainsString('download https://updates.openwebanalytics.com/download/2.0.0/owa_2.0.0_packaged.tar, unpack it over ' . $this->root, $err);
-        $this->assertStringContainsString('Putting OWA 2.0.0 back failed: 8 of the 8 files backed up before the copy are missing or changed', $this->failure()['error']);
+        $this->assertStringContainsString('Putting OWA 2.0.0 back failed: 10 of the 10 files backed up before the copy are missing or changed', $this->failure()['error']);
         $this->assertFileExists($this->u['marker']($this->root), 'the maintenance page stays');
     }
 
