@@ -25,6 +25,7 @@ return [
     '"%s" makes a column name longer than 64 characters.' => '"%s" makes a column name longer than 64 characters.',
     '%%s is Yes or No; "%s" is neither.' => '%%s is Yes or No; "%s" is neither.',
     '%1$d beacon today and yesterday. By rule: %2$s.' => [ '%1$d beacon today and yesterday. By rule: %2$s.', '%1$d beacons today and yesterday. By rule: %2$s.' ],
+    '%1$d cube busy: its build will apply the columns. %2$d changed.' => [ '%1$d cube busy: its build will apply the columns. %2$d changed.', '%1$d cubes busy: their builds will apply the columns. %2$d changed.' ],
     '%1$d of the directories the release writes in cannot be written by the user the scheduler runs as, such as %2$s.' => '%1$d of the directories the release writes in cannot be written by the user the scheduler runs as, such as %2$s.',
     '%1$s (serves %2$s)' => '%1$s (serves %2$s)',
     '%1$s (serves %2$s; runs the scheduler)' => '%1$s (serves %2$s; runs the scheduler)',
