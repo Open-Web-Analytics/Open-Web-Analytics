@@ -38,6 +38,13 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
                 $connected ? \OWA\Core\CoreAPI::t( 'connected' ) : \OWA\Core\CoreAPI::t( 'failed' ),
                 $connected,
                 sprintf( \OWA\Core\CoreAPI::t( 'Check the database settings in %s.' ), basename( (string) $config_file ) ) );
+
+            // A warning, which does not stop the install; the next screen repeats it.
+            if ( $connected ) {
+
+                $checks[] = \OWA\Module\Base\Classes\EnvironmentCheck::timeZoneTables(
+                    \OWA\Module\Base\Classes\DatabaseRequirement::timeZoneWarning() );
+            }
         }
 
         $failed = array_values( array_filter( $checks, static function ( $check ) {

@@ -1,6 +1,6 @@
 {
     "title": "Creative Performance",
-    "description": "Sessions by attributed ad and the landing page it led to.",
+    "description": "Sessions by attributed ad and the landing page it led to, for sessions credited to an ad.",
     "widgets": [
         {
             "type": "trend",
@@ -21,5 +21,8 @@
                 "resultsPerPage": 25
             }
         }
-    ]
+    ],
+    "settings": {
+        "constraints": "attributedAd!=(not set)"
+    }
 }

@@ -97,6 +97,50 @@ class DatabaseRequirement {
             $number, $mysql_min, self::shortVersion( $mariadb_min ) );
     }
 
+    /** @var bool|null whether named time zones convert, to answer with instead of the server's */
+    protected static $assumed_zones = null;
+
+    /**
+     * Test seam: answer timeZoneWarning() as if the server did (true) or did
+     * not (false) convert named time zones; null to ask it again.
+     *
+     * @param  bool|null $convert
+     * @return void
+     */
+    public static function assumeTimeZones( $convert ) {
+
+        self::$assumed_zones = $convert === null ? null : (bool) $convert;
+    }
+
+    /**
+     * Why the clock dimensions report (not set) on this server, or null.
+     * Asks the connected server (Db::namedTimeZonesConvert()).
+     *
+     * A warning, not a refusal: every other report works without the time
+     * zone tables.
+     *
+     * @return string|null
+     */
+    public static function timeZoneWarning() {
+
+        $convert = self::$assumed_zones ?? \OWA\Core\CoreAPI::dbSingleton()->namedTimeZonesConvert();
+
+        return $convert ? null : self::timeZoneWarningText();
+    }
+
+    /**
+     * The warning and its fix.
+     *
+     * @return string
+     */
+    public static function timeZoneWarningText() {
+
+        return \OWA\Core\CoreAPI::t( 'The database server\'s time zone tables are not loaded, so hour, minute and '
+          . 'date-hour report as (not set). Load them on the database server with: '
+          . 'mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root mysql. On a managed database, ask your hosting '
+          . 'provider to load them.' );
+    }
+
     /**
      * "10.11.0" as "10.11".
      *

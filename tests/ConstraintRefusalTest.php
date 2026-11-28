@@ -105,7 +105,7 @@ final class ConstraintRefusalTest extends TestCase
     /** A Yes/No dimension takes the words its cells show; anything else is refused, not compared with the flag. */
     public function testABooleanDimensionTakesYesOrNo(): void
     {
-        foreach (['isOutbound==Yes', 'isOutbound!=no', 'isOutbound==1', 'isOutbound==(not set)'] as $clause) {
+        foreach (['isOutbound==Yes', 'isOutbound!=no', 'isOutbound==1'] as $clause) {
             $rsm = $this->rsm();
             $rsm->setConstraints($rsm->constraintsStringToArray($clause));
 
@@ -113,7 +113,8 @@ final class ConstraintRefusalTest extends TestCase
             $this->assertFalse($rsm->hasRequestErrors(), $clause);
         }
 
-        foreach (['isOutbound==Maybe' => 'is Yes or No; "Maybe" is neither', 'isOutbound=@Ye' => 'can only be filtered with is or is not'] as $clause => $why) {
+        foreach (['isOutbound==Maybe' => 'is Yes or No; "Maybe" is neither', 'isOutbound=@Ye' => 'can only be filtered with is or is not',
+                  'isOutbound==(not set)' => 'is Yes or No, so it cannot be (not set)'] as $clause => $why) {
             $rsm = $this->rsm();
             $rsm->setConstraints($rsm->constraintsStringToArray($clause));
 

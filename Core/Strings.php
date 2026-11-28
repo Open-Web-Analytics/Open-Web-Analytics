@@ -100,6 +100,8 @@ class Strings {
         'FieldGroups::LABELS',
         'TimePeriod::COMPARE_PERIODS',
         'Requirements::PHP_EXTENSIONS',
+        'StoredLabels::NEW_VS_RETURNING',
+        'StoredLabels::CHANNELS',
     ];
 
     /** gettext's context separator. */

@@ -177,7 +177,10 @@ class CompareMerger {
     }
 
     /**
-     * (value - compare) / compare, or null when there is nothing to divide by.
+     * (value - compare) / |compare|, or null when there is nothing to divide by.
+     *
+     * Divided by the earlier value's magnitude, so a rise is positive whatever
+     * the sign of the earlier value: -100 to -50 is +50%.
      *
      * @param  mixed $value   a cell's value, numeric or not
      * @param  mixed $compare a cell's value, numeric or not
@@ -190,7 +193,7 @@ class CompareMerger {
             return null;
         }
 
-        return ( (float) $value - (float) $compare ) / (float) $compare;
+        return ( (float) $value - (float) $compare ) / abs( (float) $compare );
     }
 
     /**

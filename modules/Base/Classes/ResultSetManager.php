@@ -148,7 +148,8 @@ class ResultSetManager extends \OWA\Core\Base {
             'boolean'         => [$this, 'booleanFormatter'],
             'milliseconds'    => [$this, 'formatMilliseconds'],
             'datetime'        => [$this, 'formatDateTime'],
-            'currency'        => [$this, 'formatCurrency']
+            'currency'        => [$this, 'formatCurrency'],
+            'decimal'         => [$this, 'formatDecimal']
         ];
         
         $this->resultSet = new \OWA\Module\Base\Classes\PaginatedResultSet();
@@ -268,6 +269,13 @@ class ResultSetManager extends \OWA\Core\Base {
 
                 // A Yes/No dimension takes Yes or No, with is or is not (booleanConstraint()).
                 $entry = $this->isDimension( $constraint['name'] ) ? ( $this->dimensionRegistry()->all()[ $constraint['name'] ] ?? null ) : null;
+
+                if ( ( $entry['data_type'] ?? null ) === 'boolean' && self::emptyTestFor( $constraint ) ) {
+
+                    $this->addRequestError( sprintf( self::booleanEmptyTestRefusal(), $entry['label'] ?? $constraint['name'], self::NOT_SET_LABEL ) );
+
+                    continue;
+                }
 
                 if ( ( $entry['data_type'] ?? null ) === 'boolean' && ! self::emptyTestFor( $constraint ) ) {
 
@@ -1098,8 +1106,52 @@ class ResultSetManager extends \OWA\Core\Base {
 
             $dim = $this->lookupDimension($constraint['name'], $entity);
 
+            $data_type = $dim['data_type'] ?? null;
+
+            /*
+             * The empty test by type. A Yes/No dimension has no unset state to
+             * test (false is NULL), and a number column compared with '' casts
+             * it to 0, so there "(not set)" is NULL alone.
+             */
+            if ( $unary && $data_type === 'boolean' ) {
+
+                $this->addError( sprintf( self::booleanEmptyTestRefusal(), $dim['label'] ?? $constraint['name'], self::NOT_SET_LABEL ) );
+                return;
+            }
+
+            if ( $unary && in_array( $data_type, self::NUMERIC_DIMENSION_TYPES, true ) ) {
+
+                $constraint['operator'] = $unary === 'empty' ? 'null' : 'notnull';
+            }
+
+            if ( ! $unary && is_scalar( $constraint['value'] ) && ! in_array( $constraint['operator'], [ '=~', '!~' ], true ) ) {
+
+                // "(unknown)" is how the sentinel a build could not resolve is
+                // shown; in a joined dimension it is one part of the value.
+                $constraint['value'] = str_replace( self::UNKNOWN_LABEL,
+                    \OWA\Module\Base\Classes\V2Event::UNRESOLVED, (string) $constraint['value'] );
+
+                // A stored word, given as it is shown in the locale in use.
+                if ( ! empty( $dim['label_set'] ) ) {
+
+                    $constraint['value'] = \OWA\Module\Base\Classes\StoredLabels::stored( $dim['label_set'], $constraint['value'] );
+                }
+            }
+
+            // A date typed into a date-and-time dimension: the day's span of epoch seconds.
+            if ( ! $unary && $data_type === 'datetime' ) {
+
+                $day = self::daySpan( $constraint['value'] );
+
+                if ( $day !== null ) {
+
+                    $this->applyDayConstraint( $db, $dim['column'], $constraint, $day );
+                    return;
+                }
+            }
+
             // A Yes/No dimension, filtered in the words its cells show; a request's is checked in setConstraints().
-            if ( ! $unary && ( $dim['data_type'] ?? null ) === 'boolean' ) {
+            if ( ! $unary && $data_type === 'boolean' ) {
 
                 $flag = self::booleanConstraint( $constraint['operator'], $constraint['value'] );
 
@@ -1192,6 +1244,86 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         return '';
+    }
+
+    /** Dimension data types whose empty test is NULL alone: '' compares as 0. */
+    const NUMERIC_DIMENSION_TYPES = [ 'integer', 'decimal', 'datetime', 'yyyymmdd', 'yyyymm', 'yyyymmddhh', 'timestamp' ];
+
+    /**
+     * Why a Yes/No dimension cannot take the empty test: a sprintf() format
+     * for the dimension's label and the (not set) label.
+     *
+     * @return string
+     */
+    public static function booleanEmptyTestRefusal() {
+
+        return \OWA\Core\CoreAPI::t( '%1$s is Yes or No, so it cannot be %2$s. Filter on Yes or No.' );
+    }
+
+    /**
+     * A yyyymmdd value as the day's first and last epoch second in the
+     * configured timezone, or null when it is not a date.
+     *
+     * Eight digits only: an epoch second of this century has ten, so a value
+     * of eight is a date.
+     *
+     * @param  mixed $value
+     * @return array{0: int, 1: int}|null
+     */
+    public static function daySpan( $value ) {
+
+        if ( ! is_scalar( $value ) || ! preg_match( '/^(\d{4})(\d{2})(\d{2})$/', trim( (string) $value ), $m )
+             || ! checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ) {
+
+            return null;
+        }
+
+        $start = new \DateTimeImmutable( sprintf( '%s-%s-%s 00:00:00', $m[1], $m[2], $m[3] ),
+            new \DateTimeZone( date_default_timezone_get() ) );
+
+        return [ $start->getTimestamp(), $start->modify( '+1 day' )->getTimestamp() - 1 ];
+    }
+
+    /**
+     * A comparison with a day on a column of epoch seconds: is the day, before
+     * it, after it, and the inclusive forms.
+     *
+     * @param  \OWA\Core\Db $db
+     * @param  string $column
+     * @param  Constraint $constraint
+     * @param  array{0: int, 1: int} $day
+     * @return void
+     */
+    private function applyDayConstraint( $db, $column, $constraint, array $day ) {
+
+        [ $first, $last ] = $day;
+        $key = $constraint['key'] ?? $column;
+
+        switch ( $constraint['operator'] ) {
+
+            case '!=':
+                $db->whereSql( $key, sprintf( '( %1$s < ? OR %1$s > ? OR %1$s IS NULL )', $column ), [ $first, $last ] );
+                return;
+
+            case '<':
+                $db->where( $column, $first, '<', $key );
+                return;
+
+            case '<=':
+                $db->where( $column, $last, '<=', $key );
+                return;
+
+            case '>':
+                $db->where( $column, $last, '>', $key );
+                return;
+
+            case '>=':
+                $db->where( $column, $first, '>=', $key );
+                return;
+
+            default:
+                $db->where( $column, [ 'start' => $first, 'end' => $last ], 'BETWEEN', $key );
+        }
     }
 
     /**
@@ -1878,14 +2010,19 @@ class ResultSetManager extends \OWA\Core\Base {
              */
             $type      = null;
             $data_type = null;
+            $precision = null;
+            $label_set = null;
 
             if (in_array($k, $this->dimensions)) {
                 $type = 'dimension';
                 $dim = $this->lookupDimension($k, $this->baseEntity);
                 $data_type = $dim['data_type'];
+                $label_set = $dim['label_set'] ?? null;
             } elseif (in_array($k, $this->metrics)){
                 $type = 'metric';
-                $data_type = $this->getMetric($k)->getDataType();
+                $metric = $this->getMetric($k);
+                $data_type = $metric->getDataType();
+                $precision = $metric->getPrecision();
             }
             else {
                 // can't throw exception here as the metrics are sometimes used to geenrate calculated metrics
@@ -1899,8 +2036,10 @@ class ResultSetManager extends \OWA\Core\Base {
                 'name'           => $k,
                 'value'       => $v,
                 'formatted_value' => $type === 'dimension'
-                                     ? $this->formatDimensionValue( $data_type, $v )
-                                     : $this->formatValue($data_type, $v),
+                                     ? ( $label_set !== null
+                                         ? \OWA\Module\Base\Classes\StoredLabels::shown( $label_set, $this->formatDimensionValue( $data_type, $v ) )
+                                         : $this->formatDimensionValue( $data_type, $v ) )
+                                     : $this->formatValue($data_type, $v, $precision),
                 'label' => $this->getLabel($k), 'data_type' => $data_type];
         }
 
@@ -1977,15 +2116,28 @@ class ResultSetManager extends \OWA\Core\Base {
                 self::UNKNOWN_LABEL, (string) $value );
         }
 
+        // A decimal dimension (a custom dimension's value) shows every place it
+        // was recorded with: the decimal formatter is a metric's, to its precision.
+        if ( $data_type === 'decimal' ) {
+
+            return $value;
+        }
+
         return $this->formatValue( $data_type, $value );
     }
 
     /**
      * @param  string|null $type a data type
      * @param  mixed       $value
+     * @param  int|null    $precision a decimal metric's places (Metric::getPrecision()); null for 2
      * @return mixed the formatter's answer; the value itself when the type has none
      */
-    public function formatValue($type, $value) {
+    public function formatValue($type, $value, $precision = null) {
+
+        if ( $type === 'decimal' ) {
+
+            return $this->formatDecimal( $value, $precision );
+        }
 
         if ($type !== null && array_key_exists($type, $this->formatters)) {
 
@@ -1993,6 +2145,24 @@ class ResultSetManager extends \OWA\Core\Base {
         }
 
         return $value;
+    }
+
+    /**
+     * A decimal in the locale in use, to the metric's places: 2.33 in English,
+     * 2,33 in German. NULL stays NULL, as numberFormatter() keeps it.
+     *
+     * @param  mixed    $value
+     * @param  int|null $precision decimal places; null for 2
+     * @return mixed
+     */
+    public function formatDecimal( $value, $precision = null ) {
+
+        if ( $value === null || $value === '' || ! is_numeric( $value ) ) {
+
+            return $value;
+        }
+
+        return \OWA\Core\Strings::formatNumber( $value, $precision === null ? 2 : (int) $precision );
     }
 
     /**
@@ -3179,7 +3349,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     $rs->getAggregateMetric( $cm->getSubtrahend() ) );
 
                 $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
-                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value, $cm->getPrecision() ) );
 
                 foreach ( $rs->getRowCount() > 0 ? $rs->resultsRows : [] as $k => $row ) {
 
@@ -3188,7 +3358,7 @@ class ResultSetManager extends \OWA\Core\Base {
                         $row[ $cm->getSubtrahend() ]['value'] ?? null );
 
                     $rs->appendRow( $k, 'metric', $cm->getName(), $v, $cm->getLabel(),
-                        $cm->getDataType(), $this->formatValue( $cm->getDataType(), $v ) );
+                        $cm->getDataType(), $this->formatValue( $cm->getDataType(), $v, $cm->getPrecision() ) );
                 }
 
                 continue;
@@ -3202,7 +3372,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     $rs->getAggregateMetric( $cm->getDenominator() ) );
 
                 $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
-                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value, $cm->getPrecision() ) );
 
                 $this->appendRatioRows( $rs, $cm );
 
@@ -3249,7 +3419,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 array_key_exists( $denominator, $row ) ? $row[ $denominator ]['value'] : null );
 
             $rs->appendRow( $k, 'metric', $cm->getName(), $value, $cm->getLabel(),
-                $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+                $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value, $cm->getPrecision() ) );
         }
     }
 
@@ -3272,6 +3442,7 @@ class ResultSetManager extends \OWA\Core\Base {
     /**
      * The dimensions a query can group by, by family, each with what the
      * choosers show: its description, its family's name and its value type.
+     * An internal dimension (the heatmap's) is queryable and not offered.
      *
      * @return RelatedDimensions
      */
@@ -3280,6 +3451,11 @@ class ResultSetManager extends \OWA\Core\Base {
         $dims = [];
 
         foreach ( $this->dimensionRegistry()->onEntity( \OWA\Core\Module::FACT_ENTITY ) as $ddim ) {
+
+            if ( ! empty( $ddim['internal'] ) ) {
+
+                continue;
+            }
 
             $dims[ $ddim['family'] ][] = [
                 'name'        => $ddim['name'],

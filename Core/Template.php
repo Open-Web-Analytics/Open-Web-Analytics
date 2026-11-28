@@ -371,6 +371,28 @@ class Template extends TemplateEngine {
 
 
     /**
+     * Link parameters URL-encoded, names and values: a value carrying & = + #
+     * or % stays one parameter and reads back as given. The value `%s` is left
+     * as it is: a link template's placeholder, which the reporting JavaScript
+     * fills with an encoded value (a grid's column link).
+     *
+     * @param  array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private static function encodedParams( array $params ) {
+
+        $encoded = [];
+
+        foreach ( $params as $n => $v ) {
+
+            $encoded[ rawurlencode( (string) $n ) ] = is_scalar( $v ) && (string) $v !== '%s'
+                ? rawurlencode( (string) $v ) : $v;
+        }
+
+        return $encoded;
+    }
+
+    /**
      * Makes Links, adds state to links optionaly.
      *
      * @param array $params
@@ -403,26 +425,13 @@ class Template extends TemplateEngine {
                 $state = array_intersect_key($state, array_flip($add_state));
             }
 
-            /*
-             * URL-encoded here, as the request's own values: one carrying & = or
-             * # would otherwise add parameters to every link on the screen, or
-             * cut them short. $params are the caller's, which encodes what it
-             * means to (ConfiguredReport::buildConstraints(), the heatmap's
-             * constraints).
-             */
-            $encoded = [];
-
-            foreach ($state as $n => $v) {
-                $encoded[rawurlencode((string) $n)] = is_scalar($v) ? rawurlencode((string) $v) : $v;
-            }
-
-            $all_params = array_merge($all_params, $encoded);
+            $all_params = array_merge($all_params, self::encodedParams($state));
         }
 
         // Load overrides
         if (!empty($params)) {
             $params = array_filter($params);
-            $all_params = array_merge($all_params, $params);
+            $all_params = array_merge($all_params, self::encodedParams($params));
         }
 
         // add nonce if called for
@@ -528,11 +537,10 @@ class Template extends TemplateEngine {
      * single-box install and fails silently on exactly the deployments that
      * most need it right, by fetching from a host that never answers.
      *
-     * **The token holds the resource as the API will READ it back**, which is
-     * the parameter decoded once: the link carries the value as given, and PHP
-     * decodes the query string. The heatmap encodes its page path into
-     * `constraints` (pagePath==%2Fpricing), and the request arrives as
-     * pagePath==/pricing.
+     * **The token holds the resource as the API will READ it back**: the
+     * value as given, which makeLink() encodes once and PHP decodes once. The
+     * heatmap passes `constraints` as pagePath==/pricing, and the request
+     * arrives as pagePath==/pricing.
      *
      * @param    LinkParams $params      the API request params
      * @param    string    $resourceKey    which param names the resource
@@ -541,8 +549,6 @@ class Template extends TemplateEngine {
     public function makeOverlayApiLink( $params, $resourceKey ) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-        parse_str( 'resource=' . (string) $params[ $resourceKey ], $as_read );
 
         // What the link will carry for each scoped key: its own value, else
         // the state makeLink() adds below.
@@ -558,7 +564,7 @@ class Template extends TemplateEngine {
             $cu->getUserData('user_id'),
             $params['do'],
             $resourceKey,
-            (string) ( $as_read['resource'] ?? '' ),
+            (string) $params[ $resourceKey ],
             \OWA\Core\OverlayToken::DEFAULT_TTL,
             $scope
         );

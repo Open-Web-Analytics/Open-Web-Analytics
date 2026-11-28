@@ -35,6 +35,7 @@ final class ResultRowMetaDataTest extends TestCase
 
         $rsm->method('getMetric')->willReturn(new class {
             public function getDataType() { return 'currency'; }
+            public function getPrecision() { return null; }
         });
 
         // Identity, so a formatted value that differs is the formatter having

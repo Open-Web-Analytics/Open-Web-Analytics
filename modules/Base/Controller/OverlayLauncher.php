@@ -94,7 +94,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
             'metrics'        => 'eventCount',
             'dimensions'     => self::HEATMAP_DIMENSIONS,
             'constraints'    => ( $byPath ? 'pagePath==' : 'pagePathPlusQuery==' )
-                . urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $value ) )
+                . \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $value )
                 . ',eventName==click',
             'resultsPerPage' => 1000,
             'format'         => 'json',

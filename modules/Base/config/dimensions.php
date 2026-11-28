@@ -27,6 +27,10 @@
  * the ones a feature queries and a person would not group by: the heatmap's
  * coordinates and element anchor.
  *
+ * `label_set` names the words the cube build stores as the value (channel,
+ * newVsReturning): a report shows them translated and a filter accepts the
+ * translated word (Classes\StoredLabels).
+ *
  * A COLUMN THAT IS NOT THERE FAILS SILENTLY: the result set carries no error,
  * the aggregate is still right, and the breakdown comes back empty --
  * MySQL refuses the dimensional query with "Unknown column" and that refusal is
@@ -188,7 +192,7 @@ return [
             'sessionCampaign' => [ 'column' => 'campaign', 'label' => 'Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).' ],
             'sessionChannel' => [ 'column' => 'channel', 'label' => 'Channel',
-                'family' => 'traffic source', 'description' => "What kind of traffic this session was, from the channel rules in conf/channels.php: Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest." ],
+                'family' => 'traffic source', 'label_set' => 'channel', 'description' => "What kind of traffic this session was, from the channel rules in conf/channels.php: Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest." ],
             'sessionAd' => [ 'column' => 'ad', 'label' => 'Ad',
                 'family' => 'traffic source', 'description' => 'The ad this session was tagged with.' ],
             'sessionSearchTerms' => [ 'column' => 'search_terms', 'label' => 'Search Terms',
@@ -205,7 +209,7 @@ return [
             'attributedCampaign' => [ 'column' => 'attributed_campaign', 'label' => 'Attributed Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign of the attributed source, or the placeholder for an untagged one.' ],
             'attributedChannel' => [ 'column' => 'attributed_channel', 'label' => 'Attributed Channel',
-                'family' => 'traffic source', 'description' => 'What kind of traffic the attributed source is, by the channel rules in conf/channels.php.' ],
+                'family' => 'traffic source', 'label_set' => 'channel', 'description' => 'What kind of traffic the attributed source is, by the channel rules in conf/channels.php.' ],
             'attributedAd' => [ 'column' => 'attributed_ad', 'label' => 'Attributed Ad',
                 'family' => 'traffic source', 'description' => 'The ad of the attributed source.' ],
             'attributedSourceMedium' => [ 'parts' => [ 'attributed_source', 'attributed_medium' ],
@@ -220,7 +224,7 @@ return [
             'firstCampaign' => [ 'column' => 'acq_campaign', 'label' => 'First Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign that acquired the user, or the placeholder for how they arrived untagged.' ],
             'firstChannel' => [ 'column' => 'acq_channel', 'label' => 'First Channel',
-                'family' => 'traffic source', 'description' => 'What kind of traffic acquired the user, by the same channel rules.' ],
+                'family' => 'traffic source', 'label_set' => 'channel', 'description' => 'What kind of traffic acquired the user, by the same channel rules.' ],
             'firstAd' => [ 'column' => 'acq_ad', 'label' => 'First Ad',
                 'family' => 'traffic source', 'description' => 'The ad that acquired the user.' ],
             'firstSearchTerms' => [ 'column' => 'acq_search_terms', 'label' => 'First Search Terms',
@@ -257,7 +261,7 @@ return [
              * buckets at all.
              */
             'newVsReturning' => [ 'column' => 'new_vs_returning', 'label' => 'New vs Returning',
-                'family' => 'visitor',
+                'family' => 'visitor', 'label_set' => 'newVsReturning',
                 'description' => 'Whether the session was the user\'s first.' ],
             'isEngagedSession' => [ 'column' => 'is_engaged_session', 'label' => 'Engaged Session',
                 'family' => 'visit',

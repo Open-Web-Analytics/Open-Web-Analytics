@@ -140,6 +140,29 @@ final class TranslatedDataTest extends TestCase
         $this->assertNull($rsm->numberFormatter(null));
     }
 
+    /** A decimal metric reads in the locale, to its precision. */
+    public function testADecimalMetricFollowsTheLocale(): void
+    {
+        if (!class_exists('\NumberFormatter')) {
+            $this->markTestSkipped('needs the intl extension');
+        }
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+
+        $this->assertSame('2.33', $rsm->formatValue('decimal', 2.3333, 2));
+        $this->assertSame('2.33', $rsm->formatValue('decimal', 7 / 3), 'two places when none is given');
+
+        Strings::useLocale('de_DE');
+
+        $this->assertSame('2,33', $rsm->formatValue('decimal', 7 / 3, 2));
+        $this->assertSame('2,3', $rsm->formatValue('decimal', 7 / 3, 1));
+        $this->assertSame('1.234,50', $rsm->formatValue('decimal', 1234.5, 2));
+        $this->assertNull($rsm->formatValue('decimal', null, 2));
+
+        // A decimal custom dimension keeps every place it was recorded with.
+        $this->assertSame('3.14159', $rsm->formatDimensionValue('decimal', '3.14159'));
+    }
+
     /** The label tables of goals, app passwords, comparisons and the environment check. */
     public function testTheGoalAndSettingsTablesAreTranslatedWhereShown(): void
     {

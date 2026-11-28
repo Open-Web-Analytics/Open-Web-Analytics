@@ -120,6 +120,9 @@
             <?php } else { ?>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Statistics are bucketed into days using this timezone.' ) ); ?> <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s: existing data keeps the day boundaries it was recorded with.' ), '<strong>' . $view->escape( \OWA\Core\CoreAPI::t( 'Changing it later is not retroactive' ) ) . '</strong>' ); ?></span>
             <?php } ?>
+            <?php if ( (string) $view->get( 'zone_warning' ) !== '' ) { ?>
+            <span class="owa_installWarning" data-ui="install:zone-warning"><?php $view->out( (string) $view->get( 'zone_warning' ) ); ?></span>
+            <?php } ?>
         </div>
 
         <div class="owa_installField">

@@ -265,11 +265,16 @@ if ( ! defined( 'OWA_SQL_WEEK_OF_YEAR' ) ) { define('OWA_SQL_WEEK_OF_YEAR', 'WEE
  * per row and so daylight saving is applied at the instant it changed rather
  * than at the instant the query was built.
  *
+ * The UTC datetime is the epoch plus the microseconds (TIMESTAMPADD), not
+ * FROM_UNIXTIME, which answers in the connection's time_zone: on a session
+ * that is not UTC every hour came out shifted by its offset.
+ *
  * MySQL resolves the name out of its timezone tables, which are populated by a
  * separate step at server setup. Where they are missing this returns NULL for
- * every row rather than raising anything.
+ * every row rather than raising anything; namedTimeZonesConvert() says which,
+ * and System Health warns.
  */
-if ( ! defined( 'OWA_SQL_LOCAL_DATETIME' ) ) { define('OWA_SQL_LOCAL_DATETIME', "CONVERT_TZ(FROM_UNIXTIME(%s / 1000000), '+00:00', '%s')"); }
+if ( ! defined( 'OWA_SQL_LOCAL_DATETIME' ) ) { define('OWA_SQL_LOCAL_DATETIME', "CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %s, '1970-01-01 00:00:00'), '+00:00', '%s')"); }
 if ( ! defined( 'OWA_SQL_HOUR' ) ) { define('OWA_SQL_HOUR', 'HOUR(%s)'); }
 if ( ! defined( 'OWA_SQL_MINUTE' ) ) { define('OWA_SQL_MINUTE', 'MINUTE(%s)'); }
 // Day and hour as one sortable number, e.g. 2026092518.
@@ -388,6 +393,21 @@ trait MysqlDialect
         $row = $this->get_row( 'SELECT VERSION() AS v' );
 
         return is_array( $row ) ? (string) ( $row['v'] ?? '' ) : '';
+    }
+
+    /**
+     * Whether the server converts a named time zone: CONVERT_TZ to
+     * Europe/Berlin is not NULL. It is NULL where the server's time zone
+     * tables are not loaded, and then the clock dimensions (hour, minute,
+     * dateHour) are NULL on every row.
+     *
+     * @return bool  false also when the server does not answer
+     */
+    public function namedTimeZonesConvert() {
+
+        $row = $this->get_row( "SELECT CONVERT_TZ('2026-01-01 00:00:00', '+00:00', 'Europe/Berlin') AS v" );
+
+        return is_array( $row ) && $row['v'] !== null && $row['v'] !== '';
     }
 
     /**

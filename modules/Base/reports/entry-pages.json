@@ -1,6 +1,7 @@
 {
     "title": "Entry Pages",
     "description": "Sessions by landing page, with bounce and engagement rates.",
+    "metrics": "sessions,bounceRate,engagementRate",
     "widgets": [
         {
             "type": "trend",

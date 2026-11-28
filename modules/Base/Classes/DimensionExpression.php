@@ -261,7 +261,8 @@ class DimensionExpression {
      * they are missing it returns NULL for every row, which renders as
      * `(not set)` rather than as an error -- indistinguishable, from SQL, from
      * a zone name that does not exist. An installation without those tables
-     * loses these dimensions and keeps the seven day-level ones.
+     * loses these dimensions and keeps the seven day-level ones; System Health
+     * and the installer warn (DatabaseRequirement::timeZoneWarning()).
      *
      * @param string $column    a timestamp column, in MICROseconds
      * @param string $part

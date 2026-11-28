@@ -1398,7 +1398,7 @@
             "base.event": {
                 "name": "dateHour",
                 "entity": "base.event",
-                "column": "DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
+                "column": "DATE_FORMAT(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
                 "family": "time",
                 "label": "Date + Hour",
                 "description": "The day and hour together, as 2026092518: one value that sorts chronologically.",
@@ -1703,7 +1703,7 @@
             "base.event": {
                 "name": "hour",
                 "entity": "base.event",
-                "column": "HOUR(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+                "column": "HOUR(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'))",
                 "family": "time",
                 "label": "Hour",
                 "description": "The hour of the day, 0 to 23, in the configured timezone.",
@@ -1866,7 +1866,7 @@
             "base.event": {
                 "name": "minute",
                 "entity": "base.event",
-                "column": "MINUTE(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+                "column": "MINUTE(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'))",
                 "family": "time",
                 "label": "Minute",
                 "description": "The minute of the hour, 0 to 59, in the configured timezone.",
@@ -2661,7 +2661,7 @@
         "dateHour": {
             "name": "dateHour",
             "entity": "base.event",
-            "column": "DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
+            "column": "DATE_FORMAT(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
             "family": "time",
             "label": "Date + Hour",
             "description": "The day and hour together, as 2026092518: one value that sorts chronologically.",
@@ -2922,7 +2922,7 @@
         "hour": {
             "name": "hour",
             "entity": "base.event",
-            "column": "HOUR(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+            "column": "HOUR(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'))",
             "family": "time",
             "label": "Hour",
             "description": "The hour of the day, 0 to 23, in the configured timezone.",
@@ -3061,7 +3061,7 @@
         "minute": {
             "name": "minute",
             "entity": "base.event",
-            "column": "MINUTE(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+            "column": "MINUTE(CONVERT_TZ(TIMESTAMPADD(MICROSECOND, %1$s.ts, '1970-01-01 00:00:00'), '+00:00', '%2$s'))",
             "family": "time",
             "label": "Minute",
             "description": "The minute of the hour, 0 to 59, in the configured timezone.",
@@ -3575,14 +3575,9 @@
                 "screenResolution"
             ],
             "event": [
-                "anchorX",
-                "anchorY",
                 "clickTarget",
-                "clickX",
-                "clickY",
                 "domElementId",
                 "domElementTag",
-                "elementAnchor",
                 "eventName",
                 "fileExtension",
                 "fileName",

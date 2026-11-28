@@ -394,6 +394,14 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
             return $this->fail( CoreAPI::t( 'The database schema was not installed. The error log says why. Fix it, then run this command again.' ) );
         }
 
+        // A warning: the install goes on, and hour, minute and date-hour report as (not set).
+        $zones = \OWA\Module\Base\Classes\DatabaseRequirement::timeZoneWarning();
+
+        if ( $zones !== null ) {
+
+            CoreAPI::notice( $zones );
+        }
+
         // An admin an earlier run left is kept, with its own password: createAdminUser() returns nothing then.
         $created = null;
 

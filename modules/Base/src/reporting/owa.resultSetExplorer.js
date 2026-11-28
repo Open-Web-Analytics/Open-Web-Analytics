@@ -627,15 +627,31 @@ OWA.resultSetExplorer.prototype = {
 
                             if (this.resultSet.resultsRows[i][y].name.length > 0) {
 
+                                // A row whose value is null or empty (not set) gets no link,
+                                // as row actions do: there is nothing for the link to name.
+                                var empty = false;
+
                                 for (var z in this.columnLinks[y].params) {
 
                                     if (this.columnLinks[y].params.hasOwnProperty(z)) {
 
-                                        template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value));
+                                        var cell  = this.resultSet.resultsRows[i][this.columnLinks[y].params[z]];
+                                        var value = cell ? cell.value : null;
+
+                                        if ( value === null || value === undefined || value === '' ) {
+
+                                            empty = true;
+                                            break;
+                                        }
+
+                                        template = template.replace('%s', OWA.util.urlEncode(value));
                                     }
                                 }
 
-                                this.resultSet.resultsRows[i][this.columnLinks[y].name].link = template;
+                                if ( ! empty ) {
+
+                                    this.resultSet.resultsRows[i][this.columnLinks[y].name].link = template;
+                                }
                             }
                         }
                     }

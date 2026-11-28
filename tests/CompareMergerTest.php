@@ -46,6 +46,16 @@ final class CompareMergerTest extends TestCase
         $this->assertSame( 100, $rs->compare['aggregates']['pageViews']['value'] );
     }
 
+    /** The change divides by the earlier value's magnitude: a rise is positive whatever its sign. */
+    public function testTheChangeFromANegativeValueKeepsItsDirection(): void
+    {
+        $this->assertEqualsWithDelta( 0.5, CompareMerger::change( -50, -100 ), 1e-9 );
+        $this->assertEqualsWithDelta( -1.0, CompareMerger::change( -200, -100 ), 1e-9 );
+        $this->assertEqualsWithDelta( 2.0, CompareMerger::change( 100, -100 ), 1e-9 );
+        $this->assertEqualsWithDelta( -0.5, CompareMerger::change( 50, 100 ), 1e-9 );
+        $this->assertNull( CompareMerger::change( -50, 0 ) );
+    }
+
     public function testRowsAreMatchedOnTheirDimensionValues(): void
     {
         $row = fn ( $path, $views ) => [ 'pagePath' => self::cell( 'pagePath', $path, 'dimension' ), 'pageViews' => self::cell( 'pageViews', $views ) ];

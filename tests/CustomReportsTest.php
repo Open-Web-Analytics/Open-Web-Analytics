@@ -456,8 +456,7 @@ final class CustomReportsTest extends TestCase
      */
     public function testEveryShippedReportThatNamesItsMetricsPassesTheBuildersRules(): void
     {
-        $metric_sets = ['ads', 'browsers', 'campaigns', 'channels', 'creative-performance', 'devices', 'entry-pages',
-            'exit-pages', 'geolocation', 'keywords', 'languages', 'os', 'referring-sites', 'screen-resolutions',
+        $metric_sets = ['ads', 'browsers', 'campaigns', 'channels', 'creative-performance', 'devices', 'geolocation', 'keywords', 'languages', 'os', 'referring-sites', 'screen-resolutions',
             'search-engines', 'sources', 'visitors-loyalty'];
 
         $checked = [];

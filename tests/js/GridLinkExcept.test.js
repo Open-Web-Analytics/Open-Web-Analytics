@@ -18,7 +18,8 @@ require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
  * A grid's row link skips the values it is told to.
  *
  * Page Detail's Next Pages card links each next page to that page's Page
- * Detail, and (exit) is not a page: there is nothing for it to open.
+ * Detail, and (exit) is not a page: there is nothing for it to open. Nor is a
+ * null or empty value, which would link to pagePath=null.
  */
 
 function row(path) {
@@ -50,5 +51,12 @@ test('a row after a skipped one is still linked', () => {
 
 test('without except every row is linked, as before', () => {
     expect(linked(undefined).filter(Boolean)).toHaveLength(2);
+});
 
+test('a null or empty value is not linked', () => {
+    expect(linked(undefined, [null, '/docs', ''])).toEqual([
+        undefined,
+        '?do=base.report&reportId=document&pagePath=%2Fdocs',
+        undefined,
+    ]);
 });
