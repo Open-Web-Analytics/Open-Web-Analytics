@@ -530,20 +530,31 @@ it checks the tables and the data directory's modes, and installs a release:
 | `--file=<tarball>` | Installs the release in a tarball on the server, with no network request. Its signature is `<tarball>.sig`, or `--sig=<path>` |
 | `--force` | Installs a release older than the installed one. The installed release again needs no `--force`: it reinstalls, copying the files that differ |
 
-### Third-party code goes in its own module directory
+### Third-party modules go in `extensions/`
 
-Installing a release, by hand or as an automatic update, deletes the files the
-release does not ship from each directory it ships: `Core/`, `api/`, `conf/`,
-`public/`, `vendor/`, and under `modules/` each module directory the release
-has. A file added to one of them is deleted at the next install.
+`modules/` holds OWA's own modules only. Installing a release, by hand or as an
+automatic update, deletes the files the release does not ship from each
+directory it ships: `Core/`, `api/`, `conf/`, `modules/`, `public/` and
+`vendor/`. A module directory in `modules/` that the release does not ship is
+deleted, and so is a file you added to any of these.
 
-Put a third-party module in its own `modules/<Name>/`, which an install never
-touches, and nothing of your own inside OWA's directories. Kept as they are:
-files at the top of the OWA directory (`owa-config.php`, `robots.txt`,
-`.htpasswd`), directories the release does not ship (`.well-known/`),
-`owa-data/` and the data directory, and the tracking bundles in
-`public/tracker/`. Overrides of `conf/` files go in the data directory's
-`conf/`.
+A third-party module goes in `extensions/<Name>/`, namespace
+`OWA\Extension\<Name>\`, with a `Module` class extending `\OWA\Core\Module`
+that declares its own `NAME`. An install never touches `extensions/`. To move
+one you put in `modules/<Name>/`, move the directory to `extensions/` and
+change `OWA\Module\<Name>` to `OWA\Extension\<Name>` in its files.
+
+OWA's modules register first. An extension whose directory or `NAME` is one of
+OWA's, or that registers a table, CLI command, scheduled job or event type
+already registered, is refused: not loaded, not activated, nothing of it
+registered. The error log and System Health name it and the clashing name.
+Prefix every name a module registers with the module's own name.
+
+Kept as they are: files at the top of the OWA directory (`owa-config.php`,
+`robots.txt`, `.htpasswd`), directories the release does not ship
+(`.well-known/`), `extensions/`, `owa-data/` and the data directory, and the
+tracking bundles in `public/tracker/`. Overrides of `conf/` files go in the
+data directory's `conf/`.
 
 ### Server roles: `OWA_SERVER_ROLE`
 
