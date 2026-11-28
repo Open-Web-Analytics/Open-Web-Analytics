@@ -88,6 +88,53 @@ final class UserRoleAndCreateTest extends TestCase
         $this->assertContains( 'viewer', $roles );
     }
 
+    /** @return array<string, mixed> the add form's body data */
+    private function addForm( array $profile = [] ): array
+    {
+        $data = [ 'profile' => $profile, 'edit' => false ];
+        $view = \OWA\Core\CoreAPI::viewFactory( 'base.usersProfile' );
+        $view->setData( $data );
+        $view->render( $data );
+
+        return [ 'user' => (array) $view->body->get( 'user' ), 'html' => $view->body->fetch() ];
+    }
+
+    public function testTheAddFormStartsAtTheLeastPrivilegedRole(): void
+    {
+        $this->assertSame( 'viewer', \OWA\Core\CoreAPI::leastPrivilegedRole() );
+
+        $form = $this->addForm();
+
+        $this->assertSame( 'viewer', $form['user']['role'] ?? null );
+        $this->assertMatchesRegularExpression( '/<option\s+SELECTED\s+value="viewer">/', $form['html'] );
+        $this->assertDoesNotMatchRegularExpression( '/<option\s+SELECTED\s+value="admin">/', $form['html'] );
+    }
+
+    /** A form drawn again after an error keeps the role that was chosen. */
+    public function testTheAddFormKeepsAChosenRole(): void
+    {
+        $this->assertSame( 'admin', $this->addForm( [ 'role' => 'admin' ] )['user']['role'] ?? null );
+    }
+
+    /** Ties go to the role listed last: the setting lists admin first. */
+    public function testTheLeastPrivilegedRoleIsTheOneWithFewestCapabilities(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting( 'base', 'capabilities' );
+
+        try {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'capabilities', [
+                'admin'    => [ 'view_reports', 'edit_users' ],
+                'viewer'   => [ 'view_reports', 'edit_reports' ],
+                'reader'   => [ 'view_reports' ],
+                'everyone' => [],
+            ] );
+
+            $this->assertSame( 'reader', \OWA\Core\CoreAPI::leastPrivilegedRole() );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'capabilities', $was );
+        }
+    }
+
     /** No real_name posted is no real name, and a user not created is an error, not an invitation. */
     public function testAUserNotCreatedIsAnError(): void
     {

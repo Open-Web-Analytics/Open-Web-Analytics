@@ -17,7 +17,7 @@ final class NoApiKeyOnScreenTest extends TestCase
         $t = new \OWA\Core\Template('base');
 
         foreach ([
-            'headline' => 'Edit user', 'action' => 'base.usersEdit', 'edit' => true, 'isAdmin' => false,
+            'headline' => 'Edit user', 'action' => 'base.usersEdit', 'edit' => true,
             'roles' => ['admin', 'viewer'], 'app_passwords' => [], 'app_password_scopes' => [],
             'user' => ['user_id' => 'someone', 'real_name' => 'Someone', 'role' => 'viewer',
                 'email_address' => 'someone@example.test', 'api_key' => self::KEY],

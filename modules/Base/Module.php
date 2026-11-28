@@ -13,7 +13,7 @@ class Module extends \OWA\Core\Module {
      */
     public $name = 'base';
 
-    public $required_schema_version = 98;
+    public $required_schema_version = 99;
 
     /**
      * Constructor
@@ -566,6 +566,8 @@ class Module extends \OWA\Core\Module {
                 'job_queue',
                 // Application passwords for the REST API.
                 'app_password',
+                // Failed sign-ins (Classes\LoginThrottle).
+                'login_failure',
                 'site_user',
                 /*
                  * v2. Registered unconditionally so cmd=core-update-schema creates them and

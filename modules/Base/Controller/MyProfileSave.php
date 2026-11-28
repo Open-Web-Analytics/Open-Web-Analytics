@@ -16,7 +16,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
      * The messages.php codes a refusal carries back to base.myProfile, and
      * the only ones it shows.
      */
-    const ERRORS = [ 2001, 3009, 3230, 3231, 3232, 3233, 3234, 3235, 3236, 3237, 3238 ];
+    const ERRORS = [ 2001, 3009, 3230, 3231, 3232, 3233, 3234, 3235, 3236, 3237, 3238, 3239 ];
 
     /** The code of each failed validation, by its name. */
     const VALIDATION_ERRORS = [
@@ -25,6 +25,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
         'new_password'     => 3231,
         'password_match'   => 3232,
         'password_length'  => 3233,
+        'password_max_length' => 3239,
     ];
 
     public function __construct( $params ) {
@@ -73,6 +74,13 @@ class MyProfileSave extends \OWA\Core\AdminController {
                 'length'   => self::MIN_PASSWORD_LENGTH,
                 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The new password must be at least %d characters.' ),
                     self::MIN_PASSWORD_LENGTH ),
+            ] );
+
+        $this->addValidation( 'password_max_length', $this->getParam( 'new_password' ),
+            'stringLength', [
+                'operator' => '<=',
+                'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+                'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
             ] );
     }
 

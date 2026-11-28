@@ -356,6 +356,8 @@ return [
         'mailer-username' => [ 'config_constant' => 'OWA_MAILER_USERNAME', 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'config_constant' => 'OWA_MAX_CUSTOM_VARS', 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
         'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
+        'login_throttle_max_failures' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_MAX_FAILURES', 'default' => \OWA\Module\Base\Classes\LoginThrottle::MAX_FAILURES, 'description' => 'How many failed sign-ins by one user name, or from one client address, within login_throttle_window refuse its further sign-ins. 0 counts and refuses nothing. Default 5.' ],
+        'login_throttle_window' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_WINDOW', 'default' => \OWA\Module\Base\Classes\LoginThrottle::WINDOW, 'description' => 'The time, in seconds, after a first failed sign-in within which the next ones are counted with it, and after the last one that sign-ins are refused. Default 900 (15 minutes).' ],
         // The wire namespace only. OWA's own admin and reporting URLs carry no
         // prefix; RequestContainer still accepts prefixed ones.
         'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],

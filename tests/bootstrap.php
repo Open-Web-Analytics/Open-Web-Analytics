@@ -52,3 +52,10 @@ if (!defined('OWA_AUTH_KEY') && !file_exists(__DIR__ . '/../owa-config.php')) {
     // may depend on a particular key.
     define('OWA_AUTH_KEY', 'test-suite-not-a-real-key');
 }
+
+/*
+ * Failed sign-ins are not counted or refused (Classes\LoginThrottle): every
+ * test signs in from one address, so a suite's wrong passwords would refuse
+ * its later sign-ins. LoginThrottleTest turns it on for itself.
+ */
+\OWA\Module\Base\Classes\LoginThrottle::$enabled = false;

@@ -238,7 +238,7 @@ final class AccessibleMarkupTest extends TestCase
                 'name' => 'Profile Name:', 'description' => 'Description:']],
             'users_addoredit, add' => ['users_addoredit.php', [
                 'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
-                'isAdmin' => false, 'roles' => ['admin', 'viewer'], 'user' => [],
+                'roles' => ['admin', 'viewer'], 'user' => [],
             ], [
                 'user_id' => 'User Name', 'real_name' => 'Real Name',
                 'role' => 'Role', 'email_address' => 'E-mail Address']],

@@ -24,6 +24,9 @@ class Users extends \OWA\Core\AdminController {
         
         $user_objs = \OWA\Core\CoreAPI::loadEntitiesFromArray( $users, 'base.user');
         $this->set('users_objs', $user_objs );
+
+        // The list offers no Delete for this account (UsersDelete).
+        $this->set('current_user_id', (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ) );
     }
     
     public function success() {
@@ -38,6 +41,6 @@ class Users extends \OWA\Core\AdminController {
         $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'base.users', [
             'template' => 'users.php',
-            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'User Roster' ), 'users' ] ] );
+            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'User Roster' ), 'users', 'current_user_id' ] ] );
     }
 }

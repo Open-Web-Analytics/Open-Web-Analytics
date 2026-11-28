@@ -375,11 +375,22 @@ class Auth extends \OWA\Core\Base {
             return false;
         }
 
+        // Failures are counted per client address, with the login form's.
+        $keys = \OWA\Module\Base\Classes\LoginThrottle::keys( '', self::lastPublicHop() );
+
+        if ( \OWA\Module\Base\Classes\LoginThrottle::isLocked( $keys ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password refused: too many failed attempts from this address.' );
+
+            return false;
+        }
+
         $password = \OWA\Module\Base\Classes\AppPasswords::verify( $token );
 
         if ( ! $password ) {
 
             \OWA\Core\CoreAPI::debug( 'Application password not recognised.' );
+            \OWA\Module\Base\Classes\LoginThrottle::recordFailure( $keys );
 
             return false;
         }
@@ -387,6 +398,7 @@ class Auth extends \OWA\Core\Base {
         if ( $user_id !== null && (string) $user_id !== (string) $password['user_id'] ) {
 
             \OWA\Core\CoreAPI::debug( 'Application password belongs to a different user.' );
+            \OWA\Module\Base\Classes\LoginThrottle::recordFailure( $keys );
 
             return false;
         }
@@ -486,10 +498,31 @@ class Auth extends \OWA\Core\Base {
         unset( $this->credentials['password'] );
         // the typed password, checked against the stored hash
         $this->credentials['new_password'] = $password;
+
+        // Failed sign-ins are counted per user name and per client address,
+        // this attempt among them before its password is checked.
+        $address = self::lastPublicHop();
+        $keys    = \OWA\Module\Base\Classes\LoginThrottle::keys( $this->credentials['user_id'], $address );
+
+        if ( ! \OWA\Module\Base\Classes\LoginThrottle::attempt( $keys ) ) {
+
+            // Answered as a wrong password is, in the time one takes.
+            $this->passwordMatches( $password, self::NO_USER_HASH );
+            $this->_is_user = false;
+            \OWA\Core\CoreAPI::debug( 'Sign-in refused: too many failed attempts for this user name or address.' );
+
+            return false;
+        }
+
         $ret = $this->isUser();
 
         if ($ret === true) {
             $this->saveCredentials();
+            \OWA\Module\Base\Classes\LoginThrottle::succeeded(
+                \OWA\Module\Base\Classes\LoginThrottle::nameKey( $this->credentials['user_id'] ),
+                \OWA\Module\Base\Classes\LoginThrottle::addressKey( $address ) );
+        } else {
+            \OWA\Module\Base\Classes\LoginThrottle::failed( $keys );
         }
 
         return $ret;
