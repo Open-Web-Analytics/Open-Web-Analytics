@@ -2020,8 +2020,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 $label_set = $dim['label_set'] ?? null;
             } elseif (in_array($k, $this->metrics)){
                 $type = 'metric';
-                $data_type = $this->getMetric($k)->getDataType();
-                $precision = $this->getMetric($k)->getPrecision();
+                $metric = $this->getMetric($k);
+                $data_type = $metric->getDataType();
+                $precision = $metric->getPrecision();
             }
             else {
                 // can't throw exception here as the metrics are sometimes used to geenrate calculated metrics
