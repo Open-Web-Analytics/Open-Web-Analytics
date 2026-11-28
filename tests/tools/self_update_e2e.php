@@ -612,11 +612,14 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
     $wrong = is_string( $read['OWA_AUTO_UPDATE_WINDOW'] ?? null ) ? $wrong : [ ...$wrong, 'OWA_AUTO_UPDATE_WINDOW' ];
     check( $wrong === [], 'owa-config.php does not set ' . implode( ', ', $wrong ) . ' as the harness wrote it -- stopping before anything can send mail or fetch from the update host' );
 
-    must( 'php cli.php cmd=install user_id=e2e-admin password=e2e-admin-password-1 email_address=admin@example.test domain=example.test', $site );
+    // A release built from before cmd=install became cmd=core-install (OWA_E2E_FROM_REF) installs with the command it has.
+    must( is_file( "$site/modules/Base/Controller/InstallCli.php" )
+        ? 'php cli.php cmd=install user_id=e2e-admin password=e2e-admin-password-1 email_address=admin@example.test domain=example.test'
+        : "printf '%s\\n' e2e-admin-password-1 | php cli.php cmd=core-install --password-stdin user_id=e2e-admin email_address=admin@example.test domain=example.test", $site );
 
     // What belongs to the installation, and must survive an update: the
-    // bundles cmd=install published, and a module of someone else's.
-    check( (bool) glob( "$site/public/tracker/*.js" ), 'cmd=install published no tracking bundle' );
+    // bundles cmd=core-install published, and a module of someone else's.
+    check( (bool) glob( "$site/public/tracker/*.js" ), 'cmd=core-install published no tracking bundle' );
     @mkdir( "$site/modules/E2eThirdParty", 0755, true );
     file_put_contents( "$site/modules/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
 
@@ -1009,6 +1012,35 @@ $scenarios = [
 
         [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=2.0.92' );
         check( $code === 0 && envVersion( $site ) === '2.0.92', "core-install --version did not install a release the listing does not have (exit $code):\n$out" );
+        next_run( $site, $ca );
+        installed( $site, $ca, '2.0.92' );
+    },
+
+    'by-file' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+
+        // A tarball on this server, its signature beside it: --file installs it
+        // with no download of it, once a trusted key's signature proves it.
+        $to  = package( $build, $work, 'by-file-listed', TO );
+        $old = package( $build, $work, 'by-file', '2.0.92' );
+        publish( $www, $base, $to, TO );
+        $tar = "$work/by-file-upload/owa_2.0.92_packaged.tar";
+        @mkdir( dirname( $tar ), 0755, true );
+        copy( $old['file'], $tar );
+        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+
+        if ( is_file( "$site/modules/Base/Controller/InstallCli.php" ) ) {
+
+            return 'the installed release has no cmd=core-install --file';
+        }
+
+        file_put_contents( "$tar.sig", base64_encode( str_repeat( "\0", 64 ) ) . "\n" );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );
+        check( $code !== 0 && str_contains( $out, 'is not signed by a key this installation trusts' ) && envVersion( $site ) === FROM,
+            "core-install --file took a tarball no trusted key signed (exit $code):\n$out" );
+
+        file_put_contents( "$tar.sig", $old['sig'] );
+        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );
+        check( $code === 0 && envVersion( $site ) === '2.0.92', "core-install --file did not install the tarball (exit $code):\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, '2.0.92' );
     },

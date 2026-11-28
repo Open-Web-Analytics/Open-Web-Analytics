@@ -537,7 +537,7 @@ jobs:
       # scratch DB on the service, self-served by php -S. This certifies the exact
       # install_manager::installSchema()/createAdminUser()/createDefaultSite() code
       # that the self-hosted step below relies on to provision its own install (the
-      # web wizard's installBase and the CLI installCli both delegate to it), so a
+      # web wizard's installBase and cmd=core-install both delegate to it), so a
       # green install run proves that provisioning is sound.
       - name: Run install-flow e2e suite (php -S)
         env:

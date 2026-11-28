@@ -3,15 +3,17 @@ const { execFileSync, spawnSync } = require('child_process');
 const path = require('path');
 
 /**
- * Characterization of the OWA CLI INSTALLER (php cli.php cmd=install), the
+ * Characterization of the OWA CLI INSTALLER (php cli.php cmd=core-install), the
  * headless bring-up path used for scripted/embedded installs.
  *
  * Unlike the web wizard, the CLI installer does NOT write owa-config.php -- it
- * REQUIRES the config file to already exist and aborts otherwise (installCli.php
- * isConfigFilePresent guard). It also sets the admin password = OWA_DB_PASSWORD.
- * So this spec has no browser interaction: it drives the harness to write a
- * scratch config (pointing at SCRATCH_DB_CLI), runs the CLI installer, and
- * asserts the resulting schema/admin/site/install_complete directly from SQL.
+ * REQUIRES the config file to already exist and aborts otherwise. The admin's
+ * password is generated and printed once, or read from standard input with
+ * --password-stdin; password= on the command line is refused. So this spec has
+ * no browser interaction: it drives the harness to write a scratch config
+ * (pointing at SCRATCH_DB_CLI), runs the CLI installer, and asserts the
+ * resulting schema/admin/site/install_complete directly from SQL. A second run
+ * on the installed system checks and repairs, and changes nothing.
  *
  * ISOLATION: runs after install-web.spec.js under playwright.install.config.js.
  * The harness `prepare-cli` step first removes the web-wizard-written config and
@@ -39,7 +41,7 @@ function phpAnswer(cmd) {
 
 const INFO = php('info');
 
-test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', () => {
+test.describe('install: CLI installer (cli.php cmd=core-install into a scratch DB)', () => {
 
     test('installs schema + admin + site + install_complete via cli.php', async () => {
         // 1. Swap the web-wizard config for a CLI scratch config (points at
@@ -48,46 +50,48 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         expect(prepared.db_name).toBe(INFO.scratch_db_cli);
 
         // 2. Run the real CLI installer. cli.php parses key=value args and maps
-        //    cmd=install -> base.installCli.
+        //    cmd=core-install -> base.coreInstallCli.
         const repoRoot = path.join(__dirname, '..', '..');
         // Its exit code and what it printed. cli.php exits 0 when the command
         // did what it was asked, 1 when it failed, 2 when the arguments are wrong.
-        const install = (extra) => {
-            const r = spawnSync(
-                'php',
-                [
-                    'cli.php',
-                    'cmd=install',
-                    `user_id=${INFO.installcli_admin_id}`,
-                    `email_address=${INFO.installcli_admin_id}`,
-                    `domain=${INFO.installcli_domain}`,
-                    ...extra,
-                ],
-                { cwd: repoRoot, encoding: 'utf8' }
-            );
+        const run = (args, input) => {
+            const r = spawnSync('php', ['cli.php', 'cmd=core-install', ...args],
+                { cwd: repoRoot, encoding: 'utf8', input: input ?? '' });
             return { code: r.status, out: `${r.stdout}${r.stderr}` };
         };
+        const setup = [
+            `user_id=${INFO.installcli_admin_id}`,
+            `email_address=${INFO.installcli_admin_id}`,
+            `domain=${INFO.installcli_domain}`,
+        ];
 
-        // Without a password it refuses, and installs nothing: the admin's
-        // password is not taken from owa-config.php.
-        const refused = install([]);
-        expect(refused.code).toBe(2);
-        expect(refused.out).toMatch(/password for the admin account is required/);
-        expect(refused.out).not.toMatch(/Install Completed/i);
+        // A password on the command line is refused, and nothing is installed.
+        const argued = run([...setup, 'password=owa-cli-admin-pass']);
+        expect(argued.code).toBe(2);
+        expect(argued.out).toMatch(/password= is not taken/);
+        expect(argued.out).not.toMatch(/Install Completed/i);
         expect(phpAnswer('assert-cli').checks.install_complete).toBe(false);
 
-        // Too short is refused the same way.
-        const short = install(['password=short']);
+        // A piped password too short is refused the same way.
+        const short = run([...setup, '--password-stdin'], 'short\n');
         expect(short.code).toBe(2);
-        expect(short.out).toMatch(/at least 6 characters/);
+        expect(short.out).toMatch(/--password-stdin: The password must be at least 6 characters/);
 
-        const installed = install(['password=owa-cli-admin-pass']);
+        // A release named before the install is refused.
+        const early = run(['--version=2.0.1']);
+        expect(early.code).toBe(1);
+        expect(early.out).toMatch(/OWA is not installed yet/);
+
+        const installed = run([...setup, '--password-stdin'], 'owa-cli-admin-pass\n');
         const out = installed.out;
         expect(installed.code, out).toBe(0);
         // The installer logs "Install Completed." on success.
         expect(out).toMatch(/Install Completed|Installation complete/i);
         // ...and the cron line, without which no report shows anything.
         expect(out).toMatch(/\* \* \* \* \* cd .+ && php cli\.php cmd=schedule-run/);
+        // A piped password is not printed.
+        expect(out).not.toMatch(/Admin password for/);
+        expect(out).not.toContain('owa-cli-admin-pass');
 
         // 3. Assert the scratch DB really got a working install.
         const result = php('assert-cli');
@@ -101,5 +105,19 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         // when there is no cheap way to drop old data.
         expect(result.checks.raw_partitioned).toBe(true);
         expect(result.checks.raw_has_lead).toBe(true);
+
+        // 4. Run again on the installed system: check and repair, nothing else.
+        const again = run(setup);
+        expect(again.code, again.out).toBe(0);
+        expect(again.out).toMatch(/Schema: already installed, tables checked/);
+        expect(again.out).toContain(`Admin "${INFO.installcli_admin_id}": already exists, not changed`);
+        expect(again.out).toMatch(/Site: already exists, not changed/);
+        expect(again.out).toMatch(/so these arguments are ignored: user_id, email_address, domain/);
+        expect(again.out).not.toMatch(/Admin password for/);
+
+        // cmd=install is gone, and says what it is now.
+        const renamed = spawnSync('php', ['cli.php', 'cmd=install'], { cwd: repoRoot, encoding: 'utf8' });
+        expect(renamed.status).toBe(2);
+        expect(renamed.stderr).toMatch(/cmd=install is now cmd=core-install\./);
     });
 });
