@@ -2092,6 +2092,18 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Delegates to Db\Partitions::applyReshapes().
+     *
+     * @param list<Span>    $spans       the table's, ascending
+     * @param list<Reshape> $operations
+     * @return list<Span>
+     */
+    public static function applyReshapes( array $spans, array $operations ) {
+
+        return \OWA\Core\Db\Partitions::applyReshapes( $spans, $operations );
+    }
+
+    /**
      * Delegates to Db\Partitions::splitAtCutoff().
      *
      * @param list<Span> $old  the old tier's spans, ascending
@@ -2170,11 +2182,12 @@ class Db extends \OWA\Core\Base {
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd
      * @param array{start: string, less_than: string}|null $skip  to leave untouched
+     * @param list<Span>|null $spans the partitions a dry run plans against instead of the table's
      * @return array{changed: list<string>, skipped: int, failed: list<string>, planned: int}
      */
-    public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
+    public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null, $spans = null ) {
 
-        return $this->partitions()->repartitionTable( $table_name, $granularity, $dry_run, $from, $to, $skip );
+        return $this->partitions()->repartitionTable( $table_name, $granularity, $dry_run, $from, $to, $skip, $spans );
     }
 
     /**
