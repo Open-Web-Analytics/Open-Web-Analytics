@@ -235,10 +235,40 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertFalse($s->isSchemaUpdateRequired());
     }
 
+    /** Notices logged while $fn runs. */
+    private function noticesDuring(callable $fn): string
+    {
+        $e = \OWA\Core\CoreAPI::errorSingleton();
+        $p = new ReflectionProperty($e, 'sinks');
+        $was = $p->getValue($e);
+        $stream = fopen('php://memory', 'w+');
+        $p->setValue($e, [['path' => null, 'stream' => $stream]]);
+        try {
+            $fn();
+        } finally {
+            $p->setValue($e, $was);
+        }
+        rewind($stream);
+
+        return (string) stream_get_contents($stream);
+    }
+
+    /** A runner that records the jobs it considers and whether it drained the queue. */
+    private function recordingRunner(array $params): object
+    {
+        return new class($params) extends \OWA\Module\Base\Controller\ScheduleRunCli {
+            public array $considered = [];
+            public bool $drained = false;
+            protected function considerJob($name, $job, $force, $dry_run) { $this->considered[] = $name; }
+            protected function drainQueue($deadline) { $this->drained = true; }
+        };
+    }
+
     /**
-     * With the schema behind, schedule-run runs only the jobs registered to
-     * run then (the release check), leaves the rest due, unrecorded, and
-     * drains no queue; pruning is refused, since it would see a filtered list.
+     * With the schema behind, schedule-run, run as cli.php runs it
+     * (doAction()), runs only the jobs registered to run then (core-update),
+     * leaves the rest due, unrecorded, and drains no queue; a named job that
+     * may not run then, and pruning, are refused.
      */
     public function testASchemaBehindRunsOnlyTheJobsThatMayRunThen()
     {
@@ -246,37 +276,127 @@ final class ScheduleCliTest extends CliControllerTestCase
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
         $was  = $c->get('base', 'schema_version');
 
-        $runner = static fn (array $params) => new class($params) extends \OWA\Module\Base\Controller\ScheduleRunCli {
-            public array $considered = [];
-            public bool $drained = false;
-            protected function considerJob($name, $job, $force, $dry_run) { $this->considered[] = $name; }
-            protected function drainQueue($deadline) { $this->drained = true; }
-        };
-
         try {
             $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+            $this->assertTrue(\OWA\Core\CoreAPI::isSchemaUpdateRequired());
 
-            $run = $runner([]);
-            $run->action();
+            $run = $this->recordingRunner([]);
+            $run->doAction();
+            $this->assertSame('ok', $run->getCliOutcome()['outcome']);
             $this->assertSame(['core-update'], $run->considered);
             $this->assertFalse($run->drained);
 
-            $prune = $runner(['prune-orphans' => true]);
-            $prune->action();
+            $prune = $this->recordingRunner(['prune-orphans' => true]);
+            $prune->doAction();
             $this->assertSame('refused', $prune->getCliOutcome()['outcome']);
+            $this->assertStringContainsString('so only core-update can run', $prune->getCliOutcome()['message']);
 
-            $named = $runner(['job' => 'rebuild-cube']);
-            $named->action();
+            $named = $this->recordingRunner(['job' => 'rebuild-cube']);
+            $named->doAction();
             $this->assertSame('refused', $named->getCliOutcome()['outcome']);
             $this->assertStringContainsString('so rebuild-cube cannot run', $named->getCliOutcome()['message']);
+            $this->assertSame([], $named->considered);
+
+            // A command that needs the schema is still refused by doAction().
+            $rebuild = new \OWA\Module\Base\Controller\CubeRebuildCli([]);
+            $rebuild->doAction();
+            $this->assertSame('schema updates are pending', $rebuild->getCliOutcome()['message']);
+            \OWA\Core\Controller\Cli::$exit_code = 0;
         } finally {
             $c->set('base', 'schema_version', $was);
         }
 
-        $all = $runner([]);
-        $all->action();
+        $all = $this->recordingRunner([]);
+        $all->doAction();
         $this->assertContains('rebuild-cube', $all->considered, 'and every job once the schema is current');
         $this->assertTrue($all->drained);
+    }
+
+    /** schedule-status, run through doAction(), reports pending schema updates and what still runs. */
+    public function testStatusReportsPendingSchemaUpdates()
+    {
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $was  = $c->get('base', 'schema_version');
+
+        $status = new class([]) extends \OWA\Module\Base\Controller\ScheduleStatusCli {
+            public array $lines = [];
+            protected function write($lines) { $this->lines = array_merge($this->lines, (array) $lines); }
+        };
+
+        try {
+            $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+            $status->doAction();
+        } finally {
+            $c->set('base', 'schema_version', $was);
+        }
+
+        $this->assertSame('ok', $status->getCliOutcome()['outcome']);
+        $this->assertContains(
+            'ACTION: schema updates are pending, so the dispatcher runs only core-update. Apply them with cmd=core-update-schema. No other job below runs until you do.',
+            $status->lines);
+    }
+
+    /** --force applies to one named job: without job= it is a usage error, and nothing runs. */
+    public function testForceWithoutAJobIsAUsageError()
+    {
+        $run = $this->recordingRunner(['force' => true]);
+        $run->doAction();
+
+        $this->assertSame('failed', $run->getCliOutcome()['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertSame('--force runs one job: name it with job=. Nothing was run.', $run->getCliOutcome()['message']);
+        $this->assertSame([], $run->considered);
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+    }
+
+    /** --dry-run with --prune-orphans names what would be pruned and deletes nothing. */
+    public function testADryRunPruneDeletesNothing()
+    {
+        $name = $this->track('owa_test_orphan_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->query(sprintf(
+            "INSERT INTO owa_scheduled_job (id, job_name, last_status, last_message, last_params, last_run_at, run_count)
+             VALUES (%d, '%s', 'ok', '-', '-', %d, 4)",
+            crc32($name), $db->prepare($name), time() - 100
+        ));
+
+        $lease = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($lease->acquire(3600));
+
+        $log = $this->noticesDuring(fn () => $this->runner(['prune-orphans' => true, 'dry-run' => true])->doAction());
+
+        $this->assertStringContainsString(sprintf('Would prune orphaned job "%s".', $name), $log);
+        $this->assertStringContainsString('would be pruned. Nothing was changed.', $log);
+        $this->assertNotNull($this->callProtected($this->statusCli(), 'state', [$name]), 'the state row stays');
+        $this->assertNotNull($db->getJobLock($name), 'and so does the lock');
+
+        $this->runner(['prune-orphans' => true])->doAction();
+
+        $this->assertNull($this->callProtected($this->statusCli(), 'state', [$name]), 'a real run prunes it');
+        $this->assertNull($db->getJobLock($name));
+    }
+
+    /** --dry-run with --force-release names the lock and its holder and releases nothing. */
+    public function testADryRunForceReleaseReleasesNothing()
+    {
+        $name = $this->track('owa_test_release_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $lease = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($lease->acquire(3600));
+        $owner = $db->getJobLock($name)['owner'];
+
+        $log = $this->noticesDuring(fn () => $this->runner(['force-release' => true, 'job' => $name, 'dry-run' => true])->doAction());
+
+        $this->assertStringContainsString(sprintf('Would release the lock on "%s"', $name), $log);
+        $this->assertStringContainsString('by ' . $owner . '. Nothing was changed.', $log);
+        $this->assertSame($owner, $db->getJobLock($name)['owner'], 'the lock is still held');
+
+        $this->runner(['force-release' => true, 'job' => $name])->doAction();
+
+        $this->assertNull($db->getJobLock($name));
     }
 
     /**
