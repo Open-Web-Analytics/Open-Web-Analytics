@@ -56,7 +56,7 @@ final class OverlayApiLinkTest extends TestCase
         return $t->makeOverlayApiLink([
             'metrics'     => 'eventCount',
             'dimensions'  => 'clickX,clickY',
-            'constraints' => 'pagePath==' . urlencode('/pricing') . ',eventName==click',
+            'constraints' => 'pagePath==/pricing,eventName==click',
             'module'      => 'base',
             'version'     => 'v1',
             'do'          => 'reports',
