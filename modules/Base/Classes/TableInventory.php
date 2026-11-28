@@ -11,12 +11,14 @@ namespace OWA\Module\Base\Classes;
  * and each entity for its table name and its backup group
  * (Entity::getBackupGroup()). The cubes are in use too, but owned by no
  * entity: one table per Property, named owa_event_<id>, with build tables
- * named after it.
+ * named after it. A cube is in use while its Property's row exists, archived
+ * or not.
  *
  * Everything else under the prefix is OLD: a 1.x table no v2 update renamed
  * or dropped, a table of a module no longer installed, a table nothing has
- * created since. The 1.x tracking tables are kept apart (Migration\V1Tables),
- * because cmd=v1-drop drops those and records that it did.
+ * created since, the cube of a Property whose row is gone. The 1.x tracking
+ * tables are kept apart (Migration\V1Tables), because cmd=v1-drop drops those
+ * and records that it did.
  *
  * Read only while the schema is current: before a pending update runs, a
  * table it is about to rename (Update076's goal tables) has no entity yet.
@@ -55,22 +57,25 @@ class TableInventory {
 
     /**
      * The tables present, sorted, under each of APPLICATION, DATA, CUBE, V1
-     * and OLD.
+     * and OLD. CUBE holds the cubes and build tables of the Properties whose
+     * rows exist; those of any other Property are OLD.
      *
      * @return array<string, list<string>>
      */
     public function classify() {
 
-        $out  = [ self::APPLICATION => [], self::DATA => [], self::CUBE => [], self::V1 => [], self::OLD => [] ];
-        $cube = '/^' . preg_quote( $this->prefix . Cube\Cubes::PREFIX, '/' ) . '[0-9]+/';
+        $out        = [ self::APPLICATION => [], self::DATA => [], self::CUBE => [], self::V1 => [], self::OLD => [] ];
+        $tables     = $this->db->listTables( $this->prefix );
+        $properties = $this->properties( $tables );
 
-        foreach ( $this->db->listTables( $this->prefix ) as $name ) {
+        foreach ( $tables as $name ) {
 
-            $table = substr( $name, strlen( $this->prefix ) );
+            $table    = substr( $name, strlen( $this->prefix ) );
+            $property = $this->cubeProperty( $name );
 
-            if ( preg_match( $cube, $name ) ) {
+            if ( $property !== null ) {
 
-                $out[ self::CUBE ][] = $name;
+                $out[ $properties === null || isset( $properties[ $property ] ) ? self::CUBE : self::OLD ][] = $name;
 
             } elseif ( isset( $this->owned_here[ $table ] ) ) {
 
@@ -87,6 +92,67 @@ class TableInventory {
         }
 
         return $out;
+    }
+
+    /**
+     * Whether $name is a cube or one of its build tables, under this prefix.
+     *
+     * @param  string $name a table name, prefixed
+     * @return bool
+     */
+    public function isCube( $name ) {
+
+        return $this->cubeProperty( $name ) !== null;
+    }
+
+    /**
+     * The Property id a cube or build table is named for; null for any other
+     * table.
+     *
+     * @param  string $name
+     * @return string|null
+     */
+    private function cubeProperty( $name ) {
+
+        $cube = '/^' . preg_quote( $this->prefix . Cube\Cubes::PREFIX, '/' ) . '([0-9]+)/';
+
+        return preg_match( $cube, (string) $name, $m ) ? ( ltrim( $m[1], '0' ) ?: '0' ) : null;
+    }
+
+    /**
+     * The ids of the Property rows, archived or not, as keys; null when the
+     * Property table is not among $tables or cannot be read, and then every
+     * cube is taken to be in use.
+     *
+     * @param  list<string> $tables the tables under the prefix
+     * @return array<string, true>|null
+     */
+    private function properties( array $tables ) {
+
+        $table = $this->prefix . substr( \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName(),
+            strlen( \OWA\Core\Entity::TABLE_PREFIX ) );
+
+        if ( ! in_array( $table, $tables, true ) ) {
+
+            return null;
+        }
+
+        $errors = $this->db->queryErrorCount();
+        $rows   = $this->db->get_results( sprintf( 'SELECT id FROM `%s`', $table ) );
+
+        if ( $this->db->queryErrorCount() !== $errors ) {
+
+            return null;
+        }
+
+        $ids = [];
+
+        foreach ( (array) $rows as $row ) {
+
+            $ids[ (string) $row['id'] ] = true;
+        }
+
+        return $ids;
     }
 
     /**

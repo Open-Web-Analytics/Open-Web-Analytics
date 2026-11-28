@@ -10,12 +10,14 @@ use OWA\Module\Base\Classes\TableInventory;
  *   php cli.php cmd=tables-cleanup          what would be dropped, and its size
  *   php cli.php cmd=tables-cleanup --drop   drop them
  *
- * Such as a 1.x table no v2 update dropped (owa_exit), or the tables of a
- * module whose directory is gone. Without --drop this only reports.
+ * Such as a 1.x table no v2 update dropped (owa_exit), the tables of a module
+ * whose directory is gone, or the cube and build tables of a Property whose
+ * row is gone. Without --drop this only reports.
  *
- * NOT the cubes, and NOT the 1.x tracking tables: cmd=v1-drop removes those,
- * after the migration that reads them, and records that it did so Update062's
- * down() stops offering a revert.
+ * NOT the cubes of Properties whose rows exist, archived or not, and NOT the
+ * 1.x tracking tables: cmd=v1-drop removes those, after the migration that
+ * reads them, and records that it did so Update062's down() stops offering a
+ * revert.
  *
  * Refused while updates are pending (the default for a CLI command): a table
  * a pending update is about to rename has no entity until it runs.
@@ -26,7 +28,7 @@ class TablesCleanupCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Reports the tables under OWA\'s prefix that this version does not use, such as a retired 1.x table or a removed module\'s; with --drop, drops them. Leaves the cubes, and the 1.x tracking tables to cmd=v1-drop. Refused while updates are pending.',
+            'description' => 'Reports the tables under OWA\'s prefix that this version does not use, such as a retired 1.x table, a removed module\'s, or the cube of a Property that no longer exists; with --drop, drops them. Leaves the cubes of Properties that exist, archived or not, and the 1.x tracking tables to cmd=v1-drop. Refused while updates are pending.',
             'arguments'   => [
                 '--drop' => 'Drop the tables.',
             ],
