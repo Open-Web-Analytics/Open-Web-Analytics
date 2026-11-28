@@ -20,8 +20,10 @@ namespace OWA\Module\Base\Classes;
  * tables are kept apart (Migration\V1Tables), because cmd=v1-drop drops those
  * and records that it did.
  *
- * Read only while the schema is current: before a pending update runs, a
- * table it is about to rename (Update076's goal tables) has no entity yet.
+ * Before a pending update runs, a table it is about to rename (Update076's
+ * goal tables) has no entity yet and is OLD. cmd=tables-cleanup reads this
+ * only while the schema is current; cmd=backup dumps OLD tables with the rest
+ * (Classes\Backup).
  */
 class TableInventory {
 

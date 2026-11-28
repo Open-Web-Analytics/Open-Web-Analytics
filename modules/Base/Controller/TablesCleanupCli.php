@@ -78,8 +78,8 @@ class TablesCleanupCli extends \OWA\Core\Controller\Cli {
 
             if ( $old ) {
 
-                $lines[] = 'Nothing was dropped. What these tables hold is lost with them, and cmd=backup does not'
-                    . ' include them: copy any you want with mysqldump first. Run again with --drop to drop them.';
+                $lines[] = \OWA\Core\CoreAPI::t( 'Nothing was dropped. What these tables hold is lost with them. cmd=backup scope=all'
+                    . ' includes all of them but the cubes: back up any you want first. Run again with --drop to drop them.' );
             }
 
             $this->write( $lines );

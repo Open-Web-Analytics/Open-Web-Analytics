@@ -4,16 +4,21 @@ namespace OWA\Module\Base\Classes;
 /**
  * A SQL dump of OWA's tables, written by OWA itself (cmd=backup).
  *
- * ONLY THE TABLES THE RUNNING CODE USES: those an entity of a module present
- * owns (TableInventory), in two groups each entity declares
- * (Entity::getBackupGroup()). Data is what tracking writes on every visit:
- * owa_event_raw, owa_visitor_acquisition, and any module's own tracking table,
- * such as page recordings. Application is the rest: configuration, users,
- * Properties and Profiles, goals, settings, notices, the job queue.
+ * EVERY TABLE UNDER OWA'S PREFIX but the cubes and the 1.x tracking tables,
+ * in three groups (TableInventory). The tables an entity of a module present
+ * owns are in the group each entity declares (Entity::getBackupGroup()). Data
+ * is what tracking writes on every visit: owa_event_raw,
+ * owa_visitor_acquisition, and any module's own tracking table, such as page
+ * recordings. Application is the rest: configuration, users, Properties and
+ * Profiles, goals, settings, notices, the job queue. Other is every table no
+ * entity owns: a table a pending update is about to rename (Update076's goal
+ * tables, while updates are pending), a removed module's, a retired 1.x table
+ * cmd=v1-drop does not drop. scope=all includes it.
  *
- * Not dumped: the cubes, rebuilt from owa_event_raw (cmd=cube-rebuild); 1.x
- * tables and any other table nothing owns any more, which cmd=tables-cleanup
- * and cmd=v1-drop remove.
+ * Not dumped, and listed by skipped(): the cubes and their build tables,
+ * rebuilt from owa_event_raw (cmd=cube-rebuild), whether or not their Property
+ * still exists; the 1.x tracking tables (Migration\V1Tables), which
+ * cmd=v1-drop removes.
  *
  * THE FILE is plain SQL, gzipped: a header saying what it holds and how to
  * restore it, then each table's SHOW CREATE TABLE and batched INSERTs, then a
@@ -31,22 +36,28 @@ namespace OWA\Module\Base\Classes;
  * owa_event_raw dump would hold its metadata lock that long, and a partition
  * change queued behind it would stop ingest. So the data dump holds each row
  * once, as it was when its page was read, and rows tracked while it runs may
- * or may not be in it. Integer keys and values are written as integer
- * literals: a quoted one is compared as a double, which cannot hold a BIGINT
- * key exactly.
+ * or may not be in it. Other tables are read outside a transaction too: no
+ * code writes them, and they can be large. Integer keys and values are
+ * written as integer literals: a quoted one is compared as a double, which
+ * cannot hold a BIGINT key exactly.
  */
 class Backup {
 
     const APPLICATION = \OWA\Core\Entity::BACKUP_APPLICATION;
     const DATA        = \OWA\Core\Entity::BACKUP_DATA;
+    const OTHER       = 'other';
     const ALL         = 'all';
 
     /** The scope= values, and the groups each dumps. */
     const SCOPES = [
         self::APPLICATION => [ self::APPLICATION ],
         self::DATA        => [ self::DATA ],
-        self::ALL         => [ self::APPLICATION, self::DATA ],
+        self::ALL         => [ self::APPLICATION, self::DATA, self::OTHER ],
     ];
+
+    /** The groups never dumped, in skipped(). */
+    const CUBE = TableInventory::CUBE;
+    const V1   = TableInventory::V1;
 
     /** The file's format, in its header. */
     const FORMAT = 1;
@@ -89,78 +100,113 @@ class Backup {
     }
 
     /**
-     * The tables present that the running code uses, by group, sorted.
+     * The tables present that a backup dumps, by group, sorted.
      *
-     * @return array{application: list<string>, data: list<string>}
+     * @return array{application: list<string>, data: list<string>, other: list<string>}
      */
     public function tables() {
 
-        $all = $this->inventory->classify();
+        $all = $this->classify();
 
-        return [ self::APPLICATION => $all[ self::APPLICATION ], self::DATA => $all[ self::DATA ] ];
+        return [ self::APPLICATION => $all[ self::APPLICATION ], self::DATA => $all[ self::DATA ], self::OTHER => $all[ self::OTHER ] ];
+    }
+
+    /**
+     * The tables present that a backup never dumps, sorted: the cubes and
+     * their build tables, whether or not their Property exists, and the 1.x
+     * tracking tables.
+     *
+     * @return array{cube: list<string>, v1: list<string>}
+     */
+    public function skipped() {
+
+        $all = $this->classify();
+
+        return [ self::CUBE => $all[ self::CUBE ], self::V1 => $all[ self::V1 ] ];
+    }
+
+    /**
+     * The inventory's groups, with every cube under CUBE: a cube with no
+     * Property is OLD to cmd=tables-cleanup, and is still rebuilt from raw
+     * rather than dumped.
+     *
+     * @return array{application: list<string>, data: list<string>, other: list<string>, cube: list<string>, v1: list<string>}
+     */
+    private function classify() {
+
+        $all   = $this->inventory->classify();
+        $cubes = array_values( array_filter( $all[ TableInventory::OLD ], [ $this->inventory, 'isCube' ] ) );
+        $cube  = array_merge( $all[ TableInventory::CUBE ], $cubes );
+
+        sort( $cube );
+
+        return [
+            self::APPLICATION => $all[ TableInventory::APPLICATION ],
+            self::DATA        => $all[ TableInventory::DATA ],
+            self::OTHER       => array_values( array_diff( $all[ TableInventory::OLD ], $cubes ) ),
+            self::CUBE        => $cube,
+            self::V1          => $all[ TableInventory::V1 ],
+        ];
     }
 
     /**
      * Why a directory cannot hold backups, or null when it can.
      *
-     * It must exist, be writable and lie outside every directory the web
-     * server may serve: the OWA directory (owa-data/ included), public_path,
-     * and the web root when there is one to ask (not in the CLI).
+     * It must exist, be writable and lie outside OWA's own directories
+     * (owaDirs()): the OWA directory, owa-data/ included, and public_path
+     * when it is set elsewhere. The web root is not looked for.
      *
      * @param  string       $dir
-     * @param  list<string> $served   directories the web server may serve
+     * @param  list<string> $owa      OWA's directories, owaDirs()
      * @param  bool         $writable whether to require it writable by this process; System
      *                                Health does not, since the web server is not who writes
      * @return string|null
      */
-    public static function dirProblem( $dir, array $served, $writable = true ) {
+    public static function dirProblem( $dir, array $owa, $writable = true ) {
 
         $dir = (string) $dir;
 
         if ( $dir === '' ) {
 
-            return 'No backup directory: pass dir=<path> or define OWA_BACKUP_DIR in owa-config.php.';
+            return \OWA\Core\CoreAPI::t( 'No backup directory: pass dir=<path> or define OWA_BACKUP_DIR in owa-config.php.' );
         }
 
         $real = realpath( $dir );
 
         if ( $real === false || ! is_dir( $real ) ) {
 
-            return sprintf( 'The backup directory %s does not exist.', $dir );
+            return sprintf( \OWA\Core\CoreAPI::t( 'The backup directory %s does not exist.' ), $dir );
         }
 
-        foreach ( $served as $root ) {
+        foreach ( $owa as $root ) {
 
             $root = $root !== '' ? realpath( $root ) : false;
 
             if ( $root !== false && ( $real === $root || str_starts_with( $real . '/', rtrim( $root, '/' ) . '/' ) ) ) {
 
-                return sprintf( 'The backup directory %s is inside %s, which the web server can serve. Use a directory outside the web root.', $dir, $root );
+                return sprintf( \OWA\Core\CoreAPI::t( 'The backup directory %s is inside OWA\'s directory %s. Use a directory outside it.' ), $dir, $root );
             }
         }
 
         if ( $writable && ! is_writable( $real ) ) {
 
-            return sprintf( 'The backup directory %s is not writable.', $dir );
+            return sprintf( \OWA\Core\CoreAPI::t( 'The backup directory %s is not writable.' ), $dir );
         }
 
         return null;
     }
 
     /**
-     * The directories the web server may serve, for dirProblem().
+     * OWA's own directories, for dirProblem(): the OWA directory, and
+     * public_path when it is set.
      *
      * @return list<string>
      */
-    public static function servedDirs() {
+    public static function owaDirs() {
 
         $public = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_path' );
 
-        return array_values( array_filter( [
-            \OWA\Core\Env::root(),
-            $public !== '' ? $public : \OWA\Core\Env::root() . '/public',
-            (string) ( $_SERVER['DOCUMENT_ROOT'] ?? '' ),
-        ] ) );
+        return array_values( array_filter( [ \OWA\Core\Env::root(), $public ] ) );
     }
 
     /**
@@ -352,7 +398,7 @@ class Backup {
 
         $lines = [
             sprintf( 'Open Web Analytics backup, format %d: the %s tables.', self::FORMAT,
-                $scope === self::ALL ? 'application and data' : $scope ),
+                $scope === self::ALL ? 'application, data and other' : $scope ),
             sprintf( 'OWA %s, written %s UTC.', \OWA\Core\Env::version(), gmdate( 'Y-m-d H:i:s' ) ),
         ];
 

@@ -963,10 +963,10 @@ class SystemHealth {
     }
 
     /**
-     * Where cmd=backup writes, when OWA_BACKUP_DIR is set: red when that is
-     * inside a directory the web server serves. Asked here as well as by the
-     * command, because only a web request knows the web root. Whether it is
-     * writable is the command's question: the web server is not who writes.
+     * Where cmd=backup writes, when OWA_BACKUP_DIR is set: red when it does
+     * not exist or is inside OWA's directory (Backup::dirProblem()), which the
+     * command refuses. Whether it is writable is the command's question: the
+     * web server is not who writes.
      *
      * @return Finding|null nothing when no directory is set
      */
@@ -980,12 +980,12 @@ class SystemHealth {
         }
 
         $label   = \OWA\Core\CoreAPI::t( 'Backup directory' );
-        $problem = \OWA\Module\Base\Classes\Backup::dirProblem( $dir, \OWA\Module\Base\Classes\Backup::servedDirs(), false );
+        $problem = \OWA\Module\Base\Classes\Backup::dirProblem( $dir, \OWA\Module\Base\Classes\Backup::owaDirs(), false );
 
         if ( $problem !== null ) {
 
             return self::finding( 'red', $label, sprintf( \OWA\Core\CoreAPI::t(
-                '%s is not usable for backups: it does not exist, or it is inside a directory the web server can serve. Set OWA_BACKUP_DIR to a directory outside the web root.' ), $dir ) );
+                '%s is not usable for backups: it does not exist, or it is inside OWA\'s directory. Set OWA_BACKUP_DIR to a directory outside it.' ), $dir ) );
         }
 
         return self::finding( 'green', $label, $dir );
