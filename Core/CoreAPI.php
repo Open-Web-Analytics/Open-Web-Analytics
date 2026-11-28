@@ -1464,6 +1464,13 @@ class CoreAPI {
         $class = 'OWA\\Module\\' . $seg . '\\Module';
 
         if ( class_exists( $class ) ) {
+
+            // A module is known by its NAME, read before it is built.
+            if ( ! \OWA\Core\Module::declaresName( $class ) ) {
+
+                throw new \Exception( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+            }
+
             return new $class( [] );
         }
 
@@ -1988,11 +1995,12 @@ class CoreAPI {
     
     /**
      * The module directories: each one under modules/ that holds a PSR-4
-     * OWA\Module\<Dir>\Module class.
+     * OWA\Module\<Dir>\Module class that declares its own NAME.
      *
      * Anything else there is skipped with a notice naming it, once per
-     * process -- a module still in the pre-PSR-4 layout (a lowercase directory
-     * and module.php) loads nothing since v2.0, and saying so is how an
+     * process: a module class without its own NAME (Module::declaresName()),
+     * and a module still in the pre-PSR-4 layout (a lowercase directory and
+     * module.php), which loads nothing since v2.0. The notice is how an
      * administrator learns why it vanished.
      *
      * @return string[] directory names
@@ -2015,9 +2023,20 @@ class CoreAPI {
                 continue;
             }
 
-            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( 'OWA\\Module\\' . $dir . '\\Module' ) ) {
+            $class = 'OWA\\Module\\' . $dir . '\\Module';
 
-                $modules[] = $dir;
+            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( $class ) ) {
+
+                if ( \OWA\Core\Module::declaresName( $class ) ) {
+
+                    $modules[] = $dir;
+
+                } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
+
+                    self::$warned_modules[ $dir ] = true;
+
+                    \OWA\Core\CoreAPI::notice( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+                }
 
             } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
 

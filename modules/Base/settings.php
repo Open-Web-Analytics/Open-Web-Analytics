@@ -186,7 +186,7 @@ return [
          * about a Property also needs the Property on the user's access list
          * (PropertyScopedAccess).
          */
-        'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside the web root. Empty: cmd=backup needs dir=.' ],
+        'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside OWA\'s directory. Empty: cmd=backup needs dir=.' ],
         'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
         'config_file' => [ 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ],
         'configuration_id' => [ 'default' => '1', 'internal' => true ],

@@ -824,6 +824,13 @@ screen, or `CoreAPI::getJsTrackerBundleTag()`.
 through `eval()` with child values substituted in by name -- is refused with a
 notice, and nothing in OWA uses `eval()` any more.
 
+**A module declares its name and entities as constants.** The module class
+declares `const NAME = '<runtime name>';`. Setting `$this->name` in the
+constructor is not enough: a module class without its own `NAME` is not
+loaded, and a notice in the error log names the class.
+
+A module declares its tables in `const ENTITIES`.
+
 **Only declared settings can be stored.** `persistSetting()` and the options
 form refuse a key no module declares (in its `settings.php`, `storable` and with
 `install` among its scopes). A module that stored an undeclared key in 1.x must

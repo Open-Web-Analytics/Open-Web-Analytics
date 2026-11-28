@@ -21,12 +21,14 @@ namespace OWA\Module\Domstream;
  */
 class Module extends \OWA\Core\Module {
 
+    const NAME = 'domstream';
+
+    const ENTITIES = [ 'domstream_chunk', 'domstream_payload' ];
+
     /*
-     * Declared, not set in the constructor, so cmd=version-info reads both
+     * Declared, not set in the constructor, so cmd=version-info reads it
      * without constructing the module (Core\VersionInfo).
      */
-    public $name = 'domstream';
-
     public $required_schema_version = 3;
 
     /** The event name the recorder sends: dispatched as tracking.domstream. */
@@ -109,11 +111,6 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\ReportDomstreams' );
         $this->registerAction( 'domstream.playerLauncher',
             'OWA\\Module\\Domstream\\Controller\\PlayerLauncher' );
-    }
-
-    public function _registerEntities() {
-
-        $this->registerEntity( [ 'domstream_chunk', 'domstream_payload' ] );
     }
 
     /** A chunk goes to this module's processor, never to Base's. */

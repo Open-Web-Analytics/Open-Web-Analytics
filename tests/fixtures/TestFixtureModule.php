@@ -21,7 +21,6 @@ namespace OWA\Module\TestFixture {
 
         public function __construct() {
 
-            $this->name = self::NAME;
             $this->display_name = 'Test Fixture';
             $this->group = self::NAME;
             $this->author = 'OWA tests';

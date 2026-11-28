@@ -31,12 +31,12 @@ namespace OWA\Module\Sqs;
  */
 class Module extends \OWA\Core\Module {
 
+    const NAME = 'sqs';
+
     /*
-     * Declared, not set in the constructor, so cmd=version-info reads both
+     * Declared, not set in the constructor, so cmd=version-info reads it
      * without constructing the module (Core\VersionInfo).
      */
-    public $name = 'sqs';
-
     public $required_schema_version = 1;
 
     public function __construct() {
