@@ -59,6 +59,8 @@ return [
             'title' => \OWA\Core\CoreAPI::t( 'Modules' ),
             'group' => 'General',
             'order' => 3,
+            // The screen's own capability, so the link is shown only to whoever may open it.
+            'capability' => 'edit_modules',
         ],
 
         /*
@@ -72,6 +74,8 @@ return [
             'title' => \OWA\Core\CoreAPI::t( 'Reporting cubes' ),
             'group' => 'General',
             'order' => 4,
+            // The screen's own capability, so the link is shown only to whoever may open it.
+            'capability' => 'edit_modules',
         ],
 
         // Is the background work happening: the scheduler, its jobs, the job queue, the tracker intake.
@@ -80,6 +84,8 @@ return [
             'title' => \OWA\Core\CoreAPI::t( 'System health' ),
             'group' => 'General',
             'order' => 5,
+            // The screen's own capability, so the link is shown only to whoever may open it.
+            'capability' => 'edit_modules',
         ],
     ],
 

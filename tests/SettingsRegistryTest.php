@@ -697,6 +697,46 @@ final class SettingsRegistryTest extends TestCase
     }
 
     /**
+     * Every settings nav link asks for its screen's own capability, so a
+     * role that may not open a screen is not shown its link: Modules,
+     * Reporting cubes and System health need edit_modules, which a role
+     * with only edit_settings lacks.
+     */
+    public function testEveryNavLinkAsksForItsScreensCapability(): void
+    {
+        // The two modules' pages too, active or not, with their controllers.
+        $panels  = (array) \OWA\Core\CoreAPI::getAdminPanels();
+        $classes = [
+            'maxmind_geoip.optionsGeoip' => \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip::class,
+            'sqs.optionsSqs'             => \OWA\Module\Sqs\Controller\OptionsSqs::class,
+        ];
+
+        foreach ( [ \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class ] as $class ) {
+            $module = new $class();
+            $module->registerAdminPanels();
+            $panels[] = (array) $module->getAdminPanels();
+        }
+
+        $checked = [];
+
+        foreach ( \OWA\Core\Controller::settingsNavSections( $panels ) as $items ) {
+            foreach ( $items as $item ) {
+                $map   = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', $item['do'] );
+                $class = $classes[ $item['do'] ] ?? ( is_array( $map ) ? (string) ( $map['class_name'] ?? '' ) : (string) $map );
+
+                $this->assertTrue( class_exists( $class ), $item['do'] . ' names no controller' );
+
+                $checked[ $item['do'] ] = true;
+                $this->assertSame( ( new $class( [] ) )->getRequiredCapability(), $item['capability'], $item['do'] );
+            }
+        }
+
+        foreach ( [ 'base.optionsGeneral', 'base.optionsModules', 'base.cubeStatus', 'base.systemHealth', 'maxmind_geoip.optionsGeoip' ] as $do ) {
+            $this->assertArrayHasKey( $do, $checked, $do . ' is in the nav' );
+        }
+    }
+
+    /**
      * Each module's pages are registered once a request, however often the
      * panels are asked for. registerSettingsPage() appends, and a settings
      * screen asks three times (its nav, its title, its fieldsets), so each
