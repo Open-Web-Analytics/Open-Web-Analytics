@@ -81,7 +81,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         return [
             'description' => 'Installs OWA. With no installation yet (owa-config.php must exist), sets up the database: the schema, the first admin and the first tracked website, then the data directory\'s permissions. The admin\'s password is generated and printed once, unless --password-stdin is given. '
                 . 'On an installed system with no release named, in this order: the permissions are checked, missing tables are created, pending schema updates are applied as cmd=core-update-schema applies them, and stale tracking bundles are republished as cmd=publish-trackers does. The admin and the sites are not changed. A module with tables but no recorded schema version stops it, unless --force is given. '
-                . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release can be named whose requirements this server meets and which installs over the installed release (its upgrades_from); a newer major version too. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
+                . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release can be named whose requirements this server meets and which installs over the installed release (its upgrades_from); a newer major version too. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. In each directory the release ships, files it does not ship are deleted. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
             'arguments'   => [
                 'user_id' => [
                     'type'        => 'string',
@@ -128,7 +128,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
                 '--file' => [
                     'type'        => 'string',
                     'value'       => '<path>',
-                    'description' => 'An installed system: the release in this tarball, installed with no network request. Its version is read from it. The installed release\'s tarball and its .sig must be in the updates directory already, to put it back if the copy fails.',
+                    'description' => 'An installed system: the release in this tarball, installed with no network request. Its version is read from it.',
                 ],
                 '--sig' => [
                     'type'        => 'string',

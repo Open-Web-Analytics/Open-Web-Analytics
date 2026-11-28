@@ -13,12 +13,14 @@ use OWA\Core\SafeFile;
  *   updates-<id>/                0755: listed by the Updates screen (UpdatesState)
  *     owa_<v>_packaged.tar       0600: a release tarball, there only once its signature
  *     owa_<v>_packaged.tar.sig   0644  checked by a trusted key (Signature), and its SHA-256
- *                                      the listing's digest where it has one. Two at most: the installed
- *                                      release's, which a failed install puts back, and the
+ *                                      the listing's digest where it has one. One at most, the
  *                                      pending one: the release the release check or
  *                                      cmd=core-install chose last, refused or waiting, until it
  *                                      installs, another chosen release replaces it, or a
  *                                      release check runs with automatic updates off.
+ *     backup-<32 hex>/           0700: what the copy overwrote or deleted (updater.php `backup`),
+ *                                      until the new release has booted and finished, or the
+ *                                      files are put back
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
  *                                installs; written by updater.php `recordFailure` alone

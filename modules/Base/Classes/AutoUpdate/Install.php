@@ -8,24 +8,27 @@ use OWA\Core\CoreAPI;
  * (ReleaseCheck) when a release is due, or cmd=core-install --version or
  * --file by hand (byHand(), fromFile()).
  *
- * prepare() takes the install lock and proves both tarballs (Downloads::open(),
- * a private copy of each, checked against its signature): the release's, and
- * the installed release's, which a failed copy puts back. The copy reads
- * those private copies, never the files on disk. The copy waits for the end of
- * the process: cli.php calls run() once the command, and the scheduler's
- * other jobs, have finished and recorded what they did.
+ * prepare() takes the install lock, proves the release's tarball
+ * (Downloads::open(), a private copy checked against its signature) and
+ * decides what the copy changes (updater.php `plan`): what it overwrites,
+ * and in the directories the release ships, the files it does not ship,
+ * which go. The copy reads that private copy, never the file on disk. The
+ * copy waits for the end of the process: cli.php calls run() once the
+ * command, and the scheduler's other jobs, have finished and recorded what
+ * they did.
  *
  * PHP cannot unload a class, so neither this process nor any other run of
  * cli.php loads one from the new release while it runs the old: run() saves
  * the settings, writes the install marker and waits for the other runs of
- * cli.php to end, restores PHP's own error and exception handlers, registers
- * an autoloader ahead of Composer's that refuses every class, copies with
- * the updater.php closures it loaded before the copy began (`apply`), and
- * exits.
+ * cli.php to end, backs up every file the copy overwrites or deletes
+ * (`backup`) and writes their paths and hashes in the marker, restores PHP's
+ * own error and exception handlers, registers an autoloader ahead of
+ * Composer's that refuses every class, copies with the updater.php closures
+ * it loaded before the copy began (`apply`), and exits.
  * The next run of cli.php boots the new release and finishes the install
  * (updater.php `preboot`, Finish). A copy that fails is put back at once from
- * the installed release's tarball, one that is killed by the next run of
- * cli.php, and either is recorded in last-failure.json: automatic updates
+ * the backup (`restore`), one that is killed by the next run of cli.php,
+ * and either is recorded in last-failure.json: automatic updates
  * try that release again 6 hours on, 3 attempts in all, then skip it until
  * a newer one, or an install by hand (updater.php `recordFailure`).
  */
@@ -43,10 +46,11 @@ class Install {
     const WAIT = 300;
 
     /**
-     * Take the lock, or the caller's hold of it, and prove both tarballs; set
-     * $pending, which holds the lock until the copy. On any other outcome the
-     * lock is let go, the caller's hold too. The caller has judged the
-     * release.
+     * Take the lock, or the caller's hold of it, prove the release's tarball
+     * and decide what the copy changes; set $pending, which holds the lock
+     * until the copy. Refused when the updates directory's disk has no room
+     * for the backup. On any other outcome the lock is let go, the caller's
+     * hold too. The caller has judged the release.
      *
      * @param  Downloads $downloads
      * @param  string    $v         the release to install, downloaded
@@ -97,11 +101,9 @@ class Install {
 
         try {
 
-            // Each the private copy Downloads proved: what is copied is what was checked.
-            $to_files   = array_keys( $downloads->files( $v ) );
-            $from_files = array_keys( $downloads->files( $installed ) );
-            $to         = $downloads->open( $v );
-            $from       = $downloads->open( $installed );
+            // The private copy Downloads proved: what is copied is what was checked.
+            $to   = $downloads->open( $v );
+            $plan = $u['plan']( $root, $to, self::keeps( $root ) );
 
         } catch ( \Throwable $e ) {
 
@@ -110,23 +112,27 @@ class Install {
             return self::answer( self::FAILED, sprintf( 'Installing %s failed before anything changed: %s', $v, $e->getMessage() ) );
         }
 
+        $room = Preflight::backup( (int) $plan['bytes'], $downloads->root() );
+
+        if ( $room ) {
+
+            $u['unlock']( $hold );
+
+            return self::answer( self::FAILED, sprintf( 'Installing %s failed before anything changed: %s', $v, implode( ' ', $room ) ) );
+        }
+
         self::$pending = [
-            'root'       => rtrim( (string) $root, '/' ),
-            'from'       => (string) $installed,
-            'to'         => (string) $v,
-            'to_h'       => $to,
-            'from_h'     => $from,
-            'to_files'   => $to_files,
-            'from_files' => $from_files,
-            'hold'       => $hold,
-            'updates'    => $downloads->root(),
-            'from_tar'   => $downloads->tarball( $installed ),
-            'to_tar'     => $downloads->tarball( $v ),
-            'from_sha'   => $downloads->sha256( $installed ),
-            'to_sha'     => $downloads->sha256( $v ),
-            'quiet'      => (bool) $quiet,
-            'u'          => $u,
-            'log'        => array_reduce( array_merge( $log, [ sprintf( 'Installing OWA %s over %s: both tarballs proved, the install lock held.', $v, $installed ) ] ),
+            'root'    => rtrim( (string) $root, '/' ),
+            'from'    => (string) $installed,
+            'to'      => (string) $v,
+            'to_h'    => $to,
+            'plan'    => $plan,
+            'hold'    => $hold,
+            'updates' => $downloads->root(),
+            'quiet'   => (bool) $quiet,
+            'u'       => $u,
+            'log'     => array_reduce( array_merge( $log, [ sprintf( 'Installing OWA %s over %s: its tarball proved, the install lock held; the copy writes %d files and deletes %d.',
+                $v, $installed, count( $plan['writes'] ), count( $plan['deletes'] ) ) ] ),
                 static fn ( $m, $line ) => $u['logged']( $m, $line ), [] )['log'],
         ];
 
@@ -134,12 +140,23 @@ class Install {
     }
 
     /**
+     * What the copy never deletes (updater.php `keeps`): the paths it names,
+     * and this installation's data directory and tracking bundles, wherever
+     * OWA_DATA_DIR and OWA_PUBLIC_PATH put them.
+     *
+     * @param  string $root
+     * @return list<string>
+     */
+    public static function keeps( $root ) {
+
+        return Downloads::updater()['keeps']( $root, \OWA\Core\Env::dataDir(), (string) CoreAPI::getSetting( 'base', 'public_path' ) );
+    }
+
+    /**
      * cmd=core-install --version=<x.y.z> [--force]: that release installed
      * now, whatever the automatic update settings say, its tarball and
      * signature fetched from the download URL by its version (Releases::byTag())
-     * unless they are held already; the listing is read only when the installed
-     * release's tarball, which a failed install puts back, must be
-     * downloaded too (ReleaseCheck::ensureInstalled()). Any release whose
+     * unless they are held already. Any release whose
      * requirements and upgrades_from this installation meets
      * (ReleaseCheck::judge()), of any major version. The installed release
      * again is reinstalled, copying the files that differ; an older one only
@@ -191,9 +208,7 @@ class Install {
      * A tarball that is not signed, or not by a trusted key, is refused. The
      * proved tarball and its signature are put in the updates directory
      * (Downloads::import()), and from there it installs as a download does.
-     * It makes no network request: the installed release's tarball, which a
-     * failed copy puts back, must be in the updates directory already, and
-     * it is refused before anything changes when it is not.
+     * It makes no network request.
      *
      * @param  string               $file
      * @param  string|null          $sig
@@ -268,7 +283,7 @@ class Install {
 
                     return null;
                 },
-                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ), true );
+                sprintf( 'php cli.php cmd=core-install --file=%s%s, by hand.', $path, $force ? ' --force' : '' ) );
 
         } finally {
 
@@ -303,8 +318,7 @@ class Install {
 
     /**
      * byHand() and fromFile(): the release judged, $fetch putting its tarball
-     * in the updates directory, the installed release's fetched too, and the
-     * install prepared.
+     * in the updates directory, and the install prepared.
      *
      * @param  string                                               $v
      * @param  bool                                                 $force
@@ -312,10 +326,9 @@ class Install {
      * @param  array<string, mixed>                                 $context
      * @param  callable(Downloads, array<string, mixed>): ?string   $fetch    why it failed, or null
      * @param  string                                               $how      the install log's first line
-     * @param  bool                                                 $offline  --file: no network request, so the installed release's tarball must be held
      * @return array{outcome: string, message: string, lines: list<string>}
      */
-    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how, $offline = false ) {
+    private static function installNamed( $v, $force, Downloads $downloads, array $context, callable $fetch, $how ) {
 
         $check     = new ReleaseCheck( $downloads, $context );
         $c         = $check->context;
@@ -369,14 +382,6 @@ class Install {
 
         try {
 
-            // --file makes no network request: the installed release's tarball, which a
-            // failed copy puts back, must be held already, unless the file is that release.
-            if ( $offline && $v !== $installed && ! $downloads->has( $installed ) ) {
-
-                return self::answer( self::REFUSED, sprintf( 'OWA %1$s\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. Install with --version, or place %2$s and its .sig in %3$s.',
-                    $installed, sprintf( Releases::ASSET, $installed ), $downloads->root() !== '' ? $downloads->root() . '/' : $downloads->dataDir() . '/updates-<id>/' ) );
-            }
-
             $failed = $fetch( $downloads, $c );
 
             if ( $failed !== null ) {
@@ -385,14 +390,7 @@ class Install {
             }
 
             // The release named is the pending one, refused or not: any other goes.
-            $downloads->prune( [ $v, $installed ] );
-
-            $missing = $check->ensureInstalled();
-
-            if ( $missing !== null ) {
-
-                return self::answer( self::REFUSED, $missing );
-            }
+            $downloads->prune( [ $v ] );
 
             $judged = $check->judge( $v );
 
@@ -493,13 +491,6 @@ class Install {
             'since'       => time(),
             'lock'        => $p['hold']['file'],
             'updates'     => $p['updates'],
-            'from_tar'    => $p['from_tar'],
-            'to_tar'      => $p['to_tar'],
-            // Proved here, against the keys this release trusts: putting the
-            // installed release back checks these, not a signature, so a
-            // release that retires a key can still be put back.
-            'from_sha256' => $p['from_sha'],
-            'to_sha256'   => $p['to_sha'],
             'boots'       => 0,
             'log'         => $p['log'] ?? [],
         ];
@@ -512,6 +503,9 @@ class Install {
 
             if ( $alone ) {
 
+                // Every file the copy overwrites or deletes, and its SHA-256 in the marker, which the web user cannot write.
+                $marker          = $u['backup']( $root, $p['updates'], $p['plan'] ) + $marker;
+                $marker          = $u['logged']( $marker, sprintf( 'Backed up the %d files the copy overwrites or deletes in %s.', count( $marker['saved'] ), $marker['backup'] ) );
                 $marker['phase'] = 'copying';
                 $marker          = $u['logged']( $marker, sprintf( 'Copying OWA %s\'s files over %s\'s.', $p['to'], $p['from'] ) );
                 $u['writeMarker']( $root, $marker );
@@ -520,6 +514,7 @@ class Install {
         } catch ( \RuntimeException $e ) {
 
             @unlink( $u['marker']( $root ) );
+            $u['removeBackups']( $p['updates'] );
             $u['recordFailure']( $p['updates'], $marker, $e->getMessage() . ' Nothing was installed.' );
             $u['unlock']( $p['hold'] );
             fwrite( STDERR, sprintf( "Installing OWA %s failed: %s Nothing was installed.\n", $p['to'], $e->getMessage() ) );
@@ -559,7 +554,7 @@ class Install {
 
         try {
 
-            $u['apply']( $root, $p['to_h'], $p['from_files'] );
+            $u['apply']( $root, $p['to_h'], $p['plan'] );
 
         } catch ( \Throwable $e ) {
 
@@ -567,7 +562,7 @@ class Install {
 
             try {
 
-                $u['apply']( $root, $p['from_h'], $p['to_files'] );
+                $u['restore']( $root, $marker );
                 @unlink( $u['marker']( $root ) );
                 $u['recordFailure']( $p['updates'], $marker, sprintf( '%s OWA %s was put back.', $why, $p['from'] ) );
                 fwrite( STDERR, sprintf( "Installing OWA %s failed: %s OWA %s was put back.\n", $p['to'], $why, $p['from'] ) );

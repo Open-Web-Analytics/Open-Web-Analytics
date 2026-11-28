@@ -32,7 +32,8 @@
     "autoload": {
         "psr-4": {
             "OWA\\Core\\": "Core/",
-            "OWA\\Module\\": "modules/"
+            "OWA\\Module\\": "modules/",
+            "OWA\\Extension\\": "extensions/"
         }
     },
     "autoload-dev": {

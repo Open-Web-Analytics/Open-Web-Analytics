@@ -77,7 +77,7 @@ class Template extends TemplateEngine {
     public function _setTemplateDir($module) {
 
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
-        $this->module_template_dir = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/templates/';
+        $this->module_template_dir = \OWA\Core\Env::moduleDir( $module ) . 'templates/';
 
         return;
     }

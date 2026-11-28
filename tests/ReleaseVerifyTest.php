@@ -125,4 +125,26 @@ final class ReleaseVerifyTest extends TestCase
 
         $this->assertRefused( "a member's name is not a plain path: ./vendor/../Core/Extra.php", $tar );
     }
+
+    /** extensions/ is third-party code, which no release ships: the packager refuses to make such a tarball. */
+    public function testThePackagerRefusesExtensions(): void {
+
+        mkdir( "$this->dir/built/extensions/Acme", 0755, true );
+        file_put_contents( "$this->dir/built/extensions/Acme/Module.php", "<?php\n" );
+
+        [ $code, $out ] = self::sh( 'bash ' . escapeshellarg( dirname( __DIR__ ) . '/.github/scripts/release-tarball.sh' ) . ' ' . self::VERSION, "$this->dir/built" );
+
+        $this->assertSame( 1, $code, $out );
+        $this->assertStringContainsString( 'The tarball holds extensions/, which is third-party code no release ships', $out );
+        $this->assertFileDoesNotExist( "$this->dir/built/owa_" . self::VERSION . '_packaged.tar', 'and leaves none' );
+    }
+
+    /** And the check before signing refuses one that holds it. */
+    public function testATarballWithExtensionsIsRefused(): void {
+
+        $tar = $this->tarball();
+        $this->append( $tar, './extensions/Acme/Module.php' );
+
+        $this->assertRefused( 'it holds ./extensions/Acme/Module.php: extensions/ is third-party code, which no release ships.', $tar );
+    }
 }

@@ -721,6 +721,13 @@ class SystemHealth {
             $findings[] = $writable;
         }
 
+        $refused = self::refusedExtensions();
+
+        if ( $refused ) {
+
+            $findings[] = $refused;
+        }
+
         $overrides = self::overrides();
 
         if ( $overrides ) {
@@ -849,7 +856,8 @@ class SystemHealth {
      * Whether the web server can change OWA's code: yellow when this process,
      * the web user on the System Health screen, can write the OWA directory
      * itself (it could then replace any file in it, owa.php and index.php
-     * among them), owa.php, Core/ or modules/, and is not their owner. Then whatever compromises PHP can
+     * among them), owa.php, Core/, modules/ or extensions/ (when there is
+     * one), and is not their owner. Then whatever compromises PHP can
      * change OWA. OWA never changes an installation's file modes (FTP and
      * shared hosts differ, and group write can be deliberate); it says so
      * here. Nothing when this process owns them, as where PHP runs as the
@@ -872,7 +880,7 @@ class SystemHealth {
         $uid      = $uid ?? posix_geteuid();
         $writable = [];
 
-        foreach ( [ '', 'owa.php', 'Core', 'modules' ] as $path ) {
+        foreach ( [ '', 'owa.php', 'Core', 'modules', 'extensions' ] as $path ) {
 
             $full = $path === '' ? $root : $root . '/' . $path;
 
@@ -890,6 +898,21 @@ class SystemHealth {
         return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'OWA\'s files' ), sprintf( \OWA\Core\CoreAPI::t(
             'The web server can change OWA\'s code (%s), so whatever compromises PHP can change OWA. Remove world write from OWA\'s files and directories, and either remove group write or take the web server user out of their group. Keep them writable by the user the scheduler runs as, who installs updates.' ),
             implode( ', ', $writable ) ) );
+    }
+
+    /**
+     * The extensions this process refused (Core\Extensions): red, each with
+     * the name it declares that OWA's modules, or one loaded before it,
+     * register. Nothing when none was refused.
+     *
+     * @param  array<string, string>|null $refused a test's; else this process's
+     * @return Finding|null
+     */
+    public static function refusedExtensions( $refused = null ) {
+
+        $refused = $refused ?? \OWA\Core\Extensions::refused();
+
+        return $refused ? self::finding( 'red', \OWA\Core\CoreAPI::t( 'Extensions' ), implode( ' ', array_values( $refused ) ) ) : null;
     }
 
     /**

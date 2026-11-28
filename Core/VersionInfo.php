@@ -123,7 +123,7 @@ class VersionInfo {
 
     /**
      * Every module directory's module, name => required schema, Base first
-     * and the rest by name.
+     * and the rest by name: OWA's, and the extensions' (Env::moduleClasses()).
      *
      * @return array<string, int|null>
      */
@@ -131,14 +131,7 @@ class VersionInfo {
 
         $out = [];
 
-        foreach ( (array) glob( Env::modulesDir() . '*/Module.php' ) as $file ) {
-
-            $class = '\\OWA\\Module\\' . basename( dirname( (string) $file ) ) . '\\Module';
-
-            if ( ! Module::declaresName( $class ) ) {
-
-                continue;
-            }
+        foreach ( Env::moduleClasses() as $class ) {
 
             $defaults = ( new \ReflectionClass( $class ) )->getDefaultProperties();
             $name     = (string) $class::NAME;

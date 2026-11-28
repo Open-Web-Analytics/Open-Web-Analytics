@@ -10,8 +10,8 @@
  * cron entry runs:
  *
  *   php cli.php cmd=core-update    the listing, the download, its SHA-256 and signature, the
- *                                        checks, and the install: both tarballs proved, the files
- *                                        copied when the command has finished
+ *                                        checks, and the install: its tarball proved, the files
+ *                                        backed up and copied when the command has finished
  *   php cli.php cmd=core-update-status   the next run of cli.php: it boots the new release and finishes
  *
  * The HTTPS server's certificate is signed by a CA made for the run, which
@@ -22,7 +22,8 @@
  * Scenarios, each on a fresh install of 2.0.90 and a fresh database:
  *
  *   installs         2.0.91 downloads, installs and runs its schema update; the
- *                    installation's own files stay, what 2.0.91 dropped goes
+ *                    installation's own files stay, and in the directories 2.0.91
+ *                    ships, what it does not ship goes
  *   scheduled        the scheduler's own core-update (schedule-run) installs it
  *   wrong-digest     the listing's SHA-256 is not the tarball's: nothing downloaded
  *   not-signed       no signature, or one by a key not trusted: nothing downloaded; signed, it installs
@@ -30,8 +31,8 @@
  *   does-not-boot    2.0.91's owa.php does not parse: two boots fail, the third run puts 2.0.90 back,
  *                    and 2.0.91 is skipped after
  *   schema-fails     2.0.91's schema update fails: its files stay, the error is recorded
- *   tampered         the installed release's tarball is replaced after it was checked: no install
- *                    starts without a way back it can prove
+ *   tampered         a backed-up file is changed before 2.0.91, which does not boot, is put
+ *                    back: nothing is written, the marker stays, and the failure names the file
  *
  * and the failure cases of the wiki's Automatic Updates page, each with the
  * recovery it promises where there is one: window, by-version, unreachable,
@@ -40,14 +41,14 @@
  * killed-mid-copy (the web, the REST API and the CLI while it runs, then
  * 2.0.90 put back and the retry 6 hours on), waits-for-other-runs,
  * finish-killed-in-the-schema-updates, newer-release-after-a-failure,
- * installed-past, installed-tarball-missing, no-updater, install-now (the
+ * installed-past, installed-release-not-hosted, no-updater, install-now (the
  * Updates screen's button, a job the scheduler runs), finish-trackers-fail
  * (broken at the bundles, then finished by hand, with no success e-mail) and
  * finish-self-test-fails (broken at its own release check). copy-fails runs out of its 3 attempts; schema-fails is
  * recovered as its notice says.
  *
- * Every listing it serves has 2.0.90 too: a failed install puts the
- * installed release back from its tarball, which the release check downloads.
+ * Every listing it serves has 2.0.90 too, as GitHub lists every release; no
+ * install fetches it: a failed copy is put back from the backup it made.
  *
  * Needs: a built checkout (npm run build), composer, tar, openssl, python3,
  * and a MySQL or MariaDB server named by OWA_E2E_DB_HOST, _PORT, _USER,
@@ -486,9 +487,9 @@ function serve( $tls, $root, $port ) {
 
 /**
  * The listing GitHub would give for one release, its tarball and its
- * signature, in $www, and for the installed release, FROM, whose tarball a
- * failed install puts back. $signature: the signature file in place of the
- * package's; false lists none.
+ * signature, in $www, and for the installed release, FROM, as GitHub lists
+ * every release. $signature: the signature file in place of the package's;
+ * false lists none.
  */
 function publish( $www, $base, array $pkg, $version, $digest = null, $signature = null ) {
 
@@ -618,10 +619,10 @@ function installFrom( array $pkg, $work, array $db, $listing, $extra = '', ?arra
         : "printf '%s\\n' e2e-admin-password-1 | php cli.php cmd=core-install --password-stdin user_id=e2e-admin email_address=admin@example.test domain=example.test", $site );
 
     // What belongs to the installation, and must survive an update: the
-    // bundles cmd=core-install published, and a module of someone else's.
+    // bundles cmd=core-install published, and a module of someone else's, in extensions/.
     check( (bool) glob( "$site/public/tracker/*.js" ), 'cmd=core-install published no tracking bundle' );
-    @mkdir( "$site/modules/E2eThirdParty", 0755, true );
-    file_put_contents( "$site/modules/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
+    @mkdir( "$site/extensions/E2eThirdParty", 0755, true );
+    file_put_contents( "$site/extensions/E2eThirdParty/Module.php", '<?php // someone else\'s module' );
 
     return $site;
 }
@@ -674,7 +675,7 @@ function failure( $site ) {
     return $dir === null ? null : json( "$dir/last-failure.json" );
 }
 
-/** Installed and finished: the version, no schema update pending, nothing left of the install but its tarball. */
+/** Installed and finished: the version, no schema update pending, nothing left of the install: no tarball, no backup. */
 function installed( $site, $ca, $version ) {
 
     check( envVersion( $site ) === $version, "Core/Env.php says " . envVersion( $site ) . ", not $version" );
@@ -686,8 +687,8 @@ function installed( $site, $ca, $version ) {
     check( failure( $site ) === null, 'last-failure.json was left behind: ' . json_encode( failure( $site ) ) );
     check( ! file_exists( "$site/owa-update.php" ), 'the install marker was left behind: ' . @file_get_contents( "$site/owa-update.php" ) );
     check( ! file_exists( "$site/owa-update-lock.php" ), 'the lock file was left behind' );
-    check( array_map( 'basename', glob( "$dir/*" ) ?: [] ) === [ "owa_{$version}_packaged.tar", "owa_{$version}_packaged.tar.sig" ],
-        'the updates directory does not hold just the installed release\'s tarball: ' . implode( ', ', array_map( 'basename', glob( "$dir/*" ) ?: [] ) ) );
+    check( ( glob( "$dir/*" ) ?: [] ) === [],
+        'the updates directory is not empty after the install: ' . implode( ', ', array_map( 'basename', glob( "$dir/*" ) ?: [] ) ) );
 }
 
 /** An HTTP GET of the installation through php -S: [status, body]. */
@@ -741,6 +742,8 @@ if ( $fromRef !== 'HEAD' ) {
 $dropped = static function ( $tree ) {
 
     file_put_contents( "$tree/modules/Base/e2e-only-in-" . FROM . '.txt', 'a file the next release does not ship' );
+    @mkdir( "$tree/modules/Base/e2e-only-in-" . FROM, 0755 );
+    file_put_contents( "$tree/modules/Base/e2e-only-in-" . FROM . '/file.txt', 'a directory the next release does not ship' );
 };
 
 $from = package( $fromBuild, $work, 'from', FROM, $dropped );
@@ -768,13 +771,18 @@ $scenarios = [
         file_put_contents( "$site/.well-known/e2e.txt", 'the operator\'s' );
         file_put_contents( "$site/.htpasswd", 'e2e:x' );
         file_put_contents( "$site/robots.txt", "User-agent: *\n" );
+        // And one put inside a directory the release ships, which the install deletes.
+        file_put_contents( "$site/Core/e2e-planted.php", '<?php // not the release\'s' );
+        @mkdir( "$site/modules/E2ePlanted", 0755 );
+        file_put_contents( "$site/modules/E2ePlanted/Module.php", '<?php // not the release\'s' );
 
         // No window: the release check downloads it and installs it, in one run.
         [ $code, $out ] = release_check( $site, $ca );
         check( $code === 0, "core-update exited $code:\n$out" );
         check( envVersion( $site ) === TO, 'Core/Env.php says ' . envVersion( $site ) . ":\n$out" );
         check( str_contains( (string) @file_get_contents( "$site/owa-update.php" ), '"phase":"copied"' ), "the marker does not say copied after the copy:\n$out" );
-        check( downloaded( $site, TO ) && downloaded( $site, FROM ), 'the release\'s tarball, or the installed release\'s, was not downloaded' );
+        check( downloaded( $site, TO ) && ! downloaded( $site, FROM ), 'the release\'s tarball was not downloaded, or the installed release\'s was' );
+        check( count( glob( updatesDir( $site ) . '/backup-*/Core/Env.php' ) ?: [] ) === 1, 'the copy made no backup of the files it replaced' );
 
         [ $code, $out ] = next_run( $site, $ca );
         check( $code === 0 && str_contains( $out, 'OWA ' . TO . ' is installed.' ), "the next run did not finish the install (exit $code):\n$out" );
@@ -786,9 +794,12 @@ $scenarios = [
         installed( $site, $ca, TO );
         check( hash_file( 'sha256', "$site/owa-config.php" ) === $hash, 'owa-config.php changed' );
         check( glob( "$site/public/tracker/*.js" ) == $bundles, 'the tracking bundles changed' );
-        check( is_file( "$site/modules/E2eThirdParty/Module.php" ), 'a third-party module was deleted' );
+        check( is_file( "$site/extensions/E2eThirdParty/Module.php" ), 'a third-party module in extensions/ was deleted' );
+        check( ! file_exists( "$site/modules/E2ePlanted" ), 'a module directory ' . TO . ' does not ship is still in modules/' );
         check( is_file( "$site/.well-known/e2e.txt" ) && is_file( "$site/.htpasswd" ) && is_file( "$site/robots.txt" ), 'an operator\'s own file was deleted' );
         check( ! file_exists( "$site/modules/Base/e2e-only-in-" . FROM . '.txt' ), 'a file ' . TO . ' does not ship is still there' );
+        check( ! file_exists( "$site/modules/Base/e2e-only-in-" . FROM ), 'a directory ' . TO . ' does not ship is still there' );
+        check( ! file_exists( "$site/Core/e2e-planted.php" ), 'a file put in a directory ' . TO . ' ships is still there' );
         check( ! glob( "$site/{,*/,*/*/}*.owa-update", GLOB_BRACE ), 'the copy left temporary files' );
     },
 
@@ -930,35 +941,34 @@ $scenarios = [
 
     'tampered' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        $to    = package( $build, $work, 'tampered', TO );
-        $other = package( $build, $work, 'tampered-other', TO, static function ( $tree ) {
+        // A release that does not boot, so its third run puts the installed release back from the backup.
+        $to = package( $build, $work, 'tampered', TO, null, static function ( $tree ) {
 
-            file_put_contents( "$tree/modules/Base/e2e-tampered.txt", 'not what was checked' );
+            file_put_contents( "$tree/owa.php", "\nthis is not PHP(\n", FILE_APPEND );
         } );
         publish( $www, $base, $to, TO );
-        $site = installFrom( $from, $work, $db, "$base/releases.json", later() );
+        $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        [ , $out ] = release_check( $site, $ca );
-        check( downloaded( $site, TO ) && str_contains( $out, 'installs between' ), "it was not downloaded to wait for its window:\n$out" );
+        [ $code, $out ] = release_check( $site, $ca );
+        check( $code === 0 && envVersion( $site ) === TO, "the copy did not complete (exit $code):\n$out" );
 
-        // After the release check proved it, someone who can write the data
-        // directory puts another tarball, a real release's, in place of the
-        // installed release's: what a failed install would put back. --version
-        // fetches its own release afresh, and uses the installed one as kept.
-        $tar = updatesDir( $site ) . '/owa_' . FROM . '_packaged.tar';
-        copy( $other['file'], $tar );
+        // Someone who can write the data directory changes a backed-up file.
+        $saved = glob( updatesDir( $site ) . '/backup-*/owa.php' ) ?: [];
+        check( count( $saved ) === 1, 'the copy made no backup of owa.php' );
+        file_put_contents( $saved[0], '<?php // the web user\'s' );
+        $before = hash_file( 'sha256', "$site/Core/Env.php" );
 
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
-        check( $code !== 0 && str_contains( $out, 'not signed by a key this installation trusts' ), "core-install --version does not refuse the tampered tarball (exit $code):\n$out" );
-        check( ! file_exists( $tar ), 'the tarball that does not check was kept' );
-        next_run( $site, $ca );
-        check( envVersion( $site ) === FROM && ! file_exists( "$site/modules/Base/e2e-tampered.txt" ), 'an install went ahead without a way back it could prove' );
+        foreach ( [ 1, 2 ] as $boot ) {
 
-        // Downloaded again, and it installs.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --version=' . TO );
-        check( $code === 0, "core-install --version exited $code:\n$out" );
-        next_run( $site, $ca );
-        installed( $site, $ca, TO );
+            cli( $site, $ca, 'cmd=schedule-run' );
+        }
+
+        [ $code, $out ] = cli( $site, $ca, 'cmd=schedule-run' );
+        check( $code !== 0 && str_contains( $out, 'missing or changed' ) && str_contains( $out, 'owa.php' ) && str_contains( $out, 'unpack it over' ),
+            "a tampered backup was not refused, naming the file and the tarball to unpack (exit $code):\n$out" );
+        check( hash_file( 'sha256', "$site/Core/Env.php" ) === $before && envVersion( $site ) === TO, 'the put-back wrote files from a backup that does not check' );
+        check( file_exists( "$site/owa-update.php" ) && maintenance( $site ), 'the marker went, so OWA would run on the mixed files' );
+        check( str_contains( (string) ( failure( $site )['error'] ?? '' ), 'missing or changed' ), 'last-failure.json does not record the refusal: ' . json_encode( failure( $site ) ) );
     },
 
     'scheduled' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
@@ -1033,16 +1043,9 @@ $scenarios = [
             return 'the installed release has no cmd=core-install --file';
         }
 
-        file_put_contents( "$tar.sig", $old['sig'] );
-
-        // No network request: without the installed release's tarball, which a failed copy puts back, it is refused.
-        [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );
-        check( $code !== 0 && str_contains( $out, "OWA " . FROM . "'s tarball is needed to put it back" ) && envVersion( $site ) === FROM,
-            "core-install --file went ahead without the installed release's tarball (exit $code):\n$out" );
-
-        // The release check downloads it (the window is hours away, so nothing installs).
-        release_check( $site, $ca );
-        check( downloaded( $site, FROM ), 'the release check did not download the installed release' );
+        // No network request, and no other tarball: the update host serves nothing from here on.
+        must( 'rm -rf ' . escapeshellarg( $www ) );
+        @mkdir( $www, 0755, true );
 
         file_put_contents( "$tar.sig", base64_encode( str_repeat( "\0", 64 ) ) . "\n" );
         [ $code, $out ] = cli( $site, $ca, 'cmd=core-install --file=' . escapeshellarg( $tar ) );
@@ -1446,24 +1449,19 @@ $scenarios = [
         check( ! downloaded( $site, TO ), "the downloaded " . TO . ", older than what is installed, was kept:\n$out" );
     },
 
-    'installed-tarball-missing' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
+    'installed-release-not-hosted' => function () use ( $build, $work, $db, $from, $www, $base, $ca ) {
 
-        $to   = package( $build, $work, 'installed-missing', TO );
+        $to   = package( $build, $work, 'installed-not-hosted', TO );
         publish( $www, $base, $to, TO );
         $site = installFrom( $from, $work, $db, "$base/releases.json" );
 
-        // The update host has no 2.0.90: neither listed nor at its download URL.
+        // The update host has no 2.0.90: neither listed nor at its download URL. Nothing needs it.
         $listing = json_decode( (string) file_get_contents( "$www/releases.json" ), true );
         file_put_contents( "$www/releases.json", json_encode( array_values( array_filter( $listing, static fn ( $r ) => $r['tag_name'] !== FROM ) ) ) );
         must( 'rm -rf ' . escapeshellarg( "$www/download/" . FROM ) );
 
-        [ , $out ] = release_check( $site, $ca );
-        check( envVersion( $site ) === FROM && ! file_exists( "$site/owa-update.php" ), "it installed without a way back:\n$out" );
-        check( str_contains( $out, 'The installed release, ' . FROM . ', could not be downloaded' ), "it does not say why it waits:\n$out" );
-
-        // Served again: the next check downloads it, and installs.
-        publish( $www, $base, $to, TO );
-        release_check( $site, $ca );
+        [ $code, $out ] = release_check( $site, $ca );
+        check( $code === 0 && envVersion( $site ) === TO, "it did not install without the installed release on the update host (exit $code):\n$out" );
         next_run( $site, $ca );
         installed( $site, $ca, TO );
     },

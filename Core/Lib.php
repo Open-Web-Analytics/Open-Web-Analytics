@@ -322,9 +322,11 @@ class Lib {
         $dir = str_replace('\\', '/', (string) $class_dir);
         $dir = trim($dir, '/');
 
-        // Everything from 'modules/' or 'Core/' onwards names the namespace.
+        // Everything from 'modules/', 'extensions/' or 'Core/' onwards names the namespace.
         if (preg_match('#(?:^|/)modules/(.+)$#', $dir, $m)) {
             $ns = 'OWA\\Module\\' . str_replace('/', '\\', trim($m[1], '/'));
+        } elseif (preg_match('#(?:^|/)extensions/(.+)$#', $dir, $m)) {
+            $ns = 'OWA\\Extension\\' . str_replace('/', '\\', trim($m[1], '/'));
         } elseif (preg_match('#(?:^|/)(Core(?:/.*)?)$#', $dir, $m)) {
             $ns = 'OWA\\' . str_replace('/', '\\', trim($m[1], '/'));
         } else {

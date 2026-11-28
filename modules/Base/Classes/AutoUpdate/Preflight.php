@@ -198,14 +198,38 @@ class Preflight {
     }
 
     /**
-     * Room in PHP's temporary directory for the tarballs an install reads:
-     * each is read once into a private copy (Downloads::open()), held in
-     * memory up to 1 MB and in a temporary file beyond. Whether PHP can write
+     * Room in the updates directory for the backup the copy makes first of
+     * every file it overwrites or deletes (updater.php `backup`).
+     *
+     * @param  int    $bytes   those files' size together (updater.php `plan`)
+     * @param  string $updates the updates directory
+     * @return list<string>
+     */
+    public static function backup( $bytes, $updates ) {
+
+        $need = (int) $bytes + 1048576;
+        $free = (string) $updates === '' ? false : @disk_free_space( (string) $updates );
+
+        if ( $free !== false && $free < $need ) {
+
+            return [ sprintf( \OWA\Core\CoreAPI::t( 'Backing up the files the copy replaces needs about %1$d MB free on the disk holding %2$s; %3$d MB are.' ),
+                (int) ceil( $need / 1048576 ), $updates, (int) floor( $free / 1048576 ) ) ];
+        }
+
+        return [];
+    }
+
+    /**
+     * Room in PHP's temporary directory for what an install reads: the
+     * release's tarball, read once into a private copy (Downloads::open()),
+     * and, to put a failed copy back, the backup, about as large (updater.php
+     * `restore`); each held in memory up to 1 MB and in a temporary file
+     * beyond. Whether PHP can write
      * there is tried, not inferred (tempWrites()): sys_temp_dir, TMPDIR and
      * open_basedir all decide it, and the CLI's php.ini may differ from the
      * web server's.
      *
-     * @param  int         $bytes the tarballs' size together
+     * @param  int         $bytes their size together
      * @param  string|null $dir   a test's, judged by its mode; else PHP's own, tried
      * @return list<string>
      */
@@ -256,7 +280,7 @@ class Preflight {
      * $root ('' for the OWA directory itself): what an automatic update
      * writes in, asked where the installer runs (cmd=core-install). The
      * installation's own directories are left out: owa-data/, the data
-     * directory and the tracking bundles.
+     * directory, the tracking bundles and extensions/, which no install writes.
      *
      * @param  string       $root
      * @param  list<string> $own  more of the installation's own directories
@@ -265,7 +289,7 @@ class Preflight {
     public static function unwritableCode( $root, array $own = [] ) {
 
         $root = rtrim( (string) $root, '/' );
-        $own  = array_map( static fn ( $d ) => rtrim( (string) $d, '/' ), array_merge( [ $root . '/owa-data', $root . '/public/tracker' ], $own ) );
+        $own  = array_map( static fn ( $d ) => rtrim( (string) $d, '/' ), array_merge( [ $root . '/owa-data', $root . '/public/tracker', $root . '/extensions' ], $own ) );
         $out  = is_writable( $root ) ? [] : [ '' ];
 
         $dirs = new \RecursiveIteratorIterator(

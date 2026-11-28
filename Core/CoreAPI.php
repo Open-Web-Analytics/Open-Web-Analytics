@@ -1105,6 +1105,7 @@ class CoreAPI {
         self::$event_queues   = [];
         self::$salts          = null;
         self::$warned_modules = [];
+        \OWA\Core\Extensions::forget();
 
         self::settingCacheFlush();
         self::forgetRegisteredSites();
@@ -1355,7 +1356,7 @@ class CoreAPI {
             return null;
         }
 
-        $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+        $psr4 = '\\' . \OWA\Core\Env::moduleNamespace( $module )
               . '\\' . $class_suffix . '\\' . ucfirst( $file );
 
         if ( class_exists( $psr4 ) ) {
@@ -1441,7 +1442,7 @@ class CoreAPI {
         $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
 
         $nsClass = \OWA\Core\Lib::conventionalClass(
-            \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/' . $dir,
+            \OWA\Core\Env::moduleDir( $module ) . $dir,
             '', $file, (string) $class_suffix );
 
         if ( $nsClass !== null ) {
@@ -1467,8 +1468,7 @@ class CoreAPI {
         // directory scan). moduleDirName() is idempotent on its own output, so
         // it normalises both to the PascalCase PSR-4 segment, from which the
         // module class FQCN (OWA\Module\<Seg>\Module) is directly derivable.
-        $seg   = \OWA\Core\Lib::moduleDirName( $module );
-        $class = 'OWA\\Module\\' . $seg . '\\Module';
+        $class = \OWA\Core\Env::moduleNamespace( $module ) . '\\Module';
 
         if ( class_exists( $class ) ) {
 
@@ -1511,7 +1511,7 @@ class CoreAPI {
             ? sprintf( 'Update%03d', (int) $filename )
             : $filename;
 
-        $namespaced = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+        $namespaced = '\\' . \OWA\Core\Env::moduleNamespace( $module )
                     . '\\Update\\' . $basename;
 
         if ( ! class_exists( $namespaced ) ) {
@@ -1566,7 +1566,7 @@ class CoreAPI {
             return new $core( $params );
         }
 
-        $obj = \OWA\Core\Lib::factory(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($module) . '/Classes/', $class_ns, $class, $params);
+        $obj = \OWA\Core\Lib::factory(\OWA\Core\Env::moduleDir($module) . 'Classes/', $class_ns, $class, $params);
 
         return $obj;
     }
@@ -1665,7 +1665,7 @@ class CoreAPI {
         }
 
         return self::namespacedClass(
-            'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module) . '\\' . $kind,
+            \OWA\Core\Env::moduleNamespace($module) . '\\' . $kind,
             $name );
     }
 
@@ -1734,7 +1734,7 @@ class CoreAPI {
 
         if ( count( $parts ) === 2 && preg_match( '/^[A-Za-z0-9_]+$/', $parts[1] ) ) {
 
-            $nsClass = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $parts[0] )
+            $nsClass = \OWA\Core\Env::moduleNamespace( $parts[0] )
                      . '\\Metric\\' . ucfirst( $parts[1] );
 
             if ( class_exists( $nsClass ) ) {
@@ -2002,57 +2002,84 @@ class CoreAPI {
     
     /**
      * The module directories: each one under modules/ that holds a PSR-4
-     * OWA\Module\<Dir>\Module class that declares its own NAME.
+     * OWA\Module\<Dir>\Module class that declares its own NAME, then each
+     * under extensions/ that holds an OWA\Extension\<Dir>\Module that does.
      *
      * Anything else there is skipped with a notice naming it, once per
      * process: a module class without its own NAME (Module::declaresName()),
      * and a module still in the pre-PSR-4 layout (a lowercase directory and
      * module.php), which loads nothing since v2.0. The notice is how an
-     * administrator learns why it vanished.
+     * administrator learns why it vanished. An extension with the directory
+     * or the NAME of one of OWA's modules is refused (Core\Extensions).
      *
      * @return string[] directory names
      */
     public static function getPresentModules() {
 
-        $path = rtrim( \OWA\Core\Env::modulesDir(), '/' );
-
-        if ( ! is_dir( $path ) ) {
-
-            return [];
-        }
-
         $modules = [];
+        $names   = [];
 
-        foreach ( scandir( $path ) as $dir ) {
+        foreach ( \OWA\Core\Env::moduleRoots() as $prefix => $root ) {
 
-            if ( $dir[0] === '.' || ! is_dir( $path . '/' . $dir ) ) {
+            $path      = rtrim( $root, '/' );
+            $extension = $prefix === \OWA\Core\Extensions::PREFIX;
+            $where     = $extension ? 'extensions' : 'modules';
+
+            if ( ! is_dir( $path ) ) {
 
                 continue;
             }
 
-            $class = 'OWA\\Module\\' . $dir . '\\Module';
+            foreach ( scandir( $path ) as $dir ) {
 
-            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( $class ) ) {
+                if ( $dir[0] === '.' || ! is_dir( $path . '/' . $dir ) ) {
 
-                if ( \OWA\Core\Module::declaresName( $class ) ) {
-
-                    $modules[] = $dir;
-
-                } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
-
-                    self::$warned_modules[ $dir ] = true;
-
-                    \OWA\Core\CoreAPI::notice( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+                    continue;
                 }
 
-            } elseif ( ! isset( self::$warned_modules[ $dir ] ) ) {
+                $class = $prefix . $dir . '\\Module';
 
-                self::$warned_modules[ $dir ] = true;
+                if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( $class ) ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
-                    'modules/%s is not loaded: a module is a PascalCase directory with an '
-                  . 'OWA\\Module\\<Dir>\\Module class. The pre-PSR-4 layout was removed in v2.0 '
-                  . '(UPGRADING.md).', $dir ) );
+                    if ( ! \OWA\Core\Module::declaresName( $class ) ) {
+
+                        if ( ! isset( self::$warned_modules[ "$where/$dir" ] ) ) {
+
+                            self::$warned_modules[ "$where/$dir" ] = true;
+
+                            \OWA\Core\CoreAPI::notice( \OWA\Core\Module::undeclaredNameProblem( $class ) );
+                        }
+
+                        continue;
+                    }
+
+                    if ( $extension && in_array( $dir, $modules, true ) ) {
+
+                        \OWA\Core\Extensions::refuse( $dir, sprintf( \OWA\Core\CoreAPI::t( 'extensions/%1$s is not loaded: OWA has a module of that name, modules/%1$s. Rename the extension.' ), $dir ) );
+
+                        continue;
+                    }
+
+                    if ( $extension && isset( $names[ (string) $class::NAME ] ) ) {
+
+                        \OWA\Core\Extensions::refuse( $dir, sprintf( \OWA\Core\CoreAPI::t( 'extensions/%1$s is not loaded: its %2$s %3$s is registered already, by the module %4$s. Rename it in the extension.' ),
+                            $dir, \OWA\Core\CoreAPI::t( 'name' ), (string) $class::NAME, (string) $class::NAME ) );
+
+                        continue;
+                    }
+
+                    $modules[]                      = $dir;
+                    $names[ (string) $class::NAME ] = (string) $class::NAME;
+
+                } elseif ( ! isset( self::$warned_modules[ "$where/$dir" ] ) ) {
+
+                    self::$warned_modules[ "$where/$dir" ] = true;
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        '%s/%s is not loaded: a module is a PascalCase directory with an '
+                      . '%s<Dir>\\Module class. The pre-PSR-4 layout was removed in v2.0 '
+                      . '(UPGRADING.md).', $where, $dir, $prefix ) );
+                }
             }
         }
 
