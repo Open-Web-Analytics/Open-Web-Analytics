@@ -172,31 +172,6 @@ class Releases {
     }
 
     /**
-     * The installed release in the listing (ReleaseCheck::ensureInstalled()):
-     * not a draft, and shipping the tarball; a pre-release too, since it is
-     * what is installed.
-     *
-     * @param  array<int, mixed> $releases decoded from the listing
-     * @param  string            $version
-     * @param  string            $installed
-     * @return Release|null
-     */
-    public static function find( array $releases, $version, $installed ) {
-
-        foreach ( $releases as $r ) {
-
-            $r = is_array( $r ) ? $r : [];
-
-            if ( empty( $r['draft'] ) && (string) ( $r['tag_name'] ?? '' ) === (string) $version ) {
-
-                return self::describe( $r, (string) $version, (string) ( Version::step( $installed, $version ) ?? Version::PATCH ) );
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @param  array<string, mixed> $r
      * @param  string               $version
      * @param  string               $step

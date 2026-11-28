@@ -17,8 +17,8 @@ namespace OWA\Module\Base\Classes\AutoUpdate;
  * it is, so the caller rewinds it: the installer reads the private copy of
  * the tarball it verified (Downloads::open()), never the file again.
  *
- * Plain PHP with no other OWA class: cli.php requires it on its own before
- * OWA loads, to put the installed release back (updater.php `preboot`).
+ * Plain PHP with no other OWA class: the installer reads the release with
+ * it after it refuses every class load (updater.php `plan`, `apply`).
  */
 class Tar {
 

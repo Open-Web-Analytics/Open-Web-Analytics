@@ -17,8 +17,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * The release check (Classes\AutoUpdate): which release is chosen, how it is
  * downloaded, proved and judged, when it installs, and installing by hand
- * (Install::byHand()). The installed release, 2.0.0, is listed too: its
- * tarball is what a failed install puts back. An install is proved and
+ * (Install::byHand()). The installed release, 2.0.0, is listed too, as
+ * GitHub lists every release; its tarball is never fetched. An install is proved and
  * pending (Install::$pending), never copied: run() ends the process. Against real tarballs GNU tar builds, served by Releases::$fetcher,
  * and an installed tree in a temporary directory outside any checkout.
  */
@@ -60,6 +60,7 @@ final class ReleaseCheckTest extends TestCase
         mkdir($this->tmp . '/owa', 0755, true);
         mkdir($this->tmp . '/data', 0755, true);
         file_put_contents($this->tmp . '/owa/cli.php', 'installed');
+        file_put_contents($this->tmp . '/owa/owa_env.php', 'installed');
         copy(dirname(__DIR__) . '/updater.php', $this->tmp . '/owa/updater.php');
         \OWA\Core\CoreAPI::setSetting('base', 'updates_dir', '');
 
@@ -196,7 +197,7 @@ final class ReleaseCheckTest extends TestCase
         Tar::files($this->tmp . '/cut.tar');
     }
 
-    /** Listed, downloaded, proved and judged; outside its window it waits, with both tarballs kept. */
+    /** Listed, downloaded, proved and judged; outside its window it waits, its tarball kept, and only its. */
     public function testAReleaseIsDownloadedAndWaitsForItsWindow(): void
     {
         $result = $this->check(['2.1.0']);
@@ -206,8 +207,8 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('(a minor release): https://updates.openwebanalytics.com/tag/2.1.0', implode("\n", $result['lines']), 'its page on the update host, not the listing\'s GitHub address');
         $d = $this->downloads();
         $this->assertSame('new cli', Tar::member($d->tarball('2.1.0'), 'cli.php'), 'the tarball itself, not unpacked');
-        $this->assertTrue($d->has('2.0.0'), 'the installed release\'s tarball, which a failed install puts back');
-        $this->assertSame(['owa_2.0.0_packaged.tar', 'owa_2.0.0_packaged.tar.sig', 'owa_2.1.0_packaged.tar', 'owa_2.1.0_packaged.tar.sig'],
+        $this->assertFalse($d->has('2.0.0'), 'the installed release\'s tarball is not needed');
+        $this->assertSame(['owa_2.1.0_packaged.tar', 'owa_2.1.0_packaged.tar.sig'],
             array_map('basename', glob($d->root() . '/*')), 'nothing half downloaded');
         $this->assertMatchesRegularExpression('#/data/updates-[0-9a-f]{32}$#', $d->root());
         $this->assertSame('0755', sprintf('%04o', fileperms($d->root()) & 0777));
@@ -219,7 +220,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringNotContainsString('Downloaded', implode("\n", $again['lines']), 'not downloaded again');
     }
 
-    /** Inside its window, or with none, it installs in this run: both tarballs proved, the copy waiting for the end of the process. */
+    /** Inside its window, or with none, it installs in this run: its tarball proved, the copy decided, waiting for the end of the process. */
     public function testAReleaseInstallsInItsWindow(): void
     {
         // 03:00 on a Saturday in London.
@@ -228,6 +229,7 @@ final class ReleaseCheckTest extends TestCase
 
         $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertSame(['2.0.0', '2.1.0'], [Install::$pending['from'], Install::$pending['to']]);
+        $this->assertContains('cli.php', Install::$pending['plan']['writes'], 'what the copy changes, decided before it');
         $this->assertStringContainsString('the files are copied when this run has finished', implode("\n", $result['lines']));
         $this->assertTrue(InstallLock::isHeld() || Install::$pending['hold']['handle'] !== null, 'the install lock is taken');
         $this->dropPending();
@@ -389,8 +391,9 @@ final class ReleaseCheckTest extends TestCase
 
         $this->check(['2.1.0']);
 
-        $this->assertTrue($this->downloads()->has('2.1.0') && $this->downloads()->has('2.0.0'));
+        $this->assertTrue($this->downloads()->has('2.1.0'));
         $this->assertSame([], array_values(array_filter($asked, fn ($u) => preg_match('#^https://example\.test/\d#', $u))), 'never the listing\'s address');
+        $this->assertSame([], preg_grep('#/2\.0\.0/#', $asked), 'nor the installed release');
         $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar', $asked);
         $this->assertContains('https://example.test/download/2.1.0/owa_2.1.0_packaged.tar.sig', $asked);
     }
@@ -434,7 +437,7 @@ final class ReleaseCheckTest extends TestCase
         $d->open('2.1.0');
 
         // Someone who can write the data directory swaps in another release's tarball.
-        copy($d->tarball('2.0.0'), $d->tarball('2.1.0'));
+        copy($this->build('2.0.0', null), $d->tarball('2.1.0'));
 
         $this->assertSame('2.1.0', \OWA\Core\VersionInfo::decode(Tar::member($d->open('2.1.0'), 'release.php'))['version']);
         $this->assertSame($sha, $d->sha256('2.1.0'));
@@ -559,7 +562,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->check(['2.0.1', '2.0.2']);
 
         $this->assertSame('2.0.2', $result['version']);
-        $this->assertSame(['2.0.2', '2.0.0'], $this->downloads()->versions(), 'the one to install, and the installed one');
+        $this->assertSame(['2.0.2'], $this->downloads()->versions(), 'the one to install');
     }
 
     /** While an install is under way (the install marker, or its lock) nothing is downloaded, deleted or installed. */
@@ -569,7 +572,7 @@ final class ReleaseCheckTest extends TestCase
         file_put_contents($this->tmp . '/owa/owa-update.php', "<?php exit; ?>\n" . json_encode(['phase' => 'copied', 'from' => '2.0.0', 'to' => '2.0.1']) . "\n");
 
         $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => '', 'days' => ''])['outcome']);
-        $this->assertSame(['2.0.1', '2.0.0'], $this->downloads()->versions());
+        $this->assertSame(['2.0.1'], $this->downloads()->versions());
         unlink($this->tmp . '/owa/owa-update.php');
 
         $h = fopen(InstallLock::$path, 'c');
@@ -577,7 +580,7 @@ final class ReleaseCheckTest extends TestCase
 
         try {
             $this->assertSame(ReleaseCheck::BUSY, $this->check(['2.0.1', '2.0.2'], ['window' => '', 'days' => ''])['outcome']);
-            $this->assertSame(['2.0.1', '2.0.0'], $this->downloads()->versions());
+            $this->assertSame(['2.0.1'], $this->downloads()->versions());
         } finally {
             flock($h, LOCK_UN);
             fclose($h);
@@ -591,7 +594,7 @@ final class ReleaseCheckTest extends TestCase
 
         $result = $this->check([], ['installed' => '2.0.1']);
         $this->assertSame(ReleaseCheck::CURRENT, $result['outcome']);
-        $this->assertSame(['2.0.1'], $this->downloads()->versions(), 'only the installed release\'s');
+        $this->assertSame([], $this->downloads()->versions(), 'none: 2.0.1 is installed');
 
         $this->check(['2.0.2'], ['installed' => '2.0.1']);
         $result = $this->check(null, ['installed' => '2.0.1']);
@@ -613,14 +616,6 @@ final class ReleaseCheckTest extends TestCase
         $this->check(null, ['url' => 'https://example.test/releases?per_page=100', 'installed' => '2.0.1']);
 
         $this->assertSame(['https://example.test/releases?from=2.0.0', 'https://example.test/releases?per_page=100&from=2.0.1'], $asked);
-
-        // The installed release's tarball, when the listing it needs is not the caller's.
-        $asked = [];
-        $check = new ReleaseCheck($this->downloads(), ['root' => $this->tmp . '/owa', 'installed' => '2.0.1', 'url' => 'https://example.test/releases',
-            'download' => 'https://example.test/download/']);
-        $this->assertStringContainsString('The installed release, 2.0.1, could not be downloaded', (string) $check->ensureInstalled());
-        $this->assertSame(['https://example.test/releases?from=2.0.1', 'https://example.test/download/2.0.1/owa_2.0.1_packaged.tar'], $asked,
-            'the listing, then the release by its version');
     }
 
     /** A major downloaded for tonight, then automatic updates set to minor: nothing installs, and it stays as the pending tarball. */
@@ -637,13 +632,13 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
     }
 
-    /** Automatic updates turned off: what was downloaded goes, but the installed release's. */
+    /** Automatic updates turned off: what was downloaded goes. */
     public function testTurningOffDeletesTheDownload(): void
     {
         $this->check(['2.1.0']);
 
         $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false, 'window' => '', 'days' => ''])['outcome']);
-        $this->assertSame(['2.0.0'], $this->downloads()->versions());
+        $this->assertSame([], $this->downloads()->versions());
         $this->assertNull(Install::$pending);
     }
 
@@ -907,15 +902,24 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
     }
 
-    /** The installed release not in the listing (past its first 100): fetched by its version. */
-    public function testTheInstalledReleaseIsFetchedByTagWhenTheListingLacksIt(): void
+    /** The installed release's tarball is never fetched, listed or not: a failed copy is put back from its backup. */
+    public function testTheInstalledReleaseIsNeverFetched(): void
     {
-        $this->serve('2.0.0', $this->build('2.0.0', null));
+        $asked = [];
+        $serve = Releases::$fetcher;
+        Releases::$fetcher = function ($url, $timeout, $sink) use (&$asked, $serve) {
+            $asked[] = $url;
 
-        $result = $this->check(['2.0.1'], ['window' => '', 'days' => ''], null, null, false, false, null, false);
-        $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
-        $this->assertTrue($this->downloads()->has('2.0.0'));
-        $this->dropPending();
+            return $serve($url, $timeout, $sink);
+        };
+
+        foreach ([true, false] as $listed) {
+            $result = $this->check(['2.0.1'], ['window' => '', 'days' => ''], null, null, false, false, null, $listed);
+            $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
+            $this->assertFalse($this->downloads()->has('2.0.0'));
+            $this->dropPending();
+        }
+        $this->assertSame([], preg_grep('#2\.0\.0#', $asked));
     }
 
     /** --file: a tarball on this server, its signature beside it, installs as a download does; its version is read from it. */
@@ -929,7 +933,7 @@ final class ReleaseCheckTest extends TestCase
         $result = $this->fromFile($this->tmp . '/release.tar');
         $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
         $this->assertSame('2.0.3', Install::$pending['to'], 'the version inside, not the file name');
-        $this->assertSame(hash_file('sha256', $tar), Install::$pending['to_sha']);
+        $this->assertSame(hash_file('sha256', $tar), $this->downloads()->sha256('2.0.3'));
         $this->assertStringContainsString('cmd=core-install --file=' . $this->tmp . '/release.tar, by hand.', implode("\n", Install::$pending['log']));
         $this->assertTrue($this->downloads()->has('2.0.3'), 'in the updates directory, as a download is');
         $this->dropPending();
@@ -998,35 +1002,20 @@ final class ReleaseCheckTest extends TestCase
     }
 
     /**
-     * --file makes no network request (fromFile() fails the test on one). Without the installed
-     * release's tarball in the updates directory it is refused, and nothing changes.
+     * --file makes no network request (fromFile() fails the test on one), and needs no other
+     * tarball: with no updates directory at all, it installs, and the updates directory holds
+     * its tarball alone.
      */
-    public function testAFileInstallsWithNoNetworkRequestAndNeedsTheInstalledTarball(): void
+    public function testAFileInstallsOfflineWithoutTheInstalledTarball(): void
     {
         $tar = $this->build('2.0.3', null);
         $this->sign('2.0.3', $tar, "$tar.sig");
+        $this->assertSame('', $this->downloads()->root(), 'no updates directory yet');
 
-        // No updates directory at all.
-        $result = $this->fromFile($tar, null, [], false, false);
-        $this->assertSame(Install::REFUSED, $result['outcome']);
-        $this->assertSame('OWA 2.0.0\'s tarball is needed to put it back if the copy fails, and the updates directory does not hold it. '
-            . 'Install with --version, or place owa_2.0.0_packaged.tar and its .sig in ' . $this->tmp . '/data/updates-<id>/.', $result['message']);
-        $this->assertSame('', $this->downloads()->root(), 'no updates directory made');
-
-        // One without the installed release's tarball: named, and left as it was.
-        $d = $this->downloads();
-        $d->ensureRoot();
-        $before = scandir($d->root());
-        $result = $this->fromFile($tar, null, [], false, false);
-        $this->assertSame(Install::REFUSED, $result['outcome']);
-        $this->assertStringContainsString('place owa_2.0.0_packaged.tar and its .sig in ' . $d->root() . '/.', $result['message']);
-        $this->assertSame($before, scandir($d->root()), 'nothing changed');
-        $this->assertNull(Install::$pending);
-
-        // Held: it installs, still with no network request.
         $result = $this->fromFile($tar);
         $this->assertSame(Install::OK, $result['outcome'], $result['message'] . implode("\n", $result['lines']));
         $this->assertSame('2.0.3', Install::$pending['to']);
+        $this->assertSame(['owa_2.0.3_packaged.tar', 'owa_2.0.3_packaged.tar.sig'], array_map('basename', glob($this->downloads()->root() . '/*')));
         $this->dropPending();
     }
 
@@ -1059,7 +1048,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(['php cli.php cmd=core-update-schema rollback=base.095', 'php cli.php cmd=core-update-schema rollback=base.094'], $result['lines']);
         $this->assertNull(Install::$pending);
         $this->assertTrue($this->downloads()->has('2.0.1'), 'refused, it stays as the pending tarball');
-        $this->assertTrue($this->downloads()->has('2.0.4'), 'the installed release\'s stays');
+        $this->assertFalse($this->downloads()->has('2.0.4'), 'the installed release\'s is never fetched');
 
         exec('rm -rf ' . escapeshellarg($this->tmp . '/build-2.0.1'));
         @unlink($this->tmp . '/owa_2.0.1_packaged.tar');
@@ -1120,7 +1109,7 @@ final class ReleaseCheckTest extends TestCase
     {
         $this->releaseJson['4.0.0'] = ['upgrades_from' => '3.0.0'];
         $this->assertSame(Install::REFUSED, $this->hand('4.0.0', ['4.0.0'])['outcome']);
-        $this->assertSame(['4.0.0', '2.0.0'], $this->downloads()->versions());
+        $this->assertSame(['4.0.0'], $this->downloads()->versions());
 
         $asked = [];
         $serve = Releases::$fetcher;
@@ -1136,7 +1125,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame([], $asked, 'nothing downloaded');
 
         $this->assertSame(Install::OK, $this->hand('3.0.0', ['3.0.0'])['outcome']);
-        $this->assertSame(['3.0.0', '2.0.0'], $this->downloads()->versions(), '4.0.0 is replaced');
+        $this->assertSame(['3.0.0'], $this->downloads()->versions(), '4.0.0 is replaced');
         $this->dropPending();
     }
 
@@ -1207,7 +1196,7 @@ final class ReleaseCheckTest extends TestCase
         $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
         $this->assertSame('2.3.0', $result['version']);
         $this->assertSame(['OWA 2.3.0 installs over 2.2.0 or later; OWA 2.0.0 is installed. Install 2.2.0 first.'], $result['problems']);
-        $this->assertSame(['2.3.0', '2.0.0'], $this->downloads()->versions(), 'not 2.1.0 or 2.2.0');
+        $this->assertSame(['2.3.0'], $this->downloads()->versions(), 'not 2.1.0 or 2.2.0');
         $this->assertNull(Install::$pending);
 
         $again = $this->check(['2.1.0', '2.2.0', '2.3.0'], $none);
@@ -1224,10 +1213,10 @@ final class ReleaseCheckTest extends TestCase
         $this->releaseJson['2.1.0'] = ['upgrades_from' => '2.0.5'];
 
         $this->assertSame(ReleaseCheck::UNMET, $this->check(['2.1.0'], ['window' => '', 'days' => ''])['outcome']);
-        $this->assertSame(['2.1.0', '2.0.0'], $this->downloads()->versions());
+        $this->assertSame(['2.1.0'], $this->downloads()->versions());
 
         $this->check(['2.1.0', '2.2.0']);
-        $this->assertSame(['2.2.0', '2.0.0'], $this->downloads()->versions(), '2.1.0 is pruned');
+        $this->assertSame(['2.2.0'], $this->downloads()->versions(), '2.1.0 is pruned');
     }
 
     /** auto_update_level is minor or major; OWA_AUTO_UPDATE_LEVEL with anything else is a config problem, which refuses every request at boot. */
@@ -1259,8 +1248,8 @@ final class ReleaseCheckTest extends TestCase
         $this->assertStringContainsString('Automatic updates: patch, minor and major releases, installed as soon as they are downloaded.', $status);
     }
 
-    /** The installed release again, without --force: it reinstalls, and its tarball, the way back, is kept. */
-    public function testReinstallingTheInstalledReleaseKeepsItsTarball(): void
+    /** The installed release again, without --force: it reinstalls, copying the files that differ. */
+    public function testReinstallingTheInstalledRelease(): void
     {
         $result = $this->hand('2.0.0', []);
         $this->assertSame(Install::OK, $result['outcome'], 'no --force needed: ' . $result['message']);
@@ -1269,27 +1258,17 @@ final class ReleaseCheckTest extends TestCase
         $this->dropPending();
     }
 
-    /** No way back: when the installed release's tarball cannot be downloaded, nothing installs, automatically or by hand. */
-    public function testWithoutTheInstalledReleasesTarballNothingInstalls(): void
-    {
-        $result = $this->check(['2.0.1'], ['window' => '', 'days' => ''], null, null, false, false, null, false);
-        $this->assertNotSame(ReleaseCheck::INSTALLING, $result['outcome']);
-        $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded', implode("\n", array_merge($result['lines'], $result['problems'])));
-        $this->assertNull(Install::$pending);
-        $this->assertFalse($this->downloads()->has('2.0.0'));
-    }
-
     /** The downloaded tarball rewritten while it waits for its window: it is downloaded again, and what installs is the release's. */
     public function testATarballRewrittenWhileItWaitsIsDownloadedAgain(): void
     {
         $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.0.1'], ['window' => '02:00-06:00'])['outcome']);
         $listed = hash_file('sha256', $this->downloads()->tarball('2.0.1'));
-        copy($this->downloads()->tarball('2.0.0'), $this->downloads()->tarball('2.0.1'));
+        copy($this->build('2.0.0', null), $this->downloads()->tarball('2.0.1'));
 
         $result = $this->check(['2.0.1'], ['window' => '', 'days' => '']);
         $this->assertSame(ReleaseCheck::INSTALLING, $result['outcome'], implode("\n", $result['lines']));
         $this->assertStringContainsString('as the release\'s asset was replaced', implode("\n", $result['lines']));
-        $this->assertSame($listed, Install::$pending['to_sha']);
+        $this->assertSame($listed, $this->downloads()->sha256('2.0.1'));
         $this->dropPending();
     }
 
@@ -1304,7 +1283,7 @@ final class ReleaseCheckTest extends TestCase
 
         $lines = $status(['php' => '8.1.0'] + $this->env());
         $this->assertStringContainsString('Automatic updates: patch and minor releases, installed between 02:00 and 06:00 (UTC), any day.', $lines);
-        $this->assertStringContainsString('Downloaded: 2.0.0, the installed release, which a failed install puts back.', $lines);
+        $this->assertStringNotContainsString('Downloaded: 2.0.0', $lines, 'the installed release is not downloaded');
         $this->assertStringContainsString('cannot be installed yet', $lines);
         $this->assertStringContainsString('It needs PHP 8.2 or later', $lines);
         $this->assertStringContainsString('; can be installed.', $status($this->env()), 'judged now, not remembered');
@@ -1315,19 +1294,6 @@ final class ReleaseCheckTest extends TestCase
 
         file_put_contents($this->tmp . '/owa/owa-update.php', "<?php exit; ?>\n" . json_encode(['phase' => 'copied', 'from' => '2.0.0', 'to' => '2.1.0', 'since' => 1800000000]) . "\n");
         $this->assertStringContainsString('Installing 2.1.0 over 2.0.0: copied, waiting for the next run of cli.php to boot it since 2027-01-15 08:00 UTC.', $status($this->env()));
-    }
-
-    /** The installed release's tarball cannot be had: nothing installs without the way back. */
-    public function testWithoutTheInstalledReleasesTarballNothingInstallsItself(): void
-    {
-        $result = $this->check(['2.0.1'], ['installed' => '2.0.0', 'window' => '', 'days' => ''], null, null, false, false, null, false);
-
-        $this->assertSame(ReleaseCheck::UNMET, $result['outcome'], implode("\n", $result['lines']));
-        $this->assertStringContainsString('The installed release, 2.0.0, could not be downloaded: Fetching https://example.test/download/2.0.0/owa_2.0.0_packaged.tar failed: 404. A failed install puts it back',
-            implode("\n", $result['problems']));
-        $this->assertNull(Install::$pending);
-
-        $this->assertSame(ReleaseCheck::WAITING, $this->check(['2.0.1'])['outcome'], 'and installs once it can be had');
     }
 
     public function testAReleaseWithoutAnUpdaterCannotInstallItself(): void
@@ -1413,7 +1379,7 @@ final class ReleaseCheckTest extends TestCase
             implode("\n", Preflight::requirements($req, ['constants' => ['OWA_AUTH_KEY' => ''] + $env['constants']] + $env)));
     }
 
-    /** Each tarball is read into a private temporary copy: PHP's temporary directory must take both. */
+    /** The tarball is read into a private temporary copy, and a put-back reads the backup there too: PHP's temporary directory must take both. */
     public function testTheTemporaryDirectoryTakesTheTarballs(): void
     {
         mkdir($this->tmp . '/t', 0755);
@@ -1428,7 +1394,7 @@ final class ReleaseCheckTest extends TestCase
 
         $this->check(['2.1.0']);
         $d = $this->downloads();
-        $this->assertSame(filesize($d->tarball('2.1.0')) + filesize($d->tarball('2.0.0')), $d->tarballBytes('2.1.0', '2.0.0'));
+        $this->assertSame(2 * filesize($d->tarball('2.1.0')), $d->tarballBytes('2.1.0', '2.1.0'), 'the release, and a backup about its size');
         $this->assertSame(2 * filesize($d->tarball('2.1.0')), $d->tarballBytes('2.1.0', '9.9.9'), 'one not downloaded counts as the first');
     }
 
@@ -1516,9 +1482,6 @@ final class ReleaseCheckTest extends TestCase
 
         if ($p !== null) {
             fclose($p['to_h']);
-            if ($p['from_h'] !== $p['to_h']) {
-                fclose($p['from_h']); // the same copy when the installed release is installed again
-            }
             $p['u']['unlock']($p['hold']);
         }
     }
@@ -1626,24 +1589,11 @@ final class ReleaseCheckTest extends TestCase
         ]);
     }
 
-    /** Install::fromFile() of a tarball here, the installed release served for the way back. */
-    /**
-     * Install::fromFile() of a tarball here. $held: the installed release's tarball is in the updates
-     * directory, as --file needs. Any network request fails the test: --file makes none.
-     */
-    private function fromFile(string $file, ?string $sig = null, array $context = [], bool $force = false, bool $held = true): array
+    /** Install::fromFile() of a tarball here. Any network request fails the test: --file makes none. */
+    private function fromFile(string $file, ?string $sig = null, array $context = [], bool $force = false): array
     {
         $installed = (string) ($context['installed'] ?? '2.0.0');
         $this->installed($installed);
-
-        if ($held) {
-            $tar = $this->build($installed, null);
-            $this->sign($installed, $tar, "$tar.sig");
-            $d = $this->downloads();
-            $d->ensureRoot();
-            copy($tar, $d->tarball($installed));
-            copy("$tar.sig", $d->tarball($installed) . '.sig');
-        }
 
         Releases::$fetcher = static function ($url) {
             throw new \LogicException("--file made a network request: $url");

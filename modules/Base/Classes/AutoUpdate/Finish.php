@@ -16,7 +16,8 @@ use OWA\Core\CoreAPI;
  * change a setting's default with nothing to update) and a release check of
  * its own as a self-test. Then the notice that it is installed, and the
  * clean-up. Nothing is undone once the new release has booted: the schema
- * may have moved on.
+ * may have moved on, so the backup the copy made (updater.php `backup`) is
+ * deleted when Finish ends, however it ends.
  *
  * A step that fails is a failed install, and a broken one: recorded in
  * last-failure.json with the step, its notice raised at once (InstallNotices),
@@ -101,6 +102,7 @@ class Finish {
         }
 
         @unlink( $u['marker']( $root ) );
+        $u['removeBackups']( $downloads->root() );
         $u['unlock']( $hold );
 
         InstallLock::$held_here    = false;

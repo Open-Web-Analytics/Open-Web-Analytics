@@ -22,8 +22,7 @@ use OWA\Core\CoreAPI;
  *      downloaded through the update host (auto_update_download_url, never
  *      the listing's GitHub address) and checked against its SHA-256 and
  *      its signature, again
- *      if GitHub's digest for it changes (the asset was replaced), and the
- *      installed release's too, once: a failed install puts it back. Every
+ *      if GitHub's digest for it changes (the asset was replaced). Every
  *      other tarball is deleted. A failed download puts a notice in the
  *      bell; a week of them e-mails the admins. A release whose install
  *      failed (last-failure.json) is tried again 6 hours on, 3 attempts in
@@ -332,7 +331,7 @@ class ReleaseCheck {
 
             if ( ! $dry_run ) {
 
-                $this->downloads->prune( [ $installed ] );
+                $this->downloads->prune( [] );
             }
 
             return $this->outcome( self::OFF, null, [], 'Automatic updates are off.' );
@@ -340,15 +339,15 @@ class ReleaseCheck {
 
         // Every run, not only when a release is due: the job fails, so System
         // Health says so before a security release needs it.
-        $temp = $this->context['temp'] ?? Preflight::temp( $this->downloads->tarballBytes( $installed, $installed ) );
+        $held = $this->downloads->versions();
+        $temp = $this->context['temp'] ?? Preflight::temp( $held ? $this->downloads->tarballBytes( $held[0], $held[0] ) : 0 );
 
         if ( $temp ) {
 
             return $this->outcome( self::NO_TEMP, null, $temp, 'No release can be installed:' );
         }
 
-        $level   = $this->level();
-        $missing = null;
+        $level = $this->level();
 
         if ( $listed && $list === null ) {
 
@@ -363,7 +362,7 @@ class ReleaseCheck {
                 // A pending release newer than the installed one stays: a higher release can replace it.
                 if ( ! $dry_run ) {
 
-                    $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );
+                    $this->downloads->prune( [ $this->downloads->pending( $installed ) ] );
                 }
 
                 return $this->outcome( self::CURRENT, null, [], sprintf( 'No release newer than %s for automatic %s updates.', $installed,
@@ -406,10 +405,8 @@ class ReleaseCheck {
                 $this->lines[] = sprintf( 'Downloaded %s and checked its SHA-256 and signature%s.', $v, $replaced ? ', as the release\'s asset was replaced' : '' );
             }
 
-            $missing = $this->ensureInstalled( $list );
-
-            // The release to install, replacing any other pending one, and the installed one a failed install puts back.
-            $this->downloads->prune( [ $v, $installed ] );
+            // The release to install, replacing any other pending one.
+            $this->downloads->prune( [ $v ] );
         }
 
         $v = $this->candidate( $level );
@@ -424,16 +421,11 @@ class ReleaseCheck {
             return $this->outcome( self::CHOSEN, $v );
         }
 
-        if ( $missing === null && ! $this->downloads->has( $installed ) ) {
-
-            $missing = sprintf( CoreAPI::t( 'The installed release, %s, has not been downloaded: a failed install puts it back, so nothing installs until the next listing downloads it.' ), $installed );
-        }
-
         $judged   = $this->judge( $v );
         $rollback = $judged['rollback']
             ? array_merge( [ sprintf( CoreAPI::t( 'This database is newer than %s expects. Undo these updates first, newest first, with the code installed now:' ), $v ) ], $judged['rollback'] )
             : [];
-        $problems = array_merge( $judged['problems'], $rollback, $missing === null ? [] : [ $missing ] );
+        $problems = array_merge( $judged['problems'], $rollback );
         $url      = Releases::page( $v );
 
         if ( $problems ) {
@@ -634,7 +626,7 @@ class ReleaseCheck {
 
             if ( $v === $installed ) {
 
-                $lines[] = sprintf( 'Downloaded: %s, the installed release, which a failed install puts back.', $v );
+                $lines[] = sprintf( 'Downloaded: %s, the installed release.', $v );
 
                 continue;
             }
@@ -730,9 +722,9 @@ class ReleaseCheck {
         $problems = array_merge( $from === null ? [] : [ sprintf( CoreAPI::t( 'OWA %1$s installs over %2$s or later; OWA %3$s is installed. Install %2$s first.' ),
                 $v, $from, (string) $this->context['installed'] ) ],
             Preflight::requirements( $req, $env ), Preflight::install( $files, $this->root ),
-            Preflight::temp( $this->downloads->tarballBytes( $v, (string) $this->context['installed'] ) ) );
+            Preflight::temp( $this->downloads->tarballBytes( $v, $v ) ) );
 
-        // What the next run of cli.php needs, before OWA loads, to boot it or put this one back.
+        // What the next run of cli.php needs before OWA loads, and Tar, which reads the next release.
         foreach ( [ 'updater.php', 'cli.php', 'owa_env.php', 'Core/Env.php', 'modules/Base/Classes/AutoUpdate/Tar.php' ] as $needed ) {
 
             if ( ! isset( $files[ $needed ] ) ) {
@@ -742,48 +734,6 @@ class ReleaseCheck {
         }
 
         return [ 'problems' => $problems, 'manual' => $this->manualInstall( $v ), 'rollback' => $this->rollbackFirst( $v ) ];
-    }
-
-    /**
-     * The installed release's tarball, which a failed install puts back:
-     * downloaded and checked once, from $list or the listing, or by its
-     * version when the listing does not have it (Releases::byTag()). Null
-     * when it is there, else why it is not.
-     *
-     * @param  list<array<string, mixed>>|null $list the listing, when the caller has it
-     * @return string|null
-     */
-    public function ensureInstalled( $list = null ) {
-
-        $installed = (string) $this->context['installed'];
-
-        if ( $this->downloads->has( $installed ) ) {
-
-            return null;
-        }
-
-        try {
-
-            try {
-
-                $list = $list ?? $this->context['releases'] ?? Releases::fetch( Releases::listingUrl( (string) $this->context['url'], $installed ) );
-
-            } catch ( \RuntimeException $e ) {
-
-                $list = [];
-            }
-
-            $listed = Releases::find( $list, $installed, $installed );
-            $this->downloads->download( $listed !== null ? Releases::via( $listed, (string) $this->context['download'] )
-                : Releases::byTag( $installed, $installed, (string) $this->context['download'] ) );
-            $this->lines[] = sprintf( 'Downloaded the installed release, %s, and checked its SHA-256 and signature: a failed install puts it back.', $installed );
-
-            return null;
-
-        } catch ( \RuntimeException $e ) {
-
-            return sprintf( CoreAPI::t( 'The installed release, %1$s, could not be downloaded: %2$s. A failed install puts it back, so nothing installs until it is.' ), $installed, rtrim( $e->getMessage(), '.' ) );
-        }
     }
 
     /**

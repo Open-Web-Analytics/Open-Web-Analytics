@@ -8,8 +8,8 @@
  *   php install_run_child.php <root> '<plan as JSON>'
  *
  * The plan: marker_fails (phases whose marker write throws), alone (false:
- * other runs did not end), apply_fails ('to', 'from'), load (apply tries to
- * load a class), quiet.
+ * other runs did not end), backup_fails, apply_fails, restore_fails, load
+ * (apply tries to load a class), quiet.
  */
 
 require dirname( __DIR__, 2 ) . '/vendor/autoload.php';
@@ -60,7 +60,29 @@ $u = [
 
         return $plan['alone'] ?? true;
     },
-    'apply'       => static function ( $root, $h, $keep ) use ( $say, $plan ) {
+    'backup'      => static function ( $root, $updates, array $copy ) use ( $say, $plan ) {
+
+        $say( 'backup', $updates, $copy['writes'] );
+
+        if ( ! empty( $plan['backup_fails'] ) ) {
+            throw new RuntimeException( 'Backing up the files the copy replaces needs about 40 MB free on the disk holding the updates directory; 12 MB are.' );
+        }
+
+        return [ 'backup' => "$updates/backup-test", 'saved' => [ 'Core/Env.php' => [ 'sha256' => str_repeat( 'c', 64 ), 'mode' => 0644 ] ],
+            'created' => [ 'Core/Added.php' ], 'made' => [] ];
+    },
+    'removeBackups' => static function ( $updates ) use ( $say ) {
+        $say( 'removeBackups', $updates );
+    },
+    'restore'     => static function ( $root, array $marker ) use ( $say, $plan ) {
+
+        $say( 'restore', $marker['backup'] );
+
+        if ( ! empty( $plan['restore_fails'] ) ) {
+            throw new RuntimeException( '1 of the 1 files backed up before the copy are missing or changed.' );
+        }
+    },
+    'apply'       => static function ( $root, $h, array $copy ) use ( $say, $plan ) {
 
         $say( 'apply', $h );
 
@@ -74,8 +96,8 @@ $u = [
             }
         }
 
-        if ( in_array( $h, (array) ( $plan['apply_fails'] ?? [] ), true ) ) {
-            throw new RuntimeException( "Could not write Core/Env.php ($h)." );
+        if ( ! empty( $plan['apply_fails'] ) ) {
+            throw new RuntimeException( 'Could not write Core/Env.php.' );
         }
     },
     'recordFailure' => static function ( $updates, array $marker, $error ) use ( $say ) {
@@ -91,15 +113,9 @@ Install::$pending = [
     'from'       => '2.0.1',
     'to'         => '2.0.2',
     'to_h'       => 'to',
-    'from_h'     => 'from',
-    'to_files'   => [],
-    'from_files' => [],
+    'plan'       => [ 'writes' => [ 'Core/Env.php', 'Core/Added.php' ], 'deletes' => [], 'dirs' => [], 'bytes' => 10 ],
     'hold'       => [ 'file' => "$root/owa-update-lock.php" ],
     'updates'    => "$root/owa-data/updates-test",
-    'from_tar'   => "$root/owa-data/updates-test/owa_2.0.1_packaged.tar",
-    'to_tar'     => "$root/owa-data/updates-test/owa_2.0.2_packaged.tar",
-    'from_sha'   => str_repeat( 'a', 64 ),
-    'to_sha'     => str_repeat( 'b', 64 ),
     'quiet'      => ! empty( $plan['quiet'] ),
     'u'          => $u,
     'log'        => $u['logged']( [], 'Release check (by hand), OWA 2.0.1 installed.' )['log'],

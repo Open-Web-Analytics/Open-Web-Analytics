@@ -10,12 +10,18 @@
  *               do. Nothing (boot), wait for the installer, put the
  *               installed release back, or boot the new release and finish
  *               its install (Classes\AutoUpdate\Finish).
- *   apply       the copy: a release's files from its tarball over the OWA
- *               directory, then the files of the release it replaces that it
- *               does not ship, deleted; Core/Env.php, the version, last. The
- *               installer (Classes\AutoUpdate\Install) calls the copy it
- *               loaded before the copy began, and a copy that fails is put
- *               back by the same closure from the installed release's tarball.
+ *   keeps, plan, backup, apply
+ *               the copy: what it changes, decided first (plan); every file
+ *               it overwrites or deletes backed up (backup); then a release's
+ *               files from its tarball over the OWA directory, and in the
+ *               directories it ships, the files it does not ship deleted,
+ *               but those keeps names; Core/Env.php, the version, last. The
+ *               installer (Classes\AutoUpdate\Install) calls the closures it
+ *               loaded before the copy began.
+ *   restore, removeBackups
+ *               a copy that fails, or is killed, is put back from the backup
+ *               (restore), at once by the installer or by the next run of
+ *               cli.php (preboot).
  *   serveMaintenance, dropsBeacon
  *               index.php, api/index.php and log.php from the copy until
  *               the new release has booted: while the files may be mixed,
@@ -39,8 +45,13 @@
  * there can already change OWA's code: the marker is trusted as the code
  * is, however the server's users and directories are arranged.
  *
- *   {format, from, to, phase, since, lock, updates, from_tar, to_tar,
- *    from_sha256, to_sha256, boots, schema_lease, finishes}
+ *   {format, from, to, phase, since, lock, updates, backup, saved, created,
+ *    made, boots, schema_lease, finishes}
+ *   backup  the backup directory, backup-<32 hex>/ in the updates directory
+ *   saved   {path: {sha256, mode}} of each file the copy overwrites or
+ *           deletes, as it was backed up; {path: {link}} for a link
+ *   created the files the copy writes that were not there
+ *   made    the directories the copy makes
  *   phase  waiting  nothing has changed: the installer waits for the runs
  *                   of cli.php already going to end (running), and every
  *                   run that starts stops. With the lock free, the
@@ -59,15 +70,15 @@
  *                   its schema updates hold, so a Finish run again after
  *                   one was killed takes that lease back.
  *
- * Putting the installed release back unpacks from_tar, the installed
- * release's tarball, then deletes what to_tar ships and from_tar does not.
- * Each is read once into a private copy and checked against the SHA-256 the
- * marker names, which the installing release proved against the keys it
- * trusts: the data directory, where the tarballs are, is not trusted, and
- * the new release's keys may not be the old one's. to_tar that does not
- * check only means the new release's added files stay. The failure is recorded in the
- * updates directory's last-failure.json: automatic updates skip that
- * release (Downloads).
+ * Putting the installed release back (restore) reads every backed-up file
+ * once into a private copy and checks it against its SHA-256 in the marker
+ * before it writes any: the backup is in the data directory, which is not
+ * trusted, and the marker is. One that is missing or differs, and nothing
+ * is written: the marker stays, and OWA does not run until the installed
+ * release is unpacked over it by hand. Then each is written back, what the
+ * copy created is deleted, with the directories it made, and the backup
+ * goes. The failure is recorded in the updates directory's
+ * last-failure.json: automatic updates skip that release (Downloads).
  *
  * THE FROZEN CONTRACT between an installed release and the next: the
  * marker, written by the installed release and read by the next; cli.php
@@ -145,7 +156,7 @@ return ( static function () {
      * this process holds) while its SHA-256 is taken: [the copy, rewound, its
      * SHA-256]. Only a plain file, no link, at most $max bytes. What is read
      * after is the copy, never the file again, which the web user may
-     * rewrite. Downloads::privateCopy() and putting a release back both use it.
+     * rewrite. Downloads::privateCopy() uses it.
      */
     $privateCopy = static function ( $file, $max ) {
 
@@ -729,25 +740,452 @@ return ( static function () {
     };
 
     /*
+     * WHAT THE COPY NEVER DELETES. In each top-level directory a release
+     * ships, but owa-data/, and under modules/ in each module directory it
+     * ships, the copy deletes every file the release does not ship, except
+     * these paths, relative to the OWA directory, with all that is under them:
+     *
+     *   owa-data             the data directory a release ships
+     *   public/tracker       the tracking bundles (TrackerBundle::DIR)
+     *   owa-update.php       the install marker
+     *   owa-update-lock.php  the install lock
+     *   $data_dir            the data directory (OWA_DATA_DIR), when it is in the OWA directory
+     *   $public_path/tracker the tracking bundles under OWA_PUBLIC_PATH, when it is
+     *
+     * Nothing else is deleted: a file at the top of the OWA directory
+     * (owa-config.php, .htaccess, an operator's robots.txt or .htpasswd), a
+     * directory the release does not ship (.well-known/), and a module
+     * directory it does not ship. Everything else OWA writes as it runs goes
+     * in the data directory. tests/UpdaterKeepsTest.php fails when a path OWA
+     * writes is not kept.
+     *
+     * The list of paths, '' when one is the OWA directory itself (nothing is
+     * deleted then).
+     *
+     * @return list<string>
+     */
+    $keeps = static function ( $root, $data_dir = null, $public_path = null ) {
+
+        $real   = static fn ( $p ) => rtrim( (string) ( @realpath( (string) $p ) ?: $p ), '/' );
+        $root   = $real( $root );
+        $keeps  = [ 'owa-data', 'public/tracker', 'owa-update.php', 'owa-update-lock.php' ];
+        $public = (string) $public_path !== '' ? $real( $public_path ) . '/tracker' : '';
+
+        foreach ( [ (string) $data_dir !== '' ? $real( $data_dir ) : '', $public ] as $dir ) {
+
+            if ( $dir === $root ) {
+
+                $keeps[] = '';
+
+            } elseif ( $dir !== '' && strncmp( $dir, $root . '/', strlen( $root ) + 1 ) === 0 ) {
+
+                $keeps[] = substr( $dir, strlen( $root ) + 1 );
+            }
+        }
+
+        return array_values( array_unique( $keeps ) );
+    };
+
+    /* Whether $keeps names $rel or a directory it is in. */
+    $kept = static function ( $rel, array $keeps ) {
+
+        foreach ( $keeps as $k ) {
+
+            if ( $k === '' || $rel === $k || strncmp( (string) $rel, $k . '/', strlen( $k ) + 1 ) === 0 ) {
+
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    /*
+     * What the copy of the release in $tar over $root changes, decided
+     * before anything is written:
+     *   writes   each file the release ships that is not on disk as it
+     *            ships it: missing, or with other contents
+     *   deletes  each plain file or link on disk that the release does not
+     *            ship, in a top-level directory it ships (not owa-data/), and
+     *            under modules/ in a module directory it ships; not one
+     *            $keeps names. A link is deleted, never followed.
+     *   dirs     each directory the release ships, its files' included
+     *   bytes    the size of the files on disk that writes replaces and
+     *            deletes removes: what the backup holds
+     * $tar is a handle, read from the start; Tar is loaded by the caller.
+     *
+     * @param  resource     $tar
+     * @param  list<string> $keeps
+     * @return array{writes: list<string>, deletes: list<string>, dirs: array<string, true>, bytes: int}
+     */
+    $plan = static function ( $root, $tar, array $keeps ) use ( $copies, $kept ) {
+
+        $root   = rtrim( (string) $root, '/' );
+        $files  = [];
+        $dirs   = [];
+        $writes = [];
+        $bytes  = 0;
+
+        if ( $root === '' || ! is_file( $root . '/owa_env.php' ) ) {
+
+            throw new \RuntimeException( sprintf( '%s is not an OWA directory.', $root ) );
+        }
+
+        rewind( $tar );
+
+        \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$writes, &$bytes, $copies ) {
+
+            if ( ! $copies( $rel ) ) {
+
+                return;
+            }
+
+            for ( $dir = $type === 'dir' ? $rel : dirname( $rel ); $dir !== '.' && ! isset( $dirs[ $dir ] ); $dir = dirname( $dir ) ) {
+
+                $dirs[ $dir ] = true;
+            }
+
+            if ( $type === 'dir' ) {
+
+                return;
+            }
+
+            $files[ $rel ] = true;
+            $target        = $root . '/' . $rel;
+
+            if ( is_dir( $target ) && ! is_link( $target ) ) {
+
+                throw new \RuntimeException( sprintf( 'The release ships a file at %s, which is a directory here.', $rel ) );
+            }
+
+            $buf = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
+            $read( $buf );
+            rewind( $buf );
+            $ctx = hash_init( 'sha256' );
+            hash_update_stream( $ctx, $buf );
+            fclose( $buf );
+
+            $plain = is_file( $target ) && ! is_link( $target );
+
+            if ( $plain && hash_file( 'sha256', $target ) === hash_final( $ctx ) ) {
+
+                return;
+            }
+
+            $writes[] = $rel;
+            $bytes   += $plain ? (int) filesize( $target ) : 0;
+        } );
+
+        // The directories the mirror deletes in: each top-level one shipped, and under modules/ each module's.
+        $tops = [];
+
+        foreach ( array_keys( $dirs ) as $dir ) {
+
+            $parts = explode( '/', (string) $dir );
+
+            if ( $parts[0] === 'modules' ) {
+
+                if ( isset( $parts[1] ) ) {
+
+                    $tops[ 'modules/' . $parts[1] ] = true;
+                }
+
+            } else {
+
+                $tops[ $parts[0] ] = true;
+            }
+        }
+
+        $deletes = [];
+
+        foreach ( array_keys( $tops ) as $top ) {
+
+            $top = (string) $top;
+
+            if ( ! $copies( $top ) || $kept( $top, $keeps ) || is_link( $root . '/' . $top ) || ! is_dir( $root . '/' . $top ) ) {
+
+                continue;
+            }
+
+            $tree = new \RecursiveIteratorIterator(
+                new \RecursiveCallbackFilterIterator(
+                    new \RecursiveDirectoryIterator( $root . '/' . $top, \FilesystemIterator::SKIP_DOTS ),
+                    static fn ( \SplFileInfo $f ) => ! $kept( substr( (string) $f->getPathname(), strlen( $root ) + 1 ), $keeps ) ),
+                \RecursiveIteratorIterator::LEAVES_ONLY );
+
+            foreach ( $tree as $path => $info ) {
+
+                $rel = substr( (string) $path, strlen( $root ) + 1 );
+
+                // A directory left empty is no leaf; a link to one is, and is deleted as a file.
+                // A FIFO, socket or device is no file of a release's, and is left as it is.
+                if ( isset( $files[ $rel ] ) || isset( $dirs[ $rel ] ) || ( ! $info->isLink() && ! $info->isFile() ) ) {
+
+                    continue;
+                }
+
+                $deletes[] = $rel;
+                $bytes    += $info->isLink() ? 0 : (int) $info->getSize();
+            }
+        }
+
+        sort( $deletes );
+
+        return [ 'writes' => $writes, 'deletes' => $deletes, 'dirs' => $dirs, 'bytes' => $bytes ];
+    };
+
+    /*
+     * Delete the directory $dir and everything in it, following no link:
+     * each directory is entered only when it is one, not a link, and, where
+     * the posix extension says who runs this, owned by this user. $dir is in
+     * the data directory, which the web user can write: it can put a link,
+     * or its own directory, in place of the updates directory, and nothing
+     * outside this user's own directories is deleted then. Returns whether
+     * $dir is gone.
+     */
+    $removeTree = static function ( $dir ) {
+
+        $me   = function_exists( 'posix_geteuid' ) ? posix_geteuid() : null;
+        $mine = static function ( $path ) use ( $me ) {
+
+            clearstatcache( true, $path );
+            $st = @lstat( $path );
+
+            return $st !== false && ( $st['mode'] & 0170000 ) === 0040000 && ( $me === null || (int) $st['uid'] === $me );
+        };
+
+        $remove = static function ( $dir ) use ( &$remove, $mine ) {
+
+            if ( ! $mine( $dir ) ) {
+
+                return false;
+            }
+
+            foreach ( (array) @scandir( $dir ) as $name ) {
+
+                if ( $name === '.' || $name === '..' || $name === false ) {
+
+                    continue;
+                }
+
+                $path = $dir . '/' . $name;
+
+                if ( ! is_link( $path ) && is_dir( $path ) ) {
+
+                    $remove( $path );
+
+                } else {
+
+                    @unlink( $path );
+                }
+            }
+
+            return @rmdir( $dir );
+        };
+
+        $dir = rtrim( (string) $dir, '/' );
+
+        return $dir !== '' && ( ! file_exists( $dir ) && ! is_link( $dir ) || $remove( $dir ) );
+    };
+
+    /* Every backup-<32 hex>/ in the updates directory deleted (removeTree): one install's is kept only until it finishes. */
+    $removeBackups = static function ( $updates ) use ( $removeTree ) {
+
+        $updates = rtrim( (string) $updates, '/' );
+
+        if ( $updates === '' || is_link( $updates ) ) {
+
+            return;
+        }
+
+        foreach ( (array) glob( $updates . '/backup-*' ) as $dir ) {
+
+            if ( preg_match( '#/backup-[0-9a-f]{32}$#', (string) $dir ) ) {
+
+                is_link( (string) $dir ) ? @unlink( (string) $dir ) : $removeTree( (string) $dir );
+            }
+        }
+    };
+
+    /*
+     * Before the copy: every file $plan says it overwrites or deletes copied
+     * into a new directory, backup-<32 hex>, in the updates directory, and
+     * hashed as it is copied; any backup an earlier install left deleted
+     * first. Returns what the install marker carries to put it back: backup,
+     * saved, created and made (the marker, above).
+     *
+     * The updates directory is in the data directory, which the web user can
+     * write: each directory and file of the backup is made new (mkdir(),
+     * fopen() x), so none is written through a link put there, and what is
+     * read back is checked against saved, which only the marker holds.
+     * Refused before anything is made when the disk holding the updates
+     * directory has no room for it. Throws, leaving no backup.
+     *
+     * @return array{backup: string, saved: array<string, array<string, mixed>>, created: list<string>, made: list<string>}
+     */
+    $backup = static function ( $root, $updates, array $plan ) use ( $createFile, $removeTree, $removeBackups ) {
+
+        $root    = rtrim( (string) $root, '/' );
+        $updates = rtrim( (string) $updates, '/' );
+
+        if ( $updates === '' || is_link( $updates ) || ! is_dir( $updates ) ) {
+
+            throw new \RuntimeException( 'There is no updates directory to back up the files the copy replaces in.' );
+        }
+
+        $removeBackups( $updates );
+
+        $free = @disk_free_space( $updates );
+        $need = (int) ( $plan['bytes'] ?? 0 ) + 1048576;
+
+        if ( $free !== false && $free < $need ) {
+
+            throw new \RuntimeException( sprintf( 'Backing up the files the copy replaces needs about %1$d MB free on the disk holding %2$s; %3$d MB are.',
+                (int) ceil( $need / 1048576 ), $updates, (int) floor( $free / 1048576 ) ) );
+        }
+
+        $dir     = $updates . '/backup-' . bin2hex( random_bytes( 16 ) );
+        $saved   = [];
+        $created = [];
+        $made    = [];
+        $mkdirs  = [];
+
+        $umask = function_exists( 'umask' ) ? umask( 0077 ) : null;
+        $fresh = @mkdir( $dir, 0700 );
+
+        if ( $umask !== null ) {
+
+            umask( $umask );
+        }
+
+        if ( ! $fresh ) {
+
+            throw new \RuntimeException( sprintf( 'Could not create %s.', $dir ) );
+        }
+
+        try {
+
+            $writes = array_fill_keys( (array) ( $plan['writes'] ?? [] ), true );
+
+            foreach ( array_merge( array_keys( $writes ), (array) ( $plan['deletes'] ?? [] ) ) as $rel ) {
+
+                $rel    = (string) $rel;
+                $target = $root . '/' . $rel;
+
+                if ( is_link( $target ) ) {
+
+                    $saved[ $rel ] = [ 'link' => (string) readlink( $target ) ];
+
+                    continue;
+                }
+
+                // Not there: one the copy writes is created; one it deletes is gone already.
+                if ( ! file_exists( $target ) ) {
+
+                    if ( isset( $writes[ $rel ] ) ) {
+
+                        $created[] = $rel;
+                    }
+
+                    continue;
+                }
+
+                if ( ! is_file( $target ) ) {
+
+                    throw new \RuntimeException( sprintf( '%s is not a plain file.', $rel ) );
+                }
+
+                // Each directory of the backup made new by this process.
+                $parts = explode( '/', $rel );
+                array_pop( $parts );
+
+                for ( $i = 1, $n = count( $parts ); $i <= $n; $i++ ) {
+
+                    $sub = implode( '/', array_slice( $parts, 0, $i ) );
+
+                    if ( ! isset( $mkdirs[ $sub ] ) ) {
+
+                        if ( ! @mkdir( $dir . '/' . $sub, 0700 ) ) {
+
+                            throw new \RuntimeException( sprintf( 'Could not create %s/%s.', $dir, $sub ) );
+                        }
+
+                        $mkdirs[ $sub ] = true;
+                    }
+                }
+
+                $in  = @fopen( $target, 'rb' );
+                $out = $createFile( $dir . '/' . $rel, 0600 );
+                $ctx = hash_init( 'sha256' );
+                $ok  = $in !== false && $out !== false;
+
+                while ( $ok && ! feof( $in ) ) {
+
+                    $chunk = fread( $in, 1048576 );
+                    $ok    = $chunk !== false && fwrite( $out, $chunk ) === strlen( $chunk );
+
+                    if ( $ok ) {
+
+                        hash_update( $ctx, $chunk );
+                    }
+                }
+
+                $ok = $out !== false && fclose( $out ) && $ok;
+
+                if ( $in !== false ) {
+
+                    fclose( $in );
+                }
+
+                if ( ! $ok ) {
+
+                    throw new \RuntimeException( sprintf( 'Backing up %s failed; the disk holding %s may be full.', $rel, $updates ) );
+                }
+
+                $saved[ $rel ] = [ 'sha256' => hash_final( $ctx ), 'mode' => fileperms( $target ) & 0777 ];
+            }
+
+            foreach ( array_keys( (array) ( $plan['dirs'] ?? [] ) ) as $d ) {
+
+                if ( ! is_dir( $root . '/' . $d ) ) {
+
+                    $made[] = (string) $d;
+                }
+            }
+
+        } catch ( \Throwable $e ) {
+
+            $removeTree( $dir );
+
+            throw $e;
+        }
+
+        return [ 'backup' => $dir, 'saved' => $saved, 'created' => $created, 'made' => $made ];
+    };
+
+    /*
      * The copy: $tar's files over $root, each that differs written beside
      * its target and renamed over it (keeping the target's mode), then each
-     * of $old_files the release does not ship deleted, with the directories
-     * that leaves empty; Core/Env.php, which says the version, renamed into
-     * place last. Nothing in owa-data/ is written or deleted ($copies): the
-     * web user writes there. Everywhere else is OWA's code, which the cron
-     * user alone writes where the web server runs as another user.
-     * $tar is a handle, read from the start; Tar is loaded by the caller.
-     * Throws at the first failure, leaving the files mixed.
+     * of $plan's deletes deleted, with the directories that leaves empty;
+     * Core/Env.php, which says the version, renamed into place last. Only
+     * what $plan names changes, so only what was backed up: a file that
+     * differs and $plan does not write stops the copy. Nothing in owa-data/
+     * is written or deleted ($copies): the web user writes there. Everywhere
+     * else is OWA's code, which the cron user alone writes where the web
+     * server runs as another user. $tar is a handle, read from the start;
+     * Tar is loaded by the caller. Throws at the first failure, leaving the
+     * files mixed.
      *
-     * @param resource     $tar
-     * @param list<string> $old_files the replaced release's files, relative to $root
+     * @param resource                                                $tar
+     * @param array{writes: list<string>, deletes: list<string>, ...} $plan
      */
-    $apply = static function ( $root, $tar, array $old_files ) use ( $copies ) {
+    $apply = static function ( $root, $tar, array $plan ) use ( $copies ) {
 
-        $root  = rtrim( (string) $root, '/' );
-        $files = [];
-        $dirs  = [];
-        $env   = null;
+        $root   = rtrim( (string) $root, '/' );
+        $files  = [];
+        $dirs   = [];
+        $env    = null;
+        $writes = array_fill_keys( (array) ( $plan['writes'] ?? [] ), true );
 
         if ( $root === '' || ! is_file( $root . '/owa_env.php' ) ) {
 
@@ -758,7 +1196,7 @@ return ( static function () {
 
         try {
 
-            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env, $copies ) {
+            \OWA\Module\Base\Classes\AutoUpdate\Tar::each( $tar, static function ( $rel, $type, $mode, $size, $read ) use ( $root, &$files, &$dirs, &$env, $copies, $writes ) {
 
                 if ( ! $copies( $rel ) ) {
 
@@ -781,8 +1219,12 @@ return ( static function () {
 
                 $files[ $rel ] = true;
 
-                // Read whole first: a file that is already this one is left as it is,
-                // so putting a release back writes only what the copy changed.
+                for ( $dir = dirname( $rel ); $dir !== '.' && ! isset( $dirs[ $dir ] ); $dir = dirname( $dir ) ) {
+
+                    $dirs[ $dir ] = true;
+                }
+
+                // Read whole first: a file that is already this one is left as it is.
                 $buf = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
                 $read( $buf );
                 rewind( $buf );
@@ -797,6 +1239,13 @@ return ( static function () {
                     fclose( $buf );
 
                     return;
+                }
+
+                if ( ! isset( $writes[ $rel ] ) ) {
+
+                    fclose( $buf );
+
+                    throw new \RuntimeException( sprintf( '%s changed after the install was prepared, so it was not backed up.', $rel ) );
                 }
 
                 if ( ! is_dir( dirname( $target ) ) && ! @mkdir( dirname( $target ), 0755, true ) ) {
@@ -856,7 +1305,7 @@ return ( static function () {
                 throw new \RuntimeException( 'The release has no Core/Env.php.' );
             }
 
-            foreach ( $old_files as $rel ) {
+            foreach ( (array) ( $plan['deletes'] ?? [] ) as $rel ) {
 
                 $rel = (string) $rel;
 
@@ -894,12 +1343,204 @@ return ( static function () {
     };
 
     /*
-     * Put the installed release back, before OWA loads: from_tar unpacked
-     * over the OWA directory once its signature checks, then what to_tar
-     * ships and from_tar does not deleted, when to_tar's checks too. Holding
-     * the lock. Returns the exit code; the marker goes once it is done.
+     * Put back what the copy changed, from the backup the marker $m names.
+     * First every backed-up file is read once into one private copy
+     * (php://temp) and checked against its SHA-256 in the marker; when one
+     * is missing or differs, nothing is written and the exception lists
+     * them. Then each is written back that is not as it was (Core/Env.php
+     * last), what the copy created is deleted, with the copy's temporary
+     * files and the directories it made, and the backup is deleted. Throws
+     * when a file does not check or cannot be written; run again, it
+     * carries on from where it stopped. The installer calls it after a copy
+     * that failed; preboot after one that was killed, or a release that did
+     * not boot.
      */
-    $putBack = static function ( $root, array $m, $why, $retry = true ) use ( $tryLock, $unlock, $apply, $marker, $recordFailure, $privateCopy ) {
+    $restore = static function ( $root, array $m ) use ( $copies, $removeTree ) {
+
+        $root    = rtrim( (string) $root, '/' );
+        $dir     = rtrim( (string) ( $m['backup'] ?? '' ), '/' );
+        $saved   = is_array( $m['saved'] ?? null ) ? $m['saved'] : null;
+        $created = is_array( $m['created'] ?? null ) ? $m['created'] : [];
+        $safe    = static fn ( $rel ) => is_string( $rel ) && $rel !== '' && $rel[0] !== '/' && ! str_contains( $rel, "\0" )
+            && ! str_contains( '/' . $rel . '/', '/../' ) && $copies( $rel );
+
+        if ( $saved === null ) {
+
+            throw new \RuntimeException( 'The install marker names no backup to put the files back from.' );
+        }
+
+        $copy = fopen( 'php://temp/maxmemory:1048576', 'w+b' );
+        $at   = [];
+        $bad  = [];
+
+        try {
+
+            foreach ( $saved as $rel => $entry ) {
+
+                $rel = (string) $rel;
+
+                if ( ! $safe( $rel ) || ! is_array( $entry ) ) {
+
+                    throw new \RuntimeException( sprintf( 'The install marker names %s, which is not a path in the OWA directory.', $rel ) );
+                }
+
+                if ( isset( $entry['link'] ) ) {
+
+                    continue;
+                }
+
+                // Never opened unless it is a plain file: a FIFO would wait for a writer.
+                $src = $dir . '/' . $rel;
+                clearstatcache( true, $src );
+                $in  = $dir === '' || is_link( $src ) || ! is_file( $src ) ? false : @fopen( $src, 'rb' );
+                $st  = $in === false ? false : fstat( $in );
+
+                if ( $in === false || $st === false || ( $st['mode'] & 0170000 ) !== 0100000 ) {
+
+                    if ( $in !== false ) {
+
+                        fclose( $in );
+                    }
+
+                    $bad[] = $rel;
+
+                    continue;
+                }
+
+                $start = ftell( $copy );
+                $ctx   = hash_init( 'sha256' );
+
+                while ( ! feof( $in ) ) {
+
+                    $chunk = fread( $in, 1048576 );
+
+                    if ( $chunk === false || fwrite( $copy, $chunk ) !== strlen( $chunk ) ) {
+
+                        fclose( $in );
+
+                        throw new \RuntimeException( sprintf( 'Reading the backup of %s failed; the disk holding PHP\'s temporary directory may be full.', $rel ) );
+                    }
+
+                    hash_update( $ctx, $chunk );
+                }
+
+                fclose( $in );
+                $at[ $rel ] = [ $start, ftell( $copy ) - $start ];
+
+                if ( ! hash_equals( strtolower( (string) ( $entry['sha256'] ?? '' ) ), hash_final( $ctx ) ) ) {
+
+                    $bad[] = $rel;
+                }
+            }
+
+            if ( $bad ) {
+
+                $shown = array_slice( $bad, 0, 20 );
+
+                throw new \RuntimeException( sprintf( '%1$d of the %2$d files backed up before the copy are missing or changed in %3$s, so nothing was put back: %4$s%5$s.',
+                    count( $bad ), count( $saved ), $dir, implode( ', ', $shown ), count( $bad ) > count( $shown ) ? sprintf( ' and %d more', count( $bad ) - count( $shown ) ) : '' ) );
+            }
+
+            // Core/Env.php, which says the version, last.
+            $order = array_keys( $saved );
+            usort( $order, static fn ( $a, $b ) => ( (string) $a === 'Core/Env.php' ) <=> ( (string) $b === 'Core/Env.php' ) );
+
+            foreach ( $order as $rel ) {
+
+                $rel    = (string) $rel;
+                $entry  = $saved[ $rel ];
+                $target = $root . '/' . $rel;
+
+                if ( ! is_dir( dirname( $target ) ) && ! @mkdir( dirname( $target ), 0755, true ) ) {
+
+                    throw new \RuntimeException( sprintf( 'Could not create the directory for %s.', $rel ) );
+                }
+
+                if ( isset( $entry['link'] ) ) {
+
+                    if ( is_link( $target ) && readlink( $target ) === (string) $entry['link'] ) {
+
+                        continue;
+                    }
+
+                    if ( ( is_file( $target ) || is_link( $target ) ) && ! @unlink( $target ) || ! @symlink( (string) $entry['link'], $target ) ) {
+
+                        throw new \RuntimeException( sprintf( 'Could not put back the link %s.', $rel ) );
+                    }
+
+                    continue;
+                }
+
+                if ( is_file( $target ) && ! is_link( $target ) && hash_file( 'sha256', $target ) === strtolower( (string) $entry['sha256'] ) ) {
+
+                    continue;
+                }
+
+                [ $start, $length ] = $at[ $rel ];
+                $tmp = $target . '.owa-update';
+                @unlink( $tmp );
+                $out = @fopen( $tmp, 'xb' );
+                $ok  = $out !== false && fseek( $copy, $start ) === 0 && stream_copy_to_stream( $copy, $out, $length ) === $length;
+                $ok  = $out !== false && fclose( $out ) && $ok;
+
+                if ( ! $ok || ! @chmod( $tmp, (int) ( $entry['mode'] ?? 0644 ) & 0777 ) || ! @rename( $tmp, $target ) ) {
+
+                    @unlink( $tmp );
+
+                    throw new \RuntimeException( sprintf( 'Could not write %s.', $rel ) );
+                }
+            }
+
+        } finally {
+
+            fclose( $copy );
+        }
+
+        foreach ( $created as $rel ) {
+
+            if ( ! $safe( $rel ) ) {
+
+                continue;
+            }
+
+            $target = $root . '/' . $rel;
+
+            if ( ( is_file( $target ) || is_link( $target ) ) && ! @unlink( $target ) ) {
+
+                throw new \RuntimeException( sprintf( 'Could not delete %s, which the copy created.', $rel ) );
+            }
+        }
+
+        // What a copy killed part-way left beside its targets.
+        foreach ( array_merge( array_keys( $saved ), $created ) as $rel ) {
+
+            if ( $safe( (string) $rel ) && is_file( $root . '/' . $rel . '.owa-update' ) ) {
+
+                @unlink( $root . '/' . $rel . '.owa-update' );
+            }
+        }
+
+        $made = array_filter( (array) ( $m['made'] ?? [] ), $safe );
+        usort( $made, static fn ( $a, $b ) => substr_count( (string) $b, '/' ) <=> substr_count( (string) $a, '/' ) );
+
+        foreach ( $made as $d ) {
+
+            @rmdir( $root . '/' . $d );
+        }
+
+        if ( $dir !== '' ) {
+
+            $removeTree( $dir );
+        }
+    };
+
+    /*
+     * Put the installed release back, before OWA loads, from the backup
+     * (restore), holding the lock. Returns the exit code; the marker goes
+     * once it is done. When it cannot, the marker stays, so OWA does not
+     * run on the mixed files, and the failure is recorded.
+     */
+    $putBack = static function ( $root, array $m, $why, $retry = true ) use ( $tryLock, $unlock, $restore, $marker, $recordFailure ) {
 
         $from = (string) ( $m['from'] ?? '' );
         $hold = $tryLock( dirname( (string) ( $m['lock'] ?? '' ) ), sprintf( 'putting back %s', $from ) );
@@ -913,47 +1554,12 @@ return ( static function () {
 
         try {
 
-            if ( ! class_exists( '\\OWA\\Module\\Base\\Classes\\AutoUpdate\\Tar', false ) ) {
-
-                require rtrim( (string) $root, '/' ) . '/modules/Base/Classes/AutoUpdate/Tar.php';
-            }
-
-            // Read once into memory or a temporary file only this process holds,
-            // hashed as it is read: what is unpacked is what was checked.
-            // Each tarball read once into a private copy, which must be the one the marker names.
-            $open = static function ( $tar, $version, $sha256 ) use ( $privateCopy ) {
-
-                [ $copy, $actual ] = $privateCopy( $tar, PHP_INT_MAX );
-
-                if ( ! hash_equals( strtolower( (string) $sha256 ), $actual ) ) {
-
-                    fclose( $copy );
-
-                    throw new \RuntimeException( sprintf( '%s is not the tarball OWA %s was installed from: its SHA-256 is %s.', $tar, $version, $actual ) );
-                }
-
-                return $copy;
-            };
-
-            $h   = $open( $m['from_tar'] ?? '', $from, $m['from_sha256'] ?? '' );
-            $old = [];
-
-            try {
-
-                $old = \OWA\Module\Base\Classes\AutoUpdate\Tar::files( $open( $m['to_tar'] ?? '', (string) ( $m['to'] ?? '' ), $m['to_sha256'] ?? '' ) );
-
-            } catch ( \RuntimeException $e ) {
-
-                // What the new release added stays: nothing proves which files it shipped.
-            }
-
-            $apply( $root, $h, $old );
-            fclose( $h );
+            $restore( $root, $m );
 
         } catch ( \Throwable $e ) {
 
+            $recordFailure( (string) ( $m['updates'] ?? '' ), $m, sprintf( '%s Putting OWA %s back failed: %s', $why, $from, $e->getMessage() ), $retry );
             $unlock( $hold );
-            // The tarball here may be what failed: the release is fetched again.
             fwrite( STDERR, sprintf( "Putting OWA %s back failed: %s\nOWA cannot run until it is put back by hand: download https://updates.openwebanalytics.com/download/%s/owa_%s_packaged.tar, unpack it over %s as the user the scheduler runs as, then delete %s.\n",
                 $from, $e->getMessage(), $from, $from, $root, $marker( $root ) ) );
 
@@ -982,7 +1588,14 @@ return ( static function () {
         'running'     => $running,
         'alone'       => $alone,
         'copies'      => $copies,
+        'keeps'       => $keeps,
+        'kept'        => $kept,
+        'plan'        => $plan,
+        'backup'      => $backup,
         'apply'       => $apply,
+        'restore'     => $restore,
+        'removeTree'  => $removeTree,
+        'removeBackups' => $removeBackups,
         'marker'      => $marker,
         'readMarker'  => $readMarker,
         'logged'      => $logged,
@@ -1005,7 +1618,7 @@ return ( static function () {
          * code to end with, or ['finish' => marker, 'hold' => lock] to boot
          * and run Finish first, whatever the command.
          */
-        'preboot' => static function ( $root, array $argv ) use ( $logged, $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker, $recordFailure ) {
+        'preboot' => static function ( $root, array $argv ) use ( $logged, $readMarker, $writeMarker, $lockState, $tryLock, $unlock, $putBack, $marker, $recordFailure, $removeBackups ) {
 
             $m = $readMarker( $root );
 
@@ -1068,13 +1681,14 @@ return ( static function () {
             }
 
             // Booted: Finish ran and died. Run again twice; then the failure is
-            // recorded, the marker goes, and OWA runs with its schema updates
-            // pending, as after any failed schema update.
+            // recorded, the marker and the backup go, and OWA runs with its
+            // schema updates pending, as after any failed schema update.
             if ( $phase === 'booted' && (int) ( $m['finishes'] ?? 0 ) >= 2 ) {
 
                 $error = sprintf( 'Finishing the install of OWA %s stopped three times before it completed.', $m['to'] ?? '' );
                 $recordFailure( (string) ( $m['updates'] ?? '' ), $m, $error, false, true );
                 @unlink( $marker( $root ) );
+                $removeBackups( (string) ( $m['updates'] ?? '' ) );
                 $unlock( $hold );
                 fwrite( STDERR, $error . "\n" );
 

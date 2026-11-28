@@ -82,11 +82,14 @@ final class InstallRunTest extends TestCase
         $r = $this->install();
 
         $this->assertSame(0, $r['exit'], $r['err']);
-        $this->assertSame(['writeMarker waiting', 'alone', 'writeMarker copying', 'apply to', 'writeMarker copied', 'unlock'], self::steps($r));
+        $this->assertSame(['writeMarker waiting', 'alone', 'backup', 'writeMarker copying', 'apply to', 'writeMarker copied', 'unlock'], self::steps($r));
         $this->assertSame([300], array_slice($r['calls'][1], 1), 'it waits Install::WAIT seconds for other runs');
+        $this->assertSame([$this->root . '/owa-data/updates-test', ['Core/Env.php', 'Core/Added.php']], array_slice($r['calls'][2], 1), 'what the plan writes is backed up, in the updates directory');
         $this->assertSame('copied', $this->marker()['phase']);
-        $this->assertSame(str_repeat('b', 64), $this->marker()['to_sha256'], 'the marker carries what the put-back checks');
+        $this->assertSame([$this->root . '/owa-data/updates-test/backup-test', ['Core/Env.php' => ['sha256' => str_repeat('c', 64), 'mode' => 0644]], ['Core/Added.php']],
+            [$this->marker()['backup'], $this->marker()['saved'], $this->marker()['created']], 'the marker carries what the put-back checks');
         $this->assertSame(['Release check (by hand), OWA 2.0.1 installed.', 'Waiting up to 300 seconds for other runs of cli.php to end.',
+            'Backed up the 1 files the copy overwrites or deletes in ' . $this->root . '/owa-data/updates-test/backup-test.',
             'Copying OWA 2.0.2\'s files over 2.0.1\'s.', 'Copied. The next run of cli.php starts it.'],
             array_map(fn ($l) => preg_replace('/^\S+ \S+ UTC /', '', $l), $this->marker()['log']), 'the marker carries the install\'s log');
         $this->assertStringContainsString("OWA 2.0.2's files are in place.", $r['out']);
@@ -113,11 +116,11 @@ final class InstallRunTest extends TestCase
 
     public function testAMarkerThatCannotBeWrittenInstallsNothing(): void
     {
-        foreach (['waiting' => ['writeMarker waiting'], 'copying' => ['writeMarker waiting', 'alone', 'writeMarker copying']] as $phase => $before) {
+        foreach (['waiting' => ['writeMarker waiting'], 'copying' => ['writeMarker waiting', 'alone', 'backup', 'writeMarker copying']] as $phase => $before) {
             $r = $this->install(['marker_fails' => [$phase]]);
 
             $this->assertSame(1, $r['exit'], $phase);
-            $this->assertSame(array_merge($before, ['recordFailure', 'unlock']), self::steps($r), $phase);
+            $this->assertSame(array_merge($before, ['removeBackups', 'recordFailure', 'unlock']), self::steps($r), $phase);
             $this->assertSame("The marker cannot be written ($phase). Nothing was installed.", self::failure($r));
             $this->assertNull($this->marker(), "$phase: the marker stayed, which would stop every run");
             $this->assertSame("Installing OWA 2.0.2 failed: The marker cannot be written ($phase). Nothing was installed.\n", $r['err']);
@@ -141,25 +144,38 @@ final class InstallRunTest extends TestCase
         $this->assertSame('', $r['err']);
     }
 
-    public function testAFailedCopyIsPutBack(): void
+    /** No room for the backup: nothing is copied, and nothing is left. */
+    public function testABackupThatFailsInstallsNothing(): void
     {
-        $r = $this->install(['apply_fails' => ['to']]);
+        $r = $this->install(['backup_fails' => true]);
 
         $this->assertSame(1, $r['exit']);
-        $this->assertSame(['writeMarker waiting', 'alone', 'writeMarker copying', 'apply to', 'apply from', 'recordFailure', 'unlock'], self::steps($r));
-        $this->assertSame('Could not write Core/Env.php (to). OWA 2.0.1 was put back.', self::failure($r));
+        $this->assertSame(['writeMarker waiting', 'alone', 'backup', 'removeBackups', 'recordFailure', 'unlock'], self::steps($r));
+        $this->assertStringStartsWith('Backing up the files the copy replaces needs about 40 MB free', self::failure($r));
+        $this->assertStringEndsWith('Nothing was installed.', self::failure($r));
         $this->assertNull($this->marker());
-        $this->assertSame("Installing OWA 2.0.2 failed: Could not write Core/Env.php (to). OWA 2.0.1 was put back.\n", $r['err']);
+    }
+
+    public function testAFailedCopyIsPutBack(): void
+    {
+        $r = $this->install(['apply_fails' => true]);
+
+        $this->assertSame(1, $r['exit']);
+        $this->assertSame(['writeMarker waiting', 'alone', 'backup', 'writeMarker copying', 'apply to', 'restore', 'recordFailure', 'unlock'], self::steps($r));
+        $this->assertSame($this->root . '/owa-data/updates-test/backup-test', $r['calls'][5][1], 'from the backup the marker names');
+        $this->assertSame('Could not write Core/Env.php. OWA 2.0.1 was put back.', self::failure($r));
+        $this->assertNull($this->marker());
+        $this->assertSame("Installing OWA 2.0.2 failed: Could not write Core/Env.php. OWA 2.0.1 was put back.\n", $r['err']);
     }
 
     /** The marker stays, saying copying: the next run of cli.php puts the installed release back. */
     public function testWhenPuttingBackFailsTooTheMarkerStays(): void
     {
-        $r = $this->install(['apply_fails' => ['to', 'from']]);
+        $r = $this->install(['apply_fails' => true, 'restore_fails' => true]);
 
         $this->assertSame(1, $r['exit']);
-        $this->assertSame(['writeMarker waiting', 'alone', 'writeMarker copying', 'apply to', 'apply from', 'recordFailure', 'unlock'], self::steps($r));
-        $this->assertSame('Could not write Core/Env.php (to). Putting OWA 2.0.1 back failed too: Could not write Core/Env.php (from).', self::failure($r));
+        $this->assertSame(['writeMarker waiting', 'alone', 'backup', 'writeMarker copying', 'apply to', 'restore', 'recordFailure', 'unlock'], self::steps($r));
+        $this->assertSame('Could not write Core/Env.php. Putting OWA 2.0.1 back failed too: 1 of the 1 files backed up before the copy are missing or changed.', self::failure($r));
         $this->assertSame('copying', $this->marker()['phase']);
     }
 
@@ -169,7 +185,7 @@ final class InstallRunTest extends TestCase
         $r = $this->install(['marker_fails' => ['copied'], 'quiet' => true]);
 
         $this->assertSame(1, $r['exit']);
-        $this->assertSame(['writeMarker waiting', 'alone', 'writeMarker copying', 'apply to', 'writeMarker copied', 'unlock'], self::steps($r));
+        $this->assertSame(['writeMarker waiting', 'alone', 'backup', 'writeMarker copying', 'apply to', 'writeMarker copied', 'unlock'], self::steps($r));
         $this->assertSame('copying', $this->marker()['phase']);
         $this->assertSame('', $r['out']);
         $this->assertSame("OWA 2.0.2's files are in place, but the install marker could not say so: The marker cannot be written (copied). The next run of cli.php puts OWA 2.0.1 back.\n", $r['err']);
