@@ -6,7 +6,8 @@ namespace OWA\Module\Base\Classes;
  *
  * The declaration says what each setting is. `type` says what control it takes,
  * `options` says what a select offers, `label` and `description` say what to
- * call it. A screen that reads those cannot disagree with the registry about
+ * call it, and `note` (a callable given the value in force) adds a line under a
+ * Property or Profile field. A screen that reads those cannot disagree with the registry about
  * what a setting is called or whether it can be saved at all, and cannot write
  * a key nothing reads.
  *
@@ -471,7 +472,7 @@ class SettingsForm {
                 sprintf( ' id="%s"', self::esc( $id ) ) );
 
             return $control === '' ? '' : self::settingBlock( $module, $key, $args, $control,
-                self::problemNote( $module, $key, $id, $posted ), '', $id );
+                self::declaredNote( $args, $value ) . self::problemNote( $module, $key, $id, $posted ), '', $id );
         }
 
         $overriding = $state['own'];
@@ -574,7 +575,28 @@ class SettingsForm {
 
         return self::settingBlock( $module, $key, $args,
             '<div class="owa-overridable__value">' . $control . $text . $inheritNote . '</div>' . $switch,
-            $notes . self::problemNote( $module, $key, $id, $posted ), 'owa-overridable', $id );
+            $notes . self::declaredNote( $args, $overriding ? $value : $state['inherited'] )
+                . self::problemNote( $module, $key, $id, $posted ), 'owa-overridable', $id );
+    }
+
+    /**
+     * The line a declaration's `note` callable returns for the value in force,
+     * escaped; '' when it declares none or returns nothing.
+     *
+     * @param  Field $args
+     * @param  mixed $value
+     * @return string
+     */
+    protected static function declaredNote( array $args, $value ) {
+
+        if ( empty( $args['note'] ) || ! is_callable( $args['note'] ) ) {
+
+            return '';
+        }
+
+        $text = (string) call_user_func( $args['note'], $value );
+
+        return $text === '' ? '' : sprintf( '<div class="description" data-ui="setting-note">%s</div>', self::esc( $text ) );
     }
 
     /** Longer than this, an inherited value is shown on one line, cut, until it is focused or hovered. */
