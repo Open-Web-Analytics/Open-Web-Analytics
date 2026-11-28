@@ -5264,9 +5264,13 @@ class OWATracker  {
      * happens when nothing changed (a one-button form) or the value was set by
      * script. It carries no first-field properties: no field was interacted with.
      *
-     * Bound at the document with capture rather than per form, so forms added
-     * to the page after load are covered without re-binding -- which is the
-     * normal case on anything component-rendered.
+     * Bound at the document rather than per form, so forms added to the page
+     * after load are covered without re-binding -- which is the normal case on
+     * anything component-rendered.
+     *
+     * The submit listener is in the bubble phase, after the page's own
+     * handlers: a submit one of them cancelled (preventDefault()) is not a
+     * form_submit, though it still raises the form_start.
      *
      * @command
      */
@@ -5330,6 +5334,11 @@ class OWATracker  {
 
                 start( form );
 
+                if ( e.defaultPrevented ) {
+
+                    return;
+                }
+
                 var properties = that.formProperties( form );
 
                 /*
@@ -5352,7 +5361,7 @@ class OWATracker  {
                 that.raiseEvent( 'form_submit', properties );
             }
 
-        }, true );
+        }, false );
     }
 
     /**

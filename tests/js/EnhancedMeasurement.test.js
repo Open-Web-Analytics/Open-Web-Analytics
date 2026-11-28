@@ -469,6 +469,27 @@ describe('forms', () => {
             .toEqual(['form_start', 'form_submit', 'form_submit']);
         expect(sent[0].first_field_id).toBe('a');
     });
+
+    test('a submit the page cancels is not a form_submit', () => {
+        document.body.innerHTML = '<form id="f"><input id="a"></form>';
+
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackForms();
+
+        const form = document.getElementById('f');
+        const cancel = (e) => e.preventDefault();
+        form.addEventListener('submit', cancel);
+
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type)).toEqual(['form_start']);
+
+        form.removeEventListener('submit', cancel);
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type)).toEqual(['form_start', 'form_submit']);
+    });
 });
 
 describe('scroll depth', () => {
