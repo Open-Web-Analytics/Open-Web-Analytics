@@ -73,11 +73,30 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     public function testARefusedCommandIsDoneNotRetried(): void
     {
         // custom-dimension-apply for a Property with no cube refuses.
-        $id = JobQueue::enqueue('custom-dimension-apply', ['property' => '999999999999']);
+        $property_id = 7778000000000091;
+        $property    = \OWA\Core\CoreAPI::entityFactory('base.property');
+        $property->setProperties([
+            'id' => $property_id, 'name' => 'Drain refusal fixture', 'domain' => 'example.test',
+            'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time(),
+        ]);
+        $this->assertTrue((bool) $property->create());
+        $this->trackForCleanup('base.property', $property_id, 'id');
+
+        $id = JobQueue::enqueue('custom-dimension-apply', ['property' => (string) $property_id]);
 
         $this->drain();
 
         $this->assertSame('done', $this->jobStatus($id));
+    }
+
+    /** A Property that does not exist is an argument the command refuses: the job fails and gives up. */
+    public function testANonexistentPropertyFailsTheJob(): void
+    {
+        $id = JobQueue::enqueue('custom-dimension-apply', ['property' => '999999999999']);
+
+        $this->drain();
+
+        $this->assertSame('failed', $this->jobStatus($id));
     }
 
     /**

@@ -364,11 +364,31 @@ PHP;
     }
 
     /** Validation failing before action() is a usage error. */
+    /** A declared argument refused: the uniform usage error, naming it, exit 2. */
     public function testFailedValidationExits2(): void
     {
+        $cli = new \OWA\Module\Base\Controller\ChangeUserPasswordCli(['cmd' => 'change-password', 'user' => 'nobody', 'password' => 'short']);
+
         ob_start();
         try {
-            $result = $this->runCommand(\OWA\Module\Base\Controller\ChangeUserPasswordCli::class, '', ['user' => 'nobody', 'password' => 'short']);
+            $cli->doAction();
+        } finally {
+            ob_end_clean();
+        }
+
+        $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);
+        $this->assertSame(['outcome' => 'failed', 'message' => 'cmd=change-password: user=nobody: There is no user nobody. Nothing was done.', 'final' => true],
+            $cli->getCliOutcome());
+    }
+
+    /** A rule validate() adds, past the declared arguments, still answers with validation_errors and exits 2. */
+    public function testAFailedValidateRuleExits2(): void
+    {
+        $user = $this->makeUser('viewer', 'pwrule');
+
+        ob_start();
+        try {
+            $result = $this->runCommand(\OWA\Module\Base\Controller\ChangeUserPasswordCli::class, '', ['user' => $user['user_id'], 'password' => 'short']);
         } finally {
             ob_end_clean();
         }
