@@ -396,8 +396,6 @@ class OWATracker  {
 	         * @option
 	         */
 	        logger_endpoint: '',
-	        /** @internal Set by setApiEndpoint(). */
-	        api_endpoint: '',
 	        /**
 	         * The longest beacon URL, in characters, sent as a GET. A longer
 	         * event is sent as a POST body.
@@ -1665,28 +1663,15 @@ class OWATracker  {
     }
 
     /**
-     * The URL of the install's REST API, used by the overlays that draw report
-     * data on the page.
+     * Does nothing. The overlays take the API's URL from the link the admin
+     * interface opens them with.
      *
      * @command
-     * @param {string} url
+     * @deprecated Nothing. Kept so a 1.x tag that calls it still runs.
      */
-    setApiEndpoint(url) {
+    setApiEndpoint( url ) {
 
-        this.setOption( 'api_endpoint', this.forceUrlProtocol( url ) );
-        OWA.setApiEndpoint(url);
-    }
-
-    /**
-     * See the note on OWA.getApiEndpoint(): this fallback has never executed
-     * and must not be relied upon. It also disagrees with that one about what
-     * an API URL looks like ('api.php' here, 'api/' there), which is what dead
-     * code does. The overlay's API URL comes from the admin interface, the only
-     * origin that knows where reporting lives.
-     */
-    getApiEndpoint() {
-
-        return this.getOption('api_endpoint') || this.getEndpoint() + 'api.php';
+        return;
     }
 
     forceUrlProtocol(url) {
@@ -4844,7 +4829,6 @@ class OWATracker  {
      * @command
      * @param {string} event_type   the event's name
      * @param {Object} [properties]
-     * @param {boolean} [block]     internal; leave unset
      */
     trackCustomEvent(event_type, properties, block) {
 
@@ -5087,7 +5071,6 @@ class OWATracker  {
      *
      * @command
      * @param {Object} event
-     * @param {boolean} [block]  internal; leave unset
      */
     trackEvent(event, block) {
 

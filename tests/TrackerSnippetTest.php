@@ -157,6 +157,12 @@ final class TrackerSnippetTest extends TestCase
         $this->assertStringContainsString( '"stateStoreExpirations"', $html );
     }
 
+    /** setApiEndpoint does nothing in the tracker, so the tag does not emit it, even when asked. */
+    public function testTheTagEmitsNoSetApiEndpoint(): void
+    {
+        $this->assertStringNotContainsString( 'setApiEndpoint', $this->render( [ 'apiEndpoint' => 'https://owa.example.test/api/' ] ) );
+    }
+
     private function bundleTag(): string
     {
         return \OWA\Core\CoreAPI::getJsTrackerBundleTag( 'snippet-site' );

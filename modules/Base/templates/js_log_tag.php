@@ -81,9 +81,6 @@ var owa_baseUrl = '<?php $view->out( $owa_public_url ); ?>';
 var owa_assetsUrl = '<?php $view->out( $owa_assets_url ); ?>';
 <?php } ?>
 var owa_cmds = owa_cmds || [];
-<?php if ( isset($view->options) && $view->getValue('apiEndpoint', $view->options ) ) { ?>
-owa_cmds.push(['setApiEndpoint', <?php echo \OWA\Core\Template::scriptJson( (string) $view->options['apiEndpoint'], JSON_UNESCAPED_SLASHES );?>]);
-<?php } ?>
 <?php foreach ( (array) ( $view->profile_cmds ?? [] ) as $line ) { $view->out( $line, false ); /* trusted: JavaScript TrackerBundle::commandLines() JSON-encodes */ $view->out( "\n" ); } ?>
 <?php 
     if ( isset($view->options) && $view->getValue( 'cmds', $view->options ) ) {
