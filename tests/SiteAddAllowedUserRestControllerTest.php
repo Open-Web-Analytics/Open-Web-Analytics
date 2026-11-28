@@ -208,6 +208,28 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     }
 
     /**
+     * Validation checks only that the user exists: whether the siteId names a
+     * Profile is PropertyScopedAccess's question, answered 403 before
+     * validation runs (above).
+     */
+    public function testValidationChecksTheUserAndNotTheSite(): void
+    {
+        $ctrl = $this->makeController(['siteId' => 'any-site', 'user_id' => 'any-user']);
+        $ctrl->validate();
+
+        $v = (new \ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($ctrl);
+        $rules = [];
+
+        foreach ((array) $v->validations as $validation) {
+            $rules[] = $validation['name'] . ':' . (new \ReflectionClass($validation['obj']))->getShortName();
+        }
+
+        $this->assertNotContains('siteId:EntityExists', $rules);
+        $this->assertContains('user_id:EntityExists', $rules);
+        $this->assertContains('siteId:Required', $rules);
+    }
+
+    /**
      * Finding #4: a bogus user_id is likewise rejected and writes nothing.
      */
     public function testBogusUserIdIsRejectedAndWritesNoRelation(): void

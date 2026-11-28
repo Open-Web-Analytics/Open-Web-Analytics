@@ -26,7 +26,15 @@ class OrganizationProfile extends \OWA\Core\AdminController {
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
         $organization->load( $sm->ensureOrganization() );
 
-        $this->set( 'organization', $organization->_getProperties() );
+        $properties = $organization->_getProperties();
+
+        // A refused rename, drawn again (OrganizationEdit::errorAction()): the name as posted.
+        if ( is_array( $this->data['posted'] ?? null ) ) {
+
+            $properties['name'] = (string) $this->getParam( 'name' );
+        }
+
+        $this->set( 'organization', $properties );
         /*
          * A current Profile even here, so the tile shows all three tiers rather
          * than the Organization over two blank lines -- and so the nav can

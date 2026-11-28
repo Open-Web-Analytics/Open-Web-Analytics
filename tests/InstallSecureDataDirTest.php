@@ -72,4 +72,28 @@ final class InstallSecureDataDirTest extends TestCase
 
         $this->assertSame([], $this->secure($mine), 'nothing more to change');
     }
+
+    /** The tracking bundles' directory is written by publish-trackers only: its owner's alone. */
+    public function testTheBundleDirectoryIsItsOwnersOnly(): void
+    {
+        $was = \OWA\Module\Base\Classes\TrackerBundle::$outDir;
+        $dir = $this->data . '/tracker';
+
+        $old = umask(0);
+        mkdir($dir, 0775);
+        umask($old);
+
+        \OWA\Module\Base\Classes\TrackerBundle::$outDir = $dir . '/';
+
+        try {
+            $said = $this->secure();
+
+            clearstatcache();
+            $this->assertSame(0, fileperms($dir) & 0022, 'tracker/: its owner only');
+            $this->assertContains($dir . ' is now writable by its owner only.', $said);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerBundle::$outDir = $was;
+            @rmdir($dir);
+        }
+    }
 }

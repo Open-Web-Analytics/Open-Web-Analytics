@@ -477,6 +477,13 @@ class JobQueue {
 
                 $outcome = $run( (string) $job['command'], $params, $job );
 
+            } catch ( \OWA\Core\Controller\JobLeaseLost $lost ) {
+
+                // The row is the claim of the run that took the job over, which records its outcome.
+                \OWA\Core\CoreAPI::notice( sprintf( 'Job queue: job %s stopped: %s', $job['id'], $lost->getMessage() ) );
+
+                continue;
+
             } catch ( \Throwable $t ) {
 
                 $outcome = [ 'outcome' => 'failed', 'message' => get_class( $t ) . ': ' . $t->getMessage() ];

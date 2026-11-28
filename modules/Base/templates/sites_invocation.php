@@ -52,8 +52,8 @@ $state  = (string) ( $status['state'] ?? '' );
         <div class="owa-tagStatus__row owa-tagStatus__row--pending">
             <dt><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracker' ) ); ?></dt>
             <dd><?php $view->out( \OWA\Core\CoreAPI::t( 'Waiting to publish.' ) ); ?>
-                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'It could not be written when the settings were saved, so it is queued; '
-                    . 'the scheduler publishes it within a minute. If it stays here, see %1$s. To be served from %2$s' ),
+                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The scheduler publishes it within a minute of a change. '
+                    . 'If it stays here, see %1$s. To be served from %2$s' ),
                     '<code>php cli.php cmd=jobs</code>',
                     '<code>' . $view->escape( (string) $view->bundle_url ) . '</code>' ); ?></span></dd>
         </div>
@@ -124,7 +124,7 @@ $state  = (string) ( $status['state'] ?? '' );
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( // trusted: SettingsForm escapes what it prints
-                    $set, 'profile', (string) $view->site_id, '', null, true );
+                    $set, 'profile', (string) $view->site_id, '', is_array( $view->posted ?? null ) ? $view->posted : null, true );
             }
         ?>
 

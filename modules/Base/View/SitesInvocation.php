@@ -33,6 +33,9 @@ class SitesInvocation extends \OWA\Core\View {
 
         $this->body->set('site_id', $this->get('site_id'));
 
+        // A refused save, drawn again: what was posted and each problem by field (SettingsForm::redrawRefused()).
+        $this->body->set( 'posted', $this->get( 'posted' ) );
+
         $this->body->set('tracking_code', \OWA\Core\CoreAPI::getJsTrackerTag( $this->get('site_id') ) );
         $this->body->set( 'bundle_tag', \OWA\Core\CoreAPI::getJsTrackerBundleTag( $this->get( 'site_id' ) ) );
 

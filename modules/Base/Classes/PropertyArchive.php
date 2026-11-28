@@ -81,7 +81,7 @@ class PropertyArchive {
 
                 $out['profiles'][] = (string) $profile->get( 'site_id' );
 
-                // An archived Profile stops collecting, so its tracking bundle is taken down now.
+                // An archived Profile stops collecting, so its tracking bundle is queued to be taken down.
                 TrackerBundle::remove( (string) $profile->get( 'site_id' ) );
             }
         }

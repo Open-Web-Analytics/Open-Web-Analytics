@@ -33,7 +33,7 @@
         "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
     },
     "request_sec_fetch_site": {
-        "description": "The Sec-Fetch-Site header of the beacon request. Read by spam detection and not stored.",
+        "description": "The Sec-Fetch-Site header of the beacon request, which spam detection offers its rules as sec-fetch-site. No shipped rule reads it. Not stored.",
         "internal": true,
         "set_by": "request",
         "from": [
@@ -50,7 +50,7 @@
         "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
     },
     "request_sec_fetch_dest": {
-        "description": "The Sec-Fetch-Dest header of the beacon request. Read by spam detection and not stored.",
+        "description": "The Sec-Fetch-Dest header of the beacon request, which spam detection offers its rules as sec-fetch-dest. No shipped rule reads it. Not stored.",
         "internal": true,
         "set_by": "request",
         "from": [
@@ -343,20 +343,6 @@
             "v_fts"
         ],
         "column": "visitor_fsts",
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": []
-    },
-    "psts": {
-        "description": "When the visitor's previous session started, as a Unix timestamp in seconds from the visitor's clock. Absent on a visitor's first session.",
-        "set_by": "client",
-        "from": [
-            "s_pts"
-        ],
-        "column": "prior_session_start_ts",
         "events": [
             "*"
         ],

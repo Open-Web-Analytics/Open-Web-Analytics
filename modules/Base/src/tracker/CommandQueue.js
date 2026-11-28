@@ -291,10 +291,10 @@ class CommandQueue {
      *
      * A tracker is constructed on the first command naming it, and the site id
      * arrives on whichever command carries it -- which is not reliably the
-     * first. OWA's own snippet puts setDebug and setApiEndpoint ahead of
-     * setSiteId whenever the install is in development mode or has a custom API
-     * endpoint, and those snippets are already pasted into sites that will
-     * never be regenerated.
+     * first. OWA's own snippet puts setDebug ahead of setSiteId whenever the
+     * install is in development mode, 1.x's put setApiEndpoint there when it
+     * had a custom API endpoint, and those snippets are already pasted into
+     * sites that will never be regenerated.
      *
      * So this does not trust ordering. loadCmds() hands the queue the whole
      * array before process() starts shifting it, so the identity command can

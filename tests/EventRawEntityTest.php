@@ -35,7 +35,7 @@ final class EventRawEntityTest extends TestCase
          * spam_score, spam_rules) are dropped by the cube entity and cost the ceiling
          * nothing.
          */
-        $this->assertCount(78, $columns);
+        $this->assertCount(77, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares
@@ -58,7 +58,7 @@ final class EventRawEntityTest extends TestCase
             'element_anchor', 'anchor_x', 'anchor_y',
             'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
-            'referer_host', 'referer_query', 'prior_session_start_ts',
+            'referer_host', 'referer_query',
             // Device order, so a late beacon does not sort after events that
             // happened after it.
             'event_seq',
@@ -97,6 +97,8 @@ final class EventRawEntityTest extends TestCase
              * dimension. Update074 dropped it.
              */
             'remote_host',
+            // The previous session's start, which nothing read. Update108 dropped it.
+            'prior_session_start_ts',
         ] as $name) {
             $this->assertNotContains($name, $columns,
                 "$name is deliberately not a raw column -- it is a derivation, a dimension "

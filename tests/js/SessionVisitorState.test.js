@@ -603,8 +603,8 @@ describe('days since the prior session is no longer computed here', () => {
         expect(beacons[0]).not.toHaveProperty('days_since_prior_session');
     });
 
-    test('but it does send the anchors the server derives them from', () => {
-        // The RAW timestamps, exactly as the tracker stores them. Sending a
+    test('but it does send the session start, the anchor the server derives them from', () => {
+        // The RAW timestamp, exactly as the tracker stores it. Sending a
         // derived date instead would throw away granularity the tracker already
         // has, and put a transform between the state and the wire.
         const priorStart = NOW - (3 * 86400);
@@ -615,11 +615,12 @@ describe('days since the prior session is no longer computed here', () => {
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        expect(event.get('psts')).toBe(priorStart);
         expect(event.get('sts')).toBe(NOW);
         // what is stored is what is sent
-        expect(event.get('psts')).toBe(OWA.getState('s_session-site', 'psts'));
         expect(event.get('sts')).toBe(OWA.getState('s_session-site', 'sts'));
+        // The previous session's start is not: nothing read it (Update108).
+        expect(event.get('psts')).toBeUndefined();
+        expect(OWA.getState('s_session-site', 'psts')).toBeUndefined();
     });
 });
 

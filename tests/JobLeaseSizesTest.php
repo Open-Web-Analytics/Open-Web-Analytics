@@ -141,4 +141,28 @@ final class JobLeaseSizesTest extends CliControllerTestCase
 
         $this->assertSame(600, $lease->asked);
     }
+
+    /** apply-custom-dimensions runs every fifteen minutes: its lease is one cube's ALTER, not six hours. */
+    public function testTheCustomDimensionApplysLeaseIsOneCubesAlter(): void
+    {
+        $A = \OWA\Module\Base\Controller\CustomDimensionApplyCli::class;
+
+        $this->assertSame($A::APPLY_LEASE, (new $A([]))->getJobLease());
+        $this->assertLessThan(15 * 60 + 1, $A::JOB_LEASE);
+    }
+
+    /** A heartbeat whose lease is no longer the run's stops the run. */
+    public function testAHeartbeatOnALostLeaseStopsTheRun(): void
+    {
+        $lease = new class('1', 300) extends \OWA\Module\Base\Classes\JobQueueLease {
+            public function refresh($seconds) { return false; }
+        };
+
+        $cli = new \OWA\Module\Base\Controller\CubeRebuildCli([]);
+        $cli->setJobLease($lease);
+
+        $this->expectException(\OWA\Core\Controller\JobLeaseLost::class);
+
+        (new ReflectionMethod($cli, 'heartbeat'))->invoke($cli);
+    }
 }

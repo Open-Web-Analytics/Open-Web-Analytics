@@ -31,7 +31,7 @@ class PropertyCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return [
-            'description' => 'Shows a Property\'s state, or archives or restores it. Archiving archives its Profiles and removes their tracking bundles, as the Property screen\'s delete does; restoring brings back the Profiles archived with it. Name the Property by id= or by domain=, and give one of --status, --archive or --restore.',
+            'description' => 'Shows a Property\'s state, or archives or restores it. Archiving archives its Profiles and queues the removal of their tracking bundles, as the Property screen\'s delete does; restoring brings back the Profiles archived with it and queues their bundles. The scheduler writes the bundles. Name the Property by id= or by domain=, and give one of --status, --archive or --restore.',
             'arguments'   => [
                 'id' => [
                     'type'        => 'property',
@@ -49,11 +49,11 @@ class PropertyCli extends \OWA\Core\Controller\Cli {
                 ],
                 '--archive' => [
                     'type'        => 'flag',
-                    'description' => 'Archive the Property and its live Profiles, and remove the Profiles\' tracking bundles.',
+                    'description' => 'Archive the Property and its live Profiles, and queue the removal of the Profiles\' tracking bundles.',
                 ],
                 '--restore' => [
                     'type'        => 'flag',
-                    'description' => 'Restore an archived Property and the Profiles archived with it, and publish their tracking bundles. Refused while another live Property has its domain.',
+                    'description' => 'Restore an archived Property and the Profiles archived with it, and queue their tracking bundles. Refused while another live Property has its domain.',
                 ],
             ],
         ];
@@ -193,7 +193,7 @@ class PropertyCli extends \OWA\Core\Controller\Cli {
             ? sprintf( CoreAPI::t( 'Property %s archived.' ), $id )
             : sprintf( CoreAPI::t( 'Property %s was archived already.' ), $id ) );
 
-        CoreAPI::notice( self::profilesLine( CoreAPI::t( 'Profiles archived, tracking bundles removed: %s.' ), $done['profiles'] ) );
+        CoreAPI::notice( self::profilesLine( CoreAPI::t( 'Profiles archived, removal of their tracking bundles queued: %s.' ), $done['profiles'] ) );
 
         return null;
     }
@@ -224,7 +224,7 @@ class PropertyCli extends \OWA\Core\Controller\Cli {
         }
 
         CoreAPI::notice( sprintf( CoreAPI::t( 'Property %s restored.' ), $id ) );
-        CoreAPI::notice( self::profilesLine( CoreAPI::t( 'Profiles restored, tracking bundles published: %s.' ), $done['profiles'] ) );
+        CoreAPI::notice( self::profilesLine( CoreAPI::t( 'Profiles restored, their tracking bundles queued: %s.' ), $done['profiles'] ) );
 
         return null;
     }

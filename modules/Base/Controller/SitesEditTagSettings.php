@@ -62,17 +62,22 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
             $this->setStatusCode( 3201 );
         }
 
-        // Visitors get the new settings on their next page view, not tomorrow.
+        // Queued: the scheduler republishes the bundle within a minute.
         \OWA\Module\Base\Classes\TrackerBundle::publishNow( $site_id );
 
         $this->set( 'siteId', $site_id );
         $this->setRedirectAction( 'base.sitesInvocation' );
     }
 
+    /**
+     * The Tracking Tag screen drawn again with what was posted and each
+     * refusal beside its field (SettingsForm::redrawRefused()).
+     *
+     * @return mixed the screen's answer
+     */
     public function errorAction() {
 
-        $this->set( 'siteId', (string) $this->getParam( 'siteId' ) );
-        $this->setRedirectAction( 'base.sitesInvocation' );
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        return \OWA\Module\Base\Classes\SettingsForm::redrawRefused( $this->params, (array) $this->getValidationErrorMsgs(),
+            SitesInvocation::class );
     }
 }

@@ -721,13 +721,23 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    public function testRemoveTakesDownOneBundle(): void
+    /** Taking a bundle down is queued too: the full run removes a Profile that is not live. */
+    public function testRemoveQueuesTheFullRunThatTakesTheBundleDown(): void
     {
-        TrackerBundle::publish(self::SITE);
+        $table = $this->scratchJobQueue();
 
-        $this->assertTrue(TrackerBundle::remove(self::SITE));
-        $this->assertFileDoesNotExist($this->out . self::SITE . '.js');
-        $this->assertFalse(TrackerBundle::remove(self::SITE), 'nothing left to remove');
+        try {
+            TrackerBundle::publish(self::SITE);
+
+            $this->assertNotFalse(TrackerBundle::remove(self::SITE));
+            $this->assertFileExists($this->out . self::SITE . '.js', 'nothing removed in the request');
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+
+            $this->assertSame([self::SITE], TrackerBundle::removeOrphans([]));
+            $this->assertFileDoesNotExist($this->out . self::SITE . '.js');
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
     }
 
     /** @return string the scratch job table, set for this test */
@@ -750,23 +760,34 @@ final class TrackerBundleTest extends TestCase
         \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . $table);
     }
 
-    /** A Profile's save publishes it now; one that cannot be written now is queued, not left. */
-    public function testPublishNowQueuesWhatItCannotWrite(): void
+    /**
+     * A Profile's save queues its bundle, on every server role, and writes
+     * nothing: only the cron user writes the bundles (publish-trackers).
+     */
+    public function testPublishNowQueuesOnEveryRoleAndWritesNothing(): void
     {
         $table = $this->scratchJobQueue();
+        $was   = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
 
         try {
-            $this->assertTrue(TrackerBundle::publishNow(self::SITE));
-            $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'));
+            foreach (\OWA\Core\ServerRole::ALL as $role) {
+                \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
+                \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM ' . $table);
 
-            unlink($this->dist . 'owa.tracker.manifest.json');
+                $id = TrackerBundle::publishNow(self::SITE);
 
-            $this->assertFalse(TrackerBundle::publishNow(self::SITE));
-            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . self::SITE));
+                $this->assertNotFalse($id, $role);
+                $this->assertFileDoesNotExist($this->out . self::SITE . '.js', $role . ': nothing written');
+                $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . self::SITE), $role);
 
-            $job = \OWA\Module\Base\Classes\JobQueue::listJobs('pending')[0];
-            $this->assertSame(['site' => self::SITE], json_decode($job['params'], true));
+                $jobs = \OWA\Module\Base\Classes\JobQueue::listJobs('pending');
+                $this->assertCount(1, $jobs, $role);
+                $this->assertSame(['site' => self::SITE], json_decode($jobs[0]['params'], true), $role);
+
+                $this->assertSame($id, TrackerBundle::publishNow(self::SITE), $role . ': a second save, the same job');
+            }
         } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $was);
             $this->dropScratchJobQueue($table);
         }
     }
@@ -812,15 +833,12 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    /**
-     * A settings save publishes as the web server, publish-trackers as the CLI
-     * account: the directory either creates is one the other can write.
-     */
-    public function testTheBundleDirectoryIsGroupWritable(): void
+    /** Only the cron user writes the bundles, so the directory publish-trackers creates is its own. */
+    public function testTheBundleDirectoryIsWritableByItsOwnerOnly(): void
     {
         TrackerBundle::$outDir = $this->out . 'nested/tracker/';
 
-        $umask = umask(022);
+        $umask = umask(0);
 
         try {
             $this->assertTrue(TrackerBundle::publish(self::SITE));
@@ -830,7 +848,7 @@ final class TrackerBundleTest extends TestCase
 
         foreach ([$this->out, $this->out . 'nested/', $this->out . 'nested/tracker/'] as $dir) {
             clearstatcache();
-            $this->assertSame('0775', sprintf('%04o', fileperms($dir) & 0777), $dir);
+            $this->assertSame('0755', sprintf('%04o', fileperms($dir) & 0777), $dir);
         }
     }
 

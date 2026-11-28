@@ -495,7 +495,8 @@ final class ArchiveNotDeleteTest extends TestCase
     /**
      * Deleting a Property takes down its Profiles' tracking bundles, as deleting
      * one Profile does: a bundle left in place keeps every page that loads it
-     * sending beacons.
+     * sending beacons. Queued, as every bundle write is: the scheduler's
+     * publish-trackers run removes them.
      */
     public function testDeletingAPropertyRemovesItsProfilesBundles(): void
     {
@@ -508,6 +509,11 @@ final class ArchiveNotDeleteTest extends TestCase
         file_put_contents( $out . $this->siteId . '.js', '/* owatest */' );
 
         \OWA\Module\Base\Classes\TrackerBundle::$outDir = $out;
+
+        $jobs = 'owa_job_queue_phpunit_archive';
+        \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . $jobs);
+        \OWA\Core\CoreAPI::dbSingleton()->query('CREATE TABLE ' . $jobs . ' LIKE owa_job_queue');
+        \OWA\Module\Base\Classes\JobQueue::$table = $jobs;
 
         // Put back in tearDown: the Property and each of its live Profiles.
         $this->archived[] = [ 'base.property', $this->propertyId ];
@@ -528,11 +534,19 @@ final class ArchiveNotDeleteTest extends TestCase
         try {
             ( new \OWA\Module\Base\Controller\PropertyDelete( [ 'propertyId' => $this->propertyId ] ) )->action();
 
+            $this->assertFileExists( $out . $this->siteId . '.js', 'Nothing is removed in the request.' );
+            $this->assertTrue( \OWA\Module\Base\Classes\JobQueue::isQueued( 'publish-trackers', 'publish-trackers:all' ) );
+
+            // The queued run, as the scheduler runs it.
+            \OWA\Module\Base\Classes\TrackerBundle::removeOrphans( \OWA\Module\Base\Classes\TrackerBundle::siteIds() );
+
             $this->assertFileDoesNotExist( $out . $this->siteId . '.js',
                 'The Profile was archived and its bundle is still served.' );
 
         } finally {
 
+            \OWA\Module\Base\Classes\JobQueue::$table = null;
+            \OWA\Core\CoreAPI::dbSingleton()->query( 'DROP TABLE IF EXISTS ' . $jobs );
             \OWA\Module\Base\Classes\TrackerBundle::$outDir = $was;
             @unlink( $out . $this->siteId . '.js' );
             @rmdir( $out );

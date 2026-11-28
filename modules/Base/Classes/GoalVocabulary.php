@@ -68,7 +68,6 @@ class GoalVocabulary {
         'visitor_fsts'           => 'fsts',
         'prior_sessions'         => 'num_prior_sessions',
         'session_start_ts'       => 'sts',
-        'prior_session_start_ts' => 'psts',
     ];
 
     /**
@@ -113,7 +112,6 @@ class GoalVocabulary {
         'visitor_fsts'           => 'an epoch value. prior_sessions is the '
                                     . 'readable form of the same question',
         'session_start_ts'       => 'an epoch value',
-        'prior_session_start_ts' => 'an epoch value',
         'prior_touch_ts'         => 'an epoch value. The prior touch\'s source, '
                                     . 'medium and campaign are the readable parts',
 

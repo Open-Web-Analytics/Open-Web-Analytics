@@ -38,6 +38,11 @@ class ModuleDeactivate extends \OWA\Core\AdminController {
             return OptionsModules::refuse( $this->params, 3032, [ $module ] );
         }
 
+        if ( $module === 'base' ) {
+
+            return OptionsModules::refuse( $this->params, 3034, [] );
+        }
+
         $this->setRedirectAction('base.optionsModules');
         $this->setStatusCode( $this->deactivate( $module ) === false ? 3014 : 2502 );
     }

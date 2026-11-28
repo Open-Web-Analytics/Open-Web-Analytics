@@ -22,8 +22,9 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
  *
  * ORDER MUST NOT MATTER, and that is the point of the look-ahead. OWA's own
  * snippet template puts setDebug ahead of setSiteId whenever the install is in
- * development mode, and setApiEndpoint ahead of it whenever that option is set
- * -- and those snippets are pasted into sites that will never be regenerated.
+ * development mode, 1.x's put setApiEndpoint ahead of it whenever that option
+ * was set -- and those snippets are pasted into sites that will never be
+ * regenerated.
  * loadCmds() receives the whole array before process()
  * starts shifting it, so the queue looks the identity up instead.
  */

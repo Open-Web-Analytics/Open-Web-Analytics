@@ -19,7 +19,7 @@ $owa_s = (array) $view->sections;
         '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Attention' ) ) . '</b>' ); ?>
 </div>
 
-<?php foreach ( [ 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ] as $owa_key ): ?>
+<?php foreach ( array_keys( $owa_s ) as $owa_key ): /* Base's sections, then each module's (SystemHealth::sections()) */ ?>
 <?php $owa_sec = (array) ( $owa_s[ $owa_key ] ?? [] ); if ( ! $owa_sec ) { continue; } ?>
 <fieldset>
     <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); /* trusted: escapes its text */ ?></legend>

@@ -133,8 +133,6 @@ describe('one OWA cookie cleared but not the other', () => {
         expect(beacon.session_id).not.toBe(SESSION_SID);
         // Its first session: nps is on the beacon, and it is 0.
         expect(beacon.nps).toBe(0);
-        // The orphan's start was another visitor's session, not a prior one.
-        expect(beacon.psts).toBeUndefined();
     });
 
     test('the visitor cookie is gone: later events stay in the new session, and it is the one persisted', () => {

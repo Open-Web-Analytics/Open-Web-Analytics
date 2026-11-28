@@ -33,6 +33,9 @@ final class PropertyCliTest extends CliControllerTestCase
     /** TrackerBundle's $outDir, $distDir and $buildDir before the test. */
     private array $bundleDirsWas = [];
 
+    /** The scratch job queue the archive and restore queue the bundles on. */
+    private const JOBS = 'owa_job_queue_phpunit_propcli';
+
     /** The test's tracker build (dist/) and the directory bundles are written to (tracker/). */
     private string $root = '';
     private string $out = '';
@@ -81,6 +84,11 @@ final class PropertyCliTest extends CliControllerTestCase
         TrackerBundle::$distDir  = $dist;
         TrackerBundle::$buildDir = $dist;   // the manifest is beside the files
 
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query('DROP TABLE IF EXISTS ' . self::JOBS);
+        $db->query('CREATE TABLE ' . self::JOBS . ' LIKE owa_job_queue');
+        \OWA\Module\Base\Classes\JobQueue::$table = self::JOBS;
+
         $this->host  = 'propcli-' . $this->tok . '.example.test';
         $this->sites = ['pcli' . $this->tok . 'a', 'pcli' . $this->tok . 'b'];
 
@@ -99,6 +107,9 @@ final class PropertyCliTest extends CliControllerTestCase
 
             [TrackerBundle::$outDir, TrackerBundle::$distDir, TrackerBundle::$buildDir] = $this->bundleDirsWas;
             exec('rm -rf ' . escapeshellarg($this->root));
+
+            \OWA\Module\Base\Classes\JobQueue::$table = null;
+            \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::JOBS);
         }
 
         parent::tearDown();
@@ -319,9 +330,14 @@ final class PropertyCliTest extends CliControllerTestCase
         [, , $log] = $this->run_(['domain' => $this->host, 'archive' => true]);
 
         $this->assertSame(0, Cli::$exit_code);
-        $this->assertFileDoesNotExist($this->out . $this->sites[0] . '.js', 'the archived Profile\'s bundle is still served');
         $this->assertStringContainsString('Property ' . self::PROPERTY . ' archived.', $log);
-        $this->assertStringContainsString('Profiles archived, tracking bundles removed: ' . $this->sites[0] . '.', $log);
+        $this->assertStringContainsString('Profiles archived, removal of their tracking bundles queued: ' . $this->sites[0] . '.', $log);
+
+        // Queued for the scheduler, whose publish-trackers run takes the bundle down.
+        $this->assertFileExists($this->out . $this->sites[0] . '.js', 'nothing removed by the command');
+        $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+        TrackerBundle::removeOrphans(TrackerBundle::siteIds());
+        $this->assertFileDoesNotExist($this->out . $this->sites[0] . '.js', 'the archived Profile\'s bundle is still served');
 
         $at = $this->archivedDate('base.property', self::PROPERTY);
 
@@ -346,7 +362,14 @@ final class PropertyCliTest extends CliControllerTestCase
 
         $this->assertSame(0, Cli::$exit_code);
         $this->assertStringContainsString('Property ' . self::PROPERTY . ' restored.', $log);
-        $this->assertStringContainsString('Profiles restored, tracking bundles published: ' . $this->sites[0] . '.', $log);
+        $this->assertStringContainsString('Profiles restored, their tracking bundles queued: ' . $this->sites[0] . '.', $log);
+        $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . $this->sites[0]));
+        $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . $this->sites[1]),
+            'the Profile still archived is not queued');
+        $this->assertFileDoesNotExist($this->out . $this->sites[0] . '.js', 'nothing written by the command');
+
+        // The queued job, as the scheduler runs it.
+        TrackerBundle::publishStale(false, [$this->sites[0]]);
         $this->assertFileExists($this->out . $this->sites[0] . '.js', 'the restored Profile\'s bundle is served again');
         $this->assertFileDoesNotExist($this->out . $this->sites[1] . '.js', 'the Profile still archived has none');
         $this->assertSame(0, $this->archivedDate('base.property', self::PROPERTY));

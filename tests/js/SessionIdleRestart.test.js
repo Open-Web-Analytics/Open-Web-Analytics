@@ -95,7 +95,7 @@ describe('a page left open past the inactivity window', () => {
         expect(later.session_id).not.toBe(view.session_id);
         expect(later.is_new_session_start).toBe(true);
         expect(later.prior_session_id).toBeUndefined();
-        expect(later.psts).toBe(view.sts);
+        expect(later).not.toHaveProperty('psts');
         expect(later.sts).toBe(T0 + 31 * MINUTE);
         expect(later.nps).toBe(view.nps + 1);
     });
@@ -187,7 +187,7 @@ describe('another tab of the same site', () => {
         t.trackPageView();
 
         writeSessionCookie(Object.assign({}, sessionCookie(), {
-            sid: 'from-the-other-tab', sts: T0 + 35 * MINUTE, psts: T0,
+            sid: 'from-the-other-tab', sts: T0 + 35 * MINUTE,
             prior_session_id: sent[0].session_id, seq: 4, last_req: T0 + 36 * MINUTE,
         }));
 

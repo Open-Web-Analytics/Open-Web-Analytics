@@ -37,7 +37,7 @@ class SitesDelete extends \OWA\Core\AdminController {
             $site->set( 'archived_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $site->update();
 
-            // An archived Profile stops collecting, so its tracking bundle is taken down now.
+            // An archived Profile stops collecting, so its tracking bundle is queued to be taken down.
             \OWA\Module\Base\Classes\TrackerBundle::remove( (string) $this->getParam( 'siteId' ) );
         }
 

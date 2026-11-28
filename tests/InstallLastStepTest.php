@@ -346,11 +346,11 @@ final class InstallLastStepTest extends TestCase
 
     /**
      * The first Profile's tracking bundle, which the tag on the finish screen
-     * loads, is published when the install completes, by the wizard and by
-     * cmd=core-install alike; one that cannot be written then is queued. Before,
-     * neither published it and the tag answered 404.
+     * loads, is queued when the install completes, by the wizard and by
+     * cmd=core-install alike, and nothing is written: the scheduler's
+     * publish-trackers run writes it.
      */
-    public function testTheFirstProfileSBundleIsPublishedOrQueued(): void
+    public function testTheFirstProfileSBundleIsQueued(): void
     {
         if (!owa_test_db_available()) {
             $this->markTestSkipped('needs the database');
@@ -365,8 +365,9 @@ final class InstallLastStepTest extends TestCase
         $db->query('DROP TABLE IF EXISTS ' . $table);
         $db->query('CREATE TABLE ' . $table . ' LIKE owa_job_queue');
         \OWA\Module\Base\Classes\JobQueue::$table = $table;
-        // No build manifest, so the bundle cannot be written now and is queued.
-        \OWA\Module\Base\Classes\TrackerBundle::$buildDir = $noBuild;
+        // Bundles go to an empty directory of the test's own, which stays empty.
+        $outWas = \OWA\Module\Base\Classes\TrackerBundle::$outDir;
+        \OWA\Module\Base\Classes\TrackerBundle::$outDir = $noBuild;
 
         try {
             $im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
@@ -381,9 +382,10 @@ final class InstallLastStepTest extends TestCase
             }));
 
             $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . $siteId),
-                'the first Profile\'s bundle was neither published nor queued');
+                'the first Profile\'s bundle was not queued');
+            $this->assertSame([], glob($noBuild . '*'), 'nothing written');
         } finally {
-            \OWA\Module\Base\Classes\TrackerBundle::$buildDir = null;
+            \OWA\Module\Base\Classes\TrackerBundle::$outDir = $outWas;
             \OWA\Module\Base\Classes\JobQueue::$table = null;
             $db->query('DROP TABLE IF EXISTS ' . $table);
             $db->query(sprintf("DELETE FROM owa_site WHERE site_id = '%s'", addslashes($siteId)));

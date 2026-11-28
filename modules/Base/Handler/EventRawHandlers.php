@@ -30,11 +30,12 @@ namespace OWA\Module\Base\Handler;
 class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
-     * Whether ids are 1.x's, which may be negative (migratedRowFor()).
+     * Whether the event is migrated from a 1.x row (migratedRowFor()): its ids
+     * may be negative, and all five of its custom variable slots are kept.
      *
      * @var bool
      */
-    private $v1_ids = false;
+    private $migrated = false;
 
     /**
      * The wire prefixes that carry scope, matching the tracker's.
@@ -44,6 +45,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * See Tracker.EVENT_PROPERTY_PREFIX / USER_PROPERTY_PREFIX.
      */
     const EVENT_PROPERTY_PREFIX = 'eps_';
+
+    /** The custom variable slots a 1.x row has. */
+    const V1_CUSTOM_VARS = 5;
     const USER_PROPERTY_PREFIX  = 'vps_';
 
     /**
@@ -178,7 +182,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * Before 1.x's 64-bit ids (January 2012) a visitor or session id was a
      * crc32, which the tracker and 32-bit PHP stored signed, so half of them
      * are negative. A signed BIGINT holds them, so they are kept: any id
-     * FactMigrator::isId() accepts, where a beacon's must be positive.
+     * FactMigrator::isId() accepts, where a beacon's must be positive. Its
+     * five custom variable slots are all kept, whatever maxCustomVars says.
      *
      * @param  object $event
      * @return array<string, mixed>|null  as rowFor()
@@ -186,7 +191,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     public static function migratedRowFor( $event ) {
 
         $self         = new self();
-        $self->v1_ids = true;
+        $self->migrated = true;
 
         return $self->row( $event, (string) $event->getEventType() );
     }
@@ -249,7 +254,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          */
         foreach ( [ 'visitor id' => $visitor_id, 'session id' => $session_id ] as $what => $id ) {
 
-            $valid = $this->v1_ids
+            $valid = $this->migrated
                 ? \OWA\Module\Base\Classes\Migration\FactMigrator::isId( $id )
                 : \OWA\Module\Base\Classes\V2Event::isId( $id );
 
@@ -286,7 +291,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
             'session_start_ts'       => $this->number( $event->get( 'sts' ) ),
-            'prior_session_start_ts' => $this->number( $event->get( 'psts' ) ),
             'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
             'beacon_version' => $this->number( $event->get( 'beacon_version' ) ),
 
@@ -452,8 +456,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         // Custom variables, by NAME. 1.x stores them in five numbered slots and
         // then has to report cv3 as a dimension whose meaning differs per site;
-        // keyed by name they are ordinary param paths.
-        $max = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
+        // keyed by name they are ordinary param paths. A beacon's up to
+        // maxCustomVars; a migrated row's all five (FactMigrator copies five).
+        $max = $this->migrated ? self::V1_CUSTOM_VARS : (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
         for ( $i = 1; $i <= $max; $i++ ) {
 

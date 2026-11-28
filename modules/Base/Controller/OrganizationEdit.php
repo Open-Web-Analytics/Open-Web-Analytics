@@ -44,9 +44,15 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $this->setStatusCode( 3201 );
     }
 
+    /**
+     * The Organization's screen drawn again with the posted name and the
+     * refusal (SettingsForm::redrawRefused()).
+     *
+     * @return mixed the screen's answer
+     */
     public function errorAction() {
 
-        $this->setRedirectAction( 'base.organizationProfile' );
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        return \OWA\Module\Base\Classes\SettingsForm::redrawRefused( $this->params, (array) $this->getValidationErrorMsgs(),
+            OrganizationProfile::class );
     }
 }

@@ -95,7 +95,6 @@ class OWATracker  {
 
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
-		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    nps:                     { scope: 'session', permanent: false },
 		    // The site may set a different one, so it is not permanent.
@@ -396,8 +395,6 @@ class OWATracker  {
 	         * @option
 	         */
 	        logger_endpoint: '',
-	        /** @internal Set by setApiEndpoint(). */
-	        api_endpoint: '',
 	        /**
 	         * The longest beacon URL, in characters, sent as a GET. A longer
 	         * event is sent as a POST body.
@@ -1665,28 +1662,15 @@ class OWATracker  {
     }
 
     /**
-     * The URL of the install's REST API, used by the overlays that draw report
-     * data on the page.
+     * Does nothing. The overlays take the API's URL from the link the admin
+     * interface opens them with.
      *
      * @command
-     * @param {string} url
+     * @deprecated Nothing. Kept so a 1.x tag that calls it still runs.
      */
-    setApiEndpoint(url) {
+    setApiEndpoint( url ) {
 
-        this.setOption( 'api_endpoint', this.forceUrlProtocol( url ) );
-        OWA.setApiEndpoint(url);
-    }
-
-    /**
-     * See the note on OWA.getApiEndpoint(): this fallback has never executed
-     * and must not be relied upon. It also disagrees with that one about what
-     * an API URL looks like ('api.php' here, 'api/' there), which is what dead
-     * code does. The overlay's API URL comes from the admin interface, the only
-     * origin that knows where reporting lives.
-     */
-    getApiEndpoint() {
-
-        return this.getOption('api_endpoint') || this.getEndpoint() + 'api.php';
+        return;
     }
 
     forceUrlProtocol(url) {
@@ -3884,8 +3868,7 @@ class OWATracker  {
          * so the server could not tell new from returning.
          *
          * A session belongs to one visitor. The orphaned store is discarded as
-         * an expired one would be, and its start time is not carried as psts:
-         * it was another visitor's session.
+         * an expired one would be.
          *
          * pendingVisitorCreated is read here, in the same chain that set it:
          * setVisitorId() runs just before this, and the flag is consumed only
@@ -3919,24 +3902,6 @@ class OWATracker  {
              * stays true for as long as it lasts.
              */
             var now = event.get( 'timestamp' ) || this.getTimestamp();
-
-            /*
-             * The DATE of the session that just ended, taken from its stored
-             * start time before the boundary discards it.
-             *
-             * A date, like first_session_date, and coarse for the same reason:
-             * the anchor is stamped by the visitor's clock, so a date absorbs
-             * anything short of a midnight-crossing error. The server counts
-             * days from it. Days bucket, where a continuous seconds value gives one
-             * bucket per distinct second.
-             */
-            var prior_session_start = OWA.getPersistedState( this.storeName('s'), 'sts' );
-
-            if ( prior_session_start && ! minted_visitor ) {
-
-                OWA.setState( this.storeName('s'), 'psts', prior_session_start );
-            }
-
 
             /*
              * This session's start is what the day counts are measured TO.
@@ -4233,7 +4198,6 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
 
@@ -4256,8 +4220,7 @@ class OWATracker  {
          * `s.last_req` is how the DEVICE decides a session has timed out --
          * isNewSession() compares it with this request -- and `prior_last_req`
          * holds the previous session's last hit so the boundary can read it before
-         * it is overwritten. Both are state; nothing on the server reads either, and
-         * the prior session's start arrives as `psts`.
+         * it is overwritten. Both are state; nothing on the server reads either.
          */
 
 
@@ -4660,14 +4623,7 @@ class OWATracker  {
             return;
         }
 
-        var old_sts = OWA.getState( store, 'sts' );
-
         OWA.setState( store, 'prior_last_req', latest );
-
-        if ( old_sts ) {
-
-            OWA.setState( store, 'psts', old_sts );
-        }
 
         OWA.setState( store, 'sts', now );
         OWA.setState( store, 'sid', Util.generateRandomGuid(), true );
@@ -4704,9 +4660,9 @@ class OWATracker  {
         /*
          * READ ALL, THEN WRITE. Each setState() persists the whole store from
          * memory, so setting sid first would overwrite the other tab's cookie
-         * with this tab's sts, psts and seq before they were read.
+         * with this tab's sts and seq before they were read.
          */
-        var keys   = [ 'sid', 'sts', 'psts', 'seq' ];
+        var keys   = [ 'sid', 'sts', 'seq' ];
         var theirs = {};
 
         keys.forEach( function ( key ) {
@@ -4844,7 +4800,6 @@ class OWATracker  {
      * @command
      * @param {string} event_type   the event's name
      * @param {Object} [properties]
-     * @param {boolean} [block]     internal; leave unset
      */
     trackCustomEvent(event_type, properties, block) {
 
@@ -5087,7 +5042,6 @@ class OWATracker  {
      *
      * @command
      * @param {Object} event
-     * @param {boolean} [block]  internal; leave unset
      */
     trackEvent(event, block) {
 

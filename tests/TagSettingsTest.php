@@ -207,6 +207,41 @@ final class TagSettingsTest extends TestCase
             array_values((array) $c->getValidationErrorMsgs()));
     }
 
+    /**
+     * A refused save draws the Tracking Tag screen again, with the posted
+     * value and the reason beside its field; nothing is saved.
+     */
+    public function testARefusedProfileSaveIsShownBesideItsField(): void
+    {
+        $site_id = $this->aSiteId();
+        $message = 'Session Cookie Lifetime (days) is a whole number from 0 to 400.';
+
+        \OWA\Core\CoreAPI::clearScopedSetting('profile', $site_id, 'base', 'tracker_session_cookie_days');
+
+        $c = new \OWA\Module\Base\Controller\SitesEditTagSettings([
+            'do'       => 'base.sitesEditTagSettings',
+            'nonce'    => \OWA\Core\CoreAPI::createNonce('base.sitesEditTagSettings'),
+            'siteId'   => $site_id,
+            'config'   => ['base.tracker_session_cookie_days' => '500'],
+            'override' => ['base.tracker_session_cookie_days' => '1'],
+        ]);
+
+        $data = (array) $c->doAction();
+
+        $this->assertSame('base.sitesInvocation', $data['subview'] ?? null, 'the same screen, drawn');
+        $this->assertArrayNotHasKey('status_code', $data, 'not "Profile updated."');
+        $this->assertSame($message, $data['posted']['problems']['base.tracker_session_cookie_days']);
+        $this->assertNull(\OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', 'tracker_session_cookie_days'),
+            'nothing saved');
+
+        $html = '';
+        foreach (SettingsForm::groupFieldSets('tracking_tag') as $set) {
+            $html .= SettingsForm::scopedFieldSet($set, 'profile', $site_id, '', $data['posted'], true);
+        }
+
+        $this->assertStringContainsString('data-ui="setting-problem">' . htmlspecialchars($message, ENT_QUOTES) . '</div>', $html);
+    }
+
     /** The Tracking Tag screen renders the group, not a list it keeps itself. */
     public function testTheTrackingTagScreenRendersTheGroup(): void
     {
@@ -214,6 +249,7 @@ final class TagSettingsTest extends TestCase
 
         $this->assertStringContainsString("SettingsForm::groupFieldSets( 'tracking_tag' )", $code);
         $this->assertStringContainsString('SettingsForm::scopedFieldSet', $code);
+        $this->assertStringContainsString('$view->posted', $code, 'a refused save is drawn with what was posted');
         $this->assertStringContainsString("createNonceFormField( 'base.sitesEditTagSettings' )", $code);
     }
 }

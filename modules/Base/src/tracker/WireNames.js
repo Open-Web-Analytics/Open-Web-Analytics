@@ -47,7 +47,6 @@ export const WIRE_NAMES = {
     user_id:                'u_id',
     session_id:             's_id',
     sts:                    's_sts',
-    psts:                   's_pts',
     is_new_session_start:   's_new',
 
     // the page

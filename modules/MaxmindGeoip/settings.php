@@ -85,5 +85,18 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'The MaxMind licence key a GeoLite2 database is downloaded with.' ),
         ],
+
+        /*
+         * The last web service failure, for System Health: written by the
+         * lookup at most once an hour (Maxmind::FAILURE_NOTICE_INTERVAL), and
+         * read on the lookup path to keep it to that, so boot fetches it.
+         */
+        'ws_last_failure' => [
+            'default'     => [],
+            'storable'    => true,
+            'autoload'    => true,
+            'internal'    => true,
+            'description' => 'The last MaxMind web service lookup failure: when (at, unix time) and why (message).',
+        ],
     ],
 ];

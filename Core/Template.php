@@ -515,8 +515,8 @@ class Template extends TemplateEngine {
      * It looks redundant -- the token already names its action and resource,
      * and the tracker has a base URL -- but the tracker's base URL is where it
      * *logs*, which need not be where reporting lives. OWA supports split
-     * deployment deliberately: setEndpoint(), setLoggerEndpoint() and
-     * setApiEndpoint() are independently settable, and OWA_SERVER_ROLE splits
+     * deployment deliberately: setEndpoint() and setLoggerEndpoint() are
+     * independently settable, and OWA_SERVER_ROLE splits
      * an install across servers: a collector receives beacons and queues them
      * on SQS for the full server to drain, and never touches the reporting database.
      * The admin interface can be on an entirely different domain from the

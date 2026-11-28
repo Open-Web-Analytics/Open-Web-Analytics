@@ -19,7 +19,7 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
 
     /** Columns that differ between any two beacons: who and when. */
     const IDENTITY = ['id', 'visitor_id', 'session_id', 'ts', 'yyyymmdd', 'visitor_fsts',
-        'session_start_ts', 'prior_session_start_ts', 'created_at', 'updated_at'];
+        'session_start_ts', 'created_at', 'updated_at'];
 
     protected function setUp(): void
     {
