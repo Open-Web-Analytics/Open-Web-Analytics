@@ -364,6 +364,7 @@ function writeCliConfig(string $repoRoot): array
         "yournoncesaltgoeshere"  => $rand(),
         "yourauthkeygoeshere"    => $rand(),
         "yourauthsaltgoeshere"   => $rand(),
+        "yoursecretgoeshere"     => $rand(),
         "http://domain/path/to/owa/" => $publicUrl,
     ];
     $out = '';

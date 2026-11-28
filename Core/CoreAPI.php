@@ -3418,12 +3418,21 @@ class CoreAPI {
         return $s->geolocation;
     }
 
+    /** The nonce window, in seconds, when nonce_expiration_period is not a positive number. */
+    const NONCE_EXPIRATION_PERIOD = 7200;
+
     /**
+     * The current nonce window: time() in windows of nonce_expiration_period
+     * seconds, rounded up. A period of 0 or less, or not a number, is
+     * NONCE_EXPIRATION_PERIOD.
+     *
      * @return float
      */
     public static function getNonceTimeInterval() {
 
-        return  ceil( time() / \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period') );
+        $period = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period' );
+
+        return ceil( time() / ( $period > 0 ? $period : self::NONCE_EXPIRATION_PERIOD ) );
     }
 
     /**
@@ -3697,26 +3706,30 @@ class CoreAPI {
         }
     }
 
+    /** What the private-file hash is the HMAC of (privateFilesHash()). */
+    const PRIVATE_FILES_HMAC_DATA = 'owa-private-files';
+
     /**
-     * @return string
+     * This install's private-file hash (Core\PrivateFiles::name()):
+     * privateFilesHash() of OWA_SECRET, or of '' when it is not defined.
+     *
+     * @return string 32 hex characters
      */
     public static function generateInstanceSpecificHash() {
 
-        if ( defined( 'OWA_SECRET' ) ) {
-            $salt = OWA_SECRET;
-        } else {
-            $salt = '';
-        }
+        return self::privateFilesHash( defined( 'OWA_SECRET' ) ? (string) OWA_SECRET : '' );
+    }
 
-        if ( defined( 'OWA_DB_USER' ) ) {
-            $salt .= OWA_DB_USER;
-        }
+    /**
+     * HMAC-SHA256 of PRIVATE_FILES_HMAC_DATA keyed with $secret, cut to its
+     * first 32 hex characters.
+     *
+     * @param  string $secret
+     * @return string 32 hex characters
+     */
+    public static function privateFilesHash( $secret ) {
 
-        if ( defined( 'OWA_DB_PASSWORD' ) ) {
-            $salt .= OWA_DB_PASSWORD;
-        }
-
-        return md5( $salt );
+        return substr( hash_hmac( 'sha256', self::PRIVATE_FILES_HMAC_DATA, (string) $secret ), 0, 32 );
     }
 
     /**

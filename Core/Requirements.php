@@ -78,8 +78,20 @@ class Requirements {
     /** The shortest secret accepted. The installer writes 64 characters. */
     const SECRET_MIN_LENGTH = 32;
 
-    /** owa-config-dist.php's example values of SECRET_CONSTANTS. */
-    const SECRET_PLACEHOLDERS = [ 'yournoncekeygoeshere', 'yournoncesaltgoeshere', 'yourauthkeygoeshere', 'yourauthsaltgoeshere' ];
+    /**
+     * The key this server's private file names are made with
+     * (CoreAPI::privateFilesHash()), needed on every role. Random, at least
+     * SECRET_MIN_LENGTH characters and not the example value, as
+     * SECRET_CONSTANTS are; cmd=reset-secrets never changes it. Generated at
+     * install, and on an upgrade by Base's Update106.
+     */
+    const INSTANCE_SECRET = 'OWA_SECRET';
+
+    /** A command that prints a value for INSTANCE_SECRET: 64 random hex characters. */
+    const INSTANCE_SECRET_COMMAND = 'php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"';
+
+    /** owa-config-dist.php's example values of SECRET_CONSTANTS, then INSTANCE_SECRET's. */
+    const SECRET_PLACEHOLDERS = [ 'yournoncekeygoeshere', 'yournoncesaltgoeshere', 'yourauthkeygoeshere', 'yourauthsaltgoeshere', 'yoursecretgoeshere' ];
 
     /**
      * Retired constants, and what replaces them. Each notice says whether

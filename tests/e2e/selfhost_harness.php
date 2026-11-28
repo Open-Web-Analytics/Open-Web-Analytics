@@ -403,6 +403,7 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
         'yournoncesaltgoeshere'       => $rand(),
         'yourauthkeygoeshere'         => $rand(),
         'yourauthsaltgoeshere'        => $rand(),
+        'yoursecretgoeshere'          => $rand(),
         'http://domain/path/to/owa/'  => publicUrl(),
     ];
 

@@ -355,7 +355,7 @@ return [
         'mailer-use-smtp' => [ 'config_constant' => 'OWA_MAILER_USE_SMTP', 'default' => false, 'description' => 'Whether OWA sends e-mail through an SMTP server instead of PHP\'s mail(). Off by default.' ],
         'mailer-username' => [ 'config_constant' => 'OWA_MAILER_USERNAME', 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'config_constant' => 'OWA_MAX_CUSTOM_VARS', 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
-        'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
+        'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'type' => 'integer', 'min' => 1, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours); 0 or less is read as 7200.' ],
         'login_throttle_max_failures' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_MAX_FAILURES', 'default' => \OWA\Module\Base\Classes\LoginThrottle::MAX_FAILURES, 'description' => 'How many failed sign-ins by one user name, or from one client address, within login_throttle_window refuse its further sign-ins. 0 counts and refuses nothing. Default 5.' ],
         'login_throttle_window' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_WINDOW', 'default' => \OWA\Module\Base\Classes\LoginThrottle::WINDOW, 'description' => 'The time, in seconds, after a first failed sign-in within which the next ones are counted with it, and after the last one that sign-ins are refused. Default 900 (15 minutes).' ],
 
@@ -472,6 +472,8 @@ return [
         'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update102: the auto_update_level rows of patch it changed to minor, for its down().
         'retired_settings_before_102' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update106: the SHA-256 of the OWA_SECRET lines it added to owa-config.php, for its down().
+        'owa_secret_before_106' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],

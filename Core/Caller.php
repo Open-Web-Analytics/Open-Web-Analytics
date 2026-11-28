@@ -92,6 +92,15 @@ class Caller extends \OWA\Core\Base {
             
             // The boot load itself: read from the config object it is loading into.
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
+
+            // OWA_SECRET, once the stored schema version says Update106 has run.
+            $problem = \OWA\Core\ServerRole::settingsProblem( $this->c->get( 'base', 'schema_version' ) );
+
+            if ( $problem ) {
+
+                $this->e->setHandler();
+                \OWA\Core\ServerRole::refuse( $request_type, $problem );
+            }
         }
         
         // set timezone once config is loaded from DB.

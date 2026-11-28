@@ -44,11 +44,17 @@ final class RequirementsTest extends TestCase
         ], Requirements::toArray());
     }
 
-    /** Every secret is among the constants a role with a database needs. */
+    /**
+     * Every secret is among the constants a role with a database needs.
+     * OWA_SECRET is not: every role needs it.
+     */
     public function testTheSecretsAreRequiredConstants(): void
     {
         $this->assertSame([], array_diff(Requirements::SECRET_CONSTANTS, Requirements::DATABASE_CONSTANTS));
-        $this->assertCount(count(Requirements::SECRET_CONSTANTS), Requirements::SECRET_PLACEHOLDERS);
+        $this->assertNotContains(Requirements::INSTANCE_SECRET, Requirements::SECRET_CONSTANTS);
+        $this->assertNotContains(Requirements::INSTANCE_SECRET, Requirements::DATABASE_CONSTANTS);
+        $this->assertCount(count(Requirements::SECRET_CONSTANTS) + 1, Requirements::SECRET_PLACEHOLDERS, 'one each, and OWA_SECRET\'s');
+        $this->assertSame('yoursecretgoeshere', Requirements::SECRET_PLACEHOLDERS[count(Requirements::SECRET_CONSTANTS)]);
     }
 
     /**

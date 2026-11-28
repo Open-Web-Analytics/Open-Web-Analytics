@@ -9,9 +9,9 @@ use OWA\Module\Base\Classes\InstallManager;
  * Installs OWA: a new installation's database, or a release's code.
  *
  *   php cli.php cmd=core-install user_id=<name> email_address=<email> domain=<url>
- *       no installation yet: the schema, the first admin (its password generated
- *       and printed once, or read with --password-stdin) and the first site,
- *       then the data directory's permissions
+ *       no installation yet: OWA_SECRET, the schema, the first admin (its
+ *       password generated and printed once, or read with --password-stdin)
+ *       and the first site, then the data directory's permissions
  *   php cli.php cmd=core-install
  *       installed: the permissions checked, missing tables created, pending
  *       schema updates applied, stale tracking bundles republished; the admin
@@ -79,7 +79,7 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         $max = \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES;
 
         return [
-            'description' => 'Installs OWA. With no installation yet (owa-config.php must exist), sets up the database: the schema, the first admin and the first tracked website, then the data directory\'s permissions. The admin\'s password is generated and printed once, unless --password-stdin is given. '
+            'description' => 'Installs OWA. With no installation yet (owa-config.php must exist), gives owa-config.php a generated OWA_SECRET where it has none or the example one, then sets up the database: the schema, the first admin and the first tracked website, then the data directory\'s permissions. The admin\'s password is generated and printed once, unless --password-stdin is given. '
                 . 'On an installed system with no release named, in this order: the permissions are checked, missing tables are created, pending schema updates are applied as cmd=core-update-schema applies them, and stale tracking bundles are republished as cmd=publish-trackers does. The admin and the sites are not changed. A module with tables but no recorded schema version stops it, unless --force is given. '
                 . 'With --version or --file, installs that release\'s code, whatever the automatic update settings say: fetched by its version through OWA\'s update host (auto_update_download_url), or read from a tarball, and checked against its signature either way. Any release can be named whose requirements this server meets and which installs over the installed release (its upgrades_from); a newer major version too. Copies its files when the command has finished, and the next run of cli.php runs its schema updates and republishes the tracking bundles. In each directory the release ships, files it does not ship are deleted. A copy that fails puts the installed release back. Clears a failed install of it, which automatic updates skip.',
             'arguments'   => [
@@ -363,10 +363,12 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * A new installation: the schema, then the first admin, the first site
-     * and the install-complete flag together (InstallManager::finishInstall()),
-     * then the data directory's permissions. A run that fails part way can be
-     * run again. A generated password is printed last, once, and never logged.
+     * A new installation: OWA_SECRET in owa-config.php
+     * (InstallManager::writeInstanceSecret()), the schema, then the first
+     * admin, the first site and the install-complete flag together
+     * (InstallManager::finishInstall()), then the data directory's
+     * permissions. A run that fails part way can be run again. A generated
+     * password is printed last, once, and never logged.
      *
      * @return null
      */
@@ -383,6 +385,16 @@ class CoreInstallCli extends \OWA\Core\Controller\Cli {
         }
 
         $this->c->applyConfigConstants();
+
+        // Before anything is created: an install that cannot have one stops here.
+        $secret = $im->writeInstanceSecret();
+
+        if ( $secret['problem'] !== '' ) {
+
+            return $this->fail( $secret['problem'], true );
+        }
+
+        $this->write( $secret['lines'] );
 
         if ( ! $this->param( 'force' ) && in_array( 'base', $im->unknownStateModules(), true ) ) {
 

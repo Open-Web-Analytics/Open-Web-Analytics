@@ -83,6 +83,7 @@ return [
     'mailer-username' => '',
     'maxCustomVars' => 5,
     'nonce_expiration_period' => 7200,
+    'owa_secret_before_106' => [],
     'partition_detail_months' => 36,
     'partition_max_partitions' => 0,
     'password_length' => 4,

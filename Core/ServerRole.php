@@ -19,7 +19,9 @@ namespace OWA\Core;
  *
  * Boot checks the role against the request (bootProblem()): a request type the
  * role does not serve, an unknown or removed role, or a configuration the role
- * cannot run on is refused with one log line (refuse()).
+ * cannot run on is refused with one log line (refuse()). On a role with a
+ * database, a missing OWA_SECRET is refused once the stored settings are read
+ * (settingsProblem()), as only they say whether Update106 has run.
  *
  * A CLI command names the roles it runs under (Controller\Cli::serverRoles(),
  * by default full); cli.php refuses one this role is not among.
@@ -52,6 +54,13 @@ final class ServerRole {
 
     /** The roles without a database. */
     const WITHOUT_DATABASE = [ self::COLLECTOR ];
+
+    /**
+     * Base's schema version from which a role with a database needs
+     * OWA_SECRET: Update106 writes one where owa-config.php has none. Before
+     * it, the pending update stops everything but the update commands.
+     */
+    const SECRET_SCHEMA_VERSION = 106;
 
     /*
      * What owa-config.php is held to -- the constants a role with a database
@@ -287,7 +296,62 @@ final class ServerRole {
             }
         }
 
+        // A role with a database is asked once its schema version is read (settingsProblem()).
+        $secret = $this->hasDatabase() ? null : self::missingSecretProblem( $defined );
+
+        if ( $secret !== null ) {
+
+            $problems[] = $secret;
+        }
+
         return $problems;
+    }
+
+    /**
+     * Why OWA_SECRET stops this server: not defined. On a role with a
+     * database only from SECRET_SCHEMA_VERSION; a role without one has no
+     * schema version to read, and needs it always.
+     *
+     * @param array<string, mixed> $defined        the OWA_ constants
+     * @param mixed                $schema_version Base's stored schema_version; null on a role without a database
+     * @return string|null
+     */
+    public static function missingSecretProblem( array $defined, $schema_version = null ) {
+
+        if ( array_key_exists( Requirements::INSTANCE_SECRET, $defined ) ) {
+
+            return null;
+        }
+
+        if ( $schema_version !== null && (int) $schema_version < self::SECRET_SCHEMA_VERSION ) {
+
+            return null;
+        }
+
+        return sprintf( CoreAPI::t( 'OWA_SECRET is not defined in owa-config.php. Add define(\'OWA_SECRET\', \'RANDOM\'); with a random string of at least %1$d characters in place of RANDOM. This prints one: %2$s' ),
+            Requirements::SECRET_MIN_LENGTH, Requirements::INSTANCE_SECRET_COMMAND );
+    }
+
+    /**
+     * Why this request must be refused once the stored settings are read, or
+     * null: on a role with a database, OWA_SECRET missing once Base's schema
+     * is at SECRET_SCHEMA_VERSION (missingSecretProblem()). Every request
+     * type, the command line too.
+     *
+     * @param mixed                     $schema_version Base's stored schema_version
+     * @param array<string, mixed>|null $defined        the OWA_ constants; this process's when null
+     * @return BootProblem|null
+     */
+    public static function settingsProblem( $schema_version, $defined = null ) {
+
+        if ( ! self::current()->hasDatabase() || ! $schema_version ) {
+
+            return null;
+        }
+
+        $message = self::missingSecretProblem( $defined ?? self::definedConstants(), $schema_version );
+
+        return $message !== null ? [ 'status' => 503, 'message' => $message ] : null;
     }
 
     /**
@@ -378,23 +442,32 @@ final class ServerRole {
 
     /**
      * Why this role's secrets are unusable (weakSecrets()), or null. A role
-     * without a database signs nothing, so its are never asked about.
+     * without a database signs nothing, so its keys are never asked about;
+     * OWA_SECRET, which every role has, is asked about on every role.
      *
      * @param array<string, mixed> $defined the OWA_ constants
      * @return string|null
      */
     public function secretsProblem( array $defined ) {
 
-        $weak = $this->hasDatabase() ? self::weakSecrets( $defined ) : [];
+        $weak     = $this->hasDatabase() ? self::weakSecrets( $defined ) : [];
+        $problems = [];
 
-        if ( ! $weak ) {
+        if ( $weak ) {
 
-            return null;
+            $problems[] = sprintf(
+                CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
+                implode( ', ', $weak ), Requirements::SECRET_MIN_LENGTH );
         }
 
-        return sprintf(
-            CoreAPI::t( '%s in owa-config.php must be a random string of at least %d characters, not empty and not the example value. php cli.php cmd=reset-secrets writes new ones.' ),
-            implode( ', ', $weak ), Requirements::SECRET_MIN_LENGTH );
+        if ( array_key_exists( Requirements::INSTANCE_SECRET, $defined ) && self::isWeakSecret( $defined[ Requirements::INSTANCE_SECRET ] ) ) {
+
+            $problems[] = sprintf(
+                CoreAPI::t( 'OWA_SECRET in owa-config.php must be a random string of at least %1$d characters, not empty and not the example value. This prints one: %2$s' ),
+                Requirements::SECRET_MIN_LENGTH, Requirements::INSTANCE_SECRET_COMMAND );
+        }
+
+        return $problems ? implode( ' ', $problems ) : null;
     }
 
     /**
@@ -432,20 +505,27 @@ final class ServerRole {
 
         foreach ( Requirements::SECRET_CONSTANTS as $constant ) {
 
-            if ( ! array_key_exists( $constant, $defined ) ) {
-
-                continue;
-            }
-
-            $value = is_scalar( $defined[ $constant ] ) ? (string) $defined[ $constant ] : '';
-
-            if ( strlen( $value ) < Requirements::SECRET_MIN_LENGTH || in_array( $value, Requirements::SECRET_PLACEHOLDERS, true ) ) {
+            if ( array_key_exists( $constant, $defined ) && self::isWeakSecret( $defined[ $constant ] ) ) {
 
                 $weak[] = $constant;
             }
         }
 
         return $weak;
+    }
+
+    /**
+     * Whether a secret's value is empty, shorter than SECRET_MIN_LENGTH, an
+     * example value or not a string at all.
+     *
+     * @param  mixed $value
+     * @return bool
+     */
+    public static function isWeakSecret( $value ) {
+
+        $value = is_scalar( $value ) ? (string) $value : '';
+
+        return strlen( $value ) < Requirements::SECRET_MIN_LENGTH || in_array( $value, Requirements::SECRET_PLACEHOLDERS, true );
     }
 
     /**

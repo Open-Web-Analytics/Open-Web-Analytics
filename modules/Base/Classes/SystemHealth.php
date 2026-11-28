@@ -954,7 +954,7 @@ class SystemHealth {
     /**
      * Error logs in the data directory's logs/ named under another install
      * hash than this one's (PrivateFiles::name()): written before
-     * OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed. Yellow, naming each.
+     * OWA_SECRET was set or changed. Yellow, naming each.
      *
      * @param  string|null $logs_dir a test's; else the data directory's logs/
      * @return Finding|null nothing when there is none
@@ -981,7 +981,7 @@ class SystemHealth {
         }
 
         return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Earlier error logs' ), sprintf( \OWA\Core\CoreAPI::t(
-            'Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in %s. Delete each once read.' ),
+            'Errors logged before OWA_SECRET was set or changed are in %s. Delete each once read.' ),
             implode( ', ', $old ) ) );
     }
 
