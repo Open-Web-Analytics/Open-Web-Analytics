@@ -9,6 +9,19 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class MaxmindWebServiceLookupTest extends TestCase
 {
+    /** @var mixed the last failure as the test found it: a failed lookup keeps one */
+    private $lastFailure;
+
+    protected function setUp(): void
+    {
+        $this->lastFailure = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' );
+    }
+
+    protected function tearDown(): void
+    {
+        \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', $this->lastFailure );
+    }
+
     /**
      * The lookup declines instead of fatalling when the client class is absent:
      * the map comes back untouched.
@@ -64,6 +77,97 @@ final class MaxmindWebServiceLookupTest extends TestCase
         $map = [ 'ip_address' => '203.0.113.7', 'city' => '(not set)' ];
 
         $this->assertSame( $map, ( new MaxmindWebServiceLookupTestMocked )->getLocationFromWebService( $map ) );
+    }
+
+    /** What the error log is given while $fn runs. */
+    private function logDuring( callable $fn ): string
+    {
+        $e = \OWA\Core\CoreAPI::errorSingleton();
+        $p = new ReflectionProperty( $e, 'sinks' );
+        $was = $p->getValue( $e );
+        $stream = fopen( 'php://memory', 'w+' );
+        $p->setValue( $e, [ [ 'path' => null, 'stream' => $stream ] ] );
+
+        try {
+            $fn();
+        } finally {
+            $p->setValue( $e, $was );
+        }
+
+        rewind( $stream );
+
+        return (string) stream_get_contents( $stream );
+    }
+
+    /**
+     * A rejected key is logged at notice and kept for System Health, once an
+     * hour: every lookup fails alike until the key is fixed.
+     */
+    public function testAFailureIsLoggedAndKeptAtMostOnceAnHour(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' );
+        \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', [] );
+
+        $lookup = function () {
+            MaxmindWebServiceLookupTestMockedClient::$answer = new \GuzzleHttp\Psr7\Response( 401, [], '{"code":"AUTHORIZATION_INVALID"}' );
+            ( new MaxmindWebServiceLookupTestMocked )->getLocationFromWebService( [ 'ip_address' => '203.0.113.7' ] );
+        };
+
+        try {
+            $first = $this->logDuring( $lookup );
+
+            $this->assertStringContainsString( 'Maxmind web service lookup failed:', $first );
+            $this->assertStringContainsString( 'No location is recorded while lookups fail', $first, 'at notice' );
+
+            $kept = (array) \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' );
+            $this->assertEqualsWithDelta( time(), (int) $kept['at'], 5 );
+            $this->assertNotSame( '', (string) $kept['message'] );
+
+            $this->assertStringNotContainsString( 'No location is recorded while lookups fail', $this->logDuring( $lookup ),
+                'the second failure within the hour is not a notice' );
+            $this->assertSame( $kept, \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' ) );
+
+            $later = (int) $kept['at'] + \OWA\Module\MaxmindGeoip\Classes\Maxmind::FAILURE_NOTICE_INTERVAL;
+            $this->assertTrue( \OWA\Module\MaxmindGeoip\Classes\Maxmind::recordWebServiceFailure( 'later', $later ), 'an hour on, it is' );
+            $this->assertSame( [ 'at' => $later, 'message' => 'later' ], \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' ) );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', $was );
+        }
+    }
+
+    /** System Health shows the last failure while lookups go to the web service: red within a day. */
+    public function testSystemHealthShowsTheLastFailure(): void
+    {
+        $was = [ \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'lookup_method' ),
+                 \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' ),
+                 \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ];
+
+        try {
+            $module = new \OWA\Module\MaxmindGeoip\Module();
+            $now    = 1800000000;
+
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'lookup_method', 'city_lite_db' );
+            $this->assertSame( [], $module->systemHealthSection( [], $now ), 'the local database: no section' );
+
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'lookup_method', 'geoip_city_isp_org_web_service' );
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', [] );
+            $none = $module->systemHealthSection( [], $now )['geoip'];
+            $this->assertSame( 'green', $none['level'] );
+            $this->assertSame( 'No lookup has failed.', $none['findings'][0]['detail'] );
+
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', [ 'at' => $now - 3600, 'message' => 'AUTHORIZATION_INVALID' ] );
+            $recent = $module->systemHealthSection( [], $now )['geoip'];
+            $this->assertSame( 'red', $recent['level'] );
+            $this->assertSame( 'Last failure', $recent['findings'][0]['label'] );
+            $this->assertStringContainsString( 'AUTHORIZATION_INVALID', $recent['findings'][0]['detail'] );
+            $this->assertStringContainsString( date( 'Y-m-d H:i', $now - 3600 ), $recent['findings'][0]['detail'] );
+
+            $this->assertSame( 'green', $module->systemHealthSection( [], $now + 86400 )['geoip']['level'], 'a day on' );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'lookup_method', $was[0] );
+            \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', $was[1] );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', $was[2] );
+        }
     }
 
     /** Through the module's own client, an answer is mapped onto the location. */

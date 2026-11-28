@@ -149,11 +149,52 @@ class Module extends \OWA\Core\Module {
         ] );
     }
 
+    /**
+     * The geolocation filter, and this module's System Health section.
+     */
     public function registerFilters() {
 
         if ( \OWA\Core\CoreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
 
             $this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
         }
+
+        $this->registerFilter( 'system_health_sections', $this, 'systemHealthSection' );
+    }
+
+    /**
+     * The GeoIP section of System Health, when lookups go to the web service:
+     * the last failure, red within a day of it.
+     *
+     * @param  array<string, array<string, mixed>> $sections a module's sections, key => section
+     * @param  int|null                            $now      unix time
+     * @return array<string, array<string, mixed>>
+     */
+    public function systemHealthSection( $sections, $now = null ) {
+
+        if ( \OWA\Core\CoreAPI::getSetting( self::NAME, 'lookup_method' ) !== 'geoip_city_isp_org_web_service' ) {
+
+            return $sections;
+        }
+
+        $H    = \OWA\Module\Base\Classes\SystemHealth::class;
+        $now  = $now ?? time();
+        $last = (array) \OWA\Core\CoreAPI::getSetting( self::NAME, 'ws_last_failure' );
+
+        if ( empty( $last['at'] ) ) {
+
+            $finding = $H::finding( 'green', \OWA\Core\CoreAPI::t( 'Web service' ),
+                \OWA\Core\CoreAPI::t( 'No lookup has failed.' ) );
+
+        } else {
+
+            $finding = $H::finding( $now - (int) $last['at'] < 86400 ? 'red' : 'green', \OWA\Core\CoreAPI::t( 'Last failure' ),
+                sprintf( \OWA\Core\CoreAPI::t( '%1$s: %2$s. No location is recorded while lookups fail.' ),
+                    date( 'Y-m-d H:i', (int) $last['at'] ), (string) ( $last['message'] ?? '' ) ) );
+        }
+
+        $sections['geoip'] = $H::section( \OWA\Core\CoreAPI::t( 'GeoIP' ), [ $finding ] );
+
+        return $sections;
     }
 }

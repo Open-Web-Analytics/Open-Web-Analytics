@@ -212,6 +212,45 @@ final class SystemHealthTest extends TestCase
         $this->assertStringContainsString('&lt;b&gt;it broke&lt;/b&gt;', $html, 'a job\'s error is escaped');
     }
 
+    /**
+     * A module's section comes after Base's (system_health_sections), and
+     * one under a key of Base's is not taken.
+     */
+    public function testAModulesSectionsFollowBases(): void
+    {
+        $ed  = \OWA\Core\CoreAPI::getEventDispatch();
+        $was = $ed->listenersByFilterType['system_health_sections'] ?? null;
+
+        \OWA\Core\CoreAPI::registerFilter('system_health_sections', function ($sections) {
+            $sections['owatest'] = SystemHealth::section('Module check', [SystemHealth::finding('yellow', 'Probe', 'Something to look at.')]);
+            $sections['scheduler'] = SystemHealth::section('Not the scheduler', []);
+
+            return $sections;
+        });
+
+        try {
+            $sections = SystemHealth::sections();
+
+            $this->assertSame('owatest', array_key_last($sections));
+            $this->assertSame('yellow', $sections['owatest']['level']);
+            $this->assertNotSame('Not the scheduler', $sections['scheduler']['title']);
+
+            $t = new \OWA\Core\Template('base');
+            $t->set('sections', $sections);
+            $this->assertTrue($t->set_template('system_health.php'));
+            $html = (string) $t->fetch();
+
+            $this->assertStringContainsString('Module check', $html);
+            $this->assertStringContainsString('Something to look at.', $html);
+        } finally {
+            if ($was === null) {
+                unset($ed->listenersByFilterType['system_health_sections']);
+            } else {
+                $ed->listenersByFilterType['system_health_sections'] = $was;
+            }
+        }
+    }
+
     /** A fixture build and output directory for the bundle section, as TrackerBundleTest makes them. */
     private function bundleFixture(bool $built = true): array
     {

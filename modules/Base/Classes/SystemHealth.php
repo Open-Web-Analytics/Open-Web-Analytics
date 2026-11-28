@@ -43,7 +43,7 @@ class SystemHealth {
      */
     public static function sections() {
 
-        return [
+        $sections = [
             'scheduler' => self::scheduler(),
             'jobs'      => self::recurringJobs(),
             'queue'     => self::queue(),
@@ -52,6 +52,21 @@ class SystemHealth {
             'data'      => self::data(),
             'install'   => self::installation(),
         ];
+
+        /*
+         * Each active module's own, after Base's: the system_health_sections
+         * filter, given the modules' sections so far (key => a section, as
+         * section() makes one). A key of Base's is not replaced.
+         */
+        foreach ( (array) \OWA\Core\CoreAPI::filter( 'system_health_sections', [] ) as $key => $section ) {
+
+            if ( ! isset( $sections[ $key ] ) && is_array( $section ) && isset( $section['title'], $section['level'] ) ) {
+
+                $sections[ $key ] = $section + [ 'findings' => [] ];
+            }
+        }
+
+        return $sections;
     }
 
     /**
@@ -79,7 +94,7 @@ class SystemHealth {
      * @param  array<string, mixed> $extra    the section's own data
      * @return Section title, level, findings, and $extra
      */
-    private static function section( $title, array $findings, array $extra = [] ) {
+    public static function section( $title, array $findings, array $extra = [] ) {
 
         return array_merge( [
             'title'    => $title,
@@ -95,7 +110,7 @@ class SystemHealth {
      * @param  string|null $command
      * @return Finding
      */
-    private static function finding( $level, $label, $detail, $command = null ) {
+    public static function finding( $level, $label, $detail, $command = null ) {
 
         return [ 'level' => $level, 'label' => $label, 'detail' => $detail, 'command' => $command ];
     }

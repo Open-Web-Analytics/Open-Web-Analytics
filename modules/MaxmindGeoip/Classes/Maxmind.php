@@ -21,6 +21,9 @@ class Maxmind extends \OWA\Core\Location {
     /** @var string the web service client; a subclass may name another (tests) */
     protected $ws_client_class = WebServiceClient::class;
 
+    /** At most one notice, and one stored failure, per this many seconds. */
+    const FAILURE_NOTICE_INTERVAL = 3600;
+
     /**
      * The GeoLite2 editions this module can read, and what each costs.
      *
@@ -176,8 +179,7 @@ class Maxmind extends \OWA\Core\Location {
 
         } catch ( \Throwable $e ) {
 
-            \OWA\Core\CoreAPI::debug( sprintf(
-                'Maxmind web service lookup failed: %s', $e->getMessage() ) );
+            self::recordWebServiceFailure( $e->getMessage() );
 
             return $location_map;
         }
@@ -197,6 +199,48 @@ class Maxmind extends \OWA\Core\Location {
         }
 
         return $location_map;
+    }
+
+    /**
+     * Log a failed web service lookup at notice, and keep it in
+     * ws_last_failure for System Health; at most once per
+     * FAILURE_NOTICE_INTERVAL, since every lookup fails alike while a key is
+     * rejected or the service is down. The others are logged at debug.
+     *
+     * @param  string   $message the client's
+     * @param  int|null $now     unix time
+     * @return bool whether it was logged at notice and kept
+     */
+    public static function recordWebServiceFailure( $message, $now = null ) {
+
+        $now  = $now ?? time();
+        $last = (array) \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_last_failure' );
+
+        if ( $now - (int) ( $last['at'] ?? 0 ) < self::FAILURE_NOTICE_INTERVAL ) {
+
+            \OWA\Core\CoreAPI::debug( sprintf( 'Maxmind web service lookup failed: %s', $message ) );
+
+            return false;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf( 'Maxmind web service lookup failed: %s. No location is recorded while lookups fail; '
+            . 'the next failure is logged at notice in an hour.', $message ) );
+
+        $failure = [ 'at' => (int) $now, 'message' => (string) $message ];
+
+        // In memory first, so the rest of this process keeps to the interval even where the save fails.
+        \OWA\Core\CoreAPI::setSetting( 'maxmind_geoip', 'ws_last_failure', $failure );
+
+        try {
+
+            \OWA\Core\CoreAPI::persistSetting( 'maxmind_geoip', 'ws_last_failure', $failure );
+
+        } catch ( \Throwable $t ) {
+
+            \OWA\Core\CoreAPI::debug( 'Maxmind: the last web service failure was not saved: ' . $t->getMessage() );
+        }
+
+        return true;
     }
 
     /**
