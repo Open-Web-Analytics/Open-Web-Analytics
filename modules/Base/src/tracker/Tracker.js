@@ -4366,6 +4366,10 @@ class OWATracker  {
      *
      * A restarted session takes this page's campaign tags and referrer, which
      * every event carries, so it is attributed as the page's own landing was.
+     *
+     * The engagement accrued before the gap is discarded, the delta a
+     * user_engagement event already carries included: the new session starts
+     * with no engagement time.
      */
     continueSession( event ) {
 
@@ -4403,6 +4407,9 @@ class OWATracker  {
 
         this.isNewSessionFlag    = true;
         this.pendingSessionStart = true;
+
+        this.consumeEngagementDelta();
+        event.unset( 'engagement_msec' );
 
         this.setNumberPriorSessions( event );
     }
