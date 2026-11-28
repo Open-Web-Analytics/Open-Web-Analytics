@@ -214,8 +214,9 @@ class Finish {
     }
 
     /**
-     * After a successful install: the failure record, and every tarball but
-     * this release's, which the next install puts back if it fails.
+     * After a successful install: the failure record, and the tarballs: this
+     * release's, and any other but a pending one newer than it (Downloads),
+     * which stays until it installs or a higher one replaces it.
      *
      * @param  Downloads $downloads
      * @param  string    $v
@@ -224,6 +225,6 @@ class Finish {
     public static function cleanup( Downloads $downloads, $v ) {
 
         $downloads->clearFailure();
-        $downloads->prune( [ $v ] );
+        $downloads->prune( [ $downloads->pending( $v ) ] );
     }
 }

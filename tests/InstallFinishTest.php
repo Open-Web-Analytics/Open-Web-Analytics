@@ -35,7 +35,7 @@ final class InstallFinishTest extends CliControllerTestCase
         parent::tearDown();
     }
 
-    /** After an install: the failure record, and every tarball but this release's, which the next install puts back if it fails. */
+    /** After an install: the failure record, and the tarballs. An installation that is current holds none; a pending one newer than it stays. */
     public function testTheCleanUp(): void
     {
         $d      = new Downloads($this->tmp . '/updates');
@@ -50,7 +50,13 @@ final class InstallFinishTest extends CliControllerTestCase
 
         Finish::cleanup($d, '2.0.3');
         $this->assertNull($d->failure());
-        $this->assertSame(['2.0.3'], $d->versions());
+        $this->assertSame([], $d->versions(), 'the installed release\'s tarball goes too');
+        $this->assertSame([], glob($this->tmp . '/updates/owa_*'));
+
+        $tarred('2.0.3');
+        $tarred('2.0.4');
+        Finish::cleanup($d, '2.0.3');
+        $this->assertSame(['2.0.4'], $d->versions(), 'the pending release, newer, until it installs or a higher one replaces it');
     }
 
     /** One notice per failed release; what it says depends on whether the new release had booted. */
