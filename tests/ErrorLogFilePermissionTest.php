@@ -13,8 +13,8 @@ use PHPUnit\Framework\TestCase;
  * fatal.
  *
  * That is not a one-off: the path embeds an instance-specific hash derived from
- * the credentials, so a new file appears -- with a fresh race over who creates
- * it -- on every rotation.
+ * OWA_SECRET, so a new file appears -- with a fresh race over who creates it --
+ * whenever OWA_SECRET changes, and once on the upgrade that adds it.
  *
  * This asserts the mode of a file the logger actually creates, rather than
  * looking for the argument in the source, so it holds however the code is
