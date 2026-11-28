@@ -10,7 +10,7 @@ require_once __DIR__ . '/BootsWithConstants.php';
  * links), OWA_TRACKING_URL (log.php) and OWA_ASSETS_URL (public/, a CDN). The
  * last two are Settings::trackingUrl() and assetsUrl(): the constant when it
  * is set, else derived from public_url when read, so they follow a public_url
- * set after boot.
+ * set after boot. public_url is given its trailing slash at boot (setupPaths()).
  */
 final class UrlSettingsTest extends TestCase
 {
@@ -100,6 +100,37 @@ final class UrlSettingsTest extends TestCase
 
         $this->assertSame('', (string) $s->get('base', 'tracking_url'));
         $this->assertSame('', (string) $s->get('base', 'assets_url'));
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function publicUrls(): iterable
+    {
+        yield 'without the slash' => ['https://owa.example.test/owa', 'https://owa.example.test/owa/'];
+        yield 'with it'           => ['https://owa.example.test/owa/', 'https://owa.example.test/owa/'];
+        yield 'with two'          => ['https://owa.example.test/owa//', 'https://owa.example.test/owa/'];
+        yield 'none'              => ['', ''];
+    }
+
+    /** @dataProvider publicUrls */
+    public function testThePublicUrlEndsInASlashAndSoDoesEveryUrlBuiltFromIt(string $given, string $public): void
+    {
+        $s = $this->settings(['public_url' => $given]);
+        (new \ReflectionMethod($s, 'setupPaths'))->invoke($s);
+
+        $this->assertSame($public, $s->get('base', 'public_url'));
+        $this->assertSame($public . 'index.php', $s->get('base', 'main_url'));
+        $this->assertSame($public . 'api/index.php', $s->get('base', 'rest_api_url'));
+        $this->assertSame($public . 'modules/', $s->get('base', 'modules_url'));
+        $this->assertSame($public, $s->trackingUrl());
+    }
+
+    public function testOwaPublicUrlWithoutItsSlashGetsOneAtBoot(): void
+    {
+        $this->assertSame([
+            'base.public_url'   => ['value' => 'https://owa.example.test/owa/', 'constant' => 'OWA_PUBLIC_URL'],
+            'base.main_url'     => ['value' => 'https://owa.example.test/owa/index.php', 'constant' => ''],
+            'base.rest_api_url' => ['value' => 'https://owa.example.test/owa/api/index.php', 'constant' => ''],
+        ], $this->bootWith(['OWA_PUBLIC_URL' => 'https://owa.example.test/owa'], 'base.public_url', 'base.main_url', 'base.rest_api_url'));
     }
 
     /** Both are governed by their constants, which a boot applies and names (fixtures/settings_from_constants_probe.php). */

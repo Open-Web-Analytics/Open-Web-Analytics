@@ -17,7 +17,7 @@ return function () {
     $names    = TrackingEventHelpers::eventNames();
 
     if ( ! $names ) {
-        throw new RuntimeException( 'No first-class events are declared.' );
+        throw new RuntimeException( 'No built-in events are declared.' );
     }
 
     $listed = fn ( $name ) => array_values( array_filter( TrackingEventHelpers::propertiesForEvent( $name ),

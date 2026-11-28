@@ -4,9 +4,9 @@
  *
  * WHAT ONLY THIS SUITE CAN CHECK
  *
- * The access rules. `view_reports` is listed in
- * capabilitiesThatRequireSiteAccess, so passing it needs a REAL user with a
- * real grant on the site being looked at. A unit test can give a user a role
+ * The access rules. A report needs `view_reports` and access to its
+ * Property, so passing it needs a REAL user with a real grant on the site
+ * being looked at. A unit test can give a user a role
  * but not a grant, so the interesting cases -- an analyst opening a report an
  * admin built, and an analyst being refused the builder -- can only be driven
  * here, where the fixture users are real.

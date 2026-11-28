@@ -5,8 +5,8 @@ namespace OWA\Module\Domstream\Controller;
  * Stores a `domstream` tracking event: one chunk of a recording.
  *
  * Routed here by name (tracking.domstream, Module::addTrackingEventProcessor),
- * after logEvent()'s edge checks -- excluded IP, unregistered site, the
- * named-user gate -- which every tracking event passes. Not dispatched under
+ * after logEvent()'s edge checks -- excluded IP, unregistered site --
+ * which every tracking event passes. Not dispatched under
  * tracking.*, so Base's event-table handler never sees a chunk, and the spam
  * score is asked here instead: a chunk whose score reaches the threshold is
  * not stored (Classes\Spam\Score::admit()).

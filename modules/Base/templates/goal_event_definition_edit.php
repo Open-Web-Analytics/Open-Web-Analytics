@@ -17,7 +17,7 @@ $owa_ke = (array) $view->goalEventDefinition;
 ?>
 <h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
-<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal events are custom events that are created when OWA observes a behavior pattern you specify. A goal event definition names them and says which events count: choose the event, then pick a property of it, how to compare it, and what to compare it to.' ) );?></div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal events are events OWA creates when it observes a behavior pattern you specify. A goal event definition names them and says which events count: choose the event, then pick a property of it, how to compare it, and what to compare it to.' ) );?></div>
 
 <form method="post" name="owa_goalEventDefinition">
 
@@ -102,7 +102,7 @@ $owa_ke = (array) $view->goalEventDefinition;
                     </select>
                     <?php $view->out( \OWA\Core\CoreAPI::t( 'of these match:' ) );?>
                 </div>
-                <div class="owa_goalTriggerHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.' ) );?></div>
+                <div class="owa_goalTriggerHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'A custom event, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.' ) );?></div>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
 
                 <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>

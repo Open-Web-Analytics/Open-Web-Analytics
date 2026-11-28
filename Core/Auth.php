@@ -145,6 +145,7 @@ class Auth extends \OWA\Core\Base {
         };
         
         $this->legacy_api_key_refused = false;
+        $this->cross_origin_cookies_refused = false;
 
         // check existing auth status first in case someone else took care of this already.
         if (\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated()) {
@@ -185,6 +186,17 @@ class Auth extends \OWA\Core\Base {
             // request named a credential and it did not hold.
             $this->setAuthMethod( 'app_password' );
             $ret = $this->authByAppPassword( $appPassword['token'], $appPassword['user_id'] );
+        } elseif ( $accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')
+                   && \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )
+                   && ! \OWA\Core\RequestOrigin::requestIsSameOrigin() ) {
+            // The REST API takes the session cookies from a same-origin
+            // request only (RequestOrigin::isSameOrigin()): one from the origin
+            // it was made to. Otherwise the request is judged as one that
+            // carried no session, and the cookies are kept.
+            $this->cross_origin_cookies_refused = true;
+            $ret = false;
+            \OWA\Core\CoreAPI::debug( 'Session cookies not accepted: the request is not same-origin.' );
+
         } elseif ($accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
             // auth user by cookies
             $this->setAuthMethod( 'cookies');
@@ -363,11 +375,22 @@ class Auth extends \OWA\Core\Base {
             return false;
         }
 
+        // Failures are counted per client address, with the login form's.
+        $keys = \OWA\Module\Base\Classes\LoginThrottle::keys( '', self::lastPublicHop() );
+
+        if ( \OWA\Module\Base\Classes\LoginThrottle::isLocked( $keys ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password refused: too many failed attempts from this address.' );
+
+            return false;
+        }
+
         $password = \OWA\Module\Base\Classes\AppPasswords::verify( $token );
 
         if ( ! $password ) {
 
             \OWA\Core\CoreAPI::debug( 'Application password not recognised.' );
+            \OWA\Module\Base\Classes\LoginThrottle::recordFailure( $keys );
 
             return false;
         }
@@ -375,6 +398,7 @@ class Auth extends \OWA\Core\Base {
         if ( $user_id !== null && (string) $user_id !== (string) $password['user_id'] ) {
 
             \OWA\Core\CoreAPI::debug( 'Application password belongs to a different user.' );
+            \OWA\Module\Base\Classes\LoginThrottle::recordFailure( $keys );
 
             return false;
         }
@@ -474,10 +498,31 @@ class Auth extends \OWA\Core\Base {
         unset( $this->credentials['password'] );
         // the typed password, checked against the stored hash
         $this->credentials['new_password'] = $password;
+
+        // Failed sign-ins are counted per user name and per client address,
+        // this attempt among them before its password is checked.
+        $address = self::lastPublicHop();
+        $keys    = \OWA\Module\Base\Classes\LoginThrottle::keys( $this->credentials['user_id'], $address );
+
+        if ( ! \OWA\Module\Base\Classes\LoginThrottle::attempt( $keys ) ) {
+
+            // Answered as a wrong password is, in the time one takes.
+            $this->passwordMatches( $password, self::NO_USER_HASH );
+            $this->_is_user = false;
+            \OWA\Core\CoreAPI::debug( 'Sign-in refused: too many failed attempts for this user name or address.' );
+
+            return false;
+        }
+
         $ret = $this->isUser();
 
         if ($ret === true) {
             $this->saveCredentials();
+            \OWA\Module\Base\Classes\LoginThrottle::succeeded(
+                \OWA\Module\Base\Classes\LoginThrottle::nameKey( $this->credentials['user_id'] ),
+                \OWA\Module\Base\Classes\LoginThrottle::addressKey( $address ) );
+        } else {
+            \OWA\Module\Base\Classes\LoginThrottle::failed( $keys );
         }
 
         return $ret;
@@ -879,6 +924,21 @@ class Auth extends \OWA\Core\Base {
     public function refusedLegacyApiKey() {
 
         return $this->legacy_api_key_refused;
+    }
+
+    /** @var bool whether the last authenticateUser() passed over session cookies from another origin */
+    private $cross_origin_cookies_refused = false;
+
+    /**
+     * Whether the last authenticateUser() passed over the session cookies of
+     * a REST request that is not same-origin. They are left in
+     * place.
+     *
+     * @return bool
+     */
+    public function refusedCrossOriginCookies() {
+
+        return $this->cross_origin_cookies_refused;
     }
 
     /**

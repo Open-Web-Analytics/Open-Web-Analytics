@@ -27,7 +27,7 @@ final class LoginFormNonceTest extends TestCase
 
     private function cookieName(): string
     {
-        return \OWA\Core\CoreAPI::getSetting('base', 'ns') . \OWA\Module\Base\Controller\Login::FORM_COOKIE;
+        return \OWA\Core\CoreAPI::NS . \OWA\Module\Base\Controller\Login::FORM_COOKIE;
     }
 
     public function testTheFormsNonceVerifiesInTheBrowserThatGotIt(): void

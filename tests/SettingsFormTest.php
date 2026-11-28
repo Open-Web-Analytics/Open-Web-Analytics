@@ -74,9 +74,8 @@ final class SettingsFormTest extends TestCase
 
         // spam_detection and spam_threshold where log_robots was (Update084).
         foreach ([
-            'spam_detection', 'spam_threshold', 'log_named_users', 'excluded_ips',
-            'anonymize_ips', 'query_string_filters', 'announce_visitors',
-            'notice_email', 'timezone',
+            'spam_detection', 'spam_threshold', 'excluded_ips',
+            'anonymize_ips', 'query_string_filters', 'timezone',
         ] as $key) {
 
             $this->assertStringContainsString('id="' . $key . '"', $html,
@@ -85,9 +84,14 @@ final class SettingsFormTest extends TestCase
             $this->assertStringContainsString('config[base.' . $key . ']', $html,
                 $key . ' must post under the name the save controller reads');
         }
+
+        // Removed with Update098.
+        foreach (['log_named_users', 'announce_visitors', 'notice_email'] as $key) {
+            $this->assertStringNotContainsString('config[base.' . $key . ']', $html, $key);
+        }
     }
 
-    /** Three fieldsets, with the legends the page has always shown. */
+    /** The page's fieldsets, with their legends. */
     public function testTheFieldsetsKeepTheirLegendsAndOrder(): void
     {
         $sets = \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral');
@@ -95,9 +99,9 @@ final class SettingsFormTest extends TestCase
         // The page's own, in order, then its group's: Base's tag fieldsets
         // first, then any an active module added.
         $this->assertSame(
-            ['Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'REST API',
+            ['Tracking Request Processing', 'Reporting', 'REST API',
                   'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'],
-            array_slice(array_column($sets, 'legend'), 0, 11),
+            array_slice(array_column($sets, 'legend'), 0, 10),
             'the page renders its fieldsets in the order it registered them');
     }
 
@@ -147,8 +151,8 @@ final class SettingsFormTest extends TestCase
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend');
 
         $this->assertContains("A Module's Tag Settings", $legends);
-        $this->assertSame('Page views', $legends[4], 'after the fieldsets of the module that owns the screen');
-        $this->assertGreaterThan(10, array_search("A Module's Tag Settings", $legends, true),
+        $this->assertSame('Page views', $legends[3], 'after the fieldsets of the module that owns the screen');
+        $this->assertGreaterThan(9, array_search("A Module's Tag Settings", $legends, true),
             "after Base's seven, which declare their order");
     }
 

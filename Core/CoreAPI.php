@@ -74,7 +74,7 @@ class CoreAPI {
     /** @var array<string, object> queue name => the queue getEventQueue() built */
     private static $event_queues = [];
 
-    /** @var array<string, string>|null NONCE_KEY etc. => the constant's value, read by getSalt() */
+    /** @var array<string, string[]>|null scheme => its defined SALT_CONSTANTS' values, read by getSalt() */
     private static $salts = null;
 
     /** @var array<string, true> module directories getPresentModules() has warned about */
@@ -1148,6 +1148,32 @@ class CoreAPI {
     }
 
     /**
+     * The assignable role with the fewest capabilities, the last of them
+     * when several tie, as the capabilities setting lists admin first: what
+     * the Add user form starts at.
+     *
+     * @return string '' when no role can be assigned
+     */
+    public static function leastPrivilegedRole() {
+
+        $least = '';
+        $count = PHP_INT_MAX;
+
+        foreach ( self::getAssignableRoles() as $role ) {
+
+            $n = count( (array) self::getCapabilities( $role ) );
+
+            if ( $n <= $count ) {
+
+                $least = (string) $role;
+                $count = $n;
+            }
+        }
+
+        return $least;
+    }
+
+    /**
      * Capabilities OWA no longer has. A role configuration that still names
      * one is not an error: getCapabilities() leaves the name out.
      * view_reports_ecommerce: view_reports covers the e-commerce reports.
@@ -1180,18 +1206,17 @@ class CoreAPI {
     }
 
     /**
-     * check to see if the current user has a capability
-     * always returns a bool
-     * @param  string      $capability
-     * @param  string|null $site_id
+     * Whether the current user's role holds a capability (ServiceUser::isCapable()).
+     *
+     * @param  string $capability
      * @return boolean
      */
-    public static function isCurrentUserCapable($capability, $site_id = null) {
+    public static function isCurrentUserCapable($capability) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         \OWA\Core\CoreAPI::debug("Current User Role: ".$cu->getRole());
         \OWA\Core\CoreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
-        $ret = $cu->isCapable($capability, $site_id);
+        $ret = $cu->isCapable($capability);
         \OWA\Core\CoreAPI::debug("Is current User capable: ".$ret);
         return $ret;
     }
@@ -2348,24 +2373,6 @@ class CoreAPI {
          */
         $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $event_type ) );
         
-        /*
-         * Named-user logging is a per-Profile decision, so this check runs AFTER the
-         * event is built: it needs a site_id, and before this point there is only
-         * $message, which may still be a raw array. Nothing is stored between the two
-         * points, so it is still an early bail.
-         */
-        // Check to see if named users should be logged
-        if ( \OWA\Core\CoreAPI::getSetting(
-                 'base', 'log_named_users', 'profile', $event->get('site_id') ) != true ) {
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-            $cu_user_id = $cu->getUserData('user_id');
-
-            if( ! empty( $cu_user_id ) ) {
-                \OWA\Core\CoreAPI::debug("Not logging named user.");
-                return false;
-            }
-        }
-        
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         
         // Tracking Event processing STAGE 1
@@ -2376,9 +2383,6 @@ class CoreAPI {
 
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
-
-        // Before anything is queued: log_visitor_pii off keeps the identity fields out of the intake.
-        \OWA\Module\Base\Classes\TrackingEventHelpers::gateVisitorPii( $event );
 
         // do not log if the do not log property is set on the event.
         if ($event->get('do_not_log')) {
@@ -2708,7 +2712,7 @@ class CoreAPI {
         $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
 
         // add namespace
-        $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
+        $cookie_name = self::NS . $cookie_name;
 
         // debug
         \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
@@ -2738,6 +2742,12 @@ class CoreAPI {
 
         return (bool) $secure || (bool) \OWA\Core\Lib::isHttps();
     }
+
+    /**
+     * The prefix on OWA's cookie names and on the URL parameters it reads from
+     * tracked pages, such as owa_source and owa_state.
+     */
+    const NS = 'owa_';
 
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
     const CREDENTIAL_COOKIES = [ 'u', 'p' ];
@@ -3414,7 +3424,7 @@ class CoreAPI {
 
     /**
      * @param  string $data
-     * @param  string $scheme    NONCE, SECRET or AUTH, any case
+     * @param  string $scheme    NONCE or AUTH, any case
      * @param  string $hash_type
      * @return string
      */
@@ -3427,49 +3437,42 @@ class CoreAPI {
 
 
     /**
-     * @param  string $scheme NONCE, SECRET or AUTH, any case
+     * The constants each salt scheme is read from: its key, then its salt.
+     * They are Requirements::SECRET_CONSTANTS, which owa-config.php must define.
+     */
+    const SALT_CONSTANTS = [
+        'NONCE' => [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT' ],
+        'AUTH'  => [ 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ],
+    ];
+
+    /**
+     * The scheme's key and salt constants, concatenated. A constant that is
+     * not defined, or a scheme not in SALT_CONSTANTS, adds nothing.
+     *
+     * @param  string $scheme NONCE or AUTH, any case
      * @return string
      */
     public static function getSalt( $scheme ) {
 
-        $scheme = strtoupper($scheme);
+        $scheme = strtoupper( (string) $scheme );
 
         if ( ! self::$salts ) {
 
             self::$salts = [];
-            $ns = strtoupper( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
-            foreach (['NONCE', 'SECRET', 'AUTH'] as $f ) {
+            foreach ( self::SALT_CONSTANTS as $name => $constants ) {
 
-                foreach (['KEY', 'SALT'] as $s ) {
+                foreach ( $constants as $const ) {
 
-                    $const = sprintf("%s%s_%s", $ns, $f, $s);
+                    if ( defined( $const ) ) {
 
-                    if ( ! defined ( "$const" ) ) {
-                        continue;
-                    } else {
-
-                        self::$salts[ $f.'_'.$s ] = constant("$const");
+                        self::$salts[ $name ][] = (string) constant( $const );
                     }
                 }
             }
         }
 
-
-        $key = '';
-        $salt = '';
-
-        if (array_key_exists( $scheme.'_KEY', self::$salts ) ) {
-
-            $key = self::$salts[ $scheme.'_KEY' ];
-        }
-
-        if (array_key_exists( $scheme.'_SALT', self::$salts ) ) {
-
-            $salt = self::$salts[ $scheme.'_SALT' ];
-        }
-
-        return $key . $salt;
+        return implode( '', self::$salts[ $scheme ] ?? [] );
     }
 
     /**
@@ -3622,15 +3625,17 @@ class CoreAPI {
     }
 
     /**
-     * @param  string $module_name
+     * @param  string      $module_name
+     * @param  string|null $problem     set to why it failed (Module::$install_problem), '' when it did not
      * @return bool|void nothing for no module name
      */
-    public static function installModule( $module_name ) {
+    public static function installModule( $module_name, &$problem = null ) {
 
         if ($module_name) {
 
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             $status = $m->install();
+            $problem = (string) $m->install_problem;
             return $status;
         }
     }

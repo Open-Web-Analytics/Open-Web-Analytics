@@ -63,21 +63,26 @@ final class RestPropertyResolutionTest extends TestCase
         };
     }
 
-    /** A signed-in reader who holds the capability on any Profile asked about. */
+    /** A signed-in reader who holds the capability, and access to any Property asked about. */
     private static function reader(): object
     {
         return new class {
-            public function siteIdForProperty($propertyId)
-            {
-                return 'owatest-site';
-            }
-
             public function isAdmin()
             {
                 return false;
             }
 
-            public function isCapable($cap, $siteId = null)
+            public function isCapable($cap)
+            {
+                return true;
+            }
+
+            public function isCapableOnProperty($cap, $propertyId)
+            {
+                return (string) $propertyId !== '';
+            }
+
+            public function isSiteAccessible($siteId)
             {
                 return true;
             }
@@ -156,6 +161,30 @@ final class RestPropertyResolutionTest extends TestCase
         $this->assertTrue($c->capable(self::reader()));
     }
 
+    /** A siteId names its own Property, whatever propertyId is sent beside it. */
+    public function testARestRequestNamingAnotherPropertysProfileIsRefused(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
+
+        $c = $this->controller(['92000001', '92000002'], ['propertyId' => '92000001', 'siteId' => 'owatest-1']);
+        $this->assertFalse($c->capable(self::reader()), 'a propertyId beside a Profile of another Property');
+
+        $c->authenticatedButNotCapableAction();
+        $this->assertSame(403, http_response_code());
+
+        $c = $this->controller(['92000001', '92000002'], ['propertyId' => '92000002', 'siteId' => 'owatest-1']);
+        $this->assertTrue($c->capable(self::reader()), 'a propertyId beside a Profile of that Property');
+    }
+
+    public function testARestRequestNamingAProfileThatDoesNotExistIsRefused(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', \OWA\Core\RequestType::REST);
+
+        $this->assertFalse($this->controller(['92000001'], ['siteId' => 'owatest-9'])->capable(self::reader()));
+        $this->assertFalse($this->controller(['92000001'], ['propertyId' => '92000001', 'siteId' => 'owatest-9'])
+            ->capable(self::reader()));
+    }
+
     /** v1/sites is not of a Property, so it is not refused for naming none. */
     public function testTheSitesRouteNeedsNoProperty(): void
     {
@@ -199,6 +228,18 @@ trait RestPropertyResolutionProbe
     protected function getSitesAllowedForCurrentUser()
     {
         return $this->sites;
+    }
+
+    /** The Profiles are the stub sites: one not among them does not exist. */
+    protected function propertyIdOfRequestSite()
+    {
+        $siteId = (string) $this->getCurrentSiteId();
+
+        if ($siteId === '') {
+            return '';
+        }
+
+        return isset($this->sites[$siteId]) ? (string) $this->sites[$siteId]->get('property_id') : null;
     }
 
     public function capable($user): bool

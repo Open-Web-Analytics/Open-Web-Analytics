@@ -56,17 +56,6 @@ return [
     'settings' => [
 
         'additionalCss' => [ 'config_constant' => 'OWA_ADDITIONAL_CSS', 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. None by default.' ],
-        'announce_visitors' => [
-            'default'  => false,
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'boolean',
-            'label'    => \OWA\Core\CoreAPI::t( 'Announce New Visitors Via E-mail' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Sends an e-mail to the Notice E-mail Address each time a session starts.' ),
-        ],
         'anonymize_ips' => [
             'default'  => false,
             'storable' => true,
@@ -76,8 +65,8 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Anonymize IP Addresses' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'Anonymizes the IP addresses of visitors by removing the last octet '
-                . 'from their IP address.' ),
+                \OWA\Core\CoreAPI::t( 'Stores visitors&rsquo; IP addresses with the last octet of an IPv4 address, or the last '
+                . '64 bits of an IPv6 address, set to zero.' ),
         ],
         'admin_notice_email' => [
             'config_constant' => 'OWA_ADMIN_NOTICE_EMAIL',
@@ -89,7 +78,7 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Where notices for OWA\'s administrators are e-mailed, such as an update that installed '
                 . 'or failed. Separate several with commas. Empty sends them to every admin user\'s address.' ),
-            // As notice_email: read where nobody sees an error, so checked on save.
+            // Read where nobody sees an error, so checked on save.
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Admin Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ],
@@ -128,7 +117,7 @@ return [
             'type'     => 'text',
             'label'    => \OWA\Core\CoreAPI::t( 'Update Days' ),
             'description' =>
-                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun. Empty: any day.' ),
+                \OWA\Core\CoreAPI::t( 'The days an update may start on, such as sat,sun: within the Update Window on those days, or at any hour of them when there is no window. Empty: any day.' ),
             'pattern'  => '/^$|^' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . '(\s*,\s*' . \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::DAY . ')*$/i',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Update Days is a list of days such as sat,sun: mon, tue, wed, thu, fri, sat or sun, separated by commas.' ),
         ],
@@ -154,8 +143,8 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Whether the admins are e-mailed when an update installs. A failed update is always e-mailed.' ),
         ],
-        'auto_update_download_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DOWNLOAD_URL', 'default' => 'https://updates.openwebanalytics.com/download/', 'description' => 'Where every release download comes from: <this>/<version>/owa_<version>_packaged.tar, its .sig and SHA256SUMS. The default is OWA\'s update host, which redirects to GitHub. A release the listing chose keeps the listing\'s SHA-256 to check; one fetched by its version (cmd=core-install) is proved by its signature. Config-only, as auto_update_releases_url is.' ],
-        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://updates.openwebanalytics.com/releases', 'description' => 'The releases listing automatic updates choose from, in GitHub\'s format. The default is OWA\'s update host, which redirects to GitHub; each request adds from=<installed version>. Config-only: a web admin cannot change where the releases are chosen from; downloads come from auto_update_download_url.' ],
+        'auto_update_download_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_DOWNLOAD_URL', 'default' => 'https://updates.openwebanalytics.com/download/', 'description' => 'Where every release download comes from: <this>/<version>/owa_<version>_packaged.tar, its .sig and SHA256SUMS. The default is OWA\'s update host, which redirects to GitHub. A release chosen from the listing is checked against the listing\'s SHA-256; one installed by its version with cmd=core-install is checked against its signature.' ],
+        'auto_update_releases_url' => [ 'config_constant' => 'OWA_AUTO_UPDATE_RELEASES_URL', 'default' => 'https://updates.openwebanalytics.com/releases', 'description' => 'The releases listing automatic updates choose from, in GitHub\'s format. The default is OWA\'s update host, which redirects to GitHub; each request adds from=<installed version>. Downloads come from auto_update_download_url.' ],
         'updates_dir' => [ 'default' => '', 'internal' => true, 'description' => 'The automatic updates directory, owa-data/updates-<id>/, found by looking for it when first needed. Never stored.' ],
         'app_passwords_enabled' => [
             'default'  => true,
@@ -188,25 +177,24 @@ return [
          * changing the address on your own account, which moves where its
          * password resets go -- unlike your own name, and unlike edit_users,
          * which is about other people's accounts. Both are admin-only by
-         * default, granted to another role by OWA_ROLE_CAPABILITIES, and held on
-         * every Property (not in capabilitiesThatRequireSiteAccess): a custom
-         * report is of one Property, and drawing it asks view_reports there.
+         * default, and granted to another role by OWA_ROLE_CAPABILITIES. A
+         * custom report is of one Property, and drawing it asks view_reports
+         * there.
          *
-         * create_properties is making and deleting a Property. It is admin-only
-         * by default and held install-wide, unlike edit_sites, which is held
-         * on the Properties a user has been given and manages what is in
-         * them. PropertyScopedAccess applies both.
+         * create_properties is making and deleting a Property, and edit_sites
+         * manages what is in one. A capability is held by the role; a request
+         * about a Property also needs the Property on the user's access list
+         * (PropertyScopedAccess).
          */
         'backup_dir' => [ 'config_constant' => 'OWA_BACKUP_DIR', 'default' => '', 'description' => 'The directory cmd=backup writes to when it is given no dir=. It must be outside the web root. Empty: cmd=backup needs dir=.' ],
         'capabilities' => [ 'default' => [ 'admin' => [ 'install_schema', 'view_site_list', 'view_reports', 'edit_settings', 'edit_sites', 'create_properties', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ], 'analyst' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'viewer' => [ 'install_schema', 'view_site_list', 'view_reports' ], 'everyone' => [ 'install_schema' ] ], 'description' => 'Which capabilities each user role has, as role => list of capabilities. OWA_ROLE_CAPABILITIES adds capabilities to these roles.' ],
-        'capabilitiesThatRequireSiteAccess' => [ 'default' => [ 'view_reports', 'edit_sites' ], 'description' => 'The capabilities a user holds only on the Properties they have been given access to, rather than on every Property.' ],
         'config_file' => [ 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ],
         'configuration_id' => [ 'default' => '1', 'internal' => true ],
         'cookie_domain' => [ 'default' => false, 'internal' => true ],
         'cookie_persistence' => [ 'config_constant' => 'OWA_COOKIE_PERSISTENCE', 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ],
         // A Property's last cube build: partition, built_at and milliseconds (Cube\Builder::recordBuild()). No screen edits it.
         'cube_last_build' => [ 'default' => [], 'storable' => true, 'internal' => true, 'scopes' => [ 'property' ] ],
-        'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ],
+        'cube_rebuild_window_days' => [ 'config_constant' => 'OWA_CUBE_REBUILD_WINDOW_DAYS', 'default' => 7, 'description' => 'How many recent days of the reporting cube partition-rotate keeps in daily partitions. Default 7.' ],
         'data_dir' => [ 'description' => 'The directory OWA keeps its own files in: logs and the file event queue (logs/, the one folder the web server writes), downloads for automatic updates, GeoIP data, and overrides of conf/ files with the user-agent patterns (conf/). Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ],
         'attribution_lookback_days' => [
             'default'  => 90,
@@ -307,12 +295,12 @@ return [
             'scopes'   => [ 'install' ],
             'description' =>
                 'The file names a web server serves for a directory, as a list or separated by commas. A page '
-                . 'path whose last segment is one of them, in any case, is recorded without it, so '
-                . '/store/index.html and /store are one page. Applies to events recorded after the change; '
+                . 'path whose last segment is one of them, in any case, is recorded without it: '
+                . '/store/index.html and /store are counted as one page. Applies to events recorded after the change; '
                 . 'paths already stored keep theirs.',
         ],
         'disableAllEndpoints' => [ 'config_constant' => 'OWA_DISABLE_ALL_ENDPOINTS', 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ],
-        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php, cli.php. Empty by default.' ],
+        'disabledEndpoints' => [ 'config_constant' => 'OWA_DISABLED_ENDPOINTS', 'default' => [], 'description' => 'Entry points to turn off, by their paths from the install\'s directory: index.php (the admin and reports), api/index.php (the REST API), log.php, install.php, cli.php. A list, or a string of one or several separated by commas. Empty by default.' ],
         'enableEcommerceReporting' => [
             'default'  => false,
             'storable' => true,
@@ -334,7 +322,6 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'A comma-separated list of IP addresses whose requests are not recorded.' ),
         ],
-        'feed_subscription_param' => [ 'config_constant' => 'OWA_FEED_SUBSCRIPTION_PARAM', 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ],
         'geolocation_lookup' => [ 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ],
         'geolocation_service' => [ 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ],
         // Set by Update075 when it renamed goal event definitions to event names, so its
@@ -354,26 +341,9 @@ return [
         'funnel_steps_before_079' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'install_complete' => [ 'storable' => true, 'autoload' => true, 'internal' => true ],
         'link_template' => [ 'config_constant' => 'OWA_LINK_TEMPLATE', 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ],
-        'log_named_users' => [
-            'default'  => true,
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'boolean',
-            'label'    => \OWA\Core\CoreAPI::t( 'Log Requests From Named Users' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Whether requests made by a user signed in to OWA are recorded.' ),
-        ],
         // Set by Update084 when it turned log_robots into a blank spam_threshold, so its
         // down() can put the log_robots rows and the spam_threshold row back as they were.
         'log_robots_before_084' => [ 'default' => [], 'storable' => true, 'internal' => true ],
-        /*
-         * Whether user_id is stored. It gated user_name and user_email, which are
-         * custom user properties now, so it moves to the one
-         * identity field left in the release vocabulary -- see gateUserId().
-         */
-        'log_visitor_pii' => [ 'config_constant' => 'OWA_LOG_VISITOR_PII', 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ],
         'logo_image_path' => [ 'config_constant' => 'OWA_LOGO_IMAGE_PATH', 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ],
         'mailer-from' => [ 'config_constant' => 'OWA_MAILER_FROM', 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ],
         'mailer-fromName' => [ 'config_constant' => 'OWA_MAILER_FROM_NAME', 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ],
@@ -386,27 +356,8 @@ return [
         'mailer-username' => [ 'config_constant' => 'OWA_MAILER_USERNAME', 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ],
         'maxCustomVars' => [ 'config_constant' => 'OWA_MAX_CUSTOM_VARS', 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ],
         'nonce_expiration_period' => [ 'config_constant' => 'OWA_NONCE_EXPIRATION_PERIOD', 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ],
-        'notice_email' => [
-            'default'  => '',
-            'storable' => true,
-            'autoload' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => [ 'install', 'profile' ],
-            'type'     => 'text',
-            'label'    => \OWA\Core\CoreAPI::t( 'Notice E-mail Address' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'The e-mail address new visit announcements are sent to. Separate several with commas.' ),
-            /*
-             * Checked on save, because it is read during ingest: an address
-             * the mailer refuses is skipped there (Mailer::addAddress()), and
-             * a value like 'a@x b@y' would be found only in the error log.
-             */
-            'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
-            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
-        ],
-        // The wire namespace only. OWA's own admin and reporting URLs carry no
-        // prefix; RequestContainer still accepts prefixed ones.
-        'ns' => [ 'config_constant' => 'OWA_NS', 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ],
+        'login_throttle_max_failures' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_MAX_FAILURES', 'default' => \OWA\Module\Base\Classes\LoginThrottle::MAX_FAILURES, 'description' => 'How many failed sign-ins by one user name, or from one client address, within login_throttle_window refuse its further sign-ins. 0 counts and refuses nothing. Default 5.' ],
+        'login_throttle_window' => [ 'config_constant' => 'OWA_LOGIN_THROTTLE_WINDOW', 'default' => \OWA\Module\Base\Classes\LoginThrottle::WINDOW, 'description' => 'The time, in seconds, after a first failed sign-in within which the next ones are counted with it, and after the last one that sign-ins are refused. Default 900 (15 minutes).' ],
 
         /*
          * Whether the utm_ parameters are read as well as OWA's own, which win
@@ -428,8 +379,8 @@ return [
         ],
         /*
          * The URL parameter each campaign role arrives under, in place of
-         * OWA's own name for it. A role left out is ns-prefixed: owa_source,
-         * owa_medium and so on, honouring a custom `ns`.
+         * OWA's own name for it. A role left out is prefixed with CoreAPI::NS:
+         * owa_source, owa_medium and so on.
          *
          * Install, Property and Profile scoped. Read by the server, which
          * parses the tags (TrackingEventHelpers::campaignKeysFor()).
@@ -489,7 +440,6 @@ return [
         'tracking_url'        => [ 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ],
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => [ 'default' => 'ui', 'internal' => true ],
-        'ua_regexes_dir'      => [ 'config_constant' => 'OWA_UA_REGEXES_DIR', 'description' => 'The directory ua-update-definitions writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/conf/ua-parser/. Used only when nobody but the owner of OWA\'s files can write it.' ],
 
         /*
          * The tracking intake, OWA_QUEUE_TRACKING_EVENTS.
@@ -514,13 +464,15 @@ return [
         'hello_settings_before_091' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update093: the names of the autoload indexes it dropped, for its down().
         'autoload_indexes_before_093' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update100: the rows of the removed ns setting it deleted, for its down().
+        'retired_settings_before_100' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update098: the rows of the removed privacy and announcement settings it deleted, for its down().
+        'retired_settings_before_098' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update101: the rows of the removed settings it deleted, for its down().
         'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],
-        // Set by the 1.x OWA_USE_STATIC_CONFIG_ONLY: stored settings are not read at boot.
-        'skip_stored_settings' => [ 'default' => false, 'internal' => true ],
         'session_length' => [ 'config_constant' => 'OWA_SESSION_LENGTH', 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ],
         /*
          * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score
@@ -579,7 +531,7 @@ return [
                 . 'recorded after it, and reports spanning the change mix the two. A day '
                 . 'boundary can move by up to 21 hours.' ),
         ],
-        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ],
+        'ua-regexes' => [ 'config_constant' => 'OWA_UA_REGEXES', 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses owa-data/conf/ua-parser/regexes.php if present, otherwise the patterns that ship with this release.' ],
         /*
          * THE TRACKING TAG. What a Profile's tracking bundle does,
          * baked in at publish as the tracker's own options and commands -- the
@@ -695,9 +647,8 @@ return [
             'max'      => 400,
             'label'    => \OWA\Core\CoreAPI::t( 'Visitor Cookie Lifetime (days)' ),
             'description' => \OWA\Core\CoreAPI::t( 'How long the visitor cookie lasts after a visitor&rsquo;s last visit. '
-                . '<strong>0 ends it when the browser closes</strong>: every browser session is then a new '
-                . 'visitor, so returning visitors and attribution across visits are mostly lost. At most 400, '
-                . 'the longest a browser keeps a cookie.' ),
+                . '<strong>0 ends it when the browser closes</strong>, and each browser session then counts as a '
+                . 'new visitor. At most 400.' ),
         ],
         'tracker_session_cookie_days' => [
             'default'  => 364,
@@ -729,8 +680,7 @@ return [
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Honor Privacy Signals' ),
             'description' => \OWA\Core\CoreAPI::t( 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
-                . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other. '
-                . 'In some jurisdictions honoring Global Privacy Control is a legal requirement.' ),
+                . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other.' ),
         ],
         // A fact about the data, not a preference: the installation's
         // content-derived dimension ids are still 32-bit crc32 values. Set by

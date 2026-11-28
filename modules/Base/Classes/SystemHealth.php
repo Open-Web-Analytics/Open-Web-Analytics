@@ -728,6 +728,27 @@ class SystemHealth {
             $findings[] = $overrides;
         }
 
+        $endpoints = \OWA\Core\Caller::endpointListProblem( \OWA\Core\CoreAPI::getSetting( 'base', 'disabledEndpoints' ) );
+
+        if ( $endpoints !== null ) {
+
+            $findings[] = self::finding( 'yellow', 'OWA_DISABLED_ENDPOINTS', $endpoints );
+        }
+
+        $window = \OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::ignoredWindow( \OWA\Core\CoreAPI::getSetting( 'base', 'auto_update_window' ) );
+
+        if ( $window !== null ) {
+
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Update Window' ), $window );
+        }
+
+        $old_logs = self::oldErrorLogs();
+
+        if ( $old_logs ) {
+
+            $findings[] = $old_logs;
+        }
+
         return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
     }
 
@@ -900,11 +921,45 @@ class SystemHealth {
 
         if ( $misplaced ) {
 
-            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'No longer read where they are: %1$s. Move them to %2$s; run cmd=ua-update-definitions again for user-agent patterns.' ),
+            $lines[] = sprintf( \OWA\Core\CoreAPI::t( 'No longer read where they are: %1$s. Move them to %2$s.' ),
                 implode( ', ', $misplaced ), \OWA\Core\Overrides::dir( $data_dir ) );
         }
 
         return $lines ? self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Overrides' ), implode( ' ', $lines ) ) : null;
+    }
+
+    /**
+     * Error logs in the data directory's logs/ named under another install
+     * hash than this one's (PrivateFiles::name()): written before
+     * OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed. Yellow, naming each.
+     *
+     * @param  string|null $logs_dir a test's; else the data directory's logs/
+     * @return Finding|null nothing when there is none
+     */
+    public static function oldErrorLogs( $logs_dir = null ) {
+
+        $logs_dir = \OWA\Core\Env::withSlash( $logs_dir ?? \OWA\Core\Env::dataDir() . 'logs/' );
+        $current  = \OWA\Core\CoreAPI::generateInstanceSpecificHash();
+        $old      = [];
+
+        foreach ( (array) @scandir( $logs_dir ) as $name ) {
+
+            $hash = \OWA\Core\PrivateFiles::hashOf( (string) $name, 'errors', '.txt' );
+
+            if ( $hash !== null && $hash !== $current && is_file( $logs_dir . $name ) ) {
+
+                $old[] = $logs_dir . $name;
+            }
+        }
+
+        if ( ! $old ) {
+
+            return null;
+        }
+
+        return self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Earlier error logs' ), sprintf( \OWA\Core\CoreAPI::t(
+            'Errors logged before OWA_SECRET, OWA_DB_USER or OWA_DB_PASSWORD changed are in %s. Delete each once read.' ),
+            implode( ', ', $old ) ) );
     }
 
     /**

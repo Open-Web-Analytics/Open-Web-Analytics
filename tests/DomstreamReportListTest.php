@@ -247,6 +247,12 @@ final class DomstreamReportListTest extends TestCase
         $this->assertSame('Play', $row['play']['value']['label']);
         $this->assertSame(1280, $row['play']['value']['width']);
         $this->assertSame('https://domstream.test/page', $row['play']['value']['url']);
+
+        // The token is minted when Play is chosen (PlayerLauncher), not when
+        // the report renders: the cell carries the launcher and no overlay.
+        $this->assertStringContainsString('domstream.playerLauncher', $row['play']['value']['launch']);
+        $this->assertArrayNotHasKey('overlay', $row['play']['value']);
+        $this->assertStringNotContainsString('overlayToken', json_encode($row['play']['value']));
     }
 
     /**
@@ -276,10 +282,11 @@ final class DomstreamReportListTest extends TestCase
 
             // The player asks by the recording's own Profile.
             $set = $this->call('asResultSet', [], [$rows[self::REC_SIBLING]], 4);
-            $overlay = base64_decode($set['resultsRows'][0]['play']['value']['overlay']);
+            $launch = $set['resultsRows'][0]['play']['value']['launch'];
 
-            $this->assertStringContainsString(self::SIBLING, $overlay,
+            $this->assertStringContainsString('siteId=' . self::SIBLING, $launch,
                 'the player link does not name the Profile the recording was made on');
+            $this->assertStringContainsString('recording_id=' . self::REC_SIBLING, $launch);
         } finally {
             DomstreamFixtures::deleteSite(self::SIBLING);
         }

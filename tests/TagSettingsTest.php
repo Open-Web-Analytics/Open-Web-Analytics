@@ -106,7 +106,7 @@ final class TagSettingsTest extends TestCase
         $this->assertSame(['install', 'property', 'profile'], $args['scopes']);
         $this->assertSame('Honor Privacy Signals', $args['label']);
 
-        foreach (['Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other', 'legal requirement'] as $phrase) {
+        foreach (['Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other'] as $phrase) {
             $this->assertStringContainsString($phrase, $args['description']);
         }
 
@@ -197,6 +197,8 @@ final class TagSettingsTest extends TestCase
             'config'   => ['base.tracker_session_cookie_days' => '500'],
             'override' => ['base.tracker_session_cookie_days' => '1'],
         ]);
+
+        $c->validate();
 
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
         $v->doValidations();

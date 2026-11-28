@@ -20,9 +20,6 @@ final class EcommerceReportAccessTest extends TestCase
         $user = new \OWA\Module\Base\Classes\ServiceUser();
         $user->setRole( 'viewer' );
 
-        $assigned = new ReflectionProperty( $user, 'assignedSites' );
-        $assigned->setValue( $user, [ self::SITE => true ] );
-
         return $user;
     }
 
@@ -41,7 +38,7 @@ final class EcommerceReportAccessTest extends TestCase
             $report->setDefinition( (array) json_decode( (string) file_get_contents( $definition['json'] ), true ) );
 
             $this->assertSame( 'view_reports', $report->getRequiredCapability(), $id );
-            $this->assertTrue( $viewer->isCapable( $report->getRequiredCapability(), self::SITE ),
+            $this->assertTrue( $viewer->isCapable( $report->getRequiredCapability() ),
                 "a viewer cannot open '$id'" );
         }
     }
@@ -55,10 +52,10 @@ final class EcommerceReportAccessTest extends TestCase
             'siteId'     => self::SITE,
         ] );
 
-        $this->assertTrue( $this->viewer()->isCapable( $rest->getRequiredCapability(), self::SITE ) );
+        $this->assertTrue( $this->viewer()->isCapable( $rest->getRequiredCapability() ) );
     }
 
-    /** No role is granted it, and it is not in the site-access list. */
+    /** No role is granted it. */
     public function testTheCapabilityIsGone(): void
     {
         $fields = \OWA\Core\Module::settingsRegistry()['fields'];
@@ -67,9 +64,6 @@ final class EcommerceReportAccessTest extends TestCase
 
             $this->assertNotContains( 'view_reports_ecommerce', (array) $capabilities, $role );
         }
-
-        $this->assertNotContains( 'view_reports_ecommerce',
-            (array) $fields['base|capabilitiesThatRequireSiteAccess']['default'] );
 
         $this->assertNotContains( 'view_reports_ecommerce', \OWA\Core\CoreAPI::getCapabilities( 'admin' ) );
     }
@@ -82,10 +76,9 @@ final class EcommerceReportAccessTest extends TestCase
     {
         $config = \OWA\Core\CoreAPI::configSingleton();
         $caps   = $config->get( 'base', 'capabilities' );
-        $sar    = $config->get( 'base', 'capabilitiesThatRequireSiteAccess' );
 
         try {
-            $config->addCapabilityToRole( 'viewer', 'view_reports_ecommerce', true );
+            $config->addCapabilityToRole( 'viewer', 'view_reports_ecommerce' );
             $config->addCapabilityToRole( 'everyone', [ 'view_reports_ecommerce' ] );
 
             $this->assertNotContains( 'view_reports_ecommerce', \OWA\Core\CoreAPI::getCapabilities( 'viewer' ) );
@@ -94,12 +87,11 @@ final class EcommerceReportAccessTest extends TestCase
 
             $viewer = $this->viewer();
 
-            $this->assertTrue( $viewer->isCapable( 'view_reports', self::SITE ) );
+            $this->assertTrue( $viewer->isCapable( 'view_reports' ) );
             $this->assertFalse( \OWA\Core\CoreAPI::isEveryoneCapable( 'view_reports_ecommerce' ) );
 
         } finally {
             $config->set( 'base', 'capabilities', $caps );
-            $config->set( 'base', 'capabilitiesThatRequireSiteAccess', $sar );
         }
     }
 }

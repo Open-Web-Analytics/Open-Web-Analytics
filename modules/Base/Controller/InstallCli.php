@@ -14,7 +14,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first.',
             'arguments'   => [
                 'user_id=<name>'        => 'Required. The admin account\'s user name.',
-                'password=<password>'   => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters.',
+                'password=<password>'   => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters and at most ' . \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES . ' bytes.',
                 'email_address=<email>' => 'Required. The admin account\'s email address, used for password recovery.',
                 'domain=<url>'          => 'Required. The domain of the first website to track.',
                 'description=<text>'    => 'A description of the first website.',
@@ -43,6 +43,13 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
             'errorMsg' => sprintf( 'The password must be at least %d characters.', \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ]);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(false),
+        ]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress',
+            ['errorMsg' => 'A valid email address for the admin account is required: email_address=<email>.']);
     }
 
     /** A refused install prints why, and has done nothing. */

@@ -20,7 +20,6 @@
             </TD>
         </TR>
 
-        <?php if ( ! $view->isAdmin ):?>
         <TR>
             <TH><label for="owa_userRealName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Real Name' ) );?></label></TH>
             <TD><input type="text" size="30" id="owa_userRealName" name="real_name" autocomplete="off" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
@@ -35,9 +34,6 @@
             </select>
             </TD>
         </TR>
-
-
-        <?php endif;?>
         <TR>
             <TH><label for="owa_userEmail"><?php $view->out( \OWA\Core\CoreAPI::t( 'E-mail Address' ) );?></label></TH>
             <TD><input type="email" size="30" id="owa_userEmail" name="email_address" autocomplete="email" autocapitalize="none" spellcheck="false" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>

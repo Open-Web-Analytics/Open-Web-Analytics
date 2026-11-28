@@ -42,7 +42,6 @@ beforeEach(() => {
         configurable: true,
         get() { return 'shared.example'; },
     });
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', '.shared.example');
     // Turn off domain-hash gating so a store restored under the test domain isn't
     // rejected for a domain-hash mismatch -- we are testing the transport, not

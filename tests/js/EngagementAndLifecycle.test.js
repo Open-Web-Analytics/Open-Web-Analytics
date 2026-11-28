@@ -33,7 +33,6 @@ function atTime(t, ms) {
 let hidden;
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
 
     hidden = 'visible';

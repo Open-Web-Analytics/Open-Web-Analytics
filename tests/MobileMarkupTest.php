@@ -72,7 +72,7 @@ final class MobileMarkupTest extends TestCase
     {
         $xp = $this->render( 'users_addoredit.php', [
             'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
-            'isAdmin' => false, 'roles' => [ 'admin', 'viewer' ], 'user' => [],
+            'roles' => [ 'admin', 'viewer' ], 'user' => [],
         ] );
 
         $this->assertSame(
@@ -129,13 +129,14 @@ final class MobileMarkupTest extends TestCase
     /**
      * Each roster row is a card on a phone: every data cell names its column
      * (data-label, the heading's own words) and the actions are in a cell of
-     * their own. The first user cannot be deleted; its row still closes its
-     * actions cell.
+     * their own. Your own account cannot be deleted; its row still closes
+     * its actions cell.
      */
     public function testTheUserRosterIsReadyToBeCards(): void
     {
         $xp = $this->render( 'users.php', [
             'headline' => 'Users',
+            'current_user_id' => 'owner@example.test',
             'users' => [
                 [ 'id' => 1, 'user_id' => 'owner@example.test', 'real_name' => 'Owner', 'role' => 'admin' ],
                 [ 'id' => 2, 'user_id' => 'analyst@example.test', 'real_name' => 'Analyst', 'role' => 'analyst' ],
@@ -226,7 +227,7 @@ final class MobileMarkupTest extends TestCase
         ];
 
         $xp = $this->render( 'generic_error.php', [
-            'report_nav' => $nav, 'nav_property_id' => 'p1', 'nav_access_site' => '', 'back_url' => '',
+            'report_nav' => $nav, 'nav_property_id' => 'p1', 'back_url' => '',
         ] );
 
         $this->assertSame( 1, $xp->query( '//*[@id="owa_reportNavRail"]//*[@data-ui="nav:Dashboard"]' )->length );

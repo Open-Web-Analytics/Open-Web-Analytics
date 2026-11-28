@@ -301,6 +301,18 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * Whether dropOlderThan() refuses, without --force, a drop of every
+     * historical partition. Only partition-drop's: partition-rotate drops
+     * to the retention windows, which are set as settings.
+     *
+     * @return bool
+     */
+    protected function guardsAllHistory() {
+
+        return false;
+    }
+
+    /**
      * Drop one table's partitions that hold only data older than a cutoff.
      *
      * Shared by partition-drop and partition-rotate.
@@ -336,10 +348,13 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             ) );
         }
 
-        // Every bounded partition going means all history goes; the catch-all
-        // and the period holding today remain, so collection continues. Still
-        // worth confirming -- it is usually a cutoff meant to be years earlier.
-        if ( count( $plan['drop'] ) === count( $spans ) && ! $this->getParam( 'force' ) ) {
+        // The historical partitions: those entirely before today, not the
+        // current period, the lead or the catch-all. Where guardsAllHistory(),
+        // a plan that drops all of them needs --force.
+        $today      = date( 'Ymd' );
+        $historical = count( array_filter( $spans, static fn ( $span ) => (string) $span['less_than'] <= $today ) );
+
+        if ( $this->guardsAllHistory() && count( $plan['drop'] ) >= $historical && ! $this->getParam( 'force' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s: %s would drop all %d historical partition%s, leaving only what is being '

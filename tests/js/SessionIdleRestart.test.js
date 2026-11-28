@@ -64,7 +64,6 @@ afterEach(() => { jest.restoreAllMocks(); });
 
 beforeEach(() => {
     wipe();
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
 });
 

@@ -326,25 +326,41 @@ final class ServerRoleTest extends TestCase
         $this->assertStringContainsString('OWA_DEBUG', $notices['OWA_LOG_PHP_ERRORS']);
     }
 
-    public function testTheOneXStaticSwitchOnlyStopsTheStoredSettingsRead(): void
+    /** OWA_NS is not read: the prefix is CoreAPI::NS. */
+    public function testTheNsConstantGetsAnUpgradeNotice(): void
     {
-        $saved = \OWA\Core\CoreAPI::getSetting('base', 'skip_stored_settings');
+        $notices = ServerRole::upgradeNotices(['OWA_NS' => 'zz_']);
 
-        try {
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', true);
+        $this->assertSame(['OWA_NS'], array_keys($notices));
+        $this->assertStringContainsString('No longer read', $notices['OWA_NS']);
+        $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'ns'));
+    }
 
-            $this->assertFalse(ServerRole::readsStoredSettings());
-            $this->assertTrue(ServerRole::current()->hasDatabase(), 'still a full server with its database');
+    /** OWA_LOG_VISITOR_PII is not read: the identity fields are stored as sent. */
+    public function testTheVisitorPiiConstantGetsAnUpgradeNotice(): void
+    {
+        $notices = ServerRole::upgradeNotices(['OWA_LOG_VISITOR_PII' => false]);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', false);
-            $this->assertTrue(ServerRole::readsStoredSettings());
+        $this->assertSame(['OWA_LOG_VISITOR_PII'], array_keys($notices));
+        $this->assertStringContainsString('No longer read', $notices['OWA_LOG_VISITOR_PII']);
+        $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'log_visitor_pii'));
+    }
 
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
-            $this->assertFalse(ServerRole::readsStoredSettings());
-        } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'skip_stored_settings', $saved);
+    /** The boot itself, with OWA_USE_STATIC_CONFIG_ONLY defined, is StaticConfigBootTest's. */
+    public function testStoredSettingsAreReadOnEveryRoleWithADatabase(): void
+    {
+        foreach (['full' => true, 'api' => true, 'collector' => false, 'collector,api' => true, '' => true] as $role => $reads) {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
+            $this->assertSame($reads, ServerRole::readsStoredSettings(), $role);
         }
+    }
+
+    public function testTheStaticSwitchNoticeSaysItAppliesOnlyToCollectors(): void
+    {
+        $notice = ServerRole::upgradeNotices(['OWA_USE_STATIC_CONFIG_ONLY' => true])['OWA_USE_STATIC_CONFIG_ONLY'];
+
+        $this->assertStringContainsString('applies only to collectors', $notice);
+        $this->assertStringContainsString('on a role with a database it is ignored', $notice);
     }
 
     // ---------------------------------------------------------------------

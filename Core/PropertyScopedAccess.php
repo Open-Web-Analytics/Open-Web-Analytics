@@ -2,18 +2,23 @@
 namespace OWA\Core;
 
 /**
- * A controller whose capability is held on the Property the request is about.
+ * A controller whose request is about a Property.
  *
- * The Property is the request's propertyId, else the Property of its siteId.
- * The capability is checked against a Profile of that Property the user may
- * see. A user who is not an administrator and may see none is refused,
- * whatever the capability, unless the Property has no Profile at all.
- * A request naming neither is checked as any controller's is, against its
- * siteId.
+ * Such a request needs two things: the user's role holds the controller's
+ * capability (ServiceUser::isCapable()), and the Property is on the user's
+ * access list (ServiceUser::canAccessProperty()). A capability the everyone
+ * role holds is held on every Property.
  *
- * Making a Property asks create_properties, which is held install-wide
- * (createsProperty()). So does a Property with no Profile: no grant can be
- * held on it until its first, which is the next step after making it.
+ * The Property is the one the request names: the Property of its siteId, its
+ * propertyId, and the Property of the object it names
+ * (requestObjectPropertyId()). A request whose siteId is no Profile is
+ * refused, and so is one naming two different Properties, administrator or
+ * not. A request naming no Property needs only the capability. One naming
+ * only a Profile with no Property needs access to that Profile.
+ *
+ * Making a Property asks create_properties alone (createsProperty()). So does
+ * a Property with no Profile: no grant can be held on it until its first,
+ * which is the next step after making it.
  */
 trait PropertyScopedAccess {
 
@@ -23,26 +28,34 @@ trait PropertyScopedAccess {
      */
     protected function isCurrentUserCapable( $currentUser ) {
 
+        if ( ! $this->requestNamesOneProperty() ) {
+
+            return false;
+        }
+
         if ( $this->createsProperty() ) {
 
             return (bool) $currentUser->isCapable( 'create_properties' );
         }
 
+        $capability = $this->getRequiredCapability();
         $propertyId = $this->requestPropertyId();
 
         if ( $propertyId === '' ) {
 
-            return parent::isCurrentUserCapable( $currentUser );
+            $siteId = (string) $this->getCurrentSiteId();
+
+            return $currentUser->isCapable( $capability )
+                && ( $siteId === '' || \OWA\Core\CoreAPI::isEveryoneCapable( $capability )
+                     || $currentUser->isSiteAccessible( $siteId ) );
         }
 
-        $siteId = $currentUser->siteIdForProperty( $propertyId );
+        if ( $currentUser->isCapableOnProperty( $capability, $propertyId ) ) {
 
-        if ( $siteId === '' && ! $currentUser->isAdmin() ) {
-
-            return self::isEmptyProperty( $propertyId ) && $currentUser->isCapable( 'create_properties' );
+            return true;
         }
 
-        return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $siteId );
+        return $currentUser->isCapable( 'create_properties' ) && self::isEmptyProperty( $propertyId );
     }
 
     /**
@@ -54,6 +67,19 @@ trait PropertyScopedAccess {
     protected function createsProperty() {
 
         return false;
+    }
+
+    /**
+     * The Property of the object the request names by its own id (a goal, a
+     * custom report), or of a Property named under another parameter; null
+     * when it names none, or one that does not exist. None does unless its
+     * controller says so.
+     *
+     * @return string|null
+     */
+    protected function requestObjectPropertyId() {
+
+        return null;
     }
 
     /**
@@ -71,19 +97,94 @@ trait PropertyScopedAccess {
     }
 
     /**
-     * The request's propertyId, else the Property of its siteId; '' for neither.
+     * The Property the request is about: the first namedPropertyIds() finds;
+     * '' for none, or for a Profile with no Property.
      *
      * @return string
      */
     protected function requestPropertyId() {
 
-        $propertyId = (string) $this->getParam( 'propertyId' );
+        $named = (array) $this->namedPropertyIds();
 
-        if ( $propertyId === '' && $this->getCurrentSiteId() ) {
+        return $named ? (string) $named[0] : '';
+    }
 
-            $propertyId = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->getCurrentSiteId() );
+    /**
+     * Every Property the request names, in this order: its siteId's ('' for
+     * a Profile with no Property), its propertyId, its object's. Null for a
+     * siteId that is no Profile.
+     *
+     * @return list<string>|null
+     */
+    private function namedPropertyIds() {
+
+        $ids = [];
+
+        if ( (string) $this->getCurrentSiteId() !== '' ) {
+
+            $ofSite = $this->propertyIdOfRequestSite();
+
+            if ( $ofSite === null ) {
+
+                return null;
+            }
+
+            $ids[] = $ofSite;
         }
 
-        return $propertyId;
+        $named = (string) $this->getParam( 'propertyId' );
+
+        if ( $named !== '' ) {
+
+            $ids[] = $named;
+        }
+
+        $object = $this->requestObjectPropertyId();
+
+        if ( $object !== null ) {
+
+            $ids[] = (string) $object;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Whether the request's siteId, when it sends one, names a Profile, and
+     * everything the request names is of one Property.
+     *
+     * @return bool
+     */
+    private function requestNamesOneProperty() {
+
+        $named = $this->namedPropertyIds();
+
+        return $named !== null && count( array_unique( $named ) ) <= 1;
+    }
+
+    /**
+     * The Property of the Profile the request's siteId names: '' for no
+     * siteId or a Profile with no Property, null for a siteId that is no
+     * Profile. Archived Profiles count.
+     *
+     * @return string|null
+     */
+    protected function propertyIdOfRequestSite() {
+
+        $siteId = (string) $this->getCurrentSiteId();
+
+        if ( $siteId === '' ) {
+
+            return '';
+        }
+
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $siteId );
+
+        if ( ! $site->wasPersisted() ) {
+
+            return null;
+        }
+
+        return (string) ( $site->get( 'property_id' ) ?: '' );
     }
 }

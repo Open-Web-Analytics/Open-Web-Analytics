@@ -93,7 +93,7 @@ return function () {
 
     return "| Refused when the name | Value |\n|---|---|\n"
          . sprintf( "| Does not match | `%s` |\n", str_replace( '|', '\\|', $pattern ) )
-         . sprintf( "| Is a first-class event | %s |\n", $code( $reserved ) )
+         . sprintf( "| Is a built-in event | %s |\n", $code( $reserved ) )
          . ( $moduleCells ? sprintf( "| Is an event a tracker module sends | %s |\n", implode( ', ', $moduleCells ) ) : '' )
          . sprintf( "| Starts with | `%s` |\n", $p[1] );
 };

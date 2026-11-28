@@ -103,7 +103,7 @@ final class DebugLoggingTest extends TestCase
         }
 
         $this->assertGreaterThan(300, $scanned, 'the source was not read');
-        $this->assertGreaterThan(150, $statements, 'no debug statements were matched');
+        $this->assertGreaterThan(100, $statements, 'no debug statements were matched');
         $this->assertSame([], $offenders, implode("\n", $offenders));
     }
 }

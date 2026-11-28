@@ -335,16 +335,16 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         }
     }
 
-    public function testEveryRefusedCommandIsInTheTableAndIsARealCommand(): void
+    public function testEveryRefusedCommandIsInTheListAndIsARealCommand(): void
     {
         $md       = $this->section('job-refused-commands');
         $commands = $this->registeredCommands();
 
         $this->assertNotEmpty(\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE);
 
-        foreach (\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE as $command => $why) {
+        foreach (array_keys(\OWA\Module\Base\Classes\Service::NEVER_SCHEDULE) as $command) {
             $this->assertArrayHasKey($command, $commands, "$command is refused, but no command has that name");
-            $this->assertStringContainsString("| `$command` | " . owa_wiki_cell($why) . ' |', $md, "$command is not in the table");
+            $this->assertStringContainsString("| `$command` |\n", $md, "$command is not in the table");
         }
     }
 
@@ -392,13 +392,17 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         return $seconds . ' seconds';
     }
 
-    /** The class and its parents' source, up to the framework's controller. */
+    /** The class and its parents' source, up to the framework's controller, with the traits each uses. */
     private function sourceOf(string $class): string
     {
         $src = '';
 
         for ($r = new ReflectionClass($class); $r && $r->getName() !== 'OWA\\Core\\Controller'; $r = $r->getParentClass()) {
             $src .= file_get_contents($r->getFileName());
+
+            foreach ($r->getTraits() as $trait) {
+                $src .= file_get_contents($trait->getFileName());
+            }
         }
 
         return $src;

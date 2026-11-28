@@ -67,7 +67,7 @@ function seedVisitorCookie(version) {
     if (version !== null) {
         value.sv = version;
     }
-    Util.setCookie(OWA.getSetting('ns') + 'v', JSON.stringify(value), 364, '/',
+    Util.setCookie('owa_v', JSON.stringify(value), 364, '/',
         OWA.getSetting('cookie_domain'));
     OWA.state.cookies = Util.readAllCookies();
 }
@@ -84,13 +84,13 @@ function seedRawCookie(store, value) {
     if (OWA.getSetting('hashCookiesToDomain') && !value.cdh) {
         value.cdh = Util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
     }
-    Util.setCookie(OWA.getSetting('ns') + store, JSON.stringify(value), 364, '/',
+    Util.setCookie('owa_' + store, JSON.stringify(value), 364, '/',
         OWA.getSetting('cookie_domain'));
     OWA.state.cookies = Util.readAllCookies();
 }
 
 function rawCookie(store) {
-    const name = OWA.getSetting('ns') + store;
+    const name = 'owa_' + store;
     const all = Util.readAllCookies();
     let raw = all[name];
     while (Array.isArray(raw)) { raw = raw[0]; }

@@ -82,9 +82,8 @@ class Module extends \OWA\Core\Module {
      * whether or not a licence key is set, so the job is listed wherever it can
      * run; without a key the scheduled run is a success that says it skipped.
      *
-     * Unlike Base's ua-update-definitions, this outbound request ships on: an
-     * administrator who activated this module and saved a key has asked for
-     * the database.
+     * This outbound request ships on: an administrator who activated this
+     * module and saved a key has asked for the database.
      *
      * Weekly at a time each install derives, not '@weekly': MaxMind see every
      * install's check, and '@weekly' is Sunday midnight everywhere. The check
@@ -97,8 +96,7 @@ class Module extends \OWA\Core\Module {
             'refresh-geoip-db', 'geoip-update-db',
             \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), [ 'scheduled' => 1 ],
             'Checks whether MaxMind have published a newer GeoLite2 database than the local copy, and downloads '
-          . 'it if they have, or if there is no local copy. The check does not count against the MaxMind '
-          . 'account\'s download limit. Does nothing until a MaxMind licence key is set.' );
+          . 'it if they have, or if there is no local copy. Does nothing until a MaxMind licence key is set.' );
     }
 
     public function registerActions() {

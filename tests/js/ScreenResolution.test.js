@@ -19,7 +19,6 @@ function screenOf(width, height) {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
 });
 

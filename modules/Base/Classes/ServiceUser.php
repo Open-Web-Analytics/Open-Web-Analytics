@@ -132,85 +132,97 @@ class ServiceUser extends \OWA\Core\Base {
     }
 
     /**
-     * Checks if user has a partciular capability
+     * Whether the user's role holds a capability: one the everyone role
+     * holds, any for an administrator, else the role's own list. No
+     * Property is asked about; canAccessProperty() answers that.
      *
-     * @param string     $cap
-     * @param string|null $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
-     * @return boolean
+     * @param  string $cap
+     * @return bool   true for no capability
      */
-    public function isCapable($cap, $siteId = null) {
-        \OWA\Core\CoreAPI::debug("Checking if user is capable of: ".$cap);
+    public function isCapable( $cap ) {
 
-        // is this capability assigned to everyone?
-        // is this the global admin user?
-        // was no capability passed?
-        // if so, the user can see and do everything
-        if ( \OWA\Core\CoreAPI::isEveryoneCapable( $cap ) || $this->user->isAdmin() || empty($cap)) {
-            \OWA\Core\CoreAPI::debug('No capability passed or user is an admin and capable of everything.');
+        if ( empty( $cap ) || \OWA\Core\CoreAPI::isEveryoneCapable( $cap ) || $this->user->isAdmin() ) {
+
             return true;
         }
 
-        // is this user's role capable?
-        if (!in_array($cap, $this->capabilities)) {
-            \OWA\Core\CoreAPI::debug('capability does not exist for this role. user is not capable');
+        return in_array( $cap, (array) $this->capabilities );
+    }
+
+    /**
+     * Whether the Property is on the user's access list: every Property for
+     * an administrator, else a Property one of whose live Profiles the user
+     * was granted (withSiblingProfiles()).
+     *
+     * @param  string|int|null $propertyId
+     * @return bool   false for no Property
+     */
+    public function canAccessProperty( $propertyId ) {
+
+        $propertyId = (string) $propertyId;
+
+        if ( $propertyId === '' || $propertyId === '0' ) {
+
             return false;
         }
 
-        // Does capability also require site access?
-        if ( $this->isSiteAccessRequiredForCapability( $cap ) ) {
-            \OWA\Core\CoreAPI::debug('Site access required for this capability.');
-            if ( ! $this->isSiteAccessible( $siteId ) ) {
-                \OWA\Core\CoreAPI::debug('Site is not accessible for this user.');
-                return false;
-            } else {
-                \OWA\Core\CoreAPI::debug('Site is accessible for this user.');
+        if ( $this->user->isAdmin() ) {
+
+            return true;
+        }
+
+        foreach ( $this->assignedSites as $site ) {
+
+            if ( (string) $site->get( 'property_id' ) === $propertyId ) {
+
+                return true;
             }
         }
 
-        return true;
-    }
-
-    /**
-     * Checks to see if the Capability requires
-     * user to pass site access control check
-     *
-     * @param    string $capability the name of the capability (e.g. 'view_reports')
-     * @return    boolean
-     */
-    public function isSiteAccessRequiredForCapability( $capability ) {
-
-        $capabilitiesThatRequireSiteAccess = \OWA\Core\CoreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
-        if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
-            return true;
-        }
-
         return false;
     }
 
     /**
-     * Checks to see if the a site is accessible to a user
+     * Whether the user holds a capability on a Property: the role holds it
+     * (isCapable()) and the Property is on the user's access list
+     * (canAccessProperty()). A capability the everyone role holds is held on
+     * every Property, signed in or not.
      *
-     * @param    string|null $siteId  the siteId of the site in question; null throws
-     * @return    boolean
+     * @param  string          $cap
+     * @param  string|int|null $propertyId
+     * @return bool
+     */
+    public function isCapableOnProperty( $cap, $propertyId ) {
+
+        if ( ! $this->isCapable( $cap ) ) {
+
+            return false;
+        }
+
+        return ( ! empty( $cap ) && \OWA\Core\CoreAPI::isEveryoneCapable( $cap ) )
+            || $this->canAccessProperty( $propertyId );
+    }
+
+    /**
+     * Whether a Profile is on the user's access list: any Profile for an
+     * administrator, else one granted or a live sibling of one granted.
+     *
+     * @param  string|int|false|null $siteId the Profile's site_id
+     * @return bool   false for no siteId
      */
     public function isSiteAccessible( $siteId ) {
 
-        if ( is_null($siteId) ) {
-            throw new \InvalidArgumentException('Cannot tell if site is accessible to user without a siteId (none given).');
+        if ( $siteId === null || $siteId === false || (string) $siteId === '' ) {
+
+            return false;
         }
 
         if ( $this->user->isAdmin() ) {
+
             return true;
         }
 
-        if ( isset( $this->assignedSites[ $siteId ] ) ) {
-            \OWA\Core\CoreAPI::debug("Site ID: $siteId in accessible list for this user.");
-            return true;
-        }
-
-        \OWA\Core\CoreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
-
-        return false;
+        return isset( $this->assignedSites[ (string) $siteId ] );
     }
 
     /**
@@ -291,9 +303,9 @@ class ServiceUser extends \OWA\Core\Base {
 
                 /*
                  * Archived Profiles drop out here, which also settles
-                 * AUTHORISATION and not just listing: isSiteAccessible() reads
-                 * this map, so an archived Profile cannot be reported on by
-                 * URL either. The grant row is left in place: archiving keeps
+                 * AUTHORISATION and not just listing: canAccessProperty() and
+                 * isSiteAccessible() read this map, so an archived Profile
+                 * cannot be reported on by URL either. The grant row is left in place: archiving keeps
                  * what hangs off a Profile.
                  */
                 if ( $siteEntity->isArchived() ) {
@@ -399,9 +411,8 @@ class ServiceUser extends \OWA\Core\Base {
     /**
      * A Profile of the Property this user may see, or '' when there is none.
      *
-     * Site access is checked per Profile, and any Profile of a Property grants
-     * the Property (withSiblingProfiles()), so this is the site a Property's
-     * capability checks are made against.
+     * Any Profile of a Property grants the Property (withSiblingProfiles()),
+     * so which one is returned is immaterial.
      *
      * @param  string $propertyId
      * @return string

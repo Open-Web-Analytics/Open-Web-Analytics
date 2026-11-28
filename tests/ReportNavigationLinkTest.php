@@ -274,20 +274,6 @@ final class ReportNavigationLinkTest extends TestCase
         }
     }
 
-    /** Any registered site: the nav only renders for one. */
-    private function anySiteId(): string
-    {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        $row = $db->get_row( 'SELECT site_id FROM owa_site LIMIT 1' );
-
-        if ( ! $row ) {
-            $this->markTestSkipped( 'the nav renders only for a site, and none is registered' );
-        }
-
-        return (string) ( (array) $row )['site_id'];
-    }
-
     /**
      * Every nav link in the Reports group, subgroup entries included.
      */
@@ -336,15 +322,14 @@ final class ReportNavigationLinkTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        $siteId = $this->anySiteId();
-        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
+        $nav = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
 
         if ( ! $nav ) {
             $this->markTestSkipped( 'no reporting navigation is registered' );
         }
 
         $rail = $this->template()->navRail(
-            $nav, 'some-property', [ 'do' => 'base.report', 'reportId' => 'pages' ], $siteId );
+            $nav, 'some-property', [ 'do' => 'base.report', 'reportId' => 'pages' ] );
 
         $current = array_values( array_filter( $rail, function ( $s ) { return $s['current']; } ) );
 

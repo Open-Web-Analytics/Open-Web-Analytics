@@ -7,6 +7,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CubeStatusDetail extends \OWA\Core\AdminController {
 
+    // edit_modules, and access to the Property the request names.
+    use \OWA\Core\PropertyScopedAccess;
+
     public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );

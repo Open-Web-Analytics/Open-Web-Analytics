@@ -1,4 +1,4 @@
-import { OWA_instance as OWA } from './owa.js';
+import { OWA_instance as OWA, NS } from './owa.js';
 
 class Util {
 	
@@ -632,6 +632,27 @@ class Util {
     }
 
     /**
+     * Whether the page was opened on an overlay link: its fragment has an
+     * ns + 'overlay' pair (#owa_overlay.<params>), as
+     * OWATracker.getAnchorParam() reads it. Whether the link's api_url is this
+     * OWA server's is the tracker's to decide (checkForOverlaySession()).
+     *
+     * @return {boolean}
+     */
+    static opensOverlay () {
+
+        var name = ( OWA.getSetting( 'ns' ) || 'owa_' ) + 'overlay';
+        var hash = ( typeof location !== 'undefined' && location.hash ) ? String( location.hash ).substring( 1 ) : '';
+
+        return hash.split( ',' ).some( function ( pair ) {
+
+            var pieces = pair.split( '.' );
+
+            return pieces[0] === name && !! pieces[1];
+        } );
+    }
+
+    /**
      * Whether the browser asks not to be tracked: Do Not Track ("1", or the
      * legacy msDoNotTrack) or Global Privacy Control (true).
      */
@@ -651,9 +672,9 @@ class Util {
     }
 
     /**
-     * Expire the tracker's own cookies: the visitor store (ns + 'v'), every
-     * per-site session store (ns + 's_<siteId>'), and the 's', 'b' and 'c'
-     * stores an older tracker may have left. Nothing else named with the ns
+     * Expire the tracker's own cookies: the visitor store (NS + 'v'), every
+     * per-site session store (NS + 's_<siteId>'), and the 's', 'b' and 'c'
+     * stores an older tracker may have left. Nothing else named with the NS
      * prefix is touched.
      *
      * Run when a privacy signal is honoured (tracker-dom.js), so a browser
@@ -664,7 +685,6 @@ class Util {
      */
     static eraseTrackerCookies () {
 
-        var ns   = OWA.getSetting( 'ns' ) || 'owa_';
         var jar  = Util.readAllCookies() || {};
         var host = ( typeof location !== 'undefined' && location.hostname ) ? String( location.hostname )
             : ( ( typeof document !== 'undefined' && document.domain ) ? String( document.domain ) : '' );
@@ -684,7 +704,7 @@ class Util {
 
         Object.keys( jar ).forEach( function ( name ) {
 
-            if ( name.indexOf( ns ) !== 0 || ! /^(v|b|c|s(_.+)?)$/.test( name.substring( ns.length ) ) ) {
+            if ( name.indexOf( NS ) !== 0 || ! /^(v|b|c|s(_.+)?)$/.test( name.substring( NS.length ) ) ) {
                 return;
             }
 

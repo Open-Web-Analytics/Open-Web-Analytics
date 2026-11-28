@@ -1528,10 +1528,12 @@ OWA.dataGrid.formatters = {
 
     /*
      * A link that opens a page in an overlay session. The cell carries only
-     * DATA -- {overlay, url, width, height, label} -- and this builds the
-     * anchor: the page with the overlay's parameters on the fragment, which is
-     * how the overlay reaches the tracker on that page, and the viewport it
-     * was recorded in as data attributes.
+     * DATA -- {url, overlay or launch, width, height, label} -- and this
+     * builds the anchor, with the viewport it was recorded in as data
+     * attributes. With `launch`, the link is that launcher on OWA's own
+     * origin, which mints the overlay's token when the link is followed and
+     * opens `url`; with `overlay`, the link is `url` with the overlay's
+     * parameters on the fragment. No `url`, no link.
      */
     overlayLink : function( cellvalue ) {
 
@@ -1550,14 +1552,19 @@ OWA.dataGrid.formatters = {
         // A web page only: the URL is what a beacon claimed. One with a
         // backslash or a control character opens a host other than the one
         // the server checked (ProfileDomains::originOf()).
-        if ( ! data || ! data.url || ! data.overlay || ! /^https?:\/\//i.test( String( data.url ) )
-             || /[\\\u0000-\u001f\u007f]/.test( String( data.url ) ) ) {
+        var webPage = function ( url ) {
+            return /^https?:\/\//i.test( String( url ) ) && ! /[\\\u0000-\u001f\u007f]/.test( String( url ) );
+        };
+
+        if ( ! data || ! data.url || ! webPage( data.url )
+             || ( data.launch ? ! webPage( data.launch ) : ! data.overlay ) ) {
             return '';
         }
 
         var esc = OWA.util.escapeHtml;
+        var href = data.launch ? String( data.launch ) : data.url + '#owa_overlay.' + data.overlay;
 
-        return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
+        return '<a class="owa_overlayLink" href="' + esc( href )
              + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
              + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
              + '">' + esc( data.label || OWA.l( 'Open' ) ) + '</a>';

@@ -47,7 +47,6 @@ final class ControllerCapabilityContractTest extends TestCase
         // they cannot require a login by definition.
         'ProcessEvent',
         'ProcessRequest',
-        'NotifyNewSession',
 
         // Authentication entry points -- these are how a session is
         // established in the first place.
@@ -65,6 +64,9 @@ final class ControllerCapabilityContractTest extends TestCase
         'UsersSetPassword',
         'UsersPasswordEntry',
         'UsersNewAccount',
+        // The mail to an account's previous address after its address
+        // changed: run in-process by its event handler, never by a request.
+        'UsersEmailChanged',
 
         // Application password revoke link: the e-mailed key is the
         // credential (AppPasswords::forRevokeLink()), and it must work signed

@@ -14,7 +14,6 @@ function newTracker() {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
 });
 

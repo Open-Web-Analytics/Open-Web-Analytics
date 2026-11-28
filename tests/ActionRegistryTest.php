@@ -274,4 +274,25 @@ final class ActionRegistryTest extends TestCase
             $map['base.visualizationFunnel']['class_name']
         );
     }
+
+    /**
+     * Every command is a Controller\Cli: its constructor refuses any request
+     * but the command line, so no command's action runs from the web.
+     */
+    public function testEveryCommandsActionIsACliController(): void
+    {
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+
+        $commands = (array) $s->getMap('cli_commands');
+        $this->assertNotEmpty($commands);
+
+        foreach ($commands as $command => $action) {
+            $map   = $s->getMapValue('actions', $action);
+            $class = is_array($map) ? (string) ($map['class_name'] ?? '') : '';
+
+            $this->assertTrue($class !== '' && class_exists($class), "cmd=$command: $action resolves to no class");
+            $this->assertTrue(is_subclass_of($class, \OWA\Core\Controller\Cli::class), "cmd=$command: $class is not a Controller\\Cli");
+        }
+    }
 }

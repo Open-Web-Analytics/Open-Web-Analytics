@@ -24,6 +24,11 @@ class UsersChangePassword extends \OWA\Core\Controller {
         // the operator/length config above; typed as 'required' the length rule
         // silently degraded to a bare non-empty check and short passwords passed.
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', $passwordLengthConf);
+        $this->addValidation('password_max_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '<=',
+            'length'   => \OWA\Module\Base\Entity\User::MAX_PASSWORD_BYTES,
+            'errorMsg' => \OWA\Module\Base\Entity\User::passwordTooLongMessage(),
+        ]);
     }
 
     public function action() {
@@ -53,14 +58,26 @@ class UsersChangePassword extends \OWA\Core\Controller {
                 return;
             }
 
-            \OWA\Core\CoreAPI::getEventDispatch()->log(
-                [ 'ip' => $_SERVER['REMOTE_ADDR'] ?? '', 'user_id' => $user_id ], 'base.set_password' );
+            \OWA\Core\CoreAPI::getEventDispatch()->log( self::passwordSetEvent( $user_id ), 'base.set_password' );
             $this->setStatusCode( 3006 );
         } else {
             $this->setRedirectAction('base.loginForm');
             // Expired (2012), or not a key any account holds (2011).
             $this->set('error_code', \OWA\Module\Base\Controller\UsersPasswordEntry::keyProblem( $this->getParam('k') ) ?: 2011 );
         }
+    }
+
+    /**
+     * The base.set_password event's properties: the account, and the client
+     * address the password was set from (Core\ClientAddress), which the
+     * confirmation mail shows.
+     *
+     * @param  string $user_id
+     * @return array{ip: string, user_id: string}
+     */
+    public static function passwordSetEvent( $user_id ) {
+
+        return [ 'ip' => \OWA\Core\ClientAddress::fromRequest(), 'user_id' => (string) $user_id ];
     }
 
     public function errorAction() {

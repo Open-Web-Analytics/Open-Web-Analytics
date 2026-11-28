@@ -366,10 +366,10 @@ final class ReportRegistryTest extends TestCase
     /**
      * The dispatcher must not add a gate of its own.
      *
-     * Asserted structurally rather than through a role, and the reason is worth
-     * recording: view_reports is in capabilitiesThatRequireSiteAccess, so any
-     * non-admin identity is refused for lack of a site assignment long before a
-     * second capability could matter. Every role available without database
+     * Asserted structurally rather than through a role: a report needs
+     * view_reports and access to its Property, so any non-admin identity is
+     * refused for lack of access long before a second capability could
+     * matter. Every role available without database
      * fixtures therefore produces the same answer whether the dispatcher gates
      * or not, which makes a role-based test look like it passes while proving
      * nothing.

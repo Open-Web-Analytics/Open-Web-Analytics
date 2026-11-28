@@ -72,6 +72,12 @@ define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
  *
  *      define('OWA_DB_SQL_MODE', '');
  *
+ * OWA_MYSQL_CLIENT_FLAGS -- the client flags the mysqli driver connects with,
+ * such as MYSQLI_CLIENT_SSL. Read only by the mysqli driver (OWA_DB_TYPE
+ * mysqli, or mysql where pdo_mysql is not present); pdo_mysql ignores it.
+ *
+ *      define('OWA_MYSQL_CLIENT_FLAGS', MYSQLI_CLIENT_SSL);
+ *
  * Character encoding is NOT set here. The connection negotiates the widest
  * encoding automatically, and each table's encoding belongs to the entity that
  * defines it -- see Entity::setCharacterEncoding().

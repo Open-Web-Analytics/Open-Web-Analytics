@@ -109,7 +109,6 @@ function seedPersistedSession(values) {
 
 beforeEach(() => {
     setDocumentDomain('cv.example');
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
     OWA.setSetting('loggerPause', false);

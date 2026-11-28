@@ -460,8 +460,8 @@ final class SystemHealthTest extends TestCase
             $this->assertSame('full (serves tracking, ui, rest, cli, install; runs the scheduler)',
                 SystemHealth::installation()['facts']['Server role']);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'console,api');
-            $this->assertSame('console,api (serves ui, rest, cli)', SystemHealth::installation()['facts']['Server role']);
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector,api');
+            $this->assertSame('collector,api (serves tracking, rest, cli)', SystemHealth::installation()['facts']['Server role']);
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'server_role', $saved);
         }
@@ -695,6 +695,42 @@ final class SystemHealthTest extends TestCase
             chmod($root . '/Core', 0755);
             chmod($root . '/modules', 0755);
             exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
+    public function testADisabledEndpointsValueOfNoUsableTypeIsShown(): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'disabledEndpoints');
+
+        try {
+            $c->set('base', 'disabledEndpoints', 5);
+            $finding = array_column(SystemHealth::installation()['findings'], null, 'label')['OWA_DISABLED_ENDPOINTS'] ?? null;
+            $this->assertSame('yellow', $finding['level'] ?? null);
+            $this->assertStringContainsString('of type int', (string) $finding['detail']);
+
+            $c->set('base', 'disabledEndpoints', 'log.php, cli.php');
+            $this->assertArrayNotHasKey('OWA_DISABLED_ENDPOINTS', array_column(SystemHealth::installation()['findings'], null, 'label'));
+        } finally {
+            $c->set('base', 'disabledEndpoints', $saved);
+        }
+    }
+
+    public function testAMalformedUpdateWindowIsShown(): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = $c->get('base', 'auto_update_window');
+
+        try {
+            $c->set('base', 'auto_update_window', '2am-6am');
+            $finding = array_column(SystemHealth::installation()['findings'], null, 'label')['Update Window'] ?? null;
+            $this->assertSame('yellow', $finding['level'] ?? null);
+            $this->assertSame(\OWA\Module\Base\Classes\AutoUpdate\ReleaseCheck::ignoredWindow('2am-6am'), $finding['detail']);
+
+            $c->set('base', 'auto_update_window', '02:00-06:00');
+            $this->assertArrayNotHasKey('Update Window', array_column(SystemHealth::installation()['findings'], null, 'label'));
+        } finally {
+            $c->set('base', 'auto_update_window', $saved);
         }
     }
 }

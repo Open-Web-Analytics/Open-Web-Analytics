@@ -239,8 +239,8 @@ class Caller extends \OWA\Core\Base {
     public function isEndpointEnabled($file_name) {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
-            $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
-            if ( ! in_array( $file_name, $disabled_endpoints ) ) {
+            $disabled_endpoints = self::endpointList( $this->getSetting('base', 'disabledEndpoints') );
+            if ( ! in_array( $file_name, $disabled_endpoints, true ) ) {
                 return true;
             } else {
                 \OWA\Core\CoreAPI::debug('This endpoint is disabled.');
@@ -248,6 +248,47 @@ class Caller extends \OWA\Core\Base {
         }
     }
     
+    /**
+     * disabledEndpoints (OWA_DISABLED_ENDPOINTS) as a list: an array as it
+     * is, a string as one entry or a comma-separated list, anything else as
+     * none (endpointListProblem()).
+     *
+     * @param  mixed $value
+     * @return array<mixed>
+     */
+    public static function endpointList( $value ) {
+
+        if ( is_array( $value ) ) {
+
+            return $value;
+        }
+
+        if ( is_string( $value ) ) {
+
+            return array_values( array_filter( array_map( 'trim', explode( ',', $value ) ), static fn ( $name ) => $name !== '' ) );
+        }
+
+        return [];
+    }
+
+    /**
+     * Why a disabledEndpoints value is ignored, or null: one that is neither
+     * an array nor a string (nor unset).
+     *
+     * @param  mixed $value
+     * @return string|null
+     */
+    public static function endpointListProblem( $value ) {
+
+        if ( $value === null || is_array( $value ) || is_string( $value ) ) {
+
+            return null;
+        }
+
+        return sprintf( \OWA\Core\CoreAPI::t( 'OWA_DISABLED_ENDPOINTS is of type %s, not a list or a comma-separated string of entry points, so it is ignored and no entry point is turned off.' ),
+            get_debug_type( $value ) );
+    }
+
     /**
      * Used by owa_caller to override default config with values based to the caller.
      *

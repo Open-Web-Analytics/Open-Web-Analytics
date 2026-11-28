@@ -46,7 +46,7 @@
                         // Without a Property there is nothing for its links to be of.
                         if ( (string) $view->currentPropertyId !== '' ):
                         $owa_rail   = $view->navRail( $view->top_level_report_nav, (string) $view->currentPropertyId,
-                            $view->params ?? [], (string) $view->currentSiteId );
+                            $view->params ?? [] );
                         $owa_column = \OWA\Core\Template::reportColumn( $owa_rail );
                         include( 'nav_shell.php' );
                         endif;

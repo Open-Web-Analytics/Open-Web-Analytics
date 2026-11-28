@@ -323,8 +323,9 @@ final class SessionCredentialTest extends TestCase
         return [
             'http'                     => [[], false],
             'https'                    => [['HTTPS' => 'on'], true],
-            'https at a proxy'         => [['HTTP_X_FORWARDED_PROTO' => 'https'], true],
-            'http at a proxy'          => [['HTTP_X_FORWARDED_PROTO' => 'http'], false],
+            'https at a proxy'         => [['HTTP_X_FORWARDED_PROTO' => 'https', 'REMOTE_ADDR' => '127.0.0.1'], true],
+            'http at a proxy'          => [['HTTP_X_FORWARDED_PROTO' => 'http', 'REMOTE_ADDR' => '127.0.0.1'], false],
+            'https said by a client'   => [['HTTP_X_FORWARDED_PROTO' => 'https', 'REMOTE_ADDR' => '203.0.113.10'], false],
         ];
     }
 

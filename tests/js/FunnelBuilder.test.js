@@ -47,10 +47,10 @@ function stepRow(index = 0) {
                     data-description="A page was viewed." selected>page_view</option>
             <option value="click" data-label="click" data-group="built_in" data-group-label="Built-in events"
                     data-description="An element was clicked.">click</option>
-            <option value="newsletter_signup" data-label="newsletter_signup" data-group="yours" data-group-label="Your events"
+            <option value="newsletter_signup" data-label="newsletter_signup" data-group="yours" data-group-label="Custom events"
                     data-description="">newsletter_signup</option>
-            <option value="${CUSTOM_TRIGGER}" data-label="Another event of yours" data-group="yours" data-group-label="Your events"
-                    data-description="">Another event of yours</option>
+            <option value="${CUSTOM_TRIGGER}" data-label="Another custom event" data-group="yours" data-group-label="Custom events"
+                    data-description="">Another custom event</option>
         </select>
         <input class="owa_funnelStepCustomEvent" type="text" name="owa_stepCustomEvent[]" value="" hidden>
         <select class="owa_funnelStepMatch" name="owa_stepMatch[]">
@@ -109,7 +109,7 @@ test('another event with no conditions is a step: it matches every one', () => {
     expect(isBlankStep(readStep(row))).toBe(false);
 });
 
-test('"another event of yours" is named by the field beside it', () => {
+test('"another custom event" is named by the field beside it', () => {
     const row = stepRow();
 
     row.querySelector('.owa_funnelStepEvent').value = CUSTOM_TRIGGER;
@@ -158,7 +158,7 @@ test('the condition rows offer the chosen event\'s properties, and follow it', (
     expect(offered()).toEqual(['page_path', 'element_id', 'cd_plan']);
     expect(property().value).toBe('page_path');
 
-    // The custom name field shows for "another event of yours" only.
+    // The custom name field shows for "another custom event" only.
     expect(row.querySelector('.owa_funnelStepCustomEvent').hidden).toBe(true);
     event.value = CUSTOM_TRIGGER;
     $(event).trigger('change');
@@ -202,7 +202,7 @@ test('a condition\'s property is picked in the field chooser, from the button af
     expect($('.owa_fieldChooser')).toHaveLength(0);
 });
 
-test('the event is picked in the field chooser: built-in events and yours, each described', () => {
+test('the event is picked in the field chooser: built-in events and custom events, each described', () => {
     const row = stepRow();
 
     bindStep(row);
@@ -217,7 +217,7 @@ test('the event is picked in the field chooser: built-in events and yours, each 
 
     $(button).trigger('click');
 
-    expect($('.owa_fieldGroup .owa_fieldLabel').map((i, e) => $(e).text()).get()).toEqual(['Built-in events', 'Your events']);
+    expect($('.owa_fieldGroup .owa_fieldLabel').map((i, e) => $(e).text()).get()).toEqual(['Built-in events', 'Custom events']);
 
     $('.owa_fieldGroup').first().trigger('click');
     $('.owa_fieldChooser .owa_fieldOption[data-name="click"]').trigger('mousemove');
@@ -232,7 +232,7 @@ test('the event is picked in the field chooser: built-in events and yours, each 
     // The conditions follow the event, as they do when the <select> changes.
     expect(Array.from(property(row).options).map((o) => o.value)).toContain('element_id');
 
-    // "Another event of yours" shows the name field.
+    // "Another custom event" shows the name field.
     $(button).trigger('click');
     $('.owa_fieldGroup').eq(1).trigger('click');
     $('.owa_fieldChooser .owa_fieldOption[data-name="' + CUSTOM_TRIGGER + '"]').trigger('click');

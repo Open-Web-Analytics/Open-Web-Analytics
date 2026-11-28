@@ -339,6 +339,8 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa-override input:focus-visible {outline:2px solid #2a7ae2; outline-offset:2px;}
 .setting .owa-inherit-note {font-size:var(--owa-text-xs, 0.6875rem); color:#666666; padding:2px 0;}
 .setting .owa-inherit-note code {font-size:inherit; background:#f2f2f2; padding:0 3px; border-radius:2px;}
+/* Why a refused save's value for this field was refused (SettingsForm::problemNote()). */
+.setting .owa-settingProblem {color:#b00020; font-weight:bold; padding:2px 0;}
 
 /* LAYOUT */
 #keywords{width:400px;}

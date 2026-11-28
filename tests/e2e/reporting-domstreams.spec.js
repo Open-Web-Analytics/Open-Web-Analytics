@@ -109,10 +109,12 @@ test.describe('reporting: domstreams', () => {
     });
 
     /**
-     * The player opens the RECORDED page with its parameters on the fragment.
-     * That is how the overlay reaches the tracker running on that page.
+     * Play goes to the player launcher on OWA's own origin, which mints the
+     * player's token when Play is chosen and redirects to the RECORDED page
+     * with the player's parameters on the fragment. That is how the overlay
+     * reaches the tracker running on that page.
      */
-    test('each recording has a play link pointing at the recorded page', async ({ page }) => {
+    test('each recording has a play link that opens the recorded page', async ({ page }) => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
@@ -123,8 +125,15 @@ test.describe('reporting: domstreams', () => {
 
         const href = await play.getAttribute('href');
 
-        expect(href).toContain(FIXTURE.siteDomain + DS.a.page);
-        expect(href).toContain('#owa_overlay.');
+        expect(href).toContain('domstream.playerLauncher');
+        expect(href).not.toContain('overlayToken');
+
+        const launched = await page.request.get(href, { maxRedirects: 0 });
+        const location = launched.headers()['location'] || '';
+
+        expect(launched.status()).toBe(302);
+        expect(location).toContain(FIXTURE.siteDomain + DS.a.page);
+        expect(location).toContain('#owa_overlay.');
 
         // The window is sized to the viewport the recording was made in,
         // because the replay positions events against that geometry.

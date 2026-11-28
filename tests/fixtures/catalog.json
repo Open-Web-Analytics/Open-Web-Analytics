@@ -1526,7 +1526,7 @@
                 "column": "element_anchor",
                 "family": "event",
                 "label": "Element Anchor",
-                "description": "The clicked element, as a hash of its place in the page. The heatmap finds the element by it.",
+                "description": "The clicked element, as a hash of its place in the page.",
                 "foreign_key_name": "",
                 "data_type": "integer",
                 "denormalized": true
@@ -2771,7 +2771,7 @@
             "column": "element_anchor",
             "family": "event",
             "label": "Element Anchor",
-            "description": "The clicked element, as a hash of its place in the page. The heatmap finds the element by it.",
+            "description": "The clicked element, as a hash of its place in the page.",
             "foreign_key_name": "",
             "data_type": "integer",
             "denormalized": true

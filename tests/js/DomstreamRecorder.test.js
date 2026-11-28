@@ -33,7 +33,6 @@ function started(t, at = 1000) {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
     document.body.innerHTML = '';
 });

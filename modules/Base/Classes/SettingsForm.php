@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Classes;
  *
  * @phpstan-import-type Field from \OWA\Module\Base\Classes\Settings
  * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
- * @phpstan-type Posted array{config?: array<mixed>, override?: array<mixed>}
+ * @phpstan-type Posted array{config?: array<mixed>, override?: array<mixed>, problems?: array<string, string>}
  */
 class SettingsForm {
 
@@ -142,11 +142,12 @@ class SettingsForm {
     /**
      * One fieldset, as HTML.
      *
-     * @param  FieldSet $set  from Settings::registeredFieldSets()
-     * @param  string $ns     a prefix for each field's name; OWA's own forms use none
+     * @param  FieldSet    $set    from Settings::registeredFieldSets()
+     * @param  string      $ns     a prefix for each field's name; OWA's own forms use none
+     * @param  Posted|null $posted a refused post to redisplay (redrawRefused())
      * @return string
      */
-    public static function fieldSet( array $set, $ns = '' ) {
+    public static function fieldSet( array $set, $ns = '', $posted = null ) {
 
         $module = (string) ( $set['module'] ?? '' );
 
@@ -154,7 +155,7 @@ class SettingsForm {
 
         foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
-            $fields .= self::field( $module, (string) $key, $ns );
+            $fields .= self::field( $module, (string) $key, $ns, $posted );
         }
 
         if ( $fields === '' ) {
@@ -179,12 +180,13 @@ class SettingsForm {
      * it, and cmd=instance-info prints that -- the screen's job is not to
      * display the mistake to whoever is trying to use it.
      *
-     * @param  string $module
-     * @param  string $key
-     * @param  string $ns
+     * @param  string      $module
+     * @param  string      $key
+     * @param  string      $ns
+     * @param  Posted|null $posted a refused post: its value for this field (not a secret's) and its problem
      * @return string
      */
-    public static function field( $module, $key, $ns = '' ) {
+    public static function field( $module, $key, $ns = '', $posted = null ) {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
 
@@ -217,8 +219,16 @@ class SettingsForm {
         }
 
         $id      = self::controlId( $module, $key );
+        $value   = self::storedValue( $module, $key, $args );
+
+        if ( ! $constant && empty( $args['secret'] ) && is_array( $posted )
+             && array_key_exists( $module . '.' . $key, (array) ( $posted['config'] ?? [] ) ) ) {
+
+            $value = $posted['config'][ $module . '.' . $key ];
+        }
+
         $control = self::control( $module, $key, $args, $ns, (bool) $constant,
-            self::storedValue( $module, $key, $args ), sprintf( ' id="%s"', self::esc( $id ) ) );
+            $value, sprintf( ' id="%s"', self::esc( $id ) ) );
 
         if ( $control === '' ) {
 
@@ -232,18 +242,77 @@ class SettingsForm {
             $description .= self::constantNote( $constant );
         }
 
+        $problem = self::problemNote( $module, $key, $id, $posted );
+
         return sprintf(
             "    <div class=\"setting\" id=\"%s\" data-ui=\"setting:%s\">\n"
           . "        <label class=\"title\" for=\"%s\">%s</label>\n"
           . "        <div class=\"description\">%s</div>\n"
           . "        <div class=\"field\">%s</div>\n"
+          . "%s"
           . "    </div>\n",
             self::esc( $key ),
             self::esc( $module . '.' . $key ),
             self::esc( $id ),
             self::esc( self::label( $key, $args ) ),
             $description,
-            $control );
+            $control,
+            $problem !== '' ? '        ' . $problem . "\n" : '' );
+    }
+
+    /**
+     * Why a refused post's value for this field was refused, beside the
+     * field; '' when it was not.
+     *
+     * @param  string      $module
+     * @param  string      $key
+     * @param  string      $id     the control's id
+     * @param  Posted|null $posted
+     * @return string
+     */
+    protected static function problemNote( $module, $key, $id, $posted ) {
+
+        $problem = is_array( $posted ) ? ( $posted['problems'][ $module . '.' . $key ] ?? null ) : null;
+
+        if ( ! is_string( $problem ) || $problem === '' ) {
+
+            return '';
+        }
+
+        return sprintf( '<div class="owa-settingProblem" id="%s-problem" role="alert" data-ui="setting-problem">%s</div>',
+            self::esc( $id ), self::esc( $problem ) );
+    }
+
+    /**
+     * A refused settings save, answered with its screen drawn again: the
+     * $screen controller run with the post's params and `posted` set to what
+     * was posted and each problem by field. Its template hands `posted` to
+     * fieldSet() or scopedFieldSet(), which put each problem beside its
+     * field; msgs.php lists them above the form (validation_errors).
+     *
+     * @param  array<string, mixed>  $params   the refused request's
+     * @param  array<string, mixed>  $problems field => message, Controller::getValidationErrorMsgs()
+     * @param  class-string<\OWA\Core\Controller> $screen
+     * @return mixed the screen's answer
+     */
+    public static function redrawRefused( array $params, array $problems, $screen ) {
+
+        $by_field = [];
+
+        foreach ( $problems as $field => $message ) {
+
+            $by_field[ (string) $field ] = is_array( $message ) ? (string) ( $message['message'] ?? '' ) : (string) $message;
+        }
+
+        $c = new $screen( $params );
+        $c->set( 'validation_errors', $problems );
+        $c->set( 'posted', [
+            'config'   => (array) ( $params['config'] ?? [] ),
+            'override' => (array) ( $params['override'] ?? [] ),
+            'problems' => $by_field,
+        ] );
+
+        return $c->doAction();
     }
 
     /**
@@ -401,7 +470,8 @@ class SettingsForm {
             $control = self::control( $module, $key, $args, $ns, false, $value,
                 sprintf( ' id="%s"', self::esc( $id ) ) );
 
-            return $control === '' ? '' : self::settingBlock( $module, $key, $args, $control, '', '', $id );
+            return $control === '' ? '' : self::settingBlock( $module, $key, $args, $control,
+                self::problemNote( $module, $key, $id, $posted ), '', $id );
         }
 
         $overriding = $state['own'];
@@ -504,7 +574,7 @@ class SettingsForm {
 
         return self::settingBlock( $module, $key, $args,
             '<div class="owa-overridable__value">' . $control . $text . $inheritNote . '</div>' . $switch,
-            $notes, 'owa-overridable', $id );
+            $notes . self::problemNote( $module, $key, $id, $posted ), 'owa-overridable', $id );
     }
 
     /** Longer than this, an inherited value is shown on one line, cut, until it is focused or hovered. */

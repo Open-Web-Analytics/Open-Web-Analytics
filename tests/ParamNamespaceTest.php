@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Which spellings of a request param OWA reads, and where the `owa_` prefix
  * still has to be there.
  *
- * The prefix is ONE setting doing three unrelated jobs:
+ * The prefix, CoreAPI::NS, did three unrelated jobs:
  *
  *   1. cookie names, in a jar shared with the tracked page
  *   2. attribution params a customer puts on their own URLs (owa_source,
@@ -16,8 +16,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *   3. OWA's own admin and reporting URLs and form fields
  *
  * Only (3) has nothing to collide with -- OWA owns that whole query string --
- * so only (3) drops the prefix: OWA emits its own names bare, while 'ns' stays
- * 'owa_' and keeps doing (1) and (2). Conflating them is the trap this file
+ * so only (3) drops the prefix: OWA emits its own names bare, while the prefix
+ * stays 'owa_' and keeps doing (1) and (2). Conflating them is the trap this file
  * exists to catch: a change aimed at links must not land on the cookie jar.
  * The param path has its own resolution loop; cookies and $_SESSION go through
  * stripParams(), and require the prefix.
@@ -338,7 +338,7 @@ final class ParamNamespaceTest extends TestCase
         $this->assertFalse(method_exists(\OWA\Core\Template::class, 'getNs'));
         $this->assertSame(
             'owa_',
-            \OWA\Core\CoreAPI::getSetting('base', 'ns'),
+            \OWA\Core\CoreAPI::NS,
             'the wire namespace must not have moved with it'
         );
     }

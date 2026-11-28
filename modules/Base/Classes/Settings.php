@@ -537,14 +537,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'server_role', (string) OWA_SERVER_ROLE, 'OWA_SERVER_ROLE');
         }
 
-        /*
-         * The 1.x switch: stored settings are not read at boot, and nothing
-         * else. ServerRole::upgradeNotices() asks for OWA_SERVER_ROLE instead.
-         */
-        if (defined('OWA_USE_STATIC_CONFIG_ONLY') && OWA_USE_STATIC_CONFIG_ONLY) {
-            $this->setFromConfigConstant( 'base', 'skip_stored_settings', true, 'OWA_USE_STATIC_CONFIG_ONLY');
-        }
-
         /* DATABASE CONFIGURATION */
 
         // This needs to come before the fetch of user overrides from the DB
@@ -652,10 +644,8 @@ namespace OWA\Module\Base\Classes;
       * OWA_ROLE_CAPABILITIES: role => capabilities, ADDED to the roles that
       * exist. Nothing is taken away. A role that does not exist is refused --
       * nothing from the constant is applied, and configProblems() says why --
-      * so a misspelt role cannot leave a grant silently missing. Whether a
-      * capability needs site access follows capabilitiesThatRequireSiteAccess,
-      * which the constant does not change. A retired capability is dropped
-      * with one notice.
+      * so a misspelt role cannot leave a grant silently missing. A retired
+      * capability is dropped with one notice.
       *
       * @param  mixed $grants
       * @return void
@@ -1790,7 +1780,7 @@ namespace OWA\Module\Base\Classes;
 
              if ( $governing ) {
 
-                 $why = sprintf( 'it is set by %s in owa-config.php, which wins on every boot',
+                 $why = sprintf( 'it is set by %s in owa-config.php',
                      $governing );
 
              } elseif ( ! $this->isRegistered( $module, $key ) ) {
@@ -1799,7 +1789,7 @@ namespace OWA\Module\Base\Classes;
 
              } elseif ( ! self::isStorable( $this->registeredField( $module, $key ) ) ) {
 
-                 $why = 'it is not declared storable, so nothing would ever read the value';
+                 $why = 'it is not declared storable';
 
              } else {
 
@@ -2992,8 +2982,11 @@ namespace OWA\Module\Base\Classes;
             $this->set('base','public_path', $public_path);
         }
 
+        // The public URL (OWA_PUBLIC_URL), ending in one slash; '' stays ''.
+        $public_url = self::withSlash( (string) $this->get( 'base', 'public_url' ) );
+        $this->set( 'base', 'public_url', $public_url );
+
         // set various paths
-        $public_url = $this->get('base', 'public_url');
         $main_url = $public_url.'index.php';
         $this->set('base','main_url', $main_url);
         $this->set('base','main_absolute_url', $main_url);
@@ -3332,19 +3325,17 @@ namespace OWA\Module\Base\Classes;
     }
 
     /**
-     * Adds a capability ot a role, creating the role if it does
-     * not already exist. Also adds the capability to the
-     * siteAccessRequired list if role is not 'everyone'.
+     * Adds a capability to a role, creating the role if it does
+     * not already exist.
      *
      * For a module's code. owa-config.php uses OWA_ROLE_CAPABILITIES
      * (applyRoleCapabilities()).
      *
-     * @param string               $role                 role name.
-     * @param string|array<string> $capability           capability name, or several.
-     * @param bool                 $isSiteAccessRequired flag for adding to SA list.
+     * @param string               $role       role name.
+     * @param string|array<string> $capability capability name, or several.
      * @return void
      */
-    public function addCapabilityToRole( $role, $capability, $isSiteAccessRequired = false ) {
+    public function addCapabilityToRole( $role, $capability ) {
 
         $caps = $this->get('base', 'capabilities');
 
@@ -3366,19 +3357,6 @@ namespace OWA\Module\Base\Classes;
         // set new values
 
         $this->set('base', 'capabilities', $caps);
-
-        // make site access required, if role is not 'everyone'.
-        // this read `! $role === 'everyone'`, which PHP parses as
-        // `(! $role) === 'everyone'` -- a boolean compared identically against
-        // a string, so always false, so the body never ran and no caller could
-        // ever add a capability to the site-access list.
-        if ( $role !== 'everyone' && $isSiteAccessRequired ) {
-            $sar = (array) $this->get('base', 'capabilitiesThatRequireSiteAccess');
-            $sar = array_merge( $sar, (array) $capability );
-            // unique the array
-            $sar = array_values( array_unique( $sar ) );
-            $this->set('base', 'capabilitiesThatRequireSiteAccess', $sar);
-        }
     }
 
 }

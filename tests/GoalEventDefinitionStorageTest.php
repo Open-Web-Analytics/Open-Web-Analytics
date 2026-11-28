@@ -314,8 +314,8 @@ final class GoalEventDefinitionStorageTest extends TestCase
     {
         $this->assertContains( 'A name starts with a letter and has up to 40 letters, digits and underscores.',
             $this->saveErrors( 'x', [ 'name' => 'Signup by email' ] ) );
-        $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', [ 'name' => 'click' ] ) );
-        $this->assertContains( 'Page_View is an event OWA collects.', $this->saveErrors( 'x', [ 'name' => 'Page_View' ] ) );
+        $this->assertContains( 'click is a built-in event.', $this->saveErrors( 'x', [ 'name' => 'click' ] ) );
+        $this->assertContains( 'Page_View is a built-in event.', $this->saveErrors( 'x', [ 'name' => 'Page_View' ] ) );
         $this->assertSame( [], array_filter( $this->saveErrors( 'x', [ 'name' => 'Unused_name_75' ] ),
             static function ( $m ) { return strpos( $m, 'name' ) !== false; } ) );
     }

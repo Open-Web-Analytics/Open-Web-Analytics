@@ -41,10 +41,25 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         }
     }
 
+    /**
+     * The screen the form is on (returnAction()), drawn again with what was
+     * posted and each refusal beside its field (SettingsForm::redrawRefused()).
+     *
+     * @return mixed the screen's answer
+     */
     public function errorAction() {
 
-        $this->setRedirectAction( $this->returnAction() );
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        $map   = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', $this->returnAction() );
+        $class = is_array( $map ) ? (string) ( $map['class_name'] ?? '' ) : '';
+
+        if ( $class === '' || ! class_exists( $class ) ) {
+
+            $this->setRedirectAction( $this->returnAction() );
+
+            return null;
+        }
+
+        return \OWA\Module\Base\Classes\SettingsForm::redrawRefused( $this->params, (array) $this->getValidationErrorMsgs(), $class );
     }
 
     public function action() {

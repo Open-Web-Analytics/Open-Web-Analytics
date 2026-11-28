@@ -15,6 +15,13 @@ class User extends \OWA\Core\Entity {
     const MIN_PASSWORD_LENGTH = 6;
 
     /**
+     * The longest password any screen or command accepts, in bytes: bcrypt
+     * (Lib::encryptPassword()) reads no further. Hashes already stored are
+     * not affected.
+     */
+    const MAX_PASSWORD_BYTES = 72;
+
+    /**
      * How long the link in a new account's email can set its password.
      */
     const INVITE_TTL = 604800; // 7 days
@@ -108,6 +115,14 @@ class User extends \OWA\Core\Entity {
      */
     public function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 
+        // The screens and commands refuse it first, with a message.
+        if ( self::passwordIsTooLong( $password ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf( 'User %s not created: the password is longer than %d bytes.', $user_id, self::MAX_PASSWORD_BYTES ) );
+
+            return false;
+        }
+
         if ( ! $password ) {
 
             $password = bin2hex( random_bytes( 32 ) );
@@ -124,6 +139,30 @@ class User extends \OWA\Core\Entity {
         $ret = $this->create();
 
         return $ret;
+    }
+
+    /**
+     * Whether a password is too long to set (MAX_PASSWORD_BYTES).
+     *
+     * @param  mixed $password as the request carried it
+     */
+    public static function passwordIsTooLong( $password ): bool {
+
+        return is_string( $password ) && strlen( $password ) > self::MAX_PASSWORD_BYTES;
+    }
+
+    /**
+     * The refusal of a password longer than MAX_PASSWORD_BYTES.
+     *
+     * @param  bool $translated false for the command line, which is not translated
+     */
+    public static function passwordTooLongMessage( bool $translated = true ): string {
+
+        $text = $translated
+            ? \OWA\Core\CoreAPI::t( 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.' )
+            : 'The password must be at most %d bytes. An accented or non-Latin letter takes 2 to 4.';
+
+        return sprintf( $text, self::MAX_PASSWORD_BYTES );
     }
 
     /** A temp passkey that sets a password until $ttl seconds from now. */
