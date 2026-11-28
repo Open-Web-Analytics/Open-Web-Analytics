@@ -12,6 +12,7 @@ class ConfigurableMetric extends \OWA\Core\Metric {
 
     public function __construct( $params ) {
         
+        $this->setDefinition( (array) $params );
         $this->setMetricType( $params['metric_type'] );
         $this->setName( $params['name'] );
         $this->setLabel( $params['label'] );

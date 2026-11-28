@@ -8,8 +8,9 @@ use OWA\Module\Base\Classes\SettingsForm;
 
 /**
  * The Property's Details screen offers the currency its revenue is reported
- * in, read at Property scope (ResultSetManager), and its campaign parameter
- * names, beside the utm_ switch.
+ * in, read at Property scope (ResultSetManager), with a note on revenue in
+ * other currencies (the currency_conversion_status filter), and its campaign
+ * parameter names, beside the utm_ switch.
  */
 final class PropertySettingsScreenTest extends TestCase
 {
@@ -68,6 +69,68 @@ final class PropertySettingsScreenTest extends TestCase
             SettingsForm::registeredFieldSet('base.propertyReporting')['settings'] ?? null);
         $this->assertSame(['attribution_lookback_days', 'campaignUtmParams', 'campaignKeys'],
             SettingsForm::registeredFieldSet('base.propertyAttribution')['settings'] ?? null);
+    }
+
+    /** @var string|null what the currency_conversion_status listener answers; null passes */
+    public static $status = null;
+
+    /** @var list<mixed> the currencies the listener was given */
+    public static $statusAsked = [];
+
+    public static function conversionStatus($value, $currency = null)
+    {
+        self::$statusAsked[] = $currency;
+
+        return self::$status ?? $value;
+    }
+
+    /** @return string the reporting fieldset for a Property not yet saved */
+    private function reportingHtml(): string
+    {
+        return SettingsForm::scopedFieldSet(SettingsForm::registeredFieldSet('base.propertyReporting'), 'property', '', 'owa_');
+    }
+
+    /** Under the currency, Base's note unless a module answers the filter. */
+    public function testTheCurrencyNoteIsBasesWithNoAnswer(): void
+    {
+        self::$status = null;
+        self::$statusAsked = [];
+        \OWA\Core\CoreAPI::registerFilter('currency_conversion_status', self::class . '::conversionStatus', 99);
+
+        $html = $this->reportingHtml();
+
+        $this->assertStringContainsString(
+            '<div class="description" data-ui="setting-note">Revenue in other currencies is added as reported, without conversion.</div>',
+            $html);
+        $this->assertSame([\OWA\Core\CoreAPI::getSetting('base', 'currencyISO3')], self::$statusAsked,
+            'the filter is given the currency in force');
+    }
+
+    public function testAModulesAnswerReplacesTheNote(): void
+    {
+        self::$status = 'Converted <daily>';
+        \OWA\Core\CoreAPI::registerFilter('currency_conversion_status', self::class . '::conversionStatus', 99);
+
+        try {
+            $html = $this->reportingHtml();
+        } finally {
+            self::$status = null;
+        }
+
+        $this->assertStringContainsString('<div class="description" data-ui="setting-note">Converted &lt;daily&gt;</div>', $html,
+            'the answer, escaped');
+        $this->assertStringNotContainsString('added as reported', $html);
+    }
+
+    public function testTheNoteIsGivenTheChosenCurrency(): void
+    {
+        self::$status = null;
+        self::$statusAsked = [];
+        \OWA\Core\CoreAPI::registerFilter('currency_conversion_status', self::class . '::conversionStatus', 99);
+
+        $this->assertSame('Revenue in other currencies is added as reported, without conversion.',
+            \OWA\Module\Base\Classes\Currency::conversionStatus('EUR'));
+        $this->assertSame(['EUR'], self::$statusAsked);
     }
 
     /** A currency is a three-letter code; anything else is refused on the form. */

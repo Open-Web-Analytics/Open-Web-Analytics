@@ -225,6 +225,8 @@ return [
             'description' =>
                 \OWA\Core\CoreAPI::t( 'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
                 . 'A purchase that names no currency is recorded in this one.' ),
+            // What happens to revenue in other currencies (the currency_conversion_status filter).
+            'note'     => [ \OWA\Module\Base\Classes\Currency::class, 'conversionStatus' ],
         ],
         // RETENTION (Classes\Retention). Months; not set keeps everything. Read by
         // partition-rotate, which drops whole partitions outside the window.

@@ -1142,6 +1142,88 @@ final class CubeReportingTest extends TestCase
         $this->assertSame(3400, (int) $rs->aggregates['netRevenue']['value'], '4000 - 600');
     }
 
+    /**
+     * Purchases in other currencies are added as reported, in minor units of
+     * the Property's: €19.99 is 1999 cents, ¥1000 is 1000.00 dollars (100000
+     * cents) and 12.345 KWD is 1234.5 cents, rounded to 1235. The fixture's
+     * own purchases carry no currency and count as the Property's.
+     */
+    public function testOtherCurrenciesAreAddedAsReportedWithTheirDecimals(): void
+    {
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = Cubes::tableFor(self::PROPERTY);
+
+        \OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base', 'currencyISO3', 'USD');
+
+        $purchases = [
+            // id,     currency, revenue, tax
+            [909990, 'EUR',  1999, 199],
+            [909991, 'JPY',  1000, 100],
+            [909992, 'KWD', 12345, null],
+        ];
+
+        try {
+            foreach ($purchases as [$id, $currency, $revenue, $tax]) {
+
+                $event = Cubes::entityFor(self::PROPERTY);
+                $event->setProperties([
+                    'id'             => $id,
+                    'event_type'     => 'purchase',
+                    'site_id'        => self::SITE,
+                    'visitor_id'     => self::VISITOR + 1,
+                    'session_id'     => self::SESSION + 1,
+                    'prior_sessions' => 3,
+                    'ts'             => time() * 1000000,
+                    'yyyymmdd'       => (int) date('Ymd'),
+                    'page_path'      => '/buy',
+                    'revenue'        => $revenue,
+                    'tax'            => $tax,
+                    'currency'       => $currency,
+                ]);
+                $this->assertTrue((bool) $event->create(), 'seeding the ' . $currency . ' purchase');
+            }
+
+            $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+            $rsm->metrics = $rsm->metricsStringToArray('transactions,transactionRevenue,taxRevenue,revenuePerTransaction');
+            $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+            $rsm->setSiteId(self::SITE);
+            $rsm->setLimit(25);
+
+            $rs = $rsm->getResults();
+
+            $byCurrency = $this->manager('transactionRevenue', 'currencyCode')->getResults();
+
+        } finally {
+            $db->query(sprintf('DELETE FROM %s WHERE id IN (909990, 909991, 909992)', $table));
+            \OWA\Core\CoreAPI::clearScopedSetting('property', (string) self::PROPERTY, 'base', 'currencyISO3');
+        }
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $this->assertSame(5, (int) $rs->aggregates['transactions']['value']);
+
+        $this->assertSame(4000 + 1999 + 100000 + 1235, (int) $rs->aggregates['transactionRevenue']['value'],
+            'the fixture\'s 4000 cents, €19.99, ¥1000 and 12.345 KWD, each in cents');
+
+        $this->assertSame(199 + 10000, (int) $rs->aggregates['taxRevenue']['value'],
+            '€1.99 and ¥100 of tax');
+
+        $this->assertSame(round(107234 / 5), (float) $rs->aggregates['revenuePerTransaction']['value']);
+
+        $this->assertSame([], (array) $byCurrency->errors);
+
+        $rows = [];
+
+        foreach ((array) $byCurrency->resultsRows as $row) {
+            $rows[(string) $row['currencyCode']['value']] = (int) $row['transactionRevenue']['value'];
+        }
+
+        $this->assertSame(1999, $rows['EUR'] ?? null);
+        $this->assertSame(100000, $rows['JPY'] ?? null, '¥1000 is not $10.00');
+        $this->assertSame(1235, $rows['KWD'] ?? null);
+    }
+
     /** A difference with nothing to subtract is the first side; with neither, nothing. */
     public function testADifferenceTreatsAMissingSideAsZero(): void
     {

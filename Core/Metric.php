@@ -291,11 +291,11 @@ class Metric extends \OWA\Core\Base {
                         $statement = $where === ''
                             ? null
                             : sprintf( OWA_SQL_COALESCE,
-                                  sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $where ), '0' );
+                                  sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)', $where, $this->inputSql( '1' ) ), '0' );
 
                     } else {
 
-                        $statement = $db->count( $this->getColumn() );
+                        $statement = $db->count( $this->inputSql( $this->getColumn() ) );
                     }
                     break;
 
@@ -314,11 +314,11 @@ class Metric extends \OWA\Core\Base {
                         $statement = $where === ''
                             ? null
                             : $db->count( $db->distinct( sprintf( 'CASE WHEN %s THEN %s END',
-                                  $where, $this->getColumn() ) ) );
+                                  $where, $this->inputSql( $this->getColumn() ) ) ) );
 
                     } else {
 
-                        $statement = $db->count( $db->distinct( $this->getColumn() ) );
+                        $statement = $db->count( $db->distinct( $this->inputSql( $this->getColumn() ) ) );
                     }
                     break;
                 
@@ -354,11 +354,11 @@ class Metric extends \OWA\Core\Base {
                         $statement = $where === ''
                             ? null
                             : sprintf( OWA_SQL_COALESCE, sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
-                                  $where, sprintf( OWA_SQL_COALESCE, $this->getColumn(), '0' ) ), '0' );
+                                  $where, sprintf( OWA_SQL_COALESCE, $this->inputSql( $this->getColumn() ), '0' ) ), '0' );
 
                     } else {
 
-                        $statement = sprintf( OWA_SQL_COALESCE, $db->sum( $this->getColumn() ), '0' );
+                        $statement = sprintf( OWA_SQL_COALESCE, $db->sum( $this->inputSql( $this->getColumn() ) ), '0' );
                     }
                     break;
 
@@ -377,7 +377,7 @@ class Metric extends \OWA\Core\Base {
                      * problem that v2's schema removes.
                      */
                     $statement = sprintf( OWA_SQL_COALESCE, sprintf(
-                        'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->getColumn() ), '0' );
+                        'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->inputSql( $this->getColumn() ) ), '0' );
                     break;
 
                 case 'avg_difference':
@@ -388,8 +388,8 @@ class Metric extends \OWA\Core\Base {
                      * columns unambiguous once the query joins anything.
                      */
                     /* Both columns arrive already qualified by their setters. */
-                    $statement = sprintf( 'round(avg(%s - %s))',
-                        $this->getColumn(), $this->getSubtrahendColumn() );
+                    $statement = sprintf( 'round(avg(%s))', $this->inputSql( sprintf( '%s - %s',
+                        $this->getColumn(), $this->getSubtrahendColumn() ) ) );
                     break;
 
                 default:
@@ -405,6 +405,129 @@ class Metric extends \OWA\Core\Base {
         
     }
     
+    /**
+     * The Property the query is of. A money metric's input is expressed in
+     * its currency (inputSql()).
+     *
+     * @var string '' for the install's currency
+     */
+    protected $property_id = '';
+
+    /**
+     * The Property's currency, as the caller resolved it.
+     *
+     * Given rather than looked up here: getSelect() runs while a query is
+     * being built on the shared database object, and a settings lookup for a
+     * Property loads the Property through that same object, which clears the
+     * query being built.
+     *
+     * @var string|null null for the install's
+     */
+    protected $property_currency = null;
+
+    /**
+     * The metric as declared (config/metrics.php), given to the input filters.
+     *
+     * @var array<string, mixed> empty for a metric built from a class
+     */
+    protected $definition = [];
+
+    /**
+     * @param  int|string  $property_id
+     * @param  string|null $currency    the Property's currency (Classes\Currency::ofProperty()); null for the install's
+     * @return void
+     */
+    public function setPropertyId( $property_id, $currency = null ) {
+
+        $this->property_id       = (string) $property_id;
+        $this->property_currency = $currency === null ? null : (string) $currency;
+    }
+
+    /** @return string */
+    public function getPropertyId() {
+
+        return $this->property_id;
+    }
+
+    /**
+     * @param  array<string, mixed> $definition
+     * @return void
+     */
+    public function setDefinition( array $definition ) {
+
+        $this->definition = $definition;
+    }
+
+    /** @return array<string, mixed> */
+    public function getDefinition() {
+
+        return $this->definition;
+    }
+
+    /**
+     * The value one row contributes to the aggregate: the expression inside
+     * SUM or COUNT. The aggregate, the condition's CASE and the COALESCE
+     * around it stay getSelect()'s.
+     *
+     * Two filters run on it, in this order, both given inputContext():
+     *
+     *   currency_amount_sql            only for a metric whose data type is
+     *                                  currency. Base's value is the amount as
+     *                                  reported (Classes\Currency::asReportedSql()).
+     *   metric_input_sql.<metricName>  for every metric, given the result of the
+     *                                  first.
+     *
+     * @param  string $expression the row's value: a qualified column, or 1 for a
+     *                            conditioned count
+     * @return string
+     */
+    protected function inputSql( $expression ) {
+
+        $context = $this->inputContext();
+
+        if ( $this->getDataType() === 'currency' ) {
+
+            $amount = $context['currency_column'] === null
+                ? $expression
+                : \OWA\Module\Base\Classes\Currency::asReportedSql(
+                    $expression, $context['currency_column'], $context['property_currency'] );
+
+            $expression = (string) \OWA\Core\CoreAPI::filter( 'currency_amount_sql', $amount, $context );
+        }
+
+        return (string) \OWA\Core\CoreAPI::filter( 'metric_input_sql.' . $this->getName(), $expression, $context );
+    }
+
+    /**
+     * What the input filters are given.
+     *
+     * Column names are qualified by the table alias. currency_column is null
+     * when the entity has no `currency` column, date_column when it has no
+     * partition column.
+     *
+     * @return array{definition: array<string, mixed>, name: string|null, data_type: string|null,
+     *               table_alias: string|null, column: string|null, currency_column: string|null,
+     *               date_column: string|null, property_id: string, property_currency: string}
+     */
+    public function inputContext() {
+
+        $alias     = $this->getTableAlias();
+        $partition = $this->entity->getPartitionColumn();
+
+        return [
+            'definition'        => $this->definition,
+            'name'              => $this->getName(),
+            'data_type'         => $this->getDataType(),
+            'table_alias'       => $alias,
+            'column'            => $this->getColumn(),
+            'currency_column'   => $this->entity->getProperty( 'currency' ) ? $alias . '.currency' : null,
+            'date_column'       => $partition ? $alias . '.' . $partition : null,
+            'property_id'       => $this->property_id,
+            // The install's currency needs no Property lookup, so no query.
+            'property_currency' => $this->property_currency ?? \OWA\Module\Base\Classes\Currency::ofProperty( '' ),
+        ];
+    }
+
     /**
      * @return string|null getSelect()'s expression
      */

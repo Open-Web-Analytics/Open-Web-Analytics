@@ -1382,6 +1382,7 @@ return [
     'Revenue divided by the number of purchases.' => 'Revenue divided by the number of purchases.',
     'Revenue divided by the number of sessions.' => 'Revenue divided by the number of sessions.',
     'Revenue divided by the number of users.' => 'Revenue divided by the number of users.',
+    'Revenue in other currencies is added as reported, without conversion.' => 'Revenue in other currencies is added as reported, without conversion.',
     'Revenue less refunds, excluding tax and shipping.' => 'Revenue less refunds, excluding tax and shipping.',
     'Revoke' => 'Revoke',
     'Revoke %s? Anything using it stops working immediately.' => 'Revoke %s? Anything using it stops working immediately.',
