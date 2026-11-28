@@ -19,7 +19,10 @@ namespace OWA\Module\Base\Classes;
  * build -- are in Core\Requirements; this class checks this server against
  * them.
  *
- * @phpstan-type Check array{name: string, value: string, passed: bool, msg: string, requires: string}
+ * A check that passes may carry a `warning`: shown, and it does not stop the
+ * install.
+ *
+ * @phpstan-type Check array{name: string, value: string, passed: bool, msg: string, requires: string, warning?: string}
  */
 class EnvironmentCheck {
 
@@ -245,6 +248,28 @@ class EnvironmentCheck {
             $passed,
             $msg,
             '`pdo_mysql`, or `mysqli` built with mysqlnd, is loaded.' );
+    }
+
+    /**
+     * The database server's time zone tables, as a warning: OWA installs and
+     * runs without them, and hour, minute and date-hour report as (not set)
+     * (DatabaseRequirement::timeZoneWarning()).
+     *
+     * @param  string|null $warning  the warning, or null when named time zones convert
+     * @return Check
+     */
+    public static function timeZoneTables( $warning ) {
+
+        $check = self::check(
+            \OWA\Core\CoreAPI::t( 'Database time zones' ),
+            $warning === null ? \OWA\Core\CoreAPI::t( 'loaded' ) : \OWA\Core\CoreAPI::t( 'not loaded' ),
+            true,
+            '',
+            'The database server\'s time zone tables are loaded, for hour, minute and date-hour (a warning otherwise).' );
+
+        $check['warning'] = (string) $warning;
+
+        return $check;
     }
 
     /**

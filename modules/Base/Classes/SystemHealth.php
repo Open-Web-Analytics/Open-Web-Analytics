@@ -714,6 +714,13 @@ class SystemHealth {
             $findings[] = $backup;
         }
 
+        $zones = self::timeZoneTables();
+
+        if ( $zones ) {
+
+            $findings[] = $zones;
+        }
+
         $writable = self::writableCode();
 
         if ( $writable ) {
@@ -1012,6 +1019,20 @@ class SystemHealth {
         }
 
         return self::finding( 'green', $label, $dir );
+    }
+
+    /**
+     * The database server's time zone tables, which the clock dimensions
+     * need (DatabaseRequirement::timeZoneWarning()).
+     *
+     * @return Finding|null nothing when named time zones convert
+     */
+    public static function timeZoneTables() {
+
+        $warning = \OWA\Module\Base\Classes\DatabaseRequirement::timeZoneWarning();
+
+        return $warning === null ? null
+            : self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Database time zones' ), $warning );
     }
 
     /**

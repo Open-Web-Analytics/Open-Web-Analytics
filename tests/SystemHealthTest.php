@@ -386,6 +386,27 @@ final class SystemHealthTest extends TestCase
         }
     }
 
+    /** Without the database's time zone tables the clock dimensions are (not set): a yellow finding with the fix. */
+    public function testMissingTimeZoneTablesAreAWarning(): void
+    {
+        try {
+            \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(false);
+
+            $finding = SystemHealth::timeZoneTables();
+
+            $this->assertSame('yellow', $finding['level'] ?? null);
+            $this->assertStringContainsString('mysql_tzinfo_to_sql', (string) $finding['detail']);
+            $this->assertContains('Database time zones', array_column(SystemHealth::installation()['findings'], 'label'));
+
+            \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(true);
+
+            $this->assertNull(SystemHealth::timeZoneTables());
+            $this->assertNotContains('Database time zones', array_column(SystemHealth::installation()['findings'], 'label'));
+        } finally {
+            \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(null);
+        }
+    }
+
     /** Two automatic updates directories: red, since neither is guessed at. */
     public function testMoreThanOneUpdatesDirectoryIsShown(): void
     {

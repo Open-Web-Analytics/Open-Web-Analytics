@@ -598,6 +598,12 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     color: #99321f;
 }
 
+/* A warning: shown, and the install goes on. */
+.owa_installCheck.is-warn .owa_installCheckMark,
+.owa_installCheck.is-warn .owa_installCheckValue {
+    color: #8a5a00;
+}
+
 .owa_installCheckName {
     color: #333333;
 }

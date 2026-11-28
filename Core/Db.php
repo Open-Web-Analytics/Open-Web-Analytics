@@ -2251,6 +2251,19 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Whether the server converts a named time zone, which the clock
+     * dimensions (hour, minute, dateHour) need (OWA_SQL_LOCAL_DATETIME). A
+     * driver whose conversion depends on server-side tables overrides this
+     * (MysqlDialect); here there is nothing to check.
+     *
+     * @return bool
+     */
+    public function namedTimeZonesConvert() {
+
+        return true;
+    }
+
+    /**
      * Run $fn with every SELECT in it limited to $seconds, then restore the
      * session's own limit.
      *

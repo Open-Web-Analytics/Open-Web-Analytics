@@ -15,7 +15,36 @@ final class DatabaseRequirementTest extends TestCase
     protected function tearDown(): void
     {
         DatabaseRequirement::assume(null);
+        DatabaseRequirement::assumeTimeZones(null);
         \OWA\Core\Strings::useTranslations(null);
+    }
+
+    /** Missing time zone tables are a warning with its fix, not a refusal. */
+    public function testMissingTimeZoneTablesAreAWarning(): void
+    {
+        DatabaseRequirement::assumeTimeZones(false);
+
+        $warning = (string) DatabaseRequirement::timeZoneWarning();
+
+        $this->assertStringStartsWith('The database server\'s time zone tables are not loaded, so hour, minute and '
+          . 'date-hour report as (not set).', $warning);
+        $this->assertStringContainsString('mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root mysql', $warning);
+        $this->assertStringContainsString('hosting provider', $warning);
+
+        DatabaseRequirement::assumeTimeZones(true);
+
+        $this->assertNull(DatabaseRequirement::timeZoneWarning());
+    }
+
+    /** The servers CI runs on have the tables loaded, and the check says so. */
+    public function testThisServerConvertsNamedTimeZones(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('This asks the database server.');
+        }
+
+        $this->assertTrue(\OWA\Core\CoreAPI::dbSingleton()->namedTimeZonesConvert());
+        $this->assertNull(DatabaseRequirement::timeZoneWarning());
     }
 
     /** The installer form shows these, so each is in the locale in use. */

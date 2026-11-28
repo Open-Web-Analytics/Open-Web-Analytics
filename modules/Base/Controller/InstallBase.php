@@ -117,6 +117,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
     public function errorAction() {
 
         $this->set('defaults', $this->params);
+        $this->set( 'zone_warning', InstallDefaultsEntry::zoneWarning() );
         $this->setView('base.install');
         $this->setSubview( 'base.installDefaultsEntry', InstallDefaultsEntry::SCREEN );
     }

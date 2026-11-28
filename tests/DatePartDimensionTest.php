@@ -194,6 +194,12 @@ final class DatePartDimensionTest extends TestCase
 
             $this->assertStringNotContainsString('FROM_UNIXTIME', $sql, $part);
         }
+
+        // Nor do the clock parts: FROM_UNIXTIME answers in the connection's zone.
+        foreach (['hour', 'minute', 'dateHour'] as $part) {
+
+            $this->assertStringNotContainsString('FROM_UNIXTIME', DimensionExpression::datePart('ts', $part), $part);
+        }
     }
 
     /**
@@ -337,6 +343,50 @@ final class DatePartDimensionTest extends TestCase
         $this->assertGreaterThanOrEqual(6, $differ,
             'the fixture must contain instants whose local hour differs from UTC, '
           . 'or the agreement test above cannot tell the two bases apart');
+    }
+
+    /**
+     * The clock parts do not depend on the connection's time_zone: under a
+     * session at +05:30 they are still the UTC instant in the configured
+     * zone. FROM_UNIXTIME answered in the session zone, which shifted every
+     * hour (and, at a half-hour offset, every minute) by it.
+     */
+    public function testTheClockPartsIgnoreTheSessionTimeZone(): void
+    {
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $row = $db->get_row('SELECT @@SESSION.time_zone AS tz');
+        $was = is_array($row) ? (string) $row['tz'] : 'SYSTEM';
+
+        $this->assertTrue($db->namedTimeZonesConvert(), 'the CI servers have the time zone tables loaded');
+
+        $expected = [ 'hour' => [], 'minute' => [], 'dateHour' => [] ];
+
+        foreach (self::instants() as $instant) {
+
+            $expected['hour'][]     = date('G', $instant);
+            $expected['minute'][]   = (string) (int) date('i', $instant);
+            $expected['dateHour'][] = date('YmdH', $instant);
+        }
+
+        $db->query("SET time_zone = '+05:30'");
+
+        try {
+            $check = $db->get_row('SELECT @@SESSION.time_zone AS tz');
+            $this->assertSame('+05:30', (string) ($check['tz'] ?? ''), 'the session zone was not changed');
+
+            foreach ($expected as $dimension => $values) {
+
+                $want = array_count_values($values);
+                $got  = $this->group($dimension);
+
+                ksort($want);
+                ksort($got);
+
+                $this->assertSame($want, $got, $dimension . ' moved with the session time zone');
+            }
+        } finally {
+            $db->query(sprintf("SET time_zone = '%s'", $db->prepare($was)));
+        }
     }
 
     /** Daylight saving is resolved per row, not once for the query. */

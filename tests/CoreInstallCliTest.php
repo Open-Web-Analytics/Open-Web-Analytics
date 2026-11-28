@@ -72,6 +72,9 @@ final class CoreInstallCliTest extends TestCase
         $this->setUpInstaller();
         Cli::$exit_code = 0;
 
+        // Nothing here reaches the database, the time zone check included.
+        \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(true);
+
         $error          = new ReflectionProperty(\OWA\Core\CoreAPI::class, 'error');
         $this->savedLog = $error->getValue();
         $this->log      = new CoreInstallRecordingError();
@@ -86,6 +89,7 @@ final class CoreInstallCliTest extends TestCase
     {
         (new ReflectionProperty(\OWA\Core\CoreAPI::class, 'error'))->setValue(null, $this->savedLog);
         Cli::$exit_code = 0;
+        \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(null);
         $this->restoreSettings();
     }
 
@@ -125,6 +129,25 @@ final class CoreInstallCliTest extends TestCase
         foreach ($this->log->logged as $line) {
             $this->assertStringNotContainsString($password, $line, 'the password was logged');
         }
+    }
+
+    /** Missing time zone tables are said, and the install goes on. */
+    public function testANewInstallationWarnsOfMissingTimeZoneTables(): void
+    {
+        \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(false);
+
+        $cli = $this->runCommand(self::SETUP);
+
+        $this->assertSame('ok', $cli->getCliOutcome()['outcome'], $cli->getCliOutcome()['message']);
+        $this->assertContains(\OWA\Module\Base\Classes\DatabaseRequirement::timeZoneWarningText(), $this->log->logged);
+        $this->assertContains('Install Completed.', $this->log->logged);
+
+        \OWA\Module\Base\Classes\DatabaseRequirement::assumeTimeZones(true);
+        $this->log->logged = [];
+
+        $this->runCommand(self::SETUP);
+
+        $this->assertNotContains(\OWA\Module\Base\Classes\DatabaseRequirement::timeZoneWarningText(), $this->log->logged);
     }
 
     /** Each run generates its own. */

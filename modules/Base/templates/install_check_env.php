@@ -16,13 +16,16 @@ $owa_failed = count( (array) $view->errors );
 
 <ul class="owa_installChecks">
 <?php foreach ( (array) $view->checks as $owa_check ): ?>
-    <li class="owa_installCheck <?php echo $owa_check['passed'] ? 'is-ok' : 'is-bad';?>">
+<?php $owa_warning = (string) ( $owa_check['warning'] ?? '' ); ?>
+    <li class="owa_installCheck <?php echo ! $owa_check['passed'] ? 'is-bad' : ( $owa_warning !== '' ? 'is-warn' : 'is-ok' );?>">
         <span class="owa_installCheckMark" aria-hidden="true"><?php
-            echo $owa_check['passed'] ? '&#10003;' : '&#10007;';?></span>
+            echo ! $owa_check['passed'] ? '&#10007;' : ( $owa_warning !== '' ? '!' : '&#10003;' );?></span>
         <span class="owa_installCheckName"><?php $view->out( $owa_check['name'] );?></span>
         <span class="owa_installCheckValue"><?php $view->out( $owa_check['value'] );?></span>
         <?php if ( ! $owa_check['passed'] ): ?>
         <span class="owa_installCheckFix"><?php $view->out( $owa_check['msg'] );?></span>
+        <?php elseif ( $owa_warning !== '' ): ?>
+        <span class="owa_installCheckFix"><?php $view->out( $owa_warning );?></span>
         <?php endif; ?>
     </li>
 <?php endforeach; ?>
