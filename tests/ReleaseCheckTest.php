@@ -637,13 +637,13 @@ final class ReleaseCheckTest extends TestCase
         $this->assertNull(Install::$pending);
     }
 
-    /** Automatic updates turned off: nothing installs; the pending tarball stays, for an install by hand. */
-    public function testTurningOffKeepsThePendingTarball(): void
+    /** Automatic updates turned off: what was downloaded goes, but the installed release's. */
+    public function testTurningOffDeletesTheDownload(): void
     {
         $this->check(['2.1.0']);
 
         $this->assertSame(ReleaseCheck::OFF, $this->check(['2.1.0'], ['enabled' => false, 'window' => '', 'days' => ''])['outcome']);
-        $this->assertSame(['2.1.0', '2.0.0'], $this->downloads()->versions());
+        $this->assertSame(['2.0.0'], $this->downloads()->versions());
         $this->assertNull(Install::$pending);
     }
 

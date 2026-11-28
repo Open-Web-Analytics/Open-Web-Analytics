@@ -332,7 +332,7 @@ class ReleaseCheck {
 
             if ( ! $dry_run ) {
 
-                $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );
+                $this->downloads->prune( [ $installed ] );
             }
 
             return $this->outcome( self::OFF, null, [], 'Automatic updates are off.' );
@@ -360,6 +360,7 @@ class ReleaseCheck {
 
             if ( $release === null ) {
 
+                // A pending release newer than the installed one stays: a higher release can replace it.
                 if ( ! $dry_run ) {
 
                     $this->downloads->prune( [ $installed, $this->downloads->pending( $installed ) ] );

@@ -17,7 +17,8 @@ use OWA\Core\SafeFile;
  *                                      release's, which a failed install puts back, and the
  *                                      pending one: the release the release check or
  *                                      cmd=core-install chose last, refused or waiting, until it
- *                                      installs or another chosen release replaces it.
+ *                                      installs, another chosen release replaces it, or a
+ *                                      release check runs with automatic updates off.
  *     last-failure.json          0644: the release whose install failed and was put back,
  *                                or whose schema updates did not complete, until one
  *                                installs; written by updater.php `recordFailure` alone
@@ -263,8 +264,9 @@ class Downloads {
     }
 
     /**
-     * The pending release (the class docblock) a run that chooses nothing
-     * keeps: the newest downloaded release newer than $installed, or null.
+     * The pending release (the class docblock) a release check that chooses
+     * nothing keeps while automatic updates are on: the newest downloaded
+     * release newer than $installed, or null. With them off it goes.
      *
      * @param  string $installed
      * @return string|null
