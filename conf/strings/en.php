@@ -1802,6 +1802,7 @@ return [
     'This link revokes nothing: the application password is already revoked, or the link is not whole.' => 'This link revokes nothing: the application password is already revoked, or the link is not whole.',
     'This module stays active while its constant is set in owa-config.php.' => 'This module stays active while its constant is set in owa-config.php.',
     'This month' => 'This month',
+    'This page is not served over HTTPS. The password you enter travels unencrypted.' => 'This page is not served over HTTPS. The password you enter travels unencrypted.',
     'This quarter' => 'This quarter',
     'This recording cannot be played.' => 'This recording cannot be played.',
     'This removes the Property and every Observation Profile under it. Those Profiles stop recording and disappear from reporting.' => 'This removes the Property and every Observation Profile under it. Those Profiles stop recording and disappear from reporting.',

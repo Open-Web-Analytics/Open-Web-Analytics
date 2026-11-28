@@ -144,6 +144,9 @@
                 <input type="password" size="30" name="password" id="owa_install_password" autocomplete="new-password" value="">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The password for this account.' ) ); ?></span>
+            <?php if ( ! \OWA\Core\Lib::isHttps() ) { ?>
+            <span class="owa_installWarning" data-ui="install:http-warning"><?php $view->out( \OWA\Core\CoreAPI::t( 'This page is not served over HTTPS. The password you enter travels unencrypted.' ) ); ?></span>
+            <?php } ?>
         </div>
                 
         <div class="owa_installActions">
