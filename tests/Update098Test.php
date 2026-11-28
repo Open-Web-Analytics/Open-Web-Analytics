@@ -145,6 +145,8 @@ final class Update098Test extends TestCase
     /**
      * The settings the update process saves are kept in step: boot loaded the
      * install rows, and a save of the old values would put them straight back.
+     *
+     * @covers-setting base.retired_settings_before_098
      */
     public function testTheSettingsInMemoryFollowTheTable(): void
     {
@@ -171,7 +173,11 @@ final class Update098Test extends TestCase
             'the restored rows are not held, and the closing save prunes them again');
     }
 
-    /** Every retired row goes, at every scope, others stay; down() is the exact inverse. */
+    /**
+     * Every retired row goes, at every scope, others stay; down() is the exact inverse.
+     *
+     * @covers-setting base.retired_settings_before_098
+     */
     public function testTheRetiredRowsGoAndComeBack(): void
     {
         $this->requireDb();

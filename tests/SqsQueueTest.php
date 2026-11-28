@@ -97,6 +97,9 @@ final class SqsQueueTest extends TestCase
     // Names
     // ---------------------------------------------------------------------
 
+    /**
+     * @covers-setting base.db_name
+     */
     public function testTheNameIsDerivedFromWhereTheBeaconsLand(): void
     {
         $saved = \OWA\Core\CoreAPI::getSetting('base', 'db_name');
@@ -194,7 +197,11 @@ final class SqsQueueTest extends TestCase
         $this->assertSame(['GetQueueUrl', 'SendMessage', 'SendMessage'], array_column($this->sent, 0));
     }
 
-    /** What provisioning recorded names both queues: no lookup at all. */
+    /**
+     * What provisioning recorded names both queues: no lookup at all.
+     *
+     * @covers-setting sqs.provisioned
+     */
     public function testTheProvisioningRecordNamesTheUrls(): void
     {
         $was = \OWA\Core\CoreAPI::getSetting('sqs', 'provisioned');

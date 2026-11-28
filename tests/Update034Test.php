@@ -27,6 +27,9 @@ final class Update034Test extends TestCase
         }
     }
 
+    /**
+     * @covers-setting base.use_32bit_hash
+     */
     public function testAnInstallationStill32BitIsWidenedAndRemembered(): void
     {
         \OWA\Core\CoreAPI::persistSetting('base', 'use_32bit_hash', true);

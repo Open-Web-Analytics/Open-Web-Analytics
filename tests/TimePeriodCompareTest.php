@@ -196,6 +196,9 @@ final class TimePeriodCompareTest extends TestCase
         $this->assertFalse( TimePeriod::isRetired( 'last_seven_days' ) );
     }
 
+    /**
+     * @covers-setting base.default_reporting_period
+     */
     public function testARetiredDefaultFallsBackToLastSevenDays(): void
     {
         $was = \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );

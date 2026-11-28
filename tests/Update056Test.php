@@ -118,7 +118,11 @@ final class Update056Test extends TestCase
         $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
     }
 
-    /** down() puts back every row and value up() removed, and removes its record. */
+    /**
+     * down() puts back every row and value up() removed, and removes its record.
+     *
+     * @covers-setting base.goal_groups_before_056
+     */
     public function testDownIsTheExactInverse(): void
     {
         $this->seed();

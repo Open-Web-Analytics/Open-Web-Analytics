@@ -164,6 +164,9 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame([], $this->blocked(), 'nothing was blocked');
     }
 
+    /**
+     * @covers-setting base.spam_threshold
+     */
     public function testABeaconAtTheThresholdWritesNothingAndIsCounted(): void
     {
         $props = $this->beacon(false);
@@ -194,7 +197,11 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame(['*' => 2, 'NO_CLIENT_HINTS' => 2, 'NO_FETCH_METADATA' => 2], $this->blocked());
     }
 
-    /** A blank threshold stores the beacon, scored. */
+    /**
+     * A blank threshold stores the beacon, scored.
+     *
+     * @covers-setting base.spam_threshold
+     */
     public function testABlankThresholdStoresEverything(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'spam_threshold', '');
@@ -210,7 +217,11 @@ final class SpamScoreIngestTest extends IngestionTestCase
         $this->assertSame([], $this->blocked());
     }
 
-    /** Normal runs the user agent rules alone, so the same beacon scores 0.0 and is stored. */
+    /**
+     * Normal runs the user agent rules alone, so the same beacon scores 0.0 and is stored.
+     *
+     * @covers-setting base.spam_detection
+     */
     public function testNormalScoresTheSameBeaconZero(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'spam_detection', 'normal');

@@ -136,6 +136,8 @@ final class StringGuidTest extends TestCase
      * Inverted deliberately: the value that needs explaining is the legacy one,
      * and it is removable. Once the migration clears the flag an installation
      * falls through to the default with nothing left behind to explain.
+     *
+     * @covers-setting base.use_32bit_hash
      */
     public function testWideIsTheDefaultAndTheFlagIsTheException(): void
     {

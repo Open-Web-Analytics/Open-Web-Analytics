@@ -305,6 +305,9 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $this->assertFalse($this->authenticate(self::bearer($made['token']))['auth_status']);
     }
 
+    /**
+     * @covers-setting base.app_passwords_enabled
+     */
     public function testTurningThemOffRefusesEveryOne(): void
     {
         list(, $made) = $this->userWithPassword();
@@ -313,6 +316,9 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $this->assertFalse($this->authenticate(self::bearer($made['token']))['auth_status']);
     }
 
+    /**
+     * @covers-setting base.app_passwords_require_https
+     */
     public function testPlainHttpIsRefusedUnlessAllowed(): void
     {
         list(, $made) = $this->userWithPassword();

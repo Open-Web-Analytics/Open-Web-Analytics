@@ -86,6 +86,8 @@ final class CurrencyTest extends TestCase
     /**
      * A purchase that names no currency takes its Property's -- so revenue never
      * sits beside a NULL currency -- and one that names its own keeps it.
+     *
+     * @covers-setting base.currencyISO3
      */
     public function testAPurchaseWithNoCurrencyTakesItsPropertys(): void
     {

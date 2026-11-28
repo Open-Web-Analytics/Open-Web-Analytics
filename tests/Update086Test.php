@@ -133,6 +133,8 @@ final class Update086Test extends TestCase
     /**
      * The settings the update process saves are kept in step: boot loaded
      * fileCache's rows, and a save of the old values put them straight back.
+     *
+     * @covers-setting base.cache_settings_before_086
      */
     public function testTheSettingsInMemoryFollowTheTable(): void
     {
@@ -160,7 +162,11 @@ final class Update086Test extends TestCase
         $this->assertArrayNotHasKey('cacheType', $config->db_settings['base'], 'a property row is not an install setting');
     }
 
-    /** Every row of the two modules and every retired base row goes, at every scope, others stay; down() is the exact inverse. */
+    /**
+     * Every row of the two modules and every retired base row goes, at every scope, others stay; down() is the exact inverse.
+     *
+     * @covers-setting base.cache_settings_before_086
+     */
     public function testTheCacheRowsGoAndComeBack(): void
     {
         $this->requireDb();

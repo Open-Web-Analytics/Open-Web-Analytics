@@ -116,6 +116,10 @@ final class NotificationNoticeTest extends TestCase
         ];
     }
 
+    /**
+     * @covers-setting base.admin_notice_email
+     * @covers-setting base.request_type
+     */
     public function testANoticeIsStoredForEveryoneAndMailedOnce(): void
     {
         $this->assertTrue(NM::notify($this->notice('k1')));
@@ -162,7 +166,11 @@ final class NotificationNoticeTest extends TestCase
         $this->assertSame([], $this->sent);
     }
 
-    /** A page request never sends mail; it records that it did not. */
+    /**
+     * A page request never sends mail; it records that it did not.
+     *
+     * @covers-setting base.request_type
+     */
     public function testAPageRequestSendsNoMail(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
@@ -190,6 +198,9 @@ final class NotificationNoticeTest extends TestCase
         $this->assertSame(NM::EMAIL_FAILED, $this->row('k5')['email_status']);
     }
 
+    /**
+     * @covers-setting base.admin_notice_email
+     */
     public function testConfiguredRecipientsAreTrimmedAndOnce(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'admin_notice_email', ' a@example.test ,b@example.test,, a@example.test ');
@@ -197,7 +208,11 @@ final class NotificationNoticeTest extends TestCase
         $this->assertSame(['a@example.test', 'b@example.test'], NM::adminRecipients());
     }
 
-    /** Empty means every admin user's address: the admin users, nobody else. */
+    /**
+     * Empty means every admin user's address: the admin users, nobody else.
+     *
+     * @covers-setting base.admin_notice_email
+     */
     public function testNoConfiguredRecipientMeansTheAdmins(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'admin_notice_email', '');

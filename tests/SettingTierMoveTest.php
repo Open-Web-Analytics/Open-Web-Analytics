@@ -253,6 +253,8 @@ final class SettingTierMoveTest extends TestCase
      * test that writes REMOTE_ADDR here is not read. A first draft did exactly
      * that and still passed, because the bootstrap address happens to anonymise
      * to the value it was asserting.
+     *
+     * @covers-setting base.anonymize_ips
      */
     public function testAnonymisationFollowsTheProfileNotTheInstall(): void
     {

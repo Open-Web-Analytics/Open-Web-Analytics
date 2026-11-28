@@ -262,7 +262,11 @@ final class ConfigSecretsTest extends TestCase
         $this->assertSame($this->dir . '/none.php does not exist. Nothing was changed.', $result['error']);
     }
 
-    /** The command: 0 and a rotated file, 1 and an untouched one. */
+    /**
+     * The command: 0 and a rotated file, 1 and an untouched one.
+     *
+     * @covers-setting base.config_file
+     */
     public function testTheCommandsExitCodes(): void
     {
         $_SERVER['HTTP_USER_AGENT'] = $_SERVER['HTTP_USER_AGENT'] ?? 'Open Web Analytics CLI test';

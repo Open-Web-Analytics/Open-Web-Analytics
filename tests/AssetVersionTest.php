@@ -31,6 +31,9 @@ final class AssetVersionTest extends TestCase
         @rmdir( $this->dir );
     }
 
+    /**
+     * @covers-setting base.public_path
+     */
     public function testARebuiltFileGetsANewUrl(): void
     {
         $file = $this->dir . 'base/css/sample.css';

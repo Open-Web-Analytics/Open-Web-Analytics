@@ -189,7 +189,11 @@ final class MigrateMoreSourcesTest extends TestCase
         }
     }
 
-    /** A configured tracker cookie domain is the site, as the tracker is told it. */
+    /**
+     * A configured tracker cookie domain is the site, as the tracker is told it.
+     *
+     * @covers-setting base.tracker_cookie_domain
+     */
     public function testAConfiguredCookieDomainIsTheSite(): void
     {
         $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base',
@@ -229,6 +233,9 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame('other.example', $this->referredView('https://other.example/post')['referer_host']);
     }
 
+    /**
+     * @covers-setting base.tracker_cookie_domain
+     */
     public function testAConfiguredCookieDomainDecidesASelfReferrer(): void
     {
         $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base',
@@ -309,7 +316,11 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame('Purchase', json_decode($row['params'], true)['action_name']);
     }
 
-    /** v1 stored the amount times 100 whatever the currency; v2 stores minor units. */
+    /**
+     * v1 stored the amount times 100 whatever the currency; v2 stores minor units.
+     *
+     * @covers-setting base.currencyISO3
+     */
     public function testAPurchaseIsInMinorUnitsOfTheProfilesCurrency(): void
     {
         $this->fact('commerce_transaction_fact', '1790000000000000701', ['order_id' => 'A-1', 'total_revenue' => 1250,

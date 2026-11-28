@@ -84,6 +84,9 @@ final class SpamScoreTest extends TestCase
             'strict runs every shipped set');
     }
 
+    /**
+     * @covers-setting base.spam_detection
+     */
     public function testAnUnknownLevelIsNormal(): void
     {
         $this->assertSame(array_keys(RuleSets::forLevel('normal')), array_keys(RuleSets::forLevel('paranoid')));
@@ -260,7 +263,11 @@ final class SpamScoreTest extends TestCase
         $this->assertFalse(Score::blocks(0.0, null));
     }
 
-    /** A blank threshold still stamps the score on the event. */
+    /**
+     * A blank threshold still stamps the score on the event.
+     *
+     * @covers-setting base.spam_threshold
+     */
     public function testAdmitStampsTheScoreAndABlankThresholdAdmits(): void
     {
         $c = \OWA\Core\CoreAPI::configSingleton();

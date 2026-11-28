@@ -112,6 +112,8 @@ final class Update091Test extends TestCase
     /**
      * The settings the update process saves are kept in step: boot loaded
      * hello's rows, and a save of the old values put them straight back.
+     *
+     * @covers-setting base.hello_settings_before_091
      */
     public function testTheSettingsInMemoryFollowTheTable(): void
     {
@@ -138,7 +140,11 @@ final class Update091Test extends TestCase
             'the restored rows are not held, and the closing save prunes them again');
     }
 
-    /** Every hello row goes, at every scope, others stay; down() is the exact inverse. */
+    /**
+     * Every hello row goes, at every scope, others stay; down() is the exact inverse.
+     *
+     * @covers-setting base.hello_settings_before_091
+     */
     public function testTheHelloRowsGoAndComeBack(): void
     {
         $this->requireDb();

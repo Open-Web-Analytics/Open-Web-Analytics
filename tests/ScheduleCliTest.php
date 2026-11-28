@@ -212,6 +212,8 @@ final class ScheduleCliTest extends CliControllerTestCase
      * they run; a schema behind stops them. Without the split, a
      * release with a new tracker would pause the drain, the cube and the job
      * queue until someone applied the update.
+     *
+     * @covers-setting base.tracker_build
      */
     public function testOnlyASchemaBehindStopsTheJobs()
     {
@@ -239,6 +241,8 @@ final class ScheduleCliTest extends CliControllerTestCase
      * With the schema behind, schedule-run runs only the jobs registered to
      * run then (the release check), leaves the rest due, unrecorded, and
      * drains no queue; pruning is refused, since it would see a filtered list.
+     *
+     * @covers-setting base.schema_version
      */
     public function testASchemaBehindRunsOnlyTheJobsThatMayRunThen()
     {
@@ -530,7 +534,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     // OWA_SCHEDULED_JOBS -- every row of the merge table
     // -----------------------------------------------------------------------
 
-    /** Giving only params keeps the shipped schedule, and vice versa. */
+    /**
+     * Giving only params keeps the shipped schedule, and vice versa.
+     *
+     * @covers-setting base.scheduled_jobs
+     */
     public function testConfigOverridesPerKey()
     {
         $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['months-ahead' => 6]]]);
@@ -570,7 +578,11 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertNotNull(\OWA\Core\Cron::parse('0 4 1 * *'), 'the documented expression must parse');
     }
 
-    /** A job the release never registered can be added outright. */
+    /**
+     * A job the release never registered can be added outright.
+     *
+     * @covers-setting base.scheduled_jobs
+     */
     public function testConfigCanAddAJob()
     {
         $jobs = $this->jobsWith([

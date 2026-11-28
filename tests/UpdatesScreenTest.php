@@ -39,6 +39,9 @@ final class UpdatesScreenTest extends TestCase
         return $returned ?? (array) $data->getValue( $controller );
     }
 
+    /**
+     * @covers-setting base.start_page
+     */
     public function testWithNothingPendingItRedirectsToTheStartPage(): void
     {
         \OWA\Core\CoreAPI::serviceSingleton()->modules_needing_updates = [];

@@ -51,7 +51,11 @@ final class DbUnbufferedIteratorTest extends TestCase
         ];
     }
 
-    /** @dataProvider drivers */
+    /**
+     * @dataProvider drivers
+     *
+     * @covers-setting base.db_type
+     */
     public function testRowsStreamInOrderAsStrings(string $type, string $class): void
     {
         $db = $this->connection($type, $class);

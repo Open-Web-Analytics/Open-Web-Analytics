@@ -122,7 +122,11 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('red', self::levels(SystemHealth::intake())['Backlog']);
     }
 
-    /** A drained batch that cannot be archived is set aside, and red, with its reason. */
+    /**
+     * A drained batch that cannot be archived is set aside, and red, with its reason.
+     *
+     * @covers-setting base.archive_old_events
+     */
     public function testABatchSetAsideIsRed(): void
     {
         $was = \OWA\Core\CoreAPI::getSetting('base', 'archive_old_events');
@@ -321,7 +325,11 @@ final class SystemHealthTest extends TestCase
         $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->tableSize('not a table'), 'a name that cannot be one is refused');
     }
 
-    /** No event-data window is said plainly: nothing is deleted. */
+    /**
+     * No event-data window is said plainly: nothing is deleted.
+     *
+     * @covers-setting base.scheduled_jobs
+     */
     public function testRetentionWithoutAWindowSaysNothingIsDeleted(): void
     {
         $was  = \OWA\Core\CoreAPI::getSetting('base', 'scheduled_jobs');

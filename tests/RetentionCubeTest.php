@@ -144,7 +144,11 @@ final class RetentionCubeTest extends TestCase
         \OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base', Retention::CUBE, $months);
     }
 
-    /** A new cube is built back to its window, not to raw's first day. */
+    /**
+     * A new cube is built back to its window, not to raw's first day.
+     *
+     * @covers-setting base.cube_retention_months
+     */
     public function testAFirstBuildStopsAtTheCubesWindow(): void
     {
         $this->windowOf(2);
@@ -158,6 +162,8 @@ final class RetentionCubeTest extends TestCase
     /**
      * Lengthening the window owes the cube the months between; the rebuild it
      * queues fills them from raw, and then nothing more is owed.
+     *
+     * @covers-setting base.cube_retention_months
      */
     public function testALongerWindowQueuesTheRebuildThatFillsIt(): void
     {

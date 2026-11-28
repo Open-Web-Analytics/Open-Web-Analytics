@@ -159,6 +159,8 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
      * once and the query as the page had it, and the readings follow.
      *
      * @dataProvider urlsByPath
+     *
+     * @covers-setting base.queue_tracking_events
      */
     public function testACurrentBeaconStoresThePathDecodedAndTheQueryAsSent(string $href, string $stored, string $path, ?string $query, bool $queued): void
     {

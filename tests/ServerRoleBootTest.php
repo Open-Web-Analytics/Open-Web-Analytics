@@ -104,6 +104,9 @@ final class ServerRoleBootTest extends TestCase
         $this->assertSame($before + 1, $this->refusalsLogged('ui'));
     }
 
+    /**
+     * @covers-setting base.server_role
+     */
     public function testAConsoleDoesNotServeTheApi(): void
     {
         $this->assertSame(404, $this->web(['OWA_SERVER_ROLE' => 'console'], 'api/index.php')['status']);

@@ -237,6 +237,8 @@ final class MaxmindUpdateCliTest extends TestCase {
      * Country is the reason this is configurable: a fraction of the size, for
      * an installation whose reports never go below country level. It works
      * because getLocation() reads the finer fields behind isset() guards.
+     *
+     * @covers-setting maxmind_geoip.db_edition
      */
     public function testCountryIsAcceptedAsAnEdition(): void {
 

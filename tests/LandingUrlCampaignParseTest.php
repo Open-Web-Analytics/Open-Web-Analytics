@@ -96,6 +96,8 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     /**
      * A stored campaignKeys naming ad_type, a role that does not exist, is
      * ignored: the roles it names still read, and the parse does not fail.
+     *
+     * @covers-setting base.campaignKeys
      */
     public function testAStoredOverrideNamingAdTypeIsIgnored(): void
     {
@@ -282,7 +284,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
           . 'keyed on the URL alone');
     }
 
-    /** A role the setting omits keeps its ns-prefixed name rather than vanishing. */
+    /**
+     * A role the setting omits keeps its ns-prefixed name rather than vanishing.
+     *
+     * @covers-setting base.campaignKeys
+     */
     public function testAPartialOverrideIsPartialRatherThanDestructive(): void
     {
         $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
@@ -304,7 +310,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
           . 'silently disable the roles it does not mention');
     }
 
-    /** On by default: a utm_* link is read with no setting named. */
+    /**
+     * On by default: a utm_* link is read with no setting named.
+     *
+     * @covers-setting base.campaignUtmParams
+     */
     public function testUtmParametersAreReadByDefault(): void
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
@@ -367,7 +377,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $this->assertSame('email', $H::taggedValue($event, 'tagged_medium'), 'and the utm_ tags are still read');
     }
 
-    /** Switched off, utm_* is not a campaign tag, so it is the site's own and stays. */
+    /**
+     * Switched off, utm_* is not a campaign tag, so it is the site's own and stays.
+     *
+     * @covers-setting base.campaignUtmParams
+     */
     public function testPageQueryKeepsUtmWhenUtmIsNotRead(): void
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
@@ -387,7 +401,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         }
     }
 
-    /** A Property's own name for a campaign role is dropped with the rest. */
+    /**
+     * A Property's own name for a campaign role is dropped with the rest.
+     *
+     * @covers-setting base.campaignKeys
+     */
     public function testPageQueryDropsAConfiguredCampaignKey(): void
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
@@ -406,7 +424,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         }
     }
 
-    /** Switched off, utm_* is not read. */
+    /**
+     * Switched off, utm_* is not read.
+     *
+     * @covers-setting base.campaignUtmParams
+     */
     public function testUtmParametersCanBeSwitchedOff(): void
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';

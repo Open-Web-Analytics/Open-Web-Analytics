@@ -113,7 +113,11 @@ final class Update084Test extends TestCase
         $this->assertSame($before, $this->rows());
     }
 
-    /** On: the threshold becomes blank, never block, and the row goes. */
+    /**
+     * On: the threshold becomes blank, never block, and the row goes.
+     *
+     * @covers-setting base.log_robots_before_084
+     */
     public function testOnBecomesABlankThresholdAndComesBack(): void
     {
         $this->requireDb();
@@ -137,7 +141,11 @@ final class Update084Test extends TestCase
         $this->assertSame($before, $this->rows());
     }
 
-    /** A threshold the install already had is kept by the record and given back. */
+    /**
+     * A threshold the install already had is kept by the record and given back.
+     *
+     * @covers-setting base.log_robots_before_084
+     */
     public function testAThresholdAlreadyStoredIsRestored(): void
     {
         $this->requireDb();

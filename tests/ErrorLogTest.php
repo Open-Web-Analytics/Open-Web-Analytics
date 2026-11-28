@@ -36,6 +36,8 @@ final class ErrorLogTest extends TestCase
      * Notice and above are always written; debug and info only under
      * OWA_DEBUG. Checked in whichever mode the suite runs: on CI there is no
      * config and debug is off, here the dev config turns it on.
+     *
+     * @covers-setting OWA_DEBUG
      */
     public function testTheThresholdIsNoticeUnlessDebugging(): void
     {
@@ -86,6 +88,8 @@ final class ErrorLogTest extends TestCase
     /**
      * OWA_DEBUG is the one switch. OWA_ERROR_HANDLER does not turn debug on. Each case runs in its own process, as a constant cannot be
      * undefined.
+     *
+     * @covers-setting OWA_DEBUG
      */
     public function testOnlyOwaDebugTurnsDebugOn(): void
     {

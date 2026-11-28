@@ -326,6 +326,8 @@ final class PartitionCliTest extends CliControllerTestCase
      * property of the installation, so it is set once with a constant in
      * owa-config.php rather than chosen per invocation. Passing it as an
      * argument must have no effect at all.
+     *
+     * @covers-setting base.partition_max_partitions
      */
     public function testTheBudgetComesFromSettingsNotArguments()
     {

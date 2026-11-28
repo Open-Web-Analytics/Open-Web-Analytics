@@ -123,6 +123,9 @@ final class ModuleScreensTest extends TestCase
         $this->assertSame('base.optionsModules', $step->data['do']);
     }
 
+    /**
+     * @covers-setting maxmind_geoip.is_active
+     */
     public function testDeactivatingAnInactiveModuleIsRefused(): void
     {
         \OWA\Core\CoreAPI::setSetting('maxmind_geoip', 'is_active', false);
@@ -133,6 +136,9 @@ final class ModuleScreensTest extends TestCase
         $this->assertSame('base.optionsModules', $data['subview'] ?? null);
     }
 
+    /**
+     * @covers-setting maxmind_geoip.is_active
+     */
     public function testAnActiveModuleIsDeactivated(): void
     {
         \OWA\Core\CoreAPI::setSetting('maxmind_geoip', 'is_active', true);
