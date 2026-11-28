@@ -31,7 +31,7 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
 
     private function ns(): string
     {
-        return (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        return \OWA\Core\CoreAPI::NS;
     }
 
     /**

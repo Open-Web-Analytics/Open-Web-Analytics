@@ -490,8 +490,8 @@ class PaginatedResultSet {
     public function buildQueryString($params, $seperator = '&') {
 
         $new = [];
-        // OWA's own API URLs carry no prefix. The wire namespace ('ns') still
-        // governs cookies and tracker params.
+        // OWA's own API URLs carry no prefix. CoreAPI::NS is on cookies and
+        // tracker params.
         foreach ($params as $k => $v) {
             
             if ($v) {

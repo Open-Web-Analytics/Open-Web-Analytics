@@ -170,7 +170,7 @@ describe('state storage migrations', () => {
                 : null;
             const store = Object.assign({}, values);
             if (cdh) { store.cdh = cdh; }
-            Util.setCookie(OWA.getSetting('ns') + 's', JSON.stringify(store), 1, '/',
+            Util.setCookie('owa_s', JSON.stringify(store), 1, '/',
                 OWA.getSetting('cookie_domain'));
             OWA.state.cookies = Util.readAllCookies();
         }
@@ -188,7 +188,7 @@ describe('state storage migrations', () => {
 
             new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
 
-            expect(Util.readCookie(OWA.getSetting('ns') + 's')).toBeFalsy();
+            expect(Util.readCookie('owa_s')).toBeFalsy();
         });
 
         /**
@@ -222,7 +222,7 @@ describe('state storage migrations', () => {
             const mine = { sid: 'already-mine' };
             if (cdh) { mine.cdh = cdh; }
 
-            Util.setCookie(OWA.getSetting('ns') + 's_migration-site', JSON.stringify(mine),
+            Util.setCookie('owa_s_migration-site', JSON.stringify(mine),
                 1, '/', OWA.getSetting('cookie_domain'));
             seedSharedSession({ sid: 'carried-session' });
 
@@ -230,7 +230,7 @@ describe('state storage migrations', () => {
 
             expect(OWA.getPersistedState(t.storeName('s'), 'sid')).toBe('already-mine');
             // ...and the residue is still cleaned up
-            expect(Util.readCookie(OWA.getSetting('ns') + 's')).toBeFalsy();
+            expect(Util.readCookie('owa_s')).toBeFalsy();
         });
     });
 });

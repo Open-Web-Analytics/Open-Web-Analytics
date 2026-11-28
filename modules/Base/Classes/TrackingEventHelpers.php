@@ -2018,10 +2018,9 @@ class TrackingEventHelpers {
      * The campaign parameters a site owner writes on a landing URL, and the
      * wire property each one becomes.
      *
-     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
-     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
-     * own query string. Changing `ns` changes every campaign URL in the wild,
-     * which is exactly why the list is built from it rather than hard-coded.
+     * SUFFIXES, not whole names: the public parameter is CoreAPI::NS plus the
+     * suffix, the prefix that keeps OWA's names off a tracked page's own query
+     * string.
      *
      * Note owa_search_terms becomes tagged_TERMS, not tagged_search_terms --
      * the one place the two halves do not share a stem.
@@ -2371,11 +2370,11 @@ class TrackingEventHelpers {
     /**
      * The URL parameter each campaign role arrives under, for this site.
      *
-     * EMPTY SETTING MEANS ns-PREFIXED, which is what OWA has always done and
-     * what honours a custom `ns`. A site that sets it names the parameters
+     * EMPTY SETTING MEANS PREFIXED with CoreAPI::NS, which is what OWA has
+     * always done. A site that sets it names the parameters
      * explicitly instead -- utm_source, utm_medium, utm_campaign, utm_term,
      * utm_content -- so a Property whose links already carry utm_* keeps them.
-     * campaignUtmParams (on by default) reads utm_* beside the ns-prefixed
+     * campaignUtmParams (on by default) reads utm_* beside the owa_-prefixed
      * names without either being named here.
      *
      * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
@@ -2402,7 +2401,7 @@ class TrackingEventHelpers {
 
         $configured = is_array( $configured ) ? $configured : [];
 
-        $ns  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $ns  = \OWA\Core\CoreAPI::NS;
         $map = [];
 
         /*
@@ -3071,7 +3070,7 @@ class TrackingEventHelpers {
      */
     public static function droppedQueryParams( $site_id ) {
 
-        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $ns = \OWA\Core\CoreAPI::NS;
 
         $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), [
             $ns . 'overlay',

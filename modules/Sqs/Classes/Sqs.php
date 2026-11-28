@@ -48,9 +48,10 @@ final class Sqs {
      * set, else derived.
      *
      * Derived from what identifies where the beacons land -- the database
-     * host and its name -- and ns, the prefix on OWA's cookie and URL
-     * parameter names, so another server computes the same name from its own
-     * owa-config.php and two installs on one server do not share a queue. Not
+     * host and its name -- and CoreAPI::NS, once the ns setting, which keeps
+     * the names queues were created under. Another server computes the same
+     * name from its own owa-config.php, and two installs on one server with
+     * different databases do not share a queue. Not
      * generateInstanceSpecificHash(): that is made from the credentials,
      * which installs on one server often share.
      *
@@ -68,7 +69,7 @@ final class Sqs {
         $id = implode( '|', [
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_host' ),
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' ),
-            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ),
+            \OWA\Core\CoreAPI::NS,
         ] );
 
         return self::PREFIX . substr( hash( 'sha256', $id ), 0, 12 );

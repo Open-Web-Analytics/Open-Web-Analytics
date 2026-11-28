@@ -74,7 +74,7 @@ class CoreAPI {
     /** @var array<string, object> queue name => the queue getEventQueue() built */
     private static $event_queues = [];
 
-    /** @var array<string, string>|null NONCE_KEY etc. => the constant's value, read by getSalt() */
+    /** @var array<string, string[]>|null scheme => its defined SALT_CONSTANTS' values, read by getSalt() */
     private static $salts = null;
 
     /** @var array<string, true> module directories getPresentModules() has warned about */
@@ -2712,7 +2712,7 @@ class CoreAPI {
         $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
 
         // add namespace
-        $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
+        $cookie_name = self::NS . $cookie_name;
 
         // debug
         \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
@@ -2742,6 +2742,12 @@ class CoreAPI {
 
         return (bool) $secure || (bool) \OWA\Core\Lib::isHttps();
     }
+
+    /**
+     * The prefix on OWA's cookie names and on the URL parameters it reads from
+     * tracked pages, such as owa_source and owa_state.
+     */
+    const NS = 'owa_';
 
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
     const CREDENTIAL_COOKIES = [ 'u', 'p' ];
@@ -3418,7 +3424,7 @@ class CoreAPI {
 
     /**
      * @param  string $data
-     * @param  string $scheme    NONCE, SECRET or AUTH, any case
+     * @param  string $scheme    NONCE or AUTH, any case
      * @param  string $hash_type
      * @return string
      */
@@ -3431,49 +3437,42 @@ class CoreAPI {
 
 
     /**
-     * @param  string $scheme NONCE, SECRET or AUTH, any case
+     * The constants each salt scheme is read from: its key, then its salt.
+     * They are Requirements::SECRET_CONSTANTS, which owa-config.php must define.
+     */
+    const SALT_CONSTANTS = [
+        'NONCE' => [ 'OWA_NONCE_KEY', 'OWA_NONCE_SALT' ],
+        'AUTH'  => [ 'OWA_AUTH_KEY', 'OWA_AUTH_SALT' ],
+    ];
+
+    /**
+     * The scheme's key and salt constants, concatenated. A constant that is
+     * not defined, or a scheme not in SALT_CONSTANTS, adds nothing.
+     *
+     * @param  string $scheme NONCE or AUTH, any case
      * @return string
      */
     public static function getSalt( $scheme ) {
 
-        $scheme = strtoupper($scheme);
+        $scheme = strtoupper( (string) $scheme );
 
         if ( ! self::$salts ) {
 
             self::$salts = [];
-            $ns = strtoupper( (string) \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
-            foreach (['NONCE', 'SECRET', 'AUTH'] as $f ) {
+            foreach ( self::SALT_CONSTANTS as $name => $constants ) {
 
-                foreach (['KEY', 'SALT'] as $s ) {
+                foreach ( $constants as $const ) {
 
-                    $const = sprintf("%s%s_%s", $ns, $f, $s);
+                    if ( defined( $const ) ) {
 
-                    if ( ! defined ( "$const" ) ) {
-                        continue;
-                    } else {
-
-                        self::$salts[ $f.'_'.$s ] = constant("$const");
+                        self::$salts[ $name ][] = (string) constant( $const );
                     }
                 }
             }
         }
 
-
-        $key = '';
-        $salt = '';
-
-        if (array_key_exists( $scheme.'_KEY', self::$salts ) ) {
-
-            $key = self::$salts[ $scheme.'_KEY' ];
-        }
-
-        if (array_key_exists( $scheme.'_SALT', self::$salts ) ) {
-
-            $salt = self::$salts[ $scheme.'_SALT' ];
-        }
-
-        return $key . $salt;
+        return implode( '', self::$salts[ $scheme ] ?? [] );
     }
 
     /**

@@ -171,7 +171,7 @@ class Login extends \OWA\Core\Controller {
      */
     private static function browserValue( $create ) {
 
-        $name  = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::FORM_COOKIE;
+        $name  = \OWA\Core\CoreAPI::NS . self::FORM_COOKIE;
         $value = $_COOKIE[ $name ] ?? '';
 
         if ( is_string( $value ) && preg_match( '/^[0-9a-f]{32}$/', $value ) ) {

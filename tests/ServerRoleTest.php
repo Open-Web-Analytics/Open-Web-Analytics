@@ -283,6 +283,16 @@ final class ServerRoleTest extends TestCase
         $this->assertStringContainsString('OWA_DEBUG', $notices['OWA_LOG_PHP_ERRORS']);
     }
 
+    /** OWA_NS is not read: the prefix is CoreAPI::NS. */
+    public function testTheNsConstantGetsAnUpgradeNotice(): void
+    {
+        $notices = ServerRole::upgradeNotices(['OWA_NS' => 'zz_']);
+
+        $this->assertSame(['OWA_NS'], array_keys($notices));
+        $this->assertStringContainsString('No longer read', $notices['OWA_NS']);
+        $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'ns'));
+    }
+
     /** OWA_LOG_VISITOR_PII is not read: the identity fields are stored as sent. */
     public function testTheVisitorPiiConstantGetsAnUpgradeNotice(): void
     {

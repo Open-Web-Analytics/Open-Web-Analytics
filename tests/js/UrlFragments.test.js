@@ -32,7 +32,6 @@ function captureSends(t) {
 }
 
 beforeEach(() => {
-    OWA.setSetting('ns', 'owa_');
     OWA.setSetting('loggerPause', false);
     window.history.replaceState({}, '', '/start');
 });

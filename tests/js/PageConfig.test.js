@@ -35,13 +35,13 @@ describe('the page settings', () => {
     });
 
     test('a page without them keeps the defaults, and an unreadable block changes nothing', () => {
-        const ns = OWA.config.ns;
+        const baseUrl = OWA.config.baseUrl;
 
         OWA.readPageConfig(document);
         document.body.innerHTML = '<script type="application/json" data-ui="owa:config">{not json</script>';
         OWA.readPageConfig(document);
 
-        expect(OWA.config.ns).toBe(ns);
+        expect(OWA.config.baseUrl).toBe(baseUrl);
         expect(OWA.config.zz_probe).toBeUndefined();
     });
 });

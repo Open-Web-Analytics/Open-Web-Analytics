@@ -992,6 +992,7 @@ return [
     'No longer read. A beacon\'s user_id, user_name and user_email are stored as it sends them.' => 'No longer read. A beacon\'s user_id, user_name and user_email are stored as it sends them.',
     'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.' => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
     'No longer read. Feed tracking is gone; list a parameter to remove from page URLs in query_string_filters.' => 'No longer read. Feed tracking is gone; list a parameter to remove from page URLs in query_string_filters.',
+    'No longer read. OWA\'s cookie names and the URL parameters it reads from tracked pages start with owa_.' => 'No longer read. OWA\'s cookie names and the URL parameters it reads from tracked pages start with owa_.',
     'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.' => 'No longer read. OWA_DEBUG also sends PHP\'s own errors to OWA\'s error log.',
     'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.' => 'No longer read. Release notifications come from the release check\'s listing, OWA_AUTO_UPDATE_RELEASES_URL.',
     'No longer read. Set OWA_DEBUG to true for debug logging.' => 'No longer read. Set OWA_DEBUG to true for debug logging.',

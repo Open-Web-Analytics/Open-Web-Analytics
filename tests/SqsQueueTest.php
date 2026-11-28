@@ -115,6 +115,14 @@ final class SqsQueueTest extends TestCase
         $this->assertSame($a . '-dlq', Sqs::deadLetterName($a));
     }
 
+    /** The name a queue was created under while the ns setting had its default, owa_. */
+    public function testTheNameIsTheOneTheDefaultPrefixGave(): void
+    {
+        $id = \OWA\Core\CoreAPI::getSetting('base', 'db_host') . '|' . \OWA\Core\CoreAPI::getSetting('base', 'db_name') . '|owa_';
+
+        $this->assertSame('owa-tracker-ingest-' . substr(hash('sha256', $id), 0, 12), Sqs::queueName());
+    }
+
     public function testThereIsNoQueueNameSetting(): void
     {
         $settings = require dirname(__DIR__) . '/modules/Sqs/settings.php';

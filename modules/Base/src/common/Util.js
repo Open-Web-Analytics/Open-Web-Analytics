@@ -1,4 +1,4 @@
-import { OWA_instance as OWA } from './owa.js';
+import { OWA_instance as OWA, NS } from './owa.js';
 
 class Util {
 	
@@ -672,9 +672,9 @@ class Util {
     }
 
     /**
-     * Expire the tracker's own cookies: the visitor store (ns + 'v'), every
-     * per-site session store (ns + 's_<siteId>'), and the 's', 'b' and 'c'
-     * stores an older tracker may have left. Nothing else named with the ns
+     * Expire the tracker's own cookies: the visitor store (NS + 'v'), every
+     * per-site session store (NS + 's_<siteId>'), and the 's', 'b' and 'c'
+     * stores an older tracker may have left. Nothing else named with the NS
      * prefix is touched.
      *
      * Run when a privacy signal is honoured (tracker-dom.js), so a browser
@@ -685,7 +685,6 @@ class Util {
      */
     static eraseTrackerCookies () {
 
-        var ns   = OWA.getSetting( 'ns' ) || 'owa_';
         var jar  = Util.readAllCookies() || {};
         var host = ( typeof location !== 'undefined' && location.hostname ) ? String( location.hostname )
             : ( ( typeof document !== 'undefined' && document.domain ) ? String( document.domain ) : '' );
@@ -705,7 +704,7 @@ class Util {
 
         Object.keys( jar ).forEach( function ( name ) {
 
-            if ( name.indexOf( ns ) !== 0 || ! /^(v|b|c|s(_.+)?)$/.test( name.substring( ns.length ) ) ) {
+            if ( name.indexOf( NS ) !== 0 || ! /^(v|b|c|s(_.+)?)$/.test( name.substring( NS.length ) ) ) {
                 return;
             }
 
