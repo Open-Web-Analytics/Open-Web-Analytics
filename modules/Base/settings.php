@@ -323,7 +323,6 @@ return [
                 \OWA\Core\CoreAPI::t( 'A comma-separated list of IP addresses whose requests are not recorded.' ),
         ],
         'geolocation_lookup' => [ 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ],
-        'geolocation_service' => [ 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ],
         // Set by Update075 when it renamed goal event definitions to event names, so its
         // down() can give them back the names they had.
         // Set by Update049 when it switched off goal events it could not migrate, so its
@@ -472,6 +471,8 @@ return [
         'retired_settings_before_101' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         // Set by Update102: the auto_update_level rows of patch it changed to minor, for its down().
         'retired_settings_before_102' => [ 'default' => [], 'storable' => true, 'internal' => true ],
+        // Set by Update108: the geolocation_service rows it deleted, for its down().
+        'retired_settings_before_108' => [ 'default' => [], 'storable' => true, 'internal' => true ],
         'reserved_words' => [ 'config_constant' => 'OWA_RESERVED_WORDS', 'default' => [ 'do' => 'action' ], 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ],
         'scheduled_jobs' => [ 'default' => [], 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ],
         'server_role' => [ 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything, and the only role that runs the scheduler; the default), collector (receives beacons and queues them, with no database) or api (the REST API). A comma list combines roles, such as collector,api.' ],

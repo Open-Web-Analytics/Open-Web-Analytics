@@ -50,10 +50,8 @@ class Module extends \OWA\Core\Module {
 
         $this->method = $method;
         
-        // turn on geo-location
+        // An active module resolves locations.
         \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', true );
-        // needed so default filters will not fun
-        \OWA\Core\CoreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
 
         parent::__construct();
@@ -151,14 +149,12 @@ class Module extends \OWA\Core\Module {
 
     /**
      * The geolocation filter, and this module's System Health section.
+     * Registered whenever the module is active: filters are collected from
+     * active modules only.
      */
     public function registerFilters() {
 
-        if ( \OWA\Core\CoreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
-
-            $this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
-        }
-
+        $this->registerFilter( 'geolocation', 'maxmind', $this->method, 0, 'classes' );
         $this->registerFilter( 'system_health_sections', $this, 'systemHealthSection' );
     }
 

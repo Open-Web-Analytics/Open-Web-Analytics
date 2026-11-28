@@ -95,7 +95,6 @@ class OWATracker  {
 
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
-		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    nps:                     { scope: 'session', permanent: false },
 		    // The site may set a different one, so it is not permanent.
@@ -3869,8 +3868,7 @@ class OWATracker  {
          * so the server could not tell new from returning.
          *
          * A session belongs to one visitor. The orphaned store is discarded as
-         * an expired one would be, and its start time is not carried as psts:
-         * it was another visitor's session.
+         * an expired one would be.
          *
          * pendingVisitorCreated is read here, in the same chain that set it:
          * setVisitorId() runs just before this, and the flag is consumed only
@@ -3904,24 +3902,6 @@ class OWATracker  {
              * stays true for as long as it lasts.
              */
             var now = event.get( 'timestamp' ) || this.getTimestamp();
-
-            /*
-             * The DATE of the session that just ended, taken from its stored
-             * start time before the boundary discards it.
-             *
-             * A date, like first_session_date, and coarse for the same reason:
-             * the anchor is stamped by the visitor's clock, so a date absorbs
-             * anything short of a midnight-crossing error. The server counts
-             * days from it. Days bucket, where a continuous seconds value gives one
-             * bucket per distinct second.
-             */
-            var prior_session_start = OWA.getPersistedState( this.storeName('s'), 'sts' );
-
-            if ( prior_session_start && ! minted_visitor ) {
-
-                OWA.setState( this.storeName('s'), 'psts', prior_session_start );
-            }
-
 
             /*
              * This session's start is what the day counts are measured TO.
@@ -4218,7 +4198,6 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
 
@@ -4241,8 +4220,7 @@ class OWATracker  {
          * `s.last_req` is how the DEVICE decides a session has timed out --
          * isNewSession() compares it with this request -- and `prior_last_req`
          * holds the previous session's last hit so the boundary can read it before
-         * it is overwritten. Both are state; nothing on the server reads either, and
-         * the prior session's start arrives as `psts`.
+         * it is overwritten. Both are state; nothing on the server reads either.
          */
 
 
@@ -4645,14 +4623,7 @@ class OWATracker  {
             return;
         }
 
-        var old_sts = OWA.getState( store, 'sts' );
-
         OWA.setState( store, 'prior_last_req', latest );
-
-        if ( old_sts ) {
-
-            OWA.setState( store, 'psts', old_sts );
-        }
 
         OWA.setState( store, 'sts', now );
         OWA.setState( store, 'sid', Util.generateRandomGuid(), true );
@@ -4689,9 +4660,9 @@ class OWATracker  {
         /*
          * READ ALL, THEN WRITE. Each setState() persists the whole store from
          * memory, so setting sid first would overwrite the other tab's cookie
-         * with this tab's sts, psts and seq before they were read.
+         * with this tab's sts and seq before they were read.
          */
-        var keys   = [ 'sid', 'sts', 'psts', 'seq' ];
+        var keys   = [ 'sid', 'sts', 'seq' ];
         var theirs = {};
 
         keys.forEach( function ( key ) {

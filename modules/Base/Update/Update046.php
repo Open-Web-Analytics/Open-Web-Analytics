@@ -29,6 +29,9 @@ namespace OWA\Module\Base\Update;
  * cached from before this release fills them from its first beacon. The
  * columns are nullable for the ones that predate the fields themselves.
  *
+ * prior_session_start_ts was removed again by Update108 (nothing read it), so
+ * the entity no longer declares it and up() adds it by its definition here.
+ *
  * NOT CLI-ONLY. Adds two columns and drops two, the way any release does.
  */
 class Update046 extends \OWA\Core\Update {
@@ -63,12 +66,17 @@ class Update046 extends \OWA\Core\Update {
      */
     public function up( $force = false ) {
 
-        foreach ( $this->added() as $column ) {
+        if ( $this->addRawColumn( 'session_start_ts' ) === false ) {
 
-            if ( $this->addRawColumn( $column ) === false ) {
+            return false;
+        }
 
-                return false;
-            }
+        // No longer declared by the entity (Update108 removes it), so added by its definition.
+        if ( ! $this->restoreColumn( 'prior_session_start_ts', OWA_DTD_BIGINT ) ) {
+
+            $this->e->notice( 'Adding prior_session_start_ts failed' );
+
+            return false;
         }
 
         return $this->dropColumns( $this->removed() );

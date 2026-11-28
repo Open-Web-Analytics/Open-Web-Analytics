@@ -256,13 +256,13 @@ describe('session-scoped properties do not vary within a session', () => {
          */
         [
             'session_id',
-            'psts',
             'sts',
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
-        // ...and the two that left, asserted absent so their removal cannot be
-        // undone by accident.
-        ['session_referer', 'landing_url']
+        // ...and the ones that left, asserted absent so their removal cannot be
+        // undone by accident. psts, the previous session's start, was read by
+        // nothing (Update108).
+        ['session_referer', 'landing_url', 'psts']
             .forEach((prop) => expect(withScope('session')).not.toContain(prop));
 
         // Written once and never rewritten. first_session_date is derived from

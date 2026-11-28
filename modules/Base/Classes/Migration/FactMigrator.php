@@ -893,9 +893,6 @@ abstract class FactMigrator {
             $refs['location_dim'][ (string) ( $r['location_id'] ?? '' ) ] ?? [] );
         $session  = $refs['session'][ (string) $r['session_id'] ] ?? [];
         $visitor  = $refs['visitor'][ (string) $r['visitor_id'] ] ?? [];
-        $prior    = isset( $session['prior_session_id'] )
-            ? ( $refs['prior_session'][ (string) $session['prior_session_id'] ] ?? [] )
-            : [];
 
         $event = new \OWA\Module\Base\Classes\Event;
         $event->setEventType( $type );
@@ -929,7 +926,6 @@ abstract class FactMigrator {
             'num_prior_sessions' => $refs['prior_sessions'][ (string) $r['session_id'] ] ?? null,
             'fsts' => $visitor['first_session_timestamp'] ?? null,
             'sts'  => $session['timestamp'] ?? null,
-            'psts' => $prior['timestamp'] ?? null,
         ] + $extra;
 
         $properties += $this->attribution( $r, $refs );
@@ -1173,7 +1169,7 @@ abstract class FactMigrator {
             'location_dim' => $this->lookup( 'location_dim', array_column( $rows, 'location_id' ),
                                   'id, country, country_code, state, city' ),
             'session'      => $this->lookup( 'session', array_column( $rows, 'session_id' ),
-                                  'id, timestamp, prior_session_id' ),
+                                  'id, timestamp' ),
             'source_dim'   => $this->lookup( 'source_dim', array_column( $rows, 'source_id' ), 'id, source_domain' ),
             'campaign_dim' => $this->lookup( 'campaign_dim', array_column( $rows, 'campaign_id' ), 'id, name' ),
             'ad_dim'       => $this->lookup( 'ad_dim', array_column( $rows, 'ad_id' ), 'id, name' ),
@@ -1182,9 +1178,6 @@ abstract class FactMigrator {
             'visitor'      => $this->lookup( 'visitor', array_column( $rows, 'visitor_id' ),
                                   'id, first_session_timestamp' ),
         ];
-
-        $refs['prior_session'] = $this->lookup( 'session',
-            array_column( $refs['session'], 'prior_session_id' ), 'id, timestamp' );
 
         $refs['prior_sessions'] = $this->priorSessions( $rows, $this->sessionStarts( $rows, $refs ) );
 

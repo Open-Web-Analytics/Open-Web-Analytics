@@ -121,7 +121,6 @@ return [
         [ 'role' => 'wire',   'from' => 'u_id',    'to' => 'user_id' ],
         [ 'role' => 'wire',   'from' => 's_id',    'to' => 'session_id' ],
         [ 'role' => 'wire',   'from' => 's_sts',   'to' => 'sts' ],
-        [ 'role' => 'wire',   'from' => 's_pts',   'to' => 'psts' ],
         [ 'role' => 'wire',   'from' => 's_new',   'to' => 'is_new_session_start' ],
         [ 'role' => 'wire',   'from' => 'p_l',     'to' => 'page_location' ],
         [ 'role' => 'wire',   'from' => 'p_t',     'to' => 'page_title' ],

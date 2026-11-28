@@ -170,6 +170,36 @@ final class MaxmindWebServiceLookupTest extends TestCase
         }
     }
 
+    /**
+     * The active module registers its geolocation filter, with no setting to
+     * say so: filters are collected from active modules only.
+     */
+    public function testTheModuleRegistersItsGeolocationFilterWhateverIsStored(): void
+    {
+        $ed  = \OWA\Core\CoreAPI::getEventDispatch();
+        $was = [ $ed->listenersByFilterType['geolocation'] ?? null, $ed->listenersByFilterType['system_health_sections'] ?? null,
+                 \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ];
+
+        unset( $ed->listenersByFilterType['geolocation'], $ed->listenersByFilterType['system_health_sections'] );
+
+        try {
+            ( new \OWA\Module\MaxmindGeoip\Module() )->registerFilters();
+
+            $this->assertTrue( (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ), 'lookups on' );
+            $this->assertNotEmpty( $ed->listenersByFilterType['geolocation'] ?? [], 'the geolocation filter' );
+            $this->assertNotEmpty( $ed->listenersByFilterType['system_health_sections'] ?? [], 'the System Health section' );
+        } finally {
+            foreach ( [ 'geolocation' => $was[0], 'system_health_sections' => $was[1] ] as $name => $listeners ) {
+                if ( $listeners === null ) {
+                    unset( $ed->listenersByFilterType[ $name ] );
+                } else {
+                    $ed->listenersByFilterType[ $name ] = $listeners;
+                }
+            }
+            \OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', $was[2] );
+        }
+    }
+
     /** Through the module's own client, an answer is mapped onto the location. */
     public function testTheModulesClientAnswerIsMapped(): void
     {

@@ -120,16 +120,11 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
         /*
-         * The session's start, and the PREVIOUS session's start.
-         *
-         * Anchors, both of them: offsets are derived from them downstream,
-         * because an offset computed at collection cannot be re-derived when
-         * the rule for it changes. `psts` is what daysSinceLastVisit reads: days
-         * bucket, where a continuous seconds value would give one bucket per
-         * distinct second.
+         * The session's start: an anchor, so offsets are derived from it
+         * downstream, because an offset computed at collection cannot be
+         * re-derived when the rule for it changes.
          */
         $this->setProperty( $this->column( 'session_start_ts', OWA_DTD_BIGINT ) );
-        $this->setProperty( $this->column( 'prior_session_start_ts', OWA_DTD_BIGINT ) );
 
         /*
          * The event's position in its session, counted on the DEVICE.

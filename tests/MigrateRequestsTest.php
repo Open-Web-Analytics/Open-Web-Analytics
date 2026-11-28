@@ -187,7 +187,7 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame(1, (int) $entry['prior_sessions'], 'counted from v1 sessions (PRIOR), not v1\'s 3');
         $this->assertSame(self::T - 86400 * 10, (int) $entry['visitor_fsts']);
         $this->assertSame(self::T, (int) $entry['session_start_ts']);
-        $this->assertSame(self::T - 86400, (int) $entry['prior_session_start_ts']);
+        $this->assertArrayNotHasKey('prior_session_start_ts', $entry, 'Update108 dropped it');
 
         $this->assertSame(['plan' => 'pro'], json_decode((string) $entry['params'], true));
     }

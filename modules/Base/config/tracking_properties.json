@@ -350,20 +350,6 @@
         "required": false,
         "callbacks": []
     },
-    "psts": {
-        "description": "When the visitor's previous session started, as a Unix timestamp in seconds from the visitor's clock. Absent on a visitor's first session.",
-        "set_by": "client",
-        "from": [
-            "s_pts"
-        ],
-        "column": "prior_session_start_ts",
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": []
-    },
     "sts": {
         "description": "When the current session started, as a Unix timestamp in seconds from the visitor's clock.",
         "set_by": "client",

@@ -291,7 +291,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
             'session_start_ts'       => $this->number( $event->get( 'sts' ) ),
-            'prior_session_start_ts' => $this->number( $event->get( 'psts' ) ),
             'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
             'beacon_version' => $this->number( $event->get( 'beacon_version' ) ),
 
